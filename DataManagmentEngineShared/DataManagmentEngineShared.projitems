@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>b5d91583-1eb4-4b3c-8288-88fd13e35556</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>TheTechIdea.DataManagment_Engine</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Addin\" />
+    <Folder Include="$(MSBuildThisFileDirectory)AppBuilder\" />
+    <Folder Include="$(MSBuildThisFileDirectory)MVVM\" />
+    <Folder Include="$(MSBuildThisFileDirectory)NOSQL\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerDataSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ConfigEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\DMTypeBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MVVM\DataListViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\LocalDBSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewDataSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBDataConnection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewConnection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewReader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\BackGroundWorkerThread.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\DataTypesHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\ETL.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\DMEEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\TypeHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileManager\FileConnection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileManager\TextFieldParser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Logger\LogAndError.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportOutput.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tools\AssemblyHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tools\ClassCreator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MVVM\NothingToDo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MVVM\Prerequisites.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MVVM\PropertyDependencyAnalyzer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MVVM\ProxyGen.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MVVM\ProxyGenerationException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MVVM\TypeFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WEBAPIDataConnection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\CopyData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\CopyEntities.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\CopyEntity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\RunScript.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\LoadDataLogResult.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\RulesParser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlowEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlowStepEditor.cs" />
+  </ItemGroup>
+</Project>

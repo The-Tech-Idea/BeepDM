@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>2f745b0a-b2f4-4eb8-9a8e-5a87b2988f99</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>TheTechIdea.DataManagment_Engine</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Addin\AddinTreeStructure.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Addin\AddinVisSchema.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Addin\IDM_Addin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Addin\PassedArgs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AI\IAAPP.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\App.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\AppField.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\AppScreen.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\AppVersion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\BreadCrumb.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\DataSourceFieldProperties.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IApp.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppComponent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppDesigner.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppField.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppScreen.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppVersion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\ILayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ConnectionProperties.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ConfigandSettings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\Enums.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ErrorsInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\IConfigEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\IConnectionProperties.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\IDatasourceEntities.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\IErrorsInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\IJsonFileLoader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ParentChildObject.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\QuerySqlRepo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\ChildRelation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\DatabaseMethods.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\DatatypeMapping.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataView\DMDataView.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\EntityStructure.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\IColumnLookupList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\IDataConnection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\IDatatypeMapping.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataView\IDMDataView.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\IEntityField.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\IEntityStructure.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\IInsertTransaction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\ILocalDB.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\IQueryFieldsandValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\IQuerySqlRepo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\IQueryStructure.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\IRDBDataConnection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\IRDBSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\IRelationShipKeys.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\QuerySqlRepo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\QueryStructure.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBSourceADP.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataView\IDataViewReader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\IETL.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\LScript.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\IRDBMSHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\IDataSourceDataType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\IDataTypesHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\ILScript.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\IDMEEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileManager\ColumnDef.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileManager\ExcelSheetDefinition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IDataSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Logger\IDMLogger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Logger\ILogAndError.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MachineLearning\ITestData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MachineLearning\ITrainedModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NOSQL\DatabaseCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Report\IReportDMWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportBlock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportBlockColumns.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportFilter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportDefinition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportTemplet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tools\assemblies_rep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tools\AssemblyItem.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tools\IAssemblyHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tools\IClassCreator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IAddinVisSchema.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranch.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranchID.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranchRootCategory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IDisplayPanel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\INode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IOrder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\ITree.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\MenuItemAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\VisEnums.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WEPAPI\IWebAPIDataSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\DataWorkFlow.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IDataWorkFlow.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IDataWorkFlowStep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MachineLearning\IMachineLearningContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMapping_rep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMapping_rep_fields.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMapping_Rule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMap_Schema.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IWorkFlowAction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IWorkFlowActionClassImplementation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IWorkFlowEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IWorkFlowStepRules.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\Mapping_rep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\Mapping_rep_fields.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\ObjectTypes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlowAction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlowStep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlow_Run_Result.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Workflow\Mapping\" />
+  </ItemGroup>
+</Project>
