@@ -18,7 +18,7 @@ namespace DemoApp
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             MainApp m = new MainApp();
-            Application.Run(new Form1());
+           // Application.Run(new Form1());
         }
     }
 }

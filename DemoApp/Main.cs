@@ -85,11 +85,7 @@ namespace DataManagment_Engine
                 // Setup the Entry Screen 
                 // the screen has to be in one the Addin DLL's loaded by the Assembly loader
 
-                if (Config_editor.Config.SystemEntryFormName == null)
-                {
-                    Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
-
-                }
+              
                 // Setup the Database Connection Screen
                 // a "Work Flow" class will control all the workflow between different data source 
                 // and automation
@@ -126,13 +122,20 @@ namespace DataManagment_Engine
            
                 LLoader.LoadAllAssembly();
                 Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
-               
-              //  vis.ShowMainDisplayForm();
-                if (DMEEditor.ErrorObject.Flag== Errors.Failed)
-                {
-                    Controleditor.MsgBox("Beep", "Could not Startup Screen");
 
+                // you start you application from an Calling an Addin
+                Config_editor.Config.SystemEntryFormName = @"Form1";
+                if (Config_editor.Config.SystemEntryFormName != null)
+                {
+                    //Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
+                    vis.ShowMainDisplayForm();
+                }else
+                {
+                    Controleditor.MsgBox("Beep", "Could not Find any Startup Screen");
                 }
+                
+
+                
             }
         }
     }

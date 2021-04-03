@@ -50,59 +50,77 @@ namespace TheTechIdea.Tools
             DataSources = new List<AssemblyClassDefinition>();
             // look through assembly list
             Assembly currentAssem = Assembly.GetExecutingAssembly();
+            Assembly rootassembly = Assembly.GetEntryAssembly();
             var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine"));
+            try
+            {
+                ScanAssembly(currentAssem);
+                DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(currentAssem);
+            }
+            catch (Exception ex)
+            {
 
-            // try to find manually
-            //foreach (Assembly asm in currentAssem)
-            //{
+                DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
+            }
 
-                try
-                {
-                    foreach (var type in currentAssem.DefinedTypes)
-                    {
+            try
+            {
+                ScanAssembly(rootassembly);
+                DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(rootassembly);
 
+            }
+            catch (Exception ex)
+            {
 
-                        string[] p = currentAssem.FullName.Split(new char[] { ',' });
-                        p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
-                        //-------------------------------------------------------
-                        // Get DataBase Drivers
-                        if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
-                        {
+                DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
+            }
+            //// try to find manually
+            ////foreach (Assembly asm in currentAssem)
+            ////{
 
-                            AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                            xcls.className = type.Name;
-                            xcls.dllname = type.Module.Name;
-                            xcls.PackageName = type.FullName;
-                            DataSources.Add(xcls);
-                            DMEEditor.ConfigEditor.DataSources.Add(xcls);
-
-
-                        }
-                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
-                        {
-
-                            AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                            xcls.className = type.Name;
-                            xcls.dllname = type.Module.Name;
-                            xcls.PackageName = type.FullName;
-                            DataSources.Add(xcls);
-                            DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
+            //    try
+            //    {
+            //        foreach (var type in currentAssem.DefinedTypes)
+            //        {
 
 
-                        }
+            //            string[] p = currentAssem.FullName.Split(new char[] { ',' });
+            //            p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
+            //            //-------------------------------------------------------
+            //            // Get DataBase Drivers
+            //            if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
+            //            {
 
-                    }
+            //                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+            //                xcls.className = type.Name;
+            //                xcls.dllname = type.Module.Name;
+            //                xcls.PackageName = type.FullName;
+            //                DataSources.Add(xcls);
+            //                DMEEditor.ConfigEditor.DataSources.Add(xcls);
+
+
+            //            }
+            //            if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
+            //            {
+
+            //                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+            //                xcls.className = type.Name;
+            //                xcls.dllname = type.Module.Name;
+            //                xcls.PackageName = type.FullName;
+            //                DataSources.Add(xcls);
+            //                DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
+
+
+            //            }
+
+            //        }
 
 
 
-                    //-----------------------------------------------------------
-                }
-                catch (Exception ex)
-                {
+            //-----------------------------------------------------------
+            // }
 
-                    DMEEditor.Logger.WriteLog($"error loading Database drivers {ex.Message} ");
-                }
-           // }
+            // }
             return DMEEditor.ErrorObject;
 
         }
