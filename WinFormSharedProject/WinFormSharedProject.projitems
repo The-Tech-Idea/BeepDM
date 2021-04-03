@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>8ef815e8-01cc-47de-add4-739141499fef</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>WinFormSharedProject</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)ControlEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\EclipseControl.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\MyCheckBox.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\RoundButton.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\RoundPanel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\RoundPicture.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IControlEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ITreeView.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IVisUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IWinFormAddin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReportEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReportGenrerator\DGVPrinter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReportGenrerator\GenReportusingPrintForm.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReportGenrerator\uc_ReportPreview.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReportGenrerator\uc_ReportPreview.Designer.cs">
+      <DependentUpon>uc_ReportPreview.cs</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)SelectedNodes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VisUtil.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)ReportGenrerator\uc_ReportPreview.resx">
+      <DependentUpon>uc_ReportPreview.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)app.config" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B766292B-356A-4E5D-802F-CB04A7BF084D}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>TheTechIdea.Winforms.VIS</RootNamespace>
+    <AssemblyName>WinformVisualObjects</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="App\AppCategoryNode.cs" />
+    <Compile Include="App\AppEntitiesNode.cs" />
+    <Compile Include="App\AppNode.cs" />
+    <Compile Include="App\AppRootNode.cs" />
+    <Compile Include="CompositeLayer\CompositeLayerCategoryNode.cs" />
+    <Compile Include="CompositeLayer\CompositeLayerEntitesNode.cs" />
+    <Compile Include="CompositeLayer\CompositeLayerNode.cs" />
+    <Compile Include="CompositeLayer\CompositeLayerRootNode.cs" />
+    <Compile Include="Config\ConfigCategoryNode.cs" />
+    <Compile Include="Config\ConfigEntityNode.cs" />
+    <Compile Include="Config\ConfigRootNode.cs" />
+    <Compile Include="DDL\DDLCategoryNode.cs" />
+    <Compile Include="DDL\DDLEntityNode.cs" />
+    <Compile Include="DDL\DDLRootNode.cs" />
+    <Compile Include="Mapping\MappingCategoryNode.cs" />
+    <Compile Include="Mapping\MappinSchemaNode.cs" />
+    <Compile Include="NoSQL\NoSqlCategoryNode.cs" />
+    <Compile Include="NoSQL\NoSqlEntityNode.cs" />
+    <Compile Include="NoSQL\NoSqlSourceNode.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Cloud\CloudServiceRootNode.cs" />
+    <Compile Include="DataBase\DatabaseCategoryNode.cs" />
+    <Compile Include="DataBase\DatabaseEntitesNode.cs" />
+    <Compile Include="DataBase\DatabaseNode.cs" />
+    <Compile Include="DataBase\DatabaseRootNode.cs" />
+    <Compile Include="DataView\DataViewCategoryNode.cs" />
+    <Compile Include="DataView\DataViewEntitiesNode.cs" />
+    <Compile Include="DataView\DataViewNode.cs" />
+    <Compile Include="DataView\DataViewRootNode.cs" />
+    <Compile Include="File\FileCategoryNode.cs" />
+    <Compile Include="File\FileEntityNode.cs" />
+    <Compile Include="File\FileEntitySheetNode.cs" />
+    <Compile Include="File\FileRootNode.cs" />
+    <Compile Include="Mapping\MappingRootNode.cs" />
+    <Compile Include="NoSQL\NoSqlRootNode.cs" />
+    <Compile Include="Reports\ReportCategoryNode.cs" />
+    <Compile Include="Reports\ReportNode.cs" />
+    <Compile Include="Reports\ReportRootNode.cs" />
+    <Compile Include="Tree\Tree.cs" />
+    <Compile Include="WebAPI\WebApiEntities.cs" />
+    <Compile Include="WebAPI\WebApiNode.cs" />
+    <Compile Include="WebAPI\WebApiRootNode.cs" />
+    <Compile Include="WebAPI\WepApiCategoryNode.cs" />
+    <Compile Include="WorkFlow\WorkFlowCategoryNode.cs" />
+    <Compile Include="WorkFlow\WorkFlowEntityNode.cs" />
+    <Compile Include="WorkFlow\WorkFlowRootNode.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DataManagerNetModels\DataManagmentModels.csproj">
+      <Project>{7697ebdc-a4f2-49b1-af91-79031516e679}</Project>
+      <Name>DataManagmentModels</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj">
+      <Project>{45983087-5e0e-4bfb-86c1-a5bc54d2a86f}</Project>
+      <Name>DataManagmentEngine</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DM_VIS\Winform.csproj">
+      <Project>{0246f046-95c7-4713-b6d7-4ae829600c39}</Project>
+      <Name>Winform</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy $(TargetName).dll  $(SolutionDir)SampleApp\bin\Debug\ProjectClasses\$(TargetName).dll</PostBuildEvent>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <ItemsProjectGuid>{9ef015e6-7816-4eaa-9151-b80f80396834}</ItemsProjectGuid>
+    <ItemsProjectName>DataManagmentModelsShared</ItemsProjectName>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MSBuildThisFileDirectory)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectCapability Include="SourceItemsFromImports" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\addin\idm_addin.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\addin\passedargs.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\connectionproperties.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\dbdatatypes.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\dmconfig.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\enums.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\errorsinfo.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\fileproperties.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\iconfigeditor.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\iconnectionproperties.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\ierrorsinfo.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\ifileproperties.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\parentchildobject.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\querysqlrepo.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\typeextensions.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\databasemethods.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\datatypemapping.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\dmdataview.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\entitystructure.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\idataconnection.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\idatatypemapping.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\idmdataview.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\iquerystructure.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\irdbdataconnection.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\irdbsource.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\querysqlrepo.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\querystructure.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\editor\idatabasecreator.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\editor\idatasourcedatatype.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\editor\idatatypeseditor.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\editor\idatavieweditor.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\editor\idmeeditor.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\filemanager\columndef.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\filemanager\excelsheetdefinition.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\idatasource.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\iutil.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\logger\idmlogger.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\logger\iloganderror.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\report\reportblock.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\report\reportblockcolumns.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\report\reportfilter.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\report\reportheader.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\wepapi\iwebapiconnection.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\wepapi\iwebapidatasource.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\datasourceitem.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\dataworkflow.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\idataworkflow.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\idataworkflowstep.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\imapping_rep.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\imapping_rep_fields.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\imapping_rule.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\imap_schema.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\iworkflowaction.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\iworkflowactionclassimplementation.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\iworkfloweditor.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\iworkflowparameters.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\iworkflowsteprules.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\mapping_rep.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\mapping_rep_fields.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\mapping_rule.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\workflowaction.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\workflowstep.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagment_engine\filemanager\ijsonreader.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagment_engine\filemanager\itxtxlscsvreader.cs" />
+  </ItemGroup>
+</Project>

@@ -161,21 +161,33 @@ namespace TheTechIdea.DataManagment_Engine
            if (cn != null)
             {
                 ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
-                string packagename = ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
-                //  Type adc = Type.GetType(packagename);
-                Type adc = Utilfunction.GetType(packagename);
-                ConstructorInfo ctor = adc.GetConstructors().First();
-                ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
-                //create an instance:
-                ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
+                if (ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).Any())
+                {
+                    string packagename = ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
+                    //  Type adc = Type.GetType(packagename);
+                    Type adc = Utilfunction.GetType(packagename);
+                    ConstructorInfo ctor = adc.GetConstructors().First();
+                    ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
+                    //create an instance:
+                    ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
+                }
+                
                 try
                 {
-
-                    ds.Dataconnection.ConnectionProp = cn;
-                    ds.Dataconnection.DataSourceDriver = driversConfig;
-                  //  ds.ConnectionStatus = ds.Dataconnection.OpenConnection();
-                    DataSources.Add(ds);
-                    return ds;
+                    if (ds != null)
+                    {
+                        ds.Dataconnection.ConnectionProp = cn;
+                        ds.Dataconnection.DataSourceDriver = driversConfig;
+                        //  ds.ConnectionStatus = ds.Dataconnection.OpenConnection();
+                        DataSources.Add(ds);
+                        return ds;
+                    }
+                    else
+                    {
+                        AddLogMessage("Fail", "Could Find DataSource Drivers", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                        return null;
+                    }
+                   
                     //if (ds.ConnectionStatus == ConnectionState.Open)
                     //{
 
@@ -218,32 +230,33 @@ namespace TheTechIdea.DataManagment_Engine
             //ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName == pdatasourcename).FirstOrDefault();
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
-
             ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
-            string packagename = ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
-            //  Type adc = Type.GetType(packagename);
-            Type adc = Utilfunction.GetType(packagename);
-            ConstructorInfo ctor = adc.GetConstructors().First();
-            ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
-
-            //create an instance:
-            ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
-
+            if (ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).Any())
+            {
+                string packagename = ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
+                //  Type adc = Type.GetType(packagename);
+                Type adc = Utilfunction.GetType(packagename);
+                ConstructorInfo ctor = adc.GetConstructors().First();
+                ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
+                //create an instance:
+                ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
+            }
 
 
             try
             {
 
-                ds.Dataconnection.ConnectionProp = cn;
-                ds.Dataconnection.DataSourceDriver = driversConfig;
-             //   ds.ConnectionStatus = ds.Dataconnection.OpenConnection();
-                DataSources.Add(ds);
+               
                 if (ds == null)
                 {
+                    AddLogMessage("Fail", "Could Find DataSource Drivers", DateTime.Now, 0, pdatasourcename, Errors.Failed);
                     return null;
                 }
                 else
                 {
+                    ds.Dataconnection.ConnectionProp = cn;
+                    ds.Dataconnection.DataSourceDriver = driversConfig;
+                    DataSources.Add(ds);
                     return ds;
                 }
             }
@@ -268,24 +281,39 @@ namespace TheTechIdea.DataManagment_Engine
 
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
+            ConnectionDriversConfig package=null;
+            if (ConfigEditor.DataDrivers.Where(x => x.classHandler == ClassDBHandlerName).Any())
+            {
+                 package = ConfigEditor.DataDrivers.Where(x => x.classHandler == ClassDBHandlerName).FirstOrDefault();
+                string packagename = ConfigEditor.DataSources.Where(x => x.className == package.classHandler).FirstOrDefault().PackageName;
 
-            ConnectionDriversConfig package = ConfigEditor.DataDrivers.Where(x => x.classHandler == ClassDBHandlerName).FirstOrDefault();
-            string packagename = ConfigEditor.DataSources.Where(x => x.className == package.classHandler).FirstOrDefault().PackageName;
+                Type adc = Utilfunction.GetType(packagename);
+                ConstructorInfo ctor = adc.GetConstructors().First();
+                ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
 
-            Type adc = Utilfunction.GetType(packagename);
-            ConstructorInfo ctor = adc.GetConstructors().First();
-            ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
-
-            //create an instance:
-            ds = createdActivator(dataConnection.ConnectionName, Logger, this, dataConnection.DatabaseType, ErrorObject);
+                //create an instance:
+                ds = createdActivator(dataConnection.ConnectionName, Logger, this, dataConnection.DatabaseType, ErrorObject);
+            }
+       
 
             try
             {
+                if (ds != null)
+                {
+                    ds.Dataconnection.ConnectionProp = dataConnection;
+                    ds.Dataconnection.DataSourceDriver = package;
+                    ds.Dataconnection.ReplaceValueFromConnectionString();
+                    ILocalDB dB = (ILocalDB)ds;
+                    DataSources.Add(ds);
+                    Logger.WriteLog($"Success Created Local Database " + pdatasourcename);
 
-                ds.Dataconnection.ConnectionProp = dataConnection;
-                ds.Dataconnection.DataSourceDriver = package;
-                ds.Dataconnection.ReplaceValueFromConnectionString();
-                ILocalDB dB = (ILocalDB)ds;
+                    return ds;
+                }else
+                {
+                    AddLogMessage("Fail", "Could Find DataSource Drivers", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
+              
            //     bool ok= dB.CreateDB();
           //      if (ok)
           //      {
@@ -293,10 +321,8 @@ namespace TheTechIdea.DataManagment_Engine
                 //if (ds.ConnectionStatus == ConnectionState.Open)
                 //{
                     // ConfigEditor.DataConnections.Add(dataConnection);
-                    DataSources.Add(ds);
-                    Logger.WriteLog($"Success Created Local Database " + pdatasourcename);
-
-                    return ds;
+                    
+                   
                 //}else
                 //{
                 //    return null;

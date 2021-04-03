@@ -33,10 +33,9 @@ namespace TheTechIdea.DataManagment_Engine
         dynamic GetTypeFromString(string strFullyQualifiedName);
         EntityStructure GetEntityStructure(DataTable tb);
         bool Download(string url, string downloadFileName, string downloadFilePath);
-        string GetInsertString(string EntityName, DataRow row, IMapping_rep Mapping, EntityStructure DataStruct);
-        double CalculateSimilarity( string source, string target);
-        bool KMPSearch(string pat, string txt);
-       
-       
+        Type GetTypeFromStringValue(string str);
+
+
+
     }
 }

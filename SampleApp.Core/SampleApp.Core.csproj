@@ -1,0 +1,1382 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Addin\HereweAddAllAddin.txt" />
+    <None Remove="Addin\HereweAddAllPlugins.txt" />
+    <None Remove="config\AddinTreeStructure.json" />
+    <None Remove="config\Apps.json" />
+    <None Remove="config\CategoryFolders.json" />
+    <None Remove="config\CompositeLayers.json" />
+    <None Remove="config\ConnectionConfig.json" />
+    <None Remove="config\DataConnections.json" />
+    <None Remove="config\DataTypeMapping.json" />
+    <None Remove="config\DbTables.json" />
+    <None Remove="config\DDLCreateTables.json" />
+    <None Remove="config\DriversDefinitions.json" />
+    <None Remove="config\events.json" />
+    <None Remove="config\Function2Function.json" />
+    <None Remove="config\Mapping.json" />
+    <None Remove="config\MappingList.json" />
+    <None Remove="config\Maps.json" />
+    <None Remove="config\ObjectTypes.json" />
+    <None Remove="config\QueryList.json" />
+    <None Remove="config\reports.json" />
+    <None Remove="ConnectionDrivers\arm64\WebView2Loader.dll" />
+    <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.Core.dll" />
+    <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.WinForms.dll" />
+    <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.Wpf.dll" />
+    <None Remove="ConnectionDrivers\x64\WebView2Loader.dll" />
+    <None Remove="ConnectionDrivers\x86\WebView2Loader.dll" />
+    <None Remove="DataFiles\Alaska.sdf" />
+    <None Remove="DataFiles\etl.s3db" />
+    <None Remove="DataFiles\firebirddb.fdb" />
+    <None Remove="DataFiles\ppdm38.s3db" />
+    <None Remove="DataFiles\refdblocal.s3db" />
+    <None Remove="DataFiles\simpleodmdblite.s3db" />
+    <None Remove="DataViews\ppdm38.json" />
+    <None Remove="DataViews\PPDM39.json" />
+    <None Remove="Entities\297_layout.xls_entities.json" />
+    <None Remove="Entities\activity-codes_210667110913052332.xls_entities.json" />
+    <None Remove="Entities\activity_codes.xls_entities.json" />
+    <None Remove="Entities\Additive-Type.xlsx_entities.json" />
+    <None Remove="Entities\additive_type.xls_entities.json" />
+    <None Remove="Entities\Core-Type.xls_entities.json" />
+    <None Remove="Entities\core_type.xls_entities.json" />
+    <None Remove="Entities\COUNTIES.xlsx_entities.json" />
+    <None Remove="Entities\counties.xls_entities.json" />
+    <None Remove="Entities\country.xls_entities.json" />
+    <None Remove="Entities\COUNTY-CODE.xlsx_entities.json" />
+    <None Remove="Entities\cushion-type_210672110913052332.xls_entities.json" />
+    <None Remove="Entities\cushion_type.xls_entities.json" />
+    <None Remove="Entities\Drilling-Media_339245110913052332.xls_entities.json" />
+    <None Remove="Entities\drilling_media.xls_entities.json" />
+    <None Remove="Entities\dst-materia-recovered_210674110913052332.xls_entities.json" />
+    <None Remove="Entities\dst_material_recovered.xls_entities.json" />
+    <None Remove="Entities\dst_recovery_codes.xls_entities.json" />
+    <None Remove="Entities\dst_recovery_codes_210675110913052332.xls_entities.json" />
+    <None Remove="Entities\EIA_entities.json" />
+    <None Remove="Entities\final_status.xls_entities.json" />
+    <None Remove="Entities\final_status_code.xls_entities.json" />
+    <None Remove="Entities\final_status_code_210677110913052332.xls_entities.json" />
+    <None Remove="Entities\Fluid-Type_339247110913052332.xls_entities.json" />
+    <None Remove="Entities\fluid_type.xls_entities.json" />
+    <None Remove="Entities\footage-origin_210679110913052332.xls_entities.json" />
+    <None Remove="Entities\footage_origin.xls_entities.json" />
+    <None Remove="Entities\GeoDBCities_entities.json" />
+    <None Remove="Entities\initial-class.xls_entities.json" />
+    <None Remove="Entities\initial_class.xls_entities.json" />
+    <None Remove="Entities\initial_lahee_class.xls_entities.json" />
+    <None Remove="Entities\initial_lahee_class_210681110913052332.xls_entities.json" />
+    <None Remove="Entities\lat-long-source.xlsx_entities.json" />
+    <None Remove="Entities\lat_long_source.xls_entities.json" />
+    <None Remove="Entities\LITHOLOGY.xlsx_entities.json" />
+    <None Remove="Entities\lithology.xls_entities.json" />
+    <None Remove="Entities\LOG-CURVE-TYPE.xlsx_entities.json" />
+    <None Remove="Entities\log_curve_type.xls_entities.json" />
+    <None Remove="Entities\lost_material.xls_entities.json" />
+    <None Remove="Entities\lost_material_210685110913052332.xls_entities.json" />
+    <None Remove="Entities\measurement_technique.xls_entities.json" />
+    <None Remove="Entities\measurement_technique_210687110913052332.xls_entities.json" />
+    <None Remove="Entities\PERFORATION-TYPE.xlsx_entities.json" />
+    <None Remove="Entities\perforation_type.xls_entities.json" />
+    <None Remove="Entities\pi_r_basin_code_263131110913052332.xls_entities.json" />
+    <None Remove="Entities\pi_r_sub_basin_263132110913052332.xls_entities.json" />
+    <None Remove="Entities\porosity_type.xls_entities.json" />
+    <None Remove="Entities\porosity_type_210689110913052332.xls_entities.json" />
+    <None Remove="Entities\ppdm38_oracle_entities.json" />
+    <None Remove="Entities\Predominant-fluid-recovery.xls_entities.json" />
+    <None Remove="Entities\principal_meridian.xls_entities.json" />
+    <None Remove="Entities\principal_meridian_210690110913052332.xls_entities.json" />
+    <None Remove="Entities\PROD-LINK-TYPE.xlsx_entities.json" />
+    <None Remove="Entities\PRODUCT-TYPE.xlsx_entities.json" />
+    <None Remove="Entities\PRODUCTION-METHOD.xlsx_entities.json" />
+    <None Remove="Entities\production_method.xls_entities.json" />
+    <None Remove="Entities\product_type.xls_entities.json" />
+    <None Remove="Entities\Proppant Type.xls_entities.json" />
+    <None Remove="Entities\proppant_type.xls_entities.json" />
+    <None Remove="Entities\rate_units.xls_entities.json" />
+    <None Remove="Entities\rate_units_210697110913052332.xls_entities.json" />
+    <None Remove="Entities\Reason-codes.xls_entities.json" />
+    <None Remove="Entities\reason_codes.xls_entities.json" />
+    <None Remove="Entities\REMARK-TYPE.xls_entities.json" />
+    <None Remove="Entities\remark_type.xls_entities.json" />
+    <None Remove="Entities\Rig-Status-may19.xls_entities.json" />
+    <None Remove="Entities\rig_status.xls_entities.json" />
+    <None Remove="Entities\Show-type.xls_entities.json" />
+    <None Remove="Entities\show_type.xls_entities.json" />
+    <None Remove="Entities\SqlServer_ppdm38_properties.json" />
+    <None Remove="Entities\state-and-counties.xlsx_entities.json" />
+    <None Remove="Entities\states.xls_entities.json" />
+    <None Remove="Entities\state_and_counties .xls_entities.json" />
+    <None Remove="Entities\test_result.xls_entities.json" />
+    <None Remove="Entities\test_result_210705110913052332.xls_entities.json" />
+    <None Remove="Entities\test_subtype.xls_entities.json" />
+    <None Remove="Entities\test_subtype_210706110913052332.xls_entities.json" />
+    <None Remove="Entities\titanic.csv_entities.json" />
+    <None Remove="Entities\Treatment-Fluid.xlsx_entities.json" />
+    <None Remove="Entities\Treatment-Type_210709110913052332.xls_entities.json" />
+    <None Remove="Entities\treatment_fluids.xls_entities.json" />
+    <None Remove="Entities\treatment_type.xls_entities.json" />
+    <None Remove="Entities\volume_units.xls_entities.json" />
+    <None Remove="Entities\volume_units_210710110913052332.xls_entities.json" />
+    <None Remove="Entities\Well-Class.xlsx_entities.json" />
+    <None Remove="Entities\well-status.xls_entities.json" />
+    <None Remove="Entities\wellhdr.csv_entities.json" />
+    <None Remove="Entities\well_class.xls_entities.json" />
+    <None Remove="Entities\well_status.xls_entities.json" />
+    <None Remove="Entities\well_types.xls_entities.json" />
+    <None Remove="GFX\ai.ico" />
+    <None Remove="GFX\amazon-web-services.ico" />
+    <None Remove="GFX\andriod.ico" />
+    <None Remove="GFX\app.ico" />
+    <None Remove="GFX\asp.ico" />
+    <None Remove="GFX\avi.ico" />
+    <None Remove="GFX\azure-active-directory.ico" />
+    <None Remove="GFX\azure-event-hub.ico" />
+    <None Remove="GFX\bigdata.ico" />
+    <None Remove="GFX\bin.ico" />
+    <None Remove="GFX\box.ico" />
+    <None Remove="GFX\Cassandra.ico" />
+    <None Remove="GFX\category.ico" />
+    <None Remove="GFX\clayer.ico" />
+    <None Remove="GFX\clayerroot.ico" />
+    <None Remove="GFX\cloud.ico" />
+    <None Remove="GFX\cloudant.ico" />
+    <None Remove="GFX\cockroachdb.ico" />
+    <None Remove="GFX\com.ico" />
+    <None Remove="GFX\connectiondrivers.ico" />
+    <None Remove="GFX\connections.ico" />
+    <None Remove="GFX\couchbase.ico" />
+    <None Remove="GFX\couchdb.ico" />
+    <None Remove="GFX\createentity.ico" />
+    <None Remove="GFX\css.ico" />
+    <None Remove="GFX\csv.ico" />
+    <None Remove="GFX\cursor.ico" />
+    <None Remove="GFX\cursor2.ico" />
+    <None Remove="GFX\database.ico" />
+    <None Remove="GFX\databaseentities.ico" />
+    <None Remove="GFX\datapoint.ico" />
+    <None Remove="GFX\dataview.ico" />
+    <None Remove="GFX\dataviewnode.ico" />
+    <None Remove="GFX\dbf.ico" />
+    <None Remove="GFX\ddl.ico" />
+    <None Remove="GFX\designer.ico" />
+    <None Remove="GFX\dll.ico" />
+    <None Remove="GFX\doc.ico" />
+    <None Remove="GFX\driversdefinition.ico" />
+    <None Remove="GFX\dwg.ico" />
+    <None Remove="GFX\elasticsearch.ico" />
+    <None Remove="GFX\eml.ico" />
+    <None Remove="GFX\entity.ico" />
+    <None Remove="GFX\eps.ico" />
+    <None Remove="GFX\events.ico" />
+    <None Remove="GFX\exe.ico" />
+    <None Remove="GFX\fieldtype.ico" />
+    <None Remove="GFX\file.ico" />
+    <None Remove="GFX\firebase.ico" />
+    <None Remove="GFX\Firebird.ico" />
+    <None Remove="GFX\fla.ico" />
+    <None Remove="GFX\folder.ico" />
+    <None Remove="GFX\function2function.ico" />
+    <None Remove="GFX\gif.ico" />
+    <None Remove="GFX\google-cloud.ico" />
+    <None Remove="GFX\google-drive.ico" />
+    <None Remove="GFX\hbase.ico" />
+    <None Remove="GFX\htm.ico" />
+    <None Remove="GFX\ico.ico" />
+    <None Remove="GFX\info.ico" />
+    <None Remove="GFX\ini.ico" />
+    <None Remove="GFX\ios.ico" />
+    <None Remove="GFX\ironpython.ico" />
+    <None Remove="GFX\iso.ico" />
+    <None Remove="GFX\jar.ico" />
+    <None Remove="GFX\jpg.ico" />
+    <None Remove="GFX\js.ico" />
+    <None Remove="GFX\json.ico" />
+    <None Remove="GFX\linux.ico" />
+    <None Remove="GFX\mapping.ico" />
+    <None Remove="GFX\mariadb.ico" />
+    <None Remove="GFX\microsoft-azure.ico" />
+    <None Remove="GFX\mkv.ico" />
+    <None Remove="GFX\mongodb.ico" />
+    <None Remove="GFX\mov.ico" />
+    <None Remove="GFX\mp3.ico" />
+    <None Remove="GFX\mp4.ico" />
+    <None Remove="GFX\mysql.ico" />
+    <None Remove="GFX\nosql.ico" />
+    <None Remove="GFX\obj.ico" />
+    <None Remove="GFX\oracle.ico" />
+    <None Remove="GFX\otf.ico" />
+    <None Remove="GFX\pdf.ico" />
+    <None Remove="GFX\pkg.ico" />
+    <None Remove="GFX\png.ico" />
+    <None Remove="GFX\ppt.ico" />
+    <None Remove="GFX\prisma.ico" />
+    <None Remove="GFX\psd.ico" />
+    <None Remove="GFX\query.ico" />
+    <None Remove="GFX\ravendb.ico" />
+    <None Remove="GFX\report.ico" />
+    <None Remove="GFX\reportnode.ico" />
+    <None Remove="GFX\rtf.ico" />
+    <None Remove="GFX\salesforce.ico" />
+    <None Remove="GFX\select.ico" />
+    <None Remove="GFX\settings.ico" />
+    <None Remove="GFX\sheet.ico" />
+    <None Remove="GFX\spreadsheet.ico" />
+    <None Remove="GFX\Sqlite.ico" />
+    <None Remove="GFX\sqlserver.ico" />
+    <None Remove="GFX\sqlserverCompact.ico" />
+    <None Remove="GFX\svg.ico" />
+    <None Remove="GFX\ttf.ico" />
+    <None Remove="GFX\txt.ico" />
+    <None Remove="GFX\unkown.ico" />
+    <None Remove="GFX\vcf.ico" />
+    <None Remove="GFX\wav.ico" />
+    <None Remove="GFX\web.ico" />
+    <None Remove="GFX\webapi.ico" />
+    <None Remove="GFX\webphp.ico" />
+    <None Remove="GFX\windows_client.ico" />
+    <None Remove="GFX\wmv.ico" />
+    <None Remove="GFX\workflow.ico" />
+    <None Remove="GFX\workflowentity.ico" />
+    <None Remove="GFX\wpf.ico" />
+    <None Remove="GFX\xls.ico" />
+    <None Remove="GFX\xlsx.ico" />
+    <None Remove="GFX\xml.ico" />
+    <None Remove="GFX\zip.ico" />
+    <None Remove="Mapping\HereweAddAllmapping.txt" />
+    <None Remove="ProjectClasses\HereweputDLL.txt" />
+    <None Remove="ProjectData\OilandGas\IHS\activity-codes_210667110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\Additive-Type.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\Core-Type.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\COUNTIES.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\COUNTY-CODE.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\cushion-type_210672110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\Drilling-Media_339245110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\dst-materia-recovered_210674110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\dst_recovery_codes_210675110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\final_status_code_210677110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\Fluid-Type_339247110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\footage-origin_210679110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\initial-class.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\initial_lahee_class_210681110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\lat-long-source.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\LITHOLOGY.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\LOG-CURVE-TYPE.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\lost_material_210685110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\measurement_technique_210687110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\PERFORATION-TYPE.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\pi_r_basin_code_263131110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\pi_r_sub_basin_263132110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\porosity_type_210689110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\Predominant-fluid-recovery.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\principal_meridian_210690110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\PROD-LINK-TYPE.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\PRODUCT-TYPE.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\PRODUCTION-METHOD.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\Proppant Type.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\rate_units_210697110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\Reason-codes.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\REMARK-TYPE.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\Rig-Status-may19.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\Show-type.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\state-and-counties.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\States.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\test_result_210705110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\test_subtype_210706110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\Treatment-Fluid.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\Treatment-Type_210709110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\volume_units_210710110913052332.xls" />
+    <None Remove="ProjectData\OilandGas\IHS\Well-Class.xlsx" />
+    <None Remove="ProjectData\OilandGas\IHS\well-status.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\297_layout.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\298_layout.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\activity_codes.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\additive_type.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\core_type.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\counties.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\country.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\cushion_type.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\drilling_media.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\dst_material_recovered.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\dst_recovery_codes.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\final_status.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\final_status_code.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\fluid_type.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\footage_origin.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\initial_class.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\initial_lahee_class.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\lat_long_source.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\lithology.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\log_curve_type.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\lost_material.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\measurement_technique.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\perforation_type.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\porosity_type.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\principal_meridian.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\production_method.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\product_type.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\proppant_type.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\rate_units.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\reason_codes.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\remark_type.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\rig_status.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\show_type.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\states.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\state_and_counties .xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\test_result.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\test_subtype.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\treatment_fluids.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\treatment_type.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\volume_units.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\wellhdr.csv" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\well_class.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\well_status.xls" />
+    <None Remove="ProjectData\OilandGas\OilandGasDataTypes\well_types.xls" />
+    <None Remove="ProjectData\titanic.csv" />
+    <None Remove="Scripts\HereweAddAllscripts.txt" />
+    <None Remove="Scripts\Logs\HereweAddAllscriptlogs.txt" />
+    <None Remove="WorkFlow\DataWorkFlow.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Addin\HereweAddAllAddin.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Addin\HereweAddAllPlugins.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\AddinTreeStructure.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\Apps.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\CategoryFolders.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\CompositeLayers.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\ConnectionConfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\DataConnections.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\DataTypeMapping.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\DbTables.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\DDLCreateTables.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\DriversDefinitions.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\events.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\Function2Function.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\Mapping.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\MappingList.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\Maps.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\ObjectTypes.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\QueryList.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\reports.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Microsoft.Web.WebView2.Core.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Microsoft.Web.WebView2.WinForms.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Microsoft.Web.WebView2.Wpf.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="DataFiles\Alaska.sdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="DataFiles\etl.s3db">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="DataFiles\firebirddb.fdb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="DataFiles\ppdm38.s3db">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="DataFiles\refdblocal.s3db">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="DataFiles\simpleodmdblite.s3db">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="DataViews\ppdm38.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="DataViews\PPDM39.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\297_layout.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\activity-codes_210667110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\activity_codes.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\Additive-Type.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\additive_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\Core-Type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\core_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\COUNTIES.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\counties.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\country.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\COUNTY-CODE.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\cushion-type_210672110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\cushion_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\Drilling-Media_339245110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\drilling_media.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\dst-materia-recovered_210674110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\dst_material_recovered.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\dst_recovery_codes.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\dst_recovery_codes_210675110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\EIA_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\final_status.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\final_status_code.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\final_status_code_210677110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\Fluid-Type_339247110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\fluid_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\footage-origin_210679110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\footage_origin.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\GeoDBCities_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\initial-class.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\initial_class.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\initial_lahee_class.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\initial_lahee_class_210681110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\lat-long-source.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\lat_long_source.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\LITHOLOGY.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\lithology.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\LOG-CURVE-TYPE.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\log_curve_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\lost_material.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\lost_material_210685110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\measurement_technique.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\measurement_technique_210687110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\PERFORATION-TYPE.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\perforation_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\pi_r_basin_code_263131110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\pi_r_sub_basin_263132110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\porosity_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\porosity_type_210689110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\ppdm38_oracle_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\Predominant-fluid-recovery.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\principal_meridian.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\principal_meridian_210690110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\PROD-LINK-TYPE.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\PRODUCT-TYPE.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\PRODUCTION-METHOD.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\production_method.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\product_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\Proppant Type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\proppant_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\rate_units.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\rate_units_210697110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\Reason-codes.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\reason_codes.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\REMARK-TYPE.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\remark_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\Rig-Status-may19.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\rig_status.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\Show-type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\show_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\SqlServer_ppdm38_properties.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\state-and-counties.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\states.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\state_and_counties .xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\test_result.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\test_result_210705110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\test_subtype.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\test_subtype_210706110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\titanic.csv_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\Treatment-Fluid.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\Treatment-Type_210709110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\treatment_fluids.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\treatment_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\volume_units.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\volume_units_210710110913052332.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\Well-Class.xlsx_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\well-status.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\wellhdr.csv_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\well_class.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\well_status.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\well_types.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\ai.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\amazon-web-services.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\andriod.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\app.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\asp.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\avi.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\azure-active-directory.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\azure-event-hub.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\bigdata.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\bin.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\box.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\Cassandra.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\category.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\clayer.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\clayerroot.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\cloud.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\cloudant.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\cockroachdb.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\com.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\connectiondrivers.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\connections.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\couchbase.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\couchdb.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\createentity.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\css.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\csv.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\cursor.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\cursor2.ico" />
+    <Content Include="GFX\database.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\databaseentities.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\datapoint.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\dataview.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\dataviewnode.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\dbf.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\ddl.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\designer.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\dll.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\doc.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\driversdefinition.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\dwg.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\elasticsearch.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\eml.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\entity.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\eps.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\events.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\exe.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\fieldtype.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\file.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\firebase.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\Firebird.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\fla.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\folder.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\function2function.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\gif.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\google-cloud.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\google-drive.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\hbase.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\htm.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\ico.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\info.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\ini.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\ios.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\ironpython.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\iso.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\jar.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\jpg.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\js.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\json.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\linux.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\mapping.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\mariadb.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\microsoft-azure.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\mkv.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\mongodb.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\mov.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\mp3.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\mp4.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\mysql.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\nosql.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\obj.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\oracle.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\otf.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\pdf.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\pkg.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\png.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\ppt.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\prisma.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\psd.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\query.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\ravendb.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\report.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\reportnode.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\rtf.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\salesforce.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\select.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\settings.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\sheet.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\spreadsheet.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\Sqlite.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\sqlserver.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\sqlserverCompact.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\svg.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\ttf.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\txt.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\unkown.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\vcf.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\wav.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\web.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\webapi.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\webphp.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\windows_client.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\wmv.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\workflow.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\workflowentity.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\wpf.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\xls.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\xlsx.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\xml.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\zip.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Mapping\HereweAddAllmapping.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectClasses\HereweputDLL.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\activity-codes_210667110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\Additive-Type.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\Core-Type.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\COUNTIES.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\COUNTY-CODE.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\cushion-type_210672110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\Drilling-Media_339245110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\dst-materia-recovered_210674110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\dst_recovery_codes_210675110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\final_status_code_210677110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\Fluid-Type_339247110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\footage-origin_210679110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\initial-class.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\initial_lahee_class_210681110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\lat-long-source.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\LITHOLOGY.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\LOG-CURVE-TYPE.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\lost_material_210685110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\measurement_technique_210687110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\PERFORATION-TYPE.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\pi_r_basin_code_263131110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\pi_r_sub_basin_263132110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\porosity_type_210689110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\Predominant-fluid-recovery.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\principal_meridian_210690110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\PROD-LINK-TYPE.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\PRODUCT-TYPE.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\PRODUCTION-METHOD.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\Proppant Type.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\rate_units_210697110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\Reason-codes.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\REMARK-TYPE.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\Rig-Status-may19.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\Show-type.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\state-and-counties.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\States.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\test_result_210705110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\test_subtype_210706110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\Treatment-Fluid.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\Treatment-Type_210709110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\volume_units_210710110913052332.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\Well-Class.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\IHS\well-status.xls">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\297_layout.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\298_layout.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\activity_codes.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\additive_type.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\core_type.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\counties.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\country.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\cushion_type.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\drilling_media.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\dst_material_recovered.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\dst_recovery_codes.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\final_status.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\final_status_code.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\fluid_type.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\footage_origin.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\initial_class.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\initial_lahee_class.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\lat_long_source.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\lithology.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\log_curve_type.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\lost_material.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\measurement_technique.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\perforation_type.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\porosity_type.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\principal_meridian.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\production_method.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\product_type.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\proppant_type.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\rate_units.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\reason_codes.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\remark_type.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\rig_status.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\show_type.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\states.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\state_and_counties .xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\test_result.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\test_subtype.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\treatment_fluids.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\treatment_type.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\volume_units.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\wellhdr.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\well_class.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\well_status.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\OilandGas\OilandGasDataTypes\well_types.xls">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectData\titanic.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Scripts\HereweAddAllscripts.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Scripts\Logs\HereweAddAllscriptlogs.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WorkFlow\DataWorkFlow.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AssemblyToolsCore\AssemblyToolsCore.csproj" />
+    <ProjectReference Include="..\CodeDomCompile\CodeDomCompile.csproj" />
+    <ProjectReference Include="..\DataManagerNetModels\DataManagmentModels.csproj" />
+    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+    <ProjectReference Include="..\DMLogger\DMLogger.csproj" />
+    <ProjectReference Include="..\JsonFileLoader\JsonFileLoader.csproj" />
+    <ProjectReference Include="..\WinformCore\WinformCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Autofac" Version="4.9.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="OtherDLL\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ConnectionDrivers\arm64\WebView2Loader.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\x64\WebView2Loader.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\x86\WebView2Loader.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

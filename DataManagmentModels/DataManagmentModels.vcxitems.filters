@@ -1,0 +1,222 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Addin">
+      <UniqueIdentifier>{7e56f33a-8661-4170-a60f-a662cb74fa7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ConfigUtil">
+      <UniqueIdentifier>{cce5ba2f-5d0c-49e5-b7ae-288c048e956f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DataBase">
+      <UniqueIdentifier>{d4aab3b4-3477-4abc-b15b-19d030f6f8b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Editor">
+      <UniqueIdentifier>{92f569ef-0010-449f-91e9-cd6ab1b5cdc8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FileManager">
+      <UniqueIdentifier>{425f4f45-001d-4e92-8f8f-d26ffc17feb4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Logger">
+      <UniqueIdentifier>{708d8dd5-d8fd-4631-be1d-270dccf45704}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Report">
+      <UniqueIdentifier>{e75a16ec-1655-457f-b645-c50813e74096}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WEPAPI">
+      <UniqueIdentifier>{f3aabc7d-f6ed-427c-a141-923226a00848}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Workflow">
+      <UniqueIdentifier>{f10cdc8a-f624-4b43-8b67-90652605d8e8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\addin\idm_addin.cs">
+      <Filter>Addin</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\addin\passedargs.cs">
+      <Filter>Addin</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\connectionproperties.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\dbdatatypes.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\dmconfig.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\enums.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\errorsinfo.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\fileproperties.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\iconfigeditor.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\iconnectionproperties.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\ierrorsinfo.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\ifileproperties.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\parentchildobject.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\querysqlrepo.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\configutil\typeextensions.cs">
+      <Filter>ConfigUtil</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\databasemethods.cs">
+      <Filter>DataBase</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\datatypemapping.cs">
+      <Filter>DataBase</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\dmdataview.cs">
+      <Filter>DataBase</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\entitystructure.cs">
+      <Filter>DataBase</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\idataconnection.cs">
+      <Filter>DataBase</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\idatatypemapping.cs">
+      <Filter>DataBase</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\idmdataview.cs">
+      <Filter>DataBase</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\iquerystructure.cs">
+      <Filter>DataBase</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\irdbdataconnection.cs">
+      <Filter>DataBase</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\irdbsource.cs">
+      <Filter>DataBase</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\querysqlrepo.cs">
+      <Filter>DataBase</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\database\querystructure.cs">
+      <Filter>DataBase</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\editor\idatabasecreator.cs">
+      <Filter>Editor</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\editor\idatasourcedatatype.cs">
+      <Filter>Editor</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\editor\idatatypeseditor.cs">
+      <Filter>Editor</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\editor\idatavieweditor.cs">
+      <Filter>Editor</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\editor\idmeeditor.cs">
+      <Filter>Editor</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\filemanager\columndef.cs">
+      <Filter>FileManager</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\filemanager\excelsheetdefinition.cs">
+      <Filter>FileManager</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\logger\idmlogger.cs">
+      <Filter>Logger</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\logger\iloganderror.cs">
+      <Filter>Logger</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\report\reportblock.cs">
+      <Filter>Report</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\report\reportblockcolumns.cs">
+      <Filter>Report</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\report\reportfilter.cs">
+      <Filter>Report</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\report\reportheader.cs">
+      <Filter>Report</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\wepapi\iwebapiconnection.cs">
+      <Filter>WEPAPI</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\wepapi\iwebapidatasource.cs">
+      <Filter>WEPAPI</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\datasourceitem.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\dataworkflow.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\idataworkflow.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\idataworkflowstep.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\imap_schema.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\imapping_rep.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\imapping_rep_fields.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\imapping_rule.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\iworkflowaction.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\iworkflowactionclassimplementation.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\iworkfloweditor.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\iworkflowparameters.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\iworkflowsteprules.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\mapping_rep.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\mapping_rep_fields.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\mapping_rule.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\workflowaction.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\workflow\workflowstep.cs">
+      <Filter>Workflow</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\idatasource.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagernetmodels\iutil.cs" />
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagment_engine\filemanager\itxtxlscsvreader.cs">
+      <Filter>FileManager</Filter>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\datamanagment_engine\filemanager\ijsonreader.cs">
+      <Filter>FileManager</Filter>
+    </None>
+  </ItemGroup>
+</Project>

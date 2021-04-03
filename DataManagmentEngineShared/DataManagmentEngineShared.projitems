@@ -18,6 +18,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ConfigEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\DMTypeBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileManager\CSVDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\DataListViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\LocalDBSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewDataSource.cs" />
@@ -44,6 +45,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\TypeFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WEBAPIDataConnection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebAPIDataSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebAPIReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\CopyData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\CopyEntities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\CopyEntity.cs" />

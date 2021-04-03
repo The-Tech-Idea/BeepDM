@@ -1,0 +1,1030 @@
+﻿<!---->
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+<!-- EF Runtime content -->
+<edmx:Runtime>
+<!-- SSDL content -->
+<edmx:StorageModels>
+<Schema Namespace="localetlModel.Store" Alias="Self" Provider="System.Data.SqlServerCe.4.0" ProviderManifestToken="4.0" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityContainer Name="localetlModelStoreContainer">
+          <EntitySet Name="etl_columnsmapped" EntityType="localetlModel.Store.etl_columnsmapped" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <EntitySet Name="etl_defaultvaluesmapped" EntityType="localetlModel.Store.etl_defaultvaluesmapped" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <EntitySet Name="etl_filelocations" EntityType="localetlModel.Store.etl_filelocations" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <EntitySet Name="etl_loadingtemplete" EntityType="localetlModel.Store.etl_loadingtemplete" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <EntitySet Name="etl_Sourcecolumn" EntityType="localetlModel.Store.etl_Sourcecolumn" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <EntitySet Name="etl_tableloadingschema" EntityType="localetlModel.Store.etl_tableloadingschema" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <EntitySet Name="etl_Targetcolumn" EntityType="localetlModel.Store.etl_Targetcolumn" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <EntitySet Name="etl_valuemapping_dtl" EntityType="localetlModel.Store.etl_valuemapping_dtl" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <EntitySet Name="etl_valuemapping_hdr" EntityType="localetlModel.Store.etl_valuemapping_hdr" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <EntitySet Name="etl_workflowsteps" EntityType="localetlModel.Store.etl_workflowsteps" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <EntitySet Name="etl_worksheets_dtl" EntityType="localetlModel.Store.etl_worksheets_dtl" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <EntitySet Name="etl_worksheets_hdr" EntityType="localetlModel.Store.etl_worksheets_hdr" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <AssociationSet Name="to_loadingschema" Association="localetlModel.Store.to_loadingschema">
+            <End Role="etl_tableloadingschema" EntitySet="etl_tableloadingschema" />
+            <End Role="etl_columnsmapped" EntitySet="etl_columnsmapped" />
+          </AssociationSet>
+          <AssociationSet Name="towkrsheet_hdr" Association="localetlModel.Store.towkrsheet_hdr">
+            <End Role="etl_worksheets_hdr" EntitySet="etl_worksheets_hdr" />
+            <End Role="etl_worksheets_dtl" EntitySet="etl_worksheets_dtl" />
+          </AssociationSet>
+          <AssociationSet Name="valuemapdtl_valuemahdr" Association="localetlModel.Store.valuemapdtl_valuemahdr">
+            <End Role="etl_valuemapping_hdr" EntitySet="etl_valuemapping_hdr" />
+            <End Role="etl_valuemapping_dtl" EntitySet="etl_valuemapping_dtl" />
+          </AssociationSet>
+          <AssociationSet Name="valuemapdtl_worksheetdtl" Association="localetlModel.Store.valuemapdtl_worksheetdtl">
+            <End Role="etl_worksheets_dtl" EntitySet="etl_worksheets_dtl" />
+            <End Role="etl_valuemapping_dtl" EntitySet="etl_valuemapping_dtl" />
+          </AssociationSet>
+          <AssociationSet Name="valuemaphdr_wkrsheethdr" Association="localetlModel.Store.valuemaphdr_wkrsheethdr">
+            <End Role="etl_worksheets_hdr" EntitySet="etl_worksheets_hdr" />
+            <End Role="etl_valuemapping_hdr" EntitySet="etl_valuemapping_hdr" />
+          </AssociationSet>
+          <AssociationSet Name="workflowcycle_valuemap" Association="localetlModel.Store.workflowcycle_valuemap">
+            <End Role="etl_valuemapping_hdr" EntitySet="etl_valuemapping_hdr" />
+            <End Role="etl_workflowsteps" EntitySet="etl_workflowsteps" />
+          </AssociationSet>
+          <AssociationSet Name="workflowcycle_workdsheet" Association="localetlModel.Store.workflowcycle_workdsheet">
+            <End Role="etl_worksheets_hdr" EntitySet="etl_worksheets_hdr" />
+            <End Role="etl_workflowsteps" EntitySet="etl_workflowsteps" />
+          </AssociationSet>
+          <AssociationSet Name="wrkflow_loadingtemplete" Association="localetlModel.Store.wrkflow_loadingtemplete">
+            <End Role="etl_loadingtemplete" EntitySet="etl_loadingtemplete" />
+            <End Role="etl_workflowsteps" EntitySet="etl_workflowsteps" />
+          </AssociationSet>
+        </EntityContainer>
+        <EntityType Name="etl_columnsmapped">
+          <Key>
+            <PropertyRef Name="id" />
+            <PropertyRef Name="etl_tableloadingschema_id" />
+          </Key>
+          <Property Name="id" Type="nvarchar" Nullable="false" MaxLength="36" />
+          <Property Name="excelcolumnposition" Type="nvarchar" MaxLength="100" />
+          <Property Name="excelcolumnname" Type="nvarchar" MaxLength="100" />
+          <Property Name="tablefieldname" Type="nvarchar" MaxLength="100" />
+          <Property Name="tablefieldtype" Type="int" />
+          <Property Name="fillreflookup" Type="bit" />
+          <Property Name="externalfieldsource" Type="nvarchar" MaxLength="100" />
+          <Property Name="defaultvalue" Type="nvarchar" MaxLength="100" />
+          <Property Name="primarykey" Type="bit" />
+          <Property Name="autofillseq" Type="bit" />
+          <Property Name="fetchfromparametervalues" Type="bit" />
+          <Property Name="fetchfromparamaterindex" Type="int" />
+          <Property Name="row_creatd_by" Type="nvarchar" MaxLength="100" />
+          <Property Name="row_created_date" Type="datetime" />
+          <Property Name="row_changed_by" Type="nvarchar" MaxLength="100" />
+          <Property Name="row_changed_date" Type="datetime" />
+          <Property Name="etl_tableloadingschema_id" Type="nvarchar" Nullable="false" MaxLength="36" />
+        </EntityType>
+        <EntityType Name="etl_defaultvaluesmapped">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="fieldname" Type="nvarchar" MaxLength="100" />
+          <Property Name="data_type" Type="nvarchar" MaxLength="100" />
+          <Property Name="fieldvalue" Type="nvarchar" MaxLength="100" />
+          <Property Name="row_created_by" Type="nvarchar" MaxLength="100" />
+          <Property Name="row_created_date" Type="datetime" />
+          <Property Name="row_changed_by" Type="nvarchar" MaxLength="100" />
+          <Property Name="row_changed_date" Type="datetime" />
+          <Property Name="etl_tableloadingschema_id" Type="int" />
+        </EntityType>
+        <EntityType Name="etl_filelocations">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="nvarchar" Nullable="false" MaxLength="36" />
+          <Property Name="filepath" Type="nvarchar" MaxLength="250" />
+          <Property Name="storagetype" Type="nvarchar" MaxLength="100" />
+          <Property Name="description" Type="nvarchar" MaxLength="100" />
+        </EntityType>
+        <EntityType Name="etl_loadingtemplete">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="templetename" Type="nvarchar" MaxLength="50" />
+          <Property Name="active_ind" Type="nvarchar" MaxLength="1" />
+          <Property Name="row_changed_by" Type="nvarchar" MaxLength="20" />
+          <Property Name="row_changed_date" Type="datetime" />
+          <Property Name="row_created_by" Type="nvarchar" MaxLength="20" />
+          <Property Name="row_created_date" Type="datetime" />
+          <Property Name="effective_date" Type="datetime" />
+          <Property Name="ppdm_guid" Type="nvarchar" MaxLength="38" />
+          <Property Name="etl_worksheet_hdr_id" Type="int" />
+        </EntityType>
+        <EntityType Name="etl_Sourcecolumn">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="column_name" Type="nvarchar" MaxLength="100" />
+          <Property Name="data_type" Type="nvarchar" MaxLength="100" />
+          <Property Name="data_size" Type="int" />
+          <Property Name="externalfieldsource" Type="nvarchar" MaxLength="100" />
+          <Property Name="row_created_by" Type="nvarchar" MaxLength="100" />
+          <Property Name="row_created_date" Type="datetime" />
+          <Property Name="row_changed_by" Type="nvarchar" MaxLength="100" />
+          <Property Name="etl_tableloadingschema_id" Type="int" />
+        </EntityType>
+        <EntityType Name="etl_tableloadingschema">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="nvarchar" Nullable="false" MaxLength="36" />
+          <Property Name="tablename" Type="nvarchar" MaxLength="100" />
+          <Property Name="schemaname" Type="nvarchar" MaxLength="100" />
+          <Property Name="description" Type="nvarchar" MaxLength="100" />
+          <Property Name="spreadsheetfilename" Type="nvarchar" MaxLength="100" />
+          <Property Name="spreadsheetdir" Type="nvarchar" MaxLength="100" />
+          <Property Name="headeron" Type="nchar" MaxLength="1" />
+          <Property Name="row_created_by" Type="nvarchar" MaxLength="100" />
+          <Property Name="row_created_date" Type="datetime" />
+          <Property Name="row_changed_by" Type="nvarchar" MaxLength="100" />
+          <Property Name="row_changed_date" Type="datetime" />
+        </EntityType>
+        <EntityType Name="etl_Targetcolumn">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="column_name" Type="nvarchar" MaxLength="100" />
+          <Property Name="data_type" Type="nvarchar" MaxLength="100" />
+          <Property Name="data_size" Type="int" />
+          <Property Name="externalfieldsource" Type="nvarchar" MaxLength="100" />
+          <Property Name="row_created_by" Type="nvarchar" MaxLength="100" />
+          <Property Name="row_created_date" Type="datetime" />
+          <Property Name="row_changed_by" Type="nvarchar" MaxLength="100" />
+          <Property Name="etl_tableloadingschema_id" Type="int" />
+        </EntityType>
+        <EntityType Name="etl_valuemapping_dtl">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="etl_valuemapping_hdr_id" Type="int" />
+          <Property Name="etl_worksheet_dtl_id" Type="int" />
+          <Property Name="column_name" Type="nvarchar" MaxLength="50" />
+          <Property Name="formula" Type="nvarchar" MaxLength="100" />
+          <Property Name="active_ind" Type="nvarchar" MaxLength="1" />
+          <Property Name="row_changed_by" Type="nvarchar" MaxLength="20" />
+          <Property Name="row_changed_date" Type="datetime" />
+          <Property Name="row_created_by" Type="nvarchar" MaxLength="20" />
+          <Property Name="row_created_date" Type="datetime" />
+          <Property Name="effective_date" Type="datetime" />
+          <Property Name="ppdm_guid" Type="nvarchar" MaxLength="38" />
+        </EntityType>
+        <EntityType Name="etl_valuemapping_hdr">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="etl_worksheet_hdr_id" Type="int" />
+          <Property Name="table_name" Type="nvarchar" MaxLength="50" />
+          <Property Name="mappingtype" Type="nvarchar" MaxLength="20" />
+          <Property Name="valuemapping_name" Type="nvarchar" MaxLength="100" />
+          <Property Name="active_ind" Type="nvarchar" MaxLength="1" />
+          <Property Name="row_changed_by" Type="nvarchar" MaxLength="20" />
+          <Property Name="row_changed_date" Type="datetime" />
+          <Property Name="row_created_by" Type="nvarchar" MaxLength="20" />
+          <Property Name="row_created_date" Type="datetime" />
+          <Property Name="effective_date" Type="datetime" />
+          <Property Name="ppdm_guid" Type="nvarchar" MaxLength="38" />
+        </EntityType>
+        <EntityType Name="etl_workflowsteps">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="operationtype" Type="nvarchar" MaxLength="50" />
+          <Property Name="formula" Type="nvarchar" MaxLength="150" />
+          <Property Name="outputvaluestring" Type="nvarchar" MaxLength="50" />
+          <Property Name="outputvaluedate" Type="datetime" />
+          <Property Name="outputvaluenumber" Type="numeric" Precision="29" />
+          <Property Name="querydefinition" Type="nvarchar" MaxLength="2500" />
+          <Property Name="querysuccessvalue" Type="numeric" Precision="29" />
+          <Property Name="queryfailurevalue" Type="numeric" Precision="29" />
+          <Property Name="etl_loadingtemplete_id" Type="int" />
+          <Property Name="etl_valuemapping_hdr_id" Type="int" />
+          <Property Name="active_ind" Type="nvarchar" MaxLength="1" />
+          <Property Name="row_changed_by" Type="nvarchar" MaxLength="20" />
+          <Property Name="row_changed_date" Type="datetime" />
+          <Property Name="row_created_by" Type="nvarchar" MaxLength="20" />
+          <Property Name="row_created_date" Type="datetime" />
+          <Property Name="effective_date" Type="datetime" />
+          <Property Name="ppdm_guid" Type="nvarchar" MaxLength="38" />
+          <Property Name="successtostepid" Type="int" />
+          <Property Name="failurestepid" Type="int" />
+          <Property Name="seqnumber" Type="int" />
+          <Property Name="etl_worksheet_hdr_id" Type="int" />
+          <Property Name="sourceconnstring" Type="nvarchar" MaxLength="250" />
+          <Property Name="destconnstring" Type="nvarchar" MaxLength="250" />
+        </EntityType>
+        <EntityType Name="etl_worksheets_dtl">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="worksheet_hdr_id" Type="int" />
+          <Property Name="cellcolumnid" Type="nvarchar" MaxLength="5" />
+          <Property Name="cellrowid" Type="nvarchar" MaxLength="5" />
+          <Property Name="descriptiondetails" Type="nvarchar" MaxLength="100" />
+          <Property Name="active_ind" Type="nvarchar" MaxLength="1" />
+          <Property Name="row_changed_by" Type="nvarchar" MaxLength="20" />
+          <Property Name="row_changed_date" Type="datetime" />
+          <Property Name="row_created_by" Type="nvarchar" MaxLength="20" />
+          <Property Name="row_created_date" Type="datetime" />
+          <Property Name="effective_date" Type="datetime" />
+          <Property Name="ppdm_guid" Type="nvarchar" MaxLength="38" />
+          <Property Name="descrcellcolumnid" Type="nvarchar" MaxLength="5" />
+          <Property Name="descrcellrowid" Type="nvarchar" MaxLength="5" />
+          <Property Name="fieldtype" Type="nvarchar" MaxLength="20" />
+        </EntityType>
+        <EntityType Name="etl_worksheets_hdr">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="sheetname" Type="nvarchar" MaxLength="50" />
+          <Property Name="active_ind" Type="nvarchar" MaxLength="1" />
+          <Property Name="row_changed_by" Type="nvarchar" MaxLength="20" />
+          <Property Name="row_changed_date" Type="datetime" />
+          <Property Name="row_created_by" Type="nvarchar" MaxLength="20" />
+          <Property Name="row_created_date" Type="datetime" />
+          <Property Name="effective_date" Type="datetime" />
+          <Property Name="ppdm_guid" Type="nvarchar" MaxLength="38" />
+          <Property Name="worksheet_type" Type="nvarchar" MaxLength="20" />
+          <Property Name="worksheet_sourcepath" Type="nvarchar" MaxLength="250" />
+          <Property Name="comments" Type="nvarchar" MaxLength="250" />
+          <Property Name="methodname" Type="nvarchar" MaxLength="50" />
+          <Property Name="webservicename" Type="nvarchar" MaxLength="50" />
+          <Property Name="databasename" Type="nvarchar" MaxLength="50" />
+          <Property Name="username" Type="nvarchar" MaxLength="20" />
+          <Property Name="password" Type="nvarchar" MaxLength="20" />
+        </EntityType>
+        <Association Name="to_loadingschema">
+          <End Role="etl_tableloadingschema" Type="localetlModel.Store.etl_tableloadingschema" Multiplicity="1" />
+          <End Role="etl_columnsmapped" Type="localetlModel.Store.etl_columnsmapped" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_tableloadingschema">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_columnsmapped">
+              <PropertyRef Name="etl_tableloadingschema_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="towkrsheet_hdr">
+          <End Role="etl_worksheets_hdr" Type="localetlModel.Store.etl_worksheets_hdr" Multiplicity="0..1" />
+          <End Role="etl_worksheets_dtl" Type="localetlModel.Store.etl_worksheets_dtl" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_worksheets_hdr">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_worksheets_dtl">
+              <PropertyRef Name="worksheet_hdr_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="valuemapdtl_valuemahdr">
+          <End Role="etl_valuemapping_hdr" Type="localetlModel.Store.etl_valuemapping_hdr" Multiplicity="0..1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="etl_valuemapping_dtl" Type="localetlModel.Store.etl_valuemapping_dtl" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_valuemapping_hdr">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_valuemapping_dtl">
+              <PropertyRef Name="etl_valuemapping_hdr_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="valuemapdtl_worksheetdtl">
+          <End Role="etl_worksheets_dtl" Type="localetlModel.Store.etl_worksheets_dtl" Multiplicity="0..1" />
+          <End Role="etl_valuemapping_dtl" Type="localetlModel.Store.etl_valuemapping_dtl" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_worksheets_dtl">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_valuemapping_dtl">
+              <PropertyRef Name="etl_worksheet_dtl_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="valuemaphdr_wkrsheethdr">
+          <End Role="etl_worksheets_hdr" Type="localetlModel.Store.etl_worksheets_hdr" Multiplicity="0..1" />
+          <End Role="etl_valuemapping_hdr" Type="localetlModel.Store.etl_valuemapping_hdr" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_worksheets_hdr">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_valuemapping_hdr">
+              <PropertyRef Name="etl_worksheet_hdr_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="workflowcycle_valuemap">
+          <End Role="etl_valuemapping_hdr" Type="localetlModel.Store.etl_valuemapping_hdr" Multiplicity="0..1" />
+          <End Role="etl_workflowsteps" Type="localetlModel.Store.etl_workflowsteps" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_valuemapping_hdr">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_workflowsteps">
+              <PropertyRef Name="etl_valuemapping_hdr_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="workflowcycle_workdsheet">
+          <End Role="etl_worksheets_hdr" Type="localetlModel.Store.etl_worksheets_hdr" Multiplicity="0..1" />
+          <End Role="etl_workflowsteps" Type="localetlModel.Store.etl_workflowsteps" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_worksheets_hdr">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_workflowsteps">
+              <PropertyRef Name="etl_worksheet_hdr_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="wrkflow_loadingtemplete">
+          <End Role="etl_loadingtemplete" Type="localetlModel.Store.etl_loadingtemplete" Multiplicity="0..1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="etl_workflowsteps" Type="localetlModel.Store.etl_workflowsteps" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_loadingtemplete">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_workflowsteps">
+              <PropertyRef Name="etl_loadingtemplete_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema></edmx:StorageModels>
+<!-- CSDL content -->
+<edmx:ConceptualModels>
+<Schema Namespace="localetlModel" Alias="Self" xmlns="http://schemas.microsoft.com/ado/2009/11/edm" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation">
+  <EntityContainer Name="localetlEntities" annotation:LazyLoadingEnabled="true" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation">
+          <EntitySet Name="etl_columnsmapped" EntityType="localetlModel.etl_columnsmapped" />
+          <EntitySet Name="etl_defaultvaluesmapped" EntityType="localetlModel.etl_defaultvaluesmapped" />
+          <EntitySet Name="etl_loadingtemplete" EntityType="localetlModel.etl_loadingtemplete" />
+          <EntitySet Name="etl_Sourcecolumn" EntityType="localetlModel.etl_Sourcecolumn" />
+          <EntitySet Name="etl_tableloadingschema" EntityType="localetlModel.etl_tableloadingschema" />
+          <EntitySet Name="etl_Targetcolumn" EntityType="localetlModel.etl_Targetcolumn" />
+          <EntitySet Name="etl_valuemapping_dtl" EntityType="localetlModel.etl_valuemapping_dtl" />
+          <EntitySet Name="etl_valuemapping_hdr" EntityType="localetlModel.etl_valuemapping_hdr" />
+          <EntitySet Name="etl_workflowsteps" EntityType="localetlModel.etl_workflowsteps" />
+          <EntitySet Name="etl_worksheets_dtl" EntityType="localetlModel.etl_worksheets_dtl" />
+          <EntitySet Name="etl_worksheets_hdr" EntityType="localetlModel.etl_worksheets_hdr" />
+          <AssociationSet Name="to_loadingschema" Association="localetlModel.to_loadingschema">
+            <End Role="etl_tableloadingschema" EntitySet="etl_tableloadingschema" />
+            <End Role="etl_columnsmapped" EntitySet="etl_columnsmapped" />
+          </AssociationSet>
+          <AssociationSet Name="wrkflow_loadingtemplete" Association="localetlModel.wrkflow_loadingtemplete">
+            <End Role="etl_loadingtemplete" EntitySet="etl_loadingtemplete" />
+            <End Role="etl_workflowsteps" EntitySet="etl_workflowsteps" />
+          </AssociationSet>
+          <AssociationSet Name="valuemapdtl_valuemahdr" Association="localetlModel.valuemapdtl_valuemahdr">
+            <End Role="etl_valuemapping_hdr" EntitySet="etl_valuemapping_hdr" />
+            <End Role="etl_valuemapping_dtl" EntitySet="etl_valuemapping_dtl" />
+          </AssociationSet>
+          <AssociationSet Name="valuemapdtl_worksheetdtl" Association="localetlModel.valuemapdtl_worksheetdtl">
+            <End Role="etl_worksheets_dtl" EntitySet="etl_worksheets_dtl" />
+            <End Role="etl_valuemapping_dtl" EntitySet="etl_valuemapping_dtl" />
+          </AssociationSet>
+          <AssociationSet Name="valuemaphdr_wkrsheethdr" Association="localetlModel.valuemaphdr_wkrsheethdr">
+            <End Role="etl_worksheets_hdr" EntitySet="etl_worksheets_hdr" />
+            <End Role="etl_valuemapping_hdr" EntitySet="etl_valuemapping_hdr" />
+          </AssociationSet>
+          <AssociationSet Name="workflowcycle_valuemap" Association="localetlModel.workflowcycle_valuemap">
+            <End Role="etl_valuemapping_hdr" EntitySet="etl_valuemapping_hdr" />
+            <End Role="etl_workflowsteps" EntitySet="etl_workflowsteps" />
+          </AssociationSet>
+          <AssociationSet Name="workflowcycle_workdsheet" Association="localetlModel.workflowcycle_workdsheet">
+            <End Role="etl_worksheets_hdr" EntitySet="etl_worksheets_hdr" />
+            <End Role="etl_workflowsteps" EntitySet="etl_workflowsteps" />
+          </AssociationSet>
+          <AssociationSet Name="towkrsheet_hdr" Association="localetlModel.towkrsheet_hdr">
+            <End Role="etl_worksheets_hdr" EntitySet="etl_worksheets_hdr" />
+            <End Role="etl_worksheets_dtl" EntitySet="etl_worksheets_dtl" />
+          </AssociationSet>
+          <EntitySet Name="etl_filelocations" EntityType="localetlModel.etl_filelocations" />
+        </EntityContainer>
+        <EntityType Name="etl_columnsmapped">
+          <Key>
+            <PropertyRef Name="id" />
+            <PropertyRef Name="etl_tableloadingschema_id" />
+          </Key>
+          <Property Type="String" Name="id" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="excelcolumnposition" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="excelcolumnname" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="tablefieldname" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="Int32" Name="tablefieldtype" />
+          <Property Type="Boolean" Name="fillreflookup" />
+          <Property Type="String" Name="externalfieldsource" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="defaultvalue" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="Boolean" Name="primarykey" />
+          <Property Type="Boolean" Name="autofillseq" />
+          <Property Type="Boolean" Name="fetchfromparametervalues" />
+          <Property Type="Int32" Name="fetchfromparamaterindex" />
+          <Property Type="String" Name="row_creatd_by" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_created_date" />
+          <Property Type="String" Name="row_changed_by" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_changed_date" />
+          <Property Type="String" Name="etl_tableloadingschema_id" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="etl_tableloadingschema" Relationship="localetlModel.to_loadingschema" FromRole="etl_columnsmapped" ToRole="etl_tableloadingschema" />
+        </EntityType>
+        <EntityType Name="etl_defaultvaluesmapped">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Type="Int32" Name="id" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Type="String" Name="fieldname" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="data_type" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="fieldvalue" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="row_created_by" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_created_date" />
+          <Property Type="String" Name="row_changed_by" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_changed_date" />
+          <Property Type="Int32" Name="etl_tableloadingschema_id" />
+        </EntityType>
+        <EntityType Name="etl_loadingtemplete">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Type="Int32" Name="id" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Type="String" Name="templetename" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="active_ind" MaxLength="1" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="row_changed_by" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_changed_date" />
+          <Property Type="String" Name="row_created_by" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_created_date" />
+          <Property Type="DateTime" Name="effective_date" />
+          <Property Type="String" Name="ppdm_guid" MaxLength="38" FixedLength="false" Unicode="true" />
+          <Property Type="Int32" Name="etl_worksheet_hdr_id" />
+          <NavigationProperty Name="etl_workflowsteps" Relationship="localetlModel.wrkflow_loadingtemplete" FromRole="etl_loadingtemplete" ToRole="etl_workflowsteps" />
+        </EntityType>
+        <EntityType Name="etl_Sourcecolumn">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Type="Int32" Name="id" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Type="String" Name="column_name" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="data_type" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="Int32" Name="data_size" />
+          <Property Type="String" Name="externalfieldsource" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="row_created_by" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_created_date" />
+          <Property Type="String" Name="row_changed_by" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="Int32" Name="etl_tableloadingschema_id" />
+        </EntityType>
+        <EntityType Name="etl_tableloadingschema">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Type="String" Name="id" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="tablename" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="schemaname" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="description" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="spreadsheetfilename" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="spreadsheetdir" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="headeron" MaxLength="1" FixedLength="true" Unicode="true" />
+          <Property Type="String" Name="row_created_by" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_created_date" />
+          <Property Type="String" Name="row_changed_by" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_changed_date" />
+          <NavigationProperty Name="etl_columnsmapped" Relationship="localetlModel.to_loadingschema" FromRole="etl_tableloadingschema" ToRole="etl_columnsmapped" />
+        </EntityType>
+        <EntityType Name="etl_Targetcolumn">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Type="Int32" Name="id" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Type="String" Name="column_name" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="data_type" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="Int32" Name="data_size" />
+          <Property Type="String" Name="externalfieldsource" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="row_created_by" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_created_date" />
+          <Property Type="String" Name="row_changed_by" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="Int32" Name="etl_tableloadingschema_id" />
+        </EntityType>
+        <EntityType Name="etl_valuemapping_dtl">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Type="Int32" Name="id" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Type="Int32" Name="etl_valuemapping_hdr_id" />
+          <Property Type="Int32" Name="etl_worksheet_dtl_id" />
+          <Property Type="String" Name="column_name" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="formula" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="active_ind" MaxLength="1" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="row_changed_by" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_changed_date" />
+          <Property Type="String" Name="row_created_by" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_created_date" />
+          <Property Type="DateTime" Name="effective_date" />
+          <Property Type="String" Name="ppdm_guid" MaxLength="38" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="etl_valuemapping_hdr" Relationship="localetlModel.valuemapdtl_valuemahdr" FromRole="etl_valuemapping_dtl" ToRole="etl_valuemapping_hdr" />
+          <NavigationProperty Name="etl_worksheets_dtl" Relationship="localetlModel.valuemapdtl_worksheetdtl" FromRole="etl_valuemapping_dtl" ToRole="etl_worksheets_dtl" />
+        </EntityType>
+        <EntityType Name="etl_valuemapping_hdr">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Type="Int32" Name="id" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Type="Int32" Name="etl_worksheet_hdr_id" />
+          <Property Type="String" Name="table_name" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="mappingtype" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="valuemapping_name" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="active_ind" MaxLength="1" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="row_changed_by" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_changed_date" />
+          <Property Type="String" Name="row_created_by" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_created_date" />
+          <Property Type="DateTime" Name="effective_date" />
+          <Property Type="String" Name="ppdm_guid" MaxLength="38" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="etl_valuemapping_dtl" Relationship="localetlModel.valuemapdtl_valuemahdr" FromRole="etl_valuemapping_hdr" ToRole="etl_valuemapping_dtl" />
+          <NavigationProperty Name="etl_worksheets_hdr" Relationship="localetlModel.valuemaphdr_wkrsheethdr" FromRole="etl_valuemapping_hdr" ToRole="etl_worksheets_hdr" />
+          <NavigationProperty Name="etl_workflowsteps" Relationship="localetlModel.workflowcycle_valuemap" FromRole="etl_valuemapping_hdr" ToRole="etl_workflowsteps" />
+        </EntityType>
+        <EntityType Name="etl_workflowsteps">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Type="Int32" Name="id" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Type="String" Name="operationtype" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="formula" MaxLength="150" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="outputvaluestring" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="outputvaluedate" />
+          <Property Type="Decimal" Name="outputvaluenumber" Precision="29" Scale="0" />
+          <Property Type="String" Name="querydefinition" MaxLength="2500" FixedLength="false" Unicode="true" />
+          <Property Type="Decimal" Name="querysuccessvalue" Precision="29" Scale="0" />
+          <Property Type="Decimal" Name="queryfailurevalue" Precision="29" Scale="0" />
+          <Property Type="Int32" Name="etl_loadingtemplete_id" />
+          <Property Type="Int32" Name="etl_valuemapping_hdr_id" />
+          <Property Type="String" Name="active_ind" MaxLength="1" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="row_changed_by" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_changed_date" />
+          <Property Type="String" Name="row_created_by" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_created_date" />
+          <Property Type="DateTime" Name="effective_date" />
+          <Property Type="String" Name="ppdm_guid" MaxLength="38" FixedLength="false" Unicode="true" />
+          <Property Type="Int32" Name="successtostepid" />
+          <Property Type="Int32" Name="failurestepid" />
+          <Property Type="Int32" Name="seqnumber" />
+          <Property Type="Int32" Name="etl_worksheet_hdr_id" />
+          <Property Type="String" Name="sourceconnstring" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="destconnstring" MaxLength="250" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="etl_loadingtemplete" Relationship="localetlModel.wrkflow_loadingtemplete" FromRole="etl_workflowsteps" ToRole="etl_loadingtemplete" />
+          <NavigationProperty Name="etl_valuemapping_hdr" Relationship="localetlModel.workflowcycle_valuemap" FromRole="etl_workflowsteps" ToRole="etl_valuemapping_hdr" />
+          <NavigationProperty Name="etl_worksheets_hdr" Relationship="localetlModel.workflowcycle_workdsheet" FromRole="etl_workflowsteps" ToRole="etl_worksheets_hdr" />
+        </EntityType>
+        <EntityType Name="etl_worksheets_dtl">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Type="Int32" Name="id" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Type="Int32" Name="worksheet_hdr_id" />
+          <Property Type="String" Name="cellcolumnid" MaxLength="5" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="cellrowid" MaxLength="5" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="descriptiondetails" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="active_ind" MaxLength="1" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="row_changed_by" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_changed_date" />
+          <Property Type="String" Name="row_created_by" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_created_date" />
+          <Property Type="DateTime" Name="effective_date" />
+          <Property Type="String" Name="ppdm_guid" MaxLength="38" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="descrcellcolumnid" MaxLength="5" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="descrcellrowid" MaxLength="5" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="fieldtype" MaxLength="20" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="etl_valuemapping_dtl" Relationship="localetlModel.valuemapdtl_worksheetdtl" FromRole="etl_worksheets_dtl" ToRole="etl_valuemapping_dtl" />
+          <NavigationProperty Name="etl_worksheets_hdr" Relationship="localetlModel.towkrsheet_hdr" FromRole="etl_worksheets_dtl" ToRole="etl_worksheets_hdr" />
+        </EntityType>
+        <EntityType Name="etl_worksheets_hdr">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Type="Int32" Name="id" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Type="String" Name="sheetname" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="active_ind" MaxLength="1" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="row_changed_by" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_changed_date" />
+          <Property Type="String" Name="row_created_by" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="row_created_date" />
+          <Property Type="DateTime" Name="effective_date" />
+          <Property Type="String" Name="ppdm_guid" MaxLength="38" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="worksheet_type" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="worksheet_sourcepath" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="comments" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="methodname" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="webservicename" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="databasename" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="username" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="password" MaxLength="20" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="etl_valuemapping_hdr" Relationship="localetlModel.valuemaphdr_wkrsheethdr" FromRole="etl_worksheets_hdr" ToRole="etl_valuemapping_hdr" />
+          <NavigationProperty Name="etl_workflowsteps" Relationship="localetlModel.workflowcycle_workdsheet" FromRole="etl_worksheets_hdr" ToRole="etl_workflowsteps" />
+          <NavigationProperty Name="etl_worksheets_dtl" Relationship="localetlModel.towkrsheet_hdr" FromRole="etl_worksheets_hdr" ToRole="etl_worksheets_dtl" />
+        </EntityType>
+        <Association Name="to_loadingschema">
+          <End Type="localetlModel.etl_tableloadingschema" Role="etl_tableloadingschema" Multiplicity="1" />
+          <End Type="localetlModel.etl_columnsmapped" Role="etl_columnsmapped" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_tableloadingschema">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_columnsmapped">
+              <PropertyRef Name="etl_tableloadingschema_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="wrkflow_loadingtemplete">
+          <End Type="localetlModel.etl_loadingtemplete" Role="etl_loadingtemplete" Multiplicity="0..1" />
+          <End Type="localetlModel.etl_workflowsteps" Role="etl_workflowsteps" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_loadingtemplete">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_workflowsteps">
+              <PropertyRef Name="etl_loadingtemplete_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="valuemapdtl_valuemahdr">
+          <End Type="localetlModel.etl_valuemapping_hdr" Role="etl_valuemapping_hdr" Multiplicity="0..1" />
+          <End Type="localetlModel.etl_valuemapping_dtl" Role="etl_valuemapping_dtl" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_valuemapping_hdr">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_valuemapping_dtl">
+              <PropertyRef Name="etl_valuemapping_hdr_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="valuemapdtl_worksheetdtl">
+          <End Type="localetlModel.etl_worksheets_dtl" Role="etl_worksheets_dtl" Multiplicity="0..1" />
+          <End Type="localetlModel.etl_valuemapping_dtl" Role="etl_valuemapping_dtl" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_worksheets_dtl">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_valuemapping_dtl">
+              <PropertyRef Name="etl_worksheet_dtl_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="valuemaphdr_wkrsheethdr">
+          <End Type="localetlModel.etl_worksheets_hdr" Role="etl_worksheets_hdr" Multiplicity="0..1" />
+          <End Type="localetlModel.etl_valuemapping_hdr" Role="etl_valuemapping_hdr" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_worksheets_hdr">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_valuemapping_hdr">
+              <PropertyRef Name="etl_worksheet_hdr_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="workflowcycle_valuemap">
+          <End Type="localetlModel.etl_valuemapping_hdr" Role="etl_valuemapping_hdr" Multiplicity="0..1" />
+          <End Type="localetlModel.etl_workflowsteps" Role="etl_workflowsteps" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_valuemapping_hdr">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_workflowsteps">
+              <PropertyRef Name="etl_valuemapping_hdr_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="workflowcycle_workdsheet">
+          <End Type="localetlModel.etl_worksheets_hdr" Role="etl_worksheets_hdr" Multiplicity="0..1" />
+          <End Type="localetlModel.etl_workflowsteps" Role="etl_workflowsteps" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_worksheets_hdr">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_workflowsteps">
+              <PropertyRef Name="etl_worksheet_hdr_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="towkrsheet_hdr">
+          <End Type="localetlModel.etl_worksheets_hdr" Role="etl_worksheets_hdr" Multiplicity="0..1" />
+          <End Type="localetlModel.etl_worksheets_dtl" Role="etl_worksheets_dtl" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="etl_worksheets_hdr">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="etl_worksheets_dtl">
+              <PropertyRef Name="worksheet_hdr_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="etl_filelocations">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="String" Name="Id" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="filepath" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="storagetype" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="description" MaxLength="250" FixedLength="false" Unicode="true" />
+        </EntityType>
+        </Schema>
+</edmx:ConceptualModels>
+<!-- C-S mapping content -->
+<edmx:Mappings>
+<Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+  <EntityContainerMapping StorageEntityContainer="localetlModelStoreContainer" CdmEntityContainer="localetlEntities">
+          <EntitySetMapping Name="etl_columnsmapped">
+            <EntityTypeMapping TypeName="localetlModel.etl_columnsmapped">
+              <MappingFragment StoreEntitySet="etl_columnsmapped">
+                <ScalarProperty Name="etl_tableloadingschema_id" ColumnName="etl_tableloadingschema_id" />
+                <ScalarProperty Name="row_changed_date" ColumnName="row_changed_date" />
+                <ScalarProperty Name="row_changed_by" ColumnName="row_changed_by" />
+                <ScalarProperty Name="row_created_date" ColumnName="row_created_date" />
+                <ScalarProperty Name="row_creatd_by" ColumnName="row_creatd_by" />
+                <ScalarProperty Name="fetchfromparamaterindex" ColumnName="fetchfromparamaterindex" />
+                <ScalarProperty Name="fetchfromparametervalues" ColumnName="fetchfromparametervalues" />
+                <ScalarProperty Name="autofillseq" ColumnName="autofillseq" />
+                <ScalarProperty Name="primarykey" ColumnName="primarykey" />
+                <ScalarProperty Name="defaultvalue" ColumnName="defaultvalue" />
+                <ScalarProperty Name="externalfieldsource" ColumnName="externalfieldsource" />
+                <ScalarProperty Name="fillreflookup" ColumnName="fillreflookup" />
+                <ScalarProperty Name="tablefieldtype" ColumnName="tablefieldtype" />
+                <ScalarProperty Name="tablefieldname" ColumnName="tablefieldname" />
+                <ScalarProperty Name="excelcolumnname" ColumnName="excelcolumnname" />
+                <ScalarProperty Name="excelcolumnposition" ColumnName="excelcolumnposition" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="etl_defaultvaluesmapped">
+            <EntityTypeMapping TypeName="localetlModel.etl_defaultvaluesmapped">
+              <MappingFragment StoreEntitySet="etl_defaultvaluesmapped">
+                <ScalarProperty Name="etl_tableloadingschema_id" ColumnName="etl_tableloadingschema_id" />
+                <ScalarProperty Name="row_changed_date" ColumnName="row_changed_date" />
+                <ScalarProperty Name="row_changed_by" ColumnName="row_changed_by" />
+                <ScalarProperty Name="row_created_date" ColumnName="row_created_date" />
+                <ScalarProperty Name="row_created_by" ColumnName="row_created_by" />
+                <ScalarProperty Name="fieldvalue" ColumnName="fieldvalue" />
+                <ScalarProperty Name="data_type" ColumnName="data_type" />
+                <ScalarProperty Name="fieldname" ColumnName="fieldname" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="etl_loadingtemplete">
+            <EntityTypeMapping TypeName="localetlModel.etl_loadingtemplete">
+              <MappingFragment StoreEntitySet="etl_loadingtemplete">
+                <ScalarProperty Name="etl_worksheet_hdr_id" ColumnName="etl_worksheet_hdr_id" />
+                <ScalarProperty Name="ppdm_guid" ColumnName="ppdm_guid" />
+                <ScalarProperty Name="effective_date" ColumnName="effective_date" />
+                <ScalarProperty Name="row_created_date" ColumnName="row_created_date" />
+                <ScalarProperty Name="row_created_by" ColumnName="row_created_by" />
+                <ScalarProperty Name="row_changed_date" ColumnName="row_changed_date" />
+                <ScalarProperty Name="row_changed_by" ColumnName="row_changed_by" />
+                <ScalarProperty Name="active_ind" ColumnName="active_ind" />
+                <ScalarProperty Name="templetename" ColumnName="templetename" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="etl_Sourcecolumn">
+            <EntityTypeMapping TypeName="localetlModel.etl_Sourcecolumn">
+              <MappingFragment StoreEntitySet="etl_Sourcecolumn">
+                <ScalarProperty Name="etl_tableloadingschema_id" ColumnName="etl_tableloadingschema_id" />
+                <ScalarProperty Name="row_changed_by" ColumnName="row_changed_by" />
+                <ScalarProperty Name="row_created_date" ColumnName="row_created_date" />
+                <ScalarProperty Name="row_created_by" ColumnName="row_created_by" />
+                <ScalarProperty Name="externalfieldsource" ColumnName="externalfieldsource" />
+                <ScalarProperty Name="data_size" ColumnName="data_size" />
+                <ScalarProperty Name="data_type" ColumnName="data_type" />
+                <ScalarProperty Name="column_name" ColumnName="column_name" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="etl_tableloadingschema">
+            <EntityTypeMapping TypeName="localetlModel.etl_tableloadingschema">
+              <MappingFragment StoreEntitySet="etl_tableloadingschema">
+                <ScalarProperty Name="row_changed_date" ColumnName="row_changed_date" />
+                <ScalarProperty Name="row_changed_by" ColumnName="row_changed_by" />
+                <ScalarProperty Name="row_created_date" ColumnName="row_created_date" />
+                <ScalarProperty Name="row_created_by" ColumnName="row_created_by" />
+                <ScalarProperty Name="headeron" ColumnName="headeron" />
+                <ScalarProperty Name="spreadsheetdir" ColumnName="spreadsheetdir" />
+                <ScalarProperty Name="spreadsheetfilename" ColumnName="spreadsheetfilename" />
+                <ScalarProperty Name="description" ColumnName="description" />
+                <ScalarProperty Name="schemaname" ColumnName="schemaname" />
+                <ScalarProperty Name="tablename" ColumnName="tablename" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="etl_Targetcolumn">
+            <EntityTypeMapping TypeName="localetlModel.etl_Targetcolumn">
+              <MappingFragment StoreEntitySet="etl_Targetcolumn">
+                <ScalarProperty Name="etl_tableloadingschema_id" ColumnName="etl_tableloadingschema_id" />
+                <ScalarProperty Name="row_changed_by" ColumnName="row_changed_by" />
+                <ScalarProperty Name="row_created_date" ColumnName="row_created_date" />
+                <ScalarProperty Name="row_created_by" ColumnName="row_created_by" />
+                <ScalarProperty Name="externalfieldsource" ColumnName="externalfieldsource" />
+                <ScalarProperty Name="data_size" ColumnName="data_size" />
+                <ScalarProperty Name="data_type" ColumnName="data_type" />
+                <ScalarProperty Name="column_name" ColumnName="column_name" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="etl_valuemapping_dtl">
+            <EntityTypeMapping TypeName="localetlModel.etl_valuemapping_dtl">
+              <MappingFragment StoreEntitySet="etl_valuemapping_dtl">
+                <ScalarProperty Name="ppdm_guid" ColumnName="ppdm_guid" />
+                <ScalarProperty Name="effective_date" ColumnName="effective_date" />
+                <ScalarProperty Name="row_created_date" ColumnName="row_created_date" />
+                <ScalarProperty Name="row_created_by" ColumnName="row_created_by" />
+                <ScalarProperty Name="row_changed_date" ColumnName="row_changed_date" />
+                <ScalarProperty Name="row_changed_by" ColumnName="row_changed_by" />
+                <ScalarProperty Name="active_ind" ColumnName="active_ind" />
+                <ScalarProperty Name="formula" ColumnName="formula" />
+                <ScalarProperty Name="column_name" ColumnName="column_name" />
+                <ScalarProperty Name="etl_worksheet_dtl_id" ColumnName="etl_worksheet_dtl_id" />
+                <ScalarProperty Name="etl_valuemapping_hdr_id" ColumnName="etl_valuemapping_hdr_id" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="etl_valuemapping_hdr">
+            <EntityTypeMapping TypeName="localetlModel.etl_valuemapping_hdr">
+              <MappingFragment StoreEntitySet="etl_valuemapping_hdr">
+                <ScalarProperty Name="ppdm_guid" ColumnName="ppdm_guid" />
+                <ScalarProperty Name="effective_date" ColumnName="effective_date" />
+                <ScalarProperty Name="row_created_date" ColumnName="row_created_date" />
+                <ScalarProperty Name="row_created_by" ColumnName="row_created_by" />
+                <ScalarProperty Name="row_changed_date" ColumnName="row_changed_date" />
+                <ScalarProperty Name="row_changed_by" ColumnName="row_changed_by" />
+                <ScalarProperty Name="active_ind" ColumnName="active_ind" />
+                <ScalarProperty Name="valuemapping_name" ColumnName="valuemapping_name" />
+                <ScalarProperty Name="mappingtype" ColumnName="mappingtype" />
+                <ScalarProperty Name="table_name" ColumnName="table_name" />
+                <ScalarProperty Name="etl_worksheet_hdr_id" ColumnName="etl_worksheet_hdr_id" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="etl_workflowsteps">
+            <EntityTypeMapping TypeName="localetlModel.etl_workflowsteps">
+              <MappingFragment StoreEntitySet="etl_workflowsteps">
+                <ScalarProperty Name="destconnstring" ColumnName="destconnstring" />
+                <ScalarProperty Name="sourceconnstring" ColumnName="sourceconnstring" />
+                <ScalarProperty Name="etl_worksheet_hdr_id" ColumnName="etl_worksheet_hdr_id" />
+                <ScalarProperty Name="seqnumber" ColumnName="seqnumber" />
+                <ScalarProperty Name="failurestepid" ColumnName="failurestepid" />
+                <ScalarProperty Name="successtostepid" ColumnName="successtostepid" />
+                <ScalarProperty Name="ppdm_guid" ColumnName="ppdm_guid" />
+                <ScalarProperty Name="effective_date" ColumnName="effective_date" />
+                <ScalarProperty Name="row_created_date" ColumnName="row_created_date" />
+                <ScalarProperty Name="row_created_by" ColumnName="row_created_by" />
+                <ScalarProperty Name="row_changed_date" ColumnName="row_changed_date" />
+                <ScalarProperty Name="row_changed_by" ColumnName="row_changed_by" />
+                <ScalarProperty Name="active_ind" ColumnName="active_ind" />
+                <ScalarProperty Name="etl_valuemapping_hdr_id" ColumnName="etl_valuemapping_hdr_id" />
+                <ScalarProperty Name="etl_loadingtemplete_id" ColumnName="etl_loadingtemplete_id" />
+                <ScalarProperty Name="queryfailurevalue" ColumnName="queryfailurevalue" />
+                <ScalarProperty Name="querysuccessvalue" ColumnName="querysuccessvalue" />
+                <ScalarProperty Name="querydefinition" ColumnName="querydefinition" />
+                <ScalarProperty Name="outputvaluenumber" ColumnName="outputvaluenumber" />
+                <ScalarProperty Name="outputvaluedate" ColumnName="outputvaluedate" />
+                <ScalarProperty Name="outputvaluestring" ColumnName="outputvaluestring" />
+                <ScalarProperty Name="formula" ColumnName="formula" />
+                <ScalarProperty Name="operationtype" ColumnName="operationtype" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="etl_worksheets_dtl">
+            <EntityTypeMapping TypeName="localetlModel.etl_worksheets_dtl">
+              <MappingFragment StoreEntitySet="etl_worksheets_dtl">
+                <ScalarProperty Name="fieldtype" ColumnName="fieldtype" />
+                <ScalarProperty Name="descrcellrowid" ColumnName="descrcellrowid" />
+                <ScalarProperty Name="descrcellcolumnid" ColumnName="descrcellcolumnid" />
+                <ScalarProperty Name="ppdm_guid" ColumnName="ppdm_guid" />
+                <ScalarProperty Name="effective_date" ColumnName="effective_date" />
+                <ScalarProperty Name="row_created_date" ColumnName="row_created_date" />
+                <ScalarProperty Name="row_created_by" ColumnName="row_created_by" />
+                <ScalarProperty Name="row_changed_date" ColumnName="row_changed_date" />
+                <ScalarProperty Name="row_changed_by" ColumnName="row_changed_by" />
+                <ScalarProperty Name="active_ind" ColumnName="active_ind" />
+                <ScalarProperty Name="descriptiondetails" ColumnName="descriptiondetails" />
+                <ScalarProperty Name="cellrowid" ColumnName="cellrowid" />
+                <ScalarProperty Name="cellcolumnid" ColumnName="cellcolumnid" />
+                <ScalarProperty Name="worksheet_hdr_id" ColumnName="worksheet_hdr_id" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="etl_worksheets_hdr">
+            <EntityTypeMapping TypeName="localetlModel.etl_worksheets_hdr">
+              <MappingFragment StoreEntitySet="etl_worksheets_hdr">
+                <ScalarProperty Name="password" ColumnName="password" />
+                <ScalarProperty Name="username" ColumnName="username" />
+                <ScalarProperty Name="databasename" ColumnName="databasename" />
+                <ScalarProperty Name="webservicename" ColumnName="webservicename" />
+                <ScalarProperty Name="methodname" ColumnName="methodname" />
+                <ScalarProperty Name="comments" ColumnName="comments" />
+                <ScalarProperty Name="worksheet_sourcepath" ColumnName="worksheet_sourcepath" />
+                <ScalarProperty Name="worksheet_type" ColumnName="worksheet_type" />
+                <ScalarProperty Name="ppdm_guid" ColumnName="ppdm_guid" />
+                <ScalarProperty Name="effective_date" ColumnName="effective_date" />
+                <ScalarProperty Name="row_created_date" ColumnName="row_created_date" />
+                <ScalarProperty Name="row_created_by" ColumnName="row_created_by" />
+                <ScalarProperty Name="row_changed_date" ColumnName="row_changed_date" />
+                <ScalarProperty Name="row_changed_by" ColumnName="row_changed_by" />
+                <ScalarProperty Name="active_ind" ColumnName="active_ind" />
+                <ScalarProperty Name="sheetname" ColumnName="sheetname" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="etl_filelocations">
+            <EntityTypeMapping TypeName="localetlModel.etl_filelocations">
+              <MappingFragment StoreEntitySet="etl_filelocations">
+                <ScalarProperty Name="description" ColumnName="description" />
+                <ScalarProperty Name="storagetype" ColumnName="storagetype" />
+                <ScalarProperty Name="filepath" ColumnName="filepath" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+</Mapping>
+</edmx:Mappings>
+</edmx:Runtime>
+<!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+<edmx:Designer>
+<edmx:Connection><edmx:DesignerInfoPropertySet><edmx:DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" /></edmx:DesignerInfoPropertySet></edmx:Connection>
+<edmx:Options><edmx:DesignerInfoPropertySet><edmx:DesignerProperty Name="ValidateOnBuild" Value="True" /><edmx:DesignerProperty Name="EnablePluralization" Value="False" /><edmx:DesignerProperty Name="IncludeForeignKeysInModel" Value="True" /><edmx:DesignerProperty Name="CodeGenerationStrategy" Value="Default" /></edmx:DesignerInfoPropertySet></edmx:Options>
+<edmx:Diagrams>
+      <edmx:Diagram Name="localetl">
+        <edmx:EntityTypeShape EntityType="localetlModel.etl_columnsmapped" Width="1.5" PointX="13" PointY="1" Height="4.4802050781250031" />
+        <edmx:EntityTypeShape EntityType="localetlModel.etl_defaultvaluesmapped" Width="1.5" PointX="0.75" PointY="0.75" Height="2.7494921875000031" />
+        <edmx:EntityTypeShape EntityType="localetlModel.etl_loadingtemplete" Width="1.5" PointX="6" PointY="2.875" Height="3.1340950520833388" />
+        <edmx:EntityTypeShape EntityType="localetlModel.etl_Sourcecolumn" Width="1.5" PointX="10.75" PointY="6.75" Height="2.7494921875000031" />
+        <edmx:EntityTypeShape EntityType="localetlModel.etl_tableloadingschema" Width="1.5" PointX="10.75" PointY="1.625" Height="3.3263964843750031" />
+        <edmx:EntityTypeShape EntityType="localetlModel.etl_Targetcolumn" Width="1.5" PointX="10.75" PointY="10.75" Height="2.7494921875000031" />
+        <edmx:EntityTypeShape EntityType="localetlModel.etl_valuemapping_dtl" Width="1.5" PointX="5.25" PointY="7.625" Height="3.7109993489583388" />
+        <edmx:EntityTypeShape EntityType="localetlModel.etl_valuemapping_hdr" Width="1.5" PointX="3" PointY="5" Height="3.9033007812500031" />
+        <edmx:EntityTypeShape EntityType="localetlModel.etl_workflowsteps" Width="1.5" PointX="8.25" PointY="5.375" Height="6.2109179687500067" />
+        <edmx:EntityTypeShape EntityType="localetlModel.etl_worksheets_dtl" Width="1.5" PointX="3" PointY="9.625" Height="4.2879036458333388" />
+        <edmx:EntityTypeShape EntityType="localetlModel.etl_worksheets_hdr" Width="1.5" PointX="0.75" PointY="7" Height="4.8648079427083246" />
+        <edmx:AssociationConnector Association="localetlModel.to_loadingschema">
+          <edmx:ConnectorPoint PointX="12.25" PointY="3.2881982421875016" />
+          <edmx:ConnectorPoint PointX="13" PointY="3.2881982421875016" />
+        </edmx:AssociationConnector>
+        <edmx:AssociationConnector Association="localetlModel.wrkflow_loadingtemplete">
+          <edmx:ConnectorPoint PointX="7.5" PointY="5.6920475260416694" />
+          <edmx:ConnectorPoint PointX="7.916666666666667" PointY="5.6920475260416685" />
+          <edmx:ConnectorPoint PointX="8.0833333333333339" PointY="5.6920475260416694" />
+          <edmx:ConnectorPoint PointX="8.25" PointY="5.6920475260416694" />
+        </edmx:AssociationConnector>
+        <edmx:AssociationConnector Association="localetlModel.valuemapdtl_valuemahdr">
+          <edmx:ConnectorPoint PointX="4.5" PointY="8.2641503906250016" />
+          <edmx:ConnectorPoint PointX="4.916666666666667" PointY="8.2641503906250016" />
+          <edmx:ConnectorPoint PointX="5.083333333333333" PointY="8.2641503906250016" />
+          <edmx:ConnectorPoint PointX="5.25" PointY="8.2641503906250016" />
+        </edmx:AssociationConnector>
+        <edmx:AssociationConnector Association="localetlModel.valuemapdtl_worksheetdtl">
+          <edmx:ConnectorPoint PointX="4.5" PointY="10.480499674479169" />
+          <edmx:ConnectorPoint PointX="5.25" PointY="10.480499674479169" />
+        </edmx:AssociationConnector>
+        <edmx:AssociationConnector Association="localetlModel.valuemaphdr_wkrsheethdr">
+          <edmx:ConnectorPoint PointX="2.25" PointY="7.9516503906250016" />
+          <edmx:ConnectorPoint PointX="3" PointY="7.9516503906250016" />
+        </edmx:AssociationConnector>
+        <edmx:AssociationConnector Association="localetlModel.workflowcycle_valuemap">
+          <edmx:ConnectorPoint PointX="4.5" PointY="6.8170475260416694" />
+          <edmx:ConnectorPoint PointX="7.916666666666667" PointY="6.8170475260416685" />
+          <edmx:ConnectorPoint PointX="8.0833333333333339" PointY="6.8170475260416694" />
+          <edmx:ConnectorPoint PointX="8.25" PointY="6.8170475260416694" />
+        </edmx:AssociationConnector>
+        <edmx:AssociationConnector Association="localetlModel.workflowcycle_workdsheet">
+          <edmx:ConnectorPoint PointX="2.25" PointY="9.2641503906250016" />
+          <edmx:ConnectorPoint PointX="5" PointY="9.2641503906250016" />
+          <edmx:ConnectorPoint PointX="5" PointY="7.375" />
+          <edmx:ConnectorPoint PointX="8" PointY="7.375" />
+          <edmx:ConnectorPoint PointX="8" PointY="5.125" />
+          <edmx:ConnectorPoint PointX="9" PointY="5.125" />
+          <edmx:ConnectorPoint PointX="9" PointY="5.375" />
+        </edmx:AssociationConnector>
+        <edmx:AssociationConnector Association="localetlModel.towkrsheet_hdr">
+          <edmx:ConnectorPoint PointX="2.25" PointY="10.744903971354162" />
+          <edmx:ConnectorPoint PointX="3" PointY="10.744903971354162" />
+        </edmx:AssociationConnector>
+        <edmx:EntityTypeShape EntityType="localetlModel.etl_filelocations" Width="1.5" PointX="5.375" PointY="12.75" Height="1.7879850260416674" />
+      </edmx:Diagram>
+    </edmx:Diagrams>
+</edmx:Designer></edmx:Edmx>

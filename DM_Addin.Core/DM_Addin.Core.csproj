@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net5.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
+		<RootNamespace>TheTechIdea</RootNamespace>
+	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\DataManagerNetModels\DataManagmentModels.csproj" />
+		<ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+		<ProjectReference Include="..\Tools\Tools.csproj" />
+		<ProjectReference Include="..\WinformCore\WinformCore.csproj" />
+	</ItemGroup>
+<ItemGroup>
+		<Compile Include="..\DM_Addin\**\*.cs" />
+		<EmbeddedResource Include="..\DM_Addin\**\*.resx" />
+</ItemGroup>
+<ItemGroup>
+	<Compile Remove="..\DM_Addin\obj\Debug\**" />
+	<Compile Remove="..\DM_Addin\obj\Release\**" />
+	<Compile Remove="..\DM_Addin\obj\Win32\Debug\**" />
+	<Compile Remove="..\DM_Addin\Properties\**" />
+	<EmbeddedResource Remove="..\DM_Addin\Properties\**" />
+</ItemGroup>
+<ItemGroup>
+  <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.705.50" />
+</ItemGroup>
+	<Target Name="CopyTarget" AfterTargets="Build">
+		<ItemGroup>
+			<DataReaders Include="$(TargetDir)\DM_Addin.Core.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\Addin" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\netcoreapp3.1\Addin" SkipUnchangedFiles="true" />
+	</Target>
+	
+</Project>

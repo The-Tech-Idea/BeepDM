@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>TheTechIdea.Winforms.VIS</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataManagerNetModels\DataManagmentModels.csproj" />
+    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+    <ProjectReference Include="..\WinformCore\WinformCore.csproj" />
+  </ItemGroup>
+
+</Project>

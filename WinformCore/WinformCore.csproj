@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>TheTechIdea.Winforms.VIS</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataManagerNetModels\DataManagmentModels.csproj" />
+    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controls\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="ReportGenrerator\uc_ReportPreview.Designer.cs">
+      <DependentUpon>uc_ReportPreview.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="ReportGenrerator\uc_ReportPreview.resx">
+      <DependentUpon>uc_ReportPreview.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+<Target Name="CopyTarget" AfterTargets="Build">
+		<ItemGroup>
+			<DataReaders Include="$(TargetDir)\WinformCore.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\netcoreapp3.1\ProjectClasses" SkipUnchangedFiles="true" />
+	</Target>
+</Project>

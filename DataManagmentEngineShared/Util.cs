@@ -509,192 +509,41 @@ namespace TheTechIdea.DataManagment_Engine
             ifFileDownoadedchk = true;
             return ifFileDownoadedchk;
         }
-        public  string GetInsertString(string EntityName, DataRow row, IMapping_rep Mapping, EntityStructure DataStruct)
+       
+        public Type GetTypeFromStringValue(string str)
         {
-
-            List<EntityField> SourceEntityFields = new List<EntityField>();
-            List<EntityField> DestEntityFields = new List<EntityField>();
-            // List<Mapping_rep_fields> map = new List < Mapping_rep_fields >()  ; 
-            //   map= Mapping.FldMapping;
-            string Insertstr = "insert into " + EntityName + " (";
-            string Valuestr = ") values (";
-            var insertfieldname = "";
-            string datafieldname = "";
-            string typefield = "";
-            foreach (IMapping_rep_fields item in Mapping.FldMapping)
-            {
-                if (EntityName == Mapping.EntityName1)
-                {
-                    insertfieldname = item.FieldName1;
-                    datafieldname = item.FieldName2;
-                    typefield = item.FieldType2;
-                }
-                else
-                {
-                    insertfieldname = item.FieldName2;
-                    datafieldname = item.FieldName1;
-                    typefield = item.FieldType1;
-                }
-                Insertstr += insertfieldname + ",";
-                switch (typefield)
-                {
-                    case "System.String":
-                        Valuestr = "'" + row[datafieldname] + "',";
-                        break;
-                    case "System.Int":
-                        Valuestr = "" + row[datafieldname] + ",";
-                        break;
-                    default:
-                        Valuestr = "'" + row[datafieldname] + "',";
-                        break;
-                }
-
-
-            }
-
-
-
-            Insertstr.Remove(Insertstr.Length - 1);
-            Valuestr.Remove(Insertstr.Length - 1);
-            Valuestr += ")";
-            return Insertstr + Valuestr;
+            byte byteValue;
+            int intValue;
+            double doubleValue;
+            char charValue;
+            bool boolValue;
+            float floatValue;
+            DateTime dateValue;
+            decimal decimalValue;
+            string strvalue=str;
+            long longValue;
+            // Place checks higher if if-else statement to give higher priority to type.
+            if (int.TryParse(str, out intValue))
+                return intValue.GetType();
+            else if (double.TryParse(str, out doubleValue))
+                return doubleValue.GetType();
+            else if (char.TryParse(str, out charValue))
+                return charValue.GetType();
+            else if (bool.TryParse(str, out boolValue))
+                return boolValue.GetType();
+            else if (DateTime.TryParse(str, out dateValue))
+                return dateValue.GetType();
+            else if (decimal.TryParse(str, out decimalValue))
+                return decimalValue.GetType();
+            else if (long.TryParse(str, out longValue))
+                return longValue.GetType();
+            else if (byte.TryParse(str, out byteValue))
+                return byteValue.GetType();
+            else if (float.TryParse(str, out floatValue))
+                return floatValue.GetType();
+            else
+                return strvalue.GetType() ;
         }
-        /// <summary>
-        /// Calculate percentage similarity of two strings
-        /// <param name="source">Source String to Compare with</param>
-        /// <param name="target">Targeted String to Compare</param>
-        /// <returns>Return Similarity between two strings from 0 to 1.0</returns>
-        /// </summary>
-        public  double CalculateSimilarity( string source, string target)
-        {
-            if ((source == null) || (target == null)) return 0.0;
-            if ((source.Length == 0) || (target.Length == 0)) return 0.0;
-            if (source == target) return 1.0;
-
-            int stepsToSame = ComputeLevenshteinDistance(source, target);
-            return (1.0 - ((double)stepsToSame / (double)Math.Max(source.Length, target.Length)));
-        }
-        /// <summary>
-        /// Returns the number of steps required to transform the source string
-        /// into the target string.
-        /// </summary>
-        private  int ComputeLevenshteinDistance(string source, string target)
-        {
-            if ((source == null) || (target == null)) return 0;
-            if ((source.Length == 0) || (target.Length == 0)) return 0;
-            if (source == target) return source.Length;
-
-            int sourceWordCount = source.Length;
-            int targetWordCount = target.Length;
-
-            // Step 1
-            if (sourceWordCount == 0)
-                return targetWordCount;
-
-            if (targetWordCount == 0)
-                return sourceWordCount;
-
-            int[,] distance = new int[sourceWordCount + 1, targetWordCount + 1];
-
-            // Step 2
-            for (int i = 0; i <= sourceWordCount; distance[i, 0] = i++) ;
-            for (int j = 0; j <= targetWordCount; distance[0, j] = j++) ;
-
-            for (int i = 1; i <= sourceWordCount; i++)
-            {
-                for (int j = 1; j <= targetWordCount; j++)
-                {
-                    // Step 3
-                    int cost = (target[j - 1] == source[i - 1]) ? 0 : 1;
-
-                    // Step 4
-                    distance[i, j] = Math.Min(Math.Min(distance[i - 1, j] + 1, distance[i, j - 1] + 1), distance[i - 1, j - 1] + cost);
-                }
-            }
-
-            return distance[sourceWordCount, targetWordCount];
-        }
-       public bool KMPSearch(string pat, string txt)
-        {
-            int M = pat.Length;
-            int N = txt.Length;
-
-            // create lps[] that will hold the longest 
-            // prefix suffix values for pattern 
-            int[] lps = new int[M];
-            int j = 0; // index for pat[] 
-
-            // Preprocess the pattern (calculate lps[] 
-            // array) 
-            computeLPSArray(ref pat, M, ref lps);
-
-            int i = 0; // index for txt[] 
-            bool found=false;
-            while (i < N && found == false)
-            {
-                if (pat[j] == txt[i])
-                {
-                    j++;
-                    i++;
-                }
-                if (j == M)
-                {
-
-                    found = true;
-                    j = lps[j - 1];
-                }
-
-                // mismatch after j matches 
-                else if (i < N && pat[j] != txt[i])
-                {
-                    // Do not match lps[0..lps[j-1]] characters, 
-                    // they will match anyway 
-                    if (j != 0)
-                        j = lps[j - 1];
-                    else
-                        i = i + 1;
-                }
-            }
-            return found;
-        }
-
-        void computeLPSArray(ref string pat, int M, ref int[] lps)
-        {
-            // length of the previous longest prefix suffix 
-            int len = 0;
-            int i = 1;
-            lps[0] = 0; // lps[0] is always 0 
-
-            // the loop calculates lps[i] for i = 1 to M-1 
-            while (i < M)
-            {
-                if (pat[i] == pat[len])
-                {
-                    len++;
-                    lps[i] = len;
-                    i++;
-                }
-                else // (pat[i] != pat[len]) 
-                {
-                    // This is tricky. Consider the example. 
-                    // AAACAAAA and i = 7. The idea is similar 
-                    // to search step. 
-                    if (len != 0)
-                    {
-                        len = lps[len - 1];
-
-                        // Also, note that we do not increment 
-                        // i here 
-                    }
-                    else // if (len == 0) 
-                    {
-                        lps[i] = len;
-                        i++;
-                    }
-                }
-            }
-        }
-     
     }
 
 }

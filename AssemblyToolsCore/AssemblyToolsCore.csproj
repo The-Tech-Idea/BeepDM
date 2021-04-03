@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>TheTechIdea.Tools.AssemblyHandling</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataManagerNetModels\DataManagmentModels.csproj" />
+    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+  </ItemGroup>
+
+</Project>

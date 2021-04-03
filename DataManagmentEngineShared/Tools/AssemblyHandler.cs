@@ -19,7 +19,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Tools
 {
-
+    
 
     public class AssemblyHandler : IAssemblyHandler
     {
@@ -36,13 +36,13 @@ namespace TheTechIdea.Tools
 
         public AssemblyHandler()
         {
-
+          
 
             CurrentDomain = AppDomain.CurrentDomain;
-
+           
             CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
         }
-
+        
         #region "Loaders"
         public IErrorsInfo GetBuiltinClasses()
         {
@@ -56,53 +56,53 @@ namespace TheTechIdea.Tools
             //foreach (Assembly asm in currentAssem)
             //{
 
-            try
-            {
-                foreach (var type in currentAssem.DefinedTypes)
+                try
+                {
+                    foreach (var type in currentAssem.DefinedTypes)
+                    {
+
+
+                        string[] p = currentAssem.FullName.Split(new char[] { ',' });
+                        p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
+                        //-------------------------------------------------------
+                        // Get DataBase Drivers
+                        if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
+                        {
+
+                            AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                            xcls.className = type.Name;
+                            xcls.dllname = type.Module.Name;
+                            xcls.PackageName = type.FullName;
+                            DataSources.Add(xcls);
+                            DMEEditor.ConfigEditor.DataSources.Add(xcls);
+
+
+                        }
+                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
+                        {
+
+                            AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                            xcls.className = type.Name;
+                            xcls.dllname = type.Module.Name;
+                            xcls.PackageName = type.FullName;
+                            DataSources.Add(xcls);
+                            DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
+
+
+                        }
+
+                    }
+
+
+
+                    //-----------------------------------------------------------
+                }
+                catch (Exception ex)
                 {
 
-
-                    string[] p = currentAssem.FullName.Split(new char[] { ',' });
-                    p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
-                    //-------------------------------------------------------
-                    // Get DataBase Drivers
-                    if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
-                    {
-
-                        AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                        xcls.className = type.Name;
-                        xcls.dllname = type.Module.Name;
-                        xcls.PackageName = type.FullName;
-                        DataSources.Add(xcls);
-                        DMEEditor.ConfigEditor.DataSources.Add(xcls);
-
-
-                    }
-                    if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
-                    {
-
-                        AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                        xcls.className = type.Name;
-                        xcls.dllname = type.Module.Name;
-                        xcls.PackageName = type.FullName;
-                        DataSources.Add(xcls);
-                        DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
-
-
-                    }
-
+                    DMEEditor.Logger.WriteLog($"error loading Database drivers {ex.Message} ");
                 }
-
-
-
-                //-----------------------------------------------------------
-            }
-            catch (Exception ex)
-            {
-
-                DMEEditor.Logger.WriteLog($"error loading Database drivers {ex.Message} ");
-            }
-            // }
+           // }
             return DMEEditor.ErrorObject;
 
         }
@@ -245,36 +245,20 @@ namespace TheTechIdea.Tools
                 {
                     try
                     {
-                        if (s.FileTypes == FolderFileTypes.Addin)
-                        {
-                            Console.WriteLine();
-                        }
-
+                      
                         ScanAssembly(s.DllLib);
-
-                    }
-
-                    catch (Exception ex)
-                    {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
-                        res = ex.Message;
-                    }
-
-                }
-                foreach (assemblies_rep s in Assemblies.Where(x => x.FileTypes == FolderFileTypes.Addin || x.FileTypes == FolderFileTypes.ProjectClass))
-                {
-                    try
-                    {
                         DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(s.DllLib);
+
                     }
+
                     catch (Exception ex)
                     {
                         DMEEditor.ErrorObject.Flag = Errors.Failed;
-                        // MessageBox.Show(ex.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly
                         res = ex.Message;
                     }
 
                 }
+               
                 //------------------------------
             }
             catch (System.Exception ex)
@@ -473,6 +457,7 @@ namespace TheTechIdea.Tools
 
                         }
                     }
+                
                     catch (Exception ex)
                     {
 
@@ -481,7 +466,7 @@ namespace TheTechIdea.Tools
                 }
 
             }
-
+          
             DMEEditor.ConfigEditor.SaveAddinTreeStructure();
             return DMEEditor.Utilfunction.FunctionHierarchy;
         }
@@ -558,15 +543,15 @@ namespace TheTechIdea.Tools
                             // Get IBranch Definitions
                             if (type.ImplementedInterfaces.Contains(typeof(IBranch)))
                             {
-
+                               
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
                                 xcls.Methods = new List<MethodsClass>();
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
-                                //   xcls.RootName = brcls.BranchClass;
+                             //   xcls.RootName = brcls.BranchClass;
                                 xcls.type = type;
-                                //   xcls.RootName = "AI";
+                             //   xcls.RootName = "AI";
                                 //   xcls.BranchType = brcls.BranchType;
                                 foreach (MethodInfo methods in type.GetMethods()
                                              .Where(m => m.GetCustomAttributes(typeof(BranchDelegate), false).Length > 0)
@@ -590,9 +575,9 @@ namespace TheTechIdea.Tools
                                         xcls.Order = cls.Order;
                                         cls = null;
                                     }
-                                    catch (Exception)
+                                    catch (Exception )
                                     {
-
+                                       
 
                                     }
 
@@ -608,7 +593,7 @@ namespace TheTechIdea.Tools
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
-
+                              
                                 foreach (MethodInfo methods in type.GetMethods()
                                              .Where(m => m.GetCustomAttributes(typeof(MLMethod), false).Length > 0)
                                               .ToArray())
@@ -781,7 +766,7 @@ namespace TheTechIdea.Tools
                 {
                     assembly = s.DllLib;
                 }
-
+                
             }
             if (assembly != null)
                 return assembly;
@@ -847,7 +832,7 @@ namespace TheTechIdea.Tools
                 return true;
                 //    DMEEditor.AddLogMessage("Success", "Running method", DateTime.Now, 0, null, Errors.Ok);
             }
-            catch (Exception)
+            catch (Exception )
             {
                 string mes = "Could not Run Method " + MethodName;
                 //  DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
@@ -996,13 +981,13 @@ namespace TheTechIdea.Tools
                 p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
                 //---------------------------------------------------------
                 // Get NoSQL Drivers 
-                //  bool driverfound = false;
-                //  bool recexist = false;
+              //  bool driverfound = false;
+              //  bool recexist = false;
                 driversConfig = DataDrivers.Where(c => c.DriverClass == p[0]).FirstOrDefault();
                 if (driversConfig == null)
                 {
                     driversConfig = new ConnectionDriversConfig();
-                    // recexist = false;
+                   // recexist = false;
                 }
                 //else
                 //{
@@ -1039,7 +1024,7 @@ namespace TheTechIdea.Tools
             ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
             try
             {
-
+              
                 foreach (ConnectionDriversConfig item in DMEEditor.ConfigEditor.DriverDefinitions)
                 {
 
@@ -1054,15 +1039,15 @@ namespace TheTechIdea.Tools
                         driversConfig.parameter1 = item.parameter1;
                         driversConfig.parameter2 = item.parameter2;
                         driversConfig.parameter3 = item.parameter3;
-
+                      
                         DataDrivers.Add(driversConfig);
                     }
-
-
+                   
+                 
 
                 }
-
-
+              
+           
 
                 //-----------------------------------------------------------
             }
@@ -1070,7 +1055,7 @@ namespace TheTechIdea.Tools
             {
 
                 DMEEditor.Logger.WriteLog($"error in creating addin {ex.Message} ");
-
+               
             }
 
 
@@ -1078,7 +1063,7 @@ namespace TheTechIdea.Tools
         }
         public List<ConnectionDriversConfig> GetDrivers(Assembly asm)
         {
-            // int cnt = 1;
+           // int cnt = 1;
 
 
             try
@@ -1087,7 +1072,7 @@ namespace TheTechIdea.Tools
                 {
                     GetADOTypeDrivers(asm);
                 }
-
+                
             }
             catch (Exception ex1)
             {
