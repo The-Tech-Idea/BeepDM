@@ -81,13 +81,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DataManagerNetModels\DataManagmentModels.csproj">
-      <Project>{7697ebdc-a4f2-49b1-af91-79031516e679}</Project>
-      <Name>DataManagmentModels</Name>
-      <Private>False</Private>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="AssemblyHandling\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

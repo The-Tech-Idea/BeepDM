@@ -242,13 +242,13 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DataManagerNetModels\DataManagmentModels.csproj">
+    <Folder Include="Properties\DataSources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DataManagmentModels\DataManagmentModels.csproj">
       <Project>{7697ebdc-a4f2-49b1-af91-79031516e679}</Project>
       <Name>DataManagmentModels</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\DataSources\" />
   </ItemGroup>
   <Import Project="..\DataManagmentEngineShared\DataManagmentEngineShared.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

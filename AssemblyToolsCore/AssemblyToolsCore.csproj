@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DataManagerNetModels\DataManagmentModels.csproj" />
     <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
   </ItemGroup>
 
