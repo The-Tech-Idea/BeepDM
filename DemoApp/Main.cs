@@ -124,10 +124,11 @@ namespace DataManagment_Engine
                 Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
 
                 // you start you application from an Calling an Addin
-                Config_editor.Config.SystemEntryFormName = @"Form1";
+                //    Config_editor.Config.SystemEntryFormName = @"Form1";
+                Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
                 if (Config_editor.Config.SystemEntryFormName != null)
                 {
-                    //Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
+                   // Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
                     vis.ShowMainDisplayForm();
                 }else
                 {
