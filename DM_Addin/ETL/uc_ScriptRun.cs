@@ -43,7 +43,7 @@ namespace TheTechIdea.ETL
         public IDMEEditor DMEEditor { get; set; }
         public EntityStructure EntityStructure { get; set; }
         public string EntityName { get; set; }
-        public PassedArgs Args { get; set; }
+        public PassedArgs Passedarg { get; set; }
         IBranch RootAppBranch;
         public IVisUtil Visutil { get; set; }
         IBranch branch;
@@ -55,7 +55,7 @@ namespace TheTechIdea.ETL
 
         public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
         {
-            Args = e;
+            Passedarg = e;
             Logger = plogger;
             ErrorObject = per;
             DMEEditor = pbl;
@@ -105,12 +105,12 @@ namespace TheTechIdea.ETL
             ObjectItem item1 = new ObjectItem();
             item1.obj = DMEEditor;
             item1.Name = "DMEEDITOR";
-            Args.Objects.Add(item1);
-            backgroundWorker = new BackgroundWorkerThread(Args);
+            Passedarg.Objects.Add(item1);
+            backgroundWorker = new BackgroundWorkerThread(Passedarg);
             backgroundWorker.ReportProgress += BackgroundWorker_ReportProgress;
             backgroundWorker1.RunWorkerCompleted += BackgroundWorker1_RunWorkerCompleted;
             progressBar1.Step = 2;
-            backgroundWorker.RunWorker(Args);
+            backgroundWorker.RunWorker(Passedarg);
 
         }
 

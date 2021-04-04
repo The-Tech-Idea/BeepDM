@@ -42,7 +42,7 @@ namespace TheTechIdea.CRUD
         private IDMDataView MyDataView { get; set; } = null;
         public IVisUtil Visutil { get; set; }
         public IErrorsInfo ErrorObject  { get; set; }
-        public PassedArgs Args { get; set; }
+        public PassedArgs Passedarg { get; set; }
        // public event EventHandler<PassedArgs> OnObjectSelected;
         public System.Windows.Forms.BindingSource bindingSource1 = new BindingSource();
         public System.Windows.Forms.PropertyGrid propertyGrid1 = new PropertyGrid();
@@ -57,7 +57,7 @@ namespace TheTechIdea.CRUD
 
         void IDM_Addin.SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, PassedArgs obj, IErrorsInfo per)
         {
-            Args=  obj;
+            Passedarg=  obj;
           
             Logger = plogger;
             this.Width = 430;
@@ -68,12 +68,12 @@ namespace TheTechIdea.CRUD
             {
                 case "RDBMSTABLE":
                     EntityName = obj.CurrentEntity;
-                    SourceConnection = (IRDBSource)Args.DataSource;
+                    SourceConnection = (IRDBSource)Passedarg.DataSource;
                     t = SourceConnection.GetEntity(EntityName, null);
                     break;
                 case "CRUDENTITY":
                     EntityName = obj.CurrentEntity;
-                    SourceConnection = DMEEditor.GetDataSource(Args.DatasourceName);
+                    SourceConnection = DMEEditor.GetDataSource(Passedarg.DatasourceName);
                     t = SourceConnection.GetEntity(EntityName, null);
                     
                     break;

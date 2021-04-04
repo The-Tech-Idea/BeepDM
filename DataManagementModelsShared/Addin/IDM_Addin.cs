@@ -24,7 +24,7 @@ namespace TheTechIdea
         IDMEEditor DMEEditor { get; set; }
         EntityStructure EntityStructure { get; set; }
         string EntityName { get; set; }
-        PassedArgs Args { get; set; }
+        PassedArgs Passedarg { get; set; }
        
         void Run(string param1);
         void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil,string[] args, PassedArgs e, IErrorsInfo per );

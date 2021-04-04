@@ -43,7 +43,7 @@ namespace TheTechIdea.DDL
         public IDMEEditor DMEEditor { get; set; }
         public EntityStructure EntityStructure { get; set; }
         public string EntityName { get; set; }
-        public PassedArgs Args { get; set; }
+        public PassedArgs Passedarg { get; set; }
    #region "IAddinVisSchema"
         public string RootNodeName { get; set; } = "DDL";
         public string CatgoryName { get; set; }
@@ -74,7 +74,7 @@ namespace TheTechIdea.DDL
 
         public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
         {
-            Args = e;
+            Passedarg = e;
             Logger = plogger;
             DMEEditor = pbl;
             ErrorObject = per;

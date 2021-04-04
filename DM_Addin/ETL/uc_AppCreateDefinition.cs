@@ -40,7 +40,7 @@ namespace TheTechIdea.ETL
         public IDMEEditor DMEEditor { get ; set ; }
         public EntityStructure EntityStructure { get ; set ; }
         public string EntityName { get ; set ; }
-        public PassedArgs Args { get ; set ; }
+        public PassedArgs Passedarg { get ; set ; }
       //  private IDMDataView MyDataView;
         public IVisUtil Visutil { get; set; }
       //  DataViewDataSource ds;
@@ -62,7 +62,7 @@ namespace TheTechIdea.ETL
 
         public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
         {
-            Args = e;
+            Passedarg = e;
             Logger = plogger;
             ErrorObject = per;
             DMEEditor = pbl;
@@ -182,7 +182,7 @@ namespace TheTechIdea.ETL
                     appsBindingSource.EndEdit();
                   
                     DMEEditor.ConfigEditor.SaveAppValues();
-                    if (Args.Id == 0)
+                    if (Passedarg.Id == 0)
                     {
                         branch.CreateChildNodes();
                     }

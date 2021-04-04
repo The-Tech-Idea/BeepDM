@@ -39,7 +39,7 @@ namespace TheTechIdea.Hidden
         public IDMEEditor DMEEditor { get ; set ; }
         public EntityStructure EntityStructure { get ; set ; }
         public string EntityName { get ; set ; }
-        public PassedArgs Args { get ; set ; }
+        public PassedArgs Passedarg { get ; set ; }
         public delegate void InvokeDelegate(object sender, string e);
        // public event EventHandler<PassedArgs> OnObjectSelected;
         public bool startLoggin = false;

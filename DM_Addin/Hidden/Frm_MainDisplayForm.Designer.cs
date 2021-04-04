@@ -86,7 +86,7 @@
             // uc_DynamicTree1
             // 
             this.uc_DynamicTree1.AddinName = "Dynamic Data View Tree";
-            this.uc_DynamicTree1.Args = null;
+            this.uc_DynamicTree1.Passedarg = null;
             this.uc_DynamicTree1.AutoScroll = true;
             this.uc_DynamicTree1.AutoScrollMargin = new System.Drawing.Size(5, 5);
             this.uc_DynamicTree1.AutoScrollMinSize = new System.Drawing.Size(5, 5);
@@ -130,7 +130,7 @@
             // uc_logpanel1
             // 
             this.uc_logpanel1.AddinName = "Log Panel";
-            this.uc_logpanel1.Args = null;
+            this.uc_logpanel1.Passedarg = null;
             this.uc_logpanel1.DefaultCreate = false;
             this.uc_logpanel1.Description = "Log all Messeges";
             this.uc_logpanel1.DestConnection = null;

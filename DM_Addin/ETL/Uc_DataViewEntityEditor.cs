@@ -40,7 +40,7 @@ namespace TheTechIdea.ETL
         public IErrorsInfo ErrorObject { get; set; }
         private IDMDataView MyDataView;
         public IVisUtil Visutil { get; set; }
-        public PassedArgs Args { get; set; }
+        public PassedArgs Passedarg { get; set; }
         public IUtil util { get; set; }
       //  public IDataViewEditor ViewEditor { get; set; }
       
@@ -59,7 +59,7 @@ namespace TheTechIdea.ETL
 
         public void SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, PassedArgs obj, IErrorsInfo per)
         {
-            Args=  obj;
+            Passedarg=  obj;
 
             Logger = plogger;
             util = putil;
@@ -85,7 +85,7 @@ namespace TheTechIdea.ETL
             this.SaveEntitybutton.Click += SaveEntitybutton_Click;
             this.ValidateFieldsbutton.Click += ValidateFieldsbutton_Click;
             EntityName = obj.CurrentEntity;
-            switch (Args.EventType)
+            switch (Passedarg.EventType)
             {
                 case "VIEWENTITY":
                     ds = (DataViewDataSource)DMEEditor.GetDataSource(obj.DMView.DataViewDataSourceID);
@@ -187,7 +187,7 @@ namespace TheTechIdea.ETL
            try
 
             {
-                switch (Args.EventType)
+                switch (Passedarg.EventType)
                 {
                     case "VIEWENTITY":
                         if (EntityName != null)
@@ -209,7 +209,7 @@ namespace TheTechIdea.ETL
                         ds.Dataview = MyDataView;
                         break;
                     case "LAYERENTITY":
-                        IDataSource layer = DMEEditor.GetDataSource(Args.DatasourceName);
+                        IDataSource layer = DMEEditor.GetDataSource(Passedarg.DatasourceName);
                         // cn = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(p => p.ConnectionName == Args.DatasourceName)];
 
                         layer.Entities[layer.Entities.FindIndex(p => p.EntityName.ToLower() == MyEntity.EntityName.ToLower())] = MyEntity;
@@ -219,11 +219,11 @@ namespace TheTechIdea.ETL
                         DMEEditor.ConfigEditor.SaveCompositeLayersValues();
                         break;
                     case "RDBMSENTITY":
-                        IDataSource dblayer = DMEEditor.GetDataSource(Args.DatasourceName);
+                        IDataSource dblayer = DMEEditor.GetDataSource(Passedarg.DatasourceName);
                        // cn = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(p => p.ConnectionName == Args.DatasourceName)];
 
                         dblayer.Entities[dblayer.Entities.FindIndex(p => p.EntityName.ToLower() == MyEntity.EntityName.ToLower())] = MyEntity;
-                        DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = Args.DatasourceName, Entities = dblayer.Entities });
+                        DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = Passedarg.DatasourceName, Entities = dblayer.Entities });
                         break;
 
                     default:

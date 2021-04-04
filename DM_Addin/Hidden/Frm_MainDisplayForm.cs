@@ -44,7 +44,7 @@ namespace TheTechIdea.Hidden
         public IVisUtil Visutil { get; set; }
         public IErrorsInfo ErrorObject  { get; set; }
         public IUtil Util { get; set; }
-        public PassedArgs Args { get; set; }
+        public PassedArgs Passedarg { get; set; }
         public PassedArgs PassedArgsFromFunctionTree { get; set; }
         public PassedArgs PassedArgsFromDataTree { get; set; }
         public IDMDataView MyDataView { get; set; } 
@@ -56,7 +56,7 @@ namespace TheTechIdea.Hidden
 
         public void SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, PassedArgs obj, IErrorsInfo per)
         {
-            Args=  obj;
+            Passedarg=  obj;
             //SourceConnection = pdataSource;
 
            ErrorObject  = per;

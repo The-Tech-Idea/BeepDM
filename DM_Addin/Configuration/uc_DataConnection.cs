@@ -40,7 +40,7 @@ namespace TheTechIdea.Configuration
         public IRDBSource SourceConnection { get; set; }
         public EntityStructure EntityStructure { get; set; }
         public string EntityName { get; set; }
-        public PassedArgs Args { get; set; }
+        public PassedArgs Passedarg { get; set; }
         public IUtil util { get; set; }
         public IVisUtil Visutil { get; set; }
         public IDMEEditor DMEEditor { get; set; }
@@ -76,13 +76,19 @@ namespace TheTechIdea.Configuration
 
         public void SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, PassedArgs obj, IErrorsInfo per)
         {
-            Args = obj;
+            Passedarg = obj;
             Visutil = (IVisUtil)obj.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
             Logger = plogger;
             DMEEditor = pDMEEditor;
-            DataSourceCategoryType = args[0];
+       //     DataSourceCategoryType = args[0];
             ErrorObject = per;
-            branch = Visutil.treeEditor.Branches[Visutil.treeEditor.Branches.FindIndex(x => x.BranchClass == "RDBMS" && x.BranchType == EnumBranchType.Root)];
+            if (Visutil.treeEditor != null)
+            {
+                branch = Visutil.treeEditor.Branches[Visutil.treeEditor.Branches.FindIndex(x => x.BranchClass == "RDBMS" && x.BranchType == EnumBranchType.Root)];
+            }
+            else
+                branch = null;
+           
 
             foreach (var item in Enum.GetValues(typeof(DataSourceType)))
             {
@@ -220,8 +226,6 @@ namespace TheTechIdea.Configuration
             }
         }
 
-        
-
         private void DataConnectionsBindingSource_AddingNew(object sender, AddingNewEventArgs e)
         {
             ConnectionProperties x = new ConnectionProperties();
@@ -242,7 +246,12 @@ namespace TheTechIdea.Configuration
                 ds= (List<ConnectionProperties>)dataConnectionsBindingSource.DataSource;
                 DMEEditor.ConfigEditor.UpdateDataConnection(ds,DataSourceCategoryType);
                 DMEEditor.ConfigEditor.SaveDataconnectionsValues();
-                branch.CreateChildNodes();
+                if (branch != null)
+                {
+                    branch.CreateChildNodes();
+
+                }
+              
                 MessageBox.Show("Changes Saved Successfuly", "DB Engine");
             }
             catch (Exception ex)

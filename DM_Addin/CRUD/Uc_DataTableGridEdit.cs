@@ -40,16 +40,16 @@ namespace TheTechIdea.CRUD
         public IVisUtil Visutil { get; set; }
         public IUtil util { get; set; }
         public IErrorsInfo ErrorObject  { get; set; }
-        public PassedArgs Args { get; set; }
+        public PassedArgs Passedarg { get; set; }
         DataTable t;
         public void SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, PassedArgs obj, IErrorsInfo per)
         {
-            Args = obj;
+            Passedarg = obj;
             // SourceConnection = pdataSource;
             Logger = plogger;
             // Visutil = new VisUtil(Logger,putil,per);
             util = putil;
-            MyDataView = (DMDataView)Args.DMView;
+            MyDataView = (DMDataView)Passedarg.DMView;
             DMEEditor = pDMEEditor;
             ErrorObject = per;
             Visutil = (IVisUtil)obj.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
@@ -57,12 +57,12 @@ namespace TheTechIdea.CRUD
             {
                 case "RDBMSTABLE":
                     EntityName = obj.CurrentEntity;
-                    SourceConnection = (IRDBSource)Args.DataSource;
+                    SourceConnection = (IRDBSource)Passedarg.DataSource;
                   
                     break;
                 case "CRUDENTITY":
                     EntityName = obj.CurrentEntity;
-                    SourceConnection = DMEEditor.GetDataSource(Args.DatasourceName);
+                    SourceConnection = DMEEditor.GetDataSource(Passedarg.DatasourceName);
                     break;
                 default:
                     break;

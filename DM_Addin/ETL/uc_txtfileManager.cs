@@ -41,7 +41,7 @@ namespace TheTechIdea.ETL
         public IDMEEditor DMEEditor { get  ; set  ; }
         public EntityStructure EntityStructure { get  ; set  ; }
         public string EntityName { get  ; set  ; }
-        public PassedArgs Args { get  ; set  ; }
+        public PassedArgs Passedarg { get  ; set  ; }
         public IVisUtil Visutil { get  ; set  ; }
 
         public string entityname { get; set; }
@@ -59,7 +59,7 @@ namespace TheTechIdea.ETL
 
         public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
         {
-            Args=  e;
+            Passedarg=  e;
             Logger = plogger;
            ErrorObject  = per;
             DMEEditor = pbl;

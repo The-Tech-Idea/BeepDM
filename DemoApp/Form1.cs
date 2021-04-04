@@ -37,7 +37,7 @@ namespace DemoApp
         public IDMEEditor DMEEditor { get ; set ; }
         public EntityStructure EntityStructure { get ; set ; }
         public string EntityName { get ; set ; }
-        public PassedArgs Args { get ; set ; }
+        public PassedArgs Passedarg { get ; set ; }
 
 
         // Added Property for Visualization
@@ -49,11 +49,40 @@ namespace DemoApp
 
         public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
         {
-            Args = e;
+
+            //------------------ 
+            // every Addin is Setup though VisUtil Class
+            // It will allow engine to setup required parameters
+            // every addin will be passed these 6 paramaters
+            // all of them are setup though the VisUtil Class
+
+            Passedarg = e;
             Logger = plogger;
             ErrorObject = per;
             DMEEditor = pbl;
             Visutil = (IVisUtil)e.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
+
+            //---------------
+            Datasourcesbutton.Click += Datasourcesbutton_Click;
         }
+
+        private void Datasourcesbutton_Click(object sender, EventArgs e)
+        {
+            string[] args = new string[] {""};
+            Visutil.ShowUserControlPopUp("uc_DataConnection", DMEEditor, args, Passedarg);
+        }
+        private void CreateLocalDB()
+        {
+
+        }
+        private void CreateDataViewFromLocalDB()
+        {
+
+        }
+        private void AddEntityFromOtherLocalDB()
+        {
+
+        }
+
     }
 }

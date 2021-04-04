@@ -40,7 +40,7 @@ namespace TheTechIdea.ETL
         public IDMEEditor DMEEditor { get ; set ; }
         public EntityStructure EntityStructure { get ; set ; }
         public string EntityName { get ; set ; }
-        public PassedArgs Args { get ; set ; }
+        public PassedArgs Passedarg { get ; set ; }
 
        // public event EventHandler<PassedArgs> OnObjectSelected;
         public IVisUtil Visutil { get; set; }

@@ -57,7 +57,7 @@ namespace TheTechIdea.DDL
         public EntityStructure EntityStructure { get; set; }
         public string EntityName { get; set; }
         public IVisUtil Visutil { get; set; }
-        public PassedArgs Args { get; set; }
+        public PassedArgs Passedarg { get; set; }
 
        // public event EventHandler<PassedArgs> OnObjectSelected;
        
@@ -73,7 +73,7 @@ namespace TheTechIdea.DDL
 
         public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
         {
-            Args = e;
+            Passedarg = e;
             Logger = plogger;
             DMEEditor = pbl;
             ErrorObject = per;
