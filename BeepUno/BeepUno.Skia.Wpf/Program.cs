@@ -1,4 +1,0 @@
-﻿
-namespace BeepUno.Skia.Gtk
-{
-}
