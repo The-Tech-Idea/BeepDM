@@ -544,6 +544,22 @@ namespace TheTechIdea.DataManagment_Engine
             else
                 return strvalue.GetType() ;
         }
+        public Type MakeGenericListofType(string typestring)
+        {
+            string elementTypeName = typestring;
+            Type elementType = Type.GetType(elementTypeName);
+            Type[] types = new Type[] { elementType };
+
+            Type listType = typeof(List<>);
+            return listType.MakeGenericType(types);
+        }
+        public Type MakeGenericType(string typestring)
+        {
+            string elementTypeName = typestring;
+            return Type.GetType(elementTypeName);
+          
+           // return listType.MakeGenericType(types);
+        }
     }
 
 }

@@ -39,7 +39,7 @@ namespace TheTechIdea.DataManagment_Engine.Report
             {
                 string QueryString = "select " + GetSelectedFields(blocknumber) + " from " + Definition.Blocks[blocknumber].EntityID;
                 DataViewDataSource ds = (DataViewDataSource)DMEEditor.GetDataSource(Definition.Blocks[blocknumber].ViewID);
-                DataTable PrintData = ds.GetEntity(Definition.Blocks[blocknumber].EntityID, QueryString);
+                DataTable PrintData = (DataTable)ds.GetEntity(Definition.Blocks[blocknumber].EntityID, QueryString);
           //      PrintData.Wait();
                 DMEEditor.AddLogMessage("Success", $"Copying Report Data", DateTime.Now, 0, null, Errors.Ok);
                 return PrintData;

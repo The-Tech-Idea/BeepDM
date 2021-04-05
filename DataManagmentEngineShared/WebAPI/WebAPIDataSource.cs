@@ -185,7 +185,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
             
         }
 
-        public virtual DataTable GetEntity(string EntityName, string filterstr)
+        public virtual object GetEntity(string EntityName, string filterstr)
         {
             throw new NotImplementedException();
         }
@@ -208,27 +208,23 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
             throw new NotImplementedException();
         }
 
-        public virtual DataTable GetEntityDataTable(string EntityName, string filterstr)
-        {
-            throw new NotImplementedException();
-        }
 
         public virtual Type GetEntityType(string EntityName)
         {
             throw new NotImplementedException();
         }
 
-        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IMapping_rep Mapping)
+        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData)
         {
             throw new NotImplementedException();
         }
-        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow, IMapping_rep Mapping = null)
+        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
 
 
             throw new NotImplementedException();
         }
-        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow, IMapping_rep Mapping = null)
+        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
         {
             throw new NotImplementedException();
         }
@@ -247,6 +243,11 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
             throw new NotImplementedException();
         }
         public List<LScript> GetCreateEntityScript(List<EntityStructure> entities = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
             throw new NotImplementedException();
         }

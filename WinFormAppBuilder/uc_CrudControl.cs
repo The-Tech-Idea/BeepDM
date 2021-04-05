@@ -72,7 +72,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
                         if (EntityStructure.Fields.Count > 0)
                         {
                             EntityName = EntityStructure.EntityName;
-                            EntityData = ds.GetEntity(EntityStructure.EntityName, null);
+                            EntityData = (DataTable)ds.GetEntity(EntityStructure.EntityName, null);
                             ShowCRUD();
                         }
                     }
@@ -93,7 +93,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
 
             {
                 bindingSource1.EndEdit();
-                ds.UpdateEntities(EntityName,EntityData,null);
+                ds.UpdateEntities(EntityName,EntityData);
 
 
                 DMEEditor.AddLogMessage("Success", $"Saving Data changes", DateTime.Now, 0, null, Errors.Ok);

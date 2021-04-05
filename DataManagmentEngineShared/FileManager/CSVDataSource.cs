@@ -182,7 +182,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow, IMapping_rep Mapping = null)
+        public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow)
         {
             throw new NotImplementedException();
         }
@@ -208,7 +208,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             return EntitiesNames;
         }
 
-        public DataTable GetEntity(string EntityName, string filterstr)
+        public object GetEntity(string EntityName, string filterstr)
         {
             ErrorObject.Flag = Errors.Ok;
             try
@@ -232,25 +232,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             }
         }
 
-        public Task<object> GetEntityDataAsync(string EntityName, string filterstr)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
-
-
-                return null;
-            }
-            catch (Exception ex)
-            {
-
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting File Data ({ex.Message}) ");
-                return null;
-            }
-        }
-
+       
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             throw new NotImplementedException();
@@ -285,12 +267,17 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IMapping_rep Mapping = null)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
         {
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow, IMapping_rep Mapping = null)
+        public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
             throw new NotImplementedException();
         }

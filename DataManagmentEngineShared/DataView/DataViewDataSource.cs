@@ -201,11 +201,8 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             EntitiesNames = retval;
             return retval;
         }
-        public Task<object> GetEntityDataAsync(string entityname, string filterstr)
-        {
-            return GetDataSourceObject(entityname).GetEntityDataAsync(entityname, filterstr);
-        }
-        public DataTable GetEntity(string entityname, string filterstr)
+       
+        public object GetEntity(string entityname, string filterstr)
         {
             return GetDataSourceObject(entityname).GetEntity(entityname, filterstr);
         }
@@ -263,20 +260,13 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             //      return GetDataSourceObject(EntityName).GetEntityStructure(EntityName, refresh);
         }
 
-        public DataTable GetEntityDataTable(string entityname, string filterstr)
-        {
-            return GetDataSourceObject(entityname).GetEntity(entityname, filterstr);
-        }
 
         public Type GetEntityType(string entityname)
         {
             return GetDataSourceObject(entityname).GetEntityType(entityname);
         }
 
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IMapping_rep Mapping)
-        {
-            return GetDataSourceObject(EntityName).UpdateEntities(EntityName,  UploadData,  Mapping);
-        }
+     
 
         public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
@@ -360,15 +350,19 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             ds = DMEEditor.GetDataSource(DatasourceName);
            return ds.RunQuery(qrystr);
         }
-        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow, IMapping_rep Mapping = null)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
         {
-
-
-            return GetDataSourceObject(EntityName).UpdateEntity(EntityName, UploadDataRow, Mapping);
+            return GetDataSourceObject(EntityName).UpdateEntities(EntityName, UploadData);
         }
-        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow, IMapping_rep Mapping = null)
+        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
-            return GetDataSourceObject(EntityName).DeleteEntity(EntityName, DeletedDataRow, Mapping);
+
+
+            return GetDataSourceObject(EntityName).UpdateEntity(EntityName, UploadDataRow);
+        }
+        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
+        {
+            return GetDataSourceObject(EntityName).DeleteEntity(EntityName, DeletedDataRow);
         }
 
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
@@ -399,6 +393,11 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 ls.AddRange(ds.GetCreateEntityScript(lsent));
             }
             return ls;
+        }
+
+        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
+        {
+            throw new NotImplementedException();
         }
     }
 }

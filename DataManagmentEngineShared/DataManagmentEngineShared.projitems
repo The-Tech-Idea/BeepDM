@@ -11,7 +11,6 @@
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Addin\" />
     <Folder Include="$(MSBuildThisFileDirectory)AppBuilder\" />
-    <Folder Include="$(MSBuildThisFileDirectory)MVVM\" />
     <Folder Include="$(MSBuildThisFileDirectory)NOSQL\" />
   </ItemGroup>
   <ItemGroup>
@@ -34,6 +33,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)FileManager\FileConnection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileManager\TextFieldParser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger\LogAndError.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MVVM\EventList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MVVM\ViewModelBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Report\ReportOutput.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\AssemblyHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\ClassCreator.cs" />

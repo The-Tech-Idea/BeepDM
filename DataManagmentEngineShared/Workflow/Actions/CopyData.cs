@@ -183,7 +183,7 @@ namespace TheTechIdea.DataManagment_Engine.Workflow.Actions
                     {
                         Outds.CreateEntityAs(Inds.GetEntityStructure(item, true));
                     }
-                    var t1 = Task.Run<IErrorsInfo>(() => { return Outds.UpdateEntity(item, InData, Mapping); });
+                    var t1 = Task.Run<IErrorsInfo>(() => { return Outds.UpdateEntity(item, InData); });
                     t1.Wait();
                     DMEEditor.ErrorObject = t1.Result;
                     ((BackgroundWorker)sender).ReportProgress(cur);

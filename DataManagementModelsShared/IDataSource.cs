@@ -29,6 +29,7 @@ namespace TheTechIdea
         IDMEEditor DMEEditor { get; set; }
         ConnectionState ConnectionStatus { get; set; }
         List<string> GetEntitesList();
+        DataTable RunQuery(string qrystr);
         IErrorsInfo ExecuteSql(string sql);
         bool CreateEntityAs(EntityStructure entity);
         Type GetEntityType(string EntityName);
@@ -37,17 +38,18 @@ namespace TheTechIdea
         List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName);
         EntityStructure GetEntityStructure(string EntityName, bool refresh );
         EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false);
-        Task<object> GetEntityDataAsync(string EntityName, string filterstr);
-        DataTable GetEntity(string EntityName, string filterstr);
-        DataTable RunQuery(string qrystr);
+       
+        //DataTable GetEntity(string EntityName, string filterstr);
+        //DataTable RunQuery(string qrystr);
         LScript RunScript( LScript dDLScripts);
         List<LScript> GetCreateEntityScript(List<EntityStructure> entities=null);
         IErrorsInfo CreateEntities(List<EntityStructure> entities);
-        IErrorsInfo UpdateEntities(string EntityName,object UploadData, IMapping_rep Mapping=null);
-        IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow, IMapping_rep Mapping=null);
-        IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow, IMapping_rep Mapping = null);
-       
-       
+        IErrorsInfo UpdateEntities(string EntityName,object UploadData);
+        IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow);
+        IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow);
+        IErrorsInfo InsertEntity(string EntityName, object InsertedData);
+        object GetEntity(string EntityName, string filterstr);
+
 
     }
 }

@@ -8,14 +8,15 @@ namespace TheTechIdea.DataManagment_Engine.MVVM
 {
    public class DataListViewModel 
     {
+        
         public event PropertyChangedEventHandler PropertyChanged;
-        public DataListViewModel(ViewModelBase EntityModel)
+        public DataListViewModel(ObservableCollection<ViewModelBase> EntityModel)
         {
             Rows.CollectionChanged += Rows_CollectionChanged;
-            EntityModel.PropertyChanged += EntityModel_PropertyChanged;
+         //   EntityModel.PropertyChanged += EntityModel_PropertyChanged;
             
         }
-
+       
         private void Rows_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             switch (e.Action)
@@ -27,7 +28,7 @@ namespace TheTechIdea.DataManagment_Engine.MVVM
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
-                  //  RemovedItem.AddRange((IEnumerable<T>)e.OldItems);
+                    
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
                     break;
@@ -70,27 +71,7 @@ namespace TheTechIdea.DataManagment_Engine.MVVM
             }
         }
     }
-    public class ViewModelBase : System.ComponentModel.INotifyPropertyChanged
-    {
-        // base class code
-        public EnumRecordStatus RecordStatus { get; set; } = EnumRecordStatus.Unchanged;
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            System.ComponentModel.PropertyChangedEventHandler handler;
-            handler = this.PropertyChanged;
-            if ((null != handler))
-            {
-                handler(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
-                if (RecordStatus== EnumRecordStatus.Unchanged)
-                {
-                    RecordStatus = EnumRecordStatus.Modified;
-                }
-                
-            }
-        }
-
-    }
+   
     public class RecordeventArgs:EventArgs
     {
         //

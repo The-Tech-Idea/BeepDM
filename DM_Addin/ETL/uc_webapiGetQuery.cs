@@ -143,7 +143,7 @@ namespace TheTechIdea.ETL
                 str = str.Replace("{" + item.parameterIndex + "}", ent.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault()) ;
             }
             
-            Task<dynamic> output= GetOutputAsync(CurrentEntity, str);
+            Task<dynamic> output= GetOutput(CurrentEntity, str);
             output.Wait();
             DataBindingSource.DataSource = output.Result;
             DataBindingSource.ResetBindings(true);
@@ -155,10 +155,10 @@ namespace TheTechIdea.ETL
 
             this.dataGridView1.Refresh();
         }
-        private async Task<dynamic> GetOutputAsync(string CurrentEntity,string str)
+        private dynamic GetOutput(string CurrentEntity, string str)
         {
-          return await webAPIData.GetEntityDataAsync(CurrentEntity, str).ConfigureAwait(false);
+            return webAPIData.GetEntity(CurrentEntity, str); //.ConfigureAwait(false)
         }
-    
+
     }
 }

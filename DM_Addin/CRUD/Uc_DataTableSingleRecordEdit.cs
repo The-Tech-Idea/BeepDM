@@ -55,7 +55,7 @@ namespace TheTechIdea.CRUD
 
         }
 
-        void IDM_Addin.SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, PassedArgs obj, IErrorsInfo per)
+        public void   SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, PassedArgs obj, IErrorsInfo per)
         {
             Passedarg=  obj;
           
@@ -64,29 +64,33 @@ namespace TheTechIdea.CRUD
            ErrorObject  = per;
             DMEEditor = pDMEEditor;
             Visutil = (IVisUtil)obj.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
+             SourceConnection = Passedarg.DataSource;
+            if (SourceConnection.Category == DatasourceCategory.RDBMS)
+            {
+                rdb = (RDBSource)SourceConnection;
+                string schemaname = rdb.GetSchemaName();
+
+            }
             switch (obj.ObjectType)
             {
                 case "RDBMSTABLE":
                     EntityName = obj.CurrentEntity;
-                    SourceConnection = (IRDBSource)Passedarg.DataSource;
-                    t = SourceConnection.GetEntity(EntityName, null);
+                   
+                   
+                    t = (DataTable) rdb.GetEntity(EntityName, null) ;
                     break;
                 case "CRUDENTITY":
                     EntityName = obj.CurrentEntity;
-                    SourceConnection = DMEEditor.GetDataSource(Passedarg.DatasourceName);
-                    t = SourceConnection.GetEntity(EntityName, null);
+                    
+                   
+                    t = (DataTable) rdb.GetEntity(EntityName, null);
                     
                     break;
                 default:
                     break;
             }
 
-            if (SourceConnection.Category == DatasourceCategory.RDBMS)
-            {
-                 rdb = (RDBSource)SourceConnection;
-               string schemaname = rdb.GetSchemaName();
-              
-            }
+           
 
          
            
@@ -115,7 +119,7 @@ namespace TheTechIdea.CRUD
             try
             {
                 bindingSource1.EndEdit();
-                SourceConnection.UpdateEntities(EntityName, t.GetChanges(), null);
+                rdb.UpdateEntities(EntityName, t.GetChanges());
                 Logger.WriteLog($"Data Saved");
                 MessageBox.Show("Data Saved");
             }

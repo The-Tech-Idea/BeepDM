@@ -42,6 +42,7 @@ namespace TheTechIdea.CRUD
         public IErrorsInfo ErrorObject  { get; set; }
         public PassedArgs Passedarg { get; set; }
         DataTable t;
+        RDBSource rdb;
         public void SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, PassedArgs obj, IErrorsInfo per)
         {
             Passedarg = obj;
@@ -53,6 +54,7 @@ namespace TheTechIdea.CRUD
             DMEEditor = pDMEEditor;
             ErrorObject = per;
             Visutil = (IVisUtil)obj.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
+            rdb = (RDBSource)DMEEditor.GetDataSource(Passedarg.DatasourceName);
             switch (obj.ObjectType)
             {
                 case "RDBMSTABLE":
@@ -87,10 +89,10 @@ namespace TheTechIdea.CRUD
                 EntityStructure = new EntityStructure(tablename);
 
                 Logger.WriteLog($"Created Table Object");
-                EntityStructure = SourceConnection.GetEntityStructure(EntityName,false);
+                EntityStructure = rdb.GetEntityStructure(EntityName,false);
                 Logger.WriteLog($"Got Table from Database) : {tablename}");
                 bindingNavigator1.BindingSource = bindingSource1;
-                t= SourceConnection.GetEntity(tablename, null);
+                t= (DataTable) rdb.GetEntity(tablename, null);
                 bindingSource1.DataSource = t;
                 DataGridViewEdit.AutoGenerateColumns = true;
                 DataGridViewEdit.Columns.Clear();
@@ -129,7 +131,7 @@ namespace TheTechIdea.CRUD
             {
                 this.Validate();
                 bindingSource1.EndEdit();
-                SourceConnection.UpdateEntities(EntityName, t.GetChanges(), null);
+                rdb.UpdateEntities(EntityName, t.GetChanges());
                 Logger.WriteLog($"Saved  to Grid  ");
                 MessageBox.Show("Data Saved");
             }

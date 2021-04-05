@@ -49,7 +49,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return DMEEditor.ErrorObject.Message;
         }
-        //public override IErrorsInfo UpdateEntities(string EntityName, object UploadData, IMapping_rep Mapping = null)
+        //public override IErrorsInfo UpdateEntities(string EntityName, object UploadData)
         //{
 
         //    //  RunCopyDataBackWorker(EntityName,  UploadData,  Mapping );

@@ -229,10 +229,10 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                             rDB.DisableFKConstraints(item);
                         }
                         DataTable srcTb = new DataTable();
-                        var src = Task.Run<DataTable>(() => { return sourceds.GetEntity(item.EntityName, ""); });
+                        var src = Task.Run<DataTable>(() => { return (DataTable)sourceds.GetEntity(item.EntityName, ""); });
                         src.Wait();
                         srcTb = src.Result;
-                        var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(item.EntityName, srcTb, null); });
+                        var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(item.EntityName, srcTb); });
                         dst.Wait();
                         DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data for {item.EntityName}", DateTime.Now, 0, null, Errors.Ok);
                         if (destds.Category == DatasourceCategory.RDBMS)
@@ -297,12 +297,12 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                                 rDB.DisableFKConstraints(item);
                             }
                             DataTable srcTb = new DataTable();
-                            var src = Task.Run<DataTable>(() => { return sourceds.GetEntity(item.EntityName, ""); });
+                            var src = Task.Run<DataTable>(() => { return (DataTable)sourceds.GetEntity(item.EntityName, ""); });
                             src.Wait();
                             srcTb = src.Result;
                             //var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(item.EntityName, srcTb, null); });
                             //dst.Wait();
-                           destds.UpdateEntities(item.EntityName, srcTb, null);
+                           destds.UpdateEntities(item.EntityName, srcTb);
                            DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data for {item.EntityName}", DateTime.Now, 0, null, Errors.Ok);
                             if (destds.Category == DatasourceCategory.RDBMS)
                             {

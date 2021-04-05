@@ -59,6 +59,437 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
         }
         #region "IDataSource Interface Methods"
+
+        #region "Repo Methods"
+        public virtual IErrorsInfo ExecuteSql(string sql)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            // CurrentSql = sql;
+            IDbCommand cmd = GetDataCommand();
+            if (cmd != null)
+            {
+                try
+                {
+                    cmd.CommandText = sql;
+                    cmd.ExecuteNonQuery();
+                    cmd.Dispose();
+                    //    DMEEditor.AddLogMessage("Success", "Executed Sql Successfully", DateTime.Now, -1, "Ok", Errors.Ok);
+                }
+                catch (Exception ex)
+                {
+                    // Logger.WriteLog("Error Running Script ");
+                    ErrorObject.Flag = Errors.Failed;
+                    cmd.Dispose();
+                    //ErrorObject.Message = "Error Running Script ";
+                    DMEEditor.AddLogMessage("Fail", " Could not run Script" + ex.Message, DateTime.Now, -1, ex.Message, Errors.Failed);
+
+                }
+
+            }
+
+            return ErrorObject;
+        }
+        public virtual DataTable RunQuery(string qrystr)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            IDbCommand cmd = GetDataCommand();
+            try
+            {
+
+                DataTable dt = new DataTable();
+
+                cmd.CommandText = qrystr;
+                dt.Load(cmd.ExecuteReader(CommandBehavior.Default));
+                cmd.Dispose();
+                return dt;
+            }
+
+            catch (Exception ex)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                cmd.Dispose();
+                Logger.WriteLog($"Error in getting entity Data ({ex.Message}) ");
+                return null;
+            }
+
+
+        }
+        public virtual Task<object> GetEntityDataAsync(string EntityName, string QueryString)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            EntityStructure enttype = GetEntityStructure(EntityName);
+            Type type = GetEntityType(EntityName);
+            EntityName = EntityName.ToLower();
+            string qrystr = "select * from " + EntityName;
+            List<object> recs = new List<object>();
+            if (QueryString != null)
+            {
+                qrystr = QueryString;
+            }
+            else
+            {
+                qrystr = "select * from " + EntityName;
+
+            }
+            try
+            {
+
+                IDataAdapter adp = GetDataAdapter(qrystr);
+                DataSet dataSet = new DataSet();
+                adp.Fill(dataSet);
+                DataTable dt = dataSet.Tables[0];
+
+
+                recs = DMEEditor.Utilfunction.GetListByDataTable(dt, type, enttype);
+
+            }
+
+            catch (Exception ex)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                Logger.WriteLog($"Error in getting entity Data ({ex.Message}) ");
+            }
+
+            return Task.FromResult<object>(recs);
+        }
+        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData)
+        {
+
+            //  RunCopyDataBackWorker(EntityName,  UploadData,  Mapping );
+            #region "Update Code"
+            string str;
+            IDbTransaction sqlTran;
+            DataTable tb = (DataTable)UploadData;
+            // DMEEditor.classCreator.CreateClass();
+            //List<object> f = DMEEditor.Utilfunction.GetListByDataTable(tb);
+            ErrorObject.Flag = Errors.Ok;
+            EntityStructure DataStruct = GetEntityStructure(EntityName);
+
+            IDbCommand command = Dataconnection.DbConn.CreateCommand();
+
+
+            int CurrentRecord = 0;
+            int highestPercentageReached = 0;
+            int numberToCompute = 0;
+            try
+            {
+                if (tb != null)
+                {
+
+                    numberToCompute = tb.Rows.Count;
+                    tb.TableName = EntityName;
+                    // int i = 0;
+                    string updatestring = null;
+                    DataTable changes = tb;//.GetChanges();
+                    for (int i = 0; i < tb.Rows.Count; i++)
+                    {
+                        try
+                        {
+                            DataRow r = tb.Rows[i];
+
+                            CurrentRecord = i;
+                            switch (r.RowState)
+                            {
+                                case DataRowState.Unchanged:
+                                case DataRowState.Added:
+                                    updatestring = GetInsertString(EntityName, r, DataStruct);
+
+
+                                    break;
+                                case DataRowState.Deleted:
+                                    updatestring = GetDeleteString(EntityName, r, DataStruct);
+                                    break;
+                                case DataRowState.Modified:
+                                    updatestring = GetUpdateString(EntityName, r, DataStruct);
+                                    break;
+                                default:
+                                    updatestring = GetInsertString(EntityName, r, DataStruct);
+                                    break;
+                            }
+
+                            command.CommandText = updatestring;
+                            foreach (EntityField item in DataStruct.Fields)
+                            {
+                                IDbDataParameter parameter = command.CreateParameter();
+                                parameter.Value = r[item.fieldname];
+                                parameter.ParameterName = "p_" + item.fieldname;
+                                //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
+                                command.Parameters.Add(parameter);
+
+                            }
+
+
+                            string msg = "";
+                            int rowsUpdated = command.ExecuteNonQuery();
+                            if (rowsUpdated > 0)
+                            {
+                                msg = $"Successfully I/U/D  Record {i} to {EntityName} : {updatestring}";
+                            }
+                            else
+                            {
+                                msg = $"Fail to I/U/D  Record {i} to {EntityName} : {updatestring}";
+                            }
+                            int percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
+                            if (percentComplete > highestPercentageReached)
+                            {
+                                highestPercentageReached = percentComplete;
+
+                            }
+                            PassedArgs args = new PassedArgs
+                            {
+                                CurrentEntity = EntityName,
+                                DatasourceName = DatasourceName,
+                                DataSource = this,
+                                EventType = "UpdateEntity",
+
+
+                            };
+                            if (DataStruct.PrimaryKeys != null)
+                            {
+                                if (DataStruct.PrimaryKeys.Count <= 1)
+                                {
+                                    args.ParameterString1 = r[DataStruct.PrimaryKeys[0].fieldname].ToString();
+                                }
+                                if (DataStruct.PrimaryKeys.Count <= 2)
+                                {
+                                    args.ParameterString2 = r[DataStruct.PrimaryKeys[1].fieldname].ToString();
+                                }
+                                if (DataStruct.PrimaryKeys.Count == 3)
+                                {
+                                    args.ParameterString3 = r[DataStruct.PrimaryKeys[2].fieldname].ToString();
+
+                                }
+                            }
+                            args.ParameterInt1 = percentComplete;
+
+                            LScriptTracker tr = new LScriptTracker();
+                            tr.currenrecordentity = EntityName;
+                            tr.currentrecorddatasourcename = DatasourceName;
+                            tr.currenrecordindex = i;
+                            tr.scriptType = DDLScriptType.CopyData;
+                            tr.errorsInfo = DMEEditor.ErrorObject;
+                            tr.errormessage = msg;
+                            DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
+
+                            args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
+                            PassEvent?.Invoke(this, args);
+                            DMEEditor.AddLogMessage("Success", msg, DateTime.Now, 0, null, Errors.Ok);
+                        }
+                        catch (Exception er)
+                        {
+                            PassedArgs args = new PassedArgs
+                            {
+                                CurrentEntity = EntityName,
+                                DatasourceName = DatasourceName,
+                                DataSource = this,
+                                EventType = "UpdateEntity",
+
+
+                            };
+                            LScriptTracker tr = new LScriptTracker();
+                            tr.currenrecordentity = EntityName;
+                            tr.currentrecorddatasourcename = DatasourceName;
+                            tr.currenrecordindex = i;
+                            tr.scriptType = DDLScriptType.CopyData;
+                            tr.errorsInfo = DMEEditor.ErrorObject;
+                            tr.errormessage = $"Fail to insert/update/delete  Record {i} to {EntityName} : {er.Message} :  {updatestring} ";
+                            DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
+                            args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
+                            PassEvent?.Invoke(this, args);
+                            //  DMEEditor.RaiseEvent(this, args);
+                            DMEEditor.AddLogMessage("Fail", $"Fail to insert/update/delete  Record {i} to {EntityName} {er.Message}", DateTime.Now, 0, null, Errors.Failed);
+                        }
+                    }
+
+
+
+                    command.Dispose();
+                    //    sqlTran.Commit();
+                    DMEEditor.AddLogMessage("Success", $"Finished Uploading Data to {EntityName}", DateTime.Now, 0, null, Errors.Ok);
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Ex = ex;
+
+                command.Dispose();
+                try
+                {
+                    // Attempt to roll back the transaction.
+                    //   sqlTran.Rollback();
+                    str = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
+                }
+                catch (Exception exRollback)
+                {
+                    // Throws an InvalidOperationException if the connection
+                    // is closed or the transaction has already been rolled
+                    // back on the server.
+                    // Console.WriteLine(exRollback.Message);
+                    str = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
+                    ErrorObject.Ex = exRollback;
+                }
+                str = "Unsuccessfully no Data has been written to Data Source";
+
+
+            }
+            #endregion
+
+
+            return ErrorObject;
+        }
+        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
+        {
+
+
+            // DataRow tb = object UploadDataRow;
+            ErrorObject.Flag = Errors.Ok;
+            EntityStructure DataStruct = GetEntityStructure(EntityName, true);
+
+            //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
+            IDbCommand command = Dataconnection.DbConn.CreateCommand();
+            try
+            {
+                //string updatestring = GetUpdateString(EntityName, tb, DataStruct);
+
+                ////  command.Transaction = sqlTran;
+                //command.CommandText = updatestring;
+                ////foreach (EntityField item in DataStruct.Fields)
+                ////{
+                ////    Parameter param = new SqlParameter();
+                ////    param.ParameterName = "@City";
+                ////    param.Value = inputCity;
+                ////    command.Parameters.Add("@" + item.fieldname, tb[item.fieldname]) ;
+
+
+                ////}
+                //command.ExecuteNonQuery();
+                //command.Dispose();
+                //  sqlTran.Commit();
+                // DMEEditor.AddLogMessage("Success",$"Successfully Written Data to {EntityName}",DateTime.Now,0,null, Errors.Ok);
+
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Ex = ex;
+                string str;
+                command.Dispose();
+                try
+                {
+                    // Attempt to roll back the transaction.
+                    //     sqlTran.Rollback();
+                    str = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
+                }
+                catch (Exception exRollback)
+                {
+                    // Throws an InvalidOperationException if the connection
+                    // is closed or the transaction has already been rolled
+                    // back on the server.
+                    // Console.WriteLine(exRollback.Message);
+                    str = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
+                    ErrorObject.Ex = exRollback;
+                }
+                str = "Unsuccessfully no Data has been written to Data Source";
+                Logger.WriteLog($"{str}  {ErrorObject.Ex.Message}");
+                ErrorObject.Flag = Errors.Failed;
+
+            }
+
+            return ErrorObject;
+        }
+        public virtual IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
+        {
+            DataRow tb = (DataRow)DeletedDataRow;
+            ErrorObject.Flag = Errors.Ok;
+            EntityStructure DataStruct = GetEntityStructure(EntityName, true);
+
+            var sqlTran = Dataconnection.DbConn.BeginTransaction();
+            IDbCommand command = Dataconnection.DbConn.CreateCommand();
+            try
+            {
+                string updatestring = GetDeleteString(EntityName, tb, DataStruct);
+
+                command.Transaction = sqlTran;
+                command.CommandText = updatestring;
+                command.ExecuteNonQuery();
+                sqlTran.Commit();
+                command.Dispose();
+                Logger.WriteLog("Successfully Written Data to DataSource ");
+
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Ex = ex;
+                string str;
+                command.Dispose();
+                try
+                {
+                    // Attempt to roll back the transaction.
+                    sqlTran.Rollback();
+                    str = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
+                }
+                catch (Exception exRollback)
+                {
+                    // Throws an InvalidOperationException if the connection
+                    // is closed or the transaction has already been rolled
+                    // back on the server.
+                    // Console.WriteLine(exRollback.Message);
+                    str = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
+                    ErrorObject.Ex = exRollback;
+                }
+                str = "Unsuccessfully no Data has been written to Data Source";
+                Logger.WriteLog($"{str}  {ErrorObject.Ex.Message}");
+                ErrorObject.Flag = Errors.Failed;
+
+            }
+
+            return ErrorObject;
+        }
+        public virtual IErrorsInfo InsertEntity(string EntityName, object InsertedData)
+        {
+            throw new NotImplementedException();
+        }
+        public virtual object GetEntity(string EntityName, string QueryString)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            //  int LoadedRecord;
+            // EntityStructure enttype = GetEntityDataType(EntityName);
+            EntityName = EntityName.ToLower();
+            string qrystr = "select * from " + EntityName;
+            if (string.IsNullOrEmpty(QueryString) && string.IsNullOrWhiteSpace(QueryString))
+            {
+                qrystr = "select * from " + EntityName;
+            }
+            else
+            {
+                qrystr = QueryString;
+            }
+            try
+            {
+
+                IDataAdapter adp = GetDataAdapter(qrystr);
+                DataSet dataSet = new DataSet();
+                adp.Fill(dataSet);
+                DataTable dt = dataSet.Tables[0];
+
+                return dt;
+            }
+
+            catch (Exception ex)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                Logger.WriteLog($"Error in getting entity Data ({ex.Message}) ");
+                return null;
+            }
+
+
+        }
+        #endregion
+
         public virtual EntityStructure GetEntityStructure(string EntityName, bool refresh = false)
         {
             EntityStructure retval = new EntityStructure();
@@ -229,294 +660,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
          //  DMEEditor.classCreator.CreateClass(fnd.EntityName, fnd.Fields, DMEEditor.ConfigEditor.Config.EntitiesPath, "TheTechIdea");
             return fnd;
         }
-        public virtual DataTable RunQuery(string qrystr)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            IDbCommand cmd = GetDataCommand();
-            try
-            {
-
-                DataTable dt = new DataTable();
-
-                cmd.CommandText = qrystr;
-                dt.Load(cmd.ExecuteReader(CommandBehavior.Default));
-                cmd.Dispose();
-                return dt;
-            }
-
-            catch (Exception ex)
-            {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                cmd.Dispose();
-                Logger.WriteLog($"Error in getting entity Data ({ex.Message}) ");
-                return null;
-            }
-
-
-        }
-        public virtual Task<object> GetEntityDataAsync(string EntityName, string QueryString)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            EntityStructure enttype = GetEntityStructure(EntityName);
-            Type type = GetEntityType(EntityName);
-            EntityName = EntityName.ToLower();
-            string qrystr = "select * from " + EntityName;
-            List<object> recs = new List<object>();
-            if (QueryString != null)
-            {
-                qrystr = QueryString;
-            }
-            else
-            {
-                qrystr = "select * from " + EntityName;
-
-            }
-            try
-            {
-
-                IDataAdapter adp = GetDataAdapter(qrystr);
-                DataSet dataSet = new DataSet();
-                adp.Fill(dataSet);
-                DataTable dt = dataSet.Tables[0];
-
-
-                recs = DMEEditor.Utilfunction.GetListByDataTable(dt, type, enttype);
-
-            }
-
-            catch (Exception ex)
-            {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting entity Data ({ex.Message}) ");
-            }
-
-            return Task.FromResult<object>(recs);
-        }
-        public virtual DataTable GetEntity(string EntityName, string QueryString)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            //  int LoadedRecord;
-            // EntityStructure enttype = GetEntityDataType(EntityName);
-            EntityName = EntityName.ToLower();
-            string qrystr = "select * from " + EntityName;
-            if (string.IsNullOrEmpty(QueryString) && string.IsNullOrWhiteSpace(QueryString))
-            {
-                qrystr = "select * from " + EntityName;
-            }
-            else
-            {
-                qrystr = QueryString;
-            }
-            try
-            {
-
-                IDataAdapter adp = GetDataAdapter(qrystr);
-                DataSet dataSet = new DataSet();
-                adp.Fill(dataSet);
-                DataTable dt = dataSet.Tables[0];
-              
-                return dt;
-            }
-
-            catch (Exception ex)
-            {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting entity Data ({ex.Message}) ");
-                return null;
-            }
-
-
-        }
-        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IMapping_rep Mapping = null)
-        {
-
-            //  RunCopyDataBackWorker(EntityName,  UploadData,  Mapping );
-            #region "Update Code"
-            string str;
-            IDbTransaction sqlTran;
-            DataTable tb = (DataTable)UploadData;
-           // DMEEditor.classCreator.CreateClass();
-            //List<object> f = DMEEditor.Utilfunction.GetListByDataTable(tb);
-            ErrorObject.Flag = Errors.Ok;
-            EntityStructure DataStruct = GetEntityStructure(EntityName);
-
-            IDbCommand command = Dataconnection.DbConn.CreateCommand();
-
-
-            int CurrentRecord = 0;
-            int highestPercentageReached = 0;
-            int numberToCompute = 0;
-            try
-            {
-                if (tb != null)
-                {
-
-                    numberToCompute = tb.Rows.Count;
-                    tb.TableName = EntityName;
-                    // int i = 0;
-                    string updatestring = null;
-                    DataTable changes = tb;//.GetChanges();
-                    for (int i = 0; i < tb.Rows.Count; i++)
-                    {
-                        try
-                        {
-                            DataRow r = tb.Rows[i];
-
-                            CurrentRecord = i;
-                            switch (r.RowState)
-                            {
-                                case DataRowState.Unchanged:
-                                case DataRowState.Added:
-                                    updatestring = GetInsertString(EntityName, r, DataStruct);
-
-
-                                    break;
-                                case DataRowState.Deleted:
-                                    updatestring = GetDeleteString(EntityName, r, DataStruct);
-                                    break;
-                                case DataRowState.Modified:
-                                    updatestring = GetUpdateString(EntityName, r, DataStruct);
-                                    break;
-                                default:
-                                    updatestring = GetInsertString(EntityName, r, DataStruct);
-                                    break;
-                            }
-                            
-                            command.CommandText = updatestring;
-                            foreach (EntityField item in DataStruct.Fields)
-                            {
-                                IDbDataParameter parameter = command.CreateParameter();
-                                parameter.Value = r[item.fieldname];
-                                parameter.ParameterName = "p_"+item.fieldname;
-                              //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
-                                command.Parameters.Add(parameter);
-                                
-                            }
-
-
-                            string msg = "";
-                            int rowsUpdated = command.ExecuteNonQuery();
-                            if (rowsUpdated > 0)
-                            {
-                                msg = $"Successfully I/U/D  Record {i} to {EntityName} : {updatestring}";
-                            }
-                            else
-                            {
-                                msg = $"Fail to I/U/D  Record {i} to {EntityName} : {updatestring}";
-                            }
-                            int percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
-                            if (percentComplete > highestPercentageReached)
-                            {
-                                highestPercentageReached = percentComplete;
-
-                            }
-                            PassedArgs args = new PassedArgs
-                            {
-                                CurrentEntity = EntityName,
-                                DatasourceName = DatasourceName,
-                                DataSource = this,
-                                EventType = "UpdateEntity",
-
-
-                            };
-                            if (DataStruct.PrimaryKeys != null)
-                            {
-                                if (DataStruct.PrimaryKeys.Count <= 1)
-                                {
-                                    args.ParameterString1 = r[DataStruct.PrimaryKeys[0].fieldname].ToString();
-                                }
-                                if (DataStruct.PrimaryKeys.Count <= 2)
-                                {
-                                    args.ParameterString2 = r[DataStruct.PrimaryKeys[1].fieldname].ToString();
-                                }
-                                if (DataStruct.PrimaryKeys.Count == 3)
-                                {
-                                    args.ParameterString3 = r[DataStruct.PrimaryKeys[2].fieldname].ToString();
-
-                                }
-                            }
-                            args.ParameterInt1 = percentComplete;
-
-                            LScriptTracker tr = new LScriptTracker();
-                            tr.currenrecordentity = EntityName;
-                            tr.currentrecorddatasourcename = DatasourceName;
-                            tr.currenrecordindex = i;
-                            tr.scriptType = DDLScriptType.CopyData;
-                            tr.errorsInfo = DMEEditor.ErrorObject;
-                            tr.errormessage = msg;
-                            DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
-
-                            args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
-                            PassEvent?.Invoke(this, args);
-                            DMEEditor.AddLogMessage("Success",msg, DateTime.Now, 0, null, Errors.Ok);
-                        }
-                        catch (Exception er)
-                        {
-                            PassedArgs args = new PassedArgs
-                            {
-                                CurrentEntity = EntityName,
-                                DatasourceName = DatasourceName,
-                                DataSource = this,
-                                EventType = "UpdateEntity",
-
-
-                            };
-                            LScriptTracker tr = new LScriptTracker();
-                            tr.currenrecordentity = EntityName;
-                            tr.currentrecorddatasourcename = DatasourceName;
-                            tr.currenrecordindex = i;
-                            tr.scriptType = DDLScriptType.CopyData;
-                            tr.errorsInfo = DMEEditor.ErrorObject;
-                            tr.errormessage = $"Fail to insert/update/delete  Record {i} to {EntityName} : {er.Message} :  {updatestring} ";
-                            DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
-                            args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
-                            PassEvent?.Invoke(this, args);
-                            //  DMEEditor.RaiseEvent(this, args);
-                            DMEEditor.AddLogMessage("Fail", $"Fail to insert/update/delete  Record {i} to {EntityName} {er.Message}", DateTime.Now, 0, null, Errors.Failed);
-                        }
-                    }
-
-
-
-                    command.Dispose();
-                    //    sqlTran.Commit();
-                    DMEEditor.AddLogMessage("Success", $"Finished Uploading Data to {EntityName}", DateTime.Now, 0, null, Errors.Ok);
-                }
-
-
-            }
-            catch (Exception ex)
-            {
-                ErrorObject.Ex = ex;
-
-                command.Dispose();
-                try
-                {
-                    // Attempt to roll back the transaction.
-                    //   sqlTran.Rollback();
-                    str = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
-                }
-                catch (Exception exRollback)
-                {
-                    // Throws an InvalidOperationException if the connection
-                    // is closed or the transaction has already been rolled
-                    // back on the server.
-                    // Console.WriteLine(exRollback.Message);
-                    str = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
-                    ErrorObject.Ex = exRollback;
-                }
-                str = "Unsuccessfully no Data has been written to Data Source";
-
-
-            }
-            #endregion
-
-
-            return ErrorObject;
-        }
         public static DbType TypeToDbType(Type T)
 
         {
@@ -581,113 +724,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             }
 
-        }
-        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow, IMapping_rep Mapping = null)
-        {
-
-
-           // DataRow tb = object UploadDataRow;
-            ErrorObject.Flag = Errors.Ok;
-            EntityStructure DataStruct = GetEntityStructure(EntityName, true);
-
-            //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
-            IDbCommand command = Dataconnection.DbConn.CreateCommand();
-            try
-            {
-                //string updatestring = GetUpdateString(EntityName, tb, DataStruct);
-
-                ////  command.Transaction = sqlTran;
-                //command.CommandText = updatestring;
-                ////foreach (EntityField item in DataStruct.Fields)
-                ////{
-                ////    Parameter param = new SqlParameter();
-                ////    param.ParameterName = "@City";
-                ////    param.Value = inputCity;
-                ////    command.Parameters.Add("@" + item.fieldname, tb[item.fieldname]) ;
-                    
-
-                ////}
-                //command.ExecuteNonQuery();
-                //command.Dispose();
-                //  sqlTran.Commit();
-                // DMEEditor.AddLogMessage("Success",$"Successfully Written Data to {EntityName}",DateTime.Now,0,null, Errors.Ok);
-
-            }
-            catch (Exception ex)
-            {
-                ErrorObject.Ex = ex;
-                string str;
-                command.Dispose();
-                try
-                {
-                    // Attempt to roll back the transaction.
-                    //     sqlTran.Rollback();
-                    str = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
-                }
-                catch (Exception exRollback)
-                {
-                    // Throws an InvalidOperationException if the connection
-                    // is closed or the transaction has already been rolled
-                    // back on the server.
-                    // Console.WriteLine(exRollback.Message);
-                    str = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
-                    ErrorObject.Ex = exRollback;
-                }
-                str = "Unsuccessfully no Data has been written to Data Source";
-                Logger.WriteLog($"{str}  {ErrorObject.Ex.Message}");
-                ErrorObject.Flag = Errors.Failed;
-
-            }
-
-            return ErrorObject;
-        }
-        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow, IMapping_rep Mapping = null)
-        {
-            DataRow tb = (DataRow)DeletedDataRow;
-            ErrorObject.Flag = Errors.Ok;
-            EntityStructure DataStruct = GetEntityStructure(EntityName, true);
-
-            var sqlTran = Dataconnection.DbConn.BeginTransaction();
-            IDbCommand command = Dataconnection.DbConn.CreateCommand();
-            try
-            {
-                string updatestring = GetDeleteString(EntityName, tb, DataStruct);
-
-                command.Transaction = sqlTran;
-                command.CommandText = updatestring;
-                command.ExecuteNonQuery();
-                sqlTran.Commit();
-                command.Dispose();
-                Logger.WriteLog("Successfully Written Data to DataSource ");
-
-            }
-            catch (Exception ex)
-            {
-                ErrorObject.Ex = ex;
-                string str;
-                command.Dispose();
-                try
-                {
-                    // Attempt to roll back the transaction.
-                    sqlTran.Rollback();
-                    str = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
-                }
-                catch (Exception exRollback)
-                {
-                    // Throws an InvalidOperationException if the connection
-                    // is closed or the transaction has already been rolled
-                    // back on the server.
-                    // Console.WriteLine(exRollback.Message);
-                    str = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
-                    ErrorObject.Ex = exRollback;
-                }
-                str = "Unsuccessfully no Data has been written to Data Source";
-                Logger.WriteLog($"{str}  {ErrorObject.Ex.Message}");
-                ErrorObject.Flag = Errors.Failed;
-
-            }
-
-            return ErrorObject;
         }
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
@@ -929,10 +965,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         }
         #endregion
         #region "RDBSSource Database Methods"
-        public static ObservableCollection<T> ToObservable<T>(IEnumerable<T> source)
-        {
-            return new ObservableCollection<T>(source);
-        }
+      
         public List<LScript> GenerateCreatEntityScript(List<EntityStructure> entities)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -1742,7 +1775,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             return dt;
 
         }
-        //------------- Methods using Dapper --------------------
+        #region "Dapper"
         public virtual List<T> GetData<T>(string sql)
         {
             var retval = Dataconnection.DbConn.Query<T>(sql);
@@ -1754,8 +1787,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             return Dataconnection.DbConn.ExecuteAsync(sql, parameters);
 
         }
-        //-------------------------------------------------------
-
+        #endregion
         private int GetCtorForAdapter(List<ConstructorInfo> ls)
         {
 
@@ -1906,34 +1938,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             return tb;
         }
-        public virtual IErrorsInfo ExecuteSql(string sql)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            // CurrentSql = sql;
-            IDbCommand cmd = GetDataCommand();
-            if (cmd != null)
-            {
-                try
-                {
-                    cmd.CommandText = sql;
-                    cmd.ExecuteNonQuery();
-                    cmd.Dispose();
-                    //    DMEEditor.AddLogMessage("Success", "Executed Sql Successfully", DateTime.Now, -1, "Ok", Errors.Ok);
-                }
-                catch (Exception ex)
-                {
-                    // Logger.WriteLog("Error Running Script ");
-                    ErrorObject.Flag = Errors.Failed;
-                    cmd.Dispose();
-                    //ErrorObject.Message = "Error Running Script ";
-                    DMEEditor.AddLogMessage("Fail", " Could not run Script" + ex.Message, DateTime.Now, -1, ex.Message, Errors.Failed);
-
-                }
-
-            }
-
-            return ErrorObject;
-        }
+      
         public virtual List<ChildRelation> GetTablesFKColumnList(string tablename, string SchemaName, string Filterparamters)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -1969,7 +1974,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         }
 
         #endregion
-       
+
 
 
 

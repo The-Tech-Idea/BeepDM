@@ -130,7 +130,7 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
             throw new NotImplementedException();
         }
 
-        public DataTable GetEntity(string EntityName, string filterstr)
+        public object GetEntity(string EntityName, string filterstr)
         {
             throw new NotImplementedException();
         }
@@ -156,7 +156,7 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IMapping_rep Mapping)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
         {
             throw new NotImplementedException();
         }
@@ -165,13 +165,13 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
         {
             throw new NotImplementedException();
         }
-        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow, IMapping_rep Mapping = null)
+        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
 
 
             throw new NotImplementedException();
         }
-        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow, IMapping_rep Mapping = null)
+        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
         {
             throw new NotImplementedException();
         }
@@ -190,6 +190,11 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
             throw new NotImplementedException();
         }
         public List<LScript> GetCreateEntityScript(List<EntityStructure> entities = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
             throw new NotImplementedException();
         }

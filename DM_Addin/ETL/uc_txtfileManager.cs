@@ -157,7 +157,7 @@ namespace TheTechIdea.ETL
                 //FileDs.fromline = 0;
                 //FileDs.toline = 100;
                 // FileDs.SourceEntityData =
-                bs.DataSource = FileDs.GetEntity(entityname, null);  //FileDs.SourceEntityData;
+                bs.DataSource = (DataTable)FileDs.GetEntity(entityname, null);  //FileDs.SourceEntityData;
                 bs.ResetBindings(true);
                 SampledataGridView.DataSource = null;
                 SampledataGridView.AutoGenerateColumns = true;

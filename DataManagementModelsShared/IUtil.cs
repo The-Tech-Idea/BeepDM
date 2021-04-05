@@ -34,8 +34,8 @@ namespace TheTechIdea.DataManagment_Engine
         EntityStructure GetEntityStructure(DataTable tb);
         bool Download(string url, string downloadFileName, string downloadFilePath);
         Type GetTypeFromStringValue(string str);
-
-
+        Type MakeGenericType(string typestring);
+        Type MakeGenericListofType(string typestring);
 
     }
 }

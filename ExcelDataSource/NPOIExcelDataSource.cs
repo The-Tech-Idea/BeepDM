@@ -67,7 +67,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow, IMapping_rep Mapping = null)
+        public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow)
         {
             throw new NotImplementedException();
         }
@@ -92,7 +92,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             throw new NotImplementedException();
         }
 
-        public DataTable GetEntity(string EntityName, string filterstr)
+        public object GetEntity(string EntityName, string filterstr)
         {
             throw new NotImplementedException();
         }
@@ -132,12 +132,12 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IMapping_rep Mapping = null)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
         {
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow, IMapping_rep Mapping = null)
+        public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
             throw new NotImplementedException();
         }
@@ -195,6 +195,11 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             }
             return DMEEditor.ErrorObject;
         }
+
+        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
+        {
+            throw new NotImplementedException();
+        }
         //------------【Function: read data from Excel file to table control】------------    
         //filePath is the path name of the Excel file
         //datagGridView to display data table control
@@ -214,7 +219,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         //    //Determine whether the file exists
         //    if (!File.Exists(filePath))
         //    {
-                
+
         //        return null;
         //    }
         //    //Create a worksheet pointing to the file
