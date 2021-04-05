@@ -227,20 +227,25 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 }
                 else
                 {
-                    if (dh.Viewtype == ViewType.Query)
+                    ds.Dataconnection.OpenConnection();
+                    if (ds.ConnectionStatus== ConnectionState.Open)
                     {
-                        r = ds.GetEntityStructure(dh, true);
+                        if (dh.Viewtype == ViewType.Query)
+                        {
+                            r = ds.GetEntityStructure(dh, true);
 
+                        }
+                        else
+                        {
+                            r = ds.GetEntityStructure(dh, true);
+                        }
+                        if (r != null)
+                        {
+                            dh.Fields = r.Fields;
+                            dh.Relations = r.Relations;
+                        }
                     }
-                    else
-                    {
-                        r = ds.GetEntityStructure(dh, true);
-                    }
-                    if (r != null)
-                    {
-                        dh.Fields = r.Fields;
-                        dh.Relations = r.Relations;
-                    }
+                   
                 }
 
 
@@ -277,22 +282,40 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             IDataSource ds = GetDataSourceObject(entityname);
-            if (ds.Category == DatasourceCategory.RDBMS)
+            if (ds.ConnectionStatus == ConnectionState.Open)
             {
-                RDBSource rdb = (RDBSource)ds;
-                return rdb.GetEntityforeignkeys(entityname, SchemaName);
+                if (ds.Category == DatasourceCategory.RDBMS)
+                {
+                    RDBSource rdb = (RDBSource)ds;
+                    return rdb.GetEntityforeignkeys(entityname, SchemaName);
+                }
+                else
+                {
+                    return null;
+                }
             }
             else
             {
+                DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
                 return null;
             }
+          
             
         }
 
         public IErrorsInfo ExecuteSql(string sql)
         {
-            ds = DMEEditor.GetDataSource(DatasourceName);
-            return ds.ExecuteSql(sql);
+            if (ds.ConnectionStatus == ConnectionState.Open)
+            {
+                ds = DMEEditor.GetDataSource(DatasourceName);
+                return ds.ExecuteSql(sql);
+            }
+            else
+            {
+                DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
+            }
+                return DMEEditor.ErrorObject;
+             
         }
 
         public bool CreateEntityAs(EntityStructure entity)
@@ -371,8 +394,17 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         }
         public LScript RunScript(LScript dDLScripts)
         {
-            ds = DMEEditor.GetDataSource(DatasourceName);
-            return ds.RunScript(dDLScripts);
+            if (ds.ConnectionStatus == ConnectionState.Open)
+            {
+                ds = DMEEditor.GetDataSource(DatasourceName);
+                return ds.RunScript(dDLScripts);
+            }
+            else
+            {
+                DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
+                return null;
+            }
+           
         }
 
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
@@ -388,9 +420,17 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             foreach (EntityStructure item in entities)
             {
                 ds = DMEEditor.GetDataSource(item.DataSourceID);
-                List<EntityStructure> lsent = new List<EntityStructure>();
-                lsent.Add(item);
-                ls.AddRange(ds.GetCreateEntityScript(lsent));
+                if (ds.ConnectionStatus == ConnectionState.Open)
+                {
+                    List<EntityStructure> lsent = new List<EntityStructure>();
+                    lsent.Add(item);
+                    ls.AddRange(ds.GetCreateEntityScript(lsent));
+                }
+                else
+                {
+                    DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {item.DataSourceID}", DateTime.Now, 0, item.DataSourceID, Errors.Failed);
+                }
+               
             }
             return ls;
         }

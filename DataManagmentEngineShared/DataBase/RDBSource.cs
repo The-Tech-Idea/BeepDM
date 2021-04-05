@@ -194,18 +194,18 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                             {
                                 case DataRowState.Unchanged:
                                 case DataRowState.Added:
-                                    updatestring = GetInsertString(EntityName, r, DataStruct);
+                                    updatestring = GetInsertString(EntityName,  DataStruct);
 
 
                                     break;
                                 case DataRowState.Deleted:
-                                    updatestring = GetDeleteString(EntityName, r, DataStruct);
+                                    updatestring = GetDeleteString(EntityName,  DataStruct);
                                     break;
                                 case DataRowState.Modified:
-                                    updatestring = GetUpdateString(EntityName, r, DataStruct);
+                                    updatestring = GetUpdateString(EntityName,  DataStruct);
                                     break;
                                 default:
-                                    updatestring = GetInsertString(EntityName, r, DataStruct);
+                                    updatestring = GetInsertString(EntityName,  DataStruct);
                                     break;
                             }
 
@@ -341,6 +341,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             return ErrorObject;
         }
+        private static DateTime dateTimeNull = new DateTime(1753, 1, 1);
+        public static DateTime DateTimeNull { get { return dateTimeNull; } }
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
 
@@ -348,27 +350,104 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             // DataRow tb = object UploadDataRow;
             ErrorObject.Flag = Errors.Ok;
             EntityStructure DataStruct = GetEntityStructure(EntityName, true);
-
+            DataRowView dv;
+            DataTable tb;
+            DataRow dr;
             //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
             IDbCommand command = Dataconnection.DbConn.CreateCommand();
+            Type enttype = GetEntityType(EntityName);
+            var ti = Activator.CreateInstance(enttype);
+            // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
+            if (UploadDataRow.GetType().GetInterfaces().Contains(typeof(ICustomTypeDescriptor)))
+            {
+                 dv = (DataRowView)UploadDataRow;
+                 dr = dv.Row;
+                //foreach (EntityField col in DataStruct.Fields)
+                //{
+                //    // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
+                //    //if (dr[col.fieldname] != System.DBNull.Value)
+                //    //{
+                //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                //        PropAInfo.SetValue(ti, dr[col.fieldname], null);
+                //    //}
+
+                //}
+
+            }else
+            {
+                tb = (DataTable)GetEntity(EntityName, $"select * from {EntityName} where 1=2");
+                dr = tb.NewRow();
+                foreach (EntityField col in DataStruct.Fields)
+                {
+                    System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname);
+                    
+                    //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
+                    //{
+                    System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                    dynamic result = GetPropAInfo.GetValue(UploadDataRow);
+
+                    if (result == null)
+                    {
+                        result = System.DBNull.Value;
+                    }
+                    
+                 
+                    //if (result is DBNull)
+                    //{
+                    //    if (PropAInfo.PropertyType.Equals(typeof(DateTime)))
+                    //    {
+                    //        // Fill data item with datetimenull
+                    //        result = DateTimeNull;
+                    //    }
+                    //    else
+                    //    {
+                    //        // Fill data item with null
+                    //        result= null;
+                    //    }
+                    //}
+                  
+                    //PropAInfo.SetValue(ti, GetPropAInfo.GetValue(UploadDataRow), null);
+                    dr[col.fieldname] = result;
+                }
+            }
             try
             {
-                //string updatestring = GetUpdateString(EntityName, tb, DataStruct);
-
-                ////  command.Transaction = sqlTran;
-                //command.CommandText = updatestring;
-                ////foreach (EntityField item in DataStruct.Fields)
-                ////{
-                ////    Parameter param = new SqlParameter();
-                ////    param.ParameterName = "@City";
-                ////    param.Value = inputCity;
-                ////    command.Parameters.Add("@" + item.fieldname, tb[item.fieldname]) ;
+                string updatestring = GetUpdateString(EntityName,  DataStruct);
 
 
-                ////}
-                //command.ExecuteNonQuery();
-                //command.Dispose();
-                //  sqlTran.Commit();
+                command.CommandText = updatestring;
+                foreach (EntityField item in DataStruct.Fields)
+                {
+                    IDbDataParameter parameter = command.CreateParameter();
+                    //System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(item.fieldname);
+                    //var v = PropAInfo.GetValue(ti);
+
+                   // parameter.Value = dr[item.fieldname];
+                    parameter.ParameterName = "p_" + item.fieldname;
+                    if (item.fieldtype == "System.DateTime")
+                    {
+                        parameter.DbType = DbType.DateTime;
+                        parameter.Value = DateTime.Parse(dr[item.fieldname].ToString());
+
+
+                    }else
+                    { parameter.Value = dr[item.fieldname]; }
+                    //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
+                    command.Parameters.Add(parameter);
+
+                }
+
+
+                string msg = "";
+                int rowsUpdated = command.ExecuteNonQuery();
+                if (rowsUpdated > 0)
+                {
+                    msg = $"Successfully Updated  Record  to {EntityName} : {updatestring}";
+                }
+                else
+                {
+                    msg = $"Fail to Updated  Record  to {EntityName} : {updatestring}";
+                }
                 // DMEEditor.AddLogMessage("Success",$"Successfully Written Data to {EntityName}",DateTime.Now,0,null, Errors.Ok);
 
             }
@@ -410,7 +489,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             IDbCommand command = Dataconnection.DbConn.CreateCommand();
             try
             {
-                string updatestring = GetDeleteString(EntityName, tb, DataStruct);
+                string updatestring = GetDeleteString(EntityName, DataStruct);
 
                 command.Transaction = sqlTran;
                 command.CommandText = updatestring;
@@ -450,7 +529,114 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         }
         public virtual IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
-            throw new NotImplementedException();
+            // DataRow tb = object UploadDataRow;
+            ErrorObject.Flag = Errors.Ok;
+            EntityStructure DataStruct = GetEntityStructure(EntityName, true);
+            DataRowView dv;
+            DataTable tb;
+            DataRow dr;
+            //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
+            IDbCommand command = Dataconnection.DbConn.CreateCommand();
+            Type enttype = GetEntityType(EntityName);
+            var ti = Activator.CreateInstance(enttype);
+            // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
+            if (InsertedData.GetType().GetInterfaces().Contains(typeof(ICustomTypeDescriptor)))
+            {
+                dv = (DataRowView)InsertedData;
+                dr = dv.Row;
+             
+
+            }
+            else
+            {
+                tb = (DataTable)GetEntity(EntityName, $"select * from {EntityName} where 1=2");
+                dr = tb.NewRow();
+                foreach (EntityField col in DataStruct.Fields)
+                {
+                    System.Reflection.PropertyInfo GetPropAInfo = InsertedData.GetType().GetProperty(col.fieldname);
+
+                    //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
+                    //{
+                    System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                    dynamic result = GetPropAInfo.GetValue(InsertedData);
+
+                    if (result == null)
+                    {
+                        result = System.DBNull.Value;
+                    }
+
+
+                    dr[col.fieldname] = result;
+                }
+            }
+            try
+            {
+                string updatestring = GetInsertString(EntityName, DataStruct);
+
+
+                command.CommandText = updatestring;
+                foreach (EntityField item in DataStruct.Fields)
+                {
+                    IDbDataParameter parameter = command.CreateParameter();
+                    //System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(item.fieldname);
+                    //var v = PropAInfo.GetValue(ti);
+
+                    parameter.ParameterName = "p_" + item.fieldname;
+                    if (item.fieldtype == "System.DateTime")
+                    {
+                        parameter.DbType = DbType.DateTime;
+                        parameter.Value = DateTime.Parse(dr[item.fieldname].ToString());
+
+
+                    }
+                    else
+                    { parameter.Value = dr[item.fieldname]; }
+                    //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
+                    command.Parameters.Add(parameter);
+
+                }
+
+
+                string msg = "";
+                int rowsUpdated = command.ExecuteNonQuery();
+                if (rowsUpdated > 0)
+                {
+                    msg = $"Successfully Updated  Record  to {EntityName} : {updatestring}";
+                }
+                else
+                {
+                    msg = $"Fail to Updated  Record  to {EntityName} : {updatestring}";
+                }
+                // DMEEditor.AddLogMessage("Success",$"Successfully Written Data to {EntityName}",DateTime.Now,0,null, Errors.Ok);
+
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Ex = ex;
+                string str;
+                command.Dispose();
+                try
+                {
+                    // Attempt to roll back the transaction.
+                    //     sqlTran.Rollback();
+                    str = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
+                }
+                catch (Exception exRollback)
+                {
+                    // Throws an InvalidOperationException if the connection
+                    // is closed or the transaction has already been rolled
+                    // back on the server.
+                    // Console.WriteLine(exRollback.Message);
+                    str = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
+                    ErrorObject.Ex = exRollback;
+                }
+                str = "Unsuccessfully no Data has been written to Data Source";
+                Logger.WriteLog($"{str}  {ErrorObject.Ex.Message}");
+                ErrorObject.Flag = Errors.Failed;
+
+            }
+
+            return ErrorObject;
         }
         public virtual object GetEntity(string EntityName, string QueryString)
         {
@@ -1406,7 +1592,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return createtablestring;
         }
-        public virtual string GetInsertString(string EntityName, DataRow row, EntityStructure DataStruct)
+        public virtual string GetInsertString(string EntityName, EntityStructure DataStruct)
         {
             List<EntityField> SourceEntityFields = new List<EntityField>();
             List<EntityField> DestEntityFields = new List<EntityField>();
@@ -1477,7 +1663,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             Valuestr += ")";
             return Insertstr + Valuestr;
         }
-        public virtual string GetUpdateString(string EntityName, DataRow row, EntityStructure DataStruct)
+        public virtual string GetUpdateString(string EntityName, EntityStructure DataStruct)
         {
             List<EntityField> SourceEntityFields = new List<EntityField>();
             List<EntityField> DestEntityFields = new List<EntityField>();
@@ -1495,8 +1681,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             {
                 if (!DataStruct.PrimaryKeys.Any(l => l.fieldname == item.fieldname))
                 {
-                    if (!DBNull.Value.Equals(row[item.fieldname]))
-                    {
+                   
                         //     insertfieldname = Regex.Replace(item.fieldname, @"\s+", "_");
                         Updatestr += item.fieldname + "=";
                         Updatestr += "@p_" + item.fieldname + ",";
@@ -1526,7 +1711,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         //        Updatestr += "'" + row[item.fieldname] + "',";
                         //        break;
                         //}
-                    }
+                   
 
 
                 }
@@ -1542,8 +1727,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             t = 1;
             foreach (EntityField item in DataStruct.PrimaryKeys)
             {
-                if (!DBNull.Value.Equals(row[item.fieldname]))
-                {
+               
                     if (t == 1)
                     {
                         Updatestr += item.fieldname + "=";
@@ -1570,7 +1754,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     //        Updatestr += "'" + row[item.fieldname] + "'";
                     //        break;
                     //}
-                }
+                
 
 
                 t += 1;
@@ -1578,7 +1762,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             //  Updatestr = Updatestr.Remove(Valuestr.Length - 1);
             return Updatestr;
         }
-        public virtual string GetDeleteString(string EntityName, DataRow row, EntityStructure DataStruct)
+        public virtual string GetDeleteString(string EntityName,  EntityStructure DataStruct)
         {
 
             List<EntityField> SourceEntityFields = new List<EntityField>();
@@ -1599,9 +1783,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             t = 1;
             foreach (EntityField item in DataStruct.PrimaryKeys)
             {
-                string st = row[item.fieldname, DataRowVersion.Original].ToString();
-                if (!DBNull.Value.Equals(row[item.fieldname, DataRowVersion.Original]))
-                {
+                
+               
                     if (t == 1)
                     {
                         Updatestr += item.fieldname + "=";
@@ -1610,162 +1793,32 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     {
                         Updatestr += " and " + item.fieldname + "=";
                     }
+                    Updatestr += "@p_" + item.fieldname + "";
+                    //    Updatestr += item.fieldname + "=";
+                    //switch (item.fieldtype)
+                    //{
+                    //    case "System.String":
+                    //        Updatestr += "'" + row[item.fieldname] + "'";
+                    //        break;
+                    //    case "System.Int":
+                    //        Updatestr += "" + row[item.fieldname] + "";
+                    //        break;
+                    //    case "System.DateTime":
+                    //        DateTime time = (DateTime)row[item.fieldname];
+                    //        Updatestr += "'" + time.ToString(dateformat) + "'";
+                    //        break;
+                    //    default:
+                    //        Updatestr += "'" + row[item.fieldname] + "'";
+                    //        break;
+                    //}
+                
 
-                    switch (item.fieldtype)
-                    {
-                        case "System.String":
-                            Updatestr += "'" + row[item.fieldname, DataRowVersion.Original].ToString() + "'";
-                            break;
-                        case "System.Int":
-                            Updatestr += "" + row[item.fieldname, DataRowVersion.Original].ToString() + "";
-                            break;
-                        default:
-                            Updatestr += "'" + row[item.fieldname, DataRowVersion.Original].ToString() + "'";
-                            break;
-                    }
-                }
+
 
                 t += 1;
             }
             //   Updatestr= Updatestr.Remove(Updatestr.Length - 1);
             return Updatestr;
-        }
-        public virtual string GetInsertString(string EntityName, DataRow row, IMapping_rep Mapping, EntityStructure DataStruct)
-        {
-
-            List<EntityField> SourceEntityFields = new List<EntityField>();
-            List<EntityField> DestEntityFields = new List<EntityField>();
-            // List<Mapping_rep_fields> map = new List < Mapping_rep_fields >()  ; 
-            //   map= Mapping.FldMapping;
-            //  EntityName = Regex.Replace(EntityName, @"\s+", "");
-            string Insertstr = "insert into " + EntityName + " (";
-            string Valuestr = ") values (";
-            var insertfieldname = "";
-            string datafieldname = "";
-            string typefield = "";
-            int i = Mapping.FldMapping.Count();
-            int t = 0;
-            foreach (IMapping_rep_fields item in Mapping.FldMapping)
-            {
-                if (EntityName == Mapping.EntityName1)
-                {
-                    insertfieldname = item.FieldName1;
-                    datafieldname = item.FieldName2;
-                    typefield = item.FieldType2;
-                }
-                else
-                {
-                    insertfieldname = item.FieldName2;
-                    datafieldname = item.FieldName1;
-                    typefield = item.FieldType1;
-                }
-                if (!DBNull.Value.Equals(row[datafieldname]))
-                {
-                    //   insertfieldname = Regex.Replace(insertfieldname, @"\s+", "");
-                    Insertstr += insertfieldname + ",";
-                    switch (typefield)
-                    {
-                        case "System.String":
-                            if (row[datafieldname].ToString().Contains("'"))
-                            {
-                                string ve = row[datafieldname].ToString();
-                                ve = ve.Replace("'", "''");
-                                Valuestr += "'" + ve + "',";
-                            }
-                            else
-                            {
-                                Valuestr += "'" + row[datafieldname] + "',";
-                            }
-                           
-                            break;
-                        case "System.Int":
-                            Valuestr += "" + row[datafieldname] + ",";
-                            break;
-                        default:
-                            Valuestr += "'" + row[datafieldname] + "',";
-                            break;
-                    }
-                }
-
-                t += 1;
-
-            }
-
-
-
-            Insertstr = Insertstr.Remove(Insertstr.Length - 1);
-            Valuestr = Valuestr.Remove(Valuestr.Length - 1);
-            Valuestr += ")";
-            return Insertstr + Valuestr;
-        }
-        public virtual string GetUpdateString(string EntityName, DataRow row, IMapping_rep Mapping, EntityStructure DataStruct)
-        {
-
-            List<EntityField> SourceEntityFields = new List<EntityField>();
-            List<EntityField> DestEntityFields = new List<EntityField>();
-            // List<Mapping_rep_fields> map = new List < Mapping_rep_fields >()  ; 
-            //   map= Mapping.FldMapping;
-            // EntityName = Regex.Replace(EntityName, @"\s+", "");
-            string Insertstr = @"Update " + EntityName + " ( \n set ";
-            string Valuestr = "";
-            var insertfieldname = "";
-            string datafieldname = "";
-            string typefield = "";
-            int i = Mapping.FldMapping.Count();
-            int t = 0;
-            foreach (IMapping_rep_fields item in Mapping.FldMapping)
-            {
-                if (EntityName == Mapping.EntityName1)
-                {
-                    insertfieldname = item.FieldName1;
-                    datafieldname = item.FieldName2;
-                    typefield = item.FieldType2;
-                }
-                else
-                {
-                    insertfieldname = item.FieldName2;
-                    datafieldname = item.FieldName1;
-                    typefield = item.FieldType1;
-                }
-                if (!DBNull.Value.Equals(row[datafieldname]))
-                {
-                    // insertfieldname = Regex.Replace(insertfieldname, @"\s+", "");
-                    Insertstr += insertfieldname + ",";
-                    switch (typefield)
-                    {
-                        case "System.String":
-                            if (row[datafieldname].ToString().Contains("'"))
-                            {
-                                string ve = row[datafieldname].ToString();
-                                ve = ve.Replace("'", "''");
-                                Valuestr += "'" + ve + "',";
-                            }
-                            else
-                            {
-                                Valuestr += "'" + row[datafieldname] + "',";
-                            }
-                            break;
-                        case "System.Int":
-                            Valuestr += "" + row[datafieldname] + ",";
-                            break;
-                        default:
-                            Valuestr += "'" + row[datafieldname] + "',";
-                            break;
-                    }
-                }
-
-
-
-                t += 1;
-
-            }
-
-
-
-            Insertstr = Insertstr.Remove(Insertstr.Length - 1);
-            Valuestr = Valuestr.Remove(Valuestr.Length - 1);
-            Valuestr += ")";
-            return Insertstr + Valuestr;
         }
         public virtual IDataReader GetDataReader(string querystring)
         {

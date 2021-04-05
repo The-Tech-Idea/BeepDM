@@ -63,6 +63,30 @@
     <Compile Include="uc_WinformApp.Designer.cs">
       <DependentUpon>uc_WinformApp.cs</DependentUpon>
     </Compile>
+    <Compile Include="UserControls\uc_deleteentity.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UserControls\uc_deleteentity.Designer.cs">
+      <DependentUpon>uc_deleteentity.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\uc_getentities.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UserControls\uc_getentities.Designer.cs">
+      <DependentUpon>uc_getentities.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\uc_Insertentity.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UserControls\uc_Insertentity.Designer.cs">
+      <DependentUpon>uc_Insertentity.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\uc_updateentity.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UserControls\uc_updateentity.Designer.cs">
+      <DependentUpon>uc_updateentity.cs</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DataManagmentModels\DataManagmentModels.csproj">
@@ -93,6 +117,15 @@
     <EmbeddedResource Include="uc_WinformApp.resx">
       <DependentUpon>uc_WinformApp.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="UserControls\uc_getentities.resx">
+      <DependentUpon>uc_getentities.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UserControls\uc_Insertentity.resx">
+      <DependentUpon>uc_Insertentity.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UserControls\uc_updateentity.resx">
+      <DependentUpon>uc_updateentity.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\windows_client_64.png" />
@@ -117,6 +150,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\save_32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\add_white_space_24px.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\expand_arrows_24px.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

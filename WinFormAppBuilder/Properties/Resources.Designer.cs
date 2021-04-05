@@ -63,6 +63,16 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap add_white_space_24px {
+            get {
+                object obj = ResourceManager.GetObject("add_white_space_24px", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap exit_32 {
             get {
                 object obj = ResourceManager.GetObject("exit_32", resourceCulture);
@@ -86,6 +96,16 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.Properties {
         internal static System.Drawing.Bitmap exit_sign_32 {
             get {
                 object obj = ResourceManager.GetObject("exit_sign_32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap expand_arrows_24px {
+            get {
+                object obj = ResourceManager.GetObject("expand_arrows_24px", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

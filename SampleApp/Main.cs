@@ -128,11 +128,11 @@ namespace DataManagment_Engine
                 Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
                
                 vis.ShowMainDisplayForm();
-                if (DMEEditor.ErrorObject.Flag== Errors.Failed)
-                {
-                    Controleditor.MsgBox("Beep", "Could not Startup Screen");
+                //if (DMEEditor.ErrorObject.Flag== Errors.Failed)
+                //{
+                //    Controleditor.MsgBox("Beep", $"Could not Startup Screen {DMEEditor.ErrorObject.Ex.Message}");
 
-                }
+                //}
             }
         }
     }

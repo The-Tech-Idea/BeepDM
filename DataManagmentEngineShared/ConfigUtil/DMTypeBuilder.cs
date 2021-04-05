@@ -48,11 +48,21 @@ namespace TheTechIdea.Util
         }
         private static void CreateProperty(TypeBuilder tb, string propertyName, Type propertyType)
         {
+            PropertyBuilder propertyBuilder;
+            MethodBuilder getPropMthdBldr;
             FieldBuilder fieldBuilder = tb.DefineField("_" + propertyName, propertyType, FieldAttributes.Private);
+            //if (propertyType.GetTypeInfo().FullName=="System.DateTime")
+            //{
+            //     propertyBuilder = tb.DefineProperty(propertyName, PropertyAttributes.HasDefault, typeof(Nullable<>).MakeGenericType(propertyType), null);
+            //     getPropMthdBldr = tb.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, typeof(Nullable<>).MakeGenericType(propertyType), Type.EmptyTypes);
+            //}
+            //else
+            //{
+                 propertyBuilder = tb.DefineProperty(propertyName, PropertyAttributes.HasDefault, propertyType, null);
+                 getPropMthdBldr = tb.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, propertyType, Type.EmptyTypes);
+            //}
 
-            PropertyBuilder propertyBuilder = tb.DefineProperty(propertyName,  PropertyAttributes.HasDefault, propertyType, null);
-
-            MethodBuilder getPropMthdBldr = tb.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, propertyType, Type.EmptyTypes);
+          
             ILGenerator getIl = getPropMthdBldr.GetILGenerator();
 
             getIl.Emit(OpCodes.Ldarg_0);
@@ -62,7 +72,7 @@ namespace TheTechIdea.Util
             MethodBuilder setPropMthdBldr =
                 tb.DefineMethod("set_" + propertyName,
                   MethodAttributes.Public |
-                  MethodAttributes.SpecialName | 
+                  MethodAttributes.SpecialName |
                   MethodAttributes.HideBySig,
                   null, new[] { propertyType });
 

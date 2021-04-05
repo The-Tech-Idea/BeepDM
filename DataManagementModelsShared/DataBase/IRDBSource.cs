@@ -17,13 +17,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         DataTable GetTableSchema(string TableName);
         IDataReader GetDataReader(string querystring);
         List<ChildRelation> GetTablesFKColumnList(string tablename, string SchemaName, string Filterparamters);
-        string GetInsertString(string EntityName, DataRow row, EntityStructure DataStruct);
        
-        string GetUpdateString(string EntityName, DataRow row, EntityStructure DataStruct);
      
-        string GetInsertString(string EntityName, DataRow row, IMapping_rep Mapping, EntityStructure DataStruct);
-     
-        string GetUpdateString(string EntityName, DataRow row, IMapping_rep Mapping, EntityStructure DataStruct);
         string DisableFKConstraints(EntityStructure t1);
         string EnableFKConstraints( EntityStructure t1);
         List<T> GetData<T>(string sql);

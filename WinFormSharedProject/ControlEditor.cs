@@ -235,8 +235,17 @@ namespace TheTechIdea.Winforms.VIS
            // throw new NotImplementedException();
         }
 
-       
+
         #endregion
+        private int getTextSize(string text)
+        {
+            Font font = new Font("Courier New", 10.0F);
+            Image fakeImage = new Bitmap(1, 1);
+            Graphics graphics = Graphics.FromImage(fakeImage);
+            SizeF size = graphics.MeasureString(text, font);
+            return Convert.ToInt32(size.Width);
+        }
+       
         //----------------------------------------------------------
         public IErrorsInfo GenerateTableViewOnControl(string tbname, ref Panel control, DataTable table, ref BindingSource bindingsource, int width, EntityStructure datahset)
         {
@@ -479,6 +488,293 @@ namespace TheTechIdea.Winforms.VIS
                                     t.Anchor = AnchorStyles.Top;
                                 }
 
+                                break;
+
+                        }
+                    }
+                    l.Anchor = AnchorStyles.Top;
+                    control.Controls.Add(l);
+
+                    starth = l.Bottom + 1;
+                    //this.databaseTextBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataConnectionsBindingSource, "Database", true));
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Erinfo.Flag = Errors.Failed;
+                Erinfo.Ex = ex;
+                Logger.WriteLog($"Error in Loading View ({ex.Message}) ");
+            }
+            return Erinfo;
+        }
+        public object GenerateEntityonControl(string entityname, ref Panel control, object record, ref BindingSource bindingsource, int width, string datasourceid)
+        {
+            controls = new Dictionary<string, Control>();
+            Erinfo.Flag = Errors.Ok;
+            TextBox t1 = new TextBox();
+
+            if (record == null)
+            {
+                MessageBox.Show("Error", " record has no Data");
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Message = "Error Table has no Data";
+                return DMEEditor.ErrorObject;
+            }
+           
+            IDataSource ds = DMEEditor.GetDataSource(datasourceid);
+            List<DefaultValue> defaults = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == ds.DatasourceName)].DatasourceDefaults;
+            TableCurrentEntity = ds.GetEntityStructure(entityname, false);
+            Type enttype = ds.GetEntityType(entityname);
+            var ti=Activator.CreateInstance(enttype);
+            // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
+            if (record.GetType().GetInterfaces().Contains(typeof(ICustomTypeDescriptor)))
+            {
+                DataRowView dv =(DataRowView) record;
+                DataRow dr = dv.Row;
+                foreach (EntityField col in TableCurrentEntity.Fields)
+                {
+                   // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
+                   if (dr[col.fieldname] != System.DBNull.Value)
+                    {
+                        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                        PropAInfo.SetValue(ti, dr[col.fieldname], null);
+                    }
+                   
+                }
+
+
+            }else
+            {
+                ti = record;
+            }
+            bindingsource.DataSource = ti;
+            //bindingsource.CurrentChanged += Bindingsource_CurrentChanged;
+            //bindingsource.PositionChanged += Bindingsource_PositionChanged;
+            //bindingsource.ListChanged += Bindingsource_ListChanged;
+            // Create Filter Control
+            // CreateFilterQueryGrid(entityname, TableCurrentEntity.Fields, null);
+            //--- Get Max label size
+            int maxlabelsize = 0;
+            int maxDatasize = 0;
+            foreach (EntityField col in TableCurrentEntity.Fields)
+            {
+                int x= getTextSize(col.fieldname);
+                if (maxlabelsize< x)
+                    maxlabelsize = x;
+            }
+            maxDatasize = control.Width - maxlabelsize - 20;
+            try
+            {
+                var starth = 25;
+
+                TableCurrentEntity.Filters = new List<DataManagment_Engine.Report.ReportFilter>();
+                foreach (EntityField col in TableCurrentEntity.Fields)
+                {
+                    DefaultValue coldefaults = defaults.Where(o => o.propertyName == col.fieldname).FirstOrDefault();
+                    if (coldefaults == null)
+                    {
+                        coldefaults = defaults.Where(o => col.fieldname.Contains(o.propertyName)).FirstOrDefault();
+                    }
+                    string coltype = col.fieldtype;
+                    RelationShipKeys FK = TableCurrentEntity.Relations.Where(f => f.EntityColumnID == col.fieldname).FirstOrDefault();
+                    //----------------------
+                    Label l = new Label
+                    {
+                        Top = starth,
+                        Left = 10,
+                        AutoSize = false,
+                        BorderStyle = BorderStyle.FixedSingle,
+                        Text = col.fieldname,
+                        BackColor = Color.White,
+                        ForeColor = Color.Red
+
+                    };
+                    l.Size = TextRenderer.MeasureText(col.fieldname, l.Font);
+                    l.Height += 10;
+                    l.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+                    l.Width = maxlabelsize;
+                    //---------------------
+
+                    if (FK != null)
+                    {
+                        ComboBox cb = new ComboBox
+                        {
+                            Left = l.Left + l.Width + 10,
+                            Top = starth
+                        };
+                        DisplayField = FK.EntityColumnID;
+                        cb.DataSource = GetDisplayLookup(datasourceid, FK.ParentEntityID, FK.ParentEntityColumnID);
+                        cb.DisplayMember = DisplayField;
+                        cb.ValueMember = FK.ParentEntityColumnID;
+                        cb.Width = maxDatasize;
+                        cb.Height = l.Height;
+                        cb.DataBindings.Add(new System.Windows.Forms.Binding("TEXT", bindingsource, col.fieldname, true));
+                        cb.SelectedValueChanged += Cb_SelectedValueChanged;
+                        cb.Anchor = AnchorStyles.Top;
+                        control.Controls.Add(cb);
+                        controls.Add(col.fieldname, cb);
+                        starth = l.Bottom + 1;
+                    }
+                    else
+                    {
+                        switch (coltype)
+                        {
+                            case "System.DateTime":
+                                DateTimePicker dt = new DateTimePicker
+                                {
+                                    Left = l.Left + l.Width + 10,
+                                    Top = starth
+                                };
+                                dt.DataBindings.Add(new System.Windows.Forms.Binding("Value", bindingsource, col.fieldname, true));
+
+                                dt.Width = maxDatasize;
+                                dt.Height = l.Height;
+                                dt.ValueChanged += Dt_ValueChanged;
+                                dt.Anchor = AnchorStyles.Top;
+                                control.Controls.Add(dt);
+                                controls.Add(col.fieldname, dt);
+                                break;
+                            case "System.TimeSpan":
+                                t1 = new TextBox
+                                {
+                                    Left = l.Left + l.Width + 10,
+                                    Top = starth
+                                };
+
+                                t1.DataBindings.Add(new System.Windows.Forms.Binding("Text", bindingsource, col.fieldname, true));
+                                t1.TextAlign = HorizontalAlignment.Left;
+                                t1.Width = maxDatasize;
+                                t1.Height = l.Height;
+                                control.Controls.Add(t1);
+                                controls.Add(col.fieldname, t1);
+                                t1.TextChanged += T_TextChanged;
+                                t1.KeyPress += T_KeyPress;
+                                t1.Anchor = AnchorStyles.Top;
+                                break;
+                            case "System.Boolean":
+                                CheckBox ch1 = new CheckBox
+                                {
+                                    Left = l.Left + l.Width + 10,
+                                    Top = starth
+                                };
+
+                                ch1.DataBindings.Add(new System.Windows.Forms.Binding("CheckState", bindingsource, col.fieldname, true));
+                                ch1.Text = "";
+                                ch1.Width = maxDatasize;
+                                ch1.Height = l.Height;
+                                ch1.CheckStateChanged += Ch1_CheckStateChanged; ;
+                                ch1.Anchor = AnchorStyles.Top;
+                                control.Controls.Add(ch1);
+                                controls.Add(col.fieldname, ch1);
+
+                                break;
+                            case "System.Char":
+                                MyCheckBox ch2 = new MyCheckBox
+                                {
+                                    Left = l.Left + l.Width + 10,
+                                    Top = starth
+                                };
+
+                                ch2.DataBindings.Add(new System.Windows.Forms.Binding("Checked", bindingsource, col.fieldname, true));
+                                ch2.Text = "";
+                                ch2.Width = maxDatasize;
+                                ch2.Height = l.Height;
+                                string[] v = coldefaults.propoertValue.Split(',');
+
+                                if (coldefaults != null)
+                                {
+                                    ch2.TrueValue = v[0].ToCharArray()[0];
+                                    ch2.FalseValue = v[1].ToCharArray()[0];
+                                }
+                                ch2.CheckStateChanged += Ch1_CheckStateChanged; ;
+                                ch2.Anchor = AnchorStyles.Top;
+                                control.Controls.Add(ch2);
+                                controls.Add(col.fieldname, ch2);
+                                break;
+                            case "System.Int16":
+                            case "System.Int32":
+                            case "System.Int64":
+                            case "System.Decimal":
+                            case "System.Double":
+                            case "System.Single":
+                            case "System.String":
+                                if (TableCurrentEntity.Fields.Where(p => p.fieldname == col.fieldname).FirstOrDefault().Size1 > 1)
+                                {
+                                    t1 = new TextBox
+                                    {
+                                        Left = l.Left + l.Width + 10,
+                                        Top = starth
+                                    };
+
+                                    t1.DataBindings.Add(new System.Windows.Forms.Binding("Text", bindingsource, col.fieldname, true));
+                                    t1.TextAlign = HorizontalAlignment.Left;
+                                    t1.Width = maxDatasize;
+                                    t1.Height = l.Height;
+                                    
+                                    t1.TextChanged += T_TextChanged;
+                                    t1.KeyPress += T_KeyPress;
+                                    if (TableCurrentEntity.PrimaryKeys.Any(x => x.fieldname == col.fieldname))
+                                    {
+                                        if (TableCurrentEntity.Relations.Any(x => x.EntityColumnID == col.fieldname))
+                                        {
+                                            t1.Enabled = false;
+                                        }
+
+                                    }
+                                    control.Controls.Add(t1);
+                                    controls.Add(col.fieldname, t1);
+                                    t1.Anchor = AnchorStyles.Top;
+                                }
+                                else
+                                {
+                                    ch2 = new MyCheckBox
+                                    {
+                                        Left = l.Left + l.Width + 10,
+                                        Top = starth
+                                    };
+
+                                    ch2.DataBindings.Add(new System.Windows.Forms.Binding("Checked", bindingsource, col.fieldname, true));
+                                    ch2.Text = "";
+                                    ch2.Width = maxDatasize;
+                                    ch2.Height = l.Height;
+
+
+
+                                    if (coldefaults != null)
+                                    {
+                                        v = coldefaults.propoertValue.Split(',');
+                                        ch2.TrueValue = v[0].ToCharArray()[0];
+                                        ch2.FalseValue = v[1].ToCharArray()[0];
+                                    }
+                                    ch2.CheckStateChanged += Ch1_CheckStateChanged; ;
+
+                                    control.Controls.Add(ch2);
+                                    controls.Add(col.fieldname, ch2);
+                                    ch2.Anchor = AnchorStyles.Top;
+                                }
+                                break;
+                            default:
+                                TextBox t = new TextBox();
+                                
+                                    t.Left = l.Left + l.Width + 10;
+                                    t.Top = starth;
+                                    t.DataBindings.Add(new System.Windows.Forms.Binding("Text", bindingsource, col.fieldname, true));
+                                    t.TextAlign = HorizontalAlignment.Left;
+                                    t.Width = maxDatasize;
+                                    t.Height = l.Height;
+                                   
+                                    t.TextChanged += T_TextChanged;
+                                    t.KeyPress += T_KeyPress;
+                                    if (TableCurrentEntity.PrimaryKeys.Where(x => x.fieldname == col.fieldname).FirstOrDefault() != null)
+                                    {
+                                        t.Enabled = false;
+                                    }
+                                    t.Anchor = AnchorStyles.Top;
+
+                                control.Controls.Add(t);
+                                controls.Add(col.fieldname, t);
                                 break;
 
                         }

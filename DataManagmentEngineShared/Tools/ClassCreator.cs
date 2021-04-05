@@ -154,7 +154,7 @@ namespace TheTechIdea.Tools
             widthProperty.Name = propertyname;
             widthProperty.HasGet = true;
             widthProperty.HasSet = true;
-            widthProperty.Type = new CodeTypeReference(type);
+            widthProperty.Type = new CodeTypeReference(typeof(Nullable<>).MakeGenericType(type));
             widthProperty.Comments.Add(new CodeCommentStatement(
                 comments));
             widthProperty.GetStatements.Add(new CodeMethodReturnStatement(

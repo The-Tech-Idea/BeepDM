@@ -87,8 +87,23 @@ namespace TheTechIdea.ETL
 
         private void DataTreeView_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
+
             EntityStructure = ds.GetEntityStructure(e.Node.Text, true);
-            ShowCRUD();
+            IDataSource entds = DMEEditor.GetDataSource(EntityStructure.DataSourceID);
+            entds.Dataconnection.OpenConnection();
+            if (entds.ConnectionStatus == ConnectionState.Open)
+            {
+                
+                ShowCRUD();
+            }
+            else
+            {
+                Visutil.controlEditor.MsgBox("Error", $"Failed to Open Entity DataSource {EntityStructure.DataSourceID}");
+            }
+
+          
+
+            
         }
 
         private void input_KeyDown(object sender, KeyEventArgs e)
@@ -217,7 +232,7 @@ namespace TheTechIdea.ETL
                     EventType = "CRUDENTITY"
 
                 };
-                Visutil.ShowUserControlInContainer("uc_CrudControl", ControlPanel, DMEEditor, args, Passedarguments);
+                Visutil.ShowUserControlInContainer("uc_getentities", ControlPanel, DMEEditor, args, Passedarguments);
             }
           
         }

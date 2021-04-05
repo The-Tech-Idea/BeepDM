@@ -25,6 +25,7 @@ namespace TheTechIdea.Winforms.VIS
         IErrorsInfo GenerateTableViewOnControl(string tbname, ref Panel control, DataTable table, ref BindingSource bindingsource, int width,  string datasourceid);
         IErrorsInfo GenerateFilterFieldsForEntityOnControl(string tbname, ref Panel control, DataTable table, ref BindingSource bindingsource, int width, EntityStructure datahset);
         IErrorsInfo GenerateTableViewOnControl(string tbname, ref Panel control, DataTable table, ref BindingSource bindingsource, int width, EntityStructure datahset);
+        object GenerateEntityonControl(string entityname, ref Panel control, object record, ref BindingSource bindingsource, int width, string datasourceid);
         DialogResult InputBox(string title, string promptText, ref string value);
         DialogResult InputBoxYesNo(string title, string promptText);
         void MsgBox(string title, string promptText);
