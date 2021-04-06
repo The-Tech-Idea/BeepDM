@@ -38,6 +38,9 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
         public PassedArgs Passedarg { get ; set ; }
         IVisUtil Visutil { get; set; }
         IDataSource ds;
+        Type enttype;
+        object ob;
+        List<object> DataList = new List<object>();
         public void Run(string param1)
         {
             throw new NotImplementedException();
@@ -54,7 +57,9 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             ds.Dataconnection.OpenConnection();
             if (ds != null && ds.ConnectionStatus== ConnectionState.Open)
             {
-                EntityStructure = ds.GetEntityStructure(e.CurrentEntity, true);
+                EntityName = e.CurrentEntity;
+                EntityStructure = ds.GetEntityStructure(EntityName, true);
+                enttype = ds.GetEntityType(EntityName);
                 if (EntityStructure != null)
                 {
                     if (EntityStructure.Fields != null)
@@ -73,6 +78,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             InsertNewEntitybutton.Click += InsertNewEntitybutton_Click;
             DeleteSelectedbutton.Click += DeleteSelectedbutton_Click;
             EditSelectedbutton.Click += EditSelectedbutton_Click;
+            
         }
 
         private void EditSelectedbutton_Click(object sender, EventArgs e)
@@ -81,38 +87,76 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             {
                 if (dataGridView1.SelectedRows.Count > 0)
                 {
-                    object ob=EntitybindingSource.Current;
+                     ob=EntitybindingSource.Current;
                     if (Passedarg.Objects.Where(i => i.Name == EntityName).Any())
                     {
                         Passedarg.Objects.Remove(Passedarg.Objects.Where(i => i.Name == EntityName).FirstOrDefault());
                     }
-                   
+                    if (Passedarg.Objects.Where(i => i.Name == "BindingSource").Any())
+                    {
+                        Passedarg.Objects.Remove(Passedarg.Objects.Where(i => i.Name == "BindingSource").FirstOrDefault());
+                    }
                     Passedarg.Objects.Add(new ObjectItem() { Name = EntityName, obj = ob });
+                    Passedarg.Objects.Add(new ObjectItem() { Name = "BindingSource", obj = EntitybindingSource });
                     Visutil.ShowUserControlPopUp("uc_updateentity", DMEEditor, new string[] { "" }, Passedarg);
+
                 }
             }
         }
         private void DeleteSelectedbutton_Click(object sender, EventArgs e)
         {
-            throw new NotImplementedException();
+           if(MessageBox.Show(this,"Delete","Are you sure ? ",MessageBoxButtons.YesNo)==DialogResult.Yes)
+            {
+                if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
+                {
+                    if (dataGridView1.SelectedRows.Count > 0)
+                    {
+                        object ob = EntitybindingSource.Current;
+                        try
+                        {
+                            if(ds.DeleteEntity(EntityName, ob).Flag==Errors.Failed)
+                            {
+                                EntitybindingSource.RemoveCurrent();
+                                RefreshData();
+                                MessageBox.Show("Failed to Delete Record");
+                               
+                            }else
+                            {
+                                MessageBox.Show("Success to Delete Record");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+
+                            throw;
+                        }
+                       
+                    }
+                }
+            }
         }
 
         private void InsertNewEntitybutton_Click(object sender, EventArgs e)
         {
             if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
             {
-                Type enttype = ds.GetEntityType(EntityName);
-                var ti = Activator.CreateInstance(enttype);
-                EntitybindingSource.DataSource = ti;
-              
-                    if (Passedarg.Objects.Where(i => i.Name == EntityName).Any())
-                    {
-                        Passedarg.Objects.Remove(Passedarg.Objects.Where(i => i.Name == EntityName).FirstOrDefault());
-                    }
 
-                    Passedarg.Objects.Add(new ObjectItem() { Name = EntityName, obj = ti });
-                    Visutil.ShowUserControlPopUp("uc_Insertentity", DMEEditor, new string[] { "" }, Passedarg);
-               
+
+                EntitybindingSource.AddNew();
+                ob= EntitybindingSource.Current;
+                if (Passedarg.Objects.Where(i => i.Name == EntityName).Any())
+                {
+                    Passedarg.Objects.Remove(Passedarg.Objects.Where(i => i.Name == EntityName).FirstOrDefault());
+                }
+                if (Passedarg.Objects.Where(i => i.Name == "BindingSource").Any())
+                {
+                    Passedarg.Objects.Remove(Passedarg.Objects.Where(i => i.Name == "BindingSource").FirstOrDefault());
+                }
+                Passedarg.Objects.Add(new ObjectItem() { Name = EntityName, obj = ob });
+                Passedarg.Objects.Add(new ObjectItem() { Name = "BindingSource", obj = EntitybindingSource });
+                Visutil.ShowUserControlPopUp("uc_Insertentity", DMEEditor, new string[] { "" }, Passedarg);
+              //  RefreshData();
+
             }
         }
 
@@ -123,17 +167,32 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
 
         private void SubmitFilterbutton_Click(object sender, EventArgs e)
         {
+            GetData();
+        }
+        private void GetData()
+        {
             if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
             {
                 object retval = ds.GetEntity(EntityName, null);
-                EntitybindingSource.DataSource = retval;
-                EntitybindingSource.ResetBindings(true);
-                dataGridView1.AutoGenerateColumns = true;
-                dataGridView1.DataSource = EntitybindingSource;
-                dataGridView1.Refresh();
-                EntityNamelabel.Text = EntityName;
-                subtitlelabel.Text = $"From Data Source : {ds.DatasourceName}";
+                if (retval.GetType().FullName == "System.Data.DataTable")
+                {
+                    DataList = DMEEditor.Utilfunction.ConvertTableToList((DataTable)retval, EntityStructure, ds.GetEntityType(EntityName));
+                }else
+                {
+                    DataList =(List<object>) retval;
+                }
+                RefreshData();
             }
+        }
+        private void RefreshData()
+        {
+            EntitybindingSource.DataSource = DataList;
+            EntitybindingSource.ResetBindings(true);
+            dataGridView1.AutoGenerateColumns = true;
+            dataGridView1.DataSource = EntitybindingSource;
+            dataGridView1.Refresh();
+            EntityNamelabel.Text = EntityName;
+            subtitlelabel.Text = $"From Data Source : {ds.DatasourceName}";
         }
     }
 }

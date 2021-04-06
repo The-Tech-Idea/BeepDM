@@ -63,12 +63,6 @@
     <Compile Include="uc_WinformApp.Designer.cs">
       <DependentUpon>uc_WinformApp.cs</DependentUpon>
     </Compile>
-    <Compile Include="UserControls\uc_deleteentity.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="UserControls\uc_deleteentity.Designer.cs">
-      <DependentUpon>uc_deleteentity.cs</DependentUpon>
-    </Compile>
     <Compile Include="UserControls\uc_getentities.cs">
       <SubType>UserControl</SubType>
     </Compile>

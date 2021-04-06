@@ -26,11 +26,11 @@ namespace TheTechIdea.DataManagment_Engine
     public class Util : IUtil
     {
         public delegate T ObjectActivator<T>(params object[] args);
-       public IDMLogger Logger { get; set; }
-       public List<string> Namespacelist { get; set; } = new List<string>();
+        public IDMLogger Logger { get; set; }
+        public List<string> Namespacelist { get; set; } = new List<string>();
         public List<string> Classlist { get; set; } = new List<string>();
         public List<ParentChildObject> FunctionHierarchy { get; set; }
-       
+
         public IErrorsInfo ErrorObject { get; set; }
         public IDMEEditor DME { get; set; }
         public object GetInstance(string strFullyQualifiedName)
@@ -74,7 +74,7 @@ namespace TheTechIdea.DataManagment_Engine
         }
         public ConnectionDriversConfig LinkConnection2Drivers(IConnectionProperties cn)
         {
-            
+
             string vr = cn.DriverVersion;
             string pk = cn.DriverName;
             return DME.ConfigEditor.DataDrivers.Where(c => c.PackageName == pk && c.version == vr).FirstOrDefault();
@@ -122,7 +122,6 @@ namespace TheTechIdea.DataManagment_Engine
             ObjectActivator<T> compiled = (ObjectActivator<T>)lambda.Compile();
             return compiled;
         }
-       
         public List<T> ConvertDataTable<T>(DataTable dt)
         {
             List<T> data = new List<T>();
@@ -150,7 +149,7 @@ namespace TheTechIdea.DataManagment_Engine
             }
             return obj;
         }
-        public  bool AddinInterfaceFilter(Type typeObj, Object criteriaObj)
+        public bool AddinInterfaceFilter(Type typeObj, Object criteriaObj)
         {
             if (typeObj.ToString() == criteriaObj.ToString())
                 return true;
@@ -163,7 +162,7 @@ namespace TheTechIdea.DataManagment_Engine
             ErrorObject = per;
 
         }
-        public  DataTable CreateDataTable(string strFilePath)
+        public DataTable CreateDataTableFromFile(string strFilePath)
         {
             DataTable dt = new DataTable();
             using (StreamReader sr = new StreamReader(strFilePath))
@@ -214,7 +213,7 @@ namespace TheTechIdea.DataManagment_Engine
             }
             return dt;
         }
-        public  DataTable CreateDataTableVer2(Object[] arr)
+        public DataTable CreateDataTableVer2(Object[] arr)
         {
             XmlSerializer serializer = new XmlSerializer(arr.GetType());
             System.IO.StringWriter sw = new System.IO.StringWriter();
@@ -263,7 +262,7 @@ namespace TheTechIdea.DataManagment_Engine
                 }
             }
         }
-        public  string GetRelativePath(string fromPath, string toPath)
+        public string GetRelativePath(string fromPath, string toPath)
         {
             if (string.IsNullOrEmpty(fromPath))
             {
@@ -304,7 +303,7 @@ namespace TheTechIdea.DataManagment_Engine
 
             return path;
         }
-        public  ExpandoObject convertToExpando(object obj)
+        public ExpandoObject convertToExpando(object obj)
         {
             //Get Properties Using Reflections
             BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
@@ -319,7 +318,7 @@ namespace TheTechIdea.DataManagment_Engine
 
             return expando;
         }
-        public  void AddProperty(ExpandoObject expando, string propertyName, object propertyValue)
+        public void AddProperty(ExpandoObject expando, string propertyName, object propertyValue)
         {
             //Take use of the IDictionary implementation
             var dictionary = (IDictionary<string, object>)expando;
@@ -329,11 +328,11 @@ namespace TheTechIdea.DataManagment_Engine
         //public List<ExpandoObject> GetExpandoObject(DataTable dt, Type type, EntityStructure enttype)
         //{
 
-           
+
         //    string f = "";
         //    List<ExpandoObject> Records = new List<ExpandoObject>();
         //    Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
-        
+
         //    for (int i = 0; i <= enttype.Fields.Count - 1; i++)
         //    {
         //        properties.Add(enttype.Fields[i].fieldname, type.GetProperty(enttype.Fields[i].fieldname));
@@ -392,14 +391,14 @@ namespace TheTechIdea.DataManagment_Engine
         public List<object> GetListByDataTable(DataTable dt, Type type, EntityStructure enttype)
         {
 
-      
-          //  string f = "";
+
+            //  string f = "";
             List<object> Records = new List<object>();
             Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
             foreach (DataColumn item in dt.Columns)
             {
                 properties.Add(item.ColumnName, type.GetProperty(item.ColumnName));
-              //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
+                //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
             }
             //for (int i = 0; i <= enttype.Fields.Count - 1; i++)
             //{
@@ -409,7 +408,7 @@ namespace TheTechIdea.DataManagment_Engine
             {
                 // dynamic x = TypeHelpers.GetInstance(type);
                 dynamic x = Activator.CreateInstance(type);
-              //  var v = (dynamic)null;
+                //  var v = (dynamic)null;
                 foreach (DataColumn item in dt.Columns)
                 {
                     properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
@@ -433,8 +432,8 @@ namespace TheTechIdea.DataManagment_Engine
 
                 //            v = null;
                 //        }
-                        
-                       
+
+
                 //        //  type.GetProperty(enttype.Fields[i].fieldname).SetValue(x, v, null);
                 //        // Logger.WriteLog($"Creating Field and Value." + f);
                 //    }
@@ -454,8 +453,8 @@ namespace TheTechIdea.DataManagment_Engine
         }
         public EntityStructure GetEntityStructure(DataTable tb)
         {
-                 int i = 0;
-                 EntityStructure entityData = new EntityStructure();
+            int i = 0;
+            EntityStructure entityData = new EntityStructure();
             try
             {
                 string sheetname;
@@ -509,7 +508,7 @@ namespace TheTechIdea.DataManagment_Engine
             ifFileDownoadedchk = true;
             return ifFileDownoadedchk;
         }
-       
+
         public Type GetTypeFromStringValue(string str)
         {
             byte byteValue;
@@ -520,7 +519,7 @@ namespace TheTechIdea.DataManagment_Engine
             float floatValue;
             DateTime dateValue;
             decimal decimalValue;
-            string strvalue=str;
+            string strvalue = str;
             long longValue;
             // Place checks higher if if-else statement to give higher priority to type.
             if (int.TryParse(str, out intValue))
@@ -542,7 +541,7 @@ namespace TheTechIdea.DataManagment_Engine
             else if (float.TryParse(str, out floatValue))
                 return floatValue.GetType();
             else
-                return strvalue.GetType() ;
+                return strvalue.GetType();
         }
         public Type MakeGenericListofType(string typestring)
         {
@@ -557,9 +556,89 @@ namespace TheTechIdea.DataManagment_Engine
         {
             string elementTypeName = typestring;
             return Type.GetType(elementTypeName);
-          
-           // return listType.MakeGenericType(types);
-        }
-    }
 
+            // return listType.MakeGenericType(types);
+        }
+
+        public List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype)
+        {
+            List<object> retval = new List<object>();
+            if (dt.Rows.Count > 0)
+            {
+                foreach (DataRow dr in dt.Rows)
+                {
+                    var ti = Activator.CreateInstance(enttype);
+                    foreach (EntityField col in ent.Fields)
+                    {
+                        try
+                        {
+                            System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                            if (dr[col.fieldname] == System.DBNull.Value)
+                            {
+                                switch (col.fieldtype)
+                                {
+                                    case "System.string":
+                                        break;
+                                    case "System.DateTime":
+                                        break;
+
+                                }
+
+                                PropAInfo.SetValue(ti, null, null);
+                            }
+                            else
+                            {
+                                PropAInfo.SetValue(ti, dr[col.fieldname], null);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+
+
+                        }
+                        // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
+
+
+                    }
+                    retval.Add(ti);
+                }
+            }
+            else
+            {
+                var ti = Activator.CreateInstance(enttype);
+                foreach (EntityField col in ent.Fields)
+                {
+                   
+                        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                        PropAInfo.SetValue(ti, null, null);
+ 
+
+
+                }
+                retval.Add(ti);
+            }
+         
+          
+            return retval;
+        }
+        public DataRow ConvertItemClassToDataRow(EntityStructure ent)
+        {
+            DataTable dt = new DataTable();
+            DataRow dr;
+            foreach (EntityField col in ent.Fields)
+            {
+                DataColumn co=dt.Columns.Add(col.fieldname);
+                co.DataType = Type.GetType(col.fieldtype);
+
+            }
+            
+             dr= dt.NewRow();
+            return dr;
+        }
+
+
+
+    }
 }
+
+

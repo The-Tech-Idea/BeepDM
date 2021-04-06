@@ -513,8 +513,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             else
             {
-                tb = (DataTable)GetEntity(EntityName, $"select * from {EntityName} where 1=2");
-                dr = tb.NewRow();
+                // Get where condition
+
+                dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
                 foreach (EntityField col in DataStruct.Fields)
                 {
                     System.Reflection.PropertyInfo GetPropAInfo = DeletedDataRow.GetType().GetProperty(col.fieldname);

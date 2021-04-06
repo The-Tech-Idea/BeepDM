@@ -23,6 +23,7 @@ namespace TheTechIdea.DataManagment_Engine
         List<T> ConvertDataTable<T>(DataTable dt);
         DataTable CreateDataTableVer1(object[] array);
         DataTable CreateDataTableVer2(object[] arr);
+        DataTable CreateDataTableFromFile(string strFilePath);
         string GetRelativePath(string fromPath, string toPath);
         object GetInstance(string strFullyQualifiedName);
        
@@ -36,6 +37,8 @@ namespace TheTechIdea.DataManagment_Engine
         Type GetTypeFromStringValue(string str);
         Type MakeGenericType(string typestring);
         Type MakeGenericListofType(string typestring);
+        List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype);
+        DataRow ConvertItemClassToDataRow(EntityStructure ent);
 
     }
 }
