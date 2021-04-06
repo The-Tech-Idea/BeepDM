@@ -228,8 +228,8 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                             IRDBSource rDB = (IRDBSource)destds;
                             rDB.DisableFKConstraints(item);
                         }
-                        DataTable srcTb = new DataTable();
-                        var src = Task.Run<DataTable>(() => { return (DataTable)sourceds.GetEntity(item.EntityName, ""); });
+                        object srcTb;
+                        var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, ""); });
                         src.Wait();
                         srcTb = src.Result;
                         var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(item.EntityName, srcTb); });

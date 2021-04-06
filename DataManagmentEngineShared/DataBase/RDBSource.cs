@@ -156,11 +156,16 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         }
         public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData)
         {
-
+            if (UploadData.GetType().ToString() != "System.Data.DataTable")
+            {
+                DMEEditor.AddLogMessage("Fail", $"Please use DataTable for this Method {EntityName}", DateTime.Now, 0, null, Errors.Failed);
+                return DMEEditor.ErrorObject;
+            }
             //  RunCopyDataBackWorker(EntityName,  UploadData,  Mapping );
             #region "Update Code"
             string str;
             IDbTransaction sqlTran;
+           
             DataTable tb = (DataTable)UploadData;
             // DMEEditor.classCreator.CreateClass();
             //List<object> f = DMEEditor.Utilfunction.GetListByDataTable(tb);
@@ -341,8 +346,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             return ErrorObject;
         }
-        private static DateTime dateTimeNull = new DateTime(1753, 1, 1);
-        public static DateTime DateTimeNull { get { return dateTimeNull; } }
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
 
@@ -353,15 +356,16 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             DataRowView dv;
             DataTable tb;
             DataRow dr;
+            string msg = "";
             //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
             IDbCommand command = Dataconnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
             var ti = Activator.CreateInstance(enttype);
             // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
-            if (UploadDataRow.GetType().GetInterfaces().Contains(typeof(ICustomTypeDescriptor)))
+            if (UploadDataRow.GetType().FullName == "System.Data.DataRowView")
             {
-                 dv = (DataRowView)UploadDataRow;
-                 dr = dv.Row;
+                dv = (DataRowView)UploadDataRow;
+                dr = dv.Row;
                 //foreach (EntityField col in DataStruct.Fields)
                 //{
                 //    // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
@@ -373,14 +377,19 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
                 //}
 
-            }else
+            } else 
+            if (UploadDataRow.GetType().FullName == "System.Data.DataRow")
+            {
+                dr = (DataRow)UploadDataRow;
+            }
+            else
             {
                 tb = (DataTable)GetEntity(EntityName, $"select * from {EntityName} where 1=2");
                 dr = tb.NewRow();
                 foreach (EntityField col in DataStruct.Fields)
                 {
                     System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname);
-                    
+
                     //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
                     //{
                     System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
@@ -390,26 +399,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     {
                         result = System.DBNull.Value;
                     }
-                    
-                 
-                    //if (result is DBNull)
-                    //{
-                    //    if (PropAInfo.PropertyType.Equals(typeof(DateTime)))
-                    //    {
-                    //        // Fill data item with datetimenull
-                    //        result = DateTimeNull;
-                    //    }
-                    //    else
-                    //    {
-                    //        // Fill data item with null
-                    //        result= null;
-                    //    }
-                    //}
-                  
-                    //PropAInfo.SetValue(ti, GetPropAInfo.GetValue(UploadDataRow), null);
+
+
                     dr[col.fieldname] = result;
                 }
             }
+               
+            
             try
             {
                 string updatestring = GetUpdateString(EntityName,  DataStruct);
@@ -438,29 +434,31 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 }
 
 
-                string msg = "";
+              
                 int rowsUpdated = command.ExecuteNonQuery();
                 if (rowsUpdated > 0)
                 {
                     msg = $"Successfully Updated  Record  to {EntityName} : {updatestring}";
+                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
                 }
                 else
                 {
                     msg = $"Fail to Updated  Record  to {EntityName} : {updatestring}";
+                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
                 }
-                // DMEEditor.AddLogMessage("Success",$"Successfully Written Data to {EntityName}",DateTime.Now,0,null, Errors.Ok);
+                
 
             }
             catch (Exception ex)
             {
                 ErrorObject.Ex = ex;
-                string str;
+               
                 command.Dispose();
                 try
                 {
                     // Attempt to roll back the transaction.
                     //     sqlTran.Rollback();
-                    str = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
+                    msg = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
                 }
                 catch (Exception exRollback)
                 {
@@ -468,12 +466,11 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     // is closed or the transaction has already been rolled
                     // back on the server.
                     // Console.WriteLine(exRollback.Message);
-                    str = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
+                    msg = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
                     ErrorObject.Ex = exRollback;
                 }
-                str = "Unsuccessfully no Data has been written to Data Source";
-                Logger.WriteLog($"{str}  {ErrorObject.Ex.Message}");
-                ErrorObject.Flag = Errors.Failed;
+                msg = "Unsuccessfully no Data has been written to Data Source";
+                DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
 
             }
 
@@ -481,34 +478,116 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         }
         public virtual IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
         {
-            DataRow tb = (DataRow)DeletedDataRow;
+          
             ErrorObject.Flag = Errors.Ok;
             EntityStructure DataStruct = GetEntityStructure(EntityName, true);
-
+            string msg;
+            DataRowView dv;
+            DataTable tb;
+            DataRow dr;
             var sqlTran = Dataconnection.DbConn.BeginTransaction();
             IDbCommand command = Dataconnection.DbConn.CreateCommand();
+            Type enttype = GetEntityType(EntityName);
+            var ti = Activator.CreateInstance(enttype);
+            // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
+            if (DeletedDataRow.GetType().FullName == "System.Data.DataRowView")
+            {
+                dv = (DataRowView)DeletedDataRow;
+                dr = dv.Row;
+                //foreach (EntityField col in DataStruct.Fields)
+                //{
+                //    // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
+                //    //if (dr[col.fieldname] != System.DBNull.Value)
+                //    //{
+                //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                //        PropAInfo.SetValue(ti, dr[col.fieldname], null);
+                //    //}
+
+                //}
+
+            }
+            else
+               if (DeletedDataRow.GetType().FullName == "System.Data.DataRow")
+            {
+                dr = (DataRow)DeletedDataRow;
+            }
+            else
+            {
+                tb = (DataTable)GetEntity(EntityName, $"select * from {EntityName} where 1=2");
+                dr = tb.NewRow();
+                foreach (EntityField col in DataStruct.Fields)
+                {
+                    System.Reflection.PropertyInfo GetPropAInfo = DeletedDataRow.GetType().GetProperty(col.fieldname);
+
+                    //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
+                    //{
+                    System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                    dynamic result = GetPropAInfo.GetValue(DeletedDataRow);
+
+                    if (result == null)
+                    {
+                        result = System.DBNull.Value;
+                    }
+
+
+                    dr[col.fieldname] = result;
+                }
+            }
             try
             {
                 string updatestring = GetDeleteString(EntityName, DataStruct);
-
                 command.Transaction = sqlTran;
                 command.CommandText = updatestring;
-                command.ExecuteNonQuery();
+
+                foreach (EntityField item in DataStruct.Fields)
+                {
+                    IDbDataParameter parameter = command.CreateParameter();
+                    //System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(item.fieldname);
+                    //var v = PropAInfo.GetValue(ti);
+
+                    parameter.ParameterName = "p_" + item.fieldname;
+                    if (item.fieldtype == "System.DateTime")
+                    {
+                        parameter.DbType = DbType.DateTime;
+                        parameter.Value = DateTime.Parse(dr[item.fieldname].ToString());
+
+
+                    }
+                    else
+                    { parameter.Value = dr[item.fieldname]; }
+                    //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
+                    command.Parameters.Add(parameter);
+
+                }
+
+
+
+                int rowsUpdated = command.ExecuteNonQuery();
+                if (rowsUpdated > 0)
+                {
+                    msg = $"Successfully Deleted  Record  to {EntityName} : {updatestring}";
+                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
+                }
+                else
+                {
+                    msg = $"Fail to Delete Record  from {EntityName} : {updatestring}";
+                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
+                }
                 sqlTran.Commit();
                 command.Dispose();
-                Logger.WriteLog("Successfully Written Data to DataSource ");
+               
 
             }
             catch (Exception ex)
             {
                 ErrorObject.Ex = ex;
-                string str;
+               
                 command.Dispose();
                 try
                 {
                     // Attempt to roll back the transaction.
                     sqlTran.Rollback();
-                    str = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
+                    msg = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
                 }
                 catch (Exception exRollback)
                 {
@@ -516,12 +595,11 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     // is closed or the transaction has already been rolled
                     // back on the server.
                     // Console.WriteLine(exRollback.Message);
-                    str = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
+                    msg = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
                     ErrorObject.Ex = exRollback;
                 }
-                str = "Unsuccessfully no Data has been written to Data Source";
-                Logger.WriteLog($"{str}  {ErrorObject.Ex.Message}");
-                ErrorObject.Flag = Errors.Failed;
+                msg = "Unsuccessfully no Data has been written to Data Source";
+                DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
 
             }
 
@@ -535,17 +613,32 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             DataRowView dv;
             DataTable tb;
             DataRow dr;
+            string msg = "";
             //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
             IDbCommand command = Dataconnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
             var ti = Activator.CreateInstance(enttype);
             // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
-            if (InsertedData.GetType().GetInterfaces().Contains(typeof(ICustomTypeDescriptor)))
+            if (InsertedData.GetType().FullName == "System.Data.DataRowView")
             {
                 dv = (DataRowView)InsertedData;
                 dr = dv.Row;
-             
+                //foreach (EntityField col in DataStruct.Fields)
+                //{
+                //    // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
+                //    //if (dr[col.fieldname] != System.DBNull.Value)
+                //    //{
+                //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                //        PropAInfo.SetValue(ti, dr[col.fieldname], null);
+                //    //}
 
+                //}
+
+            }
+            else
+               if (InsertedData.GetType().FullName == "System.Data.DataRow")
+            {
+                dr = (DataRow)InsertedData;
             }
             else
             {
@@ -596,16 +689,16 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
                 }
 
-
-                string msg = "";
                 int rowsUpdated = command.ExecuteNonQuery();
                 if (rowsUpdated > 0)
                 {
-                    msg = $"Successfully Updated  Record  to {EntityName} : {updatestring}";
+                    msg = $"Successfully Inserted  Record  to {EntityName} : {updatestring}";
+                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
                 }
                 else
                 {
-                    msg = $"Fail to Updated  Record  to {EntityName} : {updatestring}";
+                    msg = $"Fail to Insert  Record  to {EntityName} : {updatestring}";
+                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
                 }
                 // DMEEditor.AddLogMessage("Success",$"Successfully Written Data to {EntityName}",DateTime.Now,0,null, Errors.Ok);
 
@@ -613,13 +706,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             catch (Exception ex)
             {
                 ErrorObject.Ex = ex;
-                string str;
+              
                 command.Dispose();
                 try
                 {
                     // Attempt to roll back the transaction.
                     //     sqlTran.Rollback();
-                    str = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
+                    msg = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
                 }
                 catch (Exception exRollback)
                 {
@@ -627,12 +720,11 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     // is closed or the transaction has already been rolled
                     // back on the server.
                     // Console.WriteLine(exRollback.Message);
-                    str = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
+                    msg = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
                     ErrorObject.Ex = exRollback;
                 }
-                str = "Unsuccessfully no Data has been written to Data Source";
-                Logger.WriteLog($"{str}  {ErrorObject.Ex.Message}");
-                ErrorObject.Flag = Errors.Failed;
+                msg = "Unsuccessfully no Data has been written to Data Source";
+                DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
 
             }
 
