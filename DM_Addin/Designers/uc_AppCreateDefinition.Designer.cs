@@ -236,7 +236,7 @@ namespace TheTechIdea.ETL
             this.generatorNameComboBox.Size = new System.Drawing.Size(241, 21);
             this.generatorNameComboBox.TabIndex = 5;
             // 
-            // uc_AppGenerator
+            // uc_AppCreateDefinition
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -258,8 +258,9 @@ namespace TheTechIdea.ETL
             this.Controls.Add(this.createDateDateTimePicker);
             this.Controls.Add(appNameLabel);
             this.Controls.Add(this.appNameTextBox);
-            this.Name = "uc_AppGenerator";
+            this.Name = "uc_AppCreateDefinition";
             this.Size = new System.Drawing.Size(448, 277);
+           
             ((System.ComponentModel.ISupportInitialize)(this.appsBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.appVersionsBindingSource)).EndInit();
             this.ResumeLayout(false);

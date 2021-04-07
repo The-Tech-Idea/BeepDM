@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using TheTechIdea.Util;
+using TheTechIdea.Winforms.VIS;
 
 namespace TheTechIdea.DataManagment_Engine.AppBuilder
 {
@@ -23,12 +25,19 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         public bool Andriod { get; set; } = false;
         public bool IOS { get; set; } = false;
         public bool WPF { get; set; } = false;
-        public bool BuildApp()
+        IVisUtil Visutil { get; set; }
+        public bool BuildApp(IDMEEditor dMEEditor, PassedArgs passedArgs)
         {
             try
 
             {
+                DMEEditor = dMEEditor;
 
+                Visutil =(IVisUtil) passedArgs.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
+                if (Winform)
+                {
+                    Visutil.ShowUserControlInContainer("uc_WinformApp", Visutil.DisplayPanel, DMEEditor, new string[] { "" }, DMEEditor.Passedarguments);
+                }
 
 
                 DMEEditor.AddLogMessage("Success", $"Generating App {App.AppName}", DateTime.Now, 0, null, Errors.Ok);

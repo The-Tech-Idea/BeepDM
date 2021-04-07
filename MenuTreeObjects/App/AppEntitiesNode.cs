@@ -286,6 +286,8 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
                 {
                     ver = 1;
                 }
+                ObjectItem v = new ObjectItem { Name = "VISUTIL", obj =Visutil };
+                ob.Add(v);
                 PassedArgs Passedarguments = new PassedArgs
                 {
                     Addin = null,
@@ -304,9 +306,14 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
                     EventType = "CREATAPP"
 
                 };
-                // ActionNeeded?.Invoke(this, Passedarguments);
-                Visutil.ShowUserControlInContainer("uc_WinformApp", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
+                DMEEditor.Passedarguments = Passedarguments;
+                string pkname = DMEEditor.ConfigEditor.AppWritersClasses.Where(o => o.className == AppVersion.GeneratorName).FirstOrDefault().PackageName;
+                IAppBuilder appBuilder = (IAppBuilder)DMEEditor.Utilfunction.GetInstance(pkname);
+               
 
+                appBuilder.BuildApp(DMEEditor, Passedarguments);
+               
+                 
 
 
                 DMEEditor.AddLogMessage("Success", "Edit Control Shown", DateTime.Now, 0, null, Errors.Ok);

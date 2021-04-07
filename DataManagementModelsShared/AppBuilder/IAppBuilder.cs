@@ -15,7 +15,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         bool Web { get; set; }
         bool Andriod { get; set; }
         bool IOS { get; set; }
-        bool BuildApp();
+        bool BuildApp(IDMEEditor dMEEditor,PassedArgs passedArgs);
     }
 
 }

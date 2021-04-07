@@ -170,22 +170,22 @@
     <Compile Include="Designers\uc_FormDesigner.Designer.cs">
       <DependentUpon>uc_FormDesigner.cs</DependentUpon>
     </Compile>
-    <Compile Include="ETL\uc_App.cs">
+    <Compile Include="Designers\uc_App.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="ETL\uc_App.Designer.cs">
+    <Compile Include="Designers\uc_App.Designer.cs">
       <DependentUpon>uc_App.cs</DependentUpon>
     </Compile>
-    <Compile Include="ETL\uc_AppCreateDefinition.cs">
+    <Compile Include="Designers\uc_AppCreateDefinition.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="ETL\uc_AppCreateDefinition.Designer.cs">
+    <Compile Include="Designers\uc_AppCreateDefinition.Designer.cs">
       <DependentUpon>uc_AppCreateDefinition.cs</DependentUpon>
     </Compile>
-    <Compile Include="ETL\uc_ComposedLayer.cs">
+    <Compile Include="Designers\uc_ComposedLayer.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="ETL\uc_ComposedLayer.Designer.cs">
+    <Compile Include="Designers\uc_ComposedLayer.Designer.cs">
       <DependentUpon>uc_ComposedLayer.cs</DependentUpon>
     </Compile>
     <Compile Include="Designers\uc_Report.cs">
@@ -337,13 +337,13 @@
     <EmbeddedResource Include="DDL\uc_DBFieldType.resx">
       <DependentUpon>uc_DBFieldType.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="ETL\uc_App.resx">
+    <EmbeddedResource Include="Designers\uc_App.resx">
       <DependentUpon>uc_App.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="ETL\uc_AppCreateDefinition.resx">
+    <EmbeddedResource Include="Designers\uc_AppCreateDefinition.resx">
       <DependentUpon>uc_AppCreateDefinition.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="ETL\uc_ComposedLayer.resx">
+    <EmbeddedResource Include="Designers\uc_ComposedLayer.resx">
       <DependentUpon>uc_ComposedLayer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Designers\uc_Report.resx">
