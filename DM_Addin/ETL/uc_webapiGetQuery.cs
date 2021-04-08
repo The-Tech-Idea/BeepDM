@@ -75,14 +75,14 @@ namespace TheTechIdea.ETL
             branch = (IBranch)e.Objects.Where(c => c.Name == "Branch").FirstOrDefault().obj;
             ParentBranch = (IBranch)e.Objects.Where(c => c.Name == "ParentBranch").FirstOrDefault().obj;
             webAPIData = DMEEditor.GetDataSource(e.DatasourceName);
-
+            webAPIData.Dataconnection.OpenConnection();
             CurrentEntity = e.CurrentEntity;
             ConnectionProperties cn= DMEEditor.ConfigEditor.DataConnections.Where(p => string.Equals(p.ConnectionName,e.DatasourceName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             ent = webAPIData.Entities.Where(o => string.Equals(o.EntityName, e.CurrentEntity, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             
             ls = ent.Fields;
             this.dataGridView1.DataSource = DataBindingSource;
-              DataGridView grid = dv.CreateGrid();
+            DataGridView grid = dv.CreateGrid();
             if (ent.Filters == null)
             {
                 ent.Filters = new List<ReportFilter>();
@@ -143,7 +143,7 @@ namespace TheTechIdea.ETL
                 str = str.Replace("{" + item.parameterIndex + "}", ent.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault()) ;
             }
             
-            Task<dynamic> output= GetOutput(CurrentEntity, str);
+            Task<dynamic> output= GetOutputAsync(CurrentEntity, ent.Filters);
             output.Wait();
             DataBindingSource.DataSource = output.Result;
             DataBindingSource.ResetBindings(true);
@@ -155,9 +155,9 @@ namespace TheTechIdea.ETL
 
             this.dataGridView1.Refresh();
         }
-        private dynamic GetOutput(string CurrentEntity, string str)
+        private async Task<dynamic> GetOutputAsync(string CurrentEntity, List<ReportFilter> filter)
         {
-            return webAPIData.GetEntity(CurrentEntity, str); //.ConfigureAwait(false)
+            return await webAPIData.GetEntityAsync(CurrentEntity, filter).ConfigureAwait(false);
         }
 
     }

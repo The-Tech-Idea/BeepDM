@@ -8,9 +8,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using TheTechIdea.Winforms.VIS;
+using TheTechIdea.Winforms.VIS.ReportGenrerator;
 
 namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
 {
@@ -40,6 +42,8 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
         IDataSource ds;
         Type enttype;
         object ob;
+       
+
         List<object> DataList = new List<object>();
         public void Run(string param1)
         {
@@ -67,8 +71,9 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                         if (EntityStructure.Fields.Count > 0)
                         {
                             EntityName = EntityStructure.EntityName;
-                            //EntityData = (DataTable)ds.GetEntity(EntityStructure.EntityName, null);
-                            //ShowCRUD();
+                             grid = dv.CreateGrid();
+                            Filterpanel.Controls.Add(dv.GridView);
+                            CreateFilterGrid();
                         }
                     }
                 }
@@ -78,16 +83,18 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             InsertNewEntitybutton.Click += InsertNewEntitybutton_Click;
             DeleteSelectedbutton.Click += DeleteSelectedbutton_Click;
             EditSelectedbutton.Click += EditSelectedbutton_Click;
-            
-        }
+           // CreateFilterGrid();
 
+
+        }
+        #region "CRUD Methods"
         private void EditSelectedbutton_Click(object sender, EventArgs e)
         {
             if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
             {
                 if (dataGridView1.SelectedRows.Count > 0)
                 {
-                     ob=EntitybindingSource.Current;
+                    ob = EntitybindingSource.Current;
                     if (Passedarg.Objects.Where(i => i.Name == EntityName).Any())
                     {
                         Passedarg.Objects.Remove(Passedarg.Objects.Where(i => i.Name == EntityName).FirstOrDefault());
@@ -105,7 +112,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
         }
         private void DeleteSelectedbutton_Click(object sender, EventArgs e)
         {
-           if(MessageBox.Show(this,"Delete","Are you sure ? ",MessageBoxButtons.YesNo)==DialogResult.Yes)
+            if (MessageBox.Show(this, "Delete", "Are you sure ? ", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
                 if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
                 {
@@ -114,13 +121,14 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                         object ob = EntitybindingSource.Current;
                         try
                         {
-                            if(ds.DeleteEntity(EntityName, ob).Flag==Errors.Failed)
+                            if (ds.DeleteEntity(EntityName, ob).Flag == Errors.Failed)
                             {
                                 EntitybindingSource.RemoveCurrent();
                                 RefreshData();
                                 MessageBox.Show("Failed to Delete Record");
-                               
-                            }else
+
+                            }
+                            else
                             {
                                 MessageBox.Show("Success to Delete Record");
                             }
@@ -130,12 +138,11 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
 
                             throw;
                         }
-                       
+
                     }
                 }
             }
         }
-
         private void InsertNewEntitybutton_Click(object sender, EventArgs e)
         {
             if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
@@ -143,7 +150,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
 
 
                 EntitybindingSource.AddNew();
-                ob= EntitybindingSource.Current;
+                ob = EntitybindingSource.Current;
                 if (Passedarg.Objects.Where(i => i.Name == EntityName).Any())
                 {
                     Passedarg.Objects.Remove(Passedarg.Objects.Where(i => i.Name == EntityName).FirstOrDefault());
@@ -155,31 +162,22 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                 Passedarg.Objects.Add(new ObjectItem() { Name = EntityName, obj = ob });
                 Passedarg.Objects.Add(new ObjectItem() { Name = "BindingSource", obj = EntitybindingSource });
                 Visutil.ShowUserControlPopUp("uc_Insertentity", DMEEditor, new string[] { "" }, Passedarg);
-              //  RefreshData();
+                //  RefreshData();
 
             }
-        }
-
-        private void Expandbutton_Click(object sender, EventArgs e)
-        {
-            splitContainer1.Panel1Collapsed = !splitContainer1.Panel1Collapsed;
-        }
-
-        private void SubmitFilterbutton_Click(object sender, EventArgs e)
-        {
-            GetData();
         }
         private void GetData()
         {
             if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
             {
-                object retval = ds.GetEntity(EntityName, null);
+                object retval = ds.GetEntity(EntityName, EntityStructure.Filters);
                 if (retval.GetType().FullName == "System.Data.DataTable")
                 {
                     DataList = DMEEditor.Utilfunction.ConvertTableToList((DataTable)retval, EntityStructure, ds.GetEntityType(EntityName));
-                }else
+                }
+                else
                 {
-                    DataList =(List<object>) retval;
+                    DataList = (List<object>)retval;
                 }
                 RefreshData();
             }
@@ -194,5 +192,96 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             EntityNamelabel.Text = EntityName;
             subtitlelabel.Text = $"From Data Source : {ds.DatasourceName}";
         }
+        #endregion
+        #region "Filter code"
+       
+     
+        BindingSource reportFilterbindingSource1 = new BindingSource();
+        GenReportusingPrintForm dv = new GenReportusingPrintForm();
+        DataGridView grid;
+        private string getfilter()
+        {
+            string str = EntityStructure.CustomBuildQuery;
+            foreach (ReportFilter item in EntityStructure.Filters)
+            {
+                if (!string.IsNullOrEmpty(item.Operator))
+                {
+                    if (!string.IsNullOrEmpty(item.FilterValue) || string.IsNullOrWhiteSpace(item.FilterValue))
+                    {
+
+                    }
+                    else
+                    {
+                        MessageBox.Show("Error, Please Fill all missing filter Value or remove filter condition");
+                        throw new InvalidOperationException("Error, Please Fill all missing Fields");
+                    }
+                }
+
+                if (string.IsNullOrEmpty(item.FilterValue) || string.IsNullOrWhiteSpace(item.FilterValue))
+                {
+                   
+                }
+            }
+            foreach (EntityParameters item in EntityStructure.Paramenters)
+            {
+                str = str.Replace("{" + item.parameterIndex + "}", EntityStructure.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault());
+            }
+            return str;
+
+        }
+        private void CreateFilterGrid()
+        {
+
+            CreateFilterQueryGrid(EntityStructure.EntityName, EntityStructure.Fields, new List<string> { "=", ">=", "<=", ">", "<" });
+        }
+        public List<ReportFilter> CreateFilterQueryGrid(string text, List<EntityField> ls, List<string> lsop)
+        {
+           
+            List<string> FieldNames = new List<string>();
+            EntityStructure.Filters.Clear();
+            reportFilterbindingSource1.DataSource = EntityStructure.Filters;
+            for (int i = 0; i < ls.Count - 1; i++)
+            {
+                ReportFilter r = new ReportFilter();
+                r.FieldName = ls[i].fieldname;
+                r.Operator = "";
+                EntityStructure.Filters.Add(r);
+                FieldNames.Add(ls[i].fieldname);
+
+
+            }
+
+            if (lsop == null)
+            {
+                lsop = new List<string> {"", "=", ">=", "<=", ">", "<" ,"Like"};
+            }
+            grid.AutoGenerateColumns = false;
+            grid.DataSource = reportFilterbindingSource1;
+            grid.Columns.Add(dv.CreateComoboBoxColumnForGrid("FieldName", "Column", FieldNames));
+            grid.Columns.Add(dv.CreateComoboBoxColumnForGrid("Operator", "Operator", lsop));
+            grid.Columns.Add(dv.CreateTextColumnForGrid("FilterValue", "Value"));
+            grid.Left = 0;
+            grid.Top = 20;
+            grid.Height = splitContainer1.Panel1.Height;
+            grid.Width = splitContainer1.Panel1.Width - 25;
+         
+            grid.Dock = DockStyle.Fill;
+         
+         
+
+            return EntityStructure.Filters;
+        }
+        #endregion
+
+        private void Expandbutton_Click(object sender, EventArgs e)
+        {
+            splitContainer1.Panel1Collapsed = !splitContainer1.Panel1Collapsed;
+        }
+
+        private void SubmitFilterbutton_Click(object sender, EventArgs e)
+        {
+            GetData();
+        }
+     
     }
 }

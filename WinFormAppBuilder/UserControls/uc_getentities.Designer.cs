@@ -36,22 +36,23 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.label1 = new System.Windows.Forms.Label();
             this.SubmitFilterbutton = new System.Windows.Forms.Button();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
+            this.EntitybindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.gridTitlepanel = new System.Windows.Forms.Panel();
+            this.expandbutton = new System.Windows.Forms.Button();
             this.subtitlelabel = new System.Windows.Forms.Label();
             this.EntityNamelabel = new System.Windows.Forms.Label();
             this.EditSelectedbutton = new System.Windows.Forms.Button();
             this.DeleteSelectedbutton = new System.Windows.Forms.Button();
             this.InsertNewEntitybutton = new System.Windows.Forms.Button();
-            this.EntitybindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.expandbutton = new System.Windows.Forms.Button();
+            this.Filterpanel = new System.Windows.Forms.Panel();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
             this.filterTitlepanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
-            this.gridTitlepanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.EntitybindingSource)).BeginInit();
+            this.gridTitlepanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // splitContainer1
@@ -63,6 +64,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             // splitContainer1.Panel1
             // 
             this.splitContainer1.Panel1.AutoScroll = true;
+            this.splitContainer1.Panel1.Controls.Add(this.Filterpanel);
             this.splitContainer1.Panel1.Controls.Add(this.filterTitlepanel);
             // 
             // splitContainer1.Panel2
@@ -108,7 +110,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             // 
             // SubmitFilterbutton
             // 
-            this.SubmitFilterbutton.Anchor = System.Windows.Forms.AnchorStyles.Top;
+            this.SubmitFilterbutton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.SubmitFilterbutton.Location = new System.Drawing.Point(295, 65);
             this.SubmitFilterbutton.Name = "SubmitFilterbutton";
             this.SubmitFilterbutton.Size = new System.Drawing.Size(75, 23);
@@ -148,6 +150,17 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.gridTitlepanel.Name = "gridTitlepanel";
             this.gridTitlepanel.Size = new System.Drawing.Size(823, 91);
             this.gridTitlepanel.TabIndex = 0;
+            // 
+            // expandbutton
+            // 
+            this.expandbutton.FlatAppearance.BorderSize = 0;
+            this.expandbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.expandbutton.Image = global::TheTechIdea.DataManagment_Engine.AppBuilder.Properties.Resources.expand_arrows_24px;
+            this.expandbutton.Location = new System.Drawing.Point(3, 65);
+            this.expandbutton.Name = "expandbutton";
+            this.expandbutton.Size = new System.Drawing.Size(25, 23);
+            this.expandbutton.TabIndex = 6;
+            this.expandbutton.UseVisualStyleBackColor = true;
             // 
             // subtitlelabel
             // 
@@ -201,16 +214,14 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.InsertNewEntitybutton.Text = "New";
             this.InsertNewEntitybutton.UseVisualStyleBackColor = true;
             // 
-            // expandbutton
+            // Filterpanel
             // 
-            this.expandbutton.FlatAppearance.BorderSize = 0;
-            this.expandbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.expandbutton.Image = global::TheTechIdea.DataManagment_Engine.AppBuilder.Properties.Resources.expand_arrows_24px;
-            this.expandbutton.Location = new System.Drawing.Point(3, 65);
-            this.expandbutton.Name = "expandbutton";
-            this.expandbutton.Size = new System.Drawing.Size(25, 23);
-            this.expandbutton.TabIndex = 6;
-            this.expandbutton.UseVisualStyleBackColor = true;
+            this.Filterpanel.AutoScroll = true;
+            this.Filterpanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.Filterpanel.Location = new System.Drawing.Point(0, 91);
+            this.Filterpanel.Name = "Filterpanel";
+            this.Filterpanel.Size = new System.Drawing.Size(373, 709);
+            this.Filterpanel.TabIndex = 1;
             // 
             // uc_getentities
             // 
@@ -226,9 +237,9 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.filterTitlepanel.ResumeLayout(false);
             this.filterTitlepanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.EntitybindingSource)).EndInit();
             this.gridTitlepanel.ResumeLayout(false);
             this.gridTitlepanel.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.EntitybindingSource)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -249,5 +260,6 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
         private System.Windows.Forms.DataGridView dataGridView1;
         private System.Windows.Forms.BindingSource EntitybindingSource;
         private System.Windows.Forms.Button expandbutton;
+        private System.Windows.Forms.Panel Filterpanel;
     }
 }

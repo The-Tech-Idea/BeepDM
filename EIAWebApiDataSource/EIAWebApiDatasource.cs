@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
@@ -232,14 +233,20 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
             }
         }
 
-        public async Task<object> GetEntityDataAsync(string EntityName, string filterstr)
+        public async Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
-         
+
+            EntityStructure ent = Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName == EntityName).FirstOrDefault();
+            string filterstr = ent.CustomBuildQuery;
+            foreach (EntityParameters item in ent.Paramenters)
+            {
+                filterstr = filterstr.Replace("{" + item.parameterIndex + "}", ent.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault());
+            }
             var request = new HttpRequestMessage();
             client = new HttpClient();
             client.BaseAddress = new Uri(Dataconnection.ConnectionProp.Url);
           
-            EntityStructure ent = Entities.Where(o => o.EntityName == EntityName).FirstOrDefault();
+           
             if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.ApiKey))
             {
                 Dataconnection.ConnectionProp.Url = Dataconnection.ConnectionProp.Url.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
@@ -270,10 +277,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
                 return y;
             }
         }
-        public DataTable GetEntity(string EntityName, string filterstr)
-        {
-            throw new NotImplementedException();
-        }
+      
 
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
@@ -325,6 +329,31 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
             throw new NotImplementedException();
         }
         public List<LScript> GetCreateEntityScript(List<EntityStructure> entities = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
+        {
+            throw new NotImplementedException();
+        }
+
+        public object GetEntity(string EntityName, List<ReportFilter> filter)
         {
             throw new NotImplementedException();
         }

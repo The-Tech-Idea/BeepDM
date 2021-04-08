@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 using TheTechIdea.Util;
 using TheTechIdea.Winforms.VIS;
 
@@ -36,17 +37,17 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
                 Visutil =(IVisUtil) passedArgs.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
                 if (Winform)
                 {
-                    Visutil.ShowUserControlInContainer("uc_WinformApp", Visutil.DisplayPanel, DMEEditor, new string[] { "" }, DMEEditor.Passedarguments);
+                    Visutil.ShowUserControlPopUp("uc_WinformApp",  DMEEditor, new string[] { "" }, DMEEditor.Passedarguments);
                 }
 
 
-                DMEEditor.AddLogMessage("Success", $"Generating App {App.AppName}", DateTime.Now, 0, null, Errors.Ok);
+              //  DMEEditor.AddLogMessage("Success", $"Generating App {App.AppName}", DateTime.Now, 0, null, Errors.Ok);
                 return true;
             }
             catch (Exception ex)
             {
                 string errmsg = "Error Generating App";
-                DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                MessageBox.Show("Fail", $"{errmsg}:{ex.Message}");
                 return false;
             }
 

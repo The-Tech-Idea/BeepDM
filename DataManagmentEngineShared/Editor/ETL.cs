@@ -229,7 +229,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                             rDB.DisableFKConstraints(item);
                         }
                         object srcTb;
-                        var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, ""); });
+                        var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
                         src.Wait();
                         srcTb = src.Result;
                         var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(item.EntityName, srcTb); });
@@ -297,7 +297,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                                 rDB.DisableFKConstraints(item);
                             }
                             DataTable srcTb = new DataTable();
-                            var src = Task.Run<DataTable>(() => { return (DataTable)sourceds.GetEntity(item.EntityName, ""); });
+                            var src = Task.Run<DataTable>(() => { return (DataTable)sourceds.GetEntity(item.EntityName, null); });
                             src.Wait();
                             srcTb = src.Result;
                             //var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(item.EntityName, srcTb, null); });

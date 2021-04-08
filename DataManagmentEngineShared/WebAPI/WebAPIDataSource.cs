@@ -12,6 +12,7 @@ using TheTechIdea.DataManagment_Engine.DataBase;
 using DataManagmentEngineShared.WebAPI;
 using System.Net.Http;
 using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.DataManagment_Engine.Report;
 
 namespace TheTechIdea.DataManagment_Engine.WebAPI
 {
@@ -161,32 +162,23 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
         }
        
         
-        public virtual async Task<object> GetEntityDataAsync(string entityname, string filterstr)
-        {
-        var request = new HttpRequestMessage();
-        request.Method = HttpMethod.Get;
-        request.RequestUri = new Uri(Dataconnection.ConnectionProp.Url + "/" + filterstr);
-        foreach (WebApiHeader item in Dataconnection.ConnectionProp.Headers)
-        {
-            request.Headers.Add(item.headername, item.headervalue);
-        }
+       
 
-        //string retval = SendAsync(request).Result;
-
-        using (var response = await client.SendAsync(request))
+        public virtual object GetEntity(string EntityName, List<ReportFilter> filter)
+        {
+            EntityStructure ent = GetEntityStructure(EntityName);
+            string str = ent.CustomBuildQuery;
+            foreach (ReportFilter item in ent.Filters)
             {
-            //    response.EnsureSuccessStatusCode();
-                var body = await response.Content.ReadAsStringAsync();
-          
-                dynamic x= DMEEditor.ConfigEditor.JsonLoader.DeserializeObjectString<dynamic>(body);
-                return x;
+                if (string.IsNullOrEmpty(item.FilterValue) || string.IsNullOrWhiteSpace(item.FilterValue))
+                {
+                    
+                }
             }
-
-            
-        }
-
-        public virtual object GetEntity(string EntityName, string filterstr)
-        {
+            foreach (EntityParameters item in ent.Paramenters)
+            {
+                str = str.Replace("{" + item.parameterIndex + "}", ent.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault());
+            }
             throw new NotImplementedException();
         }
 
@@ -250,6 +242,37 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
+        {
+            EntityStructure ent = Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName == EntityName).FirstOrDefault();
+            string filterstr = ent.CustomBuildQuery;
+            foreach (EntityParameters item in ent.Paramenters)
+            {
+                filterstr = filterstr.Replace("{" + item.parameterIndex + "}", ent.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault());
+            }
+
+            var request = new HttpRequestMessage();
+            request.Method = HttpMethod.Get;
+            request.RequestUri = new Uri(Dataconnection.ConnectionProp.Url + "/" + filterstr);
+            foreach (WebApiHeader item in Dataconnection.ConnectionProp.Headers)
+            {
+                request.Headers.Add(item.headername, item.headervalue);
+            }
+
+            //string retval = SendAsync(request).Result;
+
+            using (var response = await client.SendAsync(request))
+            {
+                //    response.EnsureSuccessStatusCode();
+                var body = await response.Content.ReadAsStringAsync();
+
+                dynamic x = DMEEditor.ConfigEditor.JsonLoader.DeserializeObjectString<dynamic>(body);
+                return x;
+            }
+
+
         }
     }
 }

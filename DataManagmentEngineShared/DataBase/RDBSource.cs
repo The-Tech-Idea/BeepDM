@@ -19,6 +19,7 @@ using System.Dynamic;
 using TheTechIdea.DataManagment_Engine.Editor;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
+using TheTechIdea.DataManagment_Engine.Report;
 
 namespace TheTechIdea.DataManagment_Engine.DataBase
 {
@@ -384,8 +385,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             else
             {
-                tb = (DataTable)GetEntity(EntityName, $"select * from {EntityName} where 1=2");
-                dr = tb.NewRow();
+                dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
                 foreach (EntityField col in DataStruct.Fields)
                 {
                     System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname);
@@ -643,8 +643,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             else
             {
-                tb = (DataTable)GetEntity(EntityName, $"select * from {EntityName} where 1=2");
-                dr = tb.NewRow();
+                dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
                 foreach (EntityField col in DataStruct.Fields)
                 {
                     System.Reflection.PropertyInfo GetPropAInfo = InsertedData.GetType().GetProperty(col.fieldname);
@@ -731,20 +730,42 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             return ErrorObject;
         }
-        public virtual object GetEntity(string EntityName, string QueryString)
+        public virtual object GetEntity(string EntityName, List<ReportFilter> Filter)
         {
             ErrorObject.Flag = Errors.Ok;
             //  int LoadedRecord;
-            // EntityStructure enttype = GetEntityDataType(EntityName);
+           
             EntityName = EntityName.ToLower();
-            string qrystr = "select * from " + EntityName;
-            if (string.IsNullOrEmpty(QueryString) && string.IsNullOrWhiteSpace(QueryString))
+            string inname="";
+            string qrystr = "select* from ";
+            if (!string.IsNullOrEmpty(EntityName) && !string.IsNullOrWhiteSpace(EntityName))
             {
-                qrystr = "select * from " + EntityName;
+                if (!EntityName.Contains("select") && !EntityName.Contains("from"))
+                {
+                    qrystr = "select * from " + EntityName;
+                    inname = EntityName;
+                }else
+                {
+                    inname = EntityName.Substring(EntityName.IndexOf("from") + 1).Trim();
+                }
+               
             }
-            else
+            EntityStructure ent = GetEntityStructure(inname);
+
+            if (Filter != null)
             {
-                qrystr = QueryString;
+                qrystr += Environment.NewLine;
+                qrystr += " where " + Environment.NewLine;
+                foreach (ReportFilter item in Filter)
+                {
+                    EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
+                    if (f.fieldtype == "System.String")
+                    {
+                        qrystr += item.FieldName + " " + item.Operator + " '" + item.FilterValue + "'" + Environment.NewLine;
+                    }
+                    
+
+                }
             }
             try
             {
@@ -766,6 +787,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
 
 
+        }
+        public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
+        {
+            return (Task<object>)GetEntity(EntityName, Filter);
         }
         #endregion
 

@@ -13,6 +13,7 @@ using NPOI.XSSF.UserModel;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using System.IO;
+using TheTechIdea.DataManagment_Engine.Report;
 
 namespace TheTechIdea.DataManagment_Engine.FileManager
 {
@@ -92,7 +93,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             throw new NotImplementedException();
         }
 
-        public object GetEntity(string EntityName, string filterstr)
+        public object GetEntity(string EntityName, List<ReportFilter> filter)
         {
             throw new NotImplementedException();
         }
@@ -138,6 +139,10 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         }
 
         public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
+        {
+            throw new NotImplementedException();
+        }
+        public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
             throw new NotImplementedException();
         }

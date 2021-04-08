@@ -174,7 +174,7 @@ namespace TheTechIdea.ETL
             }
             else
             {
-                dt = (DataTable) SourceConnection.GetEntity(EntityName, "");
+                dt = (DataTable) SourceConnection.GetEntity(EntityName, null);
 
             }
 

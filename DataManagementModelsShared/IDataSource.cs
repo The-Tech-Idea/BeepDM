@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
@@ -38,9 +39,6 @@ namespace TheTechIdea
         List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName);
         EntityStructure GetEntityStructure(string EntityName, bool refresh );
         EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false);
-       
-        //DataTable GetEntity(string EntityName, string filterstr);
-        //DataTable RunQuery(string qrystr);
         LScript RunScript( LScript dDLScripts);
         List<LScript> GetCreateEntityScript(List<EntityStructure> entities=null);
         IErrorsInfo CreateEntities(List<EntityStructure> entities);
@@ -48,7 +46,10 @@ namespace TheTechIdea
         IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow);
         IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow);
         IErrorsInfo InsertEntity(string EntityName, object InsertedData);
-        object GetEntity(string EntityName, string filterstr);
+        object GetEntity(string EntityName, List<ReportFilter> filter);
+        Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter);
+
+
 
 
     }

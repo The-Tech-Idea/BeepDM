@@ -11,6 +11,7 @@ namespace TheTechIdea.DataManagment_Engine.Report
         string FieldName { get; set; }
         string FilterValue { get; set; }
         string Operator { get; set; }
+        string valueType { get; set; }
     }
 
     public class ReportFilter : IReportFilter
@@ -22,6 +23,7 @@ namespace TheTechIdea.DataManagment_Engine.Report
         public string FieldName { get; set; }
         public string Operator { get; set; }
         public string FilterValue { get; set; }
+        public string valueType { get; set; }
 
 
     }

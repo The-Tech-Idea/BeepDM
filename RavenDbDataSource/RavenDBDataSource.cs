@@ -12,6 +12,7 @@ using TheTechIdea;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
@@ -124,7 +125,7 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL.RavenDB
             throw new NotImplementedException();
         }
 
-        public object GetEntity(string EntityName, string filterstr)
+        public object GetEntity(string EntityName, List<ReportFilter> filter)
         {
             throw new NotImplementedException();
         }
@@ -188,6 +189,10 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL.RavenDB
         }
 
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
+        {
+            throw new NotImplementedException();
+        }
+        public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
             throw new NotImplementedException();
         }

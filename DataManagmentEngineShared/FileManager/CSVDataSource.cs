@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
@@ -208,17 +209,17 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             return EntitiesNames;
         }
 
-        public object GetEntity(string EntityName, string filterstr)
+        public object GetEntity(string EntityName, List<ReportFilter> filter)
         {
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                if (string.IsNullOrEmpty(filterstr))
+                if (filter==null)
                 {
                     return GetData(9999999);
                 }else
                 {
-                    return GetData(Convert.ToInt32(filterstr));
+                    return GetData(Convert.ToInt32(filter[0].FilterValue));
                 }
 
             }
@@ -278,6 +279,10 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         }
 
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
+        {
+            throw new NotImplementedException();
+        }
+        public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
             throw new NotImplementedException();
         }

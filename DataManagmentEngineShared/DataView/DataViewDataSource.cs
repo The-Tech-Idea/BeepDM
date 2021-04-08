@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
@@ -202,9 +203,9 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             return retval;
         }
        
-        public object GetEntity(string entityname, string filterstr)
+        public object GetEntity(string EntityName, List<ReportFilter> filter)
         {
-            return GetDataSourceObject(entityname).GetEntity(entityname, filterstr);
+            return GetDataSourceObject(EntityName).GetEntity(EntityName, filter);
         }
        
         public int EntityListIndex( string entityname)
@@ -436,6 +437,10 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         }
 
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
+        {
+            throw new NotImplementedException();
+        }
+        public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
             throw new NotImplementedException();
         }

@@ -28,7 +28,7 @@ namespace TheTechIdea.Logger
            
             logger.Information(info);
           //  OnPropertyChanged("Log");
-            Onevent?.Invoke(this, info);
+           // Onevent?.Invoke(this, info);
            // Log.CloseAndFlush();
         }
         protected void OnPropertyChanged(string propertyName)

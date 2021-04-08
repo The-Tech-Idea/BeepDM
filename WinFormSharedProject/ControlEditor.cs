@@ -1296,8 +1296,8 @@ namespace TheTechIdea.Winforms.VIS
           //  prompt.Controls.Add(textLabel);
             prompt.Controls.Add(dv.GridView);
             prompt.ShowDialog();
-            BindingList<IReportFilter> Retval = new BindingList<IReportFilter>();
-            //for (int i = 0; i < reportFilter.Count-1; i++)
+            //BindingList<IReportFilter> Retval = new BindingList<IReportFilter>();
+            //for (int i = 0; i < reportFilter.Count - 1; i++)
             //{
 
             //    if (reportFilter[i].FilterValue != null)
@@ -1307,14 +1307,12 @@ namespace TheTechIdea.Winforms.VIS
             //        r.FilterValue = reportFilter[i].FilterValue;
             //        r.Operator = reportFilter[i].Operator;
             //        Retval.Add(r);
-                  
+
             //    }
-               
-
-
             //}
-            return reportFilter;
+                return reportFilter;
         }
+     
 
         #endregion "Create Controls Dynamiclly"
         #region Handling Controls and binding
