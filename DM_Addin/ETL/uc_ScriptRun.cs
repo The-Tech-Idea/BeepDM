@@ -210,7 +210,7 @@ namespace TheTechIdea.ETL
                      if (dMEEditor.ETL.script.Scripts[i].scriptType == DDLScriptType.CopyData)
                      {
 
-                        var t1 = Task.Run<IErrorsInfo>(() => { return DMEEditor.ETL.CopyEntityData(srcds, destds, dMEEditor.ETL.script.Scripts[i], true); } );
+                        var t1 = Task.Run<IErrorsInfo>(() => { return DMEEditor.ETL.CopyEntityData(srcds, destds, dMEEditor.ETL.script.Scripts[i].entityname, true); } );
                       
                         t1.Wait();
 

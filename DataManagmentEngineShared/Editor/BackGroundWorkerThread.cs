@@ -202,7 +202,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                     if (dMEEditor.ETL.script.Scripts[i].scriptType == DDLScriptType.CopyData)
                     {
 
-                        dMEEditor.ETL.script.Scripts[i].errorsInfo = DME.ETL.CopyEntityData(srcds, destds, dMEEditor.ETL.script.Scripts[i], true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
+                        dMEEditor.ETL.script.Scripts[i].errorsInfo = DME.ETL.CopyEntityData(srcds, destds, dMEEditor.ETL.script.Scripts[i].entityname, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
                         dMEEditor.ETL.script.Scripts[i].errormessage = DME.ErrorObject.Message;
                         LScriptTracker tr = new LScriptTracker();
                         tr.currenrecordentity = dMEEditor.ETL.script.Scripts[i].entityname;

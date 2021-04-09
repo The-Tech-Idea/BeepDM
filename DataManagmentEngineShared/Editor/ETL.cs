@@ -126,35 +126,27 @@ namespace TheTechIdea.DataManagment_Engine.Editor
 
 
                 EntityStructure item = sourceds.GetEntityStructure(entity, true);
-                  if (destds.CreateEntityAs(item))
-                    {
-                     //   DMEEditor.AddLogMessage("Copy Data", $"Started Copying Strcuture for {item.EntityName}", DateTime.Now, 0, null, Errors.Ok);
-                        if (destds.Category == DatasourceCategory.RDBMS)
-                        {
+                if (destds.Category == DatasourceCategory.RDBMS)
+                {
 
-                            IRDBSource rDB = (IRDBSource)destds;
-                            rDB.DisableFKConstraints(item);
-                        }
-                        //DataTable srcTb = new DataTable();
-                        //var src = Task.Run<DataTable>(() => { return sourceds.GetEntity(item.EntityName, ""); });
-                        //src.Wait();
-                        //srcTb = src.Result;
-                        //var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(item.EntityName, srcTb, null); });
-                        //dst.Wait();
-                        DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Strcuture for {item.EntityName}", DateTime.Now, 0, null, Errors.Ok);
-                        if (destds.Category == DatasourceCategory.RDBMS)
-                        {
+                    IRDBSource rDB = (IRDBSource)destds;
+                    rDB.DisableFKConstraints(item);
+                }
+                if (destds.CreateEntityAs(item))
+                {
+                   DMEEditor.AddLogMessage("Success", $"Creating Entity  {item.EntityName} on {destds.DatasourceName}", DateTime.Now, 0, null, Errors.Ok);
+   
+                }
+                else
+                {
+                        DMEEditor.AddLogMessage("Fail", $"Error : Could not Create  Entity {item.EntityName} on {destds.DatasourceName}", DateTime.Now, 0, null, Errors.Failed);
+                 }
+                if (destds.Category == DatasourceCategory.RDBMS)
+                {
 
-                            IRDBSource rDB = (IRDBSource)destds;
-                            rDB.EnableFKConstraints(item);
-                        }
-
-                    }
-                    else
-                    {
-                        DMEEditor.AddLogMessage("Copy Data", $"Error : Could not Create missing Entity {item.EntityName}", DateTime.Now, 0, null, Errors.Failed);
-                    }
-                
+                    IRDBSource rDB = (IRDBSource)destds;
+                    rDB.EnableFKConstraints(item);
+                }
 
 
 
@@ -162,7 +154,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             catch (Exception ex)
             {
 
-                DMEEditor.AddLogMessage("Fail", $"Error copying Data ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"Error Could not Create  Entity {entity} on {destds.DatasourceName} ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
 
             }
             return DMEEditor.ErrorObject;
@@ -218,41 +210,42 @@ namespace TheTechIdea.DataManagment_Engine.Editor
 
 
                 EntityStructure item = sourceds.GetEntityStructure(entity, true);
-             
-                    if (destds.CreateEntityAs(item))
+                if (destds.Category == DatasourceCategory.RDBMS)
+                {
+
+                    IRDBSource rDB = (IRDBSource)destds;
+                    rDB.DisableFKConstraints(item);
+                }
+                if (destds.CreateEntityAs(item))
                     {
                    //     DMEEditor.AddLogMessage("Copy Data", $"Started Copying Data for {item.EntityName}", DateTime.Now, 0, null, Errors.Ok);
-                        if (destds.Category == DatasourceCategory.RDBMS)
-                        {
-
-                            IRDBSource rDB = (IRDBSource)destds;
-                            rDB.DisableFKConstraints(item);
-                        }
+                       
                         object srcTb;
                         var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
                         src.Wait();
                         srcTb = src.Result;
                         var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(item.EntityName, srcTb); });
                         dst.Wait();
-                        DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data for {item.EntityName}", DateTime.Now, 0, null, Errors.Ok);
-                        if (destds.Category == DatasourceCategory.RDBMS)
-                        {
-
-                            IRDBSource rDB = (IRDBSource)destds;
-                            rDB.EnableFKConstraints(item);
-                        }
+                        DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data for {entity} on {destds.DatasourceName}", DateTime.Now, 0, null, Errors.Ok);
+                       
 
                     }
                     else
                     {
-                        DMEEditor.AddLogMessage("Copy Data", $"Error : Could not Create missing Entity {item.EntityName}", DateTime.Now, 0, null, Errors.Failed);
+                        DMEEditor.AddLogMessage("Copy Data", $"Error Could not Copy Entity Date {entity} on {destds.DatasourceName}", DateTime.Now, 0, null, Errors.Failed);
                     }
-                
+                if (destds.Category == DatasourceCategory.RDBMS)
+                {
+
+                    IRDBSource rDB = (IRDBSource)destds;
+                    rDB.EnableFKConstraints(item);
+                }
+
             }
             catch (Exception ex)
             {
 
-                DMEEditor.AddLogMessage("Fail", $"Error copying Data ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"Error copying Data {entity} on {destds.DatasourceName} ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
 
             }
             return DMEEditor.ErrorObject;
@@ -265,7 +258,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
 
                 foreach (LScript s in scripts.Where(i=>i.scriptType==DDLScriptType.CopyData))
                 {
-                    CopyEntityData(sourceds, destds, s, CreateMissingEntity);
+                    CopyEntityData(sourceds, destds, s.entityname, CreateMissingEntity);
 
                 }
 
@@ -278,58 +271,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, LScript scripts, bool CreateMissingEntity = true)
-        {
-            try
-            {
-
-
-                
-                    EntityStructure item = sourceds.GetEntityStructure(scripts.entityname, true);
-                  
-                        if (destds.CreateEntityAs(item))
-                        {
-                           // DMEEditor.AddLogMessage("Copy Data", $"Started Copying Data for {item.EntityName}", DateTime.Now, 0, null, Errors.Ok);
-                            if (destds.Category == DatasourceCategory.RDBMS)
-                            {
-
-                                IRDBSource rDB = (IRDBSource)destds;
-                                rDB.DisableFKConstraints(item);
-                            }
-                            DataTable srcTb = new DataTable();
-                            var src = Task.Run<DataTable>(() => { return (DataTable)sourceds.GetEntity(item.EntityName, null); });
-                            src.Wait();
-                            srcTb = src.Result;
-                            //var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(item.EntityName, srcTb, null); });
-                            //dst.Wait();
-                           destds.UpdateEntities(item.EntityName, srcTb);
-                           DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data for {item.EntityName}", DateTime.Now, 0, null, Errors.Ok);
-                            if (destds.Category == DatasourceCategory.RDBMS)
-                            {
-
-                                IRDBSource rDB = (IRDBSource)destds;
-                                rDB.EnableFKConstraints(item);
-                            }
-
-                        }
-                        else
-                        {
-                            DMEEditor.AddLogMessage("Copy Data", $"Error : Could not Create missing Entity {item.EntityName}", DateTime.Now, 0, null, Errors.Failed);
-                        }
-                    
-
-               
-
-            }
-            catch (Exception ex)
-            {
-
-                DMEEditor.AddLogMessage("Fail", $"Error copying Data ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
-
-            }
-            return DMEEditor.ErrorObject;
-        }
-        //-----------------------
+         //-----------------------
         public IErrorsInfo RunScript(  )
         {
             int CurrentRecord = 1;
@@ -357,7 +299,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                     }
                     else
                     {
-                        var t1 = Task.Run<IErrorsInfo>(() => { return CopyEntityData(srcds, destds, script.Scripts[i], true); });
+                        var t1 = Task.Run<IErrorsInfo>(() => { return CopyEntityData(srcds, destds, script.Scripts[i].entityname, true); });
                         t1.Wait();
                         script.Scripts[i].errorsInfo = t1.Result;
                     }

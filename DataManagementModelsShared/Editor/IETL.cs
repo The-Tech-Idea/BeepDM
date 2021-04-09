@@ -20,7 +20,6 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, bool CreateMissingEntity = true);
         IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string entity, bool CreateMissingEntity = true);
         IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, bool CreateMissingEntity = true);
-        IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, LScript scripts, bool CreateMissingEntity = true);
         List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities);
         List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities);
         IErrorsInfo RunScript();

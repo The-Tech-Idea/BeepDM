@@ -63,6 +63,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             {
                 EntityName = e.CurrentEntity;
                 EntityStructure = ds.GetEntityStructure(EntityName, true);
+                EntityStructure.Filters = new List<ReportFilter>();
                 enttype = ds.GetEntityType(EntityName);
                 if (EntityStructure != null)
                 {
@@ -239,6 +240,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
            
             List<string> FieldNames = new List<string>();
             EntityStructure.Filters.Clear();
+         
             reportFilterbindingSource1.DataSource = EntityStructure.Filters;
             for (int i = 0; i < ls.Count - 1; i++)
             {

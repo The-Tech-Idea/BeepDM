@@ -752,20 +752,32 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             EntityStructure ent = GetEntityStructure(inname);
 
-            if (Filter != null)
-            {
-                qrystr += Environment.NewLine;
-                qrystr += " where " + Environment.NewLine;
-                foreach (ReportFilter item in Filter)
+            if (Filter != null )
+            { if (Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue)).Any())
                 {
-                    EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
-                    if (f.fieldtype == "System.String")
+                    qrystr += Environment.NewLine;
+                    qrystr += " where " + Environment.NewLine;
+                    foreach (ReportFilter item in Filter)
                     {
-                        qrystr += item.FieldName + " " + item.Operator + " '" + item.FilterValue + "'" + Environment.NewLine;
-                    }
-                    
+                        if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
+                        {
+                            EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
+                            if (f.fieldtype == "System.String")
+                            {
+                                qrystr += item.FieldName + " " + item.Operator + " '" + item.FilterValue + "'" + Environment.NewLine;
+                            }
+                            else
+                            {
+                                qrystr += item.FieldName + " " + item.Operator + " " + item.FilterValue + " " + Environment.NewLine;
+                            }
 
+                        }
+
+
+
+                    }
                 }
+               
             }
             try
             {
