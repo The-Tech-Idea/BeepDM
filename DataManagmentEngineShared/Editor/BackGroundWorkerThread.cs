@@ -109,12 +109,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         {
             #region "Update Data code "
             IDMEEditor dMEEditor = DME;
-            //object UploadData = lsob[1];
-            //IDataSource dataSource = (IDataSource)lsob[0];
-            //IMapping_rep Mapping = (IMapping_rep)lsob[2];
-            //string EntityName = (string)lsob[3];
-            //IDbTransaction sqlTran;
-            //DataTable tb = (DataTable)UploadData;
+          
             int CurrentRecord = 0;
             int highestPercentageReached = 0;
             int numberToCompute = 0;
@@ -132,170 +127,219 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             // Run Scripts-----------------
             int o = 0;
             numberToCompute = dMEEditor.ETL.script.Scripts.Count;
-            for (int i = 0; i < dMEEditor.ETL.script.Scripts.Count(); i++)
+            int p1 = dMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CreateTable).Count();
+            //for (int i = 0; i < dMEEditor.ETL.script.Scripts.Where(u=>u.scriptType == DDLScriptType.CreateTable).Count(); i++)
+            //{
+            foreach (LScript  sc in dMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CreateTable))
             {
 
+                //dMEEditor.ETL.script.Scripts[i]
 
-
-                destds = DME.GetDataSource(dMEEditor.ETL.script.Scripts[i].destinationdatasourcename);
-                srcds = DME.GetDataSource(dMEEditor.ETL.script.Scripts[i].sourcedatasourcename);
-                if (destds != null)
+                destds = DME.GetDataSource(sc.destinationdatasourcename);
+               
+                srcds = DME.GetDataSource(sc.sourcedatasourcename);
+               
+                if (destds != null )
                 {
-                    if (dMEEditor.ETL.script.Scripts[i].scriptType == DDLScriptType.CreateTable)
+                    destds.Dataconnection.OpenConnection();
+                  //  srcds.Dataconnection.OpenConnection();
+                    if(destds.ConnectionStatus== System.Data.ConnectionState.Open)
                     {
-                        dMEEditor.ETL.script.Scripts[i].errorsInfo = destds.ExecuteSql(dMEEditor.ETL.script.Scripts[i].ddl); // t.Result;
-                        LScriptTracker tr = new LScriptTracker();
-                        tr.currenrecordentity = dMEEditor.ETL.script.Scripts[i].entityname;
-                        tr.currentrecorddatasourcename = dMEEditor.ETL.script.Scripts[i].destinationdatasourcename;
-                        tr.currenrecordindex = i;
-                        tr.scriptType = dMEEditor.ETL.script.Scripts[i].scriptType;
-                        tr.errorsInfo = dMEEditor.ETL.script.Scripts[i].errorsInfo;
-                        dMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
-                        dMEEditor.ETL.script.Scripts[i].errormessage = DME.ErrorObject.Message;
-                        // Report progress as a percentage of the total task.
-                        int percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
-                        if (percentComplete > highestPercentageReached)
+                        if (sc.scriptType == DDLScriptType.CreateTable)
                         {
-                            highestPercentageReached = percentComplete;
-                            PassedArgs x = new PassedArgs();
-                            x.CurrentEntity = tr.currenrecordentity;
-                            x.DatasourceName = destds.DatasourceName;
-                            x.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
-                            x.ParameterInt1 = percentComplete;
-                            DME.Passedarguments = x;
-                            worker.ReportProgress(percentComplete);
+                            sc.errorsInfo = destds.ExecuteSql(sc.ddl); // t.Result;
+                            LScriptTracker tr = new LScriptTracker();
+                            tr.currenrecordentity = sc.entityname;
+                            tr.currentrecorddatasourcename = sc.destinationdatasourcename;
+                           // tr.currenrecordindex = i;
+                            tr.scriptType = sc.scriptType;
+                            tr.errorsInfo = sc.errorsInfo;
+                            dMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
+                            sc.errormessage = DME.ErrorObject.Message;
+                            // Report progress as a percentage of the total task.
+                            int percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
+                            if (percentComplete > highestPercentageReached)
+                            {
+                                highestPercentageReached = percentComplete;
+                                PassedArgs x = new PassedArgs();
+                                x.CurrentEntity = tr.currenrecordentity;
+                                x.DatasourceName = destds.DatasourceName;
+                                x.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
+                                x.ParameterInt1 = percentComplete;
+                                DME.Passedarguments = x;
+                                worker.ReportProgress(percentComplete);
+                            }
+                            if (backgroundWorker1.CancellationPending)
+                            {
+                                e.Cancel = true;
+                            }
+                            CurrentRecord += 1;
                         }
-                        if (backgroundWorker1.CancellationPending)
-                        {
-                            e.Cancel = true;
-                        }
-                        CurrentRecord += 1;
                     }
-                    //else
-                    //{
-                    //    var t1 = Task.Run<IErrorsInfo>(() => { return DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true); });
-                    //    t1.Wait();
-                    //    ScriptHeader.Scripts[i].errorsInfo = t1.Result;
-                    //}
+                    else
+                    {
 
-                    //destds.ExecuteSql(DMEEditor.DDLEditor.script[i].ddl);
-
-
+                        DME.ErrorObject.Flag = Errors.Failed;
+                        DME.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
+                        sc.errorsInfo = DME.ErrorObject;
+                        sc.errormessage = DME.ErrorObject.Message;
+                        LScriptTracker tr = new LScriptTracker();
+                        tr.currenrecordentity = sc.entityname;
+                        tr.currentrecorddatasourcename = sc.destinationdatasourcename;
+                      //  tr.currenrecordindex = i;
+                        tr.scriptType = sc.scriptType;
+                        tr.errorsInfo = sc.errorsInfo;
+                        DME.ETL.trackingHeader.trackingscript.Add(tr);
+                    }
+               
+               
                 }
-
-                //   ReportProgress?.Invoke(this, x);
-
 
             }
             //------------Update Entity structure
-
-            for (int i = 0; i < dMEEditor.ETL.script.Scripts.Count(); i++)
+            int p2 = dMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CopyData).Count();
+            foreach (LScript sc in dMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CopyData))
             {
 
 
 
-                destds = DME.GetDataSource(dMEEditor.ETL.script.Scripts[i].destinationdatasourcename);
-                srcds = DME.GetDataSource(dMEEditor.ETL.script.Scripts[i].sourcedatasourcename);
-              
-                if (destds != null)
+                destds = DME.GetDataSource(sc.destinationdatasourcename);
+                srcds = DME.GetDataSource(sc.sourcedatasourcename);
+
+                if (destds != null && srcds != null)
                 {
-                    if (dMEEditor.ETL.script.Scripts[i].scriptType == DDLScriptType.CopyData)
+                    destds.Dataconnection.OpenConnection();
+                    srcds.Dataconnection.OpenConnection();
+                    if (destds.ConnectionStatus == System.Data.ConnectionState.Open)
+                    {
+                        if (sc.scriptType == DDLScriptType.CopyData)
+                        {
+
+                            sc.errorsInfo = DME.ETL.CopyEntityData(srcds, destds, sc.entityname, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
+                            sc.errormessage = DME.ErrorObject.Message;
+                            LScriptTracker tr = new LScriptTracker();
+                            tr.currenrecordentity = sc.entityname;
+                            tr.currentrecorddatasourcename = sc.destinationdatasourcename;
+                         //   tr.currenrecordindex = i;
+                            tr.scriptType = sc.scriptType;
+                            tr.errorsInfo = sc.errorsInfo;
+                            DME.ETL.trackingHeader.trackingscript.Add(tr);
+
+                            // Report progress as a percentage of the total task.
+                            int percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
+                            if (percentComplete > highestPercentageReached)
+                            {
+                                highestPercentageReached = percentComplete;
+                                PassedArgs x = new PassedArgs();
+                                x.CurrentEntity = tr.currenrecordentity;
+                                x.DatasourceName = destds.DatasourceName;
+                                x.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
+                                x.ParameterInt1 = percentComplete;
+                                DME.Passedarguments = x;
+                                worker.ReportProgress(percentComplete);
+                            }
+                            if (backgroundWorker1.CancellationPending)
+                            {
+                                e.Cancel = true;
+                            }
+                            CurrentRecord += 1;
+                        }
+                    }
+                    else
                     {
 
-                        dMEEditor.ETL.script.Scripts[i].errorsInfo = DME.ETL.CopyEntityData(srcds, destds, dMEEditor.ETL.script.Scripts[i].entityname, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
-                        dMEEditor.ETL.script.Scripts[i].errormessage = DME.ErrorObject.Message;
+                        DME.ErrorObject.Flag = Errors.Failed;
+                        DME.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
+                       sc.errorsInfo = DME.ErrorObject;
+                        sc.errormessage = DME.ErrorObject.Message;
                         LScriptTracker tr = new LScriptTracker();
-                        tr.currenrecordentity = dMEEditor.ETL.script.Scripts[i].entityname;
-                        tr.currentrecorddatasourcename = dMEEditor.ETL.script.Scripts[i].destinationdatasourcename;
-                        tr.currenrecordindex = i;
-                        tr.scriptType = dMEEditor.ETL.script.Scripts[i].scriptType;
-                        tr.errorsInfo = dMEEditor.ETL.script.Scripts[i].errorsInfo;
+                        tr.currenrecordentity = sc.entityname;
+                        tr.currentrecorddatasourcename = sc.destinationdatasourcename;
+                       // tr.currenrecordindex = i;
+                        tr.scriptType = sc.scriptType;
+                        tr.errorsInfo = sc.errorsInfo;
                         DME.ETL.trackingHeader.trackingscript.Add(tr);
-
-                        // Report progress as a percentage of the total task.
-                        int percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
-                        if (percentComplete > highestPercentageReached)
-                        {
-                            highestPercentageReached = percentComplete;
-                            PassedArgs x = new PassedArgs();
-                            x.CurrentEntity = tr.currenrecordentity;
-                            x.DatasourceName = destds.DatasourceName;
-                            x.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
-                            x.ParameterInt1 = percentComplete;
-                            DME.Passedarguments = x;
-                            worker.ReportProgress(percentComplete);
-                        }
-                        if (backgroundWorker1.CancellationPending)
-                        {
-                            e.Cancel = true;
-                        }
-                        CurrentRecord += 1;
                     }
+                
 
 
                 }
 
-
-
-
             }
-            for (int i = 0; i < dMEEditor.ETL.script.Scripts.Count(); i++)
+            int p3 = dMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.AlterFor).Count();
+            foreach (LScript sc in dMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.AlterFor))
             {
 
 
                 // CurrentRecord = i;
-                destds = DME.GetDataSource(dMEEditor.ETL.script.Scripts[i].destinationdatasourcename);
-                srcds = DME.GetDataSource(dMEEditor.ETL.script.Scripts[i].sourcedatasourcename);
-                if (destds != null)
+                destds = DME.GetDataSource(sc.destinationdatasourcename);
+                srcds = DME.GetDataSource(sc.sourcedatasourcename);
+                if (destds != null )
                 {
-                    if (dMEEditor.ETL.script.Scripts[i].scriptType == DDLScriptType.AlterFor)
+                    destds.Dataconnection.OpenConnection();
+              //      srcds.Dataconnection.OpenConnection();
+                    if (destds.ConnectionStatus == System.Data.ConnectionState.Open)
+                    {
+                        if (sc.scriptType == DDLScriptType.AlterFor)
+                        {
+
+                           sc.errorsInfo = destds.ExecuteSql(sc.ddl);
+                            sc.errormessage = DME.ErrorObject.Message;
+                            LScriptTracker tr = new LScriptTracker();
+                            tr.currenrecordentity = sc.entityname;
+                            tr.currentrecorddatasourcename = sc.destinationdatasourcename;
+                           // tr.currenrecordindex = i;
+                            tr.scriptType = sc.scriptType;
+                            tr.errorsInfo = sc.errorsInfo;
+                            DME.ETL.trackingHeader.trackingscript.Add(tr);
+
+                            // Report progress as a percentage of the total task.
+
+                            int percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
+                            if (percentComplete > highestPercentageReached)
+                            {
+                                highestPercentageReached = percentComplete;
+                                PassedArgs x = new PassedArgs();
+                                x.CurrentEntity = tr.currenrecordentity;
+                                x.DatasourceName = destds.DatasourceName;
+                                x.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
+                                x.ParameterInt1 = percentComplete;
+                                DME.Passedarguments = x;
+                                worker.ReportProgress(percentComplete);
+                            }
+
+                            //  DMEEditor.RaiseEvent(this, x);
+
+
+                            if (backgroundWorker1.CancellationPending)
+                            {
+                                e.Cancel = true;
+                            }
+                            CurrentRecord += 1;
+                        }
+                    }
+                    else
                     {
 
-                        dMEEditor.ETL.script.Scripts[i].errorsInfo = destds.ExecuteSql(dMEEditor.ETL.script.Scripts[i].ddl);
-                        dMEEditor.ETL.script.Scripts[i].errormessage = DME.ErrorObject.Message;
+                        DME.ErrorObject.Flag = Errors.Failed;
+                        DME.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
+                        sc.errorsInfo = DME.ErrorObject;
+                        sc.errormessage = DME.ErrorObject.Message;
                         LScriptTracker tr = new LScriptTracker();
-                        tr.currenrecordentity = dMEEditor.ETL.script.Scripts[i].entityname;
-                        tr.currentrecorddatasourcename = dMEEditor.ETL.script.Scripts[i].destinationdatasourcename;
-                        tr.currenrecordindex = i;
-                        tr.scriptType = dMEEditor.ETL.script.Scripts[i].scriptType;
-                        tr.errorsInfo = dMEEditor.ETL.script.Scripts[i].errorsInfo;
+                        tr.currenrecordentity = sc.entityname;
+                        tr.currentrecorddatasourcename = sc.destinationdatasourcename;
+                       // tr.currenrecordindex = i;
+                        tr.scriptType = sc.scriptType;
+                        tr.errorsInfo = sc.errorsInfo;
                         DME.ETL.trackingHeader.trackingscript.Add(tr);
 
-                        // Report progress as a percentage of the total task.
-                       
-                        int percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
-                        if (percentComplete > highestPercentageReached)
-                        {
-                            highestPercentageReached = percentComplete;
-                            PassedArgs x = new PassedArgs();
-                            x.CurrentEntity = tr.currenrecordentity;
-                            x.DatasourceName = destds.DatasourceName;
-                            x.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
-                            x.ParameterInt1 = percentComplete;
-                            DME.Passedarguments = x;
-                            worker.ReportProgress(percentComplete);
-                        }
-                       
-                        //  DMEEditor.RaiseEvent(this, x);
-
-                       
-                        if (backgroundWorker1.CancellationPending)
-                        {
-                            e.Cancel = true;
-                        }
-                        CurrentRecord += 1;
                     }
-
-
+    
                 }
-
-
 
             }
 
             #endregion
-
-
 
             //-----------------------------
 

@@ -66,10 +66,6 @@ namespace TheTechIdea.ETL
             ((System.ComponentModel.ISupportInitialize)(this.compositeQueryLayersBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
-            // compositeQueryLayersBindingSource
-            // 
-            this.compositeQueryLayersBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.CompositeLayer.CompositeLayer);
-            // 
             // layerNameLabel
             // 
             layerNameLabel.AutoSize = true;
@@ -78,14 +74,6 @@ namespace TheTechIdea.ETL
             layerNameLabel.Size = new System.Drawing.Size(67, 13);
             layerNameLabel.TabIndex = 1;
             layerNameLabel.Text = "Layer Name:";
-            // 
-            // layerNameTextBox
-            // 
-            this.layerNameTextBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.compositeQueryLayersBindingSource, "LayerName", true));
-            this.layerNameTextBox.Location = new System.Drawing.Point(201, 86);
-            this.layerNameTextBox.Name = "layerNameTextBox";
-            this.layerNameTextBox.Size = new System.Drawing.Size(309, 20);
-            this.layerNameTextBox.TabIndex = 1;
             // 
             // dataViewDataSourceNameLabel
             // 
@@ -96,16 +84,6 @@ namespace TheTechIdea.ETL
             dataViewDataSourceNameLabel.TabIndex = 3;
             dataViewDataSourceNameLabel.Text = "Data View Data Source Name:";
             // 
-            // dataViewDataSourceNameComboBox
-            // 
-            this.dataViewDataSourceNameComboBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.compositeQueryLayersBindingSource, "DataViewDataSourceName", true));
-            this.dataViewDataSourceNameComboBox.Enabled = false;
-            this.dataViewDataSourceNameComboBox.FormattingEnabled = true;
-            this.dataViewDataSourceNameComboBox.Location = new System.Drawing.Point(201, 112);
-            this.dataViewDataSourceNameComboBox.Name = "dataViewDataSourceNameComboBox";
-            this.dataViewDataSourceNameComboBox.Size = new System.Drawing.Size(309, 21);
-            this.dataViewDataSourceNameComboBox.TabIndex = 2;
-            // 
             // dateCreatedLabel
             // 
             dateCreatedLabel.AutoSize = true;
@@ -114,15 +92,6 @@ namespace TheTechIdea.ETL
             dateCreatedLabel.Size = new System.Drawing.Size(73, 13);
             dateCreatedLabel.TabIndex = 5;
             dateCreatedLabel.Text = "Date Created:";
-            // 
-            // dateCreatedDateTimePicker
-            // 
-            this.dateCreatedDateTimePicker.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.compositeQueryLayersBindingSource, "DateCreated", true));
-            this.dateCreatedDateTimePicker.Enabled = false;
-            this.dateCreatedDateTimePicker.Location = new System.Drawing.Point(201, 139);
-            this.dateCreatedDateTimePicker.Name = "dateCreatedDateTimePicker";
-            this.dateCreatedDateTimePicker.Size = new System.Drawing.Size(200, 20);
-            this.dateCreatedDateTimePicker.TabIndex = 3;
             // 
             // dateUpdatedLabel
             // 
@@ -133,15 +102,6 @@ namespace TheTechIdea.ETL
             dateUpdatedLabel.TabIndex = 7;
             dateUpdatedLabel.Text = "Date Updated:";
             // 
-            // dateUpdatedDateTimePicker
-            // 
-            this.dateUpdatedDateTimePicker.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.compositeQueryLayersBindingSource, "DateUpdated", true));
-            this.dateUpdatedDateTimePicker.Enabled = false;
-            this.dateUpdatedDateTimePicker.Location = new System.Drawing.Point(201, 165);
-            this.dateUpdatedDateTimePicker.Name = "dateUpdatedDateTimePicker";
-            this.dateUpdatedDateTimePicker.Size = new System.Drawing.Size(200, 20);
-            this.dateUpdatedDateTimePicker.TabIndex = 4;
-            // 
             // iDLabel
             // 
             iDLabel.AutoSize = true;
@@ -150,15 +110,6 @@ namespace TheTechIdea.ETL
             iDLabel.Size = new System.Drawing.Size(21, 13);
             iDLabel.TabIndex = 9;
             iDLabel.Text = "ID:";
-            // 
-            // iDTextBox
-            // 
-            this.iDTextBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.compositeQueryLayersBindingSource, "ID", true));
-            this.iDTextBox.Enabled = false;
-            this.iDTextBox.Location = new System.Drawing.Point(201, 60);
-            this.iDTextBox.Name = "iDTextBox";
-            this.iDTextBox.Size = new System.Drawing.Size(309, 20);
-            this.iDTextBox.TabIndex = 0;
             // 
             // localDBDriverLabel
             // 
@@ -169,15 +120,6 @@ namespace TheTechIdea.ETL
             localDBDriverLabel.TabIndex = 11;
             localDBDriverLabel.Text = "Local DBDriver:";
             // 
-            // localDBDriverComboBox
-            // 
-            this.localDBDriverComboBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.compositeQueryLayersBindingSource, "LocalDBDriver", true));
-            this.localDBDriverComboBox.FormattingEnabled = true;
-            this.localDBDriverComboBox.Location = new System.Drawing.Point(201, 191);
-            this.localDBDriverComboBox.Name = "localDBDriverComboBox";
-            this.localDBDriverComboBox.Size = new System.Drawing.Size(121, 21);
-            this.localDBDriverComboBox.TabIndex = 5;
-            // 
             // localDBDriverVersionLabel
             // 
             localDBDriverVersionLabel.AutoSize = true;
@@ -186,6 +128,92 @@ namespace TheTechIdea.ETL
             localDBDriverVersionLabel.Size = new System.Drawing.Size(120, 13);
             localDBDriverVersionLabel.TabIndex = 13;
             localDBDriverVersionLabel.Text = "Local DBDriver Version:";
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(254)));
+            label1.Location = new System.Drawing.Point(197, 12);
+            label1.Name = "label1";
+            label1.Size = new System.Drawing.Size(235, 24);
+            label1.TabIndex = 15;
+            label1.Text = "Create Composed Layer";
+            label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new System.Drawing.Point(87, 251);
+            label2.Name = "label2";
+            label2.Size = new System.Drawing.Size(108, 13);
+            label2.TabIndex = 18;
+            label2.Text = "Save to Local Folder:";
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new System.Drawing.Point(89, 276);
+            label3.Name = "label3";
+            label3.Size = new System.Drawing.Size(106, 13);
+            label3.TabIndex = 20;
+            label3.Text = "Database File Name:";
+            // 
+            // compositeQueryLayersBindingSource
+            // 
+            this.compositeQueryLayersBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.CompositeLayer.CompositeLayer);
+            // 
+            // layerNameTextBox
+            // 
+            this.layerNameTextBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.compositeQueryLayersBindingSource, "LayerName", true));
+            this.layerNameTextBox.Location = new System.Drawing.Point(201, 86);
+            this.layerNameTextBox.Name = "layerNameTextBox";
+            this.layerNameTextBox.Size = new System.Drawing.Size(309, 20);
+            this.layerNameTextBox.TabIndex = 1;
+            // 
+            // dataViewDataSourceNameComboBox
+            // 
+            this.dataViewDataSourceNameComboBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.compositeQueryLayersBindingSource, "DataViewDataSourceName", true));
+            this.dataViewDataSourceNameComboBox.FormattingEnabled = true;
+            this.dataViewDataSourceNameComboBox.Location = new System.Drawing.Point(201, 112);
+            this.dataViewDataSourceNameComboBox.Name = "dataViewDataSourceNameComboBox";
+            this.dataViewDataSourceNameComboBox.Size = new System.Drawing.Size(309, 21);
+            this.dataViewDataSourceNameComboBox.TabIndex = 2;
+            // 
+            // dateCreatedDateTimePicker
+            // 
+            this.dateCreatedDateTimePicker.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.compositeQueryLayersBindingSource, "DateCreated", true));
+            this.dateCreatedDateTimePicker.Enabled = false;
+            this.dateCreatedDateTimePicker.Location = new System.Drawing.Point(201, 139);
+            this.dateCreatedDateTimePicker.Name = "dateCreatedDateTimePicker";
+            this.dateCreatedDateTimePicker.Size = new System.Drawing.Size(200, 20);
+            this.dateCreatedDateTimePicker.TabIndex = 3;
+            // 
+            // dateUpdatedDateTimePicker
+            // 
+            this.dateUpdatedDateTimePicker.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.compositeQueryLayersBindingSource, "DateUpdated", true));
+            this.dateUpdatedDateTimePicker.Enabled = false;
+            this.dateUpdatedDateTimePicker.Location = new System.Drawing.Point(201, 165);
+            this.dateUpdatedDateTimePicker.Name = "dateUpdatedDateTimePicker";
+            this.dateUpdatedDateTimePicker.Size = new System.Drawing.Size(200, 20);
+            this.dateUpdatedDateTimePicker.TabIndex = 4;
+            // 
+            // iDTextBox
+            // 
+            this.iDTextBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.compositeQueryLayersBindingSource, "ID", true));
+            this.iDTextBox.Enabled = false;
+            this.iDTextBox.Location = new System.Drawing.Point(201, 60);
+            this.iDTextBox.Name = "iDTextBox";
+            this.iDTextBox.Size = new System.Drawing.Size(309, 20);
+            this.iDTextBox.TabIndex = 0;
+            // 
+            // localDBDriverComboBox
+            // 
+            this.localDBDriverComboBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.compositeQueryLayersBindingSource, "LocalDBDriver", true));
+            this.localDBDriverComboBox.FormattingEnabled = true;
+            this.localDBDriverComboBox.Location = new System.Drawing.Point(201, 191);
+            this.localDBDriverComboBox.Name = "localDBDriverComboBox";
+            this.localDBDriverComboBox.Size = new System.Drawing.Size(121, 21);
+            this.localDBDriverComboBox.TabIndex = 5;
             // 
             // localDBDriverVersionComboBox
             // 
@@ -205,17 +233,6 @@ namespace TheTechIdea.ETL
             this.Createbutton.Text = "Create";
             this.Createbutton.UseVisualStyleBackColor = true;
             // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(254)));
-            label1.Location = new System.Drawing.Point(197, 12);
-            label1.Name = "label1";
-            label1.Size = new System.Drawing.Size(235, 24);
-            label1.TabIndex = 15;
-            label1.Text = "Create Composed Layer";
-            label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
             // FolderSavelocationlabel
             // 
             this.FolderSavelocationlabel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
@@ -234,30 +251,12 @@ namespace TheTechIdea.ETL
             this.FolderLocationbutton.Text = "Folder";
             this.FolderLocationbutton.UseVisualStyleBackColor = true;
             // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Location = new System.Drawing.Point(87, 251);
-            label2.Name = "label2";
-            label2.Size = new System.Drawing.Size(108, 13);
-            label2.TabIndex = 18;
-            label2.Text = "Save to Local Folder:";
-            // 
             // FileNametextBox
             // 
             this.FileNametextBox.Location = new System.Drawing.Point(201, 273);
             this.FileNametextBox.Name = "FileNametextBox";
             this.FileNametextBox.Size = new System.Drawing.Size(309, 20);
             this.FileNametextBox.TabIndex = 19;
-            // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Location = new System.Drawing.Point(89, 276);
-            label3.Name = "label3";
-            label3.Size = new System.Drawing.Size(106, 13);
-            label3.TabIndex = 20;
-            label3.Text = "Database File Name:";
             // 
             // uc_ComposedLayer
             // 

@@ -80,32 +80,35 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         }
                         else  //---- numeric
                         {
-                            if (fld.Size1 > 0)
-                            {
-                                if (fld.Size2 > 0)
-                                {
-                                    dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName == classhandler.className && x.NetDataType == fld.fieldtype && x.DataType.Contains("N,S")).FirstOrDefault();
-                                    retval = dt.DataType.Replace("(N,S)", "(" + fld.Size1.ToString() + "," + fld.Size2.ToString() + ")");
+                            //if (fld.Size1 > 0)
+                            //{
+                            //    if (fld.Size2 > 0)
+                            //    {
+                            //        dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName == classhandler.className && x.NetDataType == fld.fieldtype && x.DataType.Contains("N,S")).FirstOrDefault();
+                            //        retval = dt.DataType.Replace("(N,S)", "(" + fld.Size1.ToString() + "," + fld.Size2.ToString() + ")");
 
-                                }
-                                else
-                                {
-                                    dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName == classhandler.className && x.NetDataType == fld.fieldtype && x.DataType.Contains("(N)")).FirstOrDefault();
+                            //    }
+                            //    else
+                            //    {
+                            //        dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName == classhandler.className && x.NetDataType == fld.fieldtype && x.DataType.Contains("(N)")).FirstOrDefault();
 
-                                    if (dt != null)
-                                    {
-                                        retval = dt.DataType.Replace("(N)", "(" + fld.Size1.ToString() + ")");
-                                    }
+                            //        if (dt != null)
+                            //        {
+                            //            retval = dt.DataType.Replace("(N)", "(" + fld.Size1.ToString() + ")");
+                            //        }
                                   
-                                }
-                            }
+                            //    }
+                            //}
                             if (fld.NumericPrecision > 0)
                             {
                                 if (fld.NumericScale > 0)
                                 {
                                     dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName == classhandler.className && x.NetDataType == fld.fieldtype && x.DataType.Contains("N,S")).FirstOrDefault();
-
-                                    retval = dt.DataType.Replace("(N,S)", "(" + fld.NumericPrecision.ToString() + "," + fld.NumericScale.ToString() + ")");
+                                    if (dt != null)
+                                    {
+                                        retval = dt.DataType.Replace("(N,S)", "(" + fld.NumericPrecision.ToString() + "," + fld.NumericScale.ToString() + ")");
+                                    }
+                                      
 
                                 }
                                 else

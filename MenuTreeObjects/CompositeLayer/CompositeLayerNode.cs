@@ -634,25 +634,7 @@ namespace TheTechIdea.Winforms.VIS
         private LScriptHeader CreateScript()
         {
             List<EntityStructure> ls = new List<EntityStructure>();
-          //  IDataSource ds;
-
-           // ls = compositeLayerDataSource.LayerInfo.Entities.Where(x => x.Created == false).ToList();
-            //foreach (EntityStructure item in ls)
-            //{
-            //    ds = DMEEditor.GetDataSource(item.DataSourceID);
-            //    EntityStructure t1 = ds.GetEntityStructure(item.EntityName, true);
-                
-            //    t1.Created = false;
-            //    if (DMEEditor.ErrorObject.Flag == Errors.Ok)
-            //    {
-            //        compositeLayerDataSource.LayerInfo.Entities[compositeLayerDataSource.LayerInfo.Entities.FindIndex(x => x.EntityName.ToLower() == item.EntityName.ToLower())] = t1;
-            //    }
-            //    else
-            //    {
-            //        DMEEditor.AddLogMessage("Fail", $"Error getting entity structure for {item.EntityName}", DateTime.Now, item.Id, item.DataSourceID, Errors.Failed);
-            //    }
-
-            //}
+        
             ls = compositeLayerDataSource.LayerInfo.Entities.Where(x => x.Created == false).ToList();
             if (ls.Count > 0)
             {

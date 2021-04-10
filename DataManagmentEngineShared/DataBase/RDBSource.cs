@@ -1594,10 +1594,11 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return rt;
         }
-        private IErrorsInfo CreateAutoNumber(EntityField f, out string AutnumberString)
+        public virtual string CreateAutoNumber(EntityField f)
         {
             ErrorObject.Flag = Errors.Ok;
-            AutnumberString = "";
+            string AutnumberString = "";
+            
             try
             {
                 if (f.fieldCategory == DbFieldCategory.Numeric)
@@ -1641,7 +1642,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             }
 
-            return ErrorObject;
+            return AutnumberString;
         }
         private string CreateEntity(EntityStructure t1)
         {
@@ -1665,7 +1666,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     {
                         dbf.fieldname = Regex.Replace(dbf.fieldname, @"\s+", "_");
                         string autonumberstring = "";
-                        DMEEditor.ErrorObject = CreateAutoNumber(dbf, out autonumberstring);
+                        autonumberstring=CreateAutoNumber(dbf);
                         if (DMEEditor.ErrorObject.Flag == Errors.Ok)
                         {
                             createtablestring += autonumberstring;

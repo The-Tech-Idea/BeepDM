@@ -17,8 +17,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         DataTable GetTableSchema(string TableName);
         IDataReader GetDataReader(string querystring);
         List<ChildRelation> GetTablesFKColumnList(string tablename, string SchemaName, string Filterparamters);
+        string CreateAutoNumber(EntityField f);
 
-       
         string DisableFKConstraints(EntityStructure t1);
         string EnableFKConstraints( EntityStructure t1);
         List<T> GetData<T>(string sql);

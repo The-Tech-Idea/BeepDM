@@ -29,8 +29,8 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             DMEEditor.ErrorObject.Flag = Errors.Ok;
 
             int i = 0;
-            IDataSource ds;
-            List<LScript> rt = new List<LScript>();
+          
+            List<LScript> retval = new List<LScript>();
 
             try
             {
@@ -39,12 +39,19 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 {
                    // ds = DMEEditor.GetDataSource(item.DataSourceID);
                     List<EntityStructure> ls = new List<EntityStructure>();
+                    List<LScript>  rt = new List<LScript>();
                     ls.Add(item);
-                    rt.AddRange(Dest.GetCreateEntityScript(ls));
-                  
+                    rt = Dest.GetCreateEntityScript(ls);
+                    foreach (LScript sc in rt)
+                    {
+                        sc.sourcedatasourcename = item.DataSourceID;
+                    }
+                    //  rt.AddRange(Dest.GetCreateEntityScript(ls));
+                    script.Scripts.AddRange(rt);
+                    retval.AddRange(rt);
                     i += 1;
                 }
-                script.Scripts.AddRange(rt);
+               
                 //CreateForKeyRelationScripts(Dest, entities);
                 // CreateForKeyRelationScripts
 
@@ -57,7 +64,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
 
             }
-            return rt;
+            return retval;
 
         }
         public List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities)
@@ -83,6 +90,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
 
                     var t = Task.Run<List<LScript>>(() => { return GetCreateEntityScript(ds, ds.Entities); });
                     t.Wait();
+                   
                     rt.AddRange(t.Result);
 
                 }

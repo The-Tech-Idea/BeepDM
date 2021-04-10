@@ -6,6 +6,6 @@ namespace TheTechIdea.DataManagment_Engine.Vis
 {
     public enum EnumBranchType
     {
-        Root, DataPoint, Category, Entity,SubEntity
+        Root, DataPoint, Category, Entity,SubEntity,Function,Report
     }
 }
