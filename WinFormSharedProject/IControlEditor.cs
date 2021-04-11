@@ -33,5 +33,7 @@ namespace TheTechIdea.Winforms.VIS
         BindingList<IReportFilter> CreateFilterQueryGrid(string text, List<EntityField> ls, List<string> lsop);
         IErrorsInfo BindDataSourceEnumtoComobo(ComboBox combo);
         IErrorsInfo BindDataSourceEnumtoComobo(DataGridViewComboBoxColumn combo);
+        int getTextSize(string text);
+        DataTable GetDisplayLookup(string datasourceid, string entityname, string KeyField);
     }
 }

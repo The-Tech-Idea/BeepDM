@@ -31,8 +31,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DevExpress.Data.Desktop.v20.2, Version=20.2.4.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
+    <Reference Include="DevExpress.Data.v20.2, Version=20.2.4.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
+    <Reference Include="DevExpress.Printing.v20.2.Core, Version=20.2.4.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
+    <Reference Include="DevExpress.Sparkline.v20.2.Core, Version=20.2.4.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
+    <Reference Include="DevExpress.Utils.v20.2, Version=20.2.4.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
+    <Reference Include="DevExpress.XtraEditors.v20.2, Version=20.2.4.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL" />
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data.Linq" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
@@ -55,6 +63,12 @@
     </Compile>
     <Compile Include="uc_WinformApp.Designer.cs">
       <DependentUpon>uc_WinformApp.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\uc_filtercontrol.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UserControls\uc_filtercontrol.Designer.cs">
+      <DependentUpon>uc_filtercontrol.cs</DependentUpon>
     </Compile>
     <Compile Include="UserControls\uc_getentities.cs">
       <SubType>UserControl</SubType>
@@ -100,6 +114,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="uc_WinformApp.resx">
       <DependentUpon>uc_WinformApp.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UserControls\uc_filtercontrol.resx">
+      <DependentUpon>uc_filtercontrol.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UserControls\uc_getentities.resx">
       <DependentUpon>uc_getentities.cs</DependentUpon>

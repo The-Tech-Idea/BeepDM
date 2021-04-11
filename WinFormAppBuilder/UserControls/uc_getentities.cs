@@ -72,9 +72,11 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                         if (EntityStructure.Fields.Count > 0)
                         {
                             EntityName = EntityStructure.EntityName;
-                             grid = dv.CreateGrid();
-                            Filterpanel.Controls.Add(dv.GridView);
-                            CreateFilterGrid();
+                            uc_filtercontrol1.SetConfig(pbl, plogger, putil, args, e, per);
+
+                            // grid = dv.CreateGrid();
+                            //Filterpanel.Controls.Add(dv.GridView);
+                            //CreateFilterGrid();
                         }
                     }
                 }
@@ -195,11 +197,6 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
         }
         #endregion
         #region "Filter code"
-       
-     
-        BindingSource reportFilterbindingSource1 = new BindingSource();
-        GenReportusingPrintForm dv = new GenReportusingPrintForm();
-        DataGridView grid;
         private string getfilter()
         {
             string str = EntityStructure.CustomBuildQuery;
@@ -209,7 +206,41 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                 {
                     if (!string.IsNullOrEmpty(item.FilterValue) || string.IsNullOrWhiteSpace(item.FilterValue))
                     {
+                        switch (item.valueType)
+                        {
+                            case "System.string":
+                                break;
+                            case "System.DateTime":
+                                if (item.Operator == "between")
+                                {
 
+                                }else
+                                {
+
+                                }
+                                break;
+                            case "System.Boolean":
+                                break;
+                            case "System.Char":
+                                break;
+                            case "System.Int16":
+                            case "System.Int32":
+                            case "System.Int64":
+                            case "System.Decimal":
+                            case "System.Double":
+                            case "System.Single":
+                                if (item.Operator == "between")
+                                {
+
+                                }
+                                else
+                                {
+
+                                }
+                                break;
+                            default:
+                                break;
+                        }
                     }
                     else
                     {
@@ -230,50 +261,8 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             return str;
 
         }
-        private void CreateFilterGrid()
-        {
-
-            CreateFilterQueryGrid(EntityStructure.EntityName, EntityStructure.Fields, new List<string> { "=", ">=", "<=", ">", "<" });
-        }
-        public List<ReportFilter> CreateFilterQueryGrid(string text, List<EntityField> ls, List<string> lsop)
-        {
-           
-            List<string> FieldNames = new List<string>();
-            EntityStructure.Filters.Clear();
-         
-            reportFilterbindingSource1.DataSource = EntityStructure.Filters;
-            for (int i = 0; i < ls.Count - 1; i++)
-            {
-                ReportFilter r = new ReportFilter();
-                r.FieldName = ls[i].fieldname;
-                r.Operator = "";
-                EntityStructure.Filters.Add(r);
-                FieldNames.Add(ls[i].fieldname);
-
-
-            }
-
-            if (lsop == null)
-            {
-                lsop = new List<string> {"", "=", ">=", "<=", ">", "<" ,"Like"};
-            }
-            grid.AutoGenerateColumns = false;
-            grid.DataSource = reportFilterbindingSource1;
-            grid.Columns.Add(dv.CreateComoboBoxColumnForGrid("FieldName", "Column", FieldNames));
-            grid.Columns.Add(dv.CreateComoboBoxColumnForGrid("Operator", "Operator", lsop));
-            grid.Columns.Add(dv.CreateTextColumnForGrid("FilterValue", "Value"));
-            grid.Left = 0;
-            grid.Top = 20;
-            grid.Height = splitContainer1.Panel1.Height;
-            grid.Width = splitContainer1.Panel1.Width - 25;
-         
-            grid.Dock = DockStyle.Fill;
-         
-         
-
-            return EntityStructure.Filters;
-        }
-        #endregion
+     
+       #endregion
 
         private void Expandbutton_Click(object sender, EventArgs e)
         {

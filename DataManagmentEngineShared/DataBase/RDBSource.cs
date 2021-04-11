@@ -753,23 +753,23 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             EntityStructure ent = GetEntityStructure(inname);
 
             if (Filter != null )
-            { if (Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue)).Any())
+            { if (Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
                 {
                     qrystr += Environment.NewLine;
                     qrystr += " where " + Environment.NewLine;
-                    foreach (ReportFilter item in Filter)
+                    foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue)))
                     {
                         if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
                         {
                             EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
-                            if (f.fieldtype == "System.String")
-                            {
-                                qrystr += item.FieldName + " " + item.Operator + " '" + item.FilterValue + "'" + Environment.NewLine;
-                            }
-                            else
-                            {
-                                qrystr += item.FieldName + " " + item.Operator + " " + item.FilterValue + " " + Environment.NewLine;
-                            }
+                            //if (f.fieldtype == "System.String")
+                            //{
+                            //    qrystr += item.FieldName + " " + item.Operator + " '" + item.FilterValue + "'" + Environment.NewLine;
+                            //}
+                            //else
+                            //{
+                                qrystr += item.FieldName + " " + item.Operator + "@p_" + item.FieldName + " " + Environment.NewLine;
+                           // }
 
                         }
 
@@ -781,8 +781,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             try
             {
-
-                IDataAdapter adp = GetDataAdapter(qrystr);
+                IDataAdapter adp = GetDataAdapter(qrystr,Filter);
                 DataSet dataSet = new DataSet();
                 adp.Fill(dataSet);
                 DataTable dt = dataSet.Tables[0];
@@ -1086,7 +1085,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 if (EntitiesNames.Count() == 0)
                 {
                     string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getlistoftables, null, Dataconnection.ConnectionProp.SchemaName, null, DMEEditor.ConfigEditor.QueryList, DatasourceType);
-                    IDbDataAdapter adp = GetDataAdapter(sql, false);
+                    IDbDataAdapter adp = GetDataAdapter(sql, null);
                     adp.Fill(ds);
 
                     DataTable tb = new DataTable();
@@ -2033,7 +2032,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return cmd;
         }
-        public virtual IDbDataAdapter GetDataAdapter(string Sql, bool tablequery_CRUD = true)
+        public virtual IDbDataAdapter GetDataAdapter(string Sql, List<ReportFilter> Filter = null)
         {
             IDbDataAdapter adp = null;
             //  DbCommandBuilder cmdb = null;
@@ -2054,14 +2053,42 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 ConstructorInfo BuilderConstructer = lsc2[GetCtorForCommandBuilder(adcbuilderType.GetConstructors().ToList())];
                 ObjectActivator<IDbDataAdapter> adpActivator = GetActivator<IDbDataAdapter>(ctor);
                 ObjectActivator<DbCommandBuilder> cmdbuilderActivator = GetActivator<DbCommandBuilder>(BuilderConstructer);
-
+               
                 //create an instance:
-                adp = (IDbDataAdapter)adpActivator(Sql, Dataconnection.DbConn);
+                adp = (IDbDataAdapter)adpActivator(Sql,Dataconnection.DbConn);
 
 
                 try
                 {
                     DbCommandBuilder cmdBuilder = cmdbuilderActivator(adp);
+                    if (Filter != null)
+                    {
+                        if (Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
+                        {
+
+                            foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue)))
+                            {
+                                IDbDataParameter parameter = adp.SelectCommand.CreateParameter();
+                                string dr = Filter.Where(i => i.FieldName == item.FieldName).FirstOrDefault().FilterValue;
+                                parameter.ParameterName = "p_" + item.FieldName;
+                                if (item.valueType == "System.DateTime")
+                                {
+                                    parameter.DbType = DbType.DateTime;
+                                    parameter.Value = DateTime.Parse(dr);
+
+
+                                }
+                                else
+                                { parameter.Value = dr; }
+                                //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
+                                adp.SelectCommand.Parameters.Add(parameter);
+
+                            }
+
+                        }
+                    }
+                   
+                    
                     adp.InsertCommand = cmdBuilder.GetInsertCommand(true);
                     adp.UpdateCommand = cmdBuilder.GetUpdateCommand(true);
                     adp.DeleteCommand = cmdBuilder.GetDeleteCommand(true);

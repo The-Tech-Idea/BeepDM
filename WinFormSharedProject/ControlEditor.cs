@@ -141,7 +141,7 @@ namespace TheTechIdea.Winforms.VIS
         {
             // throw new NotImplementedException();
         }
-        private DataTable GetDisplayLookup(string datasourceid,string entityname,string KeyField)
+        public DataTable GetDisplayLookup(string datasourceid,string entityname,string KeyField)
         {
            DataTable retval = new DataTable(entityname);
             try
@@ -237,7 +237,7 @@ namespace TheTechIdea.Winforms.VIS
 
 
         #endregion
-        private int getTextSize(string text)
+        public int getTextSize(string text)
         {
             Font font = new Font("Courier New", 10.0F);
             Image fakeImage = new Bitmap(1, 1);
@@ -1312,7 +1312,7 @@ namespace TheTechIdea.Winforms.VIS
             //}
                 return reportFilter;
         }
-     
+   
 
         #endregion "Create Controls Dynamiclly"
         #region Handling Controls and binding
