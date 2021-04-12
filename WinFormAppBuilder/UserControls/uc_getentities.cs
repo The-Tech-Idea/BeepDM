@@ -174,14 +174,23 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
             {
                 object retval = ds.GetEntity(EntityName, EntityStructure.Filters);
-                if (retval.GetType().FullName == "System.Data.DataTable")
+                if (retval != null)
                 {
-                    DataList = DMEEditor.Utilfunction.ConvertTableToList((DataTable)retval, EntityStructure, ds.GetEntityType(EntityName));
+                    if (retval.GetType().FullName == "System.Data.DataTable")
+                    {
+                        DataList = DMEEditor.Utilfunction.ConvertTableToList((DataTable)retval, EntityStructure, ds.GetEntityType(EntityName));
+                    }
+                    else
+                    {
+                        DataList = (List<object>)retval;
+                    }
+
                 }
                 else
                 {
-                    DataList = (List<object>)retval;
+                    DataList = null;
                 }
+
                 RefreshData();
             }
         }

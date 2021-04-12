@@ -32,8 +32,8 @@ namespace TheTechIdea.DataManagment_Engine.Workflow.Actions
         public bool Finish { get; set; }
         public IDataSource Inds { get; set; }
         public IDataSource Outds { get; set; }
-        public DataTable InData { get; set; }
-        public DataTable OutData { get; set; }
+        public object InData { get; set; }
+        public object OutData { get; set; }
 
         public List<string> EntitesNames { get; set; }
         EntityStructure ent;
@@ -176,7 +176,7 @@ namespace TheTechIdea.DataManagment_Engine.Workflow.Actions
                 {
                     cur += 1;
 
-                    var t = Task.Run<DataTable>(() => { return Inds.RunQuery(item); });
+                    var t = Task.Run<object>(() => { return Inds.RunQuery(item); });
                     t.Wait();
                     InData = t.Result;
                     if (!Outds.CheckEntityExist(item))

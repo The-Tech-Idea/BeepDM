@@ -141,9 +141,9 @@ namespace TheTechIdea.Winforms.VIS
         {
             // throw new NotImplementedException();
         }
-        public DataTable GetDisplayLookup(string datasourceid,string entityname,string KeyField)
+        public object GetDisplayLookup(string datasourceid,string entityname,string KeyField)
         {
-           DataTable retval = new DataTable(entityname);
+            object retval;
             try
             {
                 IDataSource ds = DMEEditor.GetDataSource(datasourceid);
@@ -170,9 +170,8 @@ namespace TheTechIdea.Winforms.VIS
                 }
                 string qrystr = "select " + DisplayField + "," + KeyField + " from " + entityname;
 
-
-
-                 retval = ds.RunQuery(qrystr );
+              
+                retval = ds.RunQuery(qrystr );
                
                 return retval;
             }

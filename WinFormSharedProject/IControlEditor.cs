@@ -34,6 +34,6 @@ namespace TheTechIdea.Winforms.VIS
         IErrorsInfo BindDataSourceEnumtoComobo(ComboBox combo);
         IErrorsInfo BindDataSourceEnumtoComobo(DataGridViewComboBoxColumn combo);
         int getTextSize(string text);
-        DataTable GetDisplayLookup(string datasourceid, string entityname, string KeyField);
+        object GetDisplayLookup(string datasourceid, string entityname, string KeyField);
     }
 }

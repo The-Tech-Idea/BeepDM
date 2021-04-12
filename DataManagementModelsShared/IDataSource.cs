@@ -30,7 +30,7 @@ namespace TheTechIdea
         IDMEEditor DMEEditor { get; set; }
         ConnectionState ConnectionStatus { get; set; }
         List<string> GetEntitesList();
-        DataTable RunQuery(string qrystr);
+        object RunQuery(string qrystr);
         IErrorsInfo ExecuteSql(string sql);
         bool CreateEntityAs(EntityStructure entity);
         Type GetEntityType(string EntityName);

@@ -368,7 +368,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         }
 
 
-        public DataTable RunQuery(string qrystr)
+         public  object RunQuery( string qrystr)
         {
            
             ds = DMEEditor.GetDataSource(DatasourceName);

@@ -90,7 +90,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             return ErrorObject;
         }
-        public virtual DataTable RunQuery(string qrystr)
+        public virtual object RunQuery(string qrystr)
         {
             ErrorObject.Flag = Errors.Ok;
             IDbCommand cmd = GetDataCommand();
@@ -757,19 +757,19 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 {
                     qrystr += Environment.NewLine;
                     qrystr += " where " + Environment.NewLine;
-                    foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue)))
+                    foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)))
                     {
                         if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
                         {
                             EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
-                            //if (f.fieldtype == "System.String")
-                            //{
-                            //    qrystr += item.FieldName + " " + item.Operator + " '" + item.FilterValue + "'" + Environment.NewLine;
-                            //}
-                            //else
-                            //{
-                                qrystr += item.FieldName + " " + item.Operator + "@p_" + item.FieldName + " " + Environment.NewLine;
-                           // }
+                            if (item.Operator.ToLower() == "between")
+                            {
+                                qrystr += item.FieldName + " " + item.Operator + " @p_" + item.FieldName + " and  @p_" + item.FieldName + "1 " + Environment.NewLine;
+                            }
+                            else
+                            {
+                                qrystr += item.FieldName + " " + item.Operator + " @p_" + item.FieldName + " " + Environment.NewLine;
+                            }
 
                         }
 
@@ -2068,18 +2068,29 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
                             foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue)))
                             {
+                               
                                 IDbDataParameter parameter = adp.SelectCommand.CreateParameter();
                                 string dr = Filter.Where(i => i.FieldName == item.FieldName).FirstOrDefault().FilterValue;
                                 parameter.ParameterName = "p_" + item.FieldName;
                                 if (item.valueType == "System.DateTime")
                                 {
                                     parameter.DbType = DbType.DateTime;
-                                    parameter.Value = DateTime.Parse(dr);
-
-
+                                    parameter.Value = DateTime.Parse(dr).ToShortDateString();
+                                    
                                 }
                                 else
                                 { parameter.Value = dr; }
+
+                                if (item.Operator.ToLower() == "between")
+                                {
+                                    IDbDataParameter parameter1 = adp.SelectCommand.CreateParameter();
+                                    parameter1.ParameterName = "p_" + item.FieldName + "1";
+                                    parameter1.DbType = DbType.DateTime;
+                                    string dr1 = Filter.Where(i => i.FieldName == item.FieldName).FirstOrDefault().FilterValue1;
+                                    parameter1.Value = DateTime.Parse(dr1).ToShortDateString();
+                                    adp.SelectCommand.Parameters.Add(parameter1);
+                                }
+
                                 //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
                                 adp.SelectCommand.Parameters.Add(parameter);
 

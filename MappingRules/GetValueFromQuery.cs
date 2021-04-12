@@ -20,15 +20,15 @@ namespace TheTechIdea.DataManagment_Engine.Workflow
 
 
                 IDataSource ds = DMEEditor.GetDataSource(args.DatasourceName);
-                DataTable tb = ds.RunQuery(args.ParameterString1);
+                object tb = ds.RunQuery(args.ParameterString1);
                 dynamic v1=null;
-                if (tb != null)
-                {
-                    if (tb.Rows.Count > 0)
-                    {
-                       v1  = tb.Rows[0].ItemArray[0].ToString();
-                    }
-                }
+                //if (tb != null)
+                //{
+                //    if (tb.Rows.Count > 0)
+                //    {
+                //       v1  = tb.Rows[0].ItemArray[0].ToString();
+                //    }
+                //}
                 ObjectItem it = new ObjectItem();
                 it.obj = v1;
                 it.Name = "GetDefaultValue";

@@ -141,9 +141,9 @@ namespace TheTechIdea.Winforms.VIS
         {
             // throw new NotImplementedException();
         }
-        private DataTable GetDisplayLookup(string datasourceid,string entityname,string KeyField)
+        private object GetDisplayLookup(string datasourceid,string entityname,string KeyField)
         {
-           DataTable retval = new DataTable(entityname);
+            object retval;
             try
             {
                 IDataSource ds = DMEEditor.GetDataSource(datasourceid);

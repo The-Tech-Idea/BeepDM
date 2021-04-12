@@ -157,7 +157,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.PublicApisWebApi
             throw new NotImplementedException();
         }
 
-        public DataTable RunQuery(string qrystr)
+         public  object RunQuery( string qrystr)
         {
             throw new NotImplementedException();
         }

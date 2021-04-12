@@ -42,6 +42,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
         IDataSource ds;
         Type enttype;
         object ob;
+        string DisplayField;
        // List<FilterType> lsop;
         BindingSource[] BindingData;
         List<DefaultValue> defaults;
@@ -131,6 +132,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                 r.FieldName = entityStructure.Fields[i].fieldname;
                 r.Operator = null;
                 r.FilterValue = null;
+                r.FilterValue1 = null;
                 r.valueType = entityStructure.Fields[i].fieldtype;
                 entityStructure.Filters.Add(r);
                 BindingData[i] = new BindingSource();
@@ -175,8 +177,8 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                     cbcondition.DataSource = AddFilterTypes();
                     cbcondition.DisplayMember = "FilterDisplay";
                     cbcondition.ValueMember = "FilterValue";
-                   
-                    
+                    cbcondition.SelectedValueChanged += Cb_SelectedValueChanged;
+
                     cbcondition.Width = 50;
                     cbcondition.Height = l.Height;
                    // cbcondition.SelectedText
@@ -198,7 +200,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                         cb.Width = valuewidth;
                         cb.Height = l.Height;
                         cb.DataBindings.Add(new System.Windows.Forms.Binding("TEXT", BindingData[i], "FilterValue", true));
-                      //  cb.SelectedValueChanged += Cb_SelectedValueChanged;
+                       cb.SelectedValueChanged += Cb_SelectedValueChanged;
                         //cb.Anchor = AnchorStyles.Top;
                         this.Controls.Add(cb);
 
@@ -214,11 +216,11 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                     Left = startleft,
                                     Top = starth
                                 };
-                                dt.DataBindings.Add(new System.Windows.Forms.Binding("Value", BindingData[i], "FilterValue1", true));
+                                dt.DataBindings.Add(new System.Windows.Forms.Binding("Value", BindingData[i], "FilterValue", true));
 
                                 dt.Width = valuewidth;
                                 dt.Height = l.Height;
-                               // dt.ValueChanged += Dt_ValueChanged;
+                                dt.ValueChanged += Dt_ValueChanged;
                            //     dt.Anchor = AnchorStyles.Top;
                                 dt.Tag = i;
                                 dt.Format = DateTimePickerFormat.Short;
@@ -228,12 +230,12 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                     Left = dt.Left+10+dt.Width,
                                     Top = starth
                                 };
-                                dt1.DataBindings.Add(new System.Windows.Forms.Binding("Value", BindingData[i], "FilterValue2", true));
+                                dt1.DataBindings.Add(new System.Windows.Forms.Binding("Value", BindingData[i], "FilterValue1", true));
 
                                 dt1.Width = valuewidth;
                                 dt1.Height = l.Height;
                                 dt1.Format = DateTimePickerFormat.Short;
-                                // dt.ValueChanged += Dt_ValueChanged;
+                                 dt1.ValueChanged += Dt_ValueChanged;
                                 //     dt.Anchor = AnchorStyles.Top;
                                 dt1.Tag = i;
                                 this.Controls.Add(dt1);
@@ -251,7 +253,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                 t1.Height = l.Height;
 
                                 t1.Tag = i;
-                                //   t1.TextChanged += T_TextChanged;
+                                   t1.TextChanged += T_TextChanged;
                                 //  t1.KeyPress += T_KeyPress;
                            //     t1.Anchor = AnchorStyles.Top;
                                 this.Controls.Add(t1);
@@ -267,7 +269,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                 ch1.Text = "";
                                 ch1.Width = valuewidth;
                                 ch1.Height = l.Height;
-                               // ch1.CheckStateChanged += Ch1_CheckStateChanged; ;
+                                ch1.CheckStateChanged += Ch1_CheckStateChanged; ;
                          //       ch1.Anchor = AnchorStyles.Top;
                                 ch1.Tag = i;
                                 this.Controls.Add(ch1);
@@ -292,7 +294,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                     ch2.TrueValue = v[0].ToCharArray()[0];
                                     ch2.FalseValue = v[1].ToCharArray()[0];
                                 }
-                               // ch2.CheckStateChanged += Ch1_CheckStateChanged; ;
+                               ch2.CheckStateChanged += Ch1_CheckStateChanged; ;
                              //   ch2.Anchor = AnchorStyles.Top;
                                 ch2.Tag = i;
                                 this.Controls.Add(ch2);
@@ -308,12 +310,12 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
 
                                 t3.Left = startleft;
                                 t3.Top = starth;
-                                t3.DataBindings.Add(new System.Windows.Forms.Binding("Value", BindingData[i], "FilterValue1", true));
+                                t3.DataBindings.Add(new System.Windows.Forms.Binding("Value", BindingData[i], "FilterValue", true));
                                 t3.TextAlign = HorizontalAlignment.Left;
                                 t3.Width = valuewidth;
                                 t3.Height = l.Height;
                                 t3.Tag = i;
-                                //t.TextChanged += T_TextChanged;
+                                t3.TextChanged += T_TextChanged;
                                 //t.KeyPress += T_KeyPress;
                                 if (EntityStructure.PrimaryKeys.Where(x => x.fieldname == col.fieldname).FirstOrDefault() != null)
                                 {
@@ -324,12 +326,12 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                 NumericUpDown t2 = new NumericUpDown();
                                 t2.Left = t3.Left+t3.Width+10;
                                 t2.Top = starth;
-                                t2.DataBindings.Add(new System.Windows.Forms.Binding("Value", BindingData[i], "FilterValue2", true));
+                                t2.DataBindings.Add(new System.Windows.Forms.Binding("Value", BindingData[i], "FilterValue1", true));
                                 t2.TextAlign = HorizontalAlignment.Left;
                                 t2.Width = valuewidth;
                                 t2.Height = l.Height;
                                 t2.Tag = i;
-                                //t.TextChanged += T_TextChanged;
+                                t2.TextChanged += T_TextChanged;
                                 //t.KeyPress += T_KeyPress;
                                 if (EntityStructure.PrimaryKeys.Where(x => x.fieldname == col.fieldname).FirstOrDefault() != null)
                                 {
@@ -355,7 +357,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                     t1.Width = valuewidth;
                                     t1.Height = l.Height;
 
-                                   // t1.TextChanged += T_TextChanged;
+                                    t1.TextChanged += T_TextChanged;
                                   //  t1.KeyPress += T_KeyPress;
                                     if (EntityStructure.PrimaryKeys.Any(x => x.fieldname == col.fieldname))
                                     {
@@ -407,7 +409,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                 t.Width = valuewidth;
                                 t.Height = l.Height;
                                 t.Tag = i;
-                                //t.TextChanged += T_TextChanged;
+                                t.TextChanged += T_TextChanged;
                                 //t.KeyPress += T_KeyPress;
                                 if (EntityStructure.PrimaryKeys.Where(x => x.fieldname == col.fieldname).FirstOrDefault() != null)
                                 {
@@ -436,6 +438,49 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
 
        
         }
+        public object GetDisplayLookup(string datasourceid, string entityname, string KeyField)
+        {
+            object retval;
+            try
+            {
+                IDataSource ds = DMEEditor.GetDataSource(datasourceid);
+                EntityStructure ent = ds.GetEntityStructure(entityname, false);
+                DisplayField = null;
+                // bool found = true;
+                // int i = 0;
+                List<DefaultValue> defaults = ds.Dataconnection.ConnectionProp.DatasourceDefaults.Where(o => o.propertyType == DefaultValueType.DisplayLookup).ToList();
+                List<string> fields = ent.Fields.Select(u => u.EntityName).ToList();
+                if (defaults != null)
+                {
+
+                    DisplayField = (from x in ent.Fields
+                                    join y in defaults on x.fieldname equals y.propertyName
+                                    orderby y.propoertValue
+                                    select x.fieldname).FirstOrDefault();
+
+                }
+                if (string.IsNullOrWhiteSpace(DisplayField) || string.IsNullOrEmpty(DisplayField))
+                {
+                    DisplayField = ent.Fields.Where(r => r.EntityName.Contains("NAME")).Select(u => u.EntityName).FirstOrDefault();
+                }
+                if (string.IsNullOrWhiteSpace(DisplayField) || string.IsNullOrEmpty(DisplayField))
+                {
+                    DisplayField = KeyField;
+                }
+                string qrystr = "select " + DisplayField + "," + KeyField + " from " + entityname;
+
+
+
+                retval = ds.RunQuery(qrystr);
+
+                return retval;
+            }
+            catch (Exception)
+            {
+
+                return null;
+            }
+        }
         private int getTextSize(string text)
         {
             Font font = new Font("Courier New", 10.0F);
@@ -444,5 +489,110 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             SizeF size = graphics.MeasureString(text, font);
             return Convert.ToInt32(size.Width);
         }
+        #region "Detect Changes with Dynamiclly generated userControl"
+        private void SetFilterPropertyValue(string Fieldname, string Value)
+        {
+            ReportFilter ent = EntityStructure.Filters.Where(x => x.FieldName == Fieldname).FirstOrDefault();
+            if (ent == null)
+            {
+                ent = new ReportFilter();
+                ent.FieldName = Fieldname;
+                ent.FilterValue = Value;
+                EntityStructure.Filters.Add(ent);
+            }
+            else
+            {
+                ent.FilterValue = Value;
+            }
+
+        }
+        private void T_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            // TextBox tx=(TextBox) sender;
+            if (char.IsControl(e.KeyChar)) //&& !char.IsDigit(e.KeyChar)'  && (e.KeyChar != '.'
+            {
+                e.Handled = true;
+            }
+            //else
+            //{
+            //    SetFilterPropertyValue(tx.Name, tx.Text);
+            //}
+        }
+        private void T_TextChanged(object sender, EventArgs e)
+        {
+            var tx = (TextBox)sender;
+            if (System.Text.RegularExpressions.Regex.IsMatch(tx.Text, "  ^ [0-9]"))
+            {
+                tx.Text = null;
+            }
+            else
+            {
+                SetFilterPropertyValue(tx.Name, tx.Text);
+            }
+            RaiseEvent(sender, e, typeof(TextBox));
+
+
+        }
+        public void RaiseEvent(object sender, EventArgs e, Type SenderType)
+        {
+            Control tx = null;
+            switch (SenderType.Name)
+            {
+                case "TextBox":
+
+                    tx = (TextBox)sender;
+                    break;
+                case "ComboBox":
+
+                    tx = (ComboBox)sender;
+                    break;
+                case "CheckBox":
+
+                    tx = (CheckBox)sender;
+                    break;
+                case "DateTimePicker":
+
+                    tx = (DateTimePicker)sender;
+                    break;
+                default:
+                    break;
+            }
+
+            string[] args = { "TextBox", tx.Name, tx.Text };
+            List<ObjectItem> ob = new List<ObjectItem>(); ;
+            ObjectItem it = new ObjectItem();
+            it.obj = tx;
+            it.Name = "TextBox";
+            ob.Add(it);
+
+            PassedArgs Passedarguments = new PassedArgs
+            {
+                Addin = null,
+                AddinName = null,
+                AddinType = "",
+                DMView = null,
+                CurrentEntity = tx.Name,
+                ObjectType = "TEXTBOXCHANGED",
+                DataSource = null,
+                ObjectName = tx.Name,
+                Objects = ob,
+                EventType = "TEXTBOXCHANGED"
+
+            };
+           // ActionNeeded?.Invoke(this, Passedarguments);
+        }
+        private void Cb_SelectedValueChanged(object sender, EventArgs e)
+        {
+            // throw new NotImplementedException();
+        }
+        private void Dt_ValueChanged(object sender, EventArgs e)
+        {
+            // throw new NotImplementedException();
+        }
+        private void Ch1_CheckStateChanged(object sender, EventArgs e)
+        {
+            // throw new NotImplementedException();
+        }
+        #endregion "Detect Changes with Dynamiclly generated userControl"
     }
 }

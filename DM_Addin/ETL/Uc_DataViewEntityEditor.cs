@@ -164,7 +164,7 @@ namespace TheTechIdea.ETL
         {
             // ds = (DataViewDataSource)DMEEditor.GetDataSource(dataSourceIDComboBox.Text);
 
-            DataTable dt = new DataTable();
+            object dt;
             SourceConnection = DMEEditor.GetDataSource(dataSourceIDComboBox.Text);
             if (SourceConnection != null && MyEntity.CustomBuildQuery != null)
             {

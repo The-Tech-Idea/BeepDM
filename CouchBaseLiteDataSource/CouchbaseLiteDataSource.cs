@@ -127,10 +127,6 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
             throw new NotImplementedException();
         }
 
-        public DataTable GetEntityDataTable(string EntityName, string filterstr)
-        {
-            throw new NotImplementedException();
-        }
 
         public Type GetEntityType(string EntityName)
         {
@@ -153,7 +149,7 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
             throw new NotImplementedException();
         }
 
-        public  DataTable RunQuery( string qrystr)
+        public  object RunQuery( string qrystr)
         {
             throw new NotImplementedException();
         }

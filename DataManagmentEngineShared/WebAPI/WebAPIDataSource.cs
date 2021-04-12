@@ -183,7 +183,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
         }
 
       
-        public virtual  DataTable RunQuery( string qrystr)
+        public virtual  object RunQuery( string qrystr)
         {
 
             throw new NotImplementedException();
