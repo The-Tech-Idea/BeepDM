@@ -52,7 +52,7 @@ namespace DataManagment_Engine
         }
         public MainApp()
         {
-
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
             Container = Configure();
             using (var scope = Container.BeginLifetimeScope())
             {
@@ -71,10 +71,7 @@ namespace DataManagment_Engine
 
                 util = scope.Resolve<IUtil>();
                 //--------------------------------------------------------------------------------
-                // this is the assembly loader for loading from Addin Folder and Projectdrivers Folder
-                //---------------------------------------------------------------------------
-                // LLoader = scope.Resolve<IAssemblyLoader>();
-                LLoader = scope.Resolve<IAssemblyHandler>();
+               
 
                 //-------------------------------------------------------------------------------
                 // a onfiguration class for assembly, addin's and  drivers loading into the 
@@ -100,7 +97,11 @@ namespace DataManagment_Engine
                 //---------------------------------------------------------------------------
                 DMEEditor = scope.Resolve<IDMEEditor>();
                 //-------------------------------------------------------------------------------
-                LLoader.DMEEditor = DMEEditor;
+                // this is the assembly loader for loading from Addin Folder and Projectdrivers Folder
+                //---------------------------------------------------------------------------
+                // LLoader = scope.Resolve<IAssemblyLoader>();
+                LLoader = scope.Resolve<IAssemblyHandler>();
+             //   LLoader.DMEEditor = DMEEditor;
                // util.DME = DMEEditor;
                 //-------------------------------------------------------------------------------
                 // The Main Visualization Class tha control the visual aspect of the system
@@ -123,10 +124,8 @@ namespace DataManagment_Engine
                     ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
                     PrivateBinPath = @"ConnectionDrivers;ProjectClasses"
                 };
-           
                 LLoader.LoadAllAssembly();
                 Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
-               
                 vis.ShowMainDisplayForm();
                 //if (DMEEditor.ErrorObject.Flag== Errors.Failed)
                 //{

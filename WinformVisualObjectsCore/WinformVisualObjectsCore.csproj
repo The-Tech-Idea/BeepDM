@@ -12,5 +12,13 @@
     <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
     <ProjectReference Include="..\WinformCore\WinformCore.csproj" />
   </ItemGroup>
+	<Target Name="CopyTarget" AfterTargets="Build">
+		<ItemGroup>
+			<DataReaders Include="$(TargetDir)\WinformVisualObjectsCore.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\netcoreapp3.1\ProjectClasses" SkipUnchangedFiles="true" />
+	</Target>
+  <Import Project="..\WinformVisualObjectsShared\WinformVisualObjectsShared.projitems" Label="Shared" />
 
 </Project>

@@ -30,7 +30,8 @@ namespace TheTechIdea.Winforms.VIS
         DialogResult InputBoxYesNo(string title, string promptText);
         void MsgBox(string title, string promptText);
         DialogResult InputComboBox(string title, string promptText, List<string> itvalues, ref string value);
-        BindingList<IReportFilter> CreateFilterQueryGrid(string text, List<EntityField> ls, List<string> lsop);
+     
+        void CreateEntityFilterControls(Control panel, EntityStructure entityStructure, List<DefaultValue> dsdefaults);
         IErrorsInfo BindDataSourceEnumtoComobo(ComboBox combo);
         IErrorsInfo BindDataSourceEnumtoComobo(DataGridViewComboBoxColumn combo);
         int getTextSize(string text);

@@ -27,8 +27,7 @@ namespace TheTechIdea.DataManagment_Engine
     {
        
         public List<IDataSource> DataSources { get; set; } = new List<IDataSource>();
-         public IETL ETL { get; set; }
-      //  public IRDBMSHelper RDBMSHelper { get; set; }
+        public IETL ETL { get; set; }
         public IConfigEditor ConfigEditor { get; set; }
         public IDataTypesHelper typesHelper { get; set; }
         public IUtil Utilfunction { get; set; }
@@ -39,20 +38,34 @@ namespace TheTechIdea.DataManagment_Engine
         public LScriptHeader Script { get; set; } = new LScriptHeader();
         public BindingList<ILogAndError> Loganderrors { get; set; } = new BindingList<ILogAndError>();
         public PassedArgs Passedarguments { get; set; }
-
         public event EventHandler<PassedArgs> PassEvent;
-
-        //  ViewEvent?.Invoke(this, Passedarguments);
-       
-      
+ 
         public void AddLogMessage(string pLogType ,string pLogMessage ,DateTime pLogData , int pRecordID , string pMiscData,Errors pFlag)
         {
-            LogAndError log = new LogAndError(pLogType,  pLogMessage,  pLogData,  pRecordID,  pMiscData);
-            Loganderrors.Add(log);
-            string errmsg = pLogType + "," + pLogMessage;
-            ErrorObject.Flag = pFlag;
-            ErrorObject.Message = errmsg;
-            Logger.WriteLog(errmsg);
+            if (Logger != null)
+            {
+                LogAndError log = new LogAndError(pLogType, pLogMessage, pLogData, pRecordID, pMiscData);
+                Loganderrors.Add(log);
+                string errmsg = pLogType + "," + pLogMessage;
+                ErrorObject.Flag = pFlag;
+                ErrorObject.Message = errmsg;
+                Logger.WriteLog(errmsg);
+            }
+           
+
+        }
+        public void AddLogMessage( string pLogMessage)
+        {
+            if (Logger != null)
+            {
+                LogAndError log = new LogAndError("Beep", pLogMessage,DateTime.Now, 0, null);
+                Loganderrors.Add(log);
+                string errmsg = "Beep" + "," + pLogMessage;
+                ErrorObject.Flag =  Errors.Ok;
+                ErrorObject.Message = errmsg;
+                Logger.WriteLog(errmsg);
+            }
+
 
         }
         public IDataSource GetDataSource(string pdatasourcename)
@@ -403,7 +416,6 @@ namespace TheTechIdea.DataManagment_Engine
             };
             return false;
         }
-       
         public void RaiseEvent(object sender, PassedArgs args)
         {
             PassEvent?.Invoke(sender, args);
@@ -417,16 +429,12 @@ namespace TheTechIdea.DataManagment_Engine
             Utilfunction = utilfunctions;
             Utilfunction.DME = this;
             ConfigEditor = configEditor;
-        
             ErrorObject = per;
             classCreator = pclasscreator;
-          
             WorkFlowEditor = pworkFlowEditor;
             WorkFlowEditor.DMEEditor = this;
-
             ETL = pETL;
             ETL.DMEEditor = this;
-           
             typesHelper = new DataTypesHelper(Logger, this, ErrorObject);
             
         }

@@ -35,7 +35,7 @@ namespace TheTechIdea.DataManagment_Engine
       
         AssemblyClassDefinition GetDataSourceClass(string DatasourceName);
         void AddLogMessage(string pLogType, string pLogMessage, DateTime pLogData, int pRecordID, string pMiscData, Errors pFlag);
-      
+        void AddLogMessage(string pLogMessage);
         event EventHandler<PassedArgs> PassEvent;
         void RaiseEvent(object sender,PassedArgs args);
 

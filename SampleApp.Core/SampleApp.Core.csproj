@@ -21,6 +21,7 @@
     <None Remove="config\DriversDefinitions.json" />
     <None Remove="config\events.json" />
     <None Remove="config\Function2Function.json" />
+    <None Remove="config\HereweAddAllConfguration.txt" />
     <None Remove="config\Mapping.json" />
     <None Remove="config\MappingList.json" />
     <None Remove="config\Maps.json" />
@@ -386,6 +387,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="config\Function2Function.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config\HereweAddAllConfguration.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="config\Mapping.json">
@@ -1351,7 +1355,6 @@
   <ItemGroup>
     <ProjectReference Include="..\AssemblyToolsCore\AssemblyToolsCore.csproj" />
     <ProjectReference Include="..\CodeDomCompile\CodeDomCompile.csproj" />
-    <ProjectReference Include="..\DataManagerNetModels\DataManagmentModels.csproj" />
     <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
     <ProjectReference Include="..\DMLogger\DMLogger.csproj" />
     <ProjectReference Include="..\JsonFileLoader\JsonFileLoader.csproj" />

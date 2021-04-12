@@ -20,7 +20,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
     public class AssemblyHandler: IAssemblyHandler
     {
         string[] pluginPaths = new string[] { };
-
+        ParentChildObject a;
         private string Name { get; set; }
         private string Descr { get; set; }
         public IDMEEditor DMEEditor { get; set; }
@@ -29,9 +29,9 @@ namespace TheTechIdea.Tools.AssemblyHandling
         public List<AssemblyClassDefinition> DataSources { get; set; } = new List<AssemblyClassDefinition>();
         private List<ConnectionDriversConfig> DataDrivers = new List<ConnectionDriversConfig>();
 
-        public AssemblyHandler()
+        public AssemblyHandler(IDMEEditor pDMEEditor)
         {
-
+            DMEEditor = pDMEEditor;
 
         }
         static Assembly LoadPlugin(string relativePath)
@@ -44,65 +44,119 @@ namespace TheTechIdea.Tools.AssemblyHandling
             PluginLoadContext loadContext = new PluginLoadContext(pluginLocation);
             return loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(pluginLocation)));
         }
+        private string LoadAssembly(string path, FolderFileTypes fileTypes)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            string res = "";
+
+            foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    Assembly loadedAssembly = LoadPlugin(dll);
+
+                    assemblies_rep x = new assemblies_rep(loadedAssembly, path, dll, fileTypes);
+                    Assemblies.Add(x);
+                }
+                catch (FileLoadException loadEx)
+                {
+                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    res = "The Assembly has already been loaded" + loadEx.Message;
+                } // The Assembly has already been loaded.
+                catch (BadImageFormatException imgEx)
+                {
+                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    res = imgEx.Message;
+                }
+                catch (Exception ex)
+                {
+                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    res = ex.Message;
+                }
+            }
+
+
+            DMEEditor.ErrorObject.Message = res;
+            return res;
+        }
         #region "Loaders"
         public IErrorsInfo GetBuiltinClasses()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             DataSources = new List<AssemblyClassDefinition>();
             // look through assembly list
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.FullName.Contains("DataManagerEditors"));
-
-            // try to find manually
-            foreach (Assembly asm in assemblies)
+            Assembly currentAssem = Assembly.GetExecutingAssembly();
+            Assembly rootassembly = Assembly.GetEntryAssembly();
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine"));
+            try
+            {
+                ScanAssembly(currentAssem);
+                DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(currentAssem);
+            }
+            catch (Exception ex)
             {
 
-                try
-                {
-                    foreach (var type in asm.DefinedTypes)
-                    {
-
-
-                        string[] p = asm.FullName.Split(new char[] { ',' });
-                        p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
-                        //-------------------------------------------------------
-                        // Get DataBase Drivers
-                        if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
-                        {
-
-                            AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                            xcls.className = type.Name;
-                            xcls.dllname = type.Module.Name;
-                            xcls.PackageName = type.FullName;
-                            DataSources.Add(xcls);
-                            DMEEditor.ConfigEditor.DataSources.Add(xcls);
-
-
-                        }
-                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
-                        {
-
-                            AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                            xcls.className = type.Name;
-                            xcls.dllname = type.Module.Name;
-                            xcls.PackageName = type.FullName;
-                            DataSources.Add(xcls);
-                            DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
-
-
-                        }
-
-                    }
-
-
-
-                    //-----------------------------------------------------------
-                }
-                catch (Exception ex)
-                {
-
-                    DMEEditor.Logger.WriteLog($"error loading Database drivers {ex.Message} ");
-                }
+                DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
+
+            try
+            {
+                ScanAssembly(rootassembly);
+                DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(rootassembly);
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
+            }
+            //// try to find manually
+            ////foreach (Assembly asm in currentAssem)
+            ////{
+
+            //    try
+            //    {
+            //        foreach (var type in currentAssem.DefinedTypes)
+            //        {
+
+
+            //            string[] p = currentAssem.FullName.Split(new char[] { ',' });
+            //            p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
+            //            //-------------------------------------------------------
+            //            // Get DataBase Drivers
+            //            if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
+            //            {
+
+            //                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+            //                xcls.className = type.Name;
+            //                xcls.dllname = type.Module.Name;
+            //                xcls.PackageName = type.FullName;
+            //                DataSources.Add(xcls);
+            //                DMEEditor.ConfigEditor.DataSources.Add(xcls);
+
+
+            //            }
+            //            if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
+            //            {
+
+            //                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+            //                xcls.className = type.Name;
+            //                xcls.dllname = type.Module.Name;
+            //                xcls.PackageName = type.FullName;
+            //                DataSources.Add(xcls);
+            //                DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
+
+
+            //            }
+
+            //        }
+
+
+
+            //-----------------------------------------------------------
+            // }
+
+            // }
             return DMEEditor.ErrorObject;
 
         }
@@ -149,7 +203,6 @@ namespace TheTechIdea.Tools.AssemblyHandling
                     }
 
                 }
-
                 foreach (string p in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver).Select(x => x.FolderPath))
                 {
                     try
@@ -242,36 +295,24 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 // Scan Addin Assemblies
                 //-------------------------------
                 // Scan Project Class Assemblies
-                foreach (assemblies_rep s in Assemblies.Where(x => x.FileTypes == FolderFileTypes.ProjectClass))
+                foreach (assemblies_rep s in Assemblies.Where(x => x.FileTypes == FolderFileTypes.ProjectClass || x.FileTypes == FolderFileTypes.Addin))
                 {
                     try
                     {
 
                         ScanAssembly(s.DllLib);
-
-                    }
-
-                    catch (Exception ex)
-                    {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
-                        res = ex.Message;
-                    }
-
-                }
-                foreach (assemblies_rep s in Assemblies.Where(x => x.FileTypes == FolderFileTypes.Addin || x.FileTypes == FolderFileTypes.ProjectClass))
-                {
-                    try
-                    {
                         DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(s.DllLib);
+
                     }
+
                     catch (Exception ex)
                     {
                         DMEEditor.ErrorObject.Flag = Errors.Failed;
-                        // MessageBox.Show(ex.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly
                         res = ex.Message;
                     }
 
                 }
+
                 //------------------------------
             }
             catch (System.Exception ex)
@@ -288,42 +329,168 @@ namespace TheTechIdea.Tools.AssemblyHandling
         /// <param name="Path"></param>
         /// <param name="FolderFileTypes"></param>
         /// <returns></returns>
-        private string LoadAssembly(string path, FolderFileTypes fileTypes)
+    
+        #endregion "Loaders"
+        #region "Class ordering"
+        public ParentChildObject RearrangeAddin(string p, string parentid, string Objt)
         {
-            DMEEditor.ErrorObject.Flag = Errors.Ok;
-            string res = "";
 
-            foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
+            ParentChildObject a;
+            if (parentid == null)
             {
-                try
+                if (DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ObjType == Objt).Count() == 0)
                 {
-                    Assembly loadedAssembly = LoadPlugin(dll);
+                    a = new ParentChildObject() { id = p, ParentID = null, ObjType = Objt, AddinName = Name, Description = Descr };
+                    DMEEditor.Utilfunction.FunctionHierarchy.Add(a);
 
-                    assemblies_rep x = new assemblies_rep(loadedAssembly, path, dll, fileTypes);
-                    Assemblies.Add(x);
                 }
-                catch (FileLoadException loadEx)
+                else
                 {
-                    DMEEditor.ErrorObject.Flag = Errors.Failed;
-                    res = "The Assembly has already been loaded" + loadEx.Message;
-                } // The Assembly has already been loaded.
-                catch (BadImageFormatException imgEx)
-                {
-                    DMEEditor.ErrorObject.Flag = Errors.Failed;
-                    res = imgEx.Message;
+                    a = DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == null && f.ObjType == Objt).FirstOrDefault();
+
                 }
-                catch (Exception ex)
+
+            }
+            else
+            {
+                if (DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == parentid && f.ObjType == Objt).Count() == 0)
                 {
-                    DMEEditor.ErrorObject.Flag = Errors.Failed;
-                    res = ex.Message;
+                    a = new ParentChildObject() { id = p, ParentID = parentid, ObjType = Objt, AddinName = Name, Description = Descr };
+                    DMEEditor.Utilfunction.FunctionHierarchy.Add(a);
+
+                }
+                else
+                {
+                    a = DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == parentid && f.ObjType == Objt).FirstOrDefault();
+
                 }
             }
 
-
-            DMEEditor.ErrorObject.Message = res;
-            return res;
+            return a;
         }
-        #endregion "Loaders"
+        public List<ParentChildObject> GetAddinObjects(Assembly asm)
+        {
+            IDM_Addin addin = null;
+            string objtype = "";
+            Boolean Show = true;
+            int cnt = 0;
+            foreach (Type type in asm.DefinedTypes)
+            {
+                if (typeof(IDM_Addin).IsAssignableFrom(type))
+                {
+                    try
+                    {
+                        if (type.FullName.Contains("Properties") == false)
+                        {
+
+                            string[] p = type.FullName.Split(new char[] { '.' });
+
+                            if (p.Length >= 0)
+                            {
+                                for (int i = 0; i < p.Length; i++)
+                                {
+                                    cnt += 1;
+                                    if (i == 0)
+                                    {
+                                        Name = p[i];
+                                        Descr = p[i];
+                                        a = RearrangeAddin(p[i], null, "namespace");
+                                    }
+                                    else
+                                    {
+                                        if (i == p.Length - 1)
+                                        {
+
+
+                                            try
+                                            {
+                                                IDM_Addin uc = (IDM_Addin)Activator.CreateInstance(type);
+                                                if (uc != null)
+                                                {
+                                                    addin = (IDM_Addin)uc;
+                                                    addin.DllPath = Path.GetDirectoryName(asm.Location);
+                                                    addin.ObjectName = type.Name;
+                                                    addin.DllName = Path.GetFileName(asm.Location);
+                                                    Show = addin.DefaultCreate;
+                                                    AddIns.Add(addin);
+                                                }
+                                                Name = addin.AddinName;
+                                                Descr = addin.Description;
+
+                                                if (addin.DefaultCreate)
+                                                {
+                                                    if (DMEEditor.ConfigEditor.AddinTreeStructure.Where(x => x.className == type.Name).Any() == false)
+                                                    {
+                                                        Show = true;
+                                                        try
+                                                        {
+                                                            IAddinVisSchema cls = (IAddinVisSchema)addin;
+                                                            AddinTreeStructure xcls = new AddinTreeStructure();
+                                                            xcls.className = type.Name;
+                                                            xcls.dllname = type.Module.Name;
+                                                            xcls.PackageName = type.FullName;
+                                                            xcls.Order = cls.Order;
+                                                            xcls.Imagename = cls.IconImageName;
+                                                            xcls.RootName = cls.RootNodeName;
+                                                            xcls.NodeName = cls.BranchText;
+                                                            xcls.ObjectType = addin.ObjectType;
+                                                            DMEEditor.ConfigEditor.AddinTreeStructure.Add(xcls);
+
+                                                        }
+                                                        catch (Exception)
+                                                        {
+
+                                                        }
+                                                    }
+
+                                                }
+                                                else Show = false;
+                                                // objtype = "UserControl";
+
+                                                if (Show)
+                                                {
+                                                    a = RearrangeAddin(p[i], p[i - 1], objtype);
+                                                }
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                string mes = ex.Message;
+                                                DMEEditor.AddLogMessage(ex.Message, "Could" + mes, DateTime.Now, -1, mes, Errors.Failed);
+                                            };
+
+
+                                        }
+                                        else
+                                        {
+                                            Name = p[i];
+                                            Descr = p[i];
+                                            a = RearrangeAddin(p[i], p[i - 1], "namespace");
+
+                                        }
+
+                                    }
+
+
+                                }
+
+                            }
+
+                        }
+                    }
+
+                    catch (Exception ex)
+                    {
+
+                        DMEEditor.Logger.WriteLog($"error in creating addin {ex.Message} ");
+                    }
+                }
+
+            }
+
+            DMEEditor.ConfigEditor.SaveAddinTreeStructure();
+            return DMEEditor.Utilfunction.FunctionHierarchy;
+        }
+        #endregion
         #region "Class Extractors"
         private bool ScanAssembly(Assembly asm)
         {
@@ -373,7 +540,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                 DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
                             }
                             //-------------------------------------------------------
-                            // Get Reports  Definitions
+                            // Get IAppBuilder  Definitions
                             if (type.ImplementedInterfaces.Contains(typeof(IAppBuilder)))
                             {
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
@@ -391,6 +558,51 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
                                 DMEEditor.ConfigEditor.ReportWritersClasses.Add(xcls);
+                            }
+                            //-------------------------------------------------------
+                            // Get IBranch Definitions
+                            if (type.ImplementedInterfaces.Contains(typeof(IBranch)))
+                            {
+
+                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                                xcls.Methods = new List<MethodsClass>();
+                                xcls.className = type.Name;
+                                xcls.dllname = type.Module.Name;
+                                xcls.PackageName = type.FullName;
+                                //   xcls.RootName = brcls.BranchClass;
+                                xcls.type = type;
+                                //   xcls.RootName = "AI";
+                                //   xcls.BranchType = brcls.BranchType;
+                                foreach (MethodInfo methods in type.GetMethods()
+                                             .Where(m => m.GetCustomAttributes(typeof(BranchDelegate), false).Length > 0)
+                                              .ToArray())
+                                {
+
+                                    BranchDelegate methodAttribute = methods.GetCustomAttribute<BranchDelegate>();
+                                    MethodsClass x = new MethodsClass();
+                                    x.Caption = methodAttribute.Caption;
+                                    x.Info = methods;
+                                    x.Hidden = methodAttribute.Hidden;
+                                    x.Click = methodAttribute.Click;
+                                    x.DoubleClick = methodAttribute.DoubleClick;
+                                    xcls.Methods.Add(x);
+                                }
+                                if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
+                                {
+                                    try
+                                    {
+                                        IOrder cls = (IOrder)Activator.CreateInstance(type);
+                                        xcls.Order = cls.Order;
+                                        cls = null;
+                                    }
+                                    catch (Exception)
+                                    {
+
+
+                                    }
+
+                                }
+                                DMEEditor.ConfigEditor.BranchesClasses.Add(xcls);
                             }
                             // --- Get all AI app Interfaces
                             //-----------------------------------------------------
@@ -413,7 +625,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                     x.Info = methods;
                                     x.Hidden = methodAttribute.Hidden;
                                     x.Click = methodAttribute.Click;
-                                    x.type = typeof(MLMethod); 
+                                    x.type = typeof(MLMethod);
                                     x.DoubleClick = methodAttribute.DoubleClick;
                                     xcls.Methods.Add(x);
                                 }
@@ -494,47 +706,6 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                 }
                                 DMEEditor.ConfigEditor.BranchesClasses.Add(xcls);
                             }
-                            //-------------------------------------------------------
-                            // Get Tree Branch Definitions
-                            if (type.ImplementedInterfaces.Contains(typeof(IBranch)))
-                            {
-                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                                xcls.Methods = new List<MethodsClass>();
-                                xcls.className = type.Name;
-                                xcls.dllname = type.Module.Name;
-                                xcls.PackageName = type.FullName;
-
-                                foreach (MethodInfo methods in type.GetMethods()
-                                             .Where(m => m.GetCustomAttributes(typeof(BranchDelegate), false).Length > 0)
-                                              .ToArray())
-                                {
-
-                                    BranchDelegate methodAttribute = methods.GetCustomAttribute<BranchDelegate>();
-                                    MethodsClass x = new MethodsClass();
-                                    x.Caption = methodAttribute.Caption;
-                                    x.Info = methods;
-                                    x.Hidden = methodAttribute.Hidden;
-                                    x.Click = methodAttribute.Click;
-                                    x.DoubleClick = methodAttribute.DoubleClick;
-                                    xcls.Methods.Add(x);
-                                }
-                                if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
-                                {
-                                    try
-                                    {
-                                        IOrder cls = (IOrder)Activator.CreateInstance(type);
-                                        xcls.Order = cls.Order;
-                                        cls = null;
-                                    }
-                                    catch (Exception)
-                                    {
-
-
-                                    }
-
-                                }
-                                DMEEditor.ConfigEditor.BranchesClasses.Add(xcls);
-                            }
                         }
                     }
 
@@ -556,24 +727,140 @@ namespace TheTechIdea.Tools.AssemblyHandling
             };
         }
         #endregion "Class Extractors"
-        //static IEnumerable<T> CreateCommands(Assembly assembly)
-        //{
-        //    int count = 0;
+        #region "Helpers"
+        public Type GetTypeFromName(string typeName)
+        {
+            Type type = null;
 
-        //    foreach (Type type in assembly.GetTypes())
-        //    {
-        //        if (typeof(T).IsAssignableFrom(type))
-        //        {
-        //            ICommand result = Activator.CreateInstance(type) as ICommand;
-        //            if (result != null)
-        //            {
-        //                count++;
-        //                yield return result;
-        //            }
-        //        }
-        //    }
+            // Let default name binding find it
+            type = Type.GetType(typeName, false);
+            if (type != null)
+                return type;
 
-        //}
+            // look through assembly list
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+            // try to find manually
+            foreach (Assembly asm in assemblies)
+            {
+                type = asm.GetType(typeName, false);
+
+                if (type != null)
+                    break;
+            }
+            return type;
+        }
+        public object CreateInstanceFromString(string typeName, params object[] args)
+        {
+            object instance = null;
+            Type type = null;
+
+            try
+            {
+                type = GetTypeFromName(typeName);
+                if (type == null)
+                    return null;
+
+                instance = Activator.CreateInstance(type, args);
+            }
+            catch
+            {
+                return null;
+            }
+
+            return instance;
+        }
+        private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            // Ignore missing resources
+            if (args.Name.Contains(".resources"))
+                return null;
+
+            // check for assemblies already loaded
+            //   var s = AppDomain.CurrentDomain.GetAssemblies();
+            Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName == args.Name);
+            if (assembly == null)
+            {
+                assemblies_rep s = Assemblies.FirstOrDefault(a => a.DllLib.FullName == args.Name);
+                if (s != null)
+                {
+                    assembly = s.DllLib;
+                }
+
+            }
+            if (assembly != null)
+                return assembly;
+            foreach (var moduleDir in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver && c.FolderFilesType == FolderFileTypes.ProjectClass && c.FolderFilesType == FolderFileTypes.OtherDLL))
+            {
+                var di = new DirectoryInfo(moduleDir.FolderPath);
+                var module = di.GetFiles().FirstOrDefault(i => i.Name == args.Name + ".dll");
+                if (module != null)
+                {
+                    return Assembly.LoadFrom(module.FullName);
+                }
+            }
+            return null;
+
+        }
+        private static void LoadChildReferences(Assembly curAsm)
+        {
+            foreach (var assemblyName in curAsm.GetReferencedAssemblies())
+            {
+                try
+                {
+                    Assembly loadedAssembly = Assembly.LoadFile(assemblyName.FullName);
+                }
+                catch { }
+            }
+        }
+        public object GetInstance(string strFullyQualifiedName)
+        {
+            Type type = Type.GetType(strFullyQualifiedName);
+            if (type != null)
+                return Activator.CreateInstance(type);
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                type = asm.GetType(strFullyQualifiedName);
+                if (type != null)
+                    return Activator.CreateInstance(type);
+            }
+            return null;
+        }
+        public Type GetType(string strFullyQualifiedName)
+        {
+            Type type = Type.GetType(strFullyQualifiedName);
+            if (type != null)
+                return type;
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                type = asm.GetType(strFullyQualifiedName);
+                if (type != null)
+                    return type;
+            }
+            return null;
+        }
+        public bool RunMethod(object ObjInstance, string FullClassName, string MethodName)
+        {
+
+            try
+            {
+                AssemblyClassDefinition cls = DMEEditor.ConfigEditor.BranchesClasses.Where(x => x.className == FullClassName).FirstOrDefault();
+                dynamic obj = GetInstance(cls.PackageName);
+                obj = ObjInstance;
+                MethodInfo method = cls.Methods.Where(x => x.Caption == MethodName).FirstOrDefault().Info;
+                method.Invoke(ObjInstance, null);
+                return true;
+                //    DMEEditor.AddLogMessage("Success", "Running method", DateTime.Now, 0, null, Errors.Ok);
+            }
+            catch (Exception)
+            {
+                string mes = "Could not Run Method " + MethodName;
+                //  DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+                return false;
+            };
+
+        }
+        #endregion "Helpers"
         #region "Connection Drivers Loaders"
 
         public void CheckDriverAlreadyExistinList()
@@ -590,9 +877,6 @@ namespace TheTechIdea.Tools.AssemblyHandling
         }
         private bool GetADOTypeDrivers(Assembly asm)
         {
-
-            //
-            //typeof(ICommand).IsAssignableFrom(type)
             ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
 
             bool retval;
@@ -876,299 +1160,5 @@ namespace TheTechIdea.Tools.AssemblyHandling
             };
         }
         #endregion
-        #region "Class ordering"
-        public ParentChildObject RearrangeAddin(string p, string parentid, string Objt)
-        {
-
-            ParentChildObject a;
-            if (parentid == null)
-            {
-                if (DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ObjType == Objt).Count() == 0)
-                {
-                    a = new ParentChildObject() { id = p, ParentID = null, ObjType = Objt, AddinName = Name, Description = Descr };
-                    DMEEditor.Utilfunction.FunctionHierarchy.Add(a);
-
-                }
-                else
-                {
-                    a = DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == null && f.ObjType == Objt).FirstOrDefault();
-
-                }
-
-            }
-            else
-            {
-                if (DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == parentid && f.ObjType == Objt).Count() == 0)
-                {
-                    a = new ParentChildObject() { id = p, ParentID = parentid, ObjType = Objt, AddinName = Name, Description = Descr };
-                    DMEEditor.Utilfunction.FunctionHierarchy.Add(a);
-
-                }
-                else
-                {
-                    a = DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == parentid && f.ObjType == Objt).FirstOrDefault();
-
-                }
-            }
-
-            return a;
-        }
-        public List<ParentChildObject> GetAddinObjects(Assembly asm)
-        {
-            IDM_Addin addin = null;
-            string objtype = "";
-            Boolean Show = true;
-            int cnt = 0;
-            ParentChildObject a;
-            foreach (Type type in asm.ExportedTypes)
-            {
-                if (typeof(IDM_Addin).IsAssignableFrom(type))
-                {
-                    try
-                    {
-                        if (type.FullName.Contains("Properties") == false)
-                        {
-
-                            string[] p = type.FullName.Split(new char[] { '.' });
-
-                            if (p.Length >= 0)
-                            {
-                                for (int i = 0; i < p.Length; i++)
-                                {
-                                    cnt += 1;
-                                    if (i == 0)
-                                    {
-                                        Name = p[i];
-                                        Descr = p[i];
-                                        a = RearrangeAddin(p[i], null, "namespace");
-                                    }
-                                    else
-                                    {
-                                        if (i == p.Length - 1)
-                                        {
-
-
-                                            try
-                                            {
-                                                IDM_Addin uc = (IDM_Addin)Activator.CreateInstance(type);
-                                                if (uc != null)
-                                                {
-                                                    addin = (IDM_Addin)uc;
-                                                    addin.DllPath = Path.GetDirectoryName(asm.Location);
-                                                    addin.ObjectName = type.Name;
-                                                    addin.DllName = Path.GetFileName(asm.Location);
-                                                    Show = addin.DefaultCreate;
-                                                    AddIns.Add(addin);
-                                                }
-                                                Name = addin.AddinName;
-                                                Descr = addin.Description;
-
-                                                if (addin.DefaultCreate)
-                                                {
-                                                    if (DMEEditor.ConfigEditor.AddinTreeStructure.Where(x => x.className == type.Name).Any() == false)
-                                                    {
-                                                        Show = true;
-                                                        try
-                                                        {
-                                                            IAddinVisSchema cls = (IAddinVisSchema)addin;
-                                                            AddinTreeStructure xcls = new AddinTreeStructure();
-                                                            xcls.className = type.Name;
-                                                            xcls.dllname = type.Module.Name;
-                                                            xcls.PackageName = type.FullName;
-                                                            xcls.Order = cls.Order;
-                                                            xcls.Imagename = cls.IconImageName;
-                                                            xcls.RootName = cls.RootNodeName;
-                                                            xcls.NodeName = cls.BranchText;
-                                                            xcls.ObjectType = addin.ObjectType;
-                                                            DMEEditor.ConfigEditor.AddinTreeStructure.Add(xcls);
-
-                                                        }
-                                                        catch (Exception)
-                                                        {
-
-                                                        }
-                                                    }
-
-                                                }
-                                                else Show = false;
-                                                // objtype = "UserControl";
-
-                                                if (Show)
-                                                {
-                                                    a = RearrangeAddin(p[i], p[i - 1], objtype);
-                                                }
-                                            }
-                                            catch (Exception ex)
-                                            {
-                                                string mes = ex.Message;
-                                                DMEEditor.AddLogMessage(ex.Message, "Could" + mes, DateTime.Now, -1, mes, Errors.Failed);
-                                            };
-
-
-                                        }
-                                        else
-                                        {
-                                            Name = p[i];
-                                            Descr = p[i];
-                                            a = RearrangeAddin(p[i], p[i - 1], "namespace");
-
-                                        }
-
-                                    }
-
-
-                                }
-
-                            }
-
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-
-                        DMEEditor.Logger.WriteLog($"error in creating addin {ex.Message} ");
-                    }
-                }
-
-            }
-
-            DMEEditor.ConfigEditor.SaveAddinTreeStructure();
-            return DMEEditor.Utilfunction.FunctionHierarchy;
-        }
-        #endregion
-        #region "Helpers"
-        public Type GetTypeFromName(string typeName)
-        {
-            Type type = null;
-
-            // Let default name binding find it
-            type = Type.GetType(typeName, false);
-            if (type != null)
-                return type;
-
-            // look through assembly list
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            // try to find manually
-            foreach (Assembly asm in assemblies)
-            {
-                type = asm.GetType(typeName, false);
-
-                if (type != null)
-                    break;
-            }
-            return type;
-        }
-        public object CreateInstanceFromString(string typeName, params object[] args)
-        {
-            object instance = null;
-            Type type = null;
-
-            try
-            {
-                type = GetTypeFromName(typeName);
-                if (type == null)
-                    return null;
-
-                instance = Activator.CreateInstance(type, args);
-            }
-            catch
-            {
-                return null;
-            }
-
-            return instance;
-        }
-        private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
-        {
-            // Ignore missing resources
-            if (args.Name.Contains(".resources"))
-                return null;
-
-            // check for assemblies already loaded
-            //   var s = AppDomain.CurrentDomain.GetAssemblies();
-            Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName == args.Name);
-            if (assembly == null)
-            {
-                assemblies_rep s = Assemblies.FirstOrDefault(a => a.DllLib.FullName == args.Name);
-                if (s != null)
-                {
-                    assembly = s.DllLib;
-                }
-
-            }
-            if (assembly != null)
-                return assembly;
-            foreach (var moduleDir in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver && c.FolderFilesType == FolderFileTypes.ProjectClass && c.FolderFilesType == FolderFileTypes.OtherDLL))
-            {
-                var di = new DirectoryInfo(moduleDir.FolderPath);
-                var module = di.GetFiles().FirstOrDefault(i => i.Name == args.Name + ".dll");
-                if (module != null)
-                {
-                    return Assembly.LoadFrom(module.FullName);
-                }
-            }
-            return null;
-
-        }
-        private static void LoadChildReferences(Assembly curAsm)
-        {
-            foreach (var assemblyName in curAsm.GetReferencedAssemblies())
-            {
-                try
-                {
-                    Assembly loadedAssembly = Assembly.LoadFile(assemblyName.FullName);
-                }
-                catch { }
-            }
-        }
-        public object GetInstance(string strFullyQualifiedName)
-        {
-            Type type = Type.GetType(strFullyQualifiedName);
-            if (type != null)
-                return Activator.CreateInstance(type);
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                type = asm.GetType(strFullyQualifiedName);
-                if (type != null)
-                    return Activator.CreateInstance(type);
-            }
-            return null;
-        }
-        public Type GetType(string strFullyQualifiedName)
-        {
-            Type type = Type.GetType(strFullyQualifiedName);
-            if (type != null)
-                return type;
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                type = asm.GetType(strFullyQualifiedName);
-                if (type != null)
-                    return type;
-            }
-            return null;
-        }
-        public bool RunMethod(object ObjInstance, string FullClassName, string MethodName)
-        {
-
-            try
-            {
-                AssemblyClassDefinition cls = DMEEditor.ConfigEditor.BranchesClasses.Where(x => x.className == FullClassName).FirstOrDefault();
-                dynamic obj = GetInstance(cls.PackageName);
-                obj = ObjInstance;
-                MethodInfo method = cls.Methods.Where(x => x.Caption == MethodName).FirstOrDefault().Info;
-                method.Invoke(ObjInstance, null);
-                return true;
-                //    DMEEditor.AddLogMessage("Success", "Running method", DateTime.Now, 0, null, Errors.Ok);
-            }
-            catch (Exception)
-            {
-                string mes = "Could not Run Method " + MethodName;
-                //  DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
-                return false;
-            };
-
-        }
-        #endregion "Helpers"
     }
 }

@@ -74,7 +74,8 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                             // lsop = new List<FilterType>();
                             AddFilterTypes();
                             defaults = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == ds.DatasourceName)].DatasourceDefaults;
-                            CreateControls(this,  EntityStructure, defaults);
+                            //CreateControls(this,  EntityStructure, defaults);
+                            Visutil.controlEditor.CreateEntityFilterControls(this, EntityStructure, defaults);
                         }
                     }
                 }
@@ -317,7 +318,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                 t3.Tag = i;
                                 t3.TextChanged += T_TextChanged;
                                 //t.KeyPress += T_KeyPress;
-                                if (EntityStructure.PrimaryKeys.Where(x => x.fieldname == col.fieldname).FirstOrDefault() != null)
+                                if (entityStructure.PrimaryKeys.Where(x => x.fieldname == col.fieldname).FirstOrDefault() != null)
                                 {
                                     t3.Enabled = false;
                                 }
@@ -333,7 +334,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                 t2.Tag = i;
                                 t2.TextChanged += T_TextChanged;
                                 //t.KeyPress += T_KeyPress;
-                                if (EntityStructure.PrimaryKeys.Where(x => x.fieldname == col.fieldname).FirstOrDefault() != null)
+                                if (entityStructure.PrimaryKeys.Where(x => x.fieldname == col.fieldname).FirstOrDefault() != null)
                                 {
                                     t2.Enabled = false;
                                 }
@@ -344,7 +345,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                 break;
                                
                             case "System.String":
-                                if (EntityStructure.Fields.Where(p => p.fieldname == col.fieldname).FirstOrDefault().Size1 > 1)
+                                if (entityStructure.Fields.Where(p => p.fieldname == col.fieldname).FirstOrDefault().Size1 > 1)
                                 {
                                      t1 = new TextBox
                                     {
@@ -359,9 +360,9 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
 
                                     t1.TextChanged += T_TextChanged;
                                   //  t1.KeyPress += T_KeyPress;
-                                    if (EntityStructure.PrimaryKeys.Any(x => x.fieldname == col.fieldname))
+                                    if (entityStructure.PrimaryKeys.Any(x => x.fieldname == col.fieldname))
                                     {
-                                        if (EntityStructure.Relations.Any(x => x.EntityColumnID == col.fieldname))
+                                        if (entityStructure.Relations.Any(x => x.EntityColumnID == col.fieldname))
                                         {
                                             t1.Enabled = false;
                                         }
@@ -411,7 +412,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                 t.Tag = i;
                                 t.TextChanged += T_TextChanged;
                                 //t.KeyPress += T_KeyPress;
-                                if (EntityStructure.PrimaryKeys.Where(x => x.fieldname == col.fieldname).FirstOrDefault() != null)
+                                if (entityStructure.PrimaryKeys.Where(x => x.fieldname == col.fieldname).FirstOrDefault() != null)
                                 {
                                     t.Enabled = false;
                                 }

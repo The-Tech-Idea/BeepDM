@@ -34,10 +34,10 @@ namespace TheTechIdea.Tools
         public List<AssemblyClassDefinition> DataSources { get; set; } = new List<AssemblyClassDefinition>();
         private List<ConnectionDriversConfig> DataDrivers = new List<ConnectionDriversConfig>();
 
-        public AssemblyHandler()
+        public AssemblyHandler(IDMEEditor pDMEEditor)
         {
-          
 
+            DMEEditor = pDMEEditor;
             CurrentDomain = AppDomain.CurrentDomain;
            
             CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;

@@ -21,8 +21,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         public event EventHandler<PassedArgs> PassEvent;
         public string Id { get; set; }
         public string DatasourceName { get; set; }
-     //   public IFileConnection Fileconnection { get; set; }
-
+    
         public FileTypes FileType { get; set; }
 
         public DataSourceType DatasourceType { get; set; }
@@ -82,9 +81,9 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             }
             FileType = ft;
             Category = DatasourceCategory.FILE;
-            
-         
-           
+
+          
+
             Reader = new TxtXlsCSVReader(Dataconnection.ConnectionProp.FileName, Logger, DMEEditor, FileType, per, Dataconnection.ConnectionProp.FilePath, null);
             ConnectionStatus = Reader.OpenConnection();
             Dataconnection.ConnectionStatus = ConnectionStatus;

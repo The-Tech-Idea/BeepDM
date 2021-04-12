@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>019533b4-186d-4060-9e1f-bf36b3199bea</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>WinformVisualObjectsShared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)App\AppCategoryNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)App\AppEntitiesNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)App\AppNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)App\AppRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Cloud\CloudServiceRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerCategoryNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerEntitesNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Config\ConfigCategoryNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Config\ConfigEntityNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Config\ConfigRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\DatabaseCategoryNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\DatabaseEntitesNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\DatabaseNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\DatabaseRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewCategoryNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewEntitiesNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DDL\DDLCategoryNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DDL\DDLEntityNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DDL\DDLRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\FileCategoryNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\FileEntityNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\FileEntitySheetNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\FileRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mapping\MappingCategoryNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mapping\MappingRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mapping\MappinSchemaNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NoSQL\NoSqlCategoryNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NoSQL\NoSqlEntityNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NoSQL\NoSqlRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NoSQL\NoSqlSourceNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Reports\ReportCategoryNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Reports\ReportNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Reports\ReportRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tree\Tree.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebApiEntities.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebApiNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebApiRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WepApiCategoryNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WorkFlow\WorkFlowCategoryNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WorkFlow\WorkFlowEntityNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WorkFlow\WorkFlowRootNode.cs" />
+  </ItemGroup>
+</Project>
