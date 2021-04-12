@@ -32,6 +32,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.components = new System.ComponentModel.Container();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.Filterpanel = new System.Windows.Forms.Panel();
+            this.uc_filtercontrol1 = new TheTechIdea.DataManagment_Engine.AppBuilder.UserControls.uc_filtercontrol();
             this.filterTitlepanel = new System.Windows.Forms.Panel();
             this.Filtercaptionlabel = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
@@ -45,7 +46,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.EditSelectedbutton = new System.Windows.Forms.Button();
             this.DeleteSelectedbutton = new System.Windows.Forms.Button();
             this.InsertNewEntitybutton = new System.Windows.Forms.Button();
-            this.uc_filtercontrol1 = new TheTechIdea.DataManagment_Engine.AppBuilder.UserControls.uc_filtercontrol();
+            this.Printbutton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -87,6 +88,31 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.Filterpanel.Name = "Filterpanel";
             this.Filterpanel.Size = new System.Drawing.Size(373, 709);
             this.Filterpanel.TabIndex = 1;
+            // 
+            // uc_filtercontrol1
+            // 
+            this.uc_filtercontrol1.AddinName = null;
+            this.uc_filtercontrol1.AutoScroll = true;
+            this.uc_filtercontrol1.BackColor = System.Drawing.Color.WhiteSmoke;
+            this.uc_filtercontrol1.DefaultCreate = false;
+            this.uc_filtercontrol1.Description = null;
+            this.uc_filtercontrol1.DllName = null;
+            this.uc_filtercontrol1.DllPath = null;
+            this.uc_filtercontrol1.DMEEditor = null;
+            this.uc_filtercontrol1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.uc_filtercontrol1.EntityName = null;
+            this.uc_filtercontrol1.EntityStructure = null;
+            this.uc_filtercontrol1.ErrorObject = null;
+            this.uc_filtercontrol1.Location = new System.Drawing.Point(0, 0);
+            this.uc_filtercontrol1.Logger = null;
+            this.uc_filtercontrol1.Name = "uc_filtercontrol1";
+            this.uc_filtercontrol1.NameSpace = null;
+            this.uc_filtercontrol1.ObjectName = null;
+            this.uc_filtercontrol1.ObjectType = null;
+            this.uc_filtercontrol1.ParentName = null;
+            this.uc_filtercontrol1.Passedarg = null;
+            this.uc_filtercontrol1.Size = new System.Drawing.Size(373, 709);
+            this.uc_filtercontrol1.TabIndex = 0;
             // 
             // filterTitlepanel
             // 
@@ -150,6 +176,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             // gridTitlepanel
             // 
             this.gridTitlepanel.BackColor = System.Drawing.Color.Gainsboro;
+            this.gridTitlepanel.Controls.Add(this.Printbutton);
             this.gridTitlepanel.Controls.Add(this.expandbutton);
             this.gridTitlepanel.Controls.Add(this.subtitlelabel);
             this.gridTitlepanel.Controls.Add(this.EntityNamelabel);
@@ -225,30 +252,15 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.InsertNewEntitybutton.Text = "New";
             this.InsertNewEntitybutton.UseVisualStyleBackColor = true;
             // 
-            // uc_filtercontrol1
+            // Printbutton
             // 
-            this.uc_filtercontrol1.AddinName = null;
-            this.uc_filtercontrol1.AutoScroll = true;
-            this.uc_filtercontrol1.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.uc_filtercontrol1.DefaultCreate = false;
-            this.uc_filtercontrol1.Description = null;
-            this.uc_filtercontrol1.DllName = null;
-            this.uc_filtercontrol1.DllPath = null;
-            this.uc_filtercontrol1.DMEEditor = null;
-            this.uc_filtercontrol1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.uc_filtercontrol1.EntityName = null;
-            this.uc_filtercontrol1.EntityStructure = null;
-            this.uc_filtercontrol1.ErrorObject = null;
-            this.uc_filtercontrol1.Location = new System.Drawing.Point(0, 0);
-            this.uc_filtercontrol1.Logger = null;
-            this.uc_filtercontrol1.Name = "uc_filtercontrol1";
-            this.uc_filtercontrol1.NameSpace = null;
-            this.uc_filtercontrol1.ObjectName = null;
-            this.uc_filtercontrol1.ObjectType = null;
-            this.uc_filtercontrol1.ParentName = null;
-            this.uc_filtercontrol1.Passedarg = null;
-            this.uc_filtercontrol1.Size = new System.Drawing.Size(373, 709);
-            this.uc_filtercontrol1.TabIndex = 0;
+            this.Printbutton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.Printbutton.Location = new System.Drawing.Point(490, 65);
+            this.Printbutton.Name = "Printbutton";
+            this.Printbutton.Size = new System.Drawing.Size(75, 23);
+            this.Printbutton.TabIndex = 7;
+            this.Printbutton.Text = "Print";
+            this.Printbutton.UseVisualStyleBackColor = true;
             // 
             // uc_getentities
             // 
@@ -290,5 +302,6 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
         private System.Windows.Forms.Button expandbutton;
         private System.Windows.Forms.Panel Filterpanel;
         private uc_filtercontrol uc_filtercontrol1;
+        private System.Windows.Forms.Button Printbutton;
     }
 }

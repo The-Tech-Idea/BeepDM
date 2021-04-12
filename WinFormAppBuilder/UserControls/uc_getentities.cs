@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DynamicRdlcReport;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -7,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TheTechIdea.DataManagment_Engine.AppBuilder.DynamicRdlcReport;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.Logger;
@@ -86,9 +88,23 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             InsertNewEntitybutton.Click += InsertNewEntitybutton_Click;
             DeleteSelectedbutton.Click += DeleteSelectedbutton_Click;
             EditSelectedbutton.Click += EditSelectedbutton_Click;
+            Printbutton.Click += Printbutton_Click;
            // CreateFilterGrid();
 
 
+        }
+
+        private void Printbutton_Click(object sender, EventArgs e)
+        {
+            var f = new ReportForm();
+            f.ReportColumns = this.dataGridView1.Columns.Cast<DataGridViewColumn>()
+                                  .Select(x => new ReportColumn(x.DataPropertyName)
+                                  {
+                                      Title = x.HeaderText,
+                                      Width = x.Width
+                                  }).ToList();
+            f.ReportData = this.dataGridView1.DataSource;
+            f.ShowDialog();
         }
         #region "CRUD Methods"
         private void EditSelectedbutton_Click(object sender, EventArgs e)
