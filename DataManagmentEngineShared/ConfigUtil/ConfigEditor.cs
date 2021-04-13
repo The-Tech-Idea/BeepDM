@@ -19,12 +19,19 @@ namespace TheTechIdea.Util
 {
 	public class ConfigEditor : IConfigEditor
 	{
-		public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader)
+		public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader,string execpath=null)
 		{
 			Logger = logger;
 			ErrorObject = per;
 			JsonLoader = jsonloader;
-
+			if (execpath != null)
+			{
+				ExePath = execpath;
+			}else
+			{
+				ExePath = AppDomain.CurrentDomain.BaseDirectory;
+			}
+			
 			Init();
 
 		}
@@ -57,7 +64,7 @@ namespace TheTechIdea.Util
 		public List<LScriptHeader> Scripts { get; set; } = new List<LScriptHeader>();
 		public List<ConnectionDriversConfig> DataDrivers { get; set; } = new List<ConnectionDriversConfig>();
 		public List<AssemblyClassDefinition> DataSources { get; set; } = new List<AssemblyClassDefinition>();
-		public string ExePath { get; set; } = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+		public string ExePath { get; set; } // System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location); //System.Reflection.Assembly.GetExecutingAssembly().Location
 		public string ConfigPath { get; set; } 
 		
 		public List<Assembly> LoadedAssemblies { get; set; } = new List<Assembly>();
