@@ -118,49 +118,49 @@ namespace TheTechIdea.Winforms.VIS
         }
 
         #region "Methods"
-        [BranchDelegate(Caption = "Single Record CRUD")]
-        public IErrorsInfo CRUDSingleRecord()
-        {
+        //[BranchDelegate(Caption = "Single Record CRUD")]
+        //public IErrorsInfo CRUDSingleRecord()
+        //{
 
-            try
-            {
-                List<ObjectItem> ob = new List<ObjectItem>(); ;
-                ObjectItem it = new ObjectItem();
-                it.obj = this;
-                it.Name = "Branch";
-                ob.Add(it);
-                string[] args = new string[] { BranchText, DataSource.Dataconnection.ConnectionProp.SchemaName, null };
-                PassedArgs Passedarguments = new PassedArgs
-                {
-                    Addin = null,
-                    AddinName = null,
-                    AddinType = "",
-                    DMView = null,
-                    CurrentEntity = BranchText,
-                    Id = BranchID,
-                    ObjectType = "RDBMSTABLE",
-                    DataSource = DataSource,
-                    ObjectName = BranchText,
-                    Objects = ob,
-                    DatasourceName = DataSource.DatasourceName,
-                    EventType = "CRUDENTITY"
+        //    try
+        //    {
+        //        List<ObjectItem> ob = new List<ObjectItem>(); ;
+        //        ObjectItem it = new ObjectItem();
+        //        it.obj = this;
+        //        it.Name = "Branch";
+        //        ob.Add(it);
+        //        string[] args = new string[] { BranchText, DataSource.Dataconnection.ConnectionProp.SchemaName, null };
+        //        PassedArgs Passedarguments = new PassedArgs
+        //        {
+        //            Addin = null,
+        //            AddinName = null,
+        //            AddinType = "",
+        //            DMView = null,
+        //            CurrentEntity = BranchText,
+        //            Id = BranchID,
+        //            ObjectType = "RDBMSTABLE",
+        //            DataSource = DataSource,
+        //            ObjectName = BranchText,
+        //            Objects = ob,
+        //            DatasourceName = DataSource.DatasourceName,
+        //            EventType = "CRUDENTITY"
 
-                };
-                //ActionNeeded?.Invoke(this, Passedarguments);
+        //        };
+        //        //ActionNeeded?.Invoke(this, Passedarguments);
 
-                 Visutil.ShowUserControlInContainer("Uc_DataTableSingleRecordEdit", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
+        //         Visutil.ShowUserControlInContainer("uc_getentities", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
 
 
-                DMEEditor.AddLogMessage("Success", "Created Crud Single Record", DateTime.Now, 0, null, Errors.Ok);
-            }
-            catch (Exception ex)
-            {
-                string mes = "Could not Create Crud Single Record";
-                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
-            };
-            return DMEEditor.ErrorObject;
-        }
-        [BranchDelegate(Caption = "Grid CRUD")]
+        //        DMEEditor.AddLogMessage("Success", "Created Crud Single Record", DateTime.Now, 0, null, Errors.Ok);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        string mes = "Could not Create Crud Single Record";
+        //        DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+        //    };
+        //    return DMEEditor.ErrorObject;
+        //}
+        [BranchDelegate(Caption = "Data Edit")]
         public IErrorsInfo CRUDGrid()
         {
 
@@ -190,7 +190,7 @@ namespace TheTechIdea.Winforms.VIS
                 };
              
 
-                 Visutil.ShowUserControlInContainer("Uc_DataTableGridEdit", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
+                 Visutil.ShowUserControlInContainer("uc_getentities", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
 
 
 

@@ -37,6 +37,24 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Accessibility" />
+    <Reference Include="Microsoft.ReportViewer.Common, Version=15.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.ReportingServices.ReportViewerControl.Winforms.150.1449.0\lib\net40\Microsoft.ReportViewer.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ReportViewer.DataVisualization, Version=15.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.ReportingServices.ReportViewerControl.Winforms.150.1449.0\lib\net40\Microsoft.ReportViewer.DataVisualization.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ReportViewer.Design, Version=15.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.ReportingServices.ReportViewerControl.Winforms.150.1449.0\lib\net40\Microsoft.ReportViewer.Design.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ReportViewer.ProcessingObjectModel, Version=15.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.ReportingServices.ReportViewerControl.Winforms.150.1449.0\lib\net40\Microsoft.ReportViewer.ProcessingObjectModel.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ReportViewer.WinForms, Version=15.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.ReportingServices.ReportViewerControl.Winforms.150.1449.0\lib\net40\Microsoft.ReportViewer.WinForms.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.SqlServer.Types, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.SqlServer.Types.14.0.314.76\lib\net40\Microsoft.SqlServer.Types.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Web.WebView2.Core, Version=1.0.705.50, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Web.WebView2.1.0.705.50\lib\net45\Microsoft.Web.WebView2.Core.dll</HintPath>
     </Reference>
@@ -109,6 +127,43 @@
     </Compile>
     <Compile Include="Configuration\uc_QueryConfig.Designer.cs">
       <DependentUpon>uc_QueryConfig.cs</DependentUpon>
+    </Compile>
+    <Compile Include="RDLCReport\DynamicReport.cs" />
+    <Compile Include="RDLCReport\DynamicReport1.cs">
+      <DependentUpon>DynamicReport.tt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="RDLCReport\ReportColumn.cs" />
+    <Compile Include="RDLCReport\ReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="RDLCReport\ReportForm.designer.cs">
+      <DependentUpon>ReportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CRUD\uc_filtercontrol.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="CRUD\uc_filtercontrol.Designer.cs">
+      <DependentUpon>uc_filtercontrol.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CRUD\uc_getentities.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="CRUD\uc_getentities.Designer.cs">
+      <DependentUpon>uc_getentities.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CRUD\uc_Insertentity.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="CRUD\uc_Insertentity.Designer.cs">
+      <DependentUpon>uc_Insertentity.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CRUD\uc_updateentity.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="CRUD\uc_updateentity.Designer.cs">
+      <DependentUpon>uc_updateentity.cs</DependentUpon>
     </Compile>
     <Compile Include="Designers\uc_fieldproperty.cs">
       <SubType>UserControl</SubType>
@@ -284,6 +339,7 @@
     <Compile Include="ETL\uc_txtfileManager.Designer.cs">
       <DependentUpon>uc_txtfileManager.cs</DependentUpon>
     </Compile>
+    <Compile Include="SqlServerTypes\Loader.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Configuration\uc_CreateLocalDatabase.resx">
@@ -309,6 +365,21 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Configuration\uc_QueryConfig.resx">
       <DependentUpon>uc_QueryConfig.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RDLCReport\ReportForm.resx">
+      <DependentUpon>ReportForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CRUD\uc_filtercontrol.resx">
+      <DependentUpon>uc_filtercontrol.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CRUD\uc_getentities.resx">
+      <DependentUpon>uc_getentities.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CRUD\uc_Insertentity.resx">
+      <DependentUpon>uc_Insertentity.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CRUD\uc_updateentity.resx">
+      <DependentUpon>uc_updateentity.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Designers\uc_fieldproperty.resx">
       <DependentUpon>uc_fieldproperty.cs</DependentUpon>
@@ -445,7 +516,31 @@
   <ItemGroup>
     <None Include="Resources\notebook-9.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="RDLCReport\DynamicReport.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>DynamicReport1.cs</LastGenOutput>
+    </Content>
+    <None Include="Resources\exit_32.png" />
+    <None Include="Resources\shutdown_32.png" />
+    <None Include="Resources\search_more_16.png" />
+    <None Include="Resources\expand_arrows_24px.png" />
+    <None Include="Resources\exit_321.png" />
+    <None Include="Resources\add_white_space_24px.png" />
+    <Content Include="SqlServerTypes\readme.htm" />
+    <Content Include="SqlServerTypes\x64\msvcr120.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SqlServerTypes\x64\SqlServerSpatial140.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SqlServerTypes\x86\msvcr120.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SqlServerTypes\x86\SqlServerSpatial140.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <ItemGroup>
     <None Include="Resources\username_64.png" />
   </ItemGroup>
@@ -460,6 +555,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\save_32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

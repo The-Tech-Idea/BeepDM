@@ -63,6 +63,36 @@ namespace TheTechIdea.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap add_white_space_24px {
+            get {
+                object obj = ResourceManager.GetObject("add_white_space_24px", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap exit_32 {
+            get {
+                object obj = ResourceManager.GetObject("exit_32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap exit_321 {
+            get {
+                object obj = ResourceManager.GetObject("exit_321", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap exit_sign_32 {
             get {
                 object obj = ResourceManager.GetObject("exit_sign_32", resourceCulture);
@@ -83,6 +113,16 @@ namespace TheTechIdea.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap expand_arrows_24px {
+            get {
+                object obj = ResourceManager.GetObject("expand_arrows_24px", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap save_32 {
             get {
                 object obj = ResourceManager.GetObject("save_32", resourceCulture);
@@ -93,9 +133,29 @@ namespace TheTechIdea.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap search_more_16 {
+            get {
+                object obj = ResourceManager.GetObject("search_more_16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap search_more_32 {
             get {
                 object obj = ResourceManager.GetObject("search_more_32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap shutdown_32 {
+            get {
+                object obj = ResourceManager.GetObject("shutdown_32", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

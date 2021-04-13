@@ -40,13 +40,13 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.EntitybindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.gridTitlepanel = new System.Windows.Forms.Panel();
+            this.Printbutton = new System.Windows.Forms.Button();
             this.expandbutton = new System.Windows.Forms.Button();
             this.subtitlelabel = new System.Windows.Forms.Label();
             this.EntityNamelabel = new System.Windows.Forms.Label();
             this.EditSelectedbutton = new System.Windows.Forms.Button();
             this.DeleteSelectedbutton = new System.Windows.Forms.Button();
             this.InsertNewEntitybutton = new System.Windows.Forms.Button();
-            this.Printbutton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -189,11 +189,21 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.gridTitlepanel.Size = new System.Drawing.Size(823, 91);
             this.gridTitlepanel.TabIndex = 0;
             // 
+            // Printbutton
+            // 
+            this.Printbutton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.Printbutton.Location = new System.Drawing.Point(490, 65);
+            this.Printbutton.Name = "Printbutton";
+            this.Printbutton.Size = new System.Drawing.Size(75, 23);
+            this.Printbutton.TabIndex = 7;
+            this.Printbutton.Text = "Print";
+            this.Printbutton.UseVisualStyleBackColor = true;
+            // 
             // expandbutton
             // 
             this.expandbutton.FlatAppearance.BorderSize = 0;
             this.expandbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-          //  this.expandbutton.Image = global::TheTechIdea.DataManagment_Engine.AppBuilder.Properties.Resources.expand_arrows_24px;
+          //  this.expandbutton.Image = global::TheTechIdea.Properties.Resources.expand_arrows_24px;
             this.expandbutton.Location = new System.Drawing.Point(3, 65);
             this.expandbutton.Name = "expandbutton";
             this.expandbutton.Size = new System.Drawing.Size(25, 23);
@@ -251,16 +261,6 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.InsertNewEntitybutton.TabIndex = 2;
             this.InsertNewEntitybutton.Text = "New";
             this.InsertNewEntitybutton.UseVisualStyleBackColor = true;
-            // 
-            // Printbutton
-            // 
-            this.Printbutton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.Printbutton.Location = new System.Drawing.Point(490, 65);
-            this.Printbutton.Name = "Printbutton";
-            this.Printbutton.Size = new System.Drawing.Size(75, 23);
-            this.Printbutton.TabIndex = 7;
-            this.Printbutton.Text = "Print";
-            this.Printbutton.UseVisualStyleBackColor = true;
             // 
             // uc_getentities
             // 

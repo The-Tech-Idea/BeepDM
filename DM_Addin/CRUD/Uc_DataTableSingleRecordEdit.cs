@@ -25,7 +25,7 @@ namespace TheTechIdea.CRUD
 
         public string AddinName { get; set; } = "Data Table Single Record Edit";
         public string Description { get; set; } = "Data Table Single Record Edit";
-        public string ObjectName { get; set; }
+        public string ObjectName { get; set; } = "Data Table Single Record Edit";
         public string ObjectType { get; set; } = "UserControl";
         public string DllPath { get; set; }
         public string NameSpace { get; set; }

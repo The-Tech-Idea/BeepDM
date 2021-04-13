@@ -326,46 +326,46 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "I/U Single Record", Hidden = false)]
-        public IErrorsInfo RecordEdit()
-        {
+        //[BranchDelegate(Caption = "I/U Single Record", Hidden = false)]
+        //public IErrorsInfo RecordEdit()
+        //{
 
-            try
-            {
+        //    try
+        //    {
 
-                string[] args = { "New View", null, null };
-                List<ObjectItem> ob = new List<ObjectItem>(); ;
-                ObjectItem it = new ObjectItem();
-                it.obj = this;
-                it.Name = "Branch";
-                ob.Add(it);
-                PassedArgs Passedarguments = new PassedArgs
-                {
-                    Addin = null,
-                    AddinName = null,
-                    AddinType = "",
-                    DMView = DataView,
-                    CurrentEntity = BranchText,
-                    Id = BranchID,
-                    ObjectType = "CRUDENTITY",
-                    DataSource = DataSource,
-                    ObjectName = DataView.ViewName,
-                    Objects = ob,
-                    DatasourceName = EntityStructure.DataSourceID,
-                    EventType = "CRUDENTITY"
+        //        string[] args = { "New View", null, null };
+        //        List<ObjectItem> ob = new List<ObjectItem>(); ;
+        //        ObjectItem it = new ObjectItem();
+        //        it.obj = this;
+        //        it.Name = "Branch";
+        //        ob.Add(it);
+        //        PassedArgs Passedarguments = new PassedArgs
+        //        {
+        //            Addin = null,
+        //            AddinName = null,
+        //            AddinType = "",
+        //            DMView = DataView,
+        //            CurrentEntity = BranchText,
+        //            Id = BranchID,
+        //            ObjectType = "CRUDENTITY",
+        //            DataSource = DataSource,
+        //            ObjectName = DataView.ViewName,
+        //            Objects = ob,
+        //            DatasourceName = EntityStructure.DataSourceID,
+        //            EventType = "CRUDENTITY"
 
-                };
-                Visutil.ShowUserControlPopUp("Uc_DataTableSingleRecordEdit", DMEEditor, args, Passedarguments);
-                DMEEditor.AddLogMessage("Success", "Show Entity Record I/U", DateTime.Now, 0, null, Errors.Ok);
-            }
-            catch (Exception ex)
-            {
-                string mes = "Could not Show Entity Record I/U";
-                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
-            };
-            return DMEEditor.ErrorObject;
-        }
-        [BranchDelegate(Caption = "I/U Grid", Hidden = false)]
+        //        };
+        //        Visutil.ShowUserControlPopUp("Uc_DataTableSingleRecordEdit", DMEEditor, args, Passedarguments);
+        //        DMEEditor.AddLogMessage("Success", "Show Entity Record I/U", DateTime.Now, 0, null, Errors.Ok);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        string mes = "Could not Show Entity Record I/U";
+        //        DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+        //    };
+        //    return DMEEditor.ErrorObject;
+        //}
+        [BranchDelegate(Caption = "Data Edit", Hidden = false)]
         public IErrorsInfo GridEdit()
         {
 
@@ -394,7 +394,7 @@ namespace TheTechIdea.Winforms.VIS
 
                 };
               
-                 Visutil.ShowUserControlInContainer("Uc_DataTableGridEdit", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
+                 Visutil.ShowUserControlInContainer("uc_getentities", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
 
               //  DMEEditor.AddLogMessage("Success", "Added Database Connection", DateTime.Now, 0, null, Errors.Ok);
             }

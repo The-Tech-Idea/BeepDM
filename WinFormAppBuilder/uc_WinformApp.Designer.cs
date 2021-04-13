@@ -243,7 +243,7 @@ namespace TheTechIdea.ETL
             this.ExitButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.ExitButton.Font = new System.Drawing.Font("Nirmala UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.ExitButton.ForeColor = System.Drawing.SystemColors.ActiveCaption;
-            this.ExitButton.Image = global::TheTechIdea.DataManagment_Engine.AppBuilder.Properties.Resources.shutdown_32;
+         //   this.ExitButton.Image = global::TheTechIdea.DataManagment_Engine.AppBuilder.Properties.Resources.shutdown_32;
             this.ExitButton.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.ExitButton.Location = new System.Drawing.Point(740, 8);
             this.ExitButton.Name = "ExitButton";
