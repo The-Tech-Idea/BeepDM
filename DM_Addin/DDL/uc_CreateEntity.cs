@@ -113,20 +113,20 @@ namespace TheTechIdea.DDL
                      SourceConnection.CreateEntityAs( tb);
                     if (DMEEditor.ErrorObject.Flag == Errors.Ok)
                     {
-                        MessageBox.Show("Table Creation Success", "DB Engine");
+                        MessageBox.Show("Table Creation Success", "Beep");
                         DMEEditor.AddLogMessage("Success", "Table Creation Success", DateTime.Now, -1, "", Errors.Failed);
                     }
                     else
                     {
                         string mes = "Table Creation Failed";
-                        MessageBox.Show(mes, "DB Engine");
+                        MessageBox.Show(mes, "Beep");
                         DMEEditor.AddLogMessage("Create Table", mes, DateTime.Now, -1, mes, Errors.Failed);
                     }
 
                 }
                 else
                 {
-                    MessageBox.Show("Table Creation Not Success Could not open Database", "DB Engine");
+                    MessageBox.Show("Table Creation Not Success Could not open Database", "Beep");
                     DMEEditor.AddLogMessage("Fail", "Table Creation Not Success Could not open Database", DateTime.Now, -1, "", Errors.Failed);
                 }
 
@@ -137,7 +137,7 @@ namespace TheTechIdea.DDL
             {
 
                 string mes = "Table Creation Failed";
-                MessageBox.Show(mes, "DB Engine");
+                MessageBox.Show(mes, "Beep");
                 DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
             };
 

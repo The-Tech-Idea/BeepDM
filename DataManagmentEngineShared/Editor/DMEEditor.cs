@@ -91,6 +91,7 @@ namespace TheTechIdea.DataManagment_Engine
                 if (ds1 == null) //|| ds1.ConnectionStatus==ConnectionState.Closed
 
                 {
+
                     try
                     {
                         ds1 = CreateNewDataSourceConnection(pdatasourcename);
@@ -98,6 +99,7 @@ namespace TheTechIdea.DataManagment_Engine
                         {
                             if (ds1.Entities.Count == 0)
                             {
+
                                 if (ConfigEditor.LoadDataSourceEntitiesValues(ds1.DatasourceName) != null)
                                 {
                                     ds1.Entities = ConfigEditor.LoadDataSourceEntitiesValues(ds1.DatasourceName).Entities;

@@ -159,16 +159,16 @@ namespace TheTechIdea.Configuration
 
                         }
                         branch.CreateChildNodes();
-                        MessageBox.Show("Local/Embedded Database Created successfully", "DB Engine");
+                        MessageBox.Show("Local/Embedded Database Created successfully", "Beep");
                     }
                     else
                     {
-                        MessageBox.Show("Coudl not Create Local/Embedded Database ", "DB Engine");
+                        MessageBox.Show("Coudl not Create Local/Embedded Database ", "Beep");
                     }
                 }
                 else
                 {
-                    MessageBox.Show("Database Already Exist by this name please try another name ", "DB Engine");
+                    MessageBox.Show("Database Already Exist by this name please try another name ", "Beep");
                 }
                
 
@@ -180,7 +180,7 @@ namespace TheTechIdea.Configuration
 
                 ErrorObject.Flag = Errors.Failed;
                 string errmsg = "Error creating Database";
-                MessageBox.Show(errmsg, "DB Engine");
+                MessageBox.Show(errmsg, "Beep");
                 ErrorObject.Message = $"{errmsg}:{ex.Message}";
                 Logger.WriteLog($" {errmsg} :{ex.Message}");
             }

@@ -17,6 +17,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
         int AddEntityAsChild(IDataSource conn, string tablename, string SchemaName, string Filterparamters, int viewindex, int ParentTableIndex);
         int AddEntitytoDataView(IDataSource conn, string tablename, string SchemaName, string Filterparamters);
+        int AddEntitytoDataView( EntityStructure maintab);
         int EntityListIndex(int entityid);
         int EntityListIndex(string entityname);
         IErrorsInfo RemoveChildEntities(int EntityID);

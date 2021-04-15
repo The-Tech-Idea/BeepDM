@@ -86,7 +86,7 @@ namespace TheTechIdea.Configuration
 
                 this.eventsBindingSource.EndEdit();
                 DMEEditor.ConfigEditor.SaveEvents();
-                MessageBox.Show("Events Saved successfully", "DB Engine");
+                MessageBox.Show("Events Saved successfully", "Beep");
              
             }
             catch (Exception ex)
@@ -96,7 +96,7 @@ namespace TheTechIdea.Configuration
                 string errmsg = "Error Saving Events";
                 ErrorObject.Message = $"{errmsg}:{ex.Message}";
                 errmsg = ErrorObject.Message;
-                MessageBox.Show(errmsg, "DB Engine");
+                MessageBox.Show(errmsg, "Beep");
                 Logger.WriteLog($" {errmsg} :{ex.Message}");
             }
         }

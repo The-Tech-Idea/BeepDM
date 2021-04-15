@@ -104,14 +104,14 @@ namespace TheTechIdea.Configuration
                 DMEEditor.ConfigEditor.SaveConnectionDriversDefinitions();
 
 
-                MessageBox.Show("Changes Saved Successfuly", "DB Engine");
+                MessageBox.Show("Changes Saved Successfuly", "Beep");
             }
             catch (Exception ex)
             {
 
                 ErrorObject.Flag = Errors.Failed;
                 string errmsg = "Error Saving DataSource Drivers Path";
-                MessageBox.Show(errmsg, "DB Engine");
+                MessageBox.Show(errmsg, "Beep");
                 ErrorObject.Message = $"{errmsg}:{ex.Message}";
                 Logger.WriteLog($" {errmsg} :{ex.Message}");
             }

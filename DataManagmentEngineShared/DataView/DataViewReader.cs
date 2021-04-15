@@ -518,6 +518,91 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
 
         }
+        public int AddEntitytoDataView( EntityStructure maintab)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            string tablename = maintab.EntityName;
+            try
+            {
+                maintab.Id = NextHearId();
+                maintab.DataSourceID = maintab.DataSourceID;
+
+                switch (maintab.DatabaseType)
+                {
+                    case DataSourceType.Oracle:
+
+                    case DataSourceType.SqlServer:
+
+                    case DataSourceType.Mysql:
+
+                    case DataSourceType.SqlCompact:
+                    case DataSourceType.Postgre:
+
+                    case DataSourceType.Firebase:
+
+                    case DataSourceType.FireBird:
+
+                    case DataSourceType.Couchbase:
+
+                    case DataSourceType.RavenDB:
+
+                    case DataSourceType.MongoDB:
+
+                    case DataSourceType.CouchDB:
+
+                    case DataSourceType.VistaDB:
+
+                    case DataSourceType.DB2:
+
+                    case DataSourceType.SqlLite:
+                        maintab.Viewtype = ViewType.Table;
+                        break;
+                    case DataSourceType.Text:
+
+                    case DataSourceType.CSV:
+
+                    case DataSourceType.Xls:
+                    case DataSourceType.Json:
+
+                    case DataSourceType.xml:
+                        maintab.Viewtype = ViewType.File;
+                        break;
+                    case DataSourceType.WebService:
+                    case DataSourceType.OPC:
+                        maintab.Viewtype = ViewType.Url;
+                        break;
+                    default:
+                        break;
+                }
+                DataView.Entities.Add(maintab);
+                IDataSource entityds = DMEEditor.GetDataSource(maintab.DataSourceID);
+                if (entityds != null)
+                {
+                    List<ChildRelation> ds = entityds.GetChildTablesList(tablename, entityds.Dataconnection.ConnectionProp.SchemaName, null);
+                    if (ds != null && ds.Count > 0)
+                    {
+                        // var tb = ds.Tables[0];
+                        //-------------------------------
+                        // Create Parent Record First
+                        //-------------------------------
+                        if (ds.Count > 0)
+                        {
+                            foreach (ChildRelation r in ds)
+                            {
+                                EntityStructure a;
+                                a = GetEntityStructure(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, maintab.Id);
+                            }
+                        }
+                    }
+                }
+                
+                return maintab.Id;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
         #endregion  "View Generating Methods"
         #region "Misc and Util Methods"
         private EntityStructure GetEntityStructure(IDMDataView v, List<EntityStructure> Rootnamespacelist, string childtable, string parenttable, string childcolumn, string parentcolumn, int pid)

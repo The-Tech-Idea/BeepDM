@@ -69,22 +69,22 @@ namespace TheTechIdea.Winforms.VIS
         {
             get
             {
-                return ds.ViewReader.DataView;
+                return ds.DataView;
             }
             set
             {
-                ds.ViewReader.DataView = value;
+                ds.DataView = value;
             }
         }
         int DataViewID
         {
             get
             {
-                return ds.ViewReader.DataView.ViewID;
+                return ds.DataView.ViewID;
             }
             set
             {
-                ds.ViewReader.DataView.ViewID = value;
+                ds.DataView.ViewID = value;
             }
         }
        // public EntityStructure EntityStructure { get; set; }
@@ -98,23 +98,104 @@ namespace TheTechIdea.Winforms.VIS
        // public event EventHandler<PassedArgs> ActionNeeded;
         #endregion "Properties"
         #region "Interface Methods"
+        private string geticon(ViewType v)
+        {
+            string iconname= "entity.ico";
+            switch (v)
+            {
+                case ViewType.Table:
+                    iconname = "entity.ico";
+                    break;
+                case ViewType.Query:
+                    iconname = "sqlicon.ico";
+                    break;
+                case ViewType.Code:
+                    iconname = "codeicon.ico";
+                    break;
+                case ViewType.File:
+                    iconname = "fileicon.ico";
+                    break;
+                case ViewType.Url:
+                    iconname = "linkicon.ico";
+                    break;
+                default:
+                    break;
+            }
+            return iconname;
+        }
+        private void GetChildNodes(List<EntityStructure> Childs,EntityStructure Parent)
+        {
+            
+            DataViewEntitiesNode    dbent;
+            IBranch ParentBranch = TreeEditor.GetBranch(Parent.Id);
+            foreach (EntityStructure i in Childs)
+            {
+                IBranch branch = TreeEditor.GetBranch(i.Id);
+                if (branch == null)
+                {
+                   
+                    dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, ParentBranch, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, geticon(i.Viewtype), DataView.DataViewDataSourceID, i);
+                    TreeEditor.AddBranch(ParentBranch, dbent);
+                    dbent.CreateChildNodes();
+                    ChildBranchs.Add(dbent);
+                }
+                else
+                {
+                    if (ChildBranchs.Where(x => x.BranchText == i.EntityName).Any() == false)
+                    {
+                       
+                        dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, ParentBranch, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, geticon(i.Viewtype), DataView.DataViewDataSourceID, i);
+                        TreeEditor.AddBranch(ParentBranch, dbent);
+                        dbent.CreateChildNodes();
+                        ChildBranchs.Add(dbent);
+                    }
+                }
+                List<EntityStructure> otherchilds = DataView.Entities.Where(cx => (cx.Id != i.Id) && (cx.ParentId == i.Id)).ToList();
+                if (otherchilds != null)
+                {
+                    if (otherchilds.Count > 0)
+                    {
+                        GetChildNodes(otherchilds, i);
+                    }
+                }
+
+            }
+        }
         public IErrorsInfo CreateChildNodes()
         {
 
             try
             {
-                
+                IBranch dbent;
+               
                 List<EntityStructure> cr = DataView.Entities.Where(cx => (cx.Id != EntityStructure.Id) && (cx.ParentId == EntityStructure.Id) ).ToList();
                 foreach (EntityStructure i in cr)
                 {
                     if (ChildBranchs.Where(x=>x.BranchText== i.EntityName).Any()==false)
                     {
-                        DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "entity.ico", DataView.DataViewDataSourceID, i);
+                        
+                        dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, geticon(i.Viewtype), DataView.DataViewDataSourceID, i);
                         TreeEditor.AddBranch(this, dbent);
                         dbent.CreateChildNodes();
                         ChildBranchs.Add(dbent);
                     }
-                    
+                    else
+                    {
+                        dbent = ChildBranchs.Where(x => x.BranchText == i.EntityName).FirstOrDefault();
+                        dbent.CreateChildNodes();
+                    }
+
+                    List<EntityStructure> childs = DataView.Entities.Where(cx => (cx.Id != i.Id) && (cx.ParentId == i.Id)).ToList();
+                    if (childs != null)
+                    {
+                        if (childs.Count > 0)
+                        {
+                            GetChildNodes(childs, i);
+                        }
+                    }
+
+
+
                 }
 
             //    DMEEditor.AddLogMessage("Success", "Added Database Connection", DateTime.Now, 0, null, Errors.Ok);
@@ -148,7 +229,7 @@ namespace TheTechIdea.Winforms.VIS
                     foreach (IBranch item in ChildBranchs)
                     {
                         TreeEditor.RemoveBranch(item);
-                        ds.ViewReader.RemoveEntity(EntityStructure.Id);
+                        ds.RemoveEntity(EntityStructure.Id);
                         // DMEEditor.viewEditor.Views.Where(x => x.ViewName == DataView.ViewName).FirstOrDefault().Entity.Remove(EntityStructure);
                     }
 
@@ -265,7 +346,7 @@ namespace TheTechIdea.Winforms.VIS
                 {
                     TreeEditor.RemoveBranch(this);
                     //---- Remove From View ---- //
-                    ds.ViewReader.RemoveEntity(EntityStructure.Id);
+                    ds.RemoveEntity(EntityStructure.Id);
                     DMEEditor.AddLogMessage("Success", "Removed Entity Node", DateTime.Now, 0, null, Errors.Ok);
                 }
                
@@ -289,7 +370,8 @@ namespace TheTechIdea.Winforms.VIS
                 DataSource = DMEEditor.GetDataSource(EntityStructure.DataSourceID);
                 if (DataSource!=null)
                 {
-                    ds.ViewReader.GenerateDataViewForChildNode(DataSource, EntityStructure.Id, EntityStructure.EntityName, EntityStructure.SchemaOrOwnerOrDatabase, "");
+
+                    ds.GenerateDataViewForChildNode(DataSource, EntityStructure.Id, EntityStructure.EntityName, EntityStructure.SchemaOrOwnerOrDatabase, "");
                     CreateChildNodes();
                     DMEEditor.AddLogMessage("Success", "Got child Nodes", DateTime.Now, 0, null, Errors.Ok);
                 }else
@@ -314,7 +396,7 @@ namespace TheTechIdea.Winforms.VIS
                 if (Visutil.controlEditor.InputBoxYesNo("DM Engine","Are you sure you want to remove child  Entities?")==System.Windows.Forms.DialogResult.Yes)
                 {
                     TreeEditor.RemoveChildBranchs(this);
-                    ds.ViewReader.RemoveChildEntities(EntityStructure.Id);
+                    ds.RemoveChildEntities(EntityStructure.Id);
                     DMEEditor.AddLogMessage("Success", "Removed Child Entites", DateTime.Now, 0, null, Errors.Ok);
                 }
               
@@ -422,6 +504,10 @@ namespace TheTechIdea.Winforms.VIS
                 it.obj = this;
                 it.Name = "Branch";
                 ob.Add(it);
+                ObjectItem it1 = new ObjectItem();
+                it1.obj = this;
+                it1.Name = "ParentBranch";
+                ob.Add(it1);
                 PassedArgs Passedarguments = new PassedArgs
                 {
                     Addin = null,
@@ -430,14 +516,14 @@ namespace TheTechIdea.Winforms.VIS
                     DMView = DataView,
                     CurrentEntity = BranchText,
                     Id = ID,
-                    ObjectType = "QUERYENTITY",
+                    ObjectType = "NEWECHILDNTITY",
                     DataSource = DataSource,
                     ObjectName = DataView.ViewName,
 
                     Objects = ob,
 
                     DatasourceName = DataView.DataViewDataSourceID,
-                    EventType = "NEWENTITY"
+                    EventType = "NEWECHILDNTITY"
 
                 };
                 //ActionNeeded?.Invoke(this, Passedarguments);
@@ -497,7 +583,7 @@ namespace TheTechIdea.Winforms.VIS
                             newentity.DataSourceID = entity.DataSourceID;
                             newentity.DatabaseType = entity.DatabaseType;
                             newentity.SchemaOrOwnerOrDatabase = entity.SchemaOrOwnerOrDatabase;
-                            newentity.Id = ds.ViewReader.NextHearId();
+                            newentity.Id = ds.NextHearId();
                             ds.CreateEntityAs(newentity);
 
                             DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, newentity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "entity.ico", DataView.DataViewDataSourceID, newentity);

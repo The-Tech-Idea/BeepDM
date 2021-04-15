@@ -105,7 +105,7 @@ namespace DemoApp
 
                         DataViewDataSource ds = (DataViewDataSource)DMEEditor.GetDataSource(f.ConnectionName);
 
-                        DataView = ds.ViewReader.DataView;
+                        DataView = ds.DataView;
 
 
                        
@@ -173,7 +173,7 @@ namespace DemoApp
 
                         DataViewDataSource ds = (DataViewDataSource)DMEEditor.GetDataSource(f.ConnectionName);
 
-                        DataView = ds.ViewReader.DataView;
+                        DataView = ds.DataView;
 
 
                         
@@ -230,12 +230,12 @@ namespace DemoApp
                         if (EntitySource != null)
                         {
 
-                            int x = ds.ViewReader.AddEntitytoDataView( EntityDataSource, EntitySource.EntityName, EntityDataSource.Dataconnection.ConnectionProp.SchemaName, null);
+                            int x = ds.AddEntitytoDataView( EntityDataSource, EntitySource.EntityName, EntityDataSource.Dataconnection.ConnectionProp.SchemaName, null);
 
                         }
-                        ds.ViewReader.WriteDataViewFile(fullname);
+                        ds.WriteDataViewFile(fullname);
                         DataSource = DMEEditor.GetDataSource(f.ConnectionName);
-                        DataView = ds.ViewReader.DataView;
+                        DataView = ds.DataView;
                         DataView.EntityDataSourceID = EntityDataSource.DatasourceName;
   
                     }

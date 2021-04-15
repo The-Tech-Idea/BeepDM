@@ -44,13 +44,12 @@ namespace TheTechIdea.ETL
         public IUtil util { get; set; }
       //  public IDataViewEditor ViewEditor { get; set; }
       
-        IBranch branch;
-        // public ITreeEditor treeeditor { get; set; }
-       // public event EventHandler<PassedArgs> OnObjectSelected;
-      //  OpenFileDialog openFileDialog1;
-        public EntityStructure  MyEntity { get; set; }
-        public EntityStructure ParentEntity { get; set; }
-        DataViewDataSource ds;
+        IBranch branch=null;
+        IBranch Parentbranch = null;
+
+       
+        public EntityStructure ParentEntity { get; set; } = null;
+        DataViewDataSource vds;
         CompositeLayerDataSource cds;
         public void Run(string param1)
         {
@@ -65,10 +64,16 @@ namespace TheTechIdea.ETL
             util = putil;
             ErrorObject = per;
             DMEEditor = pDMEEditor;
-         //   ViewEditor = pDMEEditor.viewEditor;
+            SourceConnection = DMEEditor.GetDataSource(obj.DatasourceName);
             Visutil = (IVisUtil)obj.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
            
             branch = (IBranch)obj.Objects.Where(c => c.Name == "Branch").FirstOrDefault().obj;
+            if (obj.Objects.Where(c => c.Name == "ParentBranch").Any())
+            {
+                Parentbranch = (IBranch)obj.Objects.Where(c => c.Name == "ParentBranch").FirstOrDefault().obj;
+                ParentEntity = SourceConnection.GetEntityStructure(Parentbranch.BranchText,true);
+            }
+            
             foreach (ConnectionProperties c in DMEEditor.ConfigEditor.DataConnections)
             {
                 var t = dataSourceIDComboBox.Items.Add(c.ConnectionName);
@@ -84,58 +89,81 @@ namespace TheTechIdea.ETL
             this.ValidateFKbutton.Click += ValidateFKbutton_Click;
             this.SaveEntitybutton.Click += SaveEntitybutton_Click;
             this.ValidateFieldsbutton.Click += ValidateFieldsbutton_Click;
-            EntityName = obj.CurrentEntity;
-            switch (Passedarg.EventType)
+         
+            if (obj.CurrentEntity != null)
             {
-                case "VIEWENTITY":
-                    ds = (DataViewDataSource)DMEEditor.GetDataSource(obj.DMView.DataViewDataSourceID);
-                    MyDataView = ds.Dataview;
-                    MyEntity = MyDataView.Entities[ds.ViewReader.EntityListIndex(EntityName)];
+                EntityName = obj.CurrentEntity;
 
-                    break;
-                case "LAYERENTITY":
-                    SourceConnection = DMEEditor.GetDataSource(obj.DatasourceName);
-                    MyEntity = SourceConnection.GetEntityStructure(EntityName, true); 
-                    break;
-                case "CLAYERENTITY":
-                    cds = (CompositeLayerDataSource)obj.Objects.Where(c => c.Name == "Clayer").FirstOrDefault().obj;
-                    SourceConnection = DMEEditor.GetDataSource(obj.DatasourceName);
-                    MyEntity = cds.LayerInfo.Entities[cds.LayerInfo.Entities.FindIndex(p => p.EntityName == obj.CurrentEntity)];
-                    break;
-                case "RDBMSENTITY":
-                    SourceConnection = DMEEditor.GetDataSource(obj.DatasourceName);
-                    MyEntity = SourceConnection.GetEntityStructure(EntityName, true);
-                    this.dataSourceIDComboBox.Enabled = false;
-                    this.viewtypeComboBox.Enabled = false;
-                    break;
-                default:
-                    break;
-            }
-            SourceConnection = DMEEditor.GetDataSource(obj.DatasourceName);
-          
-          
-            if (EntityName == null)
-          
+            }else
             {
-                MyEntity = new EntityStructure();
-                MyEntity.ViewID = MyDataView.ViewID;
+                EntityName = "";
+            }
+          
+            if (Passedarg.EventType== "NEWENTITY" || Passedarg.EventType == "NEWECHILDNTITY")
+            {
+                EntityStructure = new EntityStructure();
+                EntityStructure.Created = false;
+                EntityStructure.Fields = new System.Collections.Generic.List<EntityField>();
+                EntityStructure.Id = SourceConnection.Entities.Max(p => p.Id) + 1;
+                EntityStructure.DataSourceID = SourceConnection.DatasourceName;
+                if (SourceConnection.Category== DatasourceCategory.VIEWS)
+                {
+                    vds = (DataViewDataSource)SourceConnection;
+                    EntityStructure.ViewID = vds.ViewID;
+                    EntityStructure.Viewtype = ViewType.Query;
+                    EntityStructure.DatabaseType = DataSourceType.Json;
+                    
+                }
               
-                MyEntity.Id= MyDataView.Entities.Max(m => m.Id)+1;
-                MyEntity.ParentId = obj.Id;
-
-                if (branch.BranchType == EnumBranchType.Entity)
+                if (ParentEntity != null)
                 {
+                    EntityStructure.ParentId = ParentEntity.Id;
 
-                    ParentEntity = ds.GetEntityStructure(branch.BranchText, false);
-                }
-                if (branch.BranchType == EnumBranchType.DataPoint)
+                }else
                 {
-
+                    EntityStructure.ParentId = -1;
                 }
+                EntityStructure.Drawn = false;
+               
+
             }
+            else
+            {
+                EntityStructure = SourceConnection.Entities[SourceConnection.Entities.FindIndex(i => i.EntityName.ToLower() == EntityName.ToLower())];
+            }
+            //switch (Passedarg.EventType)
+            //{
+            //    case "VIEWENTITY":
+            //        ds = (DataViewDataSource)DMEEditor.GetDataSource(obj.DMView.DataViewDataSourceID);
+            //        MyDataView = ds.Dataview;
+            //        MyEntity = MyDataView.Entities[ds.ViewReader.EntityListIndex(EntityName)];
+
+            //        break;
+            //    case "LAYERENTITY":
+            //        SourceConnection = DMEEditor.GetDataSource(obj.DatasourceName);
+            //        MyEntity = SourceConnection.GetEntityStructure(EntityName, true); 
+            //        break;
+            //    case "CLAYERENTITY":
+            //        cds = (CompositeLayerDataSource)obj.Objects.Where(c => c.Name == "Clayer").FirstOrDefault().obj;
+            //        SourceConnection = DMEEditor.GetDataSource(obj.DatasourceName);
+            //        MyEntity = cds.LayerInfo.Entities[cds.LayerInfo.Entities.FindIndex(p => p.EntityName == obj.CurrentEntity)];
+            //        break;
+            //    case "RDBMSENTITY":
+            //        SourceConnection = DMEEditor.GetDataSource(obj.DatasourceName);
+            //        MyEntity = SourceConnection.GetEntityStructure(EntityName, true);
+            //        this.dataSourceIDComboBox.Enabled = false;
+            //        this.viewtypeComboBox.Enabled = false;
+            //        break;
+            //    default:
+            //        break;
+            //}
+            
+          
+          
+            
             this.dataHierarchyBindingSource.ResetBindings(true);
             this.fieldsBindingSource.ResetBindings(true);
-            dataHierarchyBindingSource.DataSource = MyEntity;
+            dataHierarchyBindingSource.DataSource = EntityStructure;
        
 
         }
@@ -143,19 +171,25 @@ namespace TheTechIdea.ETL
         private void ValidateFieldsbutton_Click(object sender, EventArgs e)
         {
 
-        
+            if (EntityStructure.Drawn == true)
+            {
+
                 SourceConnection = DMEEditor.GetDataSource(dataSourceIDComboBox.Text);
                 if (SourceConnection == null)
                 {
-                    DMEEditor.AddLogMessage("Error", "Could not Find DataSource " + MyEntity.DataSourceID, DateTime.Now, MyEntity.Id, MyEntity.EntityName, Errors.Failed);
+                    DMEEditor.AddLogMessage("Error", "Could not Find DataSource " + EntityStructure.DataSourceID, DateTime.Now, EntityStructure.Id, EntityStructure.EntityName, Errors.Failed);
                     MessageBox.Show($"{ErrorObject.Message}");
-                } else
+                }
+                else
                 {
-                    EntityStructure ent = SourceConnection.GetEntityStructure(MyEntity.EntityName, true);
-                    MyEntity.Fields = ent.Fields;
+                    EntityStructure ent = SourceConnection.GetEntityStructure(EntityStructure.EntityName, true);
+                    EntityStructure.Fields = ent.Fields;
                     this.dataHierarchyBindingSource.ResetBindings(true);
                     this.fieldsBindingSource.ResetBindings(true);
                 }
+            }
+               
+              
                
            
         }
@@ -166,15 +200,15 @@ namespace TheTechIdea.ETL
 
             object dt;
             SourceConnection = DMEEditor.GetDataSource(dataSourceIDComboBox.Text);
-            if (SourceConnection != null && MyEntity.CustomBuildQuery != null)
+            if (SourceConnection != null && EntityStructure.CustomBuildQuery != null)
             {
 
-                dt = SourceConnection.RunQuery(MyEntity.CustomBuildQuery);
+                dt = SourceConnection.RunQuery(EntityStructure.CustomBuildQuery);
 
             }
             else
             {
-                dt = (DataTable) SourceConnection.GetEntity(EntityName, null);
+                dt =  SourceConnection.GetEntity(EntityName, null);
 
             }
 
@@ -187,51 +221,64 @@ namespace TheTechIdea.ETL
            try
 
             {
-                switch (Passedarg.EventType)
+                EntityStructure.Drawn = true;
+                if (SourceConnection.Entities.Where(o => o.EntityName == EntityStructure.EntityName).Any())
                 {
-                    case "VIEWENTITY":
-                        if (EntityName != null)
-                        {
-                            MyDataView.Entities[ds.ViewReader.EntityListIndex(MyEntity.Id)] = MyEntity;
-                        }
-                        else
-                        {
-                            if (MyDataView.Entities.Where(j => j.EntityName == MyEntity.EntityName).Any())
-                            {
-                                var t = MyDataView.Entities[ds.ViewReader.EntityListIndex(MyEntity.Id)];
-                                t = MyEntity;
-                            }
-                            else
-                            {
-                                MyDataView.Entities.Add(MyEntity);
-                            }
-                        }
-                        ds.Dataview = MyDataView;
-                        break;
-                    case "LAYERENTITY":
-                        IDataSource layer = DMEEditor.GetDataSource(Passedarg.DatasourceName);
-                        // cn = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(p => p.ConnectionName == Args.DatasourceName)];
-
-                        layer.Entities[layer.Entities.FindIndex(p => p.EntityName.ToLower() == MyEntity.EntityName.ToLower())] = MyEntity;
-                        break;
-                    case "CLAYERENTITY":
-                        cds.LayerInfo.Entities[cds.LayerInfo.Entities.FindIndex(o => o.EntityName == MyEntity.EntityName)] = MyEntity;
-                        DMEEditor.ConfigEditor.SaveCompositeLayersValues();
-                        break;
-                    case "RDBMSENTITY":
-                        IDataSource dblayer = DMEEditor.GetDataSource(Passedarg.DatasourceName);
-                       // cn = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(p => p.ConnectionName == Args.DatasourceName)];
-
-                        dblayer.Entities[dblayer.Entities.FindIndex(p => p.EntityName.ToLower() == MyEntity.EntityName.ToLower())] = MyEntity;
-                        DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = Passedarg.DatasourceName, Entities = dblayer.Entities });
-                        break;
-
-                    default:
-                        break;
+                    SourceConnection.Entities[SourceConnection.Entities.FindIndex(i=>i.EntityName==EntityStructure.EntityName)] = EntityStructure;
                 }
+                else
+                {
+                    SourceConnection.CreateEntityAs(EntityStructure);
+                }
+              
+                DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = Passedarg.DatasourceName, Entities = SourceConnection.Entities });
                
+                //switch (Passedarg.EventType)
+                //{
+                //    case "VIEWENTITY":
+                //        if (EntityName != null)
+                //        {
+                //            MyDataView.Entities[ds.ViewReader.EntityListIndex(MyEntity.Id)] = MyEntity;
+                //        }
+                //        else
+                //        {
+                //            if (MyDataView.Entities.Where(j => j.EntityName == MyEntity.EntityName).Any())
+                //            {
+                //                var t = MyDataView.Entities[ds.ViewReader.EntityListIndex(MyEntity.Id)];
+                //                t = MyEntity;
+                //            }
+                //            else
+                //            {
+                //                MyDataView.Entities.Add(MyEntity);
+                //            }
+                //        }
+                //        ds.Dataview = MyDataView;
+                //        break;
+                //    case "LAYERENTITY":
+                //        IDataSource layer = DMEEditor.GetDataSource(Passedarg.DatasourceName);
+                //        // cn = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(p => p.ConnectionName == Args.DatasourceName)];
+
+                //        layer.Entities[layer.Entities.FindIndex(p => p.EntityName.ToLower() == MyEntity.EntityName.ToLower())] = MyEntity;
+                //        break;
+                //    case "CLAYERENTITY":
+                //        cds.LayerInfo.Entities[cds.LayerInfo.Entities.FindIndex(o => o.EntityName == MyEntity.EntityName)] = MyEntity;
+                //        DMEEditor.ConfigEditor.SaveCompositeLayersValues();
+                //        break;
+                //    case "RDBMSENTITY":
+                //        IDataSource dblayer = DMEEditor.GetDataSource(Passedarg.DatasourceName);
+                //       // cn = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(p => p.ConnectionName == Args.DatasourceName)];
+
+                //        dblayer.Entities[dblayer.Entities.FindIndex(p => p.EntityName.ToLower() == MyEntity.EntityName.ToLower())] = MyEntity;
+                //        DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = Passedarg.DatasourceName, Entities = dblayer.Entities });
+                //        break;
+
+                //    default:
+                //        break;
+                //}
+
                 
-            MessageBox.Show("Function Mapping Saved successfully", "DB Engine");
+                
+            MessageBox.Show("Entity Saved successfully", "Beep");
              
             }
             catch (Exception ex)
@@ -241,7 +288,7 @@ namespace TheTechIdea.ETL
                 string errmsg = "Error Saving Function Mapping ";
                 ErrorObject.Message = $"{errmsg}:{ex.Message}";
                 errmsg = ErrorObject.Message;
-                MessageBox.Show(errmsg, "DB Engine");
+                MessageBox.Show(errmsg, "Beep");
                 Logger.WriteLog($" {errmsg} :{ex.Message}");
             }
         }
@@ -255,7 +302,7 @@ namespace TheTechIdea.ETL
             {
                  rdb = (IRDBSource)SourceConnection;
                 schemaname = rdb.GetSchemaName();
-                MyEntity.Relations = rdb.GetEntityforeignkeys(EntityName.ToUpper(), schemaname);
+                EntityStructure.Relations = rdb.GetEntityforeignkeys(EntityName.ToUpper(), schemaname);
                 dataHierarchyBindingSource.ResetBindings(false);
             }
            

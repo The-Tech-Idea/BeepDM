@@ -252,13 +252,13 @@ namespace TheTechIdea.Configuration
 
                 }
               
-                MessageBox.Show("Changes Saved Successfuly", "DB Engine");
+                MessageBox.Show("Changes Saved Successfuly", "Beep");
             }
             catch (Exception ex)
             {
 
                 ErrorObject.Flag = Errors.Failed;
-                MessageBox.Show("Error Saving Database connection", "DB Engine");
+                MessageBox.Show("Error Saving Database connection", "Beep");
                 ErrorObject.Message = $"Error saving Data for Database connection:{ex.Message}";
                 Logger.WriteLog($"Error saving Data for Database connection  :{ex.Message}");
             }

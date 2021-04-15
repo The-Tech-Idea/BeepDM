@@ -32,7 +32,11 @@ namespace TheTechIdea.Winforms.VIS
         //   IconImageName = pimagename;
 
             ds = (DataViewDataSource)DMEEditor.GetDataSource(ConnectionName);
-           
+            //if (ds.Entities.Count > 0)
+            //{
+            //    ds.Entities.Clear();
+            //    DMEEditor.ConfigEditor.SaveDataconnectionsValues();
+            //}
             DataSourceName = ConnectionName;
             if (pID != 0)
 
@@ -68,22 +72,22 @@ namespace TheTechIdea.Winforms.VIS
         {
             get
             {
-                return ds.ViewReader.DataView;
+                return ds.DataView;
             }
             set
             {
-                ds.ViewReader.DataView = value;
+                ds.DataView = value;
             }
         }
         int DataViewID
         {
             get
             {
-                return ds.ViewReader.DataView.ViewID;
+                return ds.DataView.ViewID;
             }
             set
             {
-                ds.ViewReader.DataView.ViewID = value;
+                ds.DataView.ViewID = value;
             }
         }
        // public event EventHandler<PassedArgs> BranchSelected;
@@ -127,7 +131,31 @@ namespace TheTechIdea.Winforms.VIS
         {
             throw new NotImplementedException();
         }
-
+        private string geticon(ViewType v)
+        {
+            string iconname = "entity.ico";
+            switch (v)
+            {
+                case ViewType.Table:
+                    iconname = "entity.ico";
+                    break;
+                case ViewType.Query:
+                    iconname = "sqlicon.ico";
+                    break;
+                case ViewType.Code:
+                    iconname = "codeicon.ico";
+                    break;
+                case ViewType.File:
+                    iconname = "fileicon.ico";
+                    break;
+                case ViewType.Url:
+                    iconname = "linkicon.ico";
+                    break;
+                default:
+                    break;
+            }
+            return iconname;
+        }
         public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
         {
             try
@@ -203,11 +231,12 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
         }
         [BranchDelegate(Caption = "Get Entities")]
+
         public IErrorsInfo CreateViewEntites()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             DMEEditor.Logger.WriteLog($"Filling View Entites ) ");
-           
+            string iconname;
             try
             {
                
@@ -219,16 +248,16 @@ namespace TheTechIdea.Winforms.VIS
                     bool loadv = false;
                     if (ChildBranchs.Count > 0)
                     {
-                        if (Visutil.controlEditor.InputBoxYesNo("DB Engine", "Do you want to over write th existing View Structure?") == DialogResult.Yes)
+                        if (Visutil.controlEditor.InputBoxYesNo("Beep", "Do you want to over write th existing View Structure?") == DialogResult.Yes)
                         {
                             TreeEditor.RemoveChildBranchs(this);
-                            //   DMEEditor.viewEditor.Views.Remove(DataView);
-                            //  DMEEditor.DataSources.Remove(DataSource);
+                            ds.LoadView();
                             loadv = true;
                         }
                     }
                     else
                     {
+                        ds.LoadView();
                         loadv = true;
                     }
                     if (loadv)
@@ -240,8 +269,8 @@ namespace TheTechIdea.Winforms.VIS
                         int i = 0;
                         foreach (EntityStructure tb in cr)
                         {
-
-                            DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, tb.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "entity.ico", DataView.DataViewDataSourceID, tb);
+                           
+                            DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, tb.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, geticon(tb.Viewtype), DataView.DataViewDataSourceID, tb);
                             dbent.ID = tb.Id;
                             dbent.DataSourceName = tb.DataSourceID;
                             TreeEditor.AddBranch(this, dbent);
@@ -275,8 +304,8 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
                 DMEEditor.ConfigEditor.SaveDataconnectionsValues();
-                ds.Dataview=DataView;
-                ds.ViewReader.WriteDataViewFile(DataView.DataViewDataSourceID);
+               // ds.Dataview=DataView;
+                ds.WriteDataViewFile(DataView.DataViewDataSourceID);
            
                 DMEEditor.AddLogMessage("Success", "Saved View", DateTime.Now, 0, null, Errors.Ok);
             }
@@ -344,8 +373,8 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Create Node")]
-        public IErrorsInfo CreateQuery()
+        [BranchDelegate(Caption = "Create Entity")]
+        public IErrorsInfo CreateEntity()
         {
 
             try
@@ -365,13 +394,13 @@ namespace TheTechIdea.Winforms.VIS
                     DMView = DataView,
                     CurrentEntity = null,
                     Id = DataView.Entities[0].Id,
-                    ObjectType = "QUERYENTITY",
-                    DataSource = DataSource,
+                    ObjectType = "NEWENTITY",
+                    DataSource = ds,
                     ObjectName = DataView.ViewName,
-                  
+                    
                     Objects = ob,
                    
-                    DatasourceName = null,
+                    DatasourceName = ds.DatasourceName,
                     EventType = "NEWENTITY"
 
                 };
@@ -500,7 +529,7 @@ namespace TheTechIdea.Winforms.VIS
                         {
                            // EntityStructure CurEntity = childds.GetEntityStructure(BranchText, true);
                             EntityStructure newentity = new EntityStructure();
-                            newentity.Id = ds.ViewReader.NextHearId();
+                            newentity.Id = ds.NextHearId();
                             newentity.ParentId = 1;
                             newentity.ViewID = DataView.ViewID;
                             newentity.Viewtype = entity.Viewtype;
@@ -570,7 +599,7 @@ namespace TheTechIdea.Winforms.VIS
                             else
                             {
                                 entity.Created = false;
-                                entity.Id = ds.ViewReader.NextHearId();
+                                entity.Id = ds.NextHearId();
                                 entity.ParentId = 1;
                                 entity.ViewID = DataView.ViewID;
                                 ds.CreateEntityAs(entity);

@@ -133,7 +133,7 @@ namespace TheTechIdea.Configuration
 
                 this.function2FunctionsBindingSource.EndEdit();
                 DMEEditor.ConfigEditor.SaveFucntion2Function();
-                MessageBox.Show("Function Mapping Saved successfully", "DB Engine");
+                MessageBox.Show("Function Mapping Saved successfully", "Beep");
              
             }
             catch (Exception ex)
@@ -143,7 +143,7 @@ namespace TheTechIdea.Configuration
                 string errmsg = "Error Saving Function Mapping ";
                 ErrorObject.Message = $"{errmsg}:{ex.Message}";
                 errmsg = ErrorObject.Message;
-                MessageBox.Show(errmsg, "DB Engine");
+                MessageBox.Show(errmsg, "Beep");
                 Logger.WriteLog($" {errmsg} :{ex.Message}");
             }
         }

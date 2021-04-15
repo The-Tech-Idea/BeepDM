@@ -98,7 +98,7 @@ namespace TheTechIdea.DDL
 
                 ErrorObject.Flag = Errors.Failed;
                 ErrorObject.Ex = ex;
-                MessageBox.Show("Error Load Mapping ", "DB Engine");
+                MessageBox.Show("Error Load Mapping ", "Beep");
                 Logger.WriteLog($"Error Load Mapping ({ex.Message})");
             }
             mappingBindingNavigator.BindingSource = mappingBindingSource;
@@ -133,13 +133,13 @@ namespace TheTechIdea.DDL
 
                 DMEEditor.ConfigEditor.WriteDataTypeFile();
                 Logger.WriteLog($"Successed in Saving Field Types");
-                MessageBox.Show("Changes Saved Successfuly", "DB Engine");
+                MessageBox.Show("Changes Saved Successfuly", "Beep");
             }
             catch (System.Exception ex)
             {
                 ErrorObject.Flag = Errors.Failed;
                 ErrorObject.Ex = ex;
-                MessageBox.Show("Error Saving Datatypes", "DB Engine");
+                MessageBox.Show("Error Saving Datatypes", "Beep");
                 Logger.WriteLog($"Error in Field Types ({ex.Message})");
 
 

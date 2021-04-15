@@ -99,13 +99,13 @@ namespace TheTechIdea.Configuration
                 DMEEditor.ConfigEditor.SaveConfigValues();
 
 
-                MessageBox.Show("Changes Saved Successfuly", "DB Engine");
+                MessageBox.Show("Changes Saved Successfuly", "Beep");
             }
             catch (Exception ex)
             {
                 string ermsg = "Error Saving Folder paths";
                 ErrorObject.Flag = Errors.Failed;
-                MessageBox.Show(ermsg, "DB Engine");
+                MessageBox.Show(ermsg, "Beep");
                 ErrorObject.Message = $"{ermsg}:{ex.Message}";
                 Logger.WriteLog($"{ermsg}:{ex.Message}");
             }

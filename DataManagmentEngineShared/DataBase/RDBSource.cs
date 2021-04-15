@@ -116,45 +116,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
 
         }
-        public virtual Task<object> GetEntityDataAsync(string EntityName, string QueryString)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            EntityStructure enttype = GetEntityStructure(EntityName);
-            Type type = GetEntityType(EntityName);
-            EntityName = EntityName.ToLower();
-            string qrystr = "select * from " + EntityName;
-            List<object> recs = new List<object>();
-            if (QueryString != null)
-            {
-                qrystr = QueryString;
-            }
-            else
-            {
-                qrystr = "select * from " + EntityName;
-
-            }
-            try
-            {
-
-                IDataAdapter adp = GetDataAdapter(qrystr);
-                DataSet dataSet = new DataSet();
-                adp.Fill(dataSet);
-                DataTable dt = dataSet.Tables[0];
-
-
-                recs = DMEEditor.Utilfunction.GetListByDataTable(dt, type, enttype);
-
-            }
-
-            catch (Exception ex)
-            {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting entity Data ({ex.Message}) ");
-            }
-
-            return Task.FromResult<object>(recs);
-        }
+       
         public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData)
         {
             if (UploadData.GetType().ToString() != "System.Data.DataTable")
@@ -840,137 +802,144 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             // 
             DataTable tb = new DataTable();
 
-           
-            if (refresh)
+            if (fnd.Created == false)
             {
-                fnd.DataSourceID = DatasourceName;
-                //  fnd.EntityName = EntityName;
-                if (fnd.Viewtype == ViewType.Query)
-                {
-
-                    tb = GetTableSchema(fnd.CustomBuildQuery);
-                }
-                else
-                {
-                    tb = GetTableSchema(fnd.EntityName);
-                }
-
-                if (tb.Rows.Count > 0)
-                {
-                    fnd.Fields = new List<EntityField>();
-                    fnd.PrimaryKeys = new List<EntityField>();
-                    DataRow rt = tb.Rows[0];
-
-                    foreach (DataRow r in rt.Table.Rows)
-                    {
-                        EntityField x = new EntityField();
-                        try
-                        {
-
-                            x.fieldname = r.Field<string>("ColumnName");
-                            x.fieldtype = (r.Field<Type>("DataType")).ToString(); //"ColumnSize"
-                            x.Size1 = r.Field<int>("ColumnSize");
-                            try
-                            {
-                                x.IsAutoIncrement = r.Field<bool>("IsAutoIncrement");
-                            }
-                            catch (Exception)
-                            {
-
-                            }
-                            try
-                            {
-                                x.AllowDBNull = r.Field<bool>("AllowDBNull");
-                            }
-                            catch (Exception)
-                            {
-
-
-                            }
-                            try
-                            {
-                                x.IsAutoIncrement = r.Field<bool>("IsIdentity");
-                            }
-                            catch (Exception)
-                            {
-
-
-                            }
-                            try
-                            {
-                                x.IsKey = r.Field<bool>("IsKey");
-                            }
-                            catch (Exception)
-                            {
-
-                            }
-                            try
-                            {
-                                x.NumericPrecision = r.Field<short>("NumericPrecision");
-                                x.NumericScale = r.Field<short>("NumericScale");
-
-
-                            }
-                            catch (Exception)
-                            {
-
-                            }
-                            try
-                            {
-                                x.IsUnique = r.Field<bool>("IsUnique");
-                            }
-                            catch (Exception)
-                            {
-
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.WriteLog("Error in Creating Field Type");
-                            ErrorObject.Flag = Errors.Failed;
-                            ErrorObject.Ex = ex;
-                        }
-
-                        if (x.IsKey)
-                        {
-                            fnd.PrimaryKeys.Add(x);
-                        }
-
-
-                        fnd.Fields.Add(x);
-                    }
-                    if (fnd.Viewtype == ViewType.Table)
-                    {
-                        if ((fnd.Relations.Count == 0) || refresh)
-                        {
-                            fnd.Relations = GetEntityforeignkeys(fnd.EntityName, Dataconnection.ConnectionProp.SchemaName);
-                        }
-                    }
-
-                    EntityStructure exist = Entities.Where(d => d.EntityName == fnd.EntityName).FirstOrDefault();
-                    if (exist == null)
-                    {
-                        Entities.Add(fnd);
-                    }
-                    else
-                    {
-                        if (fnd != exist)
-                        {
-                            Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault().Fields = new List<EntityField>();
-                            Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault().Relations = new List<RelationShipKeys>();
-                            Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault().Fields = fnd.Fields;
-                            Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault().Relations = fnd.Relations;
-                        }
-
-                    }
-
-                }
-
+                return fnd;
             }
             else
             {
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                if (refresh)
+                {
+                    fnd.DataSourceID = DatasourceName;
+                    //  fnd.EntityName = EntityName;
+                    if (fnd.Viewtype == ViewType.Query)
+                    {
+
+                        tb = GetTableSchema(fnd.CustomBuildQuery);
+                    }
+                    else
+                    {
+                        tb = GetTableSchema(fnd.EntityName);
+                    }
+
+                    if (tb.Rows.Count > 0)
+                    {
+                        fnd.Fields = new List<EntityField>();
+                        fnd.PrimaryKeys = new List<EntityField>();
+                        DataRow rt = tb.Rows[0];
+
+                        foreach (DataRow r in rt.Table.Rows)
+                        {
+                            EntityField x = new EntityField();
+                            try
+                            {
+
+                                x.fieldname = r.Field<string>("ColumnName");
+                                x.fieldtype = (r.Field<Type>("DataType")).ToString(); //"ColumnSize"
+                                x.Size1 = r.Field<int>("ColumnSize");
+                                try
+                                {
+                                    x.IsAutoIncrement = r.Field<bool>("IsAutoIncrement");
+                                }
+                                catch (Exception)
+                                {
+
+                                }
+                                try
+                                {
+                                    x.AllowDBNull = r.Field<bool>("AllowDBNull");
+                                }
+                                catch (Exception)
+                                {
+
+
+                                }
+                                try
+                                {
+                                    x.IsAutoIncrement = r.Field<bool>("IsIdentity");
+                                }
+                                catch (Exception)
+                                {
+
+
+                                }
+                                try
+                                {
+                                    x.IsKey = r.Field<bool>("IsKey");
+                                }
+                                catch (Exception)
+                                {
+
+                                }
+                                try
+                                {
+                                    x.NumericPrecision = r.Field<short>("NumericPrecision");
+                                    x.NumericScale = r.Field<short>("NumericScale");
+
+
+                                }
+                                catch (Exception)
+                                {
+
+                                }
+                                try
+                                {
+                                    x.IsUnique = r.Field<bool>("IsUnique");
+                                }
+                                catch (Exception)
+                                {
+
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.WriteLog("Error in Creating Field Type");
+                                ErrorObject.Flag = Errors.Failed;
+                                ErrorObject.Ex = ex;
+                            }
+
+                            if (x.IsKey)
+                            {
+                                fnd.PrimaryKeys.Add(x);
+                            }
+
+
+                            fnd.Fields.Add(x);
+                        }
+                        if (fnd.Viewtype == ViewType.Table)
+                        {
+                            if ((fnd.Relations.Count == 0) || refresh)
+                            {
+                                fnd.Relations = GetEntityforeignkeys(fnd.EntityName, Dataconnection.ConnectionProp.SchemaName);
+                            }
+                        }
+
+                        EntityStructure exist = Entities.Where(d => d.EntityName == fnd.EntityName).FirstOrDefault();
+                        if (exist == null)
+                        {
+                            Entities.Add(fnd);
+                        }
+                        else
+                        {
+                            if (fnd != exist)
+                            {
+                                Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault().Fields = new List<EntityField>();
+                                Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault().Relations = new List<RelationShipKeys>();
+                                Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault().Fields = fnd.Fields;
+                                Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault().Relations = fnd.Relations;
+                            }
+
+                        }
+
+                    }
+
+                }
+                else
+                {
+                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                }
             }
+           
 
          //  DMEEditor.classCreator.CreateClass(fnd.EntityName, fnd.Fields, DMEEditor.ConfigEditor.Config.EntitiesPath, "TheTechIdea");
             return fnd;
@@ -1095,10 +1064,21 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     foreach (DataRow row in tb.Rows)
                     {
                         EntitiesNames.Add(row.Field<string>("TABLE_NAME"));
-                        //GetEntityStructure(row.Field<string>("TABLE_NAME"));
+                      
                         i += 1;
                     }
-
+                    if (Entities.Count > 0)
+                    {
+                        List<string> ename = Entities.Select(p => p.EntityName).ToList();
+                        List<string> diffnames = ename.Except(EntitiesNames).ToList();
+                        if (diffnames.Count > 0)
+                        {
+                            foreach (string item in diffnames)
+                            {
+                                EntitiesNames.Add(item);
+                            }
+                        }
+                    }
 
                     Logger.WriteLog("Successfully Retrieve tables list ");
 
@@ -1280,7 +1260,83 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         }
         #endregion
         #region "RDBSSource Database Methods"
-      
+        private string GenerateCreateEntityScript(EntityStructure t1)
+        {
+            string createtablestring = "Create table ";
+            try
+            {//-- Create Create string
+                int i = 1;
+                t1.EntityName = Regex.Replace(t1.EntityName, @"\s+", "_");
+                createtablestring += t1.EntityName + "\n(";
+                if (t1.Fields.Count == 0)
+                {
+                    // t1=ds.GetEntityStructure()
+                }
+                foreach (EntityField dbf in t1.Fields)
+                {
+
+                    createtablestring += "\n" + dbf.fieldname + " " + DMEEditor.typesHelper.GetDataType(DatasourceName, dbf) + " ";
+                    if (dbf.IsAutoIncrement)
+                    {
+                        dbf.fieldname = Regex.Replace(dbf.fieldname, @"\s+", "_");
+                        string autonumberstring = "";
+                        autonumberstring = CreateAutoNumber(dbf);
+                        if (DMEEditor.ErrorObject.Flag == Errors.Ok)
+                        {
+                            createtablestring += autonumberstring;
+                        }
+                        else
+                        {
+                            throw new Exception(ErrorObject.Message);
+
+                        }
+                    }
+
+                    if (dbf.AllowDBNull == false)
+                    {
+                        createtablestring += " NOT NULL ";
+                    }
+                    if (dbf.IsUnique == true)
+                    {
+                        createtablestring += " UNIQUE ";
+                    }
+                    i += 1;
+
+                    if (i <= t1.Fields.Count)
+                    {
+                        createtablestring += ",";
+                    }
+
+                }
+                if (t1.PrimaryKeys != null)
+                {
+                    if (t1.PrimaryKeys.Count > 0)
+                    {
+                        createtablestring += $",\n" + CreatePrimaryKeyString(t1);
+                    }
+                }
+
+
+
+                if (createtablestring[createtablestring.Length - 1].Equals(","))
+                {
+                    createtablestring = createtablestring.Remove(createtablestring.Length);
+                }
+
+                createtablestring += ")";
+
+            }
+            catch (System.Exception ex)
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
+                createtablestring = "";
+                Logger.WriteLog($"Error in  Creating Table " + t1.EntityName + "   ({ex.Message})");
+
+
+            }
+            return createtablestring;
+        }
         public List<LScript> GenerateCreatEntityScript(List<EntityStructure> entities)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -1645,77 +1701,21 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         }
         private string CreateEntity(EntityStructure t1)
         {
-            string createtablestring = "Create table ";
+            string createtablestring = null;
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-
+            
+            Entities.Add(t1);
             try
-            {//-- Create Create string
-                int i = 1;
-                t1.EntityName = Regex.Replace(t1.EntityName, @"\s+", "_");
-                createtablestring += t1.EntityName + "\n(";
-                if (t1.Fields.Count == 0)
-                {
-                    // t1=ds.GetEntityStructure()
-                }
-                foreach (EntityField dbf in t1.Fields)
-                {
-
-                    createtablestring += "\n" + dbf.fieldname + " " + DMEEditor.typesHelper.GetDataType(DatasourceName, dbf) + " ";
-                    if (dbf.IsAutoIncrement)
-                    {
-                        dbf.fieldname = Regex.Replace(dbf.fieldname, @"\s+", "_");
-                        string autonumberstring = "";
-                        autonumberstring=CreateAutoNumber(dbf);
-                        if (DMEEditor.ErrorObject.Flag == Errors.Ok)
-                        {
-                            createtablestring += autonumberstring;
-                        }
-                        else
-                        {
-                            throw new Exception(ErrorObject.Message);
-
-                        }
-                    }
-
-                    if (dbf.AllowDBNull == false)
-                    {
-                        createtablestring += " NOT NULL ";
-                    }
-                    if (dbf.IsUnique == true)
-                    {
-                        createtablestring += " UNIQUE ";
-                    }
-                    i += 1;
-
-                    if (i <= t1.Fields.Count)
-                    {
-                        createtablestring += ",";
-                    }
-
-                }
-                if (t1.PrimaryKeys != null)
-                {
-                    if (t1.PrimaryKeys.Count > 0)
-                    {
-                        createtablestring += $",\n" + CreatePrimaryKeyString(t1);
-                    }
-                }
-
-
-
-                if (createtablestring[createtablestring.Length - 1].Equals(","))
-                {
-                    createtablestring = createtablestring.Remove(createtablestring.Length);
-                }
-
-                createtablestring += ")";
+            {
+               
+                createtablestring= GenerateCreateEntityScript(t1);
 
             }
             catch (System.Exception ex)
             {
                 DMEEditor.ErrorObject.Flag = Errors.Failed;
                 DMEEditor.ErrorObject.Ex = ex;
-
+                createtablestring = null;
                 Logger.WriteLog($"Error in  Creating Table " + t1.EntityName + "   ({ex.Message})");
 
 
@@ -1961,13 +1961,28 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         #region "Dapper"
         public virtual List<T> GetData<T>(string sql)
         {
-            var retval = Dataconnection.DbConn.Query<T>(sql);
+           
+            if (Dataconnection.OpenConnection() == ConnectionState.Open)
+            {
+                return Dataconnection.DbConn.Query<T>(sql).AsList<T>();
 
-            return retval.AsList<T>();
+            }
+            else
+                return null;
+
+
+
+            
         }
         public virtual Task SaveData<T>(string sql, T parameters)
         {
-            return Dataconnection.DbConn.ExecuteAsync(sql, parameters);
+            if (Dataconnection.OpenConnection() == ConnectionState.Open)
+            {
+                return Dataconnection.DbConn.ExecuteAsync(sql, parameters);
+            }
+            else
+                return null;
+               
 
         }
         #endregion

@@ -125,8 +125,8 @@ namespace TheTechIdea.ETL
                 this.entitiesBindingSource.EndEdit();
                 this.dataViewDataSourceBindingSource.EndEdit();
                 DMEEditor.ConfigEditor.SaveDataconnectionsValues();
-                ds.ViewReader.DataView = (DMDataView)dataViewDataSourceBindingSource.Current;
-                ds.ViewReader.WriteDataViewFile(ds.Dataview.DataViewDataSourceID);
+                ds.DataView = (DMDataView)dataViewDataSourceBindingSource.Current;
+                ds.WriteDataViewFile(ds.Dataview.DataViewDataSourceID);
                 DMEEditor.AddLogMessage("Success", $"Saving View Data", DateTime.Now, 0, null, Errors.Ok);
                
             }

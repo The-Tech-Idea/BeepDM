@@ -71,7 +71,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
             {
                 if (DataViewDS != null)
                 {
-                    return DataViewDS.ViewReader.DataView;
+                    return DataViewDS.DataView;
                 }else
                 {
                     return null;
@@ -80,18 +80,18 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
             }
             set
             {
-                DataViewDS.ViewReader.DataView = value;
+                DataViewDS.DataView = value;
             }
         }
         int DataViewID
         {
             get
             {
-                return DataViewDS.ViewReader.DataView.ViewID;
+                return DataViewDS.DataView.ViewID;
             }
             set
             {
-                DataViewDS.ViewReader.DataView.ViewID = value;
+                DataViewDS.DataView.ViewID = value;
             }
         }
        // public event EventHandler<PassedArgs> BranchSelected;

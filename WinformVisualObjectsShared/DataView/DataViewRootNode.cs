@@ -196,7 +196,7 @@ namespace TheTechIdea.Winforms.VIS
                        
                         DataViewDataSource ds = (DataViewDataSource)DMEEditor.GetDataSource(f.ConnectionName);
 
-                        DataView = ds.ViewReader.DataView;
+                        DataView = ds.DataView;
 
 
                         CreateViewNode(DataView.ViewID, DataView.ViewName, f.ConnectionName);
@@ -263,7 +263,7 @@ namespace TheTechIdea.Winforms.VIS
 
                         DataViewDataSource ds = (DataViewDataSource)DMEEditor.GetDataSource(f.ConnectionName);
 
-                        DataView = ds.ViewReader.DataView;
+                        DataView = ds.DataView;
 
 
                         CreateViewNode(DataView.ViewID, DataView.ViewName, f.ConnectionName);
@@ -319,12 +319,12 @@ namespace TheTechIdea.Winforms.VIS
                         if (EntitySource != null)
                         {
                            
-                            int x = ds.ViewReader.AddEntitytoDataView(EntitySource.DataSource, EntitySource.BranchText, EntitySource.DataSource.Dataconnection.ConnectionProp.SchemaName, null);
+                            int x = ds.AddEntitytoDataView(EntitySource.DataSource, EntitySource.BranchText, EntitySource.DataSource.Dataconnection.ConnectionProp.SchemaName, null);
                        
                         }
-                        ds.ViewReader.WriteDataViewFile(fullname);
+                        ds.WriteDataViewFile(fullname);
                         DataSource = DMEEditor.GetDataSource(f.ConnectionName);
-                        DataView = ds.ViewReader.DataView;
+                        DataView = ds.DataView;
                         DataView.EntityDataSourceID = EntitySource.DataSource.DatasourceName;
                         IBranch br = CreateViewNode(DataView.ViewID, DataView.ViewName, f.ConnectionName);
 

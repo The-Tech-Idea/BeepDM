@@ -37,7 +37,7 @@ namespace DynamicRdlcReport
                 this.reportViewer1.LocalReport.LoadReportDefinition(stream);
             }
             this.reportViewer1.RefreshReport();
-            this.reportViewer1.RefreshReport();
+         //   this.reportViewer1.RefreshReport();
         }
     }
 }

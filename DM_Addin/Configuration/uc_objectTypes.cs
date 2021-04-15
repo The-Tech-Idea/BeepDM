@@ -80,7 +80,7 @@ namespace TheTechIdea.Configuration
 
                 this.objectTypesBindingSource.EndEdit();
                 DMEEditor.ConfigEditor.SaveObjectTypes();
-                MessageBox.Show("Object Names successfully", "DB Engine");
+                MessageBox.Show("Object Names successfully", "Beep");
 
             }
             catch (Exception ex)
@@ -90,7 +90,7 @@ namespace TheTechIdea.Configuration
                 string errmsg = "Error Saving Object Names ";
                 ErrorObject.Message = $"{errmsg}:{ex.Message}";
                 errmsg = ErrorObject.Message;
-                MessageBox.Show(errmsg, "DB Engine");
+                MessageBox.Show(errmsg, "Beep");
                 Logger.WriteLog($" {errmsg} :{ex.Message}");
             }
         }

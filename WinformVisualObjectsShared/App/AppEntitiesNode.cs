@@ -91,22 +91,22 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         {
             get
             {
-                return DataViewDS.ViewReader.DataView;
+                return DataViewDS.DataView;
             }
             set
             {
-                DataViewDS.ViewReader.DataView = value;
+                DataViewDS.DataView = value;
             }
         }
         int DataViewID
         {
             get
             {
-                return DataViewDS.ViewReader.DataView.ViewID;
+                return DataViewDS.DataView.ViewID;
             }
             set
             {
-                DataViewDS.ViewReader.DataView.ViewID = value;
+                DataViewDS.DataView.ViewID = value;
             }
         }
        // public EntityStructure EntityStructure { get; set; }
@@ -159,7 +159,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
                     foreach (IBranch item in ChildBranchs)
                     {
                         TreeEditor.RemoveBranch(item);
-                        DataViewDS.ViewReader.RemoveEntity(EntityStructure.Id);
+                        DataViewDS.RemoveEntity(EntityStructure.Id);
                        //  DMEEditor.viewEditor.Views.Where(x => x.ViewName == DataView.ViewName).FirstOrDefault().Entity.Remove(EntityStructure);
                     }
 
