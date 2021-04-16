@@ -749,9 +749,10 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Misc Functions"
         #region "Tree Util Functions"
-       
+
         #endregion "Tree Util Functions"
         #region "Util Functions"
+     
         public static ObjectActivator<T> GetActivator<T>(ConstructorInfo ctor)
         {
             Type type = ctor.DeclaringType;

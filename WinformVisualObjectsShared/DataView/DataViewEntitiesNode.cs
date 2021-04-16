@@ -87,42 +87,10 @@ namespace TheTechIdea.Winforms.VIS
                 ds.DataView.ViewID = value;
             }
         }
-       // public EntityStructure EntityStructure { get; set; }
-
-       // public event EventHandler<PassedArgs> BranchSelected;
-       // public event EventHandler<PassedArgs> BranchDragEnter;
-       // public event EventHandler<PassedArgs> BranchDragDrop;
-       // public event EventHandler<PassedArgs> BranchDragLeave;
-       // public event EventHandler<PassedArgs> BranchDragClick;
-       // public event EventHandler<PassedArgs> BranchDragDoubleClick;
-       // public event EventHandler<PassedArgs> ActionNeeded;
+      
         #endregion "Properties"
         #region "Interface Methods"
-        private string geticon(ViewType v)
-        {
-            string iconname= "entity.ico";
-            switch (v)
-            {
-                case ViewType.Table:
-                    iconname = "entity.ico";
-                    break;
-                case ViewType.Query:
-                    iconname = "sqlicon.ico";
-                    break;
-                case ViewType.Code:
-                    iconname = "codeicon.ico";
-                    break;
-                case ViewType.File:
-                    iconname = "fileicon.ico";
-                    break;
-                case ViewType.Url:
-                    iconname = "linkicon.ico";
-                    break;
-                default:
-                    break;
-            }
-            return iconname;
-        }
+     
         private void GetChildNodes(List<EntityStructure> Childs,EntityStructure Parent)
         {
             
@@ -134,7 +102,7 @@ namespace TheTechIdea.Winforms.VIS
                 if (branch == null)
                 {
                    
-                    dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, ParentBranch, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, geticon(i.Viewtype), DataView.DataViewDataSourceID, i);
+                    dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, ParentBranch, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(i.Viewtype), DataView.DataViewDataSourceID, i);
                     TreeEditor.AddBranch(ParentBranch, dbent);
                     dbent.CreateChildNodes();
                     ChildBranchs.Add(dbent);
@@ -144,7 +112,7 @@ namespace TheTechIdea.Winforms.VIS
                     if (ChildBranchs.Where(x => x.BranchText == i.EntityName).Any() == false)
                     {
                        
-                        dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, ParentBranch, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, geticon(i.Viewtype), DataView.DataViewDataSourceID, i);
+                        dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, ParentBranch, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(i.Viewtype), DataView.DataViewDataSourceID, i);
                         TreeEditor.AddBranch(ParentBranch, dbent);
                         dbent.CreateChildNodes();
                         ChildBranchs.Add(dbent);
@@ -174,7 +142,7 @@ namespace TheTechIdea.Winforms.VIS
                     if (ChildBranchs.Where(x=>x.BranchText== i.EntityName).Any()==false)
                     {
                         
-                        dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, geticon(i.Viewtype), DataView.DataViewDataSourceID, i);
+                        dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(i.Viewtype), DataView.DataViewDataSourceID, i);
                         TreeEditor.AddBranch(this, dbent);
                         dbent.CreateChildNodes();
                         ChildBranchs.Add(dbent);
@@ -279,6 +247,7 @@ namespace TheTechIdea.Winforms.VIS
 
             try
             {
+                EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.EntityName == BranchText)];
                 string[] args = { "New View", null, null };
                 List<ObjectItem> ob = new List<ObjectItem>(); ;
                 ObjectItem it = new ObjectItem();
@@ -448,11 +417,12 @@ namespace TheTechIdea.Winforms.VIS
         //    return DMEEditor.ErrorObject;
         //}
         [BranchDelegate(Caption = "Data Edit", Hidden = false)]
-        public IErrorsInfo GridEdit()
+        public IErrorsInfo DataEdit()
         {
 
             try
             {
+                EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.EntityName == BranchText)];
                 string[] args = { "New View", null, null };
                 List<ObjectItem> ob = new List<ObjectItem>(); ;
                 ObjectItem it = new ObjectItem();
@@ -471,7 +441,7 @@ namespace TheTechIdea.Winforms.VIS
                     DataSource = DataSource,
                     ObjectName = DataView.ViewName,
                     Objects = ob,
-                    DatasourceName = EntityStructure.DataSourceID,
+                    DatasourceName = DataView.DataViewDataSourceID,
                     EventType = "CRUDENTITY"
 
                 };

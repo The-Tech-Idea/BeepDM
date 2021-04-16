@@ -131,31 +131,7 @@ namespace TheTechIdea.Winforms.VIS
         {
             throw new NotImplementedException();
         }
-        private string geticon(ViewType v)
-        {
-            string iconname = "entity.ico";
-            switch (v)
-            {
-                case ViewType.Table:
-                    iconname = "entity.ico";
-                    break;
-                case ViewType.Query:
-                    iconname = "sqlicon.ico";
-                    break;
-                case ViewType.Code:
-                    iconname = "codeicon.ico";
-                    break;
-                case ViewType.File:
-                    iconname = "fileicon.ico";
-                    break;
-                case ViewType.Url:
-                    iconname = "linkicon.ico";
-                    break;
-                default:
-                    break;
-            }
-            return iconname;
-        }
+       
         public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
         {
             try
@@ -270,7 +246,7 @@ namespace TheTechIdea.Winforms.VIS
                         foreach (EntityStructure tb in cr)
                         {
                            
-                            DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, tb.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, geticon(tb.Viewtype), DataView.DataViewDataSourceID, tb);
+                            DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, tb.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(tb.Viewtype), DataView.DataViewDataSourceID, tb);
                             dbent.ID = tb.Id;
                             dbent.DataSourceName = tb.DataSourceID;
                             TreeEditor.AddBranch(this, dbent);

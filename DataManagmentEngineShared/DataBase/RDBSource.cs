@@ -692,6 +692,121 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             return ErrorObject;
         }
+        private string BuildQuery(string originalquery, List<ReportFilter> Filter)
+        {
+            string retval;
+            string[] stringSeparators;
+            string[] sp;
+            string qrystr="Select ";
+            bool FoundWhere = false;
+            QueryBuild queryStructure = new QueryBuild();
+            try
+            {
+                //stringSeparators = new string[] {"select ", " from ", " where ", " group by "," having ", " order by " };
+                // Get Selected Fields
+                stringSeparators = new string[] { "select ", " from " , " where ", " group by ", " having ", " order by " };
+                sp = originalquery.ToLower().Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries);
+                queryStructure.FieldsString = sp[0];
+                string[] Fieldsp = sp[0].Split(',');
+                queryStructure.Fields.AddRange(Fieldsp);
+                // Get From  Tables
+                queryStructure.EntitiesString = sp[1];
+                string[] Tablesdsp = sp[1].Split(',');
+                queryStructure.Entities.AddRange(Tablesdsp);
+                qrystr += queryStructure.FieldsString + " " + " from " + queryStructure.EntitiesString;
+                qrystr += Environment.NewLine;
+                if (Filter != null)
+                {
+                    if (Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
+                    {
+                        qrystr += Environment.NewLine;
+                        if (FoundWhere == false)
+                        {
+                            qrystr += " where " + Environment.NewLine;
+                            FoundWhere = true;
+                        }
+
+                        foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)))
+                        {
+                            if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
+                            {
+                                //  EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
+                                if (item.Operator.ToLower() == "between")
+                                {
+                                    qrystr += item.FieldName + " " + item.Operator + " @p_" + item.FieldName + " and  @p_" + item.FieldName + "1 " + Environment.NewLine;
+                                }
+                                else
+                                {
+                                    qrystr += item.FieldName + " " + item.Operator + " @p_" + item.FieldName + " " + Environment.NewLine;
+                                }
+
+                            }
+
+
+
+                        }
+                    }
+
+                }
+                if (originalquery.ToLower().Contains("where"))
+                {
+                    qrystr += Environment.NewLine;
+
+                    string[] whereSeparators = new string[] { " where " };
+
+                    string[] spwhere = originalquery.ToLower().Split(whereSeparators, StringSplitOptions.RemoveEmptyEntries);
+                    queryStructure.WhereCondition = spwhere[0];
+                    if (FoundWhere == false)
+                    {
+                        qrystr += " where " + Environment.NewLine;
+                        FoundWhere = true;
+                    }
+                    qrystr +=  spwhere[0];
+                    qrystr += Environment.NewLine;
+                 
+                   
+
+                }
+                if (originalquery.ToLower().Contains("group by"))
+                {
+                    string[] groupbySeparators = new string[] { " group by " };
+
+                    string[] groupbywhere = originalquery.ToLower().Split(groupbySeparators, StringSplitOptions.RemoveEmptyEntries);
+                    queryStructure.GroupbyCondition = groupbywhere[1];
+                    qrystr += " group by " + groupbywhere[1];
+                    qrystr += Environment.NewLine;
+                }
+                if (originalquery.ToLower().Contains("having"))
+                {
+                    string[] havingSeparators = new string[] { " having " };
+
+                    string[] havingywhere = originalquery.ToLower().Split(havingSeparators, StringSplitOptions.RemoveEmptyEntries);
+                    queryStructure.HavingCondition = havingywhere[1];
+                    qrystr += " having " + havingywhere[1];
+                    qrystr += Environment.NewLine;
+                }
+                if (originalquery.ToLower().Contains("order by"))
+                {
+                    string[] orderbySeparators = new string[] { " order by " };
+
+                    string[] orderbywhere = originalquery.ToLower().Split(orderbySeparators, StringSplitOptions.RemoveEmptyEntries);
+                    queryStructure.OrderbyCondition = orderbywhere[1];
+                    qrystr += " order by " + orderbywhere[1];
+
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Fail", $"Unable Build Query Object {originalquery}", DateTime.Now, 0, "Error", Errors.Failed);
+            }
+          
+
+
+            return qrystr;
+        }
         public virtual object GetEntity(string EntityName, List<ReportFilter> Filter)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -700,6 +815,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             EntityName = EntityName.ToLower();
             string inname="";
             string qrystr = "select* from ";
+            
             if (!string.IsNullOrEmpty(EntityName) && !string.IsNullOrWhiteSpace(EntityName))
             {
                 if (!EntityName.Contains("select") && !EntityName.Contains("from"))
@@ -708,39 +824,17 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     inname = EntityName;
                 }else
                 {
-                    inname = EntityName.Substring(EntityName.IndexOf("from") + 1).Trim();
+                   
+                    string[] stringSeparators = new string[] { " from ", " where ", " group by "," order by " };
+                    string[] sp = EntityName.Split(stringSeparators, StringSplitOptions.None);
+                    qrystr = EntityName;
+                    inname = sp[1].Trim();
                 }
                
             }
-            EntityStructure ent = GetEntityStructure(inname);
-
-            if (Filter != null )
-            { if (Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
-                {
-                    qrystr += Environment.NewLine;
-                    qrystr += " where " + Environment.NewLine;
-                    foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)))
-                    {
-                        if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
-                        {
-                            EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
-                            if (item.Operator.ToLower() == "between")
-                            {
-                                qrystr += item.FieldName + " " + item.Operator + " @p_" + item.FieldName + " and  @p_" + item.FieldName + "1 " + Environment.NewLine;
-                            }
-                            else
-                            {
-                                qrystr += item.FieldName + " " + item.Operator + " @p_" + item.FieldName + " " + Environment.NewLine;
-                            }
-
-                        }
-
-
-
-                    }
-                }
-               
-            }
+            // EntityStructure ent = GetEntityStructure(inname);
+            qrystr= BuildQuery(qrystr, Filter);
+          
             try
             {
                 IDataAdapter adp = GetDataAdapter(qrystr,Filter);
@@ -802,7 +896,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             // 
             DataTable tb = new DataTable();
 
-            if (fnd.Created == false)
+            if ((fnd.Created == false)&&(fnd.ViewID==0))
             {
                 return fnd;
             }
@@ -921,18 +1015,12 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         }
                         else
                         {
-                            if (fnd != exist)
-                            {
-                                Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault().Fields = new List<EntityField>();
-                                Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault().Relations = new List<RelationShipKeys>();
-                                Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault().Fields = fnd.Fields;
-                                Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault().Relations = fnd.Relations;
-                            }
-
+                            Entities[Entities.FindIndex(o => o.EntityName == fnd.EntityName)].Fields = fnd.Fields;
+                            Entities[Entities.FindIndex(o => o.EntityName == fnd.EntityName)].Relations = fnd.Relations;
+                            Entities[Entities.FindIndex(o => o.EntityName == fnd.EntityName)].PrimaryKeys = fnd.PrimaryKeys;
+    
                         }
-
                     }
-
                 }
                 else
                 {
@@ -2033,7 +2121,16 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                cmd = Dataconnection.DbConn.CreateCommand();
+                if(Dataconnection.OpenConnection()== ConnectionState.Open)
+                {
+                    cmd = Dataconnection.DbConn.CreateCommand();
+                }else
+                {
+                    cmd = null;
+
+                    DMEEditor.AddLogMessage("Fail", $"Error in Creating Data Command, Cannot get DataSource", DateTime.Now, -1,DatasourceName, Errors.Failed);
+                }
+               
                 //    Logger.WriteLog("Created Data Command");
 
             }

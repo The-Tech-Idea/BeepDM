@@ -31,6 +31,22 @@ namespace TheTechIdea.DataManagment_Engine.Report
 
 
     }
+    public class QueryBuild
+    {
+        public QueryBuild()
+        {
+
+
+        }
+        public List<string> Fields { get; set; } = new List<string>();
+        public List<string> Entities { get; set; } = new List<string>();
+        public string FieldsString { get; set; }
+        public string EntitiesString { get; set; }
+        public string WhereCondition { get; set; }
+        public string OrderbyCondition { get; set; }
+        public string HavingCondition { get; set; }
+        public string GroupbyCondition { get; set; }
+    }
     public class FilterType
     {
         public FilterType(string pfiltertype)

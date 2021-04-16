@@ -636,7 +636,87 @@ namespace TheTechIdea.DataManagment_Engine
             return dr;
         }
 
+        public List<EntityField> GetFieldFromGeneratedObject(object dt)
+        {
+            List<EntityField> retval = new List<EntityField>();
+            DataRow dr;
+            DataRowView dv;
+            DataTable tb = new DataTable();
+            if (dt.GetType().FullName == "System.Data.DataRowView")
+            {
+                dv = (DataRowView)dt;
+                dr = dv.Row;
+             
+            }
+            else
+            if (dt.GetType().FullName == "System.Data.DataRow")
+            {
+                dr = (DataRow)dt;
+            }
+            else
+            if(dt.GetType().FullName == "System.Data.DataTable")
+            {
+                tb = (DataTable) dt;
+                dr = tb.NewRow();
+            }
+            else
+            {
+               
+                foreach (PropertyInfo pr in dt.GetType().GetProperties())
+                {
+                 
+                    DataColumn co = tb.Columns.Add(pr.Name);
+                    co.DataType = pr.PropertyType;
 
+                   
+                }
+                dr = tb.NewRow();
+            }
+            foreach (DataColumn item in dr.Table.Columns)
+            {
+                EntityField f = new EntityField();
+                f.fieldname = item.ColumnName;
+                f.fieldtype = item.DataType.FullName;
+                
+                try
+                {
+                    f.IsAutoIncrement = item.AutoIncrement;
+                }
+                catch (Exception)
+                {
+
+                }
+                try
+                {
+                    f.AllowDBNull = item.AllowDBNull;
+                }
+                catch (Exception)
+                {
+
+
+                }
+               
+                try
+                {
+                    f.Size1 =item.MaxLength;
+                }
+                catch (Exception)
+                {
+
+                }
+                
+                try
+                {
+                    f.IsUnique =item.Unique;
+                }
+                catch (Exception)
+                {
+
+                }
+                retval.Add(f);
+            }
+            return retval;
+        }
 
     }
 }

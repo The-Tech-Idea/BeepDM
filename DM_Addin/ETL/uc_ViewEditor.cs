@@ -72,9 +72,7 @@ namespace TheTechIdea.ETL
 
             branch = (IBranch)e.Objects.Where(c => c.Name == "Branch").FirstOrDefault().obj;
             RootAppBranch = (IBranch)e.Objects.Where(c => c.Name == "RootAppBranch").FirstOrDefault().obj;
-            this.dataSourcesBindingSource.DataSource = DMEEditor.DataSources;
-            this.dataConnectionsBindingSource.DataSource = DMEEditor.ConfigEditor.DataConnections;
-            entitiesBindingSource.DataSource = dataViewDataSourceBindingSource;
+           
             dataViewDataSourceBindingSource.AddingNew += DataViewDataSourceBindingSource_AddingNew;
            
             entitiesBindingSource.AddingNew += EntitiesBindingSource_AddingNew;
@@ -84,16 +82,14 @@ namespace TheTechIdea.ETL
                 this.ViewtypeComboBox.Items.Add(item);
 
             }
-            if (string.IsNullOrEmpty(e.CurrentEntity))
-            {
-                dataViewDataSourceBindingSource.AddNew();
-            }
-            else
-            {
+            
                 ds = (DataViewDataSource)DMEEditor.GetDataSource(e.CurrentEntity);
-                dataViewDataSourceBindingSource.DataSource = ds.Dataview;
+                ds.LoadView();
+                dataViewDataSourceBindingSource.DataSource = ds.DataView;
                 this.viewNameTextBox.Enabled = false;
-            }
+            this.dataSourcesBindingSource.DataSource = DMEEditor.DataSources;
+            this.dataConnectionsBindingSource.DataSource = DMEEditor.ConfigEditor.DataConnections;
+            entitiesBindingSource.DataSource = dataViewDataSourceBindingSource;
             this.entitiesDataGridView.DataError += EntitiesDataGridView_DataError;
             this.ChangeDatasourceButton.Click += ChangeDatasourceButton_Click;
         }
@@ -126,7 +122,7 @@ namespace TheTechIdea.ETL
                 this.dataViewDataSourceBindingSource.EndEdit();
                 DMEEditor.ConfigEditor.SaveDataconnectionsValues();
                 ds.DataView = (DMDataView)dataViewDataSourceBindingSource.Current;
-                ds.WriteDataViewFile(ds.Dataview.DataViewDataSourceID);
+                ds.WriteDataViewFile(ds.DataView.DataViewDataSourceID);
                 DMEEditor.AddLogMessage("Success", $"Saving View Data", DateTime.Now, 0, null, Errors.Ok);
                
             }

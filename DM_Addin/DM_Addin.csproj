@@ -128,6 +128,12 @@
     <Compile Include="Configuration\uc_QueryConfig.Designer.cs">
       <DependentUpon>uc_QueryConfig.cs</DependentUpon>
     </Compile>
+    <Compile Include="ETL\uc_DataEntityStructureViewer.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="ETL\uc_DataEntityStructureViewer.Designer.cs">
+      <DependentUpon>uc_DataEntityStructureViewer.cs</DependentUpon>
+    </Compile>
     <Compile Include="RDLCReport\DynamicReport.cs" />
     <Compile Include="RDLCReport\DynamicReport1.cs">
       <DependentUpon>DynamicReport.tt</DependentUpon>
@@ -365,6 +371,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Configuration\uc_QueryConfig.resx">
       <DependentUpon>uc_QueryConfig.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ETL\uc_DataEntityStructureViewer.resx">
+      <DependentUpon>uc_DataEntityStructureViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="RDLCReport\ReportForm.resx">
       <DependentUpon>ReportForm.cs</DependentUpon>

@@ -352,11 +352,11 @@ namespace TheTechIdea.Winforms.VIS
 
                 };
                 //ActionNeeded?.Invoke(this, Passedarguments);
-                Visutil.ShowUserControlPopUp("Uc_DataViewEntityEditor", DMEEditor, args, Passedarguments);
+                Visutil.ShowUserControlPopUp("uc_DataEntityStructureViewer", DMEEditor, args, Passedarguments);
 
 
 
-                DMEEditor.AddLogMessage("Success", "Edit Control Shown", DateTime.Now, 0, null, Errors.Ok);
+              //  DMEEditor.AddLogMessage("Success", "Edit Control Shown", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {

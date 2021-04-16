@@ -39,6 +39,7 @@ namespace TheTechIdea.DataManagment_Engine
         Type MakeGenericListofType(string typestring);
         List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype);
         DataRow ConvertItemClassToDataRow(EntityStructure ent);
+        List<EntityField> GetFieldFromGeneratedObject(object dt);
 
     }
 }

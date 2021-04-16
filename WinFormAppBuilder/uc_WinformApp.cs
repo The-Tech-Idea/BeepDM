@@ -143,7 +143,7 @@ namespace TheTechIdea.ETL
         {
             if (ds != null)
             {
-                List<EntityStructure> cr = ds.Dataview.Entities.Where(cx => (cx.Id > 1) && (cx.ParentId == startid)).ToList();
+                List<EntityStructure> cr = ds.DataView.Entities.Where(cx => (cx.Id > 1) && (cx.ParentId == startid)).ToList();
                 int i = 0;
                 foreach (EntityStructure tb in cr)
                 {
@@ -159,7 +159,7 @@ namespace TheTechIdea.ETL
                     {
                         parentnode.Nodes.Add(node);
                     }
-                    if (ds.Dataview.Entities.Any(o => o.ParentId == tb.Id))
+                    if (ds.DataView.Entities.Any(o => o.ParentId == tb.Id))
                     {
                         FillTree(tb.Id, v, node);
                     }
@@ -169,14 +169,14 @@ namespace TheTechIdea.ETL
             }
             else
             {
-                DMEEditor.Logger.WriteLog($"Could not Find DataView File " + ds.Dataview.DataViewDataSourceID);
+                DMEEditor.Logger.WriteLog($"Could not Find DataView File " + ds.DataView.DataViewDataSourceID);
             }
         }
         private void FillTreeFilterd(int startid, TreeView v, TreeNode parentnode = null)
         {
             if (ds != null)
             {
-                List<EntityStructure> cr = ds.Dataview.Entities.Where(cx => (cx.Id > 1) && (cx.ParentId == startid) && cx.EntityName.ToLower().Contains(SearchtextBox1.Text.ToLower())).ToList();
+                List<EntityStructure> cr = ds.DataView.Entities.Where(cx => (cx.Id > 1) && (cx.ParentId == startid) && cx.EntityName.ToLower().Contains(SearchtextBox1.Text.ToLower())).ToList();
                 int i = 0;
                 foreach (EntityStructure tb in cr)
                 {
@@ -191,7 +191,7 @@ namespace TheTechIdea.ETL
                     {
                         parentnode.Nodes.Add(node);
                     }
-                    if (ds.Dataview.Entities.Any(o => o.ParentId == tb.Id && o.EntityName.ToLower().Contains(SearchtextBox1.Text.ToLower())))
+                    if (ds.DataView.Entities.Any(o => o.ParentId == tb.Id && o.EntityName.ToLower().Contains(SearchtextBox1.Text.ToLower())))
                     {
                         FillTree(tb.Id, v, node);
                     }
@@ -201,7 +201,7 @@ namespace TheTechIdea.ETL
             }
             else
             {
-                DMEEditor.Logger.WriteLog($"Could not Find DataView File " + ds.Dataview.DataViewDataSourceID);
+                DMEEditor.Logger.WriteLog($"Could not Find DataView File " + ds.DataView.DataViewDataSourceID);
             }
         }
         #endregion
@@ -221,12 +221,12 @@ namespace TheTechIdea.ETL
                     Addin = null,
                     AddinName = null,
                     AddinType = "",
-                    DMView = ds.Dataview,
+                    DMView = ds.DataView,
                     CurrentEntity = EntityStructure.EntityName,
                     Id = EntityStructure.Id,
                     ObjectType = "CRUDENTITY",
                     DataSource = ds,
-                    ObjectName = ds.Dataview.ViewName,
+                    ObjectName = ds.DataView.ViewName,
                     Objects = ob,
                     DatasourceName = EntityStructure.DataSourceID,
                     EventType = "CRUDENTITY"

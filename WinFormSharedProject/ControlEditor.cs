@@ -1269,12 +1269,12 @@ namespace TheTechIdea.Winforms.VIS
         public void CreateEntityFilterControls(Control panel, EntityStructure entityStructure, List<DefaultValue> dsdefaults)
         {
            
-            BindingSource[]  BindingData = new BindingSource[entityStructure.Fields.Count - 1];
+            BindingSource[]  BindingData = new BindingSource[entityStructure.Fields.Count ];
             int maxlabelsize = 0;
             int maxDatasize = 0;
             foreach (EntityField col in entityStructure.Fields)
             {
-                int x = getTextSize(col.fieldname);
+                int x = getTextSize(col.fieldname.ToUpper());
                 if (maxlabelsize < x)
                     maxlabelsize = x;
             }
@@ -1284,7 +1284,7 @@ namespace TheTechIdea.Winforms.VIS
             var starth = 25;
             int startleft = maxlabelsize + 90;
             int valuewidth = 100;
-            for (int i = 0; i < entityStructure.Fields.Count - 1; i++)
+            for (int i = 0; i <= entityStructure.Fields.Count-1 ; i++)
             {
                 ReportFilter r = new ReportFilter();
                 r.FieldName = entityStructure.Fields[i].fieldname;
@@ -1313,12 +1313,12 @@ namespace TheTechIdea.Winforms.VIS
                         Left = 10,
                         AutoSize = false,
                         BorderStyle = BorderStyle.FixedSingle,
-                        Text = col.fieldname,
+                        Text = col.fieldname.ToUpper(),
                         BackColor = Color.White,
                         ForeColor = Color.Red
 
                     };
-                    l.Size = TextRenderer.MeasureText(col.fieldname, l.Font);
+                    l.Size = TextRenderer.MeasureText(col.fieldname.ToUpper(), l.Font);
                     l.Height += 10;
                     l.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
                     l.Width = maxlabelsize;

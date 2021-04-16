@@ -27,9 +27,9 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         public List<string> EntitiesNames { get ; set ; }
         public IDMEEditor DMEEditor { get ; set ; }
         public List<object> Records { get ; set ; }
-        public ConnectionState ConnectionStatus { get ; set ; }
+        public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; } set { }  }
         public DataTable SourceEntityData { get ; set ; }
-        public IDMDataView Dataview { get; set; } = new DMDataView();
+        public IDMDataView DataView { get; set; } = new DMDataView();
         public List<EntityStructure> Entities { get 
             {
                 if (DataView != null)
@@ -122,7 +122,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         //public IDataViewReader ViewReader { get; set; }
         string DataViewFile;
         string FileName;
-        public IDMDataView DataView { get; set; }
+      
         public bool FileLoaded { get; set; } = false;
         int EntityIndex { get; set; } = 0;
         IDataSource ds;
@@ -192,19 +192,19 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             try
             {
                
-                if (Dataview.Entities.Count <= 2)
+                if (DataView.Entities.Count <= 2)
                 {
                     LoadView();
                    
-                    if (Dataview.VID == null)
+                    if (DataView.VID == null)
                     {
                         VID = Guid.NewGuid().ToString();
                     }
-                    ViewName = Dataview.ViewName;
+                    ViewName = DataView.ViewName;
 
-                    Entities = Dataview.Entities;
+                    Entities = DataView.Entities;
                 }
-                foreach (EntityStructure i in Dataview.Entities.Where(x=>x.Id>1))
+                foreach (EntityStructure i in DataView.Entities.Where(x=>x.Id>1))
                 {
                     retval.Add(i.EntityName);
                 }
@@ -229,7 +229,35 @@ namespace TheTechIdea.DataManagment_Engine.DataView
        
         public object GetEntity(string EntityName, List<ReportFilter> filter)
         {
-            return GetDataSourceObject(EntityName).GetEntity(EntityName, filter);
+            EntityStructure ent = GetEntityStructure(EntityName);
+            string querystr = "";
+            object retval;
+            switch (ent.Viewtype)
+            {
+                case ViewType.Table:
+                    querystr = ent.EntityName;
+                    retval=GetDataSourceObject(EntityName).GetEntity(querystr, filter);
+                    break;
+                case ViewType.Query:
+                    querystr = ent.CustomBuildQuery;
+                    retval = GetDataSourceObject(EntityName).GetEntity(querystr, filter);
+                    //retval = GetDataSourceObject(EntityName).RunQuery(querystr);
+                    break;
+                case ViewType.Code:
+                    retval = null; 
+                    break;
+                case ViewType.File:
+                    retval = null;
+                    break;
+                case ViewType.Url:
+                    retval = null;
+                    break;
+                default:
+                    retval = null;
+                    break;
+            }
+
+            return retval;
         }
        
         public int EntityListIndex( string entityname)
@@ -255,20 +283,28 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                     ds.Dataconnection.OpenConnection();
                     if (ds.ConnectionStatus== ConnectionState.Open)
                     {
-                        if (dh.Viewtype == ViewType.Query)
+                        switch (dh.Viewtype)
                         {
-                            r = ds.GetEntityStructure(dh, true);
+                            case ViewType.Table:
+                                r= GetDataSourceObject(dh.EntityName).GetEntityStructure(dh, refresh);
+                                dh.Fields = r.Fields;
+                                dh.Relations = r.Relations;
+                                dh.PrimaryKeys = r.PrimaryKeys;
+                                break;
+                            case ViewType.Query:
+
+                            case ViewType.Code:
+
+                            case ViewType.File:
+
+                            case ViewType.Url:
+
+
+                            default:
+                                break;
 
                         }
-                        else
-                        {
-                            r = ds.GetEntityStructure(dh, true);
-                        }
-                        if (r != null)
-                        {
-                            dh.Fields = r.Fields;
-                            dh.Relations = r.Relations;
-                        }
+                        
                     }
                    
                 }
@@ -293,14 +329,58 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
         public Type GetEntityType(string entityname)
         {
-            return GetDataSourceObject(entityname).GetEntityType(entityname);
+            EntityStructure dh = Entities[EntityListIndex(entityname)];
+            Type retval;
+            switch (dh.Viewtype)
+            {
+                case ViewType.Table:
+                    retval=GetDataSourceObject(entityname).GetEntityType(entityname);
+                    break;
+                case ViewType.Query:
+
+                case ViewType.Code:
+
+                case ViewType.File:
+
+                case ViewType.Url:
+
+
+                default:
+                   
+                    DMTypeBuilder.CreateNewObject(entityname, entityname,dh.Fields);
+                    retval= DMTypeBuilder.myType;
+                    break;
+
+            }
+            return retval;
         }
 
      
 
         public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
-            return GetDataSourceObject(tablename).GetChildTablesList(tablename, SchemaName, Filterparamters);
+            EntityStructure dh = Entities[EntityListIndex(tablename)];
+           
+            switch (dh.Viewtype)
+            {
+                case ViewType.Table:
+                    return GetDataSourceObject(tablename).GetChildTablesList(tablename, SchemaName, Filterparamters);
+                    ;
+                case ViewType.Query:
+
+                case ViewType.Code:
+
+                case ViewType.File:
+
+                case ViewType.Url:
+
+
+                default:
+
+                    return null;
+                   
+            }
+            
         }
 
 
@@ -330,16 +410,17 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
         public IErrorsInfo ExecuteSql(string sql)
         {
-            if (ds.ConnectionStatus == ConnectionState.Open)
-            {
-                ds = DMEEditor.GetDataSource(DatasourceName);
-                return ds.ExecuteSql(sql);
-            }
-            else
-            {
-                DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
-            }
-                return DMEEditor.ErrorObject;
+            throw new NotImplementedException();
+            //if (ds.ConnectionStatus == ConnectionState.Open)
+            //{
+            //    ds = DMEEditor.GetDataSource(DatasourceName);
+            //    return ds.ExecuteSql(sql);
+            //}
+            //else
+            //{
+            //    DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
+            //}
+            //    return DMEEditor.ErrorObject;
              
         }
 
@@ -381,7 +462,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             EntityStructure dh = Entities.Where(x => string.Equals(x.EntityName, entityname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (dh==null)
             {
-                retval = DMEEditor.GetDataSource(Dataview.EntityDataSourceID);
+                retval = DMEEditor.GetDataSource(DataView.EntityDataSourceID);
             }
             else
             {
@@ -395,9 +476,9 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
          public  object RunQuery( string qrystr)
         {
-           
-            ds = DMEEditor.GetDataSource(DatasourceName);
-           return ds.RunQuery(qrystr);
+            throw new NotImplementedException();
+           // ds = DMEEditor.GetDataSource(DatasourceName);
+           //return ds.RunQuery(qrystr);
         }
         public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
         {
@@ -416,7 +497,25 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
-            return GetDataSourceObject(fnd.EntityName).GetEntityStructure(fnd, refresh);
+            switch (fnd.Viewtype)
+            {
+                case ViewType.Table:
+                    return GetDataSourceObject(fnd.EntityName).GetEntityStructure(fnd, refresh);
+                   
+                case ViewType.Query:
+                  
+                case ViewType.Code:
+                   
+                case ViewType.File:
+                    
+                case ViewType.Url:
+                   
+                   
+                default:
+                    return Entities[EntityListIndex(fnd.EntityName)];
+                   
+            }
+           
         }
         public LScript RunScript(LScript dDLScripts)
         {
@@ -865,6 +964,31 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         }
         #endregion  "View Generating Methods"
         #region "Misc and Util Methods"
+        public string GeticonForViewType(ViewType v)
+        {
+            string iconname = "entity.ico";
+            switch (v)
+            {
+                case ViewType.Table:
+                    iconname = "entity.ico";
+                    break;
+                case ViewType.Query:
+                    iconname = "sqlicon.ico";
+                    break;
+                case ViewType.Code:
+                    iconname = "codeicon.ico";
+                    break;
+                case ViewType.File:
+                    iconname = "fileicon.ico";
+                    break;
+                case ViewType.Url:
+                    iconname = "linkicon.ico";
+                    break;
+                default:
+                    break;
+            }
+            return iconname;
+        }
         private EntityStructure GetEntityStructure(IDMDataView v, List<EntityStructure> Rootnamespacelist, string childtable, string parenttable, string childcolumn, string parentcolumn, int pid)
         {
 
@@ -1082,7 +1206,16 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         #region Read/write Views to file
         public void WriteDataViewFile(string filename)
         {
-            string path = Path.Combine(DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.DataView).FirstOrDefault().FolderPath, $"{filename}");
+            string path;
+            if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.FilePath)|| !string.IsNullOrWhiteSpace(Dataconnection.ConnectionProp.FilePath))
+            {
+                path = Path.Combine(Dataconnection.ConnectionProp.FilePath, $"{filename}");
+            }
+            else
+            {
+                path = Path.Combine(DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.DataView).FirstOrDefault().FolderPath, $"{filename}");
+            }
+             
             DMEEditor.ConfigEditor.JsonLoader.Serialize(path, DataView);
 
         }
@@ -1100,15 +1233,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
 
         }
-        public IDMDataView ReadDataViewFile(string path, string filename)
-        {
-
-            string name = Path.Combine(path, filename);
-            // String JSONtxt = File.ReadAllText(name);
-            return ReadDataViewFile(name);
-
-
-        }
+      
         public IErrorsInfo LoadView()
         {
             try

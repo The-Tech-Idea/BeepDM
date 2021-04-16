@@ -90,30 +90,6 @@
     <Compile Include="uc_WinformApp.Designer.cs">
       <DependentUpon>uc_WinformApp.cs</DependentUpon>
     </Compile>
-    <Compile Include="UserControls\uc_filtercontrol.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="UserControls\uc_filtercontrol.Designer.cs">
-      <DependentUpon>uc_filtercontrol.cs</DependentUpon>
-    </Compile>
-    <Compile Include="UserControls\uc_getentities.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="UserControls\uc_getentities.Designer.cs">
-      <DependentUpon>uc_getentities.cs</DependentUpon>
-    </Compile>
-    <Compile Include="UserControls\uc_Insertentity.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="UserControls\uc_Insertentity.Designer.cs">
-      <DependentUpon>uc_Insertentity.cs</DependentUpon>
-    </Compile>
-    <Compile Include="UserControls\uc_updateentity.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="UserControls\uc_updateentity.Designer.cs">
-      <DependentUpon>uc_updateentity.cs</DependentUpon>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DataManagmentModels\DataManagmentModels.csproj">
@@ -144,18 +120,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="uc_WinformApp.resx">
       <DependentUpon>uc_WinformApp.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="UserControls\uc_filtercontrol.resx">
-      <DependentUpon>uc_filtercontrol.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="UserControls\uc_getentities.resx">
-      <DependentUpon>uc_getentities.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="UserControls\uc_Insertentity.resx">
-      <DependentUpon>uc_Insertentity.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="UserControls\uc_updateentity.resx">
-      <DependentUpon>uc_updateentity.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -209,6 +173,9 @@
     <Content Include="SqlServerTypes\x86\SqlServerSpatial140.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="UserControls\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
