@@ -41,7 +41,11 @@ namespace TheTechIdea.Winforms.VIS
             if (pID != 0)
 
             {
-                ID = DataViewID;
+                if (ds != null)
+                { ID = ds.DataView.ViewID; }
+                else
+                    ID = pID;
+                   
                 BranchID = pID;
             }
         }
@@ -72,24 +76,20 @@ namespace TheTechIdea.Winforms.VIS
         {
             get
             {
-                return ds.DataView;
+                if (ds != null)
+                {
+                    return ds.DataView;
+                }
+                else
+                    return null;
+               
             }
             set
             {
                 ds.DataView = value;
             }
         }
-        int DataViewID
-        {
-            get
-            {
-                return ds.DataView.ViewID;
-            }
-            set
-            {
-                ds.DataView.ViewID = value;
-            }
-        }
+        
        // public event EventHandler<PassedArgs> BranchSelected;
        // public event EventHandler<PassedArgs> BranchDragEnter;
        // public event EventHandler<PassedArgs> BranchDragDrop;

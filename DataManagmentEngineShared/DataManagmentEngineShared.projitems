@@ -36,7 +36,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\EventList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\ViewModelBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Report\ReportOutput.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Tools\AssemblyHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\ClassCreator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\NothingToDo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\Prerequisites.cs" />

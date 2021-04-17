@@ -7,8 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Addin\arm64\WebView2Loader.dll" />
     <None Remove="Addin\HereweAddAllAddin.txt" />
     <None Remove="Addin\HereweAddAllPlugins.txt" />
+    <None Remove="Addin\Microsoft.Web.WebView2.Core.dll" />
+    <None Remove="Addin\Microsoft.Web.WebView2.WinForms.dll" />
+    <None Remove="Addin\Microsoft.Web.WebView2.Wpf.dll" />
+    <None Remove="Addin\x64\WebView2Loader.dll" />
+    <None Remove="Addin\x86\WebView2Loader.dll" />
     <None Remove="config\AddinTreeStructure.json" />
     <None Remove="config\Apps.json" />
     <None Remove="config\CategoryFolders.json" />
@@ -28,12 +34,9 @@
     <None Remove="config\ObjectTypes.json" />
     <None Remove="config\QueryList.json" />
     <None Remove="config\reports.json" />
-    <None Remove="ConnectionDrivers\arm64\WebView2Loader.dll" />
     <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.Core.dll" />
     <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.WinForms.dll" />
     <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.Wpf.dll" />
-    <None Remove="ConnectionDrivers\x64\WebView2Loader.dll" />
-    <None Remove="ConnectionDrivers\x86\WebView2Loader.dll" />
     <None Remove="DataFiles\Alaska.sdf" />
     <None Remove="DataFiles\etl.s3db" />
     <None Remove="DataFiles\firebirddb.fdb" />
@@ -347,10 +350,28 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Addin\arm64\WebView2Loader.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Addin\HereweAddAllAddin.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Addin\HereweAddAllPlugins.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Addin\Microsoft.Web.WebView2.Core.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Addin\Microsoft.Web.WebView2.WinForms.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Addin\Microsoft.Web.WebView2.Wpf.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Addin\x64\WebView2Loader.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Addin\x86\WebView2Loader.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="config\AddinTreeStructure.json">
@@ -408,15 +429,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="config\reports.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ConnectionDrivers\Microsoft.Web.WebView2.Core.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ConnectionDrivers\Microsoft.Web.WebView2.WinForms.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ConnectionDrivers\Microsoft.Web.WebView2.Wpf.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="DataFiles\Alaska.sdf">
@@ -1368,18 +1380,6 @@
 
   <ItemGroup>
     <Folder Include="OtherDLL\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="ConnectionDrivers\arm64\WebView2Loader.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ConnectionDrivers\x64\WebView2Loader.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ConnectionDrivers\x86\WebView2Loader.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
 </Project>

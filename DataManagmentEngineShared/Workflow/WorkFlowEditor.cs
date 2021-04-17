@@ -156,7 +156,7 @@ namespace TheTechIdea.DataManagment_Engine.Workflow
                 {
                     WorkFlowStep step = CurrnetWorkFlow.Datasteps[i];
                     AssemblyClassDefinition action = DMEEditor.WorkFlowEditor.WorkFlowActions.Where(x => x.className == step.ActionName).FirstOrDefault();
-                     flowAction = (IWorkFlowActionClassImplementation)DMEEditor.Utilfunction.GetInstance(action.PackageName);
+                     flowAction = (IWorkFlowActionClassImplementation)DMEEditor.assemblyHandler.GetInstance(action.PackageName);
                     flowAction.InParameters = new List<IPassedArgs>();
                     flowAction.OutParameters = new List<IPassedArgs>();
                     flowAction.DMEEditor = DMEEditor;

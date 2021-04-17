@@ -469,7 +469,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                 foreach (AssemblyClassDefinition cls in DMEEditor.ConfigEditor.BranchesClasses.OrderBy(x => x.Order))
                 {
-                    Type adc = DMEEditor.assemblyHandler.GetType(cls.PackageName);
+                    Type adc = DMEEditor.AssemblyHandler.GetType(cls.PackageName);
                     ConstructorInfo ctor = adc.GetConstructors().First();
                     ObjectActivator<IBranch> createdActivator = GetActivator<IBranch>(ctor);
                     try

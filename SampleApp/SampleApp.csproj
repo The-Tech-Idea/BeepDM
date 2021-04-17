@@ -1608,6 +1608,10 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Assembly_helpers\Assembly_helpers.csproj">
+      <Project>{e987ec5e-563c-48d9-932f-1dfbc545752d}</Project>
+      <Name>Assembly_helpers</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DataManagmentModels\DataManagmentModels.csproj">
       <Project>{7697ebdc-a4f2-49b1-af91-79031516e679}</Project>
       <Name>DataManagmentModels</Name>

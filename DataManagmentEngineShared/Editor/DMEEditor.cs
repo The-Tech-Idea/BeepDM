@@ -31,6 +31,7 @@ namespace TheTechIdea.DataManagment_Engine
         public IConfigEditor ConfigEditor { get; set; }
         public IDataTypesHelper typesHelper { get; set; }
         public IUtil Utilfunction { get; set; }
+        public IAssemblyHandler assemblyHandler { get; set; }
         public IErrorsInfo ErrorObject { get; set; }
         public IDMLogger Logger { get; set; }
         public IWorkFlowEditor WorkFlowEditor { get; set; }
@@ -180,7 +181,7 @@ namespace TheTechIdea.DataManagment_Engine
                 {
                     string packagename = ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
                     //  Type adc = Type.GetType(packagename);
-                    Type adc = Utilfunction.GetType(packagename);
+                    Type adc = assemblyHandler.GetType(packagename);
                     ConstructorInfo ctor = adc.GetConstructors().First();
                     ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
                     //create an instance:
@@ -250,7 +251,7 @@ namespace TheTechIdea.DataManagment_Engine
             {
                 string packagename = ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
                 //  Type adc = Type.GetType(packagename);
-                Type adc = Utilfunction.GetType(packagename);
+                Type adc = assemblyHandler.GetType(packagename);
                 ConstructorInfo ctor = adc.GetConstructors().First();
                 ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
                 //create an instance:
@@ -302,7 +303,7 @@ namespace TheTechIdea.DataManagment_Engine
                  package = ConfigEditor.DataDrivers.Where(x => x.classHandler == ClassDBHandlerName).FirstOrDefault();
                 string packagename = ConfigEditor.DataSources.Where(x => x.className == package.classHandler).FirstOrDefault().PackageName;
 
-                Type adc = Utilfunction.GetType(packagename);
+                Type adc = assemblyHandler.GetType(packagename);
                 ConstructorInfo ctor = adc.GetConstructors().First();
                 ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
 

@@ -138,7 +138,7 @@ namespace TheTechIdea.ETL
             if (!string.IsNullOrEmpty(generatorNameComboBox.Text))
             {
                 string pkname = generatorNameComboBox.SelectedValue.ToString();
-                IAppBuilder appBuilder = (IAppBuilder)DMEEditor.Utilfunction.GetInstance(pkname);
+                IAppBuilder appBuilder = (IAppBuilder)DMEEditor.assemblyHandler.GetInstance(pkname);
                 if (appBuilder != null)
                 {
                     if (appBuilder.IOS)

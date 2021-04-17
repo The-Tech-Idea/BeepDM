@@ -312,7 +312,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
                     if (DMEEditor.ConfigEditor.AppWritersClasses.Where(o => o.className == AppVersion.GeneratorName).Any())
                     {
                         string pkname = DMEEditor.ConfigEditor.AppWritersClasses.Where(o => o.className == AppVersion.GeneratorName).FirstOrDefault().PackageName;
-                        IAppBuilder appBuilder = (IAppBuilder)DMEEditor.Utilfunction.GetInstance(pkname);
+                        IAppBuilder appBuilder = (IAppBuilder)DMEEditor.assemblyHandler.GetInstance(pkname);
                         appBuilder.BuildApp(DMEEditor, Passedarguments);
                         DMEEditor.AddLogMessage("Success", "Edit Control Shown", DateTime.Now, 0, null, Errors.Ok);
                     }

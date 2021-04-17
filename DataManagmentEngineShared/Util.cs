@@ -33,45 +33,45 @@ namespace TheTechIdea.DataManagment_Engine
 
         public IErrorsInfo ErrorObject { get; set; }
         public IDMEEditor DME { get; set; }
-        public object GetInstance(string strFullyQualifiedName)
-        {
-            Type type = Type.GetType(strFullyQualifiedName);
-            if (type != null)
-                return Activator.CreateInstance(type);
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                type = asm.GetType(strFullyQualifiedName);
-                if (type != null)
-                    return Activator.CreateInstance(type);
-            }
-            return null;
-        }
-        public Type GetType(string strFullyQualifiedName)
-        {
-            Type type = Type.GetType(strFullyQualifiedName);
-            if (type != null)
-                return type;
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                type = asm.GetType(strFullyQualifiedName);
-                if (type != null)
-                    return type;
-            }
-            return null;
-        }
-        public dynamic GetTypeFromString(string strFullyQualifiedName)
-        {
-            Type type = Type.GetType(strFullyQualifiedName);
-            if (type != null)
-                return type;
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                type = asm.GetType(strFullyQualifiedName);
-                if (type != null)
-                    return type;
-            }
-            return null;
-        }
+        //public object GetInstance(string strFullyQualifiedName)
+        //{
+        //    Type type = Type.GetType(strFullyQualifiedName);
+        //    if (type != null)
+        //        return Activator.CreateInstance(type);
+        //    foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        //    {
+        //        type = asm.GetType(strFullyQualifiedName);
+        //        if (type != null)
+        //            return Activator.CreateInstance(type);
+        //    }
+        //    return null;
+        //}
+        //public Type GetType(string strFullyQualifiedName)
+        //{
+        //    Type type = Type.GetType(strFullyQualifiedName);
+        //    if (type != null)
+        //        return type;
+        //    foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        //    {
+        //        type = asm.GetType(strFullyQualifiedName);
+        //        if (type != null)
+        //            return type;
+        //    }
+        //    return null;
+        //}
+        //public dynamic GetTypeFromString(string strFullyQualifiedName)
+        //{
+        //    Type type = Type.GetType(strFullyQualifiedName);
+        //    if (type != null)
+        //        return type;
+        //    foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        //    {
+        //        type = asm.GetType(strFullyQualifiedName);
+        //        if (type != null)
+        //            return type;
+        //    }
+        //    return null;
+        //}
         public ConnectionDriversConfig LinkConnection2Drivers(IConnectionProperties cn)
         {
 

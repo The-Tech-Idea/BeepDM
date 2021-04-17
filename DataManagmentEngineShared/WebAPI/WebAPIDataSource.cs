@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using System.Data;
@@ -31,7 +30,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
         public IDMEEditor DMEEditor { get; set; }
         public List<object> Records { get; set; }
         public ConnectionState ConnectionStatus { get; set; }
-        public DataTable SourceEntityData { get; set; }
+       // public DataTable SourceEntityData { get; set; }
        // IHttpClientFactory ClientFactory;
         public HttpClient client { get; set; } = new HttpClient();
 

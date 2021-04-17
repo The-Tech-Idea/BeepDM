@@ -340,11 +340,11 @@ if (this.Session.ContainsKey("Model"))
 }
 if ((ModelValueAcquired == false))
 {
-    object data = global::System.Runtime.Remoting.Messaging.CallContext.LogicalGetData("Model");
-    if ((data != null))
-    {
+                    object data = null;// global::System.Runtime.Remoting.Messaging.CallContext.LogicalGetData("Model");
+    //if ((data != null))
+    //{
         this._ModelField = ((global::System.Collections.Generic.List<ReportColumn>)(data));
-    }
+    //}
 }
 
 

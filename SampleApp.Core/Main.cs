@@ -9,6 +9,7 @@ using TheTechIdea.Util;
 using TheTechIdea.Tools;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.Tools.AssemblyHandling;
 
 namespace DataManagment_Engine
 
@@ -45,7 +46,7 @@ namespace DataManagment_Engine
             Builder.RegisterType<ControlEditor>().As<IControlEditor>().SingleInstance();
             Builder.RegisterType<VisUtil>().As<IVisUtil>().SingleInstance();
             Builder.RegisterType<JsonLoader>().As<IJsonLoader>().SingleInstance();
-            Builder.RegisterType<AssemblyHandler>().As<IAssemblyHandler>().SingleInstance();
+            Builder.RegisterType<AssemblyHandlerCore>().As<IAssemblyHandler>().SingleInstance();
             Builder.RegisterType<ClassCreator>().As<IClassCreator>().SingleInstance();
             Builder.RegisterType<ETL>().As<IETL>().SingleInstance();
             return Builder.Build();
@@ -101,8 +102,8 @@ namespace DataManagment_Engine
                 //---------------------------------------------------------------------------
                 // LLoader = scope.Resolve<IAssemblyLoader>();
                 LLoader = scope.Resolve<IAssemblyHandler>();
-             //   LLoader.DMEEditor = DMEEditor;
-               // util.DME = DMEEditor;
+                LLoader.DMEEditor = DMEEditor;
+                DMEEditor.assemblyHandler = LLoader;
                 //-------------------------------------------------------------------------------
                 // The Main Visualization Class tha control the visual aspect of the system
                 //---------------------------------------------------------------------------

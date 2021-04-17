@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using TheTechIdea.DataManagment_Engine.Vis;
+//using TheTechIdea.DataManagment_Engine.Vis;
 
 namespace TheTechIdea.Util
 {
@@ -68,7 +68,7 @@ namespace TheTechIdea.Util
         public int Order { get; set; } = 0;
         public string Imagename { get; set; }
         public string RootName { get; set; }
-        public EnumBranchType BranchType { get; set; }
+        //public EnumBranchType BranchType { get; set; }
         public Type type { get; set; }
         public List<MethodsClass> Methods { get; set; } = new List<MethodsClass>();
     }

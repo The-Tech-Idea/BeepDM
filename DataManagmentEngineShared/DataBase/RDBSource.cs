@@ -2157,9 +2157,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 string adtype = Dataconnection.DataSourceDriver.AdapterType;
                 string cmdtype = Dataconnection.DataSourceDriver.CommandBuilderType;
                 string cmdbuildername = driversConfig.CommandBuilderType;
-                Type adcbuilderType = DMEEditor.Utilfunction.GetTypeFromString(cmdbuildername);
-                List<ConstructorInfo> lsc = DMEEditor.Utilfunction.GetInstance(adtype).GetType().GetConstructors().ToList(); ;
-                List<ConstructorInfo> lsc2 = DMEEditor.Utilfunction.GetInstance(cmdbuildername).GetType().GetConstructors().ToList(); ;
+                Type adcbuilderType = DMEEditor.assemblyHandler.GetType(cmdbuildername);
+                List<ConstructorInfo> lsc = DMEEditor.assemblyHandler.GetInstance(adtype).GetType().GetConstructors().ToList(); ;
+                List<ConstructorInfo> lsc2 = DMEEditor.assemblyHandler.GetInstance(cmdbuildername).GetType().GetConstructors().ToList(); ;
 
                 ConstructorInfo ctor = lsc[GetCtorForAdapter(lsc)];
                 ConstructorInfo BuilderConstructer = lsc2[GetCtorForCommandBuilder(adcbuilderType.GetConstructors().ToList())];

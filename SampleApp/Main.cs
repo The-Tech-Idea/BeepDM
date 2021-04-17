@@ -79,14 +79,7 @@ namespace DataManagment_Engine
                 //---------------------------------------------------------------------------
                 Config_editor = scope.Resolve<IConfigEditor>();
              
-                // Setup the Entry Screen 
-                // the screen has to be in one the Addin DLL's loaded by the Assembly loader
-
-                if (Config_editor.Config.SystemEntryFormName == null)
-                {
-                    Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
-
-                }
+              
                 // Setup the Database Connection Screen
                 // a "Work Flow" class will control all the workflow between different data source 
                 // and automation
@@ -101,8 +94,9 @@ namespace DataManagment_Engine
                 //---------------------------------------------------------------------------
                 // LLoader = scope.Resolve<IAssemblyLoader>();
                 LLoader = scope.Resolve<IAssemblyHandler>();
-             //   LLoader.DMEEditor = DMEEditor;
-               // util.DME = DMEEditor;
+                LLoader.DMEEditor = DMEEditor;
+                DMEEditor.assemblyHandler = LLoader;
+               
                 //-------------------------------------------------------------------------------
                 // The Main Visualization Class tha control the visual aspect of the system
                 //---------------------------------------------------------------------------
@@ -126,6 +120,14 @@ namespace DataManagment_Engine
                 };
                 LLoader.LoadAllAssembly();
                 Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
+                // Setup the Entry Screen 
+                // the screen has to be in one the Addin DLL's loaded by the Assembly loader
+
+                if (Config_editor.Config.SystemEntryFormName == null)
+                {
+                    Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
+
+                }
                 vis.ShowMainDisplayForm();
                 //if (DMEEditor.ErrorObject.Flag== Errors.Failed)
                 //{

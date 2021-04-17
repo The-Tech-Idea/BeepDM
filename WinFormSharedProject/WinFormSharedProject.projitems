@@ -15,10 +15,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Controls\RoundButton.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Controls\RoundPanel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Controls\RoundPicture.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)IControlEditor.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ITreeView.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)IVisUtil.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)IWinFormAddin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\AddinVisSchema.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IControlEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\ITreeView.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IVisUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IWinFormAddin.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ReportEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ReportGenrerator\DGVPrinter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ReportGenrerator\GenReportusingPrintForm.cs" />
@@ -28,6 +29,16 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)SelectedNodes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VisUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IAddinVisSchema.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranch.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranchID.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranchRootCategory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IDisplayPanel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\INode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IOrder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\ITree.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\MenuItemAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\VisEnums.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)ReportGenrerator\uc_ReportPreview.resx">

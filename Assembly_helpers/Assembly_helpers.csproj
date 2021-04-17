@@ -75,7 +75,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assembly_Handler.cs" />
+    <Compile Include="AssemblyHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -85,6 +85,20 @@
   <ItemGroup>
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.3.0.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.3.0.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DataManagmentModels\DataManagmentModels.csproj">
+      <Project>{7697ebdc-a4f2-49b1-af91-79031516e679}</Project>
+      <Name>DataManagmentModels</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj">
+      <Project>{45983087-5e0e-4bfb-86c1-a5bc54d2a86f}</Project>
+      <Name>DataManagmentEngine</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DM_VIS\Winform.csproj">
+      <Project>{0246f046-95c7-4713-b6d7-4ae829600c39}</Project>
+      <Name>Winform</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

@@ -202,7 +202,7 @@ namespace TheTechIdea.ETL
                 string projectData = DMEEditor.ConfigEditor.Config.Folders.Where(h => h.FolderFilesType == FolderFileTypes.ProjectData).FirstOrDefault().FolderPath;
                 if (!string.IsNullOrEmpty(this.packageNameComboBox.Text))
                 {
-                    IReportDMWriter report = (IReportDMWriter)DMEEditor.Utilfunction.GetInstance(this.packageNameComboBox.SelectedValue.ToString());
+                    IReportDMWriter report = (IReportDMWriter)DMEEditor.assemblyHandler.GetInstance(this.packageNameComboBox.SelectedValue.ToString());
                     report.Definition = (IReportDefinition)this.reportsBindingSource.Current;
                     report.DMEEditor = DMEEditor;
                     report.RunReport((ReportType)Enum.Parse(typeof(ReportType), this.ReportOutPutTypecomboBox.Text), Path.Combine(projectData, this.nameTextBox.Text + "." + this.ReportOutPutTypecomboBox.Text));

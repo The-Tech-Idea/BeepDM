@@ -24,6 +24,7 @@ namespace TheTechIdea.DataManagment_Engine
         IConfigEditor ConfigEditor { get; set; }
         IWorkFlowEditor WorkFlowEditor { get; set; }
         IClassCreator classCreator { get; set; }
+        IAssemblyHandler assemblyHandler { get; set; }
         BindingList<ILogAndError> Loganderrors { get; set; }
         PassedArgs Passedarguments { get; set; }
         LScriptHeader Script { get; set; }

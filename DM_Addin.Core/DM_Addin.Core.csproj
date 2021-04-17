@@ -25,8 +25,11 @@
 	<EmbeddedResource Remove="..\DM_Addin\Properties\**" />
 </ItemGroup>
 <ItemGroup>
-  <PackageReference Include="Microsoft.ReportingServices.ReportViewerControl.Winforms" Version="150.1449.0" />
+  <Compile Remove="..\DM_Addin\RDLCReport\DynamicReport1.cs" />
+</ItemGroup>
+<ItemGroup>
   <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.774.44" />
+  <PackageReference Include="ReportViewerCore.WinForms" Version="15.1.13" />
 </ItemGroup>
 	<Target Name="CopyTarget" AfterTargets="Build">
 		<ItemGroup>

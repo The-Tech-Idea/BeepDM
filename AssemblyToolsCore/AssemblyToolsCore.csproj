@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net5.0-windows</TargetFramework>
     <RootNamespace>TheTechIdea.Tools.AssemblyHandling</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+    <ProjectReference Include="..\WinformCore\WinformCore.csproj" />
   </ItemGroup>
 
 </Project>

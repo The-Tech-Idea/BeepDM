@@ -25,13 +25,13 @@ namespace TheTechIdea.DataManagment_Engine
         DataTable CreateDataTableVer2(object[] arr);
         DataTable CreateDataTableFromFile(string strFilePath);
         string GetRelativePath(string fromPath, string toPath);
-        object GetInstance(string strFullyQualifiedName);
+      //  object GetInstance(string strFullyQualifiedName);
        
-        Type GetType(string strFullyQualifiedName);
+       // Type GetType(string strFullyQualifiedName);
         List<object> GetListByDataTable(DataTable dt, Type type, EntityStructure enttype);
      //   List<ExpandoObject> GetExpandoObject(DataTable dt, Type type, EntityStructure enttype);
         ConnectionDriversConfig LinkConnection2Drivers(IConnectionProperties cn);
-        dynamic GetTypeFromString(string strFullyQualifiedName);
+       // dynamic GetTypeFromString(string strFullyQualifiedName);
         EntityStructure GetEntityStructure(DataTable tb);
         bool Download(string url, string downloadFileName, string downloadFilePath);
         Type GetTypeFromStringValue(string str);
