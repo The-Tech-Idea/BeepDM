@@ -9,6 +9,7 @@ using TheTechIdea.Util;
 using TheTechIdea.Tools;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.DataManagment_Engine.Vis;
 
 namespace DataManagment_Engine
 
@@ -28,7 +29,7 @@ namespace DataManagment_Engine
         public IJsonLoader jsonLoader { get; set; }
         public IAssemblyHandler LLoader { get; set; }
         public IControlEditor Controleditor { get; set; }
-     
+        public ITree tree { get; set; }
         public IClassCreator classCreator { get; set; }
         public IETL eTL { get; set; }
         #endregion
@@ -48,6 +49,7 @@ namespace DataManagment_Engine
             Builder.RegisterType<AssemblyHandler>().As<IAssemblyHandler>().SingleInstance();
             Builder.RegisterType<ClassCreator>().As<IClassCreator>().SingleInstance();
             Builder.RegisterType<ETL>().As<IETL>().SingleInstance();
+            Builder.RegisterType<Tree>().As<ITree>().SingleInstance();
             return Builder.Build();
         }
         public MainApp()
@@ -101,6 +103,12 @@ namespace DataManagment_Engine
                 // The Main Visualization Class tha control the visual aspect of the system
                 //---------------------------------------------------------------------------
                 vis = scope.Resolve<IVisUtil>();
+                vis = scope.Resolve<IVisUtil>();
+                tree = scope.Resolve<ITree>();
+                vis.treeEditor = tree;
+                ITreeView treeView = (ITreeView)tree;
+                treeView.Visutil = vis;
+                tree.DMEEditor = DMEEditor;
                 //-------------------------------------------------------------------------------
                 // this Editor will help Generate user controls for visulization
                 Controleditor = scope.Resolve<IControlEditor>();

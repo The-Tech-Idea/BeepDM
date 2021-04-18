@@ -14,6 +14,7 @@ using TheTechIdea.Logger;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.Util;
 using TheTechIdea;
+using TheTechIdea.DataManagment_Engine.Vis;
 
 namespace TheTechIdea.CRUD
 {

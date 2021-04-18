@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TheTechIdea.Winforms.VIS
+namespace TheTechIdea.DataManagment_Engine.Vis
 {
     public interface IWinFormAddin
     {

@@ -218,10 +218,8 @@ Global
 		WinFormSharedProject\WinFormSharedProject.projitems*{0246f046-95c7-4713-b6d7-4ae829600c39}*SharedItemsImports = 4
 		DataManagementModelsShared\DataManagementModelsShared.projitems*{2f745b0a-b2f4-4eb8-9a8e-5a87b2988f99}*SharedItemsImports = 13
 		DataManagmentEngineShared\DataManagmentEngineShared.projitems*{45983087-5e0e-4bfb-86c1-a5bc54d2a86f}*SharedItemsImports = 4
-		WinFormSharedProject\WinFormSharedProject.projitems*{68460082-d9cc-414d-bd77-57c65c79ee18}*SharedItemsImports = 5
 		DataManagementModelsShared\DataManagementModelsShared.projitems*{7697ebdc-a4f2-49b1-af91-79031516e679}*SharedItemsImports = 4
 		WinFormSharedProject\WinFormSharedProject.projitems*{8ef815e8-01cc-47de-add4-739141499fef}*SharedItemsImports = 13
-		WinformVisualObjectsShared\WinformVisualObjectsShared.projitems*{9962cf4e-f867-4536-bf00-b234db8848df}*SharedItemsImports = 5
 		DataManagmentEngineShared\DataManagmentEngineShared.projitems*{b5d91583-1eb4-4b3c-8288-88fd13e35556}*SharedItemsImports = 13
 		WinformVisualObjectsShared\WinformVisualObjectsShared.projitems*{b766292b-356a-4e5d-802f-cb04a7bf084d}*SharedItemsImports = 4
 	EndGlobalSection

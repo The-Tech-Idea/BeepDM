@@ -535,7 +535,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                             p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
                             //-------------------------------------------------------
                             // Get DataBase Drivers
-                            if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
+                            if (type.ImplementedInterfaces.Where(i => i.Name == "IDataSource").Any() )
                             {
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
                                 xcls.className = type.Name;
@@ -546,7 +546,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                             }
                             //-------------------------------------------------------
                             // Get WorkFlow Definitions
-                            if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
+                            if (type.ImplementedInterfaces.Where(i => i.Name == "IWorkFlowAction").Any() )
                             {
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
                                 xcls.className = type.Name;
@@ -556,7 +556,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                             }
                             //-------------------------------------------------------
                             // Get IAppBuilder  Definitions
-                            if (type.ImplementedInterfaces.Contains(typeof(IAppBuilder)))
+                            if (type.ImplementedInterfaces.Where(i => i.Name == "IAppBuilder").Any() )
                             {
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
                                 xcls.className = type.Name;
@@ -566,7 +566,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                             }
                             //-------------------------------------------------------
                             // Get Reports Implementations Definitions
-                            if (type.ImplementedInterfaces.Contains(typeof(IReportDMWriter)))
+                            if (type.ImplementedInterfaces.Where(i => i.Name == "IReportDMWriter").Any())
                             {
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
                                 xcls.className = type.Name;
@@ -576,7 +576,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                             }
                             //-------------------------------------------------------
                             // Get IBranch Definitions //IAddinVisSchema
-                            if (type.ImplementedInterfaces.Contains(typeof(IBranch)) )
+                            if (type.ImplementedInterfaces.Where(i=>i.Name=="IBranch").Any() )
                             {
 
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
@@ -602,7 +602,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                     x.DoubleClick = methodAttribute.DoubleClick;
                                     xcls.Methods.Add(x);
                                 }
-                                if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
+                                if (type.ImplementedInterfaces.Where(i => i.Name == "IOrder").Any() )
                                 {
                                     try
                                     {
@@ -621,7 +621,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                             }
                             // --- Get all AI app Interfaces
                             //-----------------------------------------------------
-                            if (type.ImplementedInterfaces.Contains(typeof(IAAPP)))
+                            if (type.ImplementedInterfaces.Where(i => i.Name == "IAAPP").Any() )
                             {
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
                                 xcls.Methods = new List<MethodsClass>();
@@ -704,7 +704,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                     x.DoubleClick = methodAttribute.DoubleClick;
                                     xcls.Methods.Add(x);
                                 }
-                                if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
+                                if (type.ImplementedInterfaces.Where(i => i.Name == "IOrder").Any())
                                 {
                                     try
                                     {

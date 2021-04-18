@@ -11,8 +11,8 @@ using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
-using TheTechIdea.Winforms.VIS;
 
+using TheTechIdea.DataManagment_Engine.Vis;
 namespace TheTechIdea.Configuration
 {
     public partial class uc_datasourceDefaults : UserControl, IDM_Addin

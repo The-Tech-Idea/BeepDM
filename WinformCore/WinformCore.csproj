@@ -6,8 +6,14 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>TheTechIdea.Winforms.VIS</RootNamespace>
   </PropertyGroup>
-
+  
   <ItemGroup>
+    <Compile Include="..\WinFormSharedProject\**\*.cs" />
+    <EmbeddedResource Include="..\WinFormSharedProject\**\*.resx" />
+    <Compile Remove="..\WinFormSharedProject\Tree\**" />
+    <Compile Remove="..\WinFormSharedProject\DisplayPanel.cs" />
+    <Compile Remove="..\WinFormSharedProject\ITreeEditor.cs" />
+    <Compile Remove="..\WinFormSharedProject\TreeEditor_Notused.cs" />
     <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
   </ItemGroup>
 <Target Name="CopyTarget" AfterTargets="Build">
@@ -17,5 +23,4 @@
 		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\netcoreapp3.1\ProjectClasses" SkipUnchangedFiles="true" />
 	</Target>
-<Import Project="..\WinFormSharedProject\WinFormSharedProject.projitems" Label="Shared" />
 </Project>

@@ -7,8 +7,9 @@ using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Logger;
 using TheTechIdea.Tools;
 using TheTechIdea.Util;
+using TheTechIdea.Winforms.VIS;
 
-namespace TheTechIdea.Winforms.VIS
+namespace TheTechIdea.DataManagment_Engine.Vis
 {
     public interface IVisUtil
     {

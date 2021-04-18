@@ -63,20 +63,23 @@ namespace TheTechIdea.Hidden
 
             DMEEditor = pbl;
             Visutil = (IVisUtil)e.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
-            TreeEditor =(ITree) DMEEditor.assemblyHandler.GetInstance("TheTechIdea.Winforms.VIS.Tree");
-            ITreeView treeView = (ITreeView)TreeEditor;
-            treeView.Visutil = Visutil;
-            TreeEditor.DMEEditor = DMEEditor;
-            Visutil.treeEditor = TreeEditor;
+
             try
             {
+
+
+                TreeEditor = Visutil.treeEditor;
+
+
+
+
                 TreeEditor.TreeStrucure = treeView1;
                // TreeEditor.ColumnsListViewstructure = listView1;
             }
-            catch (Exception )
+            catch (Exception  ex)
             {
 
-                throw;
+                DMEEditor.AddLogMessage("Failed", $"{ex.Message}", DateTime.Now, 0, "", Errors.Failed);
             }
          
             TreeEditor.CreateRootTree();

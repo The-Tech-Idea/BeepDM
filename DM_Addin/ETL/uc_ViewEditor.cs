@@ -14,7 +14,7 @@ using TheTechIdea.DataManagment_Engine.DataView;
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
-using TheTechIdea.Winforms.VIS;
+
 
 namespace TheTechIdea.ETL
 {
@@ -42,7 +42,7 @@ namespace TheTechIdea.ETL
        
         public PassedArgs Passedarg { get ; set ; }
       //  private IDMDataView MyDataView;
-        public Winforms.VIS.IVisUtil Visutil { get; set; }
+        public IVisUtil Visutil { get; set; }
         string IDM_Addin.EntityName { get ; set ; }
 
         DataViewDataSource ds;

@@ -13,6 +13,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)App\AppEntitiesNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)App\AppNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)App\AppRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Class1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Cloud\CloudServiceRootNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerCategoryNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerEntitesNode.cs" />
@@ -46,7 +47,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Reports\ReportCategoryNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Reports\ReportNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Reports\ReportRootNode.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Tree\Tree.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebApiEntities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebApiNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebApiRootNode.cs" />
@@ -54,5 +54,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)WorkFlow\WorkFlowCategoryNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WorkFlow\WorkFlowEntityNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WorkFlow\WorkFlowRootNode.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Tree\" />
   </ItemGroup>
 </Project>

@@ -11,7 +11,7 @@ using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
-using TheTechIdea.Winforms.VIS;
+using TheTechIdea.DataManagment_Engine.Vis;
 using WinFormSharedProject.Controls;
 
 namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls

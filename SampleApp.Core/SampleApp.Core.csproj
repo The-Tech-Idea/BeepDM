@@ -10,6 +10,10 @@
     <None Remove="Addin\arm64\WebView2Loader.dll" />
     <None Remove="Addin\HereweAddAllAddin.txt" />
     <None Remove="Addin\HereweAddAllPlugins.txt" />
+    <None Remove="Addin\Microsoft.ReportViewer.Common.dll" />
+    <None Remove="Addin\Microsoft.ReportViewer.DataVisualization.dll" />
+    <None Remove="Addin\Microsoft.ReportViewer.ProcessingObjectModel.dll" />
+    <None Remove="Addin\Microsoft.ReportViewer.WinForms.dll" />
     <None Remove="Addin\Microsoft.Web.WebView2.Core.dll" />
     <None Remove="Addin\Microsoft.Web.WebView2.WinForms.dll" />
     <None Remove="Addin\Microsoft.Web.WebView2.Wpf.dll" />
@@ -357,6 +361,18 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Addin\HereweAddAllPlugins.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Addin\Microsoft.ReportViewer.Common.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Addin\Microsoft.ReportViewer.DataVisualization.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Addin\Microsoft.ReportViewer.ProcessingObjectModel.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Addin\Microsoft.ReportViewer.WinForms.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Addin\Microsoft.Web.WebView2.Core.dll">

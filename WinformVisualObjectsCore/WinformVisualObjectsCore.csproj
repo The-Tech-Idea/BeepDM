@@ -9,8 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
     <ProjectReference Include="..\WinformCore\WinformCore.csproj" />
+    <Compile Include="..\WinformVisualObjectsShared\**\*.cs" />
+    <EmbeddedResource Include="..\WinformVisualObjectsShared\**\*.resx" />  
   </ItemGroup>
 	<Target Name="CopyTarget" AfterTargets="Build">
 		<ItemGroup>
@@ -19,6 +20,5 @@
 		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\netcoreapp3.1\ProjectClasses" SkipUnchangedFiles="true" />
 	</Target>
-  <Import Project="..\WinformVisualObjectsShared\WinformVisualObjectsShared.projitems" Label="Shared" />
 
 </Project>

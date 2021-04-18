@@ -13,6 +13,7 @@ using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.Winforms.VIS;
 using TheTechIdea.Util;
 using TheTechIdea;
+using TheTechIdea.DataManagment_Engine.Vis;
 
 namespace TheTechIdea.CRUD
 {
