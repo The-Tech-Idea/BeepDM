@@ -853,6 +853,16 @@ namespace TheTechIdea.Tools
                 if (type != null)
                     return type;
             }
+            Assembly rootassembly = Assembly.GetEntryAssembly();
+            var assemblies = rootassembly.GetReferencedAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine"));
+            foreach (AssemblyName item in assemblies)
+            {
+                var assembly = Assembly.Load(item);
+                type = assembly.GetType(strFullyQualifiedName);
+                // type = asm.GetType(strFullyQualifiedName);
+                if (type != null)
+                    return type;
+            }
             return null;
         }
         public bool RunMethod(object ObjInstance, string FullClassName, string MethodName)

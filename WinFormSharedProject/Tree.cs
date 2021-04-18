@@ -274,6 +274,10 @@ namespace TheTechIdea.Winforms.VIS
         {
             return Branches.Where(c => c.BranchID == pID).FirstOrDefault();
         }
+        public IBranch GetBranchByMiscID(int pID)
+        {
+            return Branches.Where(c => c.MiscID == pID).FirstOrDefault();
+        }
         public IErrorsInfo MoveBranchToParent(IBranch CategoryBranch, IBranch CurrentBranch)
         {
 

@@ -15,7 +15,9 @@
   <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
 </ItemGroup>
 <ItemGroup>
-  <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+  <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj">
+    <Private>false</Private>
+  </ProjectReference>
 </ItemGroup>
 <Target Name="CopyTarget" AfterTargets="Build">
 		<ItemGroup>

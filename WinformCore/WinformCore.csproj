@@ -14,13 +14,15 @@
     <Compile Remove="..\WinFormSharedProject\DisplayPanel.cs" />
     <Compile Remove="..\WinFormSharedProject\ITreeEditor.cs" />
     <Compile Remove="..\WinFormSharedProject\TreeEditor_Notused.cs" />
-    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj">
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
 <Target Name="CopyTarget" AfterTargets="Build">
 		<ItemGroup>
 			<DataReaders Include="$(TargetDir)\WinformCore.dll" />
 		</ItemGroup>
-		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
-		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\netcoreapp3.1\ProjectClasses" SkipUnchangedFiles="true" />
+		<!--<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\netcoreapp3.1\ProjectClasses" SkipUnchangedFiles="true" />-->
 	</Target>
 </Project>

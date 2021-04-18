@@ -110,13 +110,14 @@ namespace TheTechIdea.Tools.AssemblyHandling
 
                 DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine"));
+            var assemblies = rootassembly.GetReferencedAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine"));
             try
             {
-                foreach (Assembly item in assemblies)
+                foreach (AssemblyName item in assemblies)
                 {
-                    ScanAssembly(item);
-                    DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(item);
+                    var assembly = Assembly.Load(item);
+                    ScanAssembly(assembly);
+                    DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(assembly);
                 }
 
             }
@@ -329,6 +330,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 }
 
                 //------------------------------
+                
             }
             catch (System.Exception ex)
             {
@@ -822,6 +824,18 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 if (type != null)
                     return type;
             }
+            Assembly rootassembly = Assembly.GetEntryAssembly();
+            var assemblies = rootassembly.GetReferencedAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine"));
+            foreach (AssemblyName item in assemblies)
+            {
+                var assembly = Assembly.Load(item);
+                type = assembly.GetType(strFullyQualifiedName);
+                // type = asm.GetType(strFullyQualifiedName);
+                if (type != null)
+                    return type;
+            }
+           
+
             return null;
         }
         public bool RunMethod(object ObjInstance, string FullClassName, string MethodName)

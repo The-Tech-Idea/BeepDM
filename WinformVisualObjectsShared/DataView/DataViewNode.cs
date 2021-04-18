@@ -207,7 +207,6 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
         }
         [BranchDelegate(Caption = "Get Entities")]
-
         public IErrorsInfo CreateViewEntites()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -239,22 +238,34 @@ namespace TheTechIdea.Winforms.VIS
                     if (loadv)
                     {
                         // ds.Dataview;// DMEEditor.viewEditor.Views[DMEEditor.viewEditor.ViewListIndex(DataView.id)];
-
-                        TreeEditor.RemoveChildBranchs(this);
-                        List<EntityStructure> cr = DataView.Entities.Where(cx => (cx.Id != 0) && (cx.ParentId == 1)).ToList();
-                        int i = 0;
-                        foreach (EntityStructure tb in cr)
+                        if (ds != null)
                         {
-                           
-                            DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, tb.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(tb.Viewtype), DataView.DataViewDataSourceID, tb);
-                            dbent.ID = tb.Id;
-                            dbent.DataSourceName = tb.DataSourceID;
-                            TreeEditor.AddBranch(this, dbent);
-                            dbent.CreateChildNodes();
-                            ChildBranchs.Add(dbent);
-                            i += 1;
+                            if (DataView != null)
+                            {
+                                TreeEditor.RemoveChildBranchs(this);
+                                List<EntityStructure> cr = DataView.Entities.Where(cx => (cx.Id != 0) && (cx.ParentId == 1)).ToList();
+                                int i = 0;
+                                foreach (EntityStructure tb in cr)
+                                {
 
+                                    DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, tb.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(tb.Viewtype), DataView.DataViewDataSourceID, tb);
+                                    dbent.ID = tb.Id;
+                                    dbent.DataSourceName = tb.DataSourceID;
+                                    TreeEditor.AddBranch(this, dbent);
+                                    dbent.CreateChildNodes();
+                                    ChildBranchs.Add(dbent);
+                                    i += 1;
+
+                                }
+
+                            }
+                           
                         }
+                        else
+                        {
+                            DMEEditor.Logger.WriteLog($"Could not Find Datasource File " + DataView.DataViewDataSourceID);
+                        }
+
                     }
                 }else
                 {

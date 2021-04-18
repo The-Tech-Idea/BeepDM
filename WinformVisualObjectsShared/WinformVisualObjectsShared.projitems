@@ -13,7 +13,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)App\AppEntitiesNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)App\AppNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)App\AppRootNode.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Class1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Cloud\CloudServiceRootNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerCategoryNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerEntitesNode.cs" />

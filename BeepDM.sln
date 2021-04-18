@@ -208,9 +208,9 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "WinformVisualObjectsShared"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DataSources", "DataSources", "{C6164BF1-DD1D-4DA5-A353-E5E18167F8C8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqliteDatasourceCore", "SqliteDatasourceCore\SqliteDatasourceCore.csproj", "{17F5C204-E4BB-4E6E-8089-DD092C2D3578}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqliteDatasourceCore", "SqliteDatasourceCore\SqliteDatasourceCore.csproj", "{17F5C204-E4BB-4E6E-8089-DD092C2D3578}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSVDatasourceCore", "CSVDatasourceCore\CSVDatasourceCore.csproj", "{F6E78D78-3637-4776-8773-315062BD84F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSVDatasourceCore", "CSVDatasourceCore\CSVDatasourceCore.csproj", "{F6E78D78-3637-4776-8773-315062BD84F2}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -3563,7 +3563,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{1DF49B6A-972B-409C-B1F1-C4182F22248F} = {26E78F15-70E6-4578-8F5B-C24798601957}
 		{97944B8E-D262-496E-B006-041BCC591121} = {26E78F15-70E6-4578-8F5B-C24798601957}
 		{0246F046-95C7-4713-B6D7-4AE829600C39} = {3CF73570-979D-462B-9B48-761E460CEDEF}
 		{20CF1D48-A601-4583-8289-3C18C79AC047} = {09A058BC-88A5-4451-9636-09A17A82814F}

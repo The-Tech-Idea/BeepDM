@@ -9,7 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WinformCore\WinformCore.csproj" />
+    <ProjectReference Include="..\WinformCore\WinformCore.csproj">
+      <Private>false</Private>
+    </ProjectReference>
     <Compile Include="..\WinformVisualObjectsShared\**\*.cs" />
     <EmbeddedResource Include="..\WinformVisualObjectsShared\**\*.resx" />  
   </ItemGroup>

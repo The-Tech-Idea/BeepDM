@@ -91,14 +91,14 @@ namespace TheTechIdea.Winforms.VIS
         #endregion "Properties"
         #region "Interface Methods"
      
-        private void GetChildNodes(List<EntityStructure> Childs,EntityStructure Parent)
+        private void GetChildNodes(List<EntityStructure> Childs,EntityStructure Parent, IBranch ParentBranch)
         {
-            
-            DataViewEntitiesNode    dbent;
-            IBranch ParentBranch = TreeEditor.GetBranch(Parent.Id);
+
+            DataViewEntitiesNode dbent = null ;
+           
             foreach (EntityStructure i in Childs)
             {
-                IBranch branch = TreeEditor.GetBranch(i.Id);
+                IBranch branch = TreeEditor.GetBranchByMiscID(i.Id);
                 if (branch == null)
                 {
                    
@@ -109,7 +109,7 @@ namespace TheTechIdea.Winforms.VIS
                 }
                 else
                 {
-                    if (ChildBranchs.Where(x => x.BranchText == i.EntityName).Any() == false)
+                    if (!ChildBranchs.Where(x => x.BranchText == i.EntityName).Any())
                     {
                        
                         dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, ParentBranch, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(i.Viewtype), DataView.DataViewDataSourceID, i);
@@ -117,13 +117,18 @@ namespace TheTechIdea.Winforms.VIS
                         dbent.CreateChildNodes();
                         ChildBranchs.Add(dbent);
                     }
+                    else
+                    {
+                        dbent =(DataViewEntitiesNode) branch;
+                    }
+
                 }
                 List<EntityStructure> otherchilds = DataView.Entities.Where(cx => (cx.Id != i.Id) && (cx.ParentId == i.Id)).ToList();
                 if (otherchilds != null)
                 {
                     if (otherchilds.Count > 0)
                     {
-                        GetChildNodes(otherchilds, i);
+                        GetChildNodes(otherchilds, i, dbent);
                     }
                 }
 
@@ -158,7 +163,7 @@ namespace TheTechIdea.Winforms.VIS
                     {
                         if (childs.Count > 0)
                         {
-                            GetChildNodes(childs, i);
+                            GetChildNodes(childs, i, this);
                         }
                     }
 

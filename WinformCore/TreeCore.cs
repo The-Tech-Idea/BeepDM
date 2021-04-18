@@ -277,6 +277,10 @@ namespace TheTechIdea.DataManagment_Engine.Vis
         {
             return Branches.Where(c => c.BranchID == pID).FirstOrDefault();
         }
+        public IBranch GetBranchByMiscID(int pID)
+        {
+            return Branches.Where(c => c.MiscID == pID).FirstOrDefault();
+        }
         public IErrorsInfo MoveBranchToParent(IBranch CategoryBranch, IBranch CurrentBranch)
         {
 
@@ -474,13 +478,13 @@ namespace TheTechIdea.DataManagment_Engine.Vis
                 {
                   
                         Type adc = DMEEditor.assemblyHandler.GetType(cls.PackageName);
-                    //ConstructorInfo ctor = adc.GetConstructors().First();
-                    //ObjectActivator<IBranch> createdActivator = GetActivator<IBranch>(ctor);
-                    TheTechIdea.DataManagment_Engine.Vis.IBranch br = DMEEditor.assemblyHandler.GetInstance(cls.PackageName) as TheTechIdea.DataManagment_Engine.Vis.IBranch;
+                    ConstructorInfo ctor = adc.GetConstructors().First();
+                    ObjectActivator<IBranch> createdActivator = GetActivator<IBranch>(ctor);
+                   // TheTechIdea.DataManagment_Engine.Vis.IBranch br = DMEEditor.assemblyHandler.GetInstance(cls.PackageName) as TheTechIdea.DataManagment_Engine.Vis.IBranch;
                         try
                         {
 
-                           // IBranch br = createdActivator();
+                           IBranch br = createdActivator();
                             if (br.BranchText == "IronPython")
                             {
                                 Console.WriteLine("Found");

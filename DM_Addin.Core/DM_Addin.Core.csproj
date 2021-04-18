@@ -9,9 +9,15 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
-		<ProjectReference Include="..\Tools\Tools.csproj" />
-		<ProjectReference Include="..\WinformCore\WinformCore.csproj" />
+		<ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj">
+		  <Private>false</Private>
+		</ProjectReference>
+		<ProjectReference Include="..\Tools\Tools.csproj">
+		  <Private>false</Private>
+		</ProjectReference>
+		<ProjectReference Include="..\WinformCore\WinformCore.csproj">
+		  <Private>false</Private>
+		</ProjectReference>
 	</ItemGroup>
 <ItemGroup>
 		<Compile Include="..\DM_Addin\**\*.cs" />

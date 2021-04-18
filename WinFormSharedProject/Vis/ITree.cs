@@ -29,7 +29,7 @@ namespace TheTechIdea.DataManagment_Engine.Vis
         IErrorsInfo RemoveCategoryBranch(int id);
         IErrorsInfo SendActionFromBranchToBranch(IBranch ParentBranch, IBranch CurrentBranch, string ActionType);
         IBranch GetBranch(int pID);
-
+        IBranch GetBranchByMiscID(int pID);
 
         IErrorsInfo AddCategory(IBranch Rootbr);
 

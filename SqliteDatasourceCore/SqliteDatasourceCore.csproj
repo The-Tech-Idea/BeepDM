@@ -13,7 +13,9 @@
    <PackageReference Include="System.Data.SQLite" Version="1.0.113.7" />
  </ItemGroup>
  <ItemGroup>
-   <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+   <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj">
+     <Private>false</Private>
+   </ProjectReference>
  </ItemGroup>
 <Target Name="CopyTarget" AfterTargets="Build">
 		<ItemGroup>
