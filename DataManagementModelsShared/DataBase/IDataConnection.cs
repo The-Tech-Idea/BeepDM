@@ -11,6 +11,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         IConnectionProperties ConnectionProp { get; set; }
         ConnectionDriversConfig DataSourceDriver { get; set; }
         ConnectionState ConnectionStatus { get; set; }
+        IDMEEditor DMEEditor { get; set; }
         int ID { get; set; }
         IDMLogger Logger { get; set; }
         IErrorsInfo ErrorObject { get; set; }

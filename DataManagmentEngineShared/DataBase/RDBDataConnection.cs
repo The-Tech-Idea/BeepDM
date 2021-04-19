@@ -11,6 +11,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
     {
         public int ID { get; set; }
         public IDbConnection DbConn { get; set; }
+        public IDMEEditor DMEEditor { get; set; }
         public ConnectionState ConnectionStatus { get; set; } = ConnectionState.Closed;
         public ConnectionDriversConfig DataSourceDriver { get; set; }
         public IDMLogger Logger { get; set; }
@@ -88,7 +89,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 try
                 {
 
-                    DbConn = (IDbConnection)GetInstance(DataSourceDriver.DbConnectionType);
+                    DbConn = (IDbConnection) DMEEditor.assemblyHandler.GetInstance(DataSourceDriver.DbConnectionType);
 
                     DbConn.ConnectionString = ReplaceValueFromConnectionString(); //ConnectionProp.ConnectionString;
                     Logger.WriteLog("Init  DbConn for  Server");

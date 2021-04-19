@@ -56,29 +56,17 @@ namespace TheTechIdea.Hidden
         public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
         {
             Passedarg = e;
-
             Logger = plogger;
             ErrorObject = per;
-            // visutil = new VisUtil(Logger,putil,per);
-
             DMEEditor = pbl;
             Visutil = (IVisUtil)e.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
-
             try
             {
-
-
                 TreeEditor = Visutil.treeEditor;
-
-
-
-
                 TreeEditor.TreeStrucure = treeView1;
-               // TreeEditor.ColumnsListViewstructure = listView1;
             }
             catch (Exception  ex)
             {
-
                 DMEEditor.AddLogMessage("Failed", $"{ex.Message}", DateTime.Now, 0, "", Errors.Failed);
             }
          

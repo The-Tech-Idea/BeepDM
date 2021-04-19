@@ -38,9 +38,17 @@
     <None Remove="config\ObjectTypes.json" />
     <None Remove="config\QueryList.json" />
     <None Remove="config\reports.json" />
+    <None Remove="ConnectionDrivers\Microsoft.Data.SqlClient.dll" />
     <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.Core.dll" />
     <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.WinForms.dll" />
     <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.Wpf.dll" />
+    <None Remove="ConnectionDrivers\MySql.Data.dll" />
+    <None Remove="ConnectionDrivers\Oracle.ManagedDataAccess.dll" />
+    <None Remove="ConnectionDrivers\System.Data.SQLite.dll" />
+    <None Remove="ConnectionDrivers\Ubiety.Dns.Core.dll" />
+    <None Remove="ConnectionDrivers\win-x64\SQLite.Interop.dll" />
+    <None Remove="ConnectionDrivers\win-x86\SQLite.Interop.dll" />
+    <None Remove="ConnectionDrivers\Zstandard.Net.dll" />
     <None Remove="DataFiles\Alaska.sdf" />
     <None Remove="DataFiles\etl.s3db" />
     <None Remove="DataFiles\firebirddb.fdb" />
@@ -445,6 +453,30 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="config\reports.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Microsoft.Data.SqlClient.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\MySql.Data.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Oracle.ManagedDataAccess.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\System.Data.SQLite.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Ubiety.Dns.Core.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\win-x64\SQLite.Interop.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\win-x86\SQLite.Interop.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Zstandard.Net.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="DataFiles\Alaska.sdf">
@@ -1390,8 +1422,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Autofac" Version="4.9.4" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Autofac" Version="6.1.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.2" />
+    <PackageReference Include="MySql.Data" Version="8.0.23" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="3.21.1" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.113.7" />
   </ItemGroup>
 
   <ItemGroup>

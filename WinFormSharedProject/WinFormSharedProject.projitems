@@ -15,6 +15,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Controls\RoundButton.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Controls\RoundPanel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Controls\RoundPicture.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MultiSelectTreeview.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tree.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\AddinVisSchema.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IControlEditor.cs" />

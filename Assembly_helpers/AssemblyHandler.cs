@@ -92,53 +92,7 @@ namespace TheTechIdea.Tools
 
                 DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
-            //// try to find manually
-            ////foreach (Assembly asm in currentAssem)
-            ////{
-
-            //    try
-            //    {
-            //        foreach (var type in currentAssem.DefinedTypes)
-            //        {
-
-
-            //            string[] p = currentAssem.FullName.Split(new char[] { ',' });
-            //            p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
-            //            //-------------------------------------------------------
-            //            // Get DataBase Drivers
-            //            if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
-            //            {
-
-            //                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-            //                xcls.className = type.Name;
-            //                xcls.dllname = type.Module.Name;
-            //                xcls.PackageName = type.FullName;
-            //                DataSources.Add(xcls);
-            //                DMEEditor.ConfigEditor.DataSources.Add(xcls);
-
-
-            //            }
-            //            if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
-            //            {
-
-            //                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-            //                xcls.className = type.Name;
-            //                xcls.dllname = type.Module.Name;
-            //                xcls.PackageName = type.FullName;
-            //                DataSources.Add(xcls);
-            //                DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
-
-
-            //            }
-
-            //        }
-
-
-
-            //-----------------------------------------------------------
-            // }
-
-            // }
+        
             return DMEEditor.ErrorObject;
 
         }
@@ -744,28 +698,6 @@ namespace TheTechIdea.Tools
         }
         #endregion "Class Extractors"
         #region "Helpers"
-        public Type GetTypeFromName(string typeName)
-        {
-            Type type = null;
-
-            // Let default name binding find it
-            type = Type.GetType(typeName, false);
-            if (type != null)
-                return type;
-
-            // look through assembly list
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            // try to find manually
-            foreach (Assembly asm in assemblies)
-            {
-                type = asm.GetType(typeName, false);
-
-                if (type != null)
-                    break;
-            }
-            return type;
-        }
         public object CreateInstanceFromString(string typeName, params object[] args)
         {
             object instance = null;
@@ -773,7 +705,7 @@ namespace TheTechIdea.Tools
 
             try
             {
-                type = GetTypeFromName(typeName);
+                type = GetType(typeName);
                 if (type == null)
                     return null;
 
@@ -818,28 +750,13 @@ namespace TheTechIdea.Tools
             return null;
 
         }
-        private static void LoadChildReferences(Assembly curAsm)
-        {
-            foreach (var assemblyName in curAsm.GetReferencedAssemblies())
-            {
-                try
-                {
-                    Assembly loadedAssembly = Assembly.LoadFile(assemblyName.FullName);
-                }
-                catch { }
-            }
-        }
+      
         public object GetInstance(string strFullyQualifiedName)
         {
-            Type type = Type.GetType(strFullyQualifiedName);
+            Type type = GetType(strFullyQualifiedName);
             if (type != null)
                 return Activator.CreateInstance(type);
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                type = asm.GetType(strFullyQualifiedName);
-                if (type != null)
-                    return Activator.CreateInstance(type);
-            }
+           
             return null;
         }
         public Type GetType(string strFullyQualifiedName)

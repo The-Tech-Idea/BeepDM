@@ -12,6 +12,7 @@ using TheTechIdea;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.DataView;
+using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using TheTechIdea.Winforms.VIS;

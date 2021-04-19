@@ -6,10 +6,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Windows.Forms;
-using System.Windows.Input;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.DataView;
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Util;
 
@@ -814,10 +812,140 @@ namespace TheTechIdea.Winforms.VIS
             TreeV.DragOver += Tree_DragOver;
          //   TreeV.DrawNode += TreeV_DrawNode;
             TreeV.AfterSelect += TreeV_AfterSelect;
+         //   TreeV.KeyDown += TreeV_KeyDown;
         }
+
+        private void TreeV_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.LControlKey)
+            {
+                TreeOP = "UnSelect";
+                StartselectBranchID = 0;
+                int BranchID = Convert.ToInt32(TreeV.SelectedNode.Tag);
+                TreeV.BeginUpdate();
+                if (TreeV.SelectedNode.BackColor == SelectBackColor)
+                {
+                    TreeV.SelectedNode.BackColor = Color.White;
+                    SelectedBranchs.Remove(BranchID);
+
+                }
+                else
+                {
+                    TreeV.SelectedNode.BackColor = SelectBackColor;
+                    SelectedBranchs.Add(BranchID);
+                }
+                TreeV.EndUpdate();
+
+            }
+            if (e.KeyCode == Keys.LShiftKey) //|| !Startselect
+            {
+
+                TreeOP = "StartSelect";
+                if (StartselectBranchID == 0)
+                {
+                    StartselectBranchID = SelectedBranchID;
+                }
+                if (SelectedBranchID != StartselectBranchID)
+                {
+
+                    IBranch startbr = Branches.Where(x => x.BranchID == StartselectBranchID).FirstOrDefault();
+                    IBranch endbr = Branches.Where(x => x.BranchID == SelectedBranchID).FirstOrDefault();
+                    if ((startbr != endbr) || (startbr.ParentBranchID == endbr.ParentBranchID) || (startbr.BranchClass == endbr.BranchClass))
+                    {
+
+                        TreeNode startnode;
+                        TreeNode endnode;
+                        bool found = false;
+
+                        if (SelectedBranchID > StartselectBranchID)
+                        {
+                            startnode = GetTreeNodeByTag(StartselectBranchID.ToString(), TreeV.Nodes);
+                            endnode = GetTreeNodeByTag(SelectedBranchID.ToString(), TreeV.Nodes);
+                        }
+                        else
+                        {
+                            startnode = GetTreeNodeByTag(SelectedBranchID.ToString(), TreeV.Nodes);
+                            endnode = GetTreeNodeByTag(StartselectBranchID.ToString(), TreeV.Nodes);
+                        }
+                        TreeNode n = startnode;
+                        while (!found)
+                        {
+                            TreeV.BeginUpdate();
+                            n.BackColor = SelectBackColor;
+                            SelectedBranchs.Add(Convert.ToInt32(n.Tag));
+                            if (n == endnode)
+                            {
+                                found = true;
+                            }
+                            else
+                            {
+                                n = n.NextNode;
+                            }
+                            TreeV.EndUpdate();
+                        }
+
+                    }
+                }
+
+
+            }
+            if (e.KeyCode == Keys.RShiftKey) //|| !Startselect
+            {
+
+                if (SelectedBranchID != StartselectBranchID)
+                {
+                    TreeOP = "StartSelect";
+                    if (StartselectBranchID == 0)
+                    {
+                        StartselectBranchID = SelectedBranchID;
+                    }
+                    IBranch startbr = Branches.Where(x => x.BranchID == StartselectBranchID).FirstOrDefault();
+                    IBranch endbr = Branches.Where(x => x.BranchID == SelectedBranchID).FirstOrDefault();
+                    if ((startbr != endbr) || (startbr.ParentBranchID == endbr.ParentBranchID) || (startbr.BranchClass == endbr.BranchClass))
+                    {
+
+                        TreeNode startnode;
+                        TreeNode endnode;
+                        bool found = false;
+
+                        if (SelectedBranchID > StartselectBranchID)
+                        {
+                            startnode = GetTreeNodeByTag(StartselectBranchID.ToString(), TreeV.Nodes);
+                            endnode = GetTreeNodeByTag(SelectedBranchID.ToString(), TreeV.Nodes);
+                        }
+                        else
+                        {
+                            startnode = GetTreeNodeByTag(SelectedBranchID.ToString(), TreeV.Nodes);
+                            endnode = GetTreeNodeByTag(StartselectBranchID.ToString(), TreeV.Nodes);
+                        }
+                        TreeNode n = startnode;
+                        while (!found)
+                        {
+                            TreeV.BeginUpdate();
+                            n.BackColor = Color.White;
+
+                            SelectedBranchs.Remove(Convert.ToInt32(n.Tag));
+                            if (n == endnode)
+                            {
+                                found = true;
+                            }
+                            else
+                            {
+                                n = n.NextNode;
+                            }
+                            TreeV.EndUpdate();
+                        }
+
+                    }
+                }
+
+
+            }
+        }
+
         // Returns the bounds of the specified node, including the region 
         // occupied by the node label and any node tag displayed.
-        
+
         private void TreeV_AfterSelect(object sender, TreeViewEventArgs e)
         {
             // Vary the response depending on which TreeViewAction
@@ -870,27 +998,27 @@ namespace TheTechIdea.Winforms.VIS
                         DataSource = null,
                         EventType = TreeEvent
                     };
-                    //if (Keyboard.IsKeyDown(Key.LeftCtrl))
+                    //if (Control.ModifierKeys == Keys.LControlKey)
                     //{
                     //    TreeOP = "UnSelect";
                     //    StartselectBranchID = 0;
                       
                     //    TreeV.BeginUpdate();
-                    //    if (e.Node.BackColor == SelectBackColor)
+                    //    if (TreeV.SelectedNode.BackColor == SelectBackColor)
                     //    {
-                    //        e.Node.BackColor = Color.White;
+                    //        TreeV.SelectedNode.BackColor = Color.White;
                     //        SelectedBranchs.Remove(BranchID);
 
                     //    }
                     //    else
                     //    {
-                    //        e.Node.BackColor = SelectBackColor;
+                    //        TreeV.SelectedNode.BackColor = SelectBackColor;
                     //        SelectedBranchs.Add(BranchID);
                     //    }
                     //    TreeV.EndUpdate();
 
                     //}
-                    //if (Keyboard.IsKeyDown(Key.LeftShift)) //|| !Startselect
+                    //if (Control.ModifierKeys == Keys.LShiftKey) //|| !Startselect
                     //{
 
                     //    TreeOP = "StartSelect";
@@ -900,7 +1028,7 @@ namespace TheTechIdea.Winforms.VIS
                     //    }
                     //    if (SelectedBranchID != StartselectBranchID)
                     //    {
-                           
+
                     //        IBranch startbr = Branches.Where(x => x.BranchID == StartselectBranchID).FirstOrDefault();
                     //        IBranch endbr = Branches.Where(x => x.BranchID == SelectedBranchID).FirstOrDefault();
                     //        if ((startbr != endbr) || (startbr.ParentBranchID == endbr.ParentBranchID) || (startbr.BranchClass == endbr.BranchClass))
@@ -942,9 +1070,9 @@ namespace TheTechIdea.Winforms.VIS
 
 
                     //}
-                    //if (Keyboard.IsKeyDown(Key.RightShift)) //|| !Startselect
+                    //if (Control.ModifierKeys == Keys.RShiftKey) //|| !Startselect
                     //{
-                       
+
                     //    if (SelectedBranchID != StartselectBranchID)
                     //    {
                     //        TreeOP = "StartSelect";
@@ -994,7 +1122,8 @@ namespace TheTechIdea.Winforms.VIS
 
 
                     //}
-                }else
+                }
+                else
                 {
 
 

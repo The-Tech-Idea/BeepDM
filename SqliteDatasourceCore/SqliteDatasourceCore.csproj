@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net5.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>TheTechIdea.DataManagment_Engine.DataBase</RootNamespace>
  </PropertyGroup>
@@ -10,7 +10,7 @@
 		<EmbeddedResource Include="..\Sqlite\**\*.resx" />
 </ItemGroup>
  <ItemGroup>
-   <PackageReference Include="System.Data.SQLite" Version="1.0.113.7" />
+   <PackageReference Include="System.Data.SQLite.Core" Version="1.0.113.7" />
  </ItemGroup>
  <ItemGroup>
    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj">

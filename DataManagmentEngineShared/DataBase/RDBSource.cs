@@ -53,8 +53,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             Dataconnection = new RDBDataConnection
             {
                 Logger = logger,
-                ErrorObject = ErrorObject
-
+                ErrorObject = ErrorObject,
+                DMEEditor=pDMEEditor
+                
             };
 
 

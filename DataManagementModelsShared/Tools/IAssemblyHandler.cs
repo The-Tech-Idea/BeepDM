@@ -26,7 +26,7 @@ namespace TheTechIdea.Tools
         object GetInstance(string strFullyQualifiedName);
         ParentChildObject RearrangeAddin(string p, string parentid, string Objt);
         Type GetType(string strFullyQualifiedName);
-        Type GetTypeFromName(string typeName);
+       
         IErrorsInfo LoadAllAssembly();
         bool RunMethod(object ObjInstance, string FullClassName, string MethodName);
     }

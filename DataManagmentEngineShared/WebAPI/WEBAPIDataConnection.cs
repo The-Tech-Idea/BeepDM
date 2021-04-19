@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Net;
 using System.Text;
+using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.WebAPI;
 using TheTechIdea.Logger;
@@ -16,6 +17,7 @@ namespace DataManagmentEngineShared.WebAPI
         public IConnectionProperties ConnectionProp { get ; set ; }
         public ConnectionDriversConfig DataSourceDriver { get ; set ; }
         public ConnectionState ConnectionStatus { get ; set ; }
+        public IDMEEditor DMEEditor { get; set; }
         public int ID { get ; set ; }
         public IDMLogger Logger { get ; set ; }
         public IErrorsInfo ErrorObject { get ; set ; }

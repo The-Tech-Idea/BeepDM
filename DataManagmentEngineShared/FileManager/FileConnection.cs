@@ -18,6 +18,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         public ConnectionDriversConfig DataSourceDriver { get ; set ; }
         public ConnectionState ConnectionStatus { get; set; } = ConnectionState.Closed;
         public int ID { get ; set ; }
+        public IDMEEditor DMEEditor { get; set; }
         public IDMLogger Logger { get ; set ; }
         public IErrorsInfo ErrorObject { get ; set ; }
         public IDbConnection DbConn { get ; set ; }
