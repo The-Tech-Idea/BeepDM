@@ -552,7 +552,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Paste Entity")]
+        [BranchDelegate(Caption = "Paste Entity(s)")]
         public IErrorsInfo PasteEntity()
         {
 
@@ -585,6 +585,8 @@ namespace TheTechIdea.Winforms.VIS
                             }
                             else
                             {
+                                IDataSource srcds = DMEEditor.GetDataSource(entity.DataSourceID);
+                                entity = srcds.GetEntityStructure(entity, true);
                                 entity.Created = false;
                                 entity.Id = ds.NextHearId();
                                 entity.ParentId = 1;
@@ -599,6 +601,35 @@ namespace TheTechIdea.Winforms.VIS
 
                         }
                     }
+                    else
+                     if (TreeEditor.SelectedBranchs.Count > 0 && TreeEditor.args.EventType == "COPYENTITIES")
+                    {
+                      
+                            
+                            foreach (int item in TreeEditor.SelectedBranchs)
+                            {
+                                IBranch br = TreeEditor.GetBranch(item);
+                                IDataSource srcds = DMEEditor.GetDataSource(br.DataSourceName);
+                                if (srcds != null)
+                                {
+                                    EntityStructure entity = srcds.GetEntityStructure(br.BranchText, true);
+                                   
+                                    entity.Created = false;
+                                    entity.Id = ds.NextHearId();
+                                    entity.ParentId = 1;
+                                    entity.ViewID = DataView.ViewID;
+                                    ds.CreateEntityAs(entity);
+                                    DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "entity.ico", DataView.DataViewDataSourceID, entity);
+                                    TreeEditor.AddBranch(this, dbent);
+                                    dbent.CreateChildNodes();
+                                    ChildBranchs.Add(dbent);
+                                    DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                                }
+                               
+
+                            }
+                        
+                    }
                 }
             }
             catch (Exception ex)
@@ -608,6 +639,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
+
         #endregion Exposed Interface"
         #region "Other Methods"
         public IErrorsInfo GetFile()

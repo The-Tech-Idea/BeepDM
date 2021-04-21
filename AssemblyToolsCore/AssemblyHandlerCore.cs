@@ -26,19 +26,18 @@ namespace TheTechIdea.Tools.AssemblyHandling
         public IDMEEditor DMEEditor { get; set; }
         public List<assemblies_rep> Assemblies { get; set; } = new List<assemblies_rep>();
         public List<IDM_Addin> AddIns { get; set; } = new List<IDM_Addin>();
-        public List<AssemblyClassDefinition> DataSources { get; set; } = new List<AssemblyClassDefinition>();
-        private List<ConnectionDriversConfig> DataDrivers = new List<ConnectionDriversConfig>();
+        public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
+        private List<ConnectionDriversConfig> DataDriversConfig = new List<ConnectionDriversConfig>();
 
         public AssemblyHandlerCore()
         {
 
-            DataSources = new List<AssemblyClassDefinition>();
+            DataSourcesClasses = new List<AssemblyClassDefinition>();
         }
         static Assembly LoadPlugin(string relativePath)
         {
             // Navigate up to the solution root
-
-
+          
             string pluginLocation = Path.GetFullPath(Path.Combine(relativePath, relativePath.Replace('\\', Path.DirectorySeparatorChar)));
             Console.WriteLine($"Loading commands from: {pluginLocation}");
             PluginLoadContext loadContext = new PluginLoadContext(pluginLocation);
@@ -141,7 +140,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
             DMEEditor.Utilfunction.FunctionHierarchy = new List<ParentChildObject>();
             DMEEditor.Utilfunction.Namespacelist = new List<string>();
             DMEEditor.Utilfunction.Classlist = new List<string>();
-            DataDrivers = new List<ConnectionDriversConfig>();
+            DataDriversConfig = new List<ConnectionDriversConfig>();
             AddEngineDefaultDrivers();
             GetNonADODrivers();
             GetBuiltinClasses();
@@ -497,8 +496,8 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
-                                DataSources.Add(xcls);
-                                DMEEditor.ConfigEditor.DataSources.Add(xcls);
+                                DataSourcesClasses.Add(xcls);
+                                DMEEditor.ConfigEditor.DataSourcesClasses.Add(xcls);
                             }
                             //-------------------------------------------------------
                             // Get WorkFlow Definitions
@@ -782,12 +781,12 @@ namespace TheTechIdea.Tools.AssemblyHandling
         public void CheckDriverAlreadyExistinList()
         {
 
-            foreach (ConnectionDriversConfig dr in DataDrivers)
+            foreach (ConnectionDriversConfig dr in DataDriversConfig)
             {
-                ConnectionDriversConfig founddr = DMEEditor.ConfigEditor.DataDrivers.Where(c => c.PackageName == dr.PackageName && c.version == dr.version).FirstOrDefault();
+                ConnectionDriversConfig founddr = DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.PackageName == dr.PackageName && c.version == dr.version).FirstOrDefault();
                 if (founddr == null)
                 {
-                    DMEEditor.ConfigEditor.DataDrivers.Add(dr);
+                    DMEEditor.ConfigEditor.DataDriversClasses.Add(dr);
                 }
             }
         }
@@ -816,7 +815,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                     p = asm.FullName.Split(new char[] { ',' });
                     p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
 
-                    driversConfig = DataDrivers.Where(c => c.DriverClass == p[0]).FirstOrDefault();
+                    driversConfig = DataDriversConfig.Where(c => c.DriverClass == p[0]).FirstOrDefault();
                     bool recexist = false;
                     //DbTransaction uc = (DbTransaction)Activator.CreateInstance(type);
                     //if (uc != null)
@@ -845,7 +844,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                         driversConfig.ADOType = true;
                         if (recexist == false)
                         {
-                            DataDrivers.Add(driversConfig);
+                            DataDriversConfig.Add(driversConfig);
                         }
 
 
@@ -862,7 +861,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                         driversConfig.dllname = type.Module.Name;
                         if (recexist == false)
                         {
-                            DataDrivers.Add(driversConfig);
+                            DataDriversConfig.Add(driversConfig);
                         }
 
                         //  }
@@ -877,7 +876,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                         driversConfig.dllname = type.Module.Name;
                         if (recexist == false)
                         {
-                            DataDrivers.Add(driversConfig);
+                            DataDriversConfig.Add(driversConfig);
                         }
 
                         //}
@@ -893,7 +892,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                         driversConfig.DbTransactionType = type.FullName;
                         if (recexist == false)
                         {
-                            DataDrivers.Add(driversConfig);
+                            DataDriversConfig.Add(driversConfig);
                         }
 
                         // }
@@ -919,7 +918,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 // Get NoSQL Drivers 
                 //  bool driverfound = false;
                 //  bool recexist = false;
-                driversConfig = DataDrivers.Where(c => c.DriverClass == p[0]).FirstOrDefault();
+                driversConfig = DataDriversConfig.Where(c => c.DriverClass == p[0]).FirstOrDefault();
                 if (driversConfig == null)
                 {
                     driversConfig = new ConnectionDriversConfig();
@@ -944,7 +943,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                     driversConfig.PackageName = p[0];
                     driversConfig.DriverClass = p[0];
                     driversConfig.ADOType = true;
-                    DataDrivers.Add(driversConfig);
+                    DataDriversConfig.Add(driversConfig);
                 }
             }
             if (driversConfig.dllname == null)
@@ -961,10 +960,10 @@ namespace TheTechIdea.Tools.AssemblyHandling
             try
             {
 
-                foreach (ConnectionDriversConfig item in DMEEditor.ConfigEditor.DriverDefinitions)
+                foreach (ConnectionDriversConfig item in DMEEditor.ConfigEditor.DriverDefinitionsConfig)
                 {
 
-                    driversConfig = DataDrivers.Where(c => c.PackageName == item.PackageName).FirstOrDefault();
+                    driversConfig = DataDriversConfig.Where(c => c.PackageName == item.PackageName).FirstOrDefault();
                     if (driversConfig == null)
                     {
                         driversConfig = new ConnectionDriversConfig();
@@ -976,7 +975,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                         driversConfig.parameter2 = item.parameter2;
                         driversConfig.parameter3 = item.parameter3;
 
-                        DataDrivers.Add(driversConfig);
+                        DataDriversConfig.Add(driversConfig);
                     }
 
 
@@ -1028,7 +1027,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
             }
 
 
-            return DataDrivers;
+            return DataDriversConfig;
 
 
         }
@@ -1043,28 +1042,28 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 DataviewDriver.PackageName = "DataViewReader";
                 DataviewDriver.DriverClass = "DataViewReader";
                 DataviewDriver.version = "1";
-                DataDrivers.Add(DataviewDriver);
+                DataDriversConfig.Add(DataviewDriver);
                 ConnectionDriversConfig TXTFileDriver = new ConnectionDriversConfig();
                 TXTFileDriver.AdapterType = "DEFAULT";
                 TXTFileDriver.dllname = "DataManagmentEngine";
                 TXTFileDriver.PackageName = "FileReader";
                 TXTFileDriver.DriverClass = "FileReader";
                 TXTFileDriver.version = "1";
-                DataDrivers.Add(TXTFileDriver);
+                DataDriversConfig.Add(TXTFileDriver);
                 ConnectionDriversConfig JSONFileDriver = new ConnectionDriversConfig();
                 JSONFileDriver.AdapterType = "DEFAULT";
                 JSONFileDriver.dllname = "DataManagmentEngine";
                 JSONFileDriver.PackageName = "JSONFileReader";
                 JSONFileDriver.DriverClass = "JSONFileReader";
                 JSONFileDriver.version = "1";
-                DataDrivers.Add(JSONFileDriver);
+                DataDriversConfig.Add(JSONFileDriver);
                 ConnectionDriversConfig WebAPIDriver = new ConnectionDriversConfig();
                 WebAPIDriver.AdapterType = "DEFAULT";
                 WebAPIDriver.dllname = "DataManagmentEngine";
                 WebAPIDriver.PackageName = "WebApiReader";
                 WebAPIDriver.DriverClass = "WebApiReader";
                 WebAPIDriver.version = "1";
-                DataDrivers.Add(WebAPIDriver);
+                DataDriversConfig.Add(WebAPIDriver);
 
                 return true;
             }

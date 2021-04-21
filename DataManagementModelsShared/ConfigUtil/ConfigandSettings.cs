@@ -84,6 +84,7 @@ namespace TheTechIdea.Util
         public bool Click { get; set; } = false;
         public Type type { get; set; }
         public bool DoubleClick { get; set; } = false;
+        public string iconimage { get; set; } = null;
     }
     public class ConnectionDriversConfig
     {

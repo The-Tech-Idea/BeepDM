@@ -57,7 +57,7 @@ namespace TheTechIdea.Winforms.VIS
         string TreeEvent { get; set; }
         string TreeOP { get; set; }
         public Font tagFont { get; set; } = new Font("Helvetica", 8, FontStyle.Bold);
-
+        private bool busy = false;
         IDM_Addin sender;
 
 
@@ -539,12 +539,16 @@ namespace TheTechIdea.Winforms.VIS
             ContextMenuStrip nodemenu = new ContextMenuStrip();
             try
             {
+                nodemenu.ImageList = images;
                 AssemblyClassDefinition cls = DMEEditor.ConfigEditor.BranchesClasses.Where(x => x.PackageName == branch.ToString()).FirstOrDefault();
                 foreach (var item in cls.Methods.Where(y => y.Hidden == false))
                 {
-                    nodemenu.Items.Add(item.Caption);
+                    ToolStripItem  st= nodemenu.Items.Add(item.Caption);
                     nodemenu.Name = branch.ToString();
-
+                    if (item.iconimage != null)
+                    {
+                        st.ImageIndex = GetImageIndex(item.iconimage);
+                    }
 
 
                 }
@@ -594,7 +598,6 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion
         #region "Winform TreeView Setup"
-      
         private void SetupTreeView()
         {
             sender = null;
@@ -626,7 +629,6 @@ namespace TheTechIdea.Winforms.VIS
           
             CreateDelagates();
         }
-       
         #endregion
         #region "Misc Functions"
         public int GetImageIndex(TreeNode n, string imagename)
@@ -710,13 +712,13 @@ namespace TheTechIdea.Winforms.VIS
                 if (drname != null)
                 {
                     string drversion = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName == Connectioname).FirstOrDefault().DriverVersion;
-                    if (DMEEditor.ConfigEditor.DataDrivers.Where(c => c.version == drversion && c.DriverClass == drname).Any())
+                    if (DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.version == drversion && c.DriverClass == drname).Any())
                     {
-                        iconname = DMEEditor.ConfigEditor.DataDrivers.Where(c => c.version == drversion && c.DriverClass == drname).FirstOrDefault().iconname;
+                        iconname = DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.version == drversion && c.DriverClass == drname).FirstOrDefault().iconname;
                     }
                     else
                     {
-                         iconname = DMEEditor.ConfigEditor.DataDrivers.Where(c => c.DriverClass == drname).FirstOrDefault().iconname;
+                         iconname = DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.DriverClass == drname).FirstOrDefault().iconname;
                     }
                     
                     int imgindx = TreeV.ImageList.Images.IndexOfKey(iconname);
@@ -750,11 +752,7 @@ namespace TheTechIdea.Winforms.VIS
 
         }
         #endregion "Misc Functions"
-        #region "Tree Util Functions"
-
-        #endregion "Tree Util Functions"
         #region "Util Functions"
-     
         public static ObjectActivator<T> GetActivator<T>(ConstructorInfo ctor)
         {
             Type type = ctor.DeclaringType;
@@ -804,7 +802,8 @@ namespace TheTechIdea.Winforms.VIS
             TreeV.AllowDrop = true;
             TreeV.NodeMouseClick += TreeView1_NodeMouseClick;
             TreeV.NodeMouseDoubleClick += TreeView1_NodeMouseDoubleClick;
-            //  Tree.AfterCheck += TreeView1_AfterCheck;
+            TreeV.AfterCheck += TreeView1_AfterCheck;
+            
             TreeV.DragDrop += Tree_DragDrop;
             TreeV.DragEnter += Tree_DragEnter;
             TreeV.DragLeave += Tree_DragLeave;
@@ -814,7 +813,6 @@ namespace TheTechIdea.Winforms.VIS
             TreeV.AfterSelect += TreeV_AfterSelect;
          //   TreeV.KeyDown += TreeV_KeyDown;
         }
-
         private void TreeV_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.LControlKey)
@@ -1140,42 +1138,75 @@ namespace TheTechIdea.Winforms.VIS
            
 
         }
-        //private void TreeView1_AfterCheck(object sender, TreeViewEventArgs e)
-        //{
-        //    if (busy) return;
-        //    busy = true;
-        //    try
-        //    {
-        //        //   CheckNodes(e.Node, e.Node.Checked);
-        //    }
-        //    catch (Exception ex)
-        //    {
+        private void TreeView1_AfterCheck(object sender, TreeViewEventArgs e)
+        {
+            if (busy) return;
+            busy = true;
+            try
+            {
+                IBranch br = GetBranch(Convert.ToInt32(e.Node.Tag));
 
-        //        Logger.WriteLog($"Error in Showing View on Tree ({ex.Message}) ");
-        //        Erinfo.Flag = Errors.Failed;
-        //        Erinfo.Ex = ex;
-        //    }
-        //    finally
-        //    {
-        //        busy = false;
-        //    }
+                if(br.BranchType== EnumBranchType.Entity && br.BranchClass!="VIEW")
+                {
+                    CheckNodes(e.Node, e.Node.Checked);
+                    if (e.Node.Checked)
+                    {
+                        SelectedBranchs.Add(br.BranchID);
+                    }else
+                        SelectedBranchs.Remove(br.BranchID);
 
-        //}
-      
-        //private void SetChildrenChecked(TreeNode treeNode, bool checkedState)
-        //{
-        //    foreach (TreeNode item in treeNode.Nodes)
-        //    {
-        //        if (item.Checked != checkedState)
-        //        {
+                }
+                else
+                {
+                    e.Node.Checked = false;
+                }
+                  
+            }
+            catch (Exception ex)
+            {
 
-        //            // int vitem = Convert.ToInt32(item.Tag.ToString().Substring(item.Tag.ToString().IndexOf('-') + 1));
-        //            item.Checked = checkedState;
-        //            Visutil.GetViewFromNode(item).Editable = checkedState;
-        //        }
-        //        SetChildrenChecked(item, item.Checked);
-        //    }
-        //}
+                DMEEditor.AddLogMessage("Fail",$"Error in Showing View on Tree ({ex.Message}) ",DateTime.Now,0,null,Errors.Failed);
+              
+            }
+            finally
+            {
+                busy = false;
+            }
+
+        }
+        private void CheckNodes(TreeNode node, bool check)
+        {
+            try
+            {
+                SetChildrenChecked(node, node.Checked);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Error in Setting Check for Node Tree ({ex.Message}) ", DateTime.Now, 0, null, Errors.Failed);
+            }
+
+
+
+        }
+        private void SetChildrenChecked(TreeNode treeNode, bool checkedState)
+        {
+            foreach (TreeNode item in treeNode.Nodes)
+            {
+                if (item.Checked != checkedState)
+                {
+
+                    // int vitem = Convert.ToInt32(item.Tag.ToString().Substring(item.Tag.ToString().IndexOf('-') + 1));
+                    item.Checked = checkedState;
+                    if (item.Checked)
+                    {
+                        SelectedBranchs.Add(Convert.ToInt32(item.Tag));
+                    }
+                    else
+                        SelectedBranchs.Remove(Convert.ToInt32(item.Tag));
+                }
+                SetChildrenChecked(item, item.Checked);
+            }
+        }
         private void TreeView1_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
             TreeEvent = "MouseDoubleClick";
@@ -1308,20 +1339,23 @@ namespace TheTechIdea.Winforms.VIS
                             {
                                 MoveBranchToParent(targetBranch, dragedBranch);
                             }
-
+                             
                             break;
                         case EnumBranchType.Entity:
+                            IDataSource ds = DMEEditor.GetDataSource(dragedBranch.DataSourceName);
+                            EntityStructure  ent= ds.GetEntityStructure(dragedBranch.BranchText, true);
                             args = new PassedArgs
                             {
                                 ObjectName = "DATABASE",
                                 ObjectType = "TABLE",
-                                EventType = "DragandDrop",
-                                ParameterString1 = "Add Entity Child",
+                                EventType = "COPYENTITY",
+                                ParameterString1 = "COPYENTITY",
+                              
                                 DataSource = dragedBranch.DataSource,
                                 DatasourceName = dragedBranch.DataSourceName,
                                 CurrentEntity = dragedBranch.BranchText,
                                  Id=dragedBranch.BranchID,
-                                Objects = new List<ObjectItem> { new ObjectItem { Name = "ChildBranch", obj = dragedBranch } }
+                                Objects = new List<ObjectItem> { new ObjectItem { Name = "Branch", obj = dragedBranch }, new ObjectItem { Name = "Entity", obj = ent } }
                             };
 
 

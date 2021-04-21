@@ -73,6 +73,16 @@ namespace TheTechIdea.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap checked_16 {
+            get {
+                object obj = ResourceManager.GetObject("checked_16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap exit_32 {
             get {
                 object obj = ResourceManager.GetObject("exit_32", resourceCulture);

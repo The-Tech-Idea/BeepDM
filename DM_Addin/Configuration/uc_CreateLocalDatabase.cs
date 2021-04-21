@@ -82,7 +82,7 @@ namespace TheTechIdea.Configuration
             //  //  var it = DatasourceCategorycomboBox.Items.Add(item);
 
             //}
-            foreach (ConnectionDriversConfig cls in DMEEditor.ConfigEditor.DataDrivers.Where(x=>x.CreateLocal==true))
+            foreach (ConnectionDriversConfig cls in DMEEditor.ConfigEditor.DataDriversClasses.Where(x=>x.CreateLocal==true))
             {
                 this.EmbeddedDatabaseTypecomboBox.Items.Add(cls.classHandler);
             }
@@ -108,7 +108,7 @@ namespace TheTechIdea.Configuration
             {
 
                 ConnectionProperties dataConnection = new ConnectionProperties();
-                ConnectionDriversConfig package = DMEEditor.ConfigEditor.DataDrivers.Where(x => x.classHandler == EmbeddedDatabaseTypecomboBox.Text).OrderByDescending(o=>o.version).FirstOrDefault();
+                ConnectionDriversConfig package = DMEEditor.ConfigEditor.DataDriversClasses.Where(x => x.classHandler == EmbeddedDatabaseTypecomboBox.Text).OrderByDescending(o=>o.version).FirstOrDefault();
 
 
                 dataConnection.Category = package.DatasourceCategory;//(DatasourceCategory)(int) Enum.Parse(typeof( DatasourceCategory),CategorycomboBox.Text);

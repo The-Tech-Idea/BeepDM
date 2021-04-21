@@ -31,7 +31,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         public List<string> GetDataClasses()
         {
             List<string> p = new List<string>();
-            foreach (AssemblyClassDefinition cls in DMEEditor.ConfigEditor.DataSources)
+            foreach (AssemblyClassDefinition cls in DMEEditor.ConfigEditor.DataSourcesClasses)
             {
                 p.Add(cls.className);
             }

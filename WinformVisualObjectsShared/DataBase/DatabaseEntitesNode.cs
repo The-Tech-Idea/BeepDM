@@ -161,7 +161,7 @@ namespace TheTechIdea.Winforms.VIS
         //    return DMEEditor.ErrorObject;
         //}
         [BranchDelegate(Caption = "Data Edit")]
-        public IErrorsInfo CRUDGrid()
+        public IErrorsInfo DataEdit()
         {
 
             try
@@ -236,10 +236,9 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
                 // IBranch pbr = TreeEditor.Branches.Where(x => x.BranchType == EnumBranchType.Root && x.BranchClass == "VIEW").FirstOrDefault();
-                if (EntityStructure == null)
-                {
-                    EntityStructure = DataSource.GetEntityStructure(BranchText,true);
-                }
+              
+                EntityStructure = DataSource.GetEntityStructure(BranchText,true);
+                
                 PassedArgs args = new PassedArgs
                 {
                     ObjectName = "DATABASE",
@@ -413,6 +412,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
+
         #endregion
     }
 }

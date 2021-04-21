@@ -1308,7 +1308,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 //IDbDataAdapter adp = GetDataAdapter(sql, false);
                 //adp.Fill(ds);
                 //return ds;
-                return GetData<ChildRelation>(sql);
+                if (!string.IsNullOrEmpty(sql) && !string.IsNullOrWhiteSpace(sql))
+                {
+                    return GetData<ChildRelation>(sql);
+                }
+                else
+                    return null;
+                 
                 //  Logger.WriteLog("Successfully Retrieve Child Table list");
 
             }
@@ -2281,10 +2287,14 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             try
             {
                 string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getFKforTable, tablename, SchemaName, Filterparamters, DMEEditor.ConfigEditor.QueryList, DatasourceType);
-                //IDbDataAdapter adp = GetDataAdapter(sql, false);
-                // adp.Fill(ds);
-                return GetData<ChildRelation>(sql);
-                // Logger.WriteLog("Successfully Retrieve Child Table list");
+                if (!string.IsNullOrEmpty(sql) && !string.IsNullOrWhiteSpace(sql))
+                {
+                    return GetData<ChildRelation>(sql);
+                }
+                else
+                    return null;
+              
+              
 
             }
             catch (Exception ex)

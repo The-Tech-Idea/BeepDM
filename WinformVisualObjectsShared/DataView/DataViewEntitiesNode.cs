@@ -31,6 +31,7 @@ namespace TheTechIdea.Winforms.VIS
             IconImageName = pimagename;
            
             ds = (DataViewDataSource)DMEEditor.GetDataSource(pDSName);
+            DataView = ds.DataView;
             EntityStructure = entityStructure;
            
             MiscID = entityStructure.Id;
@@ -246,7 +247,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Edit", Hidden = false)]
+        [BranchDelegate(Caption = "Edit", Hidden = false, iconimage = "edit_entity.ico")]
         public IErrorsInfo EditEntity()
         {
 
@@ -289,7 +290,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Remove", Hidden = false)]
+        [BranchDelegate(Caption = "Remove", Hidden = false, iconimage = "remove.ico")]
         public IErrorsInfo RemoveEntity()
         {
 
@@ -335,7 +336,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Get Childs", Hidden = false)]
+        [BranchDelegate(Caption = "Get Childs", Hidden = false, iconimage = "get_childs.ico")]
         public IErrorsInfo GetChilds()
         {
 
@@ -361,7 +362,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Remove Childs", Hidden = false)]
+        [BranchDelegate(Caption = "Remove Childs", Hidden = false, iconimage = "remove_childs.ico")]
         public IErrorsInfo RemoveChilds()
         {
 
@@ -421,7 +422,7 @@ namespace TheTechIdea.Winforms.VIS
         //    };
         //    return DMEEditor.ErrorObject;
         //}
-        [BranchDelegate(Caption = "Data Edit", Hidden = false)]
+        [BranchDelegate(Caption = "Data Edit", Hidden = false,iconimage ="data_edit.ico")]
         public IErrorsInfo DataEdit()
         {
 
@@ -461,59 +462,59 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Add Child Entity", Hidden = false)]
-        public IErrorsInfo AddChildEntity()
-        {
+        //[BranchDelegate(Caption = "Add Child Entity", Hidden = false)]
+        //public IErrorsInfo AddChildEntity()
+        //{
 
-            try
-            {
-                string[] args = { "New Query Entity", null, null };
-                List<ObjectItem> ob = new List<ObjectItem>(); ;
+        //    try
+        //    {
+        //        string[] args = { "New Query Entity", null, null };
+        //        List<ObjectItem> ob = new List<ObjectItem>(); ;
                
-                if (TreeEditor.args.Objects != null)
-                {
-                    ob.AddRange(TreeEditor.args.Objects);
+        //        if (TreeEditor.args.Objects != null)
+        //        {
+        //            ob.AddRange(TreeEditor.args.Objects);
 
-                }
-                ObjectItem it = new ObjectItem();
-                it.obj = this;
-                it.Name = "Branch";
-                ob.Add(it);
-                ObjectItem it1 = new ObjectItem();
-                it1.obj = this;
-                it1.Name = "ParentBranch";
-                ob.Add(it1);
-                PassedArgs Passedarguments = new PassedArgs
-                {
-                    Addin = null,
-                    AddinName = null,
-                    AddinType = "",
-                    DMView = DataView,
-                    CurrentEntity = BranchText,
-                    Id = ID,
-                    ObjectType = "NEWECHILDNTITY",
-                    DataSource = DataSource,
-                    ObjectName = DataView.ViewName,
+        //        }
+        //        ObjectItem it = new ObjectItem();
+        //        it.obj = this;
+        //        it.Name = "Branch";
+        //        ob.Add(it);
+        //        ObjectItem it1 = new ObjectItem();
+        //        it1.obj = this;
+        //        it1.Name = "ParentBranch";
+        //        ob.Add(it1);
+        //        PassedArgs Passedarguments = new PassedArgs
+        //        {
+        //            Addin = null,
+        //            AddinName = null,
+        //            AddinType = "",
+        //            DMView = DataView,
+        //            CurrentEntity = BranchText,
+        //            Id = ID,
+        //            ObjectType = "NEWECHILDNTITY",
+        //            DataSource = DataSource,
+        //            ObjectName = DataView.ViewName,
 
-                    Objects = ob,
+        //            Objects = ob,
 
-                    DatasourceName = DataView.DataViewDataSourceID,
-                    EventType = "NEWECHILDNTITY"
+        //            DatasourceName = DataView.DataViewDataSourceID,
+        //            EventType = "NEWECHILDNTITY"
 
-                };
-                //ActionNeeded?.Invoke(this, Passedarguments);
-                Visutil.ShowUserControlPopUp("Uc_DataViewEntityEditor", DMEEditor, args, Passedarguments);
+        //        };
+        //        //ActionNeeded?.Invoke(this, Passedarguments);
+        //        Visutil.ShowUserControlPopUp("Uc_DataViewEntityEditor", DMEEditor, args, Passedarguments);
 
-                DMEEditor.AddLogMessage("Success", "Created Query Entity", DateTime.Now, 0, null, Errors.Ok);
-            }
-            catch (Exception ex)
-            {
-                string mes = "Could not Create Query Entity";
-                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
-            };
-            return DMEEditor.ErrorObject;
-        }
-        [BranchDelegate(Caption = "Print Data", Hidden = false)]
+        //        DMEEditor.AddLogMessage("Success", "Created Query Entity", DateTime.Now, 0, null, Errors.Ok);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        string mes = "Could not Create Query Entity";
+        //        DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+        //    };
+        //    return DMEEditor.ErrorObject;
+        //}
+        [BranchDelegate(Caption = "Print Data", Hidden = false,iconimage ="print.ico")]
         public IErrorsInfo PrintData()
         {
             try
@@ -529,59 +530,51 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
            
         }
-        [BranchDelegate(Caption = "Add Child Entity From IDataSource", Hidden = true)]
-        public IErrorsInfo AddChildEntityFromIDataSource()
-        {
+        //[BranchDelegate(Caption = "Get Child Entities From DataSource", Hidden = true)]
+        //public IErrorsInfo AddChildEntityFromIDataSource()
+        //{
 
-            try
-            {
-                
-                if (TreeEditor.args.Objects != null)
-                {
-                    IBranch branchentity = (IBranch)TreeEditor.args.Objects.Where(x => x.Name == "ChildBranch").FirstOrDefault().obj;
-                    IDataSource childds = DMEEditor.GetDataSource(branchentity.DataSource.DatasourceName);
-                    if (childds != null)
-                    {
-                        EntityStructure entity = childds.GetEntityStructure(branchentity.BranchText,true);
-                     
-                        if (entity != null)
-                        {
-                            EntityStructure CurEntity= ds.GetEntityStructure(BranchText, true);
-                            EntityStructure newentity = new EntityStructure();
-                            newentity.ParentId = CurEntity.Id;
-                            newentity.ViewID = CurEntity.ViewID;
-                            newentity.Viewtype = entity.Viewtype;
-                            newentity.Relations = entity.Relations;
-                            newentity.PrimaryKeys = entity.PrimaryKeys;
-                            newentity.EntityName = entity.EntityName;
-                            newentity.Fields = entity.Fields;
-                            newentity.DataSourceID = entity.DataSourceID;
-                            newentity.DatabaseType = entity.DatabaseType;
-                            newentity.SchemaOrOwnerOrDatabase = entity.SchemaOrOwnerOrDatabase;
-                            newentity.Id = ds.NextHearId();
-                            ds.CreateEntityAs(newentity);
+        //    try
+        //    {
+        //        IDataSource childds = DMEEditor.GetDataSource(EntityStructure.DataSourceID);
+        //        if (childds != null)
+        //            {
+        //                EntityStructure entity = childds.GetEntityStructure(BranchText, true);
 
-                            DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, newentity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "entity.ico", DataView.DataViewDataSourceID, newentity);
-                           
-                            TreeEditor.AddBranch(this, dbent);
-                            dbent.CreateChildNodes();
-                            ChildBranchs.Add(dbent);
-                        }
-                    }
-                        
-                }
-             
-              
+        //                if (entity != null)
+        //                {
+        //                    EntityStructure CurEntity = ds.GetEntityStructure(BranchText, true);
+        //                    EntityStructure newentity = new EntityStructure();
+        //                    newentity.ParentId = CurEntity.Id;
+        //                    newentity.ViewID = CurEntity.ViewID;
+        //                    newentity.Viewtype = entity.Viewtype;
+        //                    newentity.Relations = entity.Relations;
+        //                    newentity.PrimaryKeys = entity.PrimaryKeys;
+        //                    newentity.EntityName = entity.EntityName;
+        //                    newentity.Fields = entity.Fields;
+        //                    newentity.DataSourceID = entity.DataSourceID;
+        //                    newentity.DatabaseType = entity.DatabaseType;
+        //                    newentity.SchemaOrOwnerOrDatabase = entity.SchemaOrOwnerOrDatabase;
+        //                    newentity.Id = ds.NextHearId();
+        //                    ds.CreateEntityAs(newentity);
 
-                DMEEditor.AddLogMessage("Success", "Created Query Entity", DateTime.Now, 0, null, Errors.Ok);
-            }
-            catch (Exception ex)
-            {
-                string mes = "Could not Create Query Entity";
-                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
-            };
-            return DMEEditor.ErrorObject;
-        }
+        //                    DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, newentity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "entity.ico", DataView.DataViewDataSourceID, newentity);
+
+        //                    TreeEditor.AddBranch(this, dbent);
+        //                    dbent.CreateChildNodes();
+        //                    ChildBranchs.Add(dbent);
+        //                }
+        //            }
+                 
+        //        DMEEditor.AddLogMessage("Success", "Get Childs for Entity", DateTime.Now, 0, null, Errors.Ok);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        string mes = "Could not Create Query Entity";
+        //        DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+        //    };
+        //    return DMEEditor.ErrorObject;
+        //}
         [BranchDelegate(Caption = "Field Properties")]
         public IErrorsInfo FieldProperties()
         {
@@ -629,6 +622,78 @@ namespace TheTechIdea.Winforms.VIS
             }
             return DMEEditor.ErrorObject;
 
+        }
+        [BranchDelegate(Caption = "Paste Entity(s)",iconimage ="paste.ico")]
+        public IErrorsInfo PasteEntity()
+        {
+
+            try
+            {
+                   ds = (DataViewDataSource)DMEEditor.GetDataSource(DataView.DataViewDataSourceID);
+                if (TreeEditor.args != null)
+                {
+                    if (TreeEditor.args.EventType == "COPYENTITY" || TreeEditor.args.EventType == "DragandDropEntity")
+                    {
+                        if (TreeEditor.args.Objects != null)
+                        {
+                            IBranch pbr = (IBranch)TreeEditor.args.Objects.Where(x => x.Name == "Branch").FirstOrDefault().obj;
+                            EntityStructure entity = (EntityStructure)TreeEditor.args.Objects.Where(x => x.Name == "Entity").FirstOrDefault().obj;
+                            if (ds.CheckEntityExist(entity.EntityName))
+                            {
+                                DMEEditor.AddLogMessage("Fail", $"Could Not Paste Entity {entity.EntityName}, it already exist", DateTime.Now, -1, null, Errors.Failed);
+                            }
+                            else
+                            {
+                                IDataSource srcds = DMEEditor.GetDataSource(entity.DataSourceID);
+                                entity = srcds.GetEntityStructure(entity, true);
+                                entity.Created = false;
+                                entity.Id = ds.NextHearId();
+                                entity.ParentId = ID;
+                                entity.ViewID = DataView.ViewID;
+                                ds.CreateEntityAs(entity);
+                                DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "entity.ico", DataView.DataViewDataSourceID, entity);
+                                TreeEditor.AddBranch(this, dbent);
+                                dbent.CreateChildNodes();
+                                ChildBranchs.Add(dbent);
+                                DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                            }
+
+                        }
+                    }
+                    else
+                    if (TreeEditor.SelectedBranchs.Count > 0 && TreeEditor.args.EventType == "COPYENTITIES")
+                    {
+                        foreach (int item in TreeEditor.SelectedBranchs)
+                        {
+                            IBranch br = TreeEditor.GetBranch(item);
+                            IDataSource srcds = DMEEditor.GetDataSource(br.DataSourceName);
+                            if (srcds != null)
+                            {
+                                EntityStructure entity = srcds.GetEntityStructure(br.BranchText, true);
+
+                                entity.Created = false;
+                                entity.Id = ds.NextHearId();
+                                entity.ParentId = ID;
+                                entity.ViewID = DataView.ViewID;
+                                ds.CreateEntityAs(entity);
+                                DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "entity.ico", DataView.DataViewDataSourceID, entity);
+                                TreeEditor.AddBranch(this, dbent);
+                                dbent.CreateChildNodes();
+                                ChildBranchs.Add(dbent);
+                                DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                            }
+
+
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                string mes = "Could not Added Entity ";
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return DMEEditor.ErrorObject;
         }
         #endregion Exposed Interface"
         #region "Other Methods"

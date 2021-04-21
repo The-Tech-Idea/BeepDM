@@ -4,15 +4,16 @@ using System.Data;
 using TheTechIdea.Util;
 
 using System.IO;
-using System.Collections.Specialized;
 using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Report;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
+using ExcelDataReader;
+using System.Text;
 
 namespace TheTechIdea.DataManagment_Engine.FileManager
 {
@@ -27,30 +28,29 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         public DataSourceType DatasourceType { get; set; }
         public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;
         public ConnectionState ConnectionStatus { get ;set ;}
-        public List<string> EntitiesNames { get; set; }
+        public List<string> EntitiesNames { get; set; } = new List<string>();
 
         public IDMEEditor DMEEditor { get; set; }
         public IErrorsInfo ErrorObject { get; set; }
         public IDMLogger Logger { get; set; }
         public List<object> Records { get; set; }
-        public List<EntityStructure> Entities {
-            get {
-                return Reader.Entities;
-            }
-            set {
-                Reader.Entities = value; 
-            } 
-        } 
+        public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>(); 
 
-        public List<object> SampleLines { get; set; }
-        public object MyType { get; set; }
-        public DataTable SourceEntityData { get; set; }
+      
         public bool HeaderExist { get; set; }
         public int fromline { get; set; }
         public int  toline { get; set; }
-        public TxtXlsCSVReader Reader { get; set; }
+       // public TxtXlsCSVReader Reader { get; set; }
         public IDataConnection Dataconnection { get; set ; }
-      
+        string FileName;
+        string FilePath;
+        string CombineFilePath;
+        char Delimiter;
+        ExcelReaderConfiguration ReaderConfig;
+        ExcelDataSetConfiguration ExcelDataSetConfig;
+        public DataSet FileData { get; set; }
+        IExcelDataReader reader;
+        
         public TxtXlsCSVFileSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType pDatasourceType ,  IErrorsInfo per)
         {
             DatasourceName = datasourcename;
@@ -81,16 +81,16 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             }
             FileType = ft;
             Category = DatasourceCategory.FILE;
-
-          
-
-            Reader = new TxtXlsCSVReader(Dataconnection.ConnectionProp.FileName, Logger, DMEEditor, FileType, per, Dataconnection.ConnectionProp.FilePath, null);
-            ConnectionStatus = Reader.OpenConnection();
+            FileName = Dataconnection.ConnectionProp.FileName;
+            FilePath = Dataconnection.ConnectionProp.FilePath;
+            SetupConfig();
+            //Reader = new TxtXlsCSVReader(, Logger, DMEEditor, FileType, per, Dataconnection.ConnectionProp.FilePath, null);
+            ConnectionStatus = OpenConnection();
             Dataconnection.ConnectionStatus = ConnectionStatus;
             if (ConnectionStatus == ConnectionState.Open)
             {
                // Entities = Reader.Entities;
-                EntitiesNames = Reader.Entities.Select(o => o.EntityName).ToList();
+                EntitiesNames = Entities.Select(o => o.EntityName).ToList();
             }
            // GetEntitesList();
             
@@ -104,7 +104,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             {
                // List<EntityStructure> entlist = new List<EntityStructure>();
                 EntitiesNames = new List<string>();
-                EntitiesNames = Reader.getWorksheetNames().ToList();
+                EntitiesNames = getWorksheetNames().ToList();
                 
 
                 //  DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == DatasourceName).FirstOrDefault().Entities =entlist ;
@@ -134,33 +134,33 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             DMTypeBuilder.CreateNewObject(EntityName, EntityName, Entities.Where(x=>x.EntityName== EntityName).FirstOrDefault().Fields);
             return DMTypeBuilder.myType;
         }
-        public async Task<object> GetEntityDataAsync(string entityname, string filterstr)
-        {
+        //public async Task<object> GetEntityDataAsync(string entityname, string filterstr)
+        //{
 
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
-                return await Task.Run(() => Reader.ReadList(0, HeaderExist, 0, 0));
+        //    ErrorObject.Flag = Errors.Ok;
+        //    try
+        //    {
+        //        return await Task.Run(() => Reader.ReadList(0, HeaderExist, 0, 0));
               
               
 
-            }
-            catch (Exception ex)
-            {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting File Data ({ex.Message}) ");
-                return null;
-            }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        ErrorObject.Flag = Errors.Failed;
+        //        ErrorObject.Ex = ex;
+        //        Logger.WriteLog($"Error in getting File Data ({ex.Message}) ");
+        //        return null;
+        //    }
            
-        }
+        //}
         public  object GetEntity(string EntityName, List<ReportFilter> filter)
         {
 
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                return  Reader.ReadDataTable(EntityName, HeaderExist, 0, 0);
+                return  ReadDataTable(EntityName, HeaderExist, 0, 0);
 
 
 
@@ -202,58 +202,58 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             return ErrorObject;
         }
      
-        public async Task<List<object>> GetSampleData(bool HeaderExist)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
+        //public async Task<List<object>> GetSampleData(bool HeaderExist)
+        //{
+        //    ErrorObject.Flag = Errors.Ok;
+        //    try
+        //    {
 
 
-                SampleLines = await Task.Run(() => Reader.ReadList(0, HeaderExist, 0,100));
-            }
-            catch (Exception ex)
-            {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting Sample Data  ({ex.Message}) ");
-            }
-            return SampleLines;
-        }
-        public DataTable GetSampleDataTable(bool HeaderExist)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
+        //        SampleLines = await Task.Run(() => Reader.ReadList(0, HeaderExist, 0,100));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        ErrorObject.Flag = Errors.Failed;
+        //        ErrorObject.Ex = ex;
+        //        Logger.WriteLog($"Error in getting Sample Data  ({ex.Message}) ");
+        //    }
+        //    return SampleLines;
+        //}
+        //public DataTable GetSampleDataTable(bool HeaderExist)
+        //{
+        //    ErrorObject.Flag = Errors.Ok;
+        //    try
+        //    {
 
 
-                SourceEntityData = Reader.ReadDataTable(0,HeaderExist, 0, 100);
-            }
-            catch (Exception ex)
-            {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting Sample Data  ({ex.Message}) ");
-            }
-            return SourceEntityData;
-        }
-        public DataTable GetEntityDataTable(string EntityName, string filterstr)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
+        //        SourceEntityData = Reader.ReadDataTable(0,HeaderExist, 0, 100);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        ErrorObject.Flag = Errors.Failed;
+        //        ErrorObject.Ex = ex;
+        //        Logger.WriteLog($"Error in getting Sample Data  ({ex.Message}) ");
+        //    }
+        //    return SourceEntityData;
+        //}
+        //public DataTable GetEntityDataTable(string EntityName, string filterstr)
+        //{
+        //    ErrorObject.Flag = Errors.Ok;
+        //    try
+        //    {
 
-                SourceEntityData = Reader.ReadDataTable(0, HeaderExist, fromline, toline);
+        //        SourceEntityData = Reader.ReadDataTable(0, HeaderExist, fromline, toline);
 
-            }
-            catch (Exception ex)
-            {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting File Data ({ex.Message}) ");
-            }
-            return SourceEntityData;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        ErrorObject.Flag = Errors.Failed;
+        //        ErrorObject.Ex = ex;
+        //        Logger.WriteLog($"Error in getting File Data ({ex.Message}) ");
+        //    }
+        //    return SourceEntityData;
 
-        }
+        //}
 
         public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
@@ -283,9 +283,9 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         public bool CheckEntityExist(string EntityName)
         {
             bool retval=false;
-            if (Reader.Entities != null)
+            if (Entities != null)
             {
-                if (Reader.Entities.Where(x => string.Equals(x.EntityName, EntityName,StringComparison.OrdinalIgnoreCase)).Count() > 0)
+                if (Entities.Where(x => string.Equals(x.EntityName, EntityName,StringComparison.OrdinalIgnoreCase)).Count() > 0)
                 {
                     retval = true;
                 }
@@ -301,22 +301,18 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         {
             if (ConnectionStatus == ConnectionState.Open)
             {
-                if (refresh || Reader.Entities.Count() == 0)
+                if (refresh || Entities.Count() == 0)
                 {
-                    Reader.GetEntityStructures( refresh);
-                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new ConfigUtil.DatasourceEntities { datasourcename = DatasourceName, Entities = Reader.Entities });
+                    GetEntityStructures( refresh);
+                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new ConfigUtil.DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
                 }
 
             }
        
-           return Reader.Entities.Where(x => string.Equals(x.EntityName, EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+           return Entities.Where(x => string.Equals(x.EntityName, EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 
         }
 
-        public IDataReader GetDataReader(string querystring)
-        {
-            throw new NotImplementedException();
-        }
 
         public  object RunQuery( string qrystr)
         {
@@ -337,12 +333,12 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         {
             if (ConnectionStatus == ConnectionState.Open)
             {
-                if (refresh || Reader.Entities.Count() == 0)
+                if (refresh || Entities.Count() == 0)
                 {
-                    Reader.GetEntityStructures(refresh);
+                    GetEntityStructures(refresh);
                 }
             }
-            return Reader.Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault();
+            return Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault();
         }
         public LScript RunScript(LScript dDLScripts)
         {
@@ -366,5 +362,507 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         {
             throw new NotImplementedException();
         }
+        #region "Excel and CSV Reader"
+        public ConnectionState OpenConnection()
+        {
+            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == FileName).FirstOrDefault();
+            if (DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName) == null)
+            {
+                GetEntityStructures(true);
+            }
+            else
+            {
+                Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
+            };
+
+            CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+            if (File.Exists(CombineFilePath))
+            {
+                ConnectionStatus = ConnectionState.Open;
+
+
+
+                return ConnectionState.Open;
+
+
+            }
+            else
+            {
+                ConnectionStatus = ConnectionState.Broken;
+                return ConnectionState.Broken;
+            }
+        }
+        public ConnectionState GetFileState()
+        {
+            if (File.Exists(CombineFilePath))
+            {
+                Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == FileName).FirstOrDefault();
+                Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
+                ConnectionStatus = ConnectionState.Open;
+                if (Entities.Count == 0)
+                {
+                    FileData = GetExcelDataSet();
+                    Entities = GetEntityStructures(false);
+                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = FileName, Entities = Entities });
+                    // ConnProp.Entities = Entities;
+                    DMEEditor.ConfigEditor.SaveDataconnectionsValues();
+
+
+                }
+
+                return ConnectionState.Open;
+
+
+            }
+            else
+            {
+                ConnectionStatus = ConnectionState.Broken;
+                return ConnectionState.Broken;
+            }
+        }
+        public List<EntityStructure> GetEntityStructures(bool refresh = false)
+        {
+            List<EntityStructure> retval = new List<EntityStructure>();
+            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == FileName).FirstOrDefault();
+
+            CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+            if (File.Exists(CombineFilePath))
+            {
+
+                if ((Entities == null) || (Entities.Count == 0) || (refresh))
+                {
+                    Entities = new List<EntityStructure>();
+                    Getfields();
+                    Dataconnection.ConnectionProp.Delimiter = Delimiter;
+                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = FileName, Entities = Entities });
+                    //  ConnProp.Entities = Entities;
+                    DMEEditor.ConfigEditor.SaveDataconnectionsValues();
+
+                }
+                else
+                {
+
+                    Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
+                    Delimiter = Dataconnection.ConnectionProp.Delimiter;
+
+                }
+
+                FileData = GetExcelDataSet();
+            }
+            else
+                retval = Entities;
+
+            return retval;
+
+        }
+        private void SetupConfig()
+        {
+            ReaderConfig = new ExcelReaderConfiguration()
+            {
+                // Gets or sets the encoding to use when the input XLS lacks a CodePage
+                // record, or when the input CSV lacks a BOM and does not parse as UTF8. 
+                // Default: cp1252 (XLS BIFF2-5 and CSV only)
+                FallbackEncoding = Encoding.GetEncoding(1252),
+
+                //// Gets or sets the password used to open password protected workbooks.
+                //Password = "password",
+
+                // Gets or sets an array of CSV separator candidates. The reader 
+                // autodetects which best fits the input data. Default: , ; TAB | # 
+                // (CSV only)
+                AutodetectSeparators = new char[] { ',', ';', '\t', '|', '#' },
+
+                // Gets or sets a value indicating whether to leave the stream open after
+                // the IExcelDataReader object is disposed. Default: false
+                LeaveOpen = false,
+
+                // Gets or sets a value indicating the number of rows to analyze for
+                // encoding, separator and field count in a CSV. When set, this option
+                // causes the IExcelDataReader.RowCount property to throw an exception.
+                // Default: 0 - analyzes the entire file (CSV only, has no effect on other
+                // formats)
+                AnalyzeInitialCsvRows = 0,
+            };
+            ExcelDataSetConfig = new ExcelDataSetConfiguration()
+            {
+                // Gets or sets a value indicating whether to set the DataColumn.DataType 
+                // property in a second pass.
+                UseColumnDataType = true,
+
+                // Gets or sets a callback to determine whether to include the current sheet
+                // in the DataSet. Called once per sheet before ConfigureDataTable.
+                FilterSheet = (tableReader, sheetIndex) => true,
+
+                // Gets or sets a callback to obtain configuration options for a DataTable. 
+                ConfigureDataTable = (tableReader) => new ExcelDataTableConfiguration()
+                {
+                    // Gets or sets a value indicating the prefix of generated column names.
+                    //EmptyColumnNamePrefix = "Column",
+
+                    // Gets or sets a value indicating whether to use a row from the 
+                    // data as column names.
+                    UseHeaderRow = true,
+
+
+                    // Gets or sets a callback to determine which row is the header row. 
+                    // Only called when UseHeaderRow = true.
+                    ReadHeaderRow = (rowReader) =>
+                    {
+                        // F.ex skip the first row and use the 2nd row as column headers:
+                        // rowReader.Read();
+
+                    },
+
+                    // Gets or sets a callback to determine whether to include the 
+                    // current row in the DataTable.
+                    FilterRow = (rowReader) =>
+                    {
+                        //return true;
+                        var hasData = false;
+                        for (var u = 0; u < rowReader.FieldCount; u++)
+                        {
+                            if (rowReader[u] == null || string.IsNullOrEmpty(rowReader[u].ToString()))
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                hasData = true;
+                                break;
+                            }
+
+
+                        }
+
+                        return hasData;
+                    },
+
+                    // Gets or sets a callback to determine whether to include the specific
+                    // column in the DataTable. Called once per column after reading the 
+                    // headers.
+                    FilterColumn = (rowReader, columnIndex) =>
+                    {
+                        return true;
+                    }
+                }
+            };
+
+        }
+
+        private DataSet GetExcelDataSet()
+        {
+            DataSet ds = new DataSet();
+            using (var stream = File.Open(Path.Combine(FilePath, FileName), FileMode.Open, FileAccess.Read))
+            {
+                switch (Dataconnection.ConnectionProp.Ext.ToLower())
+                {
+                    case ".csv":
+                        reader = ExcelReaderFactory.CreateCsvReader(stream, ReaderConfig);
+                        break;
+                    case ".xls":
+                        reader = ExcelReaderFactory.CreateBinaryReader(stream, ReaderConfig);
+                        break;
+                    case ".xlsx":
+                        reader = ExcelReaderFactory.CreateOpenXmlReader(stream, ReaderConfig);
+                        break;
+                    default:
+                        throw new Exception("ExcelDataReaderFactory() - unknown/unsupported file extension");
+                        // break;
+                }
+
+
+                // 2. Use the AsDataSet extension method
+                ds = reader.AsDataSet(ExcelDataSetConfig);
+                // The result of each spreadsheet is in result.Tables
+
+                stream.Close();
+            }
+            return ds;
+        }
+
+        private void Getfields()
+        {
+            DataSet ds;
+            Entities = new List<EntityStructure>();
+
+            if (File.Exists(Path.Combine(FilePath, FileName)) == true)
+            {
+                try
+                {
+
+
+                    ds = GetExcelDataSet();
+
+                    int i = 0;
+                    foreach (DataTable tb in ds.Tables)
+                    {
+                        EntityStructure entityData = new EntityStructure();
+
+                        string sheetname;
+                        sheetname = tb.TableName;
+                        entityData.Viewtype = ViewType.File;
+                        entityData.DatabaseType = DataSourceType.Text;
+                        entityData.DataSourceID = FileName;
+                        entityData.EntityName = sheetname;
+                        List<EntityField> Fields = new List<EntityField>();
+                        int y = 0;
+                        foreach (DataColumn field in tb.Columns)
+                        {
+
+                            Console.WriteLine("        " + field.ColumnName + ": " + field.DataType);
+
+                            EntityField f = new EntityField();
+
+
+                            //  f.tablename = sheetname;
+                            f.fieldname = field.ColumnName;
+                            f.fieldtype = field.DataType.ToString();
+                            f.ValueRetrievedFromParent = false;
+                            f.EntityName = sheetname;
+                            f.FieldIndex = y;
+                            Fields.Add(f);
+                            y += 1;
+
+                        }
+
+                        i += 1;
+                        entityData.Fields = new List<EntityField>();
+                        entityData.Fields.AddRange(Fields);
+                        Entities.Add(entityData);
+                    }
+
+
+
+                }
+                catch (Exception ex)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    ErrorObject.Ex = ex;
+                    Logger.WriteLog($"Error in getting File format ({ex.Message}) ");
+                }
+            }
+            else
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = null;
+                Logger.WriteLog($"File is not Found ");
+            }
+
+
+        }
+        private List<EntityField> GetSheetColumns(string psheetname)
+        {
+            return GetEntityDataType(psheetname).Fields.Where(x => x.EntityName == psheetname).ToList();
+        }
+        private void GetTypeForSheetsFile(string pSheetname)
+        {
+            List<EntityField> flds = GetSheetColumns(pSheetname);
+            DMTypeBuilder.CreateNewObject(pSheetname, pSheetname, flds);
+
+        }
+        public DataTable ReadDataTable(int sheetno = 0, bool HeaderExist = true, int fromline = 0, int toline = 100)
+        {
+            if (GetFileState() == ConnectionState.Open)
+            {
+                DataTable dataRows = new DataTable();
+                FileData = GetExcelDataSet();
+                dataRows = FileData.Tables[sheetno];
+                toline = dataRows.Rows.Count;
+                List<EntityField> flds = GetSheetColumns(FileData.Tables[sheetno].TableName);
+                string classpath = DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath).FirstOrDefault();
+                // DMEEditor.classCreator.CreateClass(FileData.Tables[sheetno].TableName, flds, classpath);
+                //GetTypeForSheetsFile(dataRows.TableName);
+                return dataRows;
+            }
+            else
+            {
+                return null;
+            }
+
+        }
+        public int GetSheetNumber(DataSet ls, string sheetname)
+        {
+            int retval = 0;
+            if (ls.Tables.Count == 1)
+            {
+                retval = 0;
+            }
+            else
+            {
+                if (ls.Tables.Count == 0)
+                {
+                    retval = -1;
+                }
+                else
+                {
+                    if (ls.Tables.Count > 1)
+                    {
+                        int i = 0;
+                        string found = "NotFound";
+                        while (found == "Found" || found == "ExitandNotFound")
+                        {
+
+                            if (ls.Tables[i].TableName == sheetname)
+                            {
+                                retval = i;
+
+                                found = "Found";
+                            }
+                            else
+                            {
+                                if (i == ls.Tables.Count - 1)
+                                {
+                                    found = "ExitandNotFound";
+                                }
+                                else
+                                {
+                                    i += 1;
+                                }
+                            }
+                        }
+
+
+                    }
+                }
+
+            }
+            return retval;
+
+        }
+        public DataTable ReadDataTable(string sheetname, bool HeaderExist = true, int fromline = 0, int toline = 100)
+        {
+
+            FileData = GetExcelDataSet();
+            return ReadDataTable(GetSheetNumber(FileData, sheetname), HeaderExist, fromline, toline); ;
+        }
+       
+        private EntityStructure GetEntityDataType(int sheetno)
+        {
+
+            return Entities[sheetno];
+        }
+        public List<Object> ReadList(int sheetno = 0, bool HeaderExist = true, int fromline = 0, int toline = 100)
+        {
+            if (GetFileState() == ConnectionState.Open)
+            {
+                DataTable dataRows = new DataTable();
+                FileData = GetExcelDataSet();
+                dataRows = FileData.Tables[sheetno];
+                toline = dataRows.Rows.Count;
+                List<EntityField> flds = GetSheetColumns(FileData.Tables[sheetno].TableName);
+                string classpath = DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath).FirstOrDefault();
+                DMEEditor.classCreator.CreateClass(FileData.Tables[sheetno].TableName, flds, classpath);
+                //GetTypeForSheetsFile(dataRows.TableName);
+                Type a = Type.GetType("TheTechIdea.ProjectClasses." + FileData.Tables[sheetno].TableName);
+                List<Object> retval = new List<object>();
+                EntityStructure enttype = GetEntityDataType(sheetno);
+                retval = DMEEditor.Utilfunction.GetListByDataTable(dataRows, a, enttype);
+                return retval;
+            }
+            else
+            {
+                return null;
+            }
+
+        }
+        public List<Object> ReadList(string sheetname, bool HeaderExist = true, int fromline = 0, int toline = 100)
+        {
+            if (GetFileState() == ConnectionState.Open)
+            {
+                DataTable dataRows = new DataTable();
+                FileData = GetExcelDataSet();
+                dataRows = FileData.Tables[sheetname];
+                toline = dataRows.Rows.Count;
+                List<EntityField> flds = GetSheetColumns(sheetname);
+                string classpath = DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath).FirstOrDefault();
+                DMEEditor.classCreator.CreateClass(FileData.Tables[sheetname].TableName, flds, classpath);
+                //GetTypeForSheetsFile(dataRows.TableName);
+                Type a = Type.GetType("TheTechIdea.ProjectClasses." + FileData.Tables[sheetname].TableName);
+                List<Object> retval = new List<object>();
+                EntityStructure enttype = GetEntityDataType(sheetname);
+                retval = DMEEditor.Utilfunction.GetListByDataTable(dataRows, a, enttype);
+                return retval;
+            }
+            else
+            {
+                return null;
+            }
+
+        }
+        // Private Excel Data Reader Methods
+        //-------------------------------------
+        public IExcelDataReader getExcelReader()
+        {
+            return ExcelReaderFactory.CreateReader(System.IO.File.OpenRead(FilePath), ReaderConfig);
+        }
+
+        public IEnumerable<string> getWorksheetNames()
+        {
+            List<string> entlist = new List<string>();
+            if (GetFileState() == ConnectionState.Open)
+            {
+
+                if (Entities.Count == 0)
+                {
+                    Entities = GetEntityStructures(true);
+
+                }
+                foreach (EntityStructure item in Entities)
+                {
+
+                    entlist.Add(item.EntityName);
+                }
+
+                //return null;
+                //var workbook = FileData;
+                //var sheets = from DataTable sheet in workbook.Tables.Cast<DataTable>() select sheet.TableName;
+                //return sheets;
+
+            }
+            return entlist;
+
+        }
+
+        public IEnumerable<DataRow> getData(string sheet, bool firstRowIsColumnNames = false)
+        {
+            //var reader = this.getExcelReader();
+            //reader.AsDataSet(ExcelDataSetConfig);
+            if (GetFileState() == ConnectionState.Open)
+            {
+                var workSheet = FileData.Tables[sheet];
+                var rows = from DataRow a in workSheet.Rows select a;
+                return rows;
+            }
+            else
+            {
+                return null;
+            }
+
+        }
+
+        public IEnumerable<DataRow> GetFirstSheetData(bool firstRowIsColumnNames = false)
+        {
+            //var reader = this.getExcelReader();
+            //reader.AsDataSet(ExcelDataSetConfig);
+            if (GetFileState() == ConnectionState.Open)
+            {
+                return getData(getWorksheetNames().First());
+            }
+            else
+            {
+                return null;
+            }
+
+        }
+        public DataTable GetFirstSheetData(bool firstRowIsColumnNames = false, int sheetno = 0)
+        {
+            //var reader = this.getExcelReader();
+            //reader.AsDataSet(ExcelDataSetConfig);
+            //var workSheet = reader.AsDataSet().Tables[sheet];
+            //var rows = from DataRow a in workSheet.Rows select a;
+            return FileData.Tables[sheetno];
+        }
+        #endregion
+
     }
 }

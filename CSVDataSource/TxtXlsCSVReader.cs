@@ -344,8 +344,6 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             List<EntityField> flds = GetSheetColumns(pSheetname);
             DMTypeBuilder.CreateNewObject(pSheetname, pSheetname, flds);
 
-
-
         }
         public DataTable ReadDataTable(int sheetno = 0, bool HeaderExist = true, int fromline = 0, int toline = 100)
         {
@@ -357,7 +355,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 toline = dataRows.Rows.Count;
                 List<EntityField> flds = GetSheetColumns(FileData.Tables[sheetno].TableName);
                 string classpath = DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath).FirstOrDefault();
-                DMEEditor.classCreator.CreateClass(FileData.Tables[sheetno].TableName, flds, classpath);
+               // DMEEditor.classCreator.CreateClass(FileData.Tables[sheetno].TableName, flds, classpath);
                 //GetTypeForSheetsFile(dataRows.TableName);
                 return dataRows;
             }

@@ -78,7 +78,7 @@ namespace TheTechIdea.Configuration
             List<Icon> icons = new List<Icon>();
 
             Visutil = (IVisUtil)e.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
-            driverDefinitionsBindingSource.DataSource = DMEEditor.ConfigEditor.DriverDefinitions;
+            driverDefinitionsBindingSource.DataSource = DMEEditor.ConfigEditor.DriverDefinitionsConfig;
             this.dataDriversDataGridView.DataError += DataDriversDataGridView_DataError;
             this.driverDefinitionsBindingNavigatorSaveItem.Click += DriverDefinitionsBindingNavigatorSaveItem_Click;
         }

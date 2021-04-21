@@ -84,7 +84,7 @@ namespace TheTechIdea.ETL
             }
             localDBDriverComboBox.Items.Clear();
             localDBDriverVersionComboBox.Items.Clear();
-            foreach (var item in DMEEditor.ConfigEditor.DataDrivers.Where(x => x.CreateLocal == true && x.classHandler != null))
+            foreach (var item in DMEEditor.ConfigEditor.DataDriversClasses.Where(x => x.CreateLocal == true && x.classHandler != null))
             {
                 localDBDriverComboBox.Items.Add(item.classHandler);
                 localDBDriverVersionComboBox.Items.Add(item.version);
@@ -163,7 +163,7 @@ namespace TheTechIdea.ETL
                 }
                
                 ConnectionProperties cn = new ConnectionProperties();
-                ConnectionDriversConfig package = DMEEditor.ConfigEditor.DataDrivers.Where(x => x.classHandler == localDBDriverComboBox.Text).OrderByDescending(o => o.version).FirstOrDefault();
+                ConnectionDriversConfig package = DMEEditor.ConfigEditor.DataDriversClasses.Where(x => x.classHandler == localDBDriverComboBox.Text).OrderByDescending(o => o.version).FirstOrDefault();
                 Layer =(CompositeLayer) compositeQueryLayersBindingSource.Current;
                 cn.CompositeLayer = true;
                 cn.ConnectionName = layerNameTextBox.Text; 
@@ -214,7 +214,7 @@ namespace TheTechIdea.ETL
         {
             string pkname = localDBDriverComboBox.Text;
             localDBDriverVersionComboBox.Items.Clear();
-            foreach (var item in DMEEditor.ConfigEditor.DataDrivers.Where(c => c.classHandler == pkname))
+            foreach (var item in DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.classHandler == pkname))
             {
                 localDBDriverVersionComboBox.Items.Add(item.version);
             }

@@ -790,7 +790,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             maintab.DataSourceID = conn.DatasourceName;
             maintab.EntityName = tablename;
             maintab.ViewID = DataView.ViewID;
-            maintab.ParentId = DataView.Entities[0].Id;
+            maintab.ParentId = ParentTableIndex;
 
             DataView.Entities.Add(maintab);
 

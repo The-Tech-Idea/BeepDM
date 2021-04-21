@@ -27,9 +27,9 @@ namespace TheTechIdea.Util
         List<DataWorkFlow> WorkFlows { get; set; }
         List<QuerySqlRepo> QueryList { get; set; }
         List<ObjectTypes> objectTypes { get; set; }
-        List<ConnectionDriversConfig> DataDrivers { get; set; }
-        List<ConnectionDriversConfig> DriverDefinitions { get; set; }
-        List<AssemblyClassDefinition> DataSources { get; set; }
+        List<ConnectionDriversConfig> DataDriversClasses { get; set; }
+        List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; }
+        List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
         List<AssemblyClassDefinition> BranchesClasses { get; set; }
          List<AssemblyClassDefinition> AppWritersClasses { get; set; }
          List<AssemblyClassDefinition> ReportWritersClasses { get; set; } 

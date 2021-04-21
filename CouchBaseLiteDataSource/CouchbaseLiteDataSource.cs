@@ -28,7 +28,7 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
             }
             if (Dataconnection.ConnectionProp.ConnectionString != null)
             {
-                ConnectionDriversConfig package = DMEEditor.ConfigEditor.DataDrivers.Where(x => x.classHandler == this.ToString()).FirstOrDefault();
+                ConnectionDriversConfig package = DMEEditor.ConfigEditor.DataDriversClasses.Where(x => x.classHandler == this.ToString()).FirstOrDefault();
                 ConnectionProperties dataConnection = new ConnectionProperties();
                 dataConnection.Category = DatasourceCategory.NOSQL;
                 dataConnection.DatabaseType = DataSourceType.Couchbase;

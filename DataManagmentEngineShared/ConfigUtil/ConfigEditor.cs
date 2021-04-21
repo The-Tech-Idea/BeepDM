@@ -41,7 +41,7 @@ namespace TheTechIdea.Util
 		public IDMLogger Logger { get; set; }
 		public List<string> Databasetypes { get; set; }
 		public List<QuerySqlRepo> QueryList { get; set; } = new List<QuerySqlRepo>();
-		public List<ConnectionDriversConfig> DriverDefinitions { get; set; } = new List<ConnectionDriversConfig>();
+		public List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; } = new List<ConnectionDriversConfig>();
 		public List<ConnectionProperties> DataConnections { get; set; } = new List<ConnectionProperties>(); //DataSourceConnectionConfig
 		public List<Mapping_rep> Mappings { get; set; } = new List<Mapping_rep>();
 		public List<Map_Schema> MappingSchema { get; set; } = new List<Map_Schema>();
@@ -62,8 +62,8 @@ namespace TheTechIdea.Util
 		public List<DataSourceFieldProperties> AppfieldProperties { get; set; } = new List<DataSourceFieldProperties>();
 		public Dictionary<string, string> Entities { get; set; } = new Dictionary<string, string>();
 		public List<LScriptHeader> Scripts { get; set; } = new List<LScriptHeader>();
-		public List<ConnectionDriversConfig> DataDrivers { get; set; } = new List<ConnectionDriversConfig>();
-		public List<AssemblyClassDefinition> DataSources { get; set; } = new List<AssemblyClassDefinition>();
+		public List<ConnectionDriversConfig> DataDriversClasses { get; set; } = new List<ConnectionDriversConfig>();
+		public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public string ExePath { get; set; } // System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location); //System.Reflection.Assembly.GetExecutingAssembly().Location
 		public string ConfigPath { get; set; } 
 		
@@ -605,26 +605,26 @@ namespace TheTechIdea.Util
 		public List<ConnectionDriversConfig> LoadConnectionDriversConfigValues()
 		{
 			string path = Path.Combine(ConfigPath, "ConnectionConfig.json");
-			DataDrivers = JsonLoader.DeserializeObject<ConnectionDriversConfig>(path);
-			return DataDrivers;
+			DataDriversClasses = JsonLoader.DeserializeObject<ConnectionDriversConfig>(path);
+			return DataDriversClasses;
 		}
 		public void SaveConnectionDriversConfigValues()
 		{
 			string path = Path.Combine(ConfigPath, "ConnectionConfig.json");
-			JsonLoader.Serialize(path, DataDrivers);
+			JsonLoader.Serialize(path, DataDriversClasses);
 		}
 		public List<ConnectionDriversConfig> LoadConnectionDriversDefinition()
 		{
 			string path = Path.Combine(ConfigPath, "DriversDefinitions.json");
-			DriverDefinitions = JsonLoader.DeserializeObject<ConnectionDriversConfig>(path);
+			DriverDefinitionsConfig = JsonLoader.DeserializeObject<ConnectionDriversConfig>(path);
 			
-			return DriverDefinitions;
+			return DriverDefinitionsConfig;
 			//  QueryList = ReadQueryFile("QueryList.json");
 		}
 		public void SaveConnectionDriversDefinitions()
 		{
 			string path = Path.Combine(ConfigPath, "DriversDefinitions.json");
-			JsonLoader.Serialize(path, DriverDefinitions);
+			JsonLoader.Serialize(path, DriverDefinitionsConfig);
 		}
 		public void SaveDatabasesValues()
 		{

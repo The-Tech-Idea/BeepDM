@@ -133,23 +133,29 @@ namespace TheTechIdea.Winforms.VIS
 
             try
             {
-                string[] args = { null };
+                List<ObjectItem> ob = new List<ObjectItem>(); ;
+                ObjectItem it = new ObjectItem();
+                it.obj = this;
+                it.Name = "Branch";
+                ob.Add(it);
+                string[] args = new string[] { BranchText, DataSource.Dataconnection.ConnectionProp.SchemaName, null };
                 PassedArgs Passedarguments = new PassedArgs
-                {  // Obj= obj,
-                    Addin = null,
-                    AddinName = null,
-                    AddinType = null,
-                    DMView = null,
+                
+                {  
+                    
                     CurrentEntity = BranchText,
                     Id = BranchID,
                     ObjectType = "FILE",
                     DataSource = DataSource,
-                    EventType = "FileSelected"
+                    ObjectName = BranchText,
+                    Objects = ob,
+                    DatasourceName = DataSource.DatasourceName,
+                    EventType = "FILEENTITY"
 
 
                 };
-               Visutil.ShowUserControlInContainer("uc_txtfileManager", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
-
+                //  Visutil.ShowUserControlInContainer("uc_txtfileManager", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
+                Visutil.ShowUserControlInContainer("uc_getentities", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
                 DMEEditor.AddLogMessage("Success", "Show File", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)

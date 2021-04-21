@@ -536,6 +536,7 @@
     <None Include="Resources\expand_arrows_24px.png" />
     <None Include="Resources\exit_321.png" />
     <None Include="Resources\add_white_space_24px.png" />
+    <None Include="Resources\checked_16.png" />
     <Content Include="SqlServerTypes\readme.htm" />
     <Content Include="SqlServerTypes\x64\msvcr120.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

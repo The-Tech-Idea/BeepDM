@@ -14,7 +14,7 @@ namespace TheTechIdea.Tools
         List<IDM_Addin> AddIns { get; set; }
         List<assemblies_rep> Assemblies { get; set; }
      // AppDomain CurrentDomain { get; set; }
-        List<AssemblyClassDefinition> DataSources { get; set; }
+        List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
         IDMEEditor DMEEditor { get; set; }
 
         bool AddEngineDefaultDrivers();

@@ -77,7 +77,7 @@ namespace TheTechIdea.DataManagment_Engine
 
             string vr = cn.DriverVersion;
             string pk = cn.DriverName;
-            return DME.ConfigEditor.DataDrivers.Where(c => c.PackageName == pk && c.version == vr).FirstOrDefault();
+            return DME.ConfigEditor.DataDriversClasses.Where(c => c.PackageName == pk && c.version == vr).FirstOrDefault();
 
 
         }
@@ -572,7 +572,7 @@ namespace TheTechIdea.DataManagment_Engine
                     {
                         try
                         {
-                            System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                            System.Reflection.PropertyInfo PropAInfo = ti.GetType().GetProperty(col.fieldname);
                             if (dr[col.fieldname] == System.DBNull.Value)
                             {
                                 switch (col.fieldtype)
@@ -609,7 +609,7 @@ namespace TheTechIdea.DataManagment_Engine
                 foreach (EntityField col in ent.Fields)
                 {
                    
-                        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                        System.Reflection.PropertyInfo PropAInfo = ti.GetType().GetProperty(col.fieldname);
                         PropAInfo.SetValue(ti, null, null);
  
 

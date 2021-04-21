@@ -10,5 +10,6 @@ namespace TheTechIdea.DataManagment_Engine.Vis
         public bool Hidden { get; set; } = false;
         public bool Click { get; set; } = false;
         public bool DoubleClick { get; set; } = false;
+        public string iconimage { get; set; } = null;
     }
 }

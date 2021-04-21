@@ -79,7 +79,7 @@ namespace TheTechIdea.Configuration
             List<Icon> icons=new List<Icon>();
 
             Visutil = (IVisUtil)e.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
-            foreach(AssemblyClassDefinition cls in DMEEditor.ConfigEditor.DataSources)
+            foreach(AssemblyClassDefinition cls in DMEEditor.ConfigEditor.DataSourcesClasses)
             {
                 this.classHandlerComboBox.Items.Add(cls.className);
             }
@@ -114,7 +114,7 @@ namespace TheTechIdea.Configuration
                 }
             }
             connectiondriversConfigBindingNavigator.BindingSource = connectiondriversConfigBindingSource;
-            connectiondriversConfigBindingSource.DataSource = DMEEditor.ConfigEditor.DataDrivers;
+            connectiondriversConfigBindingSource.DataSource = DMEEditor.ConfigEditor.DataDriversClasses;
             
            connectiondriversConfigBindingNavigatorSaveItem.Click += ConnectiondriversConfigBindingNavigatorSaveItem_Click;
             this.connectiondriversConfigDataGridView.DataError += ConnectiondriversConfigDataGridView_DataError;
@@ -128,10 +128,10 @@ namespace TheTechIdea.Configuration
         {
             try
             {
-                foreach (ConnectionDriversConfig item in DMEEditor.ConfigEditor.DataDrivers.Where(c=>c.DbConnectionType!=null).ToList())
+                foreach (ConnectionDriversConfig item in DMEEditor.ConfigEditor.DataDriversClasses.Where(c=>c.DbConnectionType!=null).ToList())
                 {
 
-                    foreach (ConnectionDriversConfig cfg in DMEEditor.ConfigEditor.DataDrivers.Where(x => x.PackageName == item.PackageName && x.version == item.version && x.classHandler != item.classHandler  && x.DbConnectionType == null ))
+                    foreach (ConnectionDriversConfig cfg in DMEEditor.ConfigEditor.DataDriversClasses.Where(x => x.PackageName == item.PackageName && x.version == item.version && x.classHandler != item.classHandler  && x.DbConnectionType == null ))
                     {
                         cfg.DbConnectionType = item.DbConnectionType;
                         cfg.DbTransactionType = item.DbTransactionType;

@@ -69,8 +69,13 @@ namespace TheTechIdea.Hidden
             {
                 DMEEditor.AddLogMessage("Failed", $"{ex.Message}", DateTime.Now, 0, "", Errors.Failed);
             }
-         
+            Checkbutton.Click += Checkbutton_Click;
             TreeEditor.CreateRootTree();
+        }
+
+        private void Checkbutton_Click(object sender, EventArgs e)
+        {
+            treeView1.CheckBoxes = !treeView1.CheckBoxes;
         }
     }
 }

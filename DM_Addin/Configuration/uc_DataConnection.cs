@@ -100,7 +100,7 @@ namespace TheTechIdea.Configuration
                 var it=DatasourceCategorycomboBox.Items.Add(item);
                 
             }
-            foreach (var item in DMEEditor.ConfigEditor.DataDrivers)
+            foreach (var item in DMEEditor.ConfigEditor.DataDriversClasses)
             {
                 try
                 {if (!string.IsNullOrEmpty(item.PackageName))
@@ -117,7 +117,7 @@ namespace TheTechIdea.Configuration
                 }
              
             }
-            foreach (var item in DMEEditor.ConfigEditor.DataDrivers)
+            foreach (var item in DMEEditor.ConfigEditor.DataDriversClasses)
             {
                 if (!string.IsNullOrEmpty(item.PackageName))
                 {
@@ -220,7 +220,7 @@ namespace TheTechIdea.Configuration
         {
             string pkname = driverNameComboBox.Text;
             driverVersionComboBox.Items.Clear();
-            foreach (var item in DMEEditor.ConfigEditor.DataDrivers.Where(c => c.PackageName == pkname))
+            foreach (var item in DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.PackageName == pkname))
             {
                 driverVersionComboBox.Items.Add(item.version);
             }

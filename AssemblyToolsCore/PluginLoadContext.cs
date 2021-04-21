@@ -7,10 +7,12 @@ namespace TheTechIdea.Tools.AssemblyHandling
     public class PluginLoadContext : AssemblyLoadContext
     {
         private AssemblyDependencyResolver _resolver;
+    
 
         public PluginLoadContext(string pluginPath)
         {
             _resolver = new AssemblyDependencyResolver(pluginPath);
+            
         }
 
         protected override Assembly Load(AssemblyName assemblyName)

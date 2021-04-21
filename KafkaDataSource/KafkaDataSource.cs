@@ -1,11 +1,14 @@
-﻿using System;
+﻿using Confluent.Kafka;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.DataManagment_Engine.EventStream.Kafka;
 using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
@@ -15,6 +18,34 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
 {
     public class KafkaDataSource : IDataSource
     {
+        public KafkaDataSource()
+        {
+
+        }
+        public KafkaDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
+        {
+            DatasourceName = datasourcename;
+            Logger = logger;
+            ErrorObject = per;
+            Category = DatasourceCategory.STREAM;
+            DatasourceType = DataSourceType.Kafka;
+            DMEEditor = pDMEEditor;
+            Dataconnection = new KafkaDataConnection
+            {
+                Logger = logger,
+                ErrorObject = ErrorObject,
+                DMEEditor = pDMEEditor
+
+            };
+            
+
+            if (DMEEditor.DataSources.Where(o => o.DatasourceName == datasourcename).Any())
+            {
+                Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(o => o.ConnectionName == datasourcename).FirstOrDefault();
+            }
+            Kafkadataconnection = (KafkaDataConnection)Dataconnection;
+
+        }
         public event EventHandler<PassedArgs> PassEvent;
         public DataSourceType DatasourceType { get ; set ; }
         public DatasourceCategory Category { get ; set ; }
@@ -26,18 +57,123 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
         public List<string> EntitiesNames { get ; set ; }
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public IDMEEditor DMEEditor { get ; set ; }
-        public List<object> Records { get ; set ; }
-        public ConnectionState ConnectionStatus { get ; set ; }
-        public DataTable SourceEntityData { get ; set ; }
+        public KafkaDataConnection Kafkadataconnection { get; set; }
+        public bool StopConsume { get; set; } = true;
+        #region "Kafka Methods"
+        CancellationTokenSource cts = new CancellationTokenSource();
+        public  void handler(DeliveryReport<Null, string> deliveryReport)
+        {
+            DMEEditor.AddLogMessage("Kafka Produccer", $"{ deliveryReport.Status} {deliveryReport.Message}", deliveryReport.Timestamp.UtcDateTime,0, deliveryReport.Value,Errors.Ok);
+        }
+        private void ProduceTopic(string topic,List<string> Values)
+        {
+            if(Kafkadataconnection.OpenConnection()== ConnectionState.Open)
+            {
+
+            }
+            using (var p = new ProducerBuilder<Null, string>(Kafkadataconnection.ProdConfig).Build())
+            {
+                for (int i = 0; Values.Count >=i; ++i)
+                {
+                    p.Produce(topic, new Message<Null, string> { Value = Values[i] }, handler);
+                }
+                // wait for up to 10 seconds for any inflight messages to be delivered.
+                //p.Flush(TimeSpan.FromSeconds(10));
+            }
+        }
+        private  Task ConsumeTopic(string topic)
+        {
+           
+            using (var c = new ConsumerBuilder<Ignore, string>(Kafkadataconnection.ConsConfig).Build())
+            {
+                c.Subscribe(topic);
+
+                CancellationTokenSource cts = new CancellationTokenSource();
+             
+                Console.CancelKeyPress += (_, e) => {
+                    e.Cancel = true; // prevent the process from terminating.
+                    cts.Cancel();
+                };
+
+                try
+                {
+                    while (!cts.IsCancellationRequested )
+                    {
+                        try
+                        {
+                            var cr = c.Consume(cts.Token);
+                            if (string.IsNullOrEmpty(cr.Message.Value))
+                            {
+                                cts.Cancel();
+                            }
+
+                            DMEEditor.AddLogMessage("Kafka Consumer", $"Consumed message '{cr.Message.Value}' at: '{cr.TopicPartitionOffset}'.", cr.Message.Timestamp.UtcDateTime, 0, cr.Message.Value, Errors.Ok);
+                          //  Console.WriteLine($"Consumed message '{cr.Value}' at: '{cr.TopicPartitionOffset}'.");
+                        }
+                        catch (ConsumeException e)
+                        {
+                            DMEEditor.AddLogMessage("Kafka Consumer", $"Error occured: {e.Error.Reason}", DateTime.Now, 0, e.Error.Reason, Errors.Failed);
+                            //Console.WriteLine($"Error occured: {e.Error.Reason}");
+                        }
+                    }
+                }
+                catch (OperationCanceledException canc)
+                {
+                    // Close and Release all the resources held by this consumer
+                    DMEEditor.AddLogMessage("Kafka Consumer", $"Cancelation occured: {canc.Message}", DateTime.Now, 0, canc.Message, Errors.Ok);
+                    c.Close();
+                }
+            }
+            return  Task.CompletedTask;
+        }
+        public Task StopAsync()
+        {
+            if(cts != null)
+            {   
+                    cts.Cancel();
+            }
+            
+            return Task.CompletedTask;
+        }
+        #endregion
+        public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; } set { } }
+   
 
         public bool CheckEntityExist(string EntityName)
         {
-            throw new NotImplementedException();
+            bool retval = false;
+            if (EntitiesNames.Count == 0)
+            {
+                GetEntitesList();
+            }
+            retval = EntitiesNames.ConvertAll(d => d.ToUpper()).Contains(EntityName.ToUpper());
+
+            return retval;
         }
 
         public bool CreateEntityAs(EntityStructure entity)
         {
-            throw new NotImplementedException();
+            bool retval = false;
+
+            if (CheckEntityExist(entity.EntityName) == false)
+            {
+
+             //   CreateEntity(entity);
+                if (DMEEditor.ErrorObject.Flag == Errors.Failed)
+                {
+                    retval = false;
+                }
+                else
+                {
+                    retval = true;
+                }
+            }
+            else
+            {
+                retval = true;
+            }
+
+            return retval;
         }
 
         public IErrorsInfo ExecuteSql(string sql)
@@ -46,11 +182,6 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
         }
 
         public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
-        {
-            throw new NotImplementedException();
-        }
-
-        public DataSet GetChildTablesListFromCustomQuery(string tablename, string customquery)
         {
             throw new NotImplementedException();
         }
@@ -85,14 +216,10 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
             throw new NotImplementedException();
         }
 
-        public DataTable GetEntityDataTable(string EntityName, string filterstr)
-        {
-            throw new NotImplementedException();
-        }
 
         public Type GetEntityType(string EntityName)
         {
-            throw new NotImplementedException();
+            return "string".GetType();
         }
 
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)

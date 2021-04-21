@@ -154,7 +154,7 @@ namespace TheTechIdea.DataManagment_Engine
                     AddLogMessage("Fail", "Could not get Datasource class " , DateTime.Now, -1, "", Errors.Failed);
                 }else
                 {
-                    retval = ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).FirstOrDefault();
+                    retval = ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).FirstOrDefault();
                 }
                
                
@@ -177,9 +177,9 @@ namespace TheTechIdea.DataManagment_Engine
            if (cn != null)
             {
                 ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
-                if (ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).Any())
+                if (ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).Any())
                 {
-                    string packagename = ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
+                    string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
                     //  Type adc = Type.GetType(packagename);
                     Type adc = assemblyHandler.GetType(packagename);
                     ConstructorInfo ctor = adc.GetConstructors().First();
@@ -247,9 +247,9 @@ namespace TheTechIdea.DataManagment_Engine
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
             ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
-            if (ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).Any())
+            if (ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).Any())
             {
-                string packagename = ConfigEditor.DataSources.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
+                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
                 //  Type adc = Type.GetType(packagename);
                 Type adc = assemblyHandler.GetType(packagename);
                 ConstructorInfo ctor = adc.GetConstructors().First();
@@ -298,10 +298,10 @@ namespace TheTechIdea.DataManagment_Engine
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
             ConnectionDriversConfig package=null;
-            if (ConfigEditor.DataDrivers.Where(x => x.classHandler == ClassDBHandlerName).Any())
+            if (ConfigEditor.DataDriversClasses.Where(x => x.classHandler == ClassDBHandlerName).Any())
             {
-                 package = ConfigEditor.DataDrivers.Where(x => x.classHandler == ClassDBHandlerName).FirstOrDefault();
-                string packagename = ConfigEditor.DataSources.Where(x => x.className == package.classHandler).FirstOrDefault().PackageName;
+                 package = ConfigEditor.DataDriversClasses.Where(x => x.classHandler == ClassDBHandlerName).FirstOrDefault();
+                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className == package.classHandler).FirstOrDefault().PackageName;
 
                 Type adc = assemblyHandler.GetType(packagename);
                 ConstructorInfo ctor = adc.GetConstructors().First();
