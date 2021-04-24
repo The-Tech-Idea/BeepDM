@@ -10,8 +10,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
     {
 
         public int Id { get; set; }
-        public string EntityName { get; set; }
-
+        private string entname;
+        public string EntityName { get { return entname; } set { entname = value;  } }
+        public string DatasourceEntityName { get; set; }
+        public string Caption { get; set; }
         public DataSourceType DatabaseType { get; set; }
         public string StatusDescription { get; set; }
         public string DataSourceID { get; set; }

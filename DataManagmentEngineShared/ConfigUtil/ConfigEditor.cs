@@ -49,6 +49,8 @@ namespace TheTechIdea.Util
 		public List<CategoryFolder> CategoryFolders { get; set; } = new List<CategoryFolder>();
 		public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> AppWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
+		public List<App> Apps { get; set; } = new List<App>();
+		public List<AssemblyClassDefinition> AppComponents { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> ReportWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AddinTreeStructure> AddinTreeStructure { get; set; } = new List<AddinTreeStructure>();
 		public List<Function2FunctionAction> Function2Functions { get; set; } = new List<Function2FunctionAction>();
@@ -56,7 +58,7 @@ namespace TheTechIdea.Util
 		public List<Event> Events { get; set; } = new List<Event>();
 		public List<ReportTemplate> Reports { get; set; } = new List<ReportTemplate>();
 		public List<CompositeLayer> CompositeQueryLayers { get; set; } = new List<CompositeLayer>();
-		public List<App> Apps { get; set; } = new List<App>();
+		
 		public List<EntityStructure> EntityCreateObjects { get; set; } = new List<EntityStructure>();
 		public List<DatatypeMapping> DataTypesMap { get; set; } = new List<DatatypeMapping>();
 		public List<DataSourceFieldProperties> AppfieldProperties { get; set; } = new List<DataSourceFieldProperties>();

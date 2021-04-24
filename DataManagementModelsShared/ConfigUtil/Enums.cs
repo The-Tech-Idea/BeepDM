@@ -14,7 +14,7 @@ namespace TheTechIdea.Util
     }
     public enum AppComponentType
     {
-        SplashScreen,MainForm,Report,DataEntry
+        SplashScreen,MainForm,Report,DataEntry,Dashboard
     }
     public enum ViewType
     { Table, Query,Code,File,Url }
@@ -24,7 +24,7 @@ namespace TheTechIdea.Util
     {
         Oracle , SqlServer, Mysql, SqlCompact, SqlLite,
         Text,CSV,Xls,WebService,Json,xml,
-        Postgre,Firebase,FireBird,Couchbase,RavenDB,MongoDB,CouchDB,VistaDB,DB2,OPC,Kafka
+        Postgre,Firebase,FireBird,Couchbase,RavenDB,MongoDB,CouchDB,VistaDB,DB2,OPC,Kafka,Redis,Hadoop
     }
     public enum DatasourceCategory
     {
@@ -32,7 +32,7 @@ namespace TheTechIdea.Util
     }
     public enum FileTypes
     {
-        Text, Excel
+        Text, Excel,xml,json
     }
     public enum DbFieldCategory
     {

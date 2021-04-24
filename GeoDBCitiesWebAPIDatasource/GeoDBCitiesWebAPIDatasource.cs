@@ -11,6 +11,7 @@ using TheTechIdea;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.WebAPI;
 using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
@@ -27,12 +28,29 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.GeoDBCitiesWebAPI
             Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == datasourcename).FirstOrDefault();
         
         }
-        public override async Task<object> GetEntityDataAsync(string entityname, string filterstr)
+        public override async Task<object> GetEntityAsync(string entityname, List<ReportFilter> Filter)
         {
+            EntityStructure ent = Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName == entityname).FirstOrDefault();
+            string filterstr = ent.CustomBuildQuery;
+            foreach (EntityParameters item in ent.Paramenters)
+            {
+                filterstr = filterstr.Replace("{" + item.parameterIndex + "}", ent.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault());
+            }
+            var request = new HttpRequestMessage();
+         
+
+            if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.ApiKey))
+            {
+                Dataconnection.ConnectionProp.Url = Dataconnection.ConnectionProp.Url.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
+            }
+            if (!string.IsNullOrEmpty(filterstr))
+            {
+                filterstr = filterstr.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
+            }
             client = new HttpClient();
             client.BaseAddress = new Uri(Dataconnection.ConnectionProp.Url);
-            var request = new HttpRequestMessage();
-            EntityStructure ent = Entities.Where(o => o.EntityName == entityname).FirstOrDefault();
+         
+        
             request.Method = HttpMethod.Get;
             request.RequestUri = new Uri(Dataconnection.ConnectionProp.Url+filterstr);
             foreach (WebApiHeader item in Dataconnection.ConnectionProp.Headers)

@@ -12,28 +12,36 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Winforms.VIS
 {
-    public class DataViewEntitiesNode  : IBranch, ITreeView
+    public class DataViewEntitiesNode : IBranch, ITreeView
     {
         public DataViewEntitiesNode()
         {
 
         }
-        public DataViewEntitiesNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename,string pDSName, EntityStructure entityStructure)
+        public DataViewEntitiesNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename, string pDSName, EntityStructure entityStructure)
         {
 
-            
-           
+
+
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
             ParentBranchID = pParentNode.BranchID;
-            BranchText = pBranchText;
+
             BranchType = pBranchType;
             IconImageName = pimagename;
-           
+
             ds = (DataViewDataSource)DMEEditor.GetDataSource(pDSName);
             DataView = ds.DataView;
             EntityStructure = entityStructure;
-           
+            if (string.IsNullOrEmpty(entityStructure.Caption) || string.IsNullOrWhiteSpace(entityStructure.Caption))
+            {
+                entityStructure.Caption = entityStructure.EntityName;
+            }
+            if (string.IsNullOrEmpty(entityStructure.DatasourceEntityName) || string.IsNullOrWhiteSpace(entityStructure.DatasourceEntityName))
+            {
+                entityStructure.DatasourceEntityName = entityStructure.EntityName;
+            }
+            BranchText = entityStructure.Caption;
             MiscID = entityStructure.Id;
             DataSourceName = DataView.DataViewDataSourceID;
             ID = MiscID;
@@ -253,7 +261,7 @@ namespace TheTechIdea.Winforms.VIS
 
             try
             {
-                EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.EntityName == BranchText)];
+                EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.EntityName == EntityStructure.EntityName)];
                 string[] args = { "New View", null, null };
                 List<ObjectItem> ob = new List<ObjectItem>(); ;
                 ObjectItem it = new ObjectItem();
@@ -266,7 +274,7 @@ namespace TheTechIdea.Winforms.VIS
                     AddinName = null,
                     AddinType = "",
                     DMView = DataView,
-                    CurrentEntity = BranchText,
+                    CurrentEntity = EntityStructure.EntityName,
                     Id = BranchID,
                     ObjectType = "VIEWENTITY",
                     DataSource = DataSource,
@@ -308,7 +316,7 @@ namespace TheTechIdea.Winforms.VIS
                     AddinName = null,
                     AddinType = "",
                     DMView = DataView,
-                    CurrentEntity = BranchText,
+                    CurrentEntity = EntityStructure.EntityName,
                     Id = BranchID,
                     ObjectType = "VIEWENTITY",
                     DataSource = DataSource,
@@ -428,7 +436,7 @@ namespace TheTechIdea.Winforms.VIS
 
             try
             {
-                EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.EntityName == BranchText)];
+                EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.EntityName == EntityStructure.EntityName)];
                 string[] args = { "New View", null, null };
                 List<ObjectItem> ob = new List<ObjectItem>(); ;
                 ObjectItem it = new ObjectItem();
@@ -441,7 +449,7 @@ namespace TheTechIdea.Winforms.VIS
                     AddinName = null,
                     AddinType = "",
                     DMView = DataView,
-                    CurrentEntity = BranchText,
+                    CurrentEntity = EntityStructure.EntityName,
                     Id = BranchID,
                     ObjectType = "CRUDENTITY",
                     DataSource = DataSource,
@@ -596,7 +604,7 @@ namespace TheTechIdea.Winforms.VIS
                     AddinName = null,
                     AddinType = "",
                     DMView = DataView,
-                    CurrentEntity = BranchText,
+                    CurrentEntity = EntityStructure.EntityName,
                     Id = ID,
                     ObjectType = "ENTITY",
                     DataSource = DataSource,
@@ -646,6 +654,8 @@ namespace TheTechIdea.Winforms.VIS
                             {
                                 IDataSource srcds = DMEEditor.GetDataSource(entity.DataSourceID);
                                 entity = srcds.GetEntityStructure(entity, true);
+                                entity.Caption = entity.EntityName;
+                                entity.DatasourceEntityName = entity.EntityName;
                                 entity.Created = false;
                                 entity.Id = ds.NextHearId();
                                 entity.ParentId = ID;
@@ -670,7 +680,8 @@ namespace TheTechIdea.Winforms.VIS
                             if (srcds != null)
                             {
                                 EntityStructure entity = srcds.GetEntityStructure(br.BranchText, true);
-
+                                entity.Caption = entity.EntityName;
+                                entity.DatasourceEntityName = entity.EntityName;
                                 entity.Created = false;
                                 entity.Id = ds.NextHearId();
                                 entity.ParentId = ID;

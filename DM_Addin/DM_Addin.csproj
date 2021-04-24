@@ -500,6 +500,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Properties\DataSources\TheTechIdea.DataManagment_Engine.DataBase.EntityStructure.datasource" />
     <None Include="Properties\DataSources\TheTechIdea.DataManagment_Engine.DataView.DataViewConnection.datasource" />
     <None Include="Properties\DataSources\TheTechIdea.DataManagment_Engine.DataView.DataViewDataSource.datasource" />
     <None Include="Properties\DataSources\TheTechIdea.DataManagment_Engine.DataView.DataViewReader.datasource" />
@@ -537,6 +538,8 @@
     <None Include="Resources\exit_321.png" />
     <None Include="Resources\add_white_space_24px.png" />
     <None Include="Resources\checked_16.png" />
+    <None Include="Resources\connections_16.png" />
+    <None Include="Resources\icons8_automatic_16.png" />
     <Content Include="SqlServerTypes\readme.htm" />
     <Content Include="SqlServerTypes\x64\msvcr120.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

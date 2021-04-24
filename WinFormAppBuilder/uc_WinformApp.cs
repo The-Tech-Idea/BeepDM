@@ -18,9 +18,9 @@ using TheTechIdea.Winforms.VIS;
 
 namespace TheTechIdea.ETL
 {
-    public partial class uc_WinformApp : UserControl, IDM_Addin
+    public partial class Frm_WinformApp : Form, IDM_Addin
     {
-        public uc_WinformApp()
+        public Frm_WinformApp()
         {
             InitializeComponent();
         }
@@ -29,7 +29,7 @@ namespace TheTechIdea.ETL
         public string AddinName { get; set; } = "Beep Applications";
         public string Description { get; set; } = "WinForm Application";
         public string ObjectName { get; set; }
-        public string ObjectType { get; set; } = "UserControl";
+        public string ObjectType { get; set; } = "Form";
         public Boolean DefaultCreate { get; set; } = true;
         public string DllPath { get ; set ; }
         public string DllName { get ; set ; }
@@ -83,6 +83,24 @@ namespace TheTechIdea.ETL
             this.SearchtextBox1.KeyDown += input_KeyDown;
             this.DataTreeView.NodeMouseDoubleClick += DataTreeView_NodeMouseDoubleClick;
             SearchtextBox1.AutoCompleteCustomSource = data;
+            CloseBoxButton.Click += CloseBoxButton_Click;
+            MinimizeBoxButton.Click += MinimizeBoxButton_Click;
+            MaximizeBoxButton.Click += MaximizeBoxButton_Click;
+        }
+
+        private void MaximizeBoxButton_Click(object sender, EventArgs e)
+        {
+           
+        }
+
+        private void MinimizeBoxButton_Click(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void CloseBoxButton_Click(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private void DataTreeView_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)

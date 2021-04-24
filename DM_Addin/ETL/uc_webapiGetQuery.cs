@@ -75,49 +75,54 @@ namespace TheTechIdea.ETL
             branch = (IBranch)e.Objects.Where(c => c.Name == "Branch").FirstOrDefault().obj;
             ParentBranch = (IBranch)e.Objects.Where(c => c.Name == "ParentBranch").FirstOrDefault().obj;
             webAPIData = DMEEditor.GetDataSource(e.DatasourceName);
-            webAPIData.Dataconnection.OpenConnection();
-            CurrentEntity = e.CurrentEntity;
-            ConnectionProperties cn= DMEEditor.ConfigEditor.DataConnections.Where(p => string.Equals(p.ConnectionName,e.DatasourceName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            ent = webAPIData.Entities.Where(o => string.Equals(o.EntityName, e.CurrentEntity, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            
-            ls = ent.Fields;
-            this.dataGridView1.DataSource = DataBindingSource;
-            DataGridView grid = dv.CreateGrid();
-            if (ent.Filters == null)
+            if (webAPIData != null)
             {
-                ent.Filters = new List<ReportFilter>();
-            }
-            ent.Filters.Clear();
-            for (int i = 0; i <= ls.Count - 1; i++)
-            {
-                ReportFilter r = new ReportFilter();
-                r.FieldName = ls[i].fieldname;
-                r.Operator = "=";
-                ent.Filters.Add(r);
-                FieldNames.Add(ls[i].fieldname);
+                webAPIData.Dataconnection.OpenConnection();
+                CurrentEntity = e.CurrentEntity;
+                ConnectionProperties cn = DMEEditor.ConfigEditor.DataConnections.Where(p => string.Equals(p.ConnectionName, e.DatasourceName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                ent = webAPIData.Entities.Where(o => string.Equals(o.EntityName, e.CurrentEntity, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+
+                ls = ent.Fields;
+                this.dataGridView1.DataSource = DataBindingSource;
+                DataGridView grid = dv.CreateGrid();
+                if (ent.Filters == null)
+                {
+                    ent.Filters = new List<ReportFilter>();
+                }
+                ent.Filters.Clear();
+                for (int i = 0; i <= ls.Count - 1; i++)
+                {
+                    ReportFilter r = new ReportFilter();
+                    r.FieldName = ls[i].fieldname;
+                    r.Operator = "=";
+                    ent.Filters.Add(r);
+                    FieldNames.Add(ls[i].fieldname);
 
 
-            }
-            filtersBindingSource.DataSource = ent.Filters;
-            if (lsop == null)
-            {
-                lsop = new List<string> { "=", ">=", "<=", ">", "<" };
-            }
-            grid.AutoGenerateColumns = false;
-            grid.DataSource = this.filtersBindingSource;
-            grid.Columns.Add(dv.CreateComoboBoxColumnForGrid("FieldName", "Column", FieldNames));
-            grid.Columns.Add(dv.CreateComoboBoxColumnForGrid("Operator", "Operator", lsop));
-            grid.Columns.Add(dv.CreateTextColumnForGrid("FilterValue", "Value"));
+                }
+                filtersBindingSource.DataSource = ent.Filters;
+                if (lsop == null)
+                {
+                    lsop = new List<string> { "=", ">=", "<=", ">", "<" };
+                }
+                grid.AutoGenerateColumns = false;
+                grid.DataSource = this.filtersBindingSource;
+                grid.Columns.Add(dv.CreateComoboBoxColumnForGrid("FieldName", "Column", FieldNames));
+                grid.Columns.Add(dv.CreateComoboBoxColumnForGrid("Operator", "Operator", lsop));
+                grid.Columns.Add(dv.CreateTextColumnForGrid("FilterValue", "Value"));
 
-            grid.DataError += Grid_DataError;
-            //    grid.AllowUserToAddRows = true;
+                grid.DataError += Grid_DataError;
+                //    grid.AllowUserToAddRows = true;
 
-            grid.Left = 5;
-            grid.Top = 50;
-            grid.Height = 220;
-            grid.Width = FilterPanel.Width - 25;
-            FilterPanel.Controls.Add(grid);
-            grid.Dock = DockStyle.Fill;
+                grid.Left = 5;
+                grid.Top = 50;
+                grid.Height = 220;
+                grid.Width = FilterPanel.Width - 25;
+                FilterPanel.Controls.Add(grid);
+                grid.Dock = DockStyle.Fill;
+            }else
+             MessageBox.Show("Error Could not Find WebApi Datasource", "BeepDM");
+           
             this.GetDataButton.Click += GetDataButton_Click;
         }
 

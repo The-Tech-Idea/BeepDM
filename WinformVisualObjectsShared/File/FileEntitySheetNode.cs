@@ -26,6 +26,7 @@ namespace TheTechIdea.Winforms.VIS
             ParentBranchID = pParentNode.ID;
             BranchText = pBranchText;
             BranchType = pBranchType;
+            DataSourceName = pParentNode.DataSourceName;
             IconImageName = "sheet.ico";
 
             if (pID != 0)
@@ -44,7 +45,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.DataPoint;
+        public EnumBranchType BranchType { get; set; } = EnumBranchType.Entity;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "sheet.ico";
         public string BranchStatus { get; set; }
@@ -165,23 +166,67 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        //[BranchDelegate(Caption = "Remove", Hidden = false)]
-        //public IErrorsInfo Remove()
-        //{
+        [BranchDelegate(Caption = "Copy Entities")]
+        public IErrorsInfo CopyEntities()
+        {
 
-        //    try
-        //    {
+            try
+            {
+                List<string> ents = new List<string>();
+                if (TreeEditor.SelectedBranchs.Count > 0)
+                {
+                    if (DataSource == null)
+                    {
+                        DataSource = DMEEditor.GetDataSource(DataSourceName);
+                    }
+                    if (DataSource != null)
+                    {
+                        foreach (int item in TreeEditor.SelectedBranchs)
+                        {
+                            IBranch br = TreeEditor.GetBranch(item);
+                            ents.Add(br.BranchText);
+                            // EntityStructure = DataSource.GetEntityStructure(br.BranchText, true);
 
+                        }
+                        IBranch pbr = TreeEditor.GetBranch(ParentBranchID);
+                        List<ObjectItem> ob = new List<ObjectItem>(); ;
+                        ObjectItem it = new ObjectItem();
+                        it.obj = pbr;
+                        it.Name = "ParentBranch";
+                        ob.Add(it);
 
-        //        DMEEditor.AddLogMessage("Success", "Remove File", DateTime.Now, 0, null, Errors.Ok);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        string mes = "Could not Remove File";
-        //        DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
-        //    };
-        //    return DMEEditor.ErrorObject;
-        //}
+                        PassedArgs args = new PassedArgs
+                        {
+                            ObjectName = "FILE",
+                            ObjectType = "FILE",
+                            EventType = "COPYENTITIES",
+                            ParameterString1 = "COPYENTITIES",
+                            DataSource = DataSource,
+                            DatasourceName = DataSource.DatasourceName,
+                            CurrentEntity = BranchText,
+                            EntitiesNames = ents,
+                            Objects = ob
+                        };
+                        TreeEditor.args = args;
+                        DMEEditor.Passedarguments = args;
+                    }
+                    else
+                    {
+                        DMEEditor.AddLogMessage("Fail", "Could not get DataSource", DateTime.Now, -1, null, Errors.Failed);
+                    }
+
+                }
+
+                // TreeEditor.SendActionFromBranchToBranch(pbr, this, "Create View using Table");
+
+            }
+            catch (Exception ex)
+            {
+                string mes = "Could not Copy Entites";
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return DMEEditor.ErrorObject;
+        }
         #endregion Exposed Interface"
         #region "Other Methods"
         public IErrorsInfo CreateNodes()

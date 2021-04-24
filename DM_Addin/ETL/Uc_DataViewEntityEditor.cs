@@ -216,24 +216,26 @@ namespace TheTechIdea.ETL
            try
 
             {
-                EntityStructure.Drawn = true;
-                if (vds.Entities.Where(o => o.EntityName == EntityStructure.EntityName).Any())
+                if (!string.IsNullOrEmpty(this.captionTextBox1.Text) && !string.IsNullOrWhiteSpace(this.captionTextBox1.Text))
                 {
-                    vds.Entities[vds.Entities.FindIndex(i=>i.EntityName==EntityStructure.EntityName)] = EntityStructure;
+                    EntityStructure.Drawn = true;
+                    if (vds.Entities.Where(o => o.EntityName == EntityStructure.EntityName).Any())
+                    {
+                        vds.Entities[vds.Entities.FindIndex(i => i.EntityName.Equals(EntityStructure.EntityName, StringComparison.OrdinalIgnoreCase))] = EntityStructure;
+                    }
+                    else
+                    {
+                        vds.CreateEntityAs(EntityStructure);
+                    }
+
+                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = Passedarg.DatasourceName, Entities = vds.Entities });
+                    vds.WriteDataViewFile(vds.DatasourceName);
+                    MessageBox.Show("Entity Saved successfully", "Beep");
                 }
                 else
-                {
-                    vds.CreateEntityAs(EntityStructure);
-                }
-              
-                DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = Passedarg.DatasourceName, Entities = vds.Entities });
-                vds.WriteDataViewFile(vds.DatasourceName);
-              
+                    MessageBox.Show("Please Enter Name for Entity", "Beep");
 
-                
-                
-            MessageBox.Show("Entity Saved successfully", "Beep");
-             
+
             }
             catch (Exception ex)
             {

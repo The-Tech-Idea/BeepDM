@@ -70,7 +70,13 @@ namespace TheTechIdea.Hidden
                 DMEEditor.AddLogMessage("Failed", $"{ex.Message}", DateTime.Now, 0, "", Errors.Failed);
             }
             Checkbutton.Click += Checkbutton_Click;
+            DataConnectionbutton.Click += DataConnectionbutton_Click;
             TreeEditor.CreateRootTree();
+        }
+
+        private void DataConnectionbutton_Click(object sender, EventArgs e)
+        {
+            Visutil.ShowUserControlInContainer("uc_DataConnection", Visutil.DisplayPanel, DMEEditor, null, null);
         }
 
         private void Checkbutton_Click(object sender, EventArgs e)

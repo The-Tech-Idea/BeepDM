@@ -38,8 +38,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
       
         public bool HeaderExist { get; set; }
-        public int fromline { get; set; }
-        public int  toline { get; set; }
+     
        // public TxtXlsCSVReader Reader { get; set; }
         public IDataConnection Dataconnection { get; set ; }
         string FileName;

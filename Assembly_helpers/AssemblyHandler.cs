@@ -496,6 +496,8 @@ namespace TheTechIdea.Tools
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
+                                xcls.type = type;
+                                xcls.componentType = "IDataSource";
                                 DataSourcesClasses.Add(xcls);
                                 DMEEditor.ConfigEditor.DataSourcesClasses.Add(xcls);
                             }
@@ -507,6 +509,8 @@ namespace TheTechIdea.Tools
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
+                                xcls.type = type;
+                                xcls.componentType = "IWorkFlowAction";
                                 DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
                             }
                             //-------------------------------------------------------
@@ -517,8 +521,41 @@ namespace TheTechIdea.Tools
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
+                                xcls.type = type;
+                                xcls.componentType = "IAppBuilder";
                                 DMEEditor.ConfigEditor.AppWritersClasses.Add(xcls);
                             }
+                            if (type.ImplementedInterfaces.Contains(typeof(IAppComponent)))
+                            {
+                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                                xcls.className = type.Name;
+                                xcls.dllname = type.Module.Name;
+                                xcls.PackageName = type.FullName;
+                                xcls.type = type;
+                                xcls.componentType = "IAppComponent";
+                                DMEEditor.ConfigEditor.AppComponents.Add(xcls);
+                            }
+                            if (type.ImplementedInterfaces.Contains(typeof(IAppDesigner)))
+                            {
+                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                                xcls.className = type.Name;
+                                xcls.dllname = type.Module.Name;
+                                xcls.PackageName = type.FullName;
+                                xcls.type = type;
+                                xcls.componentType = "IAppDesigner";
+                                DMEEditor.ConfigEditor.AppComponents.Add(xcls);
+                            }
+                            if (type.ImplementedInterfaces.Contains(typeof(IAppScreen)))
+                            {
+                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                                xcls.className = type.Name;
+                                xcls.dllname = type.Module.Name;
+                                xcls.PackageName = type.FullName;
+                                xcls.type = type;
+                                xcls.componentType = "IAppScreen";
+                                DMEEditor.ConfigEditor.AppComponents.Add(xcls);
+                            }
+                            
                             //-------------------------------------------------------
                             // Get Reports Implementations Definitions
                             if (type.ImplementedInterfaces.Contains(typeof(IReportDMWriter)))
@@ -527,6 +564,7 @@ namespace TheTechIdea.Tools
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
+                                xcls.componentType = "IReportDMWriter";
                                 DMEEditor.ConfigEditor.ReportWritersClasses.Add(xcls);
                             }
                             //-------------------------------------------------------
@@ -539,7 +577,7 @@ namespace TheTechIdea.Tools
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
-                             //   xcls.RootName = brcls.BranchClass;
+                                xcls.componentType = "IBranch";
                                 xcls.type = type;
                              //   xcls.RootName = "AI";
                                 //   xcls.BranchType = brcls.BranchType;
@@ -584,7 +622,7 @@ namespace TheTechIdea.Tools
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
-                              
+                                xcls.componentType = "IAAPP";
                                 foreach (MethodInfo methods in type.GetMethods()
                                              .Where(m => m.GetCustomAttributes(typeof(MLMethod), false).Length > 0)
                                               .ToArray())

@@ -359,6 +359,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
+      
         #endregion
     }
 }

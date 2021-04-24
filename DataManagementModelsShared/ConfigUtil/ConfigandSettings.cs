@@ -70,6 +70,7 @@ namespace TheTechIdea.Util
         public string RootName { get; set; }
         //public EnumBranchType BranchType { get; set; }
         public Type type { get; set; }
+        public string componentType { get; set; }
         public List<MethodsClass> Methods { get; set; } = new List<MethodsClass>();
     }
     public class MethodsClass

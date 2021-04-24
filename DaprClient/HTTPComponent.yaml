@@ -1,0 +1,11 @@
+﻿apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: <NAME>
+spec:
+  type: state.<TYPE>
+  metadata:
+  - name:<KEY>
+    value:<VALUE>
+  - name: <KEY>
+    value: <VALUE>

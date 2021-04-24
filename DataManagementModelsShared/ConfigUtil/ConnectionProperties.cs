@@ -32,15 +32,7 @@ namespace TheTechIdea.Util
         public string Url { get; set; } = "";
         public List<string> Databases { get; set; } = new List<string>();
         public  string ApiKey { get; set; }
-        public List<EntityStructure> Entities
-        {
-            get
-           ;
-
-            set
-           ;
-
-        } = new List<EntityStructure>();
+        public List<EntityStructure> Entities  {get ;  set ;} = new List<EntityStructure>();
         public string KeyToken { get; set; } = "";
         public List<WebApiHeader>  Headers { get; set; } = new List<WebApiHeader>();
         public bool CompositeLayer { get; set; } = false;

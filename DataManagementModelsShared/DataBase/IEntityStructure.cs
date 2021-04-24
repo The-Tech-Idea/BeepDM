@@ -13,6 +13,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         bool Drawn { get; set; }
         bool Editable { get; set; }
         string EntityName { get; set; }
+        string DatasourceEntityName { get; set; }
+        string Caption { get; set; }
         List<EntityField> Fields { get; set; }
         List<ReportFilter> Filters { get; set; }
         int Id { get; set; }

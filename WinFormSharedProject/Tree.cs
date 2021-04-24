@@ -631,6 +631,40 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion
         #region "Misc Functions"
+        public IErrorsInfo CopySelectedEntities()
+        {
+            List<string> ents = new List<string>();
+            if (SelectedBranchs.Count > 0)
+            {
+
+                foreach (int item in SelectedBranchs)
+                {
+                    IBranch br = GetBranch(item);
+                    ents.Add(br.BranchText);
+                    // EntityStructure = DataSource.GetEntityStructure(br.BranchText, true);
+
+                }
+
+
+                args = new PassedArgs
+                {
+                    ObjectName = "DATABASE",
+                    ObjectType = "TABLE",
+                    EventType = "COPYENTITIES",
+                    ParameterString1 = "COPYENTITIES",
+
+                };
+
+                DMEEditor.Passedarguments = args;
+            }
+            else
+
+                DMEEditor.AddLogMessage("Fail", "Could not get DataSource", DateTime.Now, -1, null, Errors.Failed);
+
+            return DMEEditor.ErrorObject;
+        
+        
+        }
         public int GetImageIndex(TreeNode n, string imagename)
         {
             try

@@ -16,6 +16,8 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         string subTitle { get; set; }
         string title { get; set; }
         PassedArgs args { get; set; }
+        string parentscreen { get; set; }
+        IAppComponent appComponentType { get; set; }
     }
 
 }

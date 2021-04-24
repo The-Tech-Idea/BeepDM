@@ -27,6 +27,8 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
 
         LinkedList<BreadCrumb> breadCrumb { get; set; }
 
+        List<ConnectionProperties> dataConnections { get; set; }
+
 
     }
 }

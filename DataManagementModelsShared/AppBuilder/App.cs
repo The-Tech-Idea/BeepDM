@@ -62,5 +62,6 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         public string AppDescription { get; set; }
         public LinkedList<BreadCrumb> breadCrumb { get; set; } = new LinkedList<BreadCrumb>();
         public List<AppVersion> AppVersions { get; set; } = new List<AppVersion>();
+        public List<ConnectionProperties> dataConnections { get; set; } = new List<ConnectionProperties>();
     }
 }

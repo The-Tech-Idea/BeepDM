@@ -52,7 +52,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Entity;
+        public EnumBranchType BranchType { get; set; } = EnumBranchType.DataPoint;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "file.ico";
         public string BranchStatus { get; set; }
@@ -208,6 +208,67 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
+        [BranchDelegate(Caption = "Copy Entities")]
+        public IErrorsInfo CopyEntities()
+        {
+
+            try
+            {
+                List<string> ents = new List<string>();
+                if (TreeEditor.SelectedBranchs.Count > 0)
+                {
+                    if (DataSource == null)
+                    {
+                        DataSource = DMEEditor.GetDataSource(DataSourceName);
+                    }
+                    if (DataSource != null)
+                    {
+                        foreach (int item in TreeEditor.SelectedBranchs)
+                        {
+                            IBranch br = TreeEditor.GetBranch(item);
+                            ents.Add(br.BranchText);
+                            // EntityStructure = DataSource.GetEntityStructure(br.BranchText, true);
+
+                        }
+                        IBranch pbr = TreeEditor.GetBranch(ParentBranchID);
+                        List<ObjectItem> ob = new List<ObjectItem>(); ;
+                        ObjectItem it = new ObjectItem();
+                        it.obj = pbr;
+                        it.Name = "ParentBranch";
+                        ob.Add(it);
+
+                        PassedArgs args = new PassedArgs
+                        {
+                            ObjectName = "DATABASE",
+                            ObjectType = "TABLE",
+                            EventType = "COPYENTITIES",
+                            ParameterString1 = "COPYENTITIES",
+                            DataSource = DataSource,
+                            DatasourceName = DataSource.DatasourceName,
+                            CurrentEntity = BranchText,
+                            EntitiesNames = ents,
+                            Objects = ob
+                        };
+                        TreeEditor.args = args;
+                        DMEEditor.Passedarguments = args;
+                    }
+                    else
+                    {
+                        DMEEditor.AddLogMessage("Fail", "Could not get DataSource", DateTime.Now, -1, null, Errors.Failed);
+                    }
+
+                }
+
+                // TreeEditor.SendActionFromBranchToBranch(pbr, this, "Create View using Table");
+
+            }
+            catch (Exception ex)
+            {
+                string mes = "Could not Copy Entites";
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return DMEEditor.ErrorObject;
+        }
         #endregion Exposed Interface"
         #region "Other Methods"
         public IErrorsInfo CreateNodes()
@@ -252,8 +313,9 @@ namespace TheTechIdea.Winforms.VIS
 
             try
             {
-                FileEntitySheetNode fileitemsheet = new FileEntitySheetNode(TreeEditor, DMEEditor, this, Sheetname, TreeEditor.SeqID, EnumBranchType.DataPoint, IconImageName, BranchText);
+                FileEntitySheetNode fileitemsheet = new FileEntitySheetNode(TreeEditor, DMEEditor, this, Sheetname, TreeEditor.SeqID, EnumBranchType.Entity, IconImageName, BranchText);
                 fileitemsheet.DataSource = DataSource;
+              //  fileitemsheet.DataSourceName = DataSourceName;
                 ChildBranchs.Add(fileitemsheet);
                 TreeEditor.AddBranch(this,fileitemsheet);
 

@@ -364,56 +364,56 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Paste Entity")]
-        public IErrorsInfo PastEntity()
-        {
+        //[BranchDelegate(Caption = "Paste Entity")]
+        //public IErrorsInfo PastEntity()
+        //{
 
-            try
-            {
-                // IBranch pbr = TreeEditor.Branches.Where(x => x.BranchType == EnumBranchType.Root && x.BranchClass == "VIEW").FirstOrDefault();
-                //PassedArgs args = new PassedArgs
-                //{
-                //    ObjectName = "DATABASE",
-                //    ObjectType = "TABLE",
-                //    EventType = "COPYENTITY",
-                //    Parameter = "COPYENTITY",
-                //    DataSource = DataSource,
-                //    DatasourceName = DataSource.DatasourceName,
-                //    CurrentEntity = BranchText,
-                //    Objects = new List<ObjectItem> { new ObjectItem { Name = "Branch", obj = this } }
-                //};
-                if (TreeEditor.args != null)
-                {
-                    if (TreeEditor.args.EventType == "COPYENTITY")
-                    {
-                        if (TreeEditor.args.Objects != null)
-                        {
-                            IBranch pbr = (IBranch)TreeEditor.args.Objects.Where(x => x.Name == "Branch").FirstOrDefault().obj;
-                            EntityStructure entity = (EntityStructure)TreeEditor.args.Objects.Where(x => x.Name == "Entity").FirstOrDefault().obj;
-                            if (compositeLayerDataSource.CheckEntityExist(entity.EntityName) || compositeLayerDataSource.LayerInfo.Entities.Where(i=>i.EntityName.ToLower()==entity.EntityName.ToLower()).Any())
-                            {
-                                DMEEditor.AddLogMessage("Fail" , $"Could Not Paste Entity {entity.EntityName}, it already exist", DateTime.Now, -1, null, Errors.Failed);
-                            }
-                            else
-                            {
-                                entity.Created = false;
-                                compositeLayerDataSource.LayerInfo.Entities.Add(entity);
-                                DMEEditor.ConfigEditor.SaveCompositeLayersValues();
-                                GetEntites();
-                                DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
-                            }
+        //    try
+        //    {
+        //        // IBranch pbr = TreeEditor.Branches.Where(x => x.BranchType == EnumBranchType.Root && x.BranchClass == "VIEW").FirstOrDefault();
+        //        //PassedArgs args = new PassedArgs
+        //        //{
+        //        //    ObjectName = "DATABASE",
+        //        //    ObjectType = "TABLE",
+        //        //    EventType = "COPYENTITY",
+        //        //    Parameter = "COPYENTITY",
+        //        //    DataSource = DataSource,
+        //        //    DatasourceName = DataSource.DatasourceName,
+        //        //    CurrentEntity = BranchText,
+        //        //    Objects = new List<ObjectItem> { new ObjectItem { Name = "Branch", obj = this } }
+        //        //};
+        //        if (TreeEditor.args != null)
+        //        {
+        //            if (TreeEditor.args.EventType == "COPYENTITY")
+        //            {
+        //                if (TreeEditor.args.Objects != null)
+        //                {
+        //                    IBranch pbr = (IBranch)TreeEditor.args.Objects.Where(x => x.Name == "Branch").FirstOrDefault().obj;
+        //                    EntityStructure entity = (EntityStructure)TreeEditor.args.Objects.Where(x => x.Name == "Entity").FirstOrDefault().obj;
+        //                    if (compositeLayerDataSource.CheckEntityExist(entity.EntityName) || compositeLayerDataSource.LayerInfo.Entities.Where(i=>i.EntityName.ToLower()==entity.EntityName.ToLower()).Any())
+        //                    {
+        //                        DMEEditor.AddLogMessage("Fail" , $"Could Not Paste Entity {entity.EntityName}, it already exist", DateTime.Now, -1, null, Errors.Failed);
+        //                    }
+        //                    else
+        //                    {
+        //                        entity.Created = false;
+        //                        compositeLayerDataSource.LayerInfo.Entities.Add(entity);
+        //                        DMEEditor.ConfigEditor.SaveCompositeLayersValues();
+        //                        GetEntites();
+        //                        DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+        //                    }
                            
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                string mes = "Could not Added Entity ";
-                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
-            };
-            return DMEEditor.ErrorObject;
-        }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        string mes = "Could not Added Entity ";
+        //        DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+        //    };
+        //    return DMEEditor.ErrorObject;
+        //}
         
         [BranchDelegate(Caption = "Remove Layer")]
         public IErrorsInfo RemoveLayer()

@@ -186,7 +186,25 @@ namespace TheTechIdea.DataManagment_Engine.CompositeLayer
             { return true; }
            
         }
-       
+       public bool AddEntitytoLayer(EntityStructure entity)
+        {
+            try
+            {
+                EntityStructure a = new EntityStructure();
+                a = (EntityStructure)entity.Clone();
+                a.EntityName = a.EntityName;
+                a.Created = false;
+              
+                LayerInfo.Entities.Add(a);
+                DMEEditor.ConfigEditor.SaveCompositeLayersValues();
+                return true;
+            }
+            catch (Exception ex)
+            {
+
+                return false;
+            }
+        }
 
        
 

@@ -21,5 +21,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         public List<IAppField> fields { get; set; } = new List<IAppField>();
         public List<IReportDefinition> Reports { get; set; } = new List<IReportDefinition>();
         public PassedArgs args { get; set; } = new PassedArgs();
+        public string parentscreen { get; set; }
+        public IAppComponent appComponentType { get; set; }
     }
 }

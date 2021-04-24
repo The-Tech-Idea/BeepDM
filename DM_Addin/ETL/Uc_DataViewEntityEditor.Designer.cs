@@ -34,17 +34,14 @@
             System.Windows.Forms.Label nameLabel;
             System.Windows.Forms.Label customBuildQueryLabel;
             System.Windows.Forms.Label viewIDLabel;
+            System.Windows.Forms.Label captionLabel;
             this.dataSourceIDComboBox = new System.Windows.Forms.ComboBox();
+            this.dataHierarchyBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.viewtypeComboBox = new System.Windows.Forms.ComboBox();
             this.nameTextBox = new System.Windows.Forms.TextBox();
             this.customBuildQueryTextBox = new System.Windows.Forms.TextBox();
             this.ValidateQuerybutton = new System.Windows.Forms.Button();
             this.fieldsDataGridView = new System.Windows.Forms.DataGridView();
-            this.relationShipsDataGridView = new System.Windows.Forms.DataGridView();
-            this.viewIDTextBox = new System.Windows.Forms.TextBox();
-            this.SaveEntitybutton = new System.Windows.Forms.Button();
-            this.CustomQueryDatadataGridView = new System.Windows.Forms.DataGridView();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.idDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.fieldnameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.fieldtypeDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -59,22 +56,24 @@
             this.fieldIndexDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.entityNameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.fieldsBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.dataHierarchyBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.relationShipsDataGridView = new System.Windows.Forms.DataGridView();
             this.parentEntityIDDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.parentEntityColumnIDDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.entityColumnIDDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.relationShipsBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.viewIDTextBox = new System.Windows.Forms.TextBox();
+            this.SaveEntitybutton = new System.Windows.Forms.Button();
+            this.CustomQueryDatadataGridView = new System.Windows.Forms.DataGridView();
+            this.panel1 = new System.Windows.Forms.Panel();
             this.primaryKeysBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.dataGridView1 = new System.Windows.Forms.DataGridView();
-            this.paramentersBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.tabControl2 = new System.Windows.Forms.TabControl();
             this.tabPage3 = new System.Windows.Forms.TabPage();
-            this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.idDataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.parameterIndexDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.sourceDataSourceDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -87,35 +86,39 @@
             this.stringValueDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dateTimeValueDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.intValueDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.paramentersBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.tabPage4 = new System.Windows.Forms.TabPage();
             this.dataGridView2 = new System.Windows.Forms.DataGridView();
-            this.filtersBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.fieldNameDataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.operatorDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.filterValueDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.valueTypeDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.filterValue1DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.filtersBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.captionTextBox1 = new System.Windows.Forms.TextBox();
             dataSourceIDLabel = new System.Windows.Forms.Label();
             viewtypeLabel = new System.Windows.Forms.Label();
             nameLabel = new System.Windows.Forms.Label();
             customBuildQueryLabel = new System.Windows.Forms.Label();
             viewIDLabel = new System.Windows.Forms.Label();
+            captionLabel = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this.dataHierarchyBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.fieldsDataGridView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.fieldsBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.relationShipsDataGridView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.relationShipsBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomQueryDatadataGridView)).BeginInit();
             this.panel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.fieldsBindingSource)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dataHierarchyBindingSource)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.relationShipsBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.primaryKeysBindingSource)).BeginInit();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.paramentersBindingSource)).BeginInit();
             this.tabControl2.SuspendLayout();
             this.tabPage3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.paramentersBindingSource)).BeginInit();
             this.tabPage4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.filtersBindingSource)).BeginInit();
@@ -124,7 +127,7 @@
             // dataSourceIDLabel
             // 
             dataSourceIDLabel.AutoSize = true;
-            dataSourceIDLabel.Location = new System.Drawing.Point(38, 50);
+            dataSourceIDLabel.Location = new System.Drawing.Point(71, 89);
             dataSourceIDLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             dataSourceIDLabel.Name = "dataSourceIDLabel";
             dataSourceIDLabel.Size = new System.Drawing.Size(84, 13);
@@ -134,7 +137,7 @@
             // viewtypeLabel
             // 
             viewtypeLabel.AutoSize = true;
-            viewtypeLabel.Location = new System.Drawing.Point(59, 99);
+            viewtypeLabel.Location = new System.Drawing.Point(92, 138);
             viewtypeLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             viewtypeLabel.Name = "viewtypeLabel";
             viewtypeLabel.Size = new System.Drawing.Size(63, 13);
@@ -144,12 +147,12 @@
             // nameLabel
             // 
             nameLabel.AutoSize = true;
-            nameLabel.Location = new System.Drawing.Point(83, 26);
+            nameLabel.Location = new System.Drawing.Point(28, 26);
             nameLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             nameLabel.Name = "nameLabel";
-            nameLabel.Size = new System.Drawing.Size(38, 13);
+            nameLabel.Size = new System.Drawing.Size(127, 13);
             nameLabel.TabIndex = 4;
-            nameLabel.Text = "Name:";
+            nameLabel.Text = "DataSource Entity Name:";
             // 
             // customBuildQueryLabel
             // 
@@ -165,7 +168,7 @@
             // viewIDLabel
             // 
             viewIDLabel.AutoSize = true;
-            viewIDLabel.Location = new System.Drawing.Point(75, 75);
+            viewIDLabel.Location = new System.Drawing.Point(108, 114);
             viewIDLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             viewIDLabel.Name = "viewIDLabel";
             viewIDLabel.Size = new System.Drawing.Size(47, 13);
@@ -176,17 +179,21 @@
             // 
             this.dataSourceIDComboBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "DataSourceID", true));
             this.dataSourceIDComboBox.FormattingEnabled = true;
-            this.dataSourceIDComboBox.Location = new System.Drawing.Point(126, 47);
+            this.dataSourceIDComboBox.Location = new System.Drawing.Point(159, 86);
             this.dataSourceIDComboBox.Margin = new System.Windows.Forms.Padding(2);
             this.dataSourceIDComboBox.Name = "dataSourceIDComboBox";
             this.dataSourceIDComboBox.Size = new System.Drawing.Size(200, 21);
             this.dataSourceIDComboBox.TabIndex = 2;
             // 
+            // dataHierarchyBindingSource
+            // 
+            this.dataHierarchyBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DataBase.EntityStructure);
+            // 
             // viewtypeComboBox
             // 
             this.viewtypeComboBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "Viewtype", true));
             this.viewtypeComboBox.FormattingEnabled = true;
-            this.viewtypeComboBox.Location = new System.Drawing.Point(126, 96);
+            this.viewtypeComboBox.Location = new System.Drawing.Point(159, 135);
             this.viewtypeComboBox.Margin = new System.Windows.Forms.Padding(2);
             this.viewtypeComboBox.Name = "viewtypeComboBox";
             this.viewtypeComboBox.Size = new System.Drawing.Size(200, 21);
@@ -195,10 +202,11 @@
             // nameTextBox
             // 
             this.nameTextBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "EntityName", true));
-            this.nameTextBox.Location = new System.Drawing.Point(125, 23);
+            this.nameTextBox.Enabled = false;
+            this.nameTextBox.Location = new System.Drawing.Point(159, 23);
             this.nameTextBox.Margin = new System.Windows.Forms.Padding(2);
             this.nameTextBox.Name = "nameTextBox";
-            this.nameTextBox.Size = new System.Drawing.Size(396, 20);
+            this.nameTextBox.Size = new System.Drawing.Size(356, 20);
             this.nameTextBox.TabIndex = 5;
             // 
             // customBuildQueryTextBox
@@ -248,68 +256,6 @@
             this.fieldsDataGridView.RowTemplate.Height = 28;
             this.fieldsDataGridView.Size = new System.Drawing.Size(442, 251);
             this.fieldsDataGridView.TabIndex = 9;
-            // 
-            // relationShipsDataGridView
-            // 
-            this.relationShipsDataGridView.AutoGenerateColumns = false;
-            this.relationShipsDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.relationShipsDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.parentEntityIDDataGridViewTextBoxColumn,
-            this.parentEntityColumnIDDataGridViewTextBoxColumn,
-            this.entityColumnIDDataGridViewTextBoxColumn});
-            this.relationShipsDataGridView.DataSource = this.relationShipsBindingSource;
-            this.relationShipsDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.relationShipsDataGridView.Location = new System.Drawing.Point(3, 3);
-            this.relationShipsDataGridView.Margin = new System.Windows.Forms.Padding(2);
-            this.relationShipsDataGridView.Name = "relationShipsDataGridView";
-            this.relationShipsDataGridView.RowHeadersWidth = 62;
-            this.relationShipsDataGridView.RowTemplate.Height = 28;
-            this.relationShipsDataGridView.Size = new System.Drawing.Size(442, 251);
-            this.relationShipsDataGridView.TabIndex = 10;
-            // 
-            // viewIDTextBox
-            // 
-            this.viewIDTextBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "ViewID", true));
-            this.viewIDTextBox.Location = new System.Drawing.Point(126, 72);
-            this.viewIDTextBox.Margin = new System.Windows.Forms.Padding(2);
-            this.viewIDTextBox.Name = "viewIDTextBox";
-            this.viewIDTextBox.ReadOnly = true;
-            this.viewIDTextBox.Size = new System.Drawing.Size(68, 20);
-            this.viewIDTextBox.TabIndex = 13;
-            // 
-            // SaveEntitybutton
-            // 
-            this.SaveEntitybutton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(254)));
-            this.SaveEntitybutton.Location = new System.Drawing.Point(125, 121);
-            this.SaveEntitybutton.Margin = new System.Windows.Forms.Padding(2);
-            this.SaveEntitybutton.Name = "SaveEntitybutton";
-            this.SaveEntitybutton.Size = new System.Drawing.Size(99, 23);
-            this.SaveEntitybutton.TabIndex = 14;
-            this.SaveEntitybutton.Text = "Save";
-            this.SaveEntitybutton.UseVisualStyleBackColor = true;
-            // 
-            // CustomQueryDatadataGridView
-            // 
-            this.CustomQueryDatadataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.CustomQueryDatadataGridView.Location = new System.Drawing.Point(3, 234);
-            this.CustomQueryDatadataGridView.Name = "CustomQueryDatadataGridView";
-            this.CustomQueryDatadataGridView.Size = new System.Drawing.Size(455, 126);
-            this.CustomQueryDatadataGridView.TabIndex = 17;
-            // 
-            // panel1
-            // 
-            this.panel1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.panel1.Controls.Add(this.customBuildQueryTextBox);
-            this.panel1.Controls.Add(this.CustomQueryDatadataGridView);
-            this.panel1.Controls.Add(this.ValidateQuerybutton);
-            this.panel1.Controls.Add(customBuildQueryLabel);
-            this.panel1.Location = new System.Drawing.Point(528, 3);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(462, 365);
-            this.panel1.TabIndex = 18;
             // 
             // idDataGridViewTextBoxColumn
             // 
@@ -425,9 +371,23 @@
             this.fieldsBindingSource.DataMember = "Fields";
             this.fieldsBindingSource.DataSource = this.dataHierarchyBindingSource;
             // 
-            // dataHierarchyBindingSource
+            // relationShipsDataGridView
             // 
-            this.dataHierarchyBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DataBase.EntityStructure);
+            this.relationShipsDataGridView.AutoGenerateColumns = false;
+            this.relationShipsDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.relationShipsDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.parentEntityIDDataGridViewTextBoxColumn,
+            this.parentEntityColumnIDDataGridViewTextBoxColumn,
+            this.entityColumnIDDataGridViewTextBoxColumn});
+            this.relationShipsDataGridView.DataSource = this.relationShipsBindingSource;
+            this.relationShipsDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.relationShipsDataGridView.Location = new System.Drawing.Point(3, 3);
+            this.relationShipsDataGridView.Margin = new System.Windows.Forms.Padding(2);
+            this.relationShipsDataGridView.Name = "relationShipsDataGridView";
+            this.relationShipsDataGridView.RowHeadersWidth = 62;
+            this.relationShipsDataGridView.RowTemplate.Height = 28;
+            this.relationShipsDataGridView.Size = new System.Drawing.Size(442, 251);
+            this.relationShipsDataGridView.TabIndex = 10;
             // 
             // parentEntityIDDataGridViewTextBoxColumn
             // 
@@ -457,6 +417,50 @@
             // 
             this.relationShipsBindingSource.DataMember = "Relations";
             this.relationShipsBindingSource.DataSource = this.dataHierarchyBindingSource;
+            // 
+            // viewIDTextBox
+            // 
+            this.viewIDTextBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "ViewID", true));
+            this.viewIDTextBox.Location = new System.Drawing.Point(159, 111);
+            this.viewIDTextBox.Margin = new System.Windows.Forms.Padding(2);
+            this.viewIDTextBox.Name = "viewIDTextBox";
+            this.viewIDTextBox.ReadOnly = true;
+            this.viewIDTextBox.Size = new System.Drawing.Size(68, 20);
+            this.viewIDTextBox.TabIndex = 13;
+            // 
+            // SaveEntitybutton
+            // 
+            this.SaveEntitybutton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(254)));
+            this.SaveEntitybutton.Location = new System.Drawing.Point(159, 160);
+            this.SaveEntitybutton.Margin = new System.Windows.Forms.Padding(2);
+            this.SaveEntitybutton.Name = "SaveEntitybutton";
+            this.SaveEntitybutton.Size = new System.Drawing.Size(99, 23);
+            this.SaveEntitybutton.TabIndex = 14;
+            this.SaveEntitybutton.Text = "Save";
+            this.SaveEntitybutton.UseVisualStyleBackColor = true;
+            // 
+            // CustomQueryDatadataGridView
+            // 
+            this.CustomQueryDatadataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.CustomQueryDatadataGridView.Location = new System.Drawing.Point(3, 234);
+            this.CustomQueryDatadataGridView.Name = "CustomQueryDatadataGridView";
+            this.CustomQueryDatadataGridView.Size = new System.Drawing.Size(455, 126);
+            this.CustomQueryDatadataGridView.TabIndex = 17;
+            // 
+            // panel1
+            // 
+            this.panel1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel1.Controls.Add(this.customBuildQueryTextBox);
+            this.panel1.Controls.Add(this.CustomQueryDatadataGridView);
+            this.panel1.Controls.Add(this.ValidateQuerybutton);
+            this.panel1.Controls.Add(customBuildQueryLabel);
+            this.panel1.Location = new System.Drawing.Point(528, 3);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(479, 382);
+            this.panel1.TabIndex = 18;
             // 
             // primaryKeysBindingSource
             // 
@@ -509,12 +513,34 @@
             // groupBox2
             // 
             this.groupBox2.Controls.Add(this.tabControl2);
-            this.groupBox2.Location = new System.Drawing.Point(32, 157);
+            this.groupBox2.Location = new System.Drawing.Point(32, 238);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(490, 522);
+            this.groupBox2.Size = new System.Drawing.Size(490, 441);
             this.groupBox2.TabIndex = 22;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Entity Data";
+            // 
+            // tabControl2
+            // 
+            this.tabControl2.Controls.Add(this.tabPage3);
+            this.tabControl2.Controls.Add(this.tabPage4);
+            this.tabControl2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabControl2.Location = new System.Drawing.Point(3, 16);
+            this.tabControl2.Name = "tabControl2";
+            this.tabControl2.SelectedIndex = 0;
+            this.tabControl2.Size = new System.Drawing.Size(484, 422);
+            this.tabControl2.TabIndex = 0;
+            // 
+            // tabPage3
+            // 
+            this.tabPage3.Controls.Add(this.dataGridView1);
+            this.tabPage3.Location = new System.Drawing.Point(4, 22);
+            this.tabPage3.Name = "tabPage3";
+            this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage3.Size = new System.Drawing.Size(476, 396);
+            this.tabPage3.TabIndex = 0;
+            this.tabPage3.Text = "Parameters";
+            this.tabPage3.UseVisualStyleBackColor = true;
             // 
             // dataGridView1
             // 
@@ -540,46 +566,8 @@
             this.dataGridView1.Name = "dataGridView1";
             this.dataGridView1.RowHeadersWidth = 62;
             this.dataGridView1.RowTemplate.Height = 28;
-            this.dataGridView1.Size = new System.Drawing.Size(470, 471);
+            this.dataGridView1.Size = new System.Drawing.Size(470, 390);
             this.dataGridView1.TabIndex = 10;
-            // 
-            // paramentersBindingSource
-            // 
-            this.paramentersBindingSource.DataMember = "Paramenters";
-            this.paramentersBindingSource.DataSource = this.dataHierarchyBindingSource;
-            // 
-            // tabControl2
-            // 
-            this.tabControl2.Controls.Add(this.tabPage3);
-            this.tabControl2.Controls.Add(this.tabPage4);
-            this.tabControl2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabControl2.Location = new System.Drawing.Point(3, 16);
-            this.tabControl2.Name = "tabControl2";
-            this.tabControl2.SelectedIndex = 0;
-            this.tabControl2.Size = new System.Drawing.Size(484, 503);
-            this.tabControl2.TabIndex = 0;
-            // 
-            // tabPage3
-            // 
-            this.tabPage3.Controls.Add(this.dataGridView1);
-            this.tabPage3.Location = new System.Drawing.Point(4, 22);
-            this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage3.Size = new System.Drawing.Size(476, 477);
-            this.tabPage3.TabIndex = 0;
-            this.tabPage3.Text = "Parameters";
-            this.tabPage3.UseVisualStyleBackColor = true;
-            // 
-            // tabPage4
-            // 
-            this.tabPage4.Controls.Add(this.dataGridView2);
-            this.tabPage4.Location = new System.Drawing.Point(4, 22);
-            this.tabPage4.Name = "tabPage4";
-            this.tabPage4.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage4.Size = new System.Drawing.Size(476, 477);
-            this.tabPage4.TabIndex = 1;
-            this.tabPage4.Text = "Filters";
-            this.tabPage4.UseVisualStyleBackColor = true;
             // 
             // idDataGridViewTextBoxColumn1
             // 
@@ -655,6 +643,22 @@
             this.intValueDataGridViewTextBoxColumn.HeaderText = "intValue";
             this.intValueDataGridViewTextBoxColumn.Name = "intValueDataGridViewTextBoxColumn";
             // 
+            // paramentersBindingSource
+            // 
+            this.paramentersBindingSource.DataMember = "Paramenters";
+            this.paramentersBindingSource.DataSource = this.dataHierarchyBindingSource;
+            // 
+            // tabPage4
+            // 
+            this.tabPage4.Controls.Add(this.dataGridView2);
+            this.tabPage4.Location = new System.Drawing.Point(4, 22);
+            this.tabPage4.Name = "tabPage4";
+            this.tabPage4.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage4.Size = new System.Drawing.Size(476, 396);
+            this.tabPage4.TabIndex = 1;
+            this.tabPage4.Text = "Filters";
+            this.tabPage4.UseVisualStyleBackColor = true;
+            // 
             // dataGridView2
             // 
             this.dataGridView2.AutoGenerateColumns = false;
@@ -672,13 +676,8 @@
             this.dataGridView2.Name = "dataGridView2";
             this.dataGridView2.RowHeadersWidth = 62;
             this.dataGridView2.RowTemplate.Height = 28;
-            this.dataGridView2.Size = new System.Drawing.Size(470, 471);
+            this.dataGridView2.Size = new System.Drawing.Size(470, 390);
             this.dataGridView2.TabIndex = 10;
-            // 
-            // filtersBindingSource
-            // 
-            this.filtersBindingSource.DataMember = "Filters";
-            this.filtersBindingSource.DataSource = this.dataHierarchyBindingSource;
             // 
             // fieldNameDataGridViewTextBoxColumn1
             // 
@@ -710,11 +709,35 @@
             this.filterValue1DataGridViewTextBoxColumn.HeaderText = "FilterValue1";
             this.filterValue1DataGridViewTextBoxColumn.Name = "filterValue1DataGridViewTextBoxColumn";
             // 
+            // filtersBindingSource
+            // 
+            this.filtersBindingSource.DataMember = "Filters";
+            this.filtersBindingSource.DataSource = this.dataHierarchyBindingSource;
+            // 
+            // captionLabel
+            // 
+            captionLabel.AutoSize = true;
+            captionLabel.Location = new System.Drawing.Point(109, 51);
+            captionLabel.Name = "captionLabel";
+            captionLabel.Size = new System.Drawing.Size(46, 13);
+            captionLabel.TabIndex = 23;
+            captionLabel.Text = "Caption:";
+            // 
+            // captionTextBox1
+            // 
+            this.captionTextBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "Caption", true));
+            this.captionTextBox1.Location = new System.Drawing.Point(159, 48);
+            this.captionTextBox1.Name = "captionTextBox1";
+            this.captionTextBox1.Size = new System.Drawing.Size(356, 20);
+            this.captionTextBox1.TabIndex = 24;
+            // 
             // Uc_DataViewEntityEditor
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.Controls.Add(captionLabel);
+            this.Controls.Add(this.captionTextBox1);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.panel1);
@@ -728,25 +751,25 @@
             this.Controls.Add(dataSourceIDLabel);
             this.Controls.Add(this.dataSourceIDComboBox);
             this.Name = "Uc_DataViewEntityEditor";
-            this.Size = new System.Drawing.Size(993, 682);
+            this.Size = new System.Drawing.Size(1010, 699);
+            ((System.ComponentModel.ISupportInitialize)(this.dataHierarchyBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.fieldsDataGridView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.fieldsBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.relationShipsDataGridView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.relationShipsBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomQueryDatadataGridView)).EndInit();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.fieldsBindingSource)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dataHierarchyBindingSource)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.relationShipsBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.primaryKeysBindingSource)).EndInit();
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
             this.groupBox1.ResumeLayout(false);
             this.groupBox2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.paramentersBindingSource)).EndInit();
             this.tabControl2.ResumeLayout(false);
             this.tabPage3.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.paramentersBindingSource)).EndInit();
             this.tabPage4.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.filtersBindingSource)).EndInit();
@@ -823,5 +846,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn valueTypeDataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn filterValue1DataGridViewTextBoxColumn;
         private System.Windows.Forms.BindingSource filtersBindingSource;
+        private System.Windows.Forms.TextBox captionTextBox1;
     }
 }

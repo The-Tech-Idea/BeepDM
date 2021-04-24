@@ -214,14 +214,11 @@ namespace TheTechIdea.Winforms.VIS
             {
                 string ext = Path.GetExtension(Connectionname).Remove(0, 1);
                 IconImageName = ext + ".ico";
-                viewbr = new FileEntityNode(TreeEditor, DMEEditor, this, FileName, TreeEditor.SeqID, EnumBranchType.Entity, IconImageName, Connectionname);
-                //   DMEEditor.viewEditor.GenerateView(ViewName,)
+                viewbr = new FileEntityNode(TreeEditor, DMEEditor, this, FileName, TreeEditor.SeqID, EnumBranchType.DataPoint, IconImageName, Connectionname);
                 viewbr.DataSource = DataSource;
-               
-
+             //   viewbr.DataSourceName = DataSourceName;
                 TreeEditor.AddBranch(this, viewbr);
-                //database.CreateChildNodes();
-                ChildBranchs.Add(viewbr);
+                 ChildBranchs.Add(viewbr);
                 viewbr.CreateChildNodes();
 
                 DMEEditor.AddLogMessage("Success", "Added Database Connection", DateTime.Now, 0, null, Errors.Ok);
@@ -269,7 +266,7 @@ namespace TheTechIdea.Winforms.VIS
                     CheckPathExists = true,
 
                     DefaultExt = "txt",
-                    Filter = "txt files (*.txt)|*.txt|csv files (*.csv)|*.csv|xls files (*.xls)|*.xls|All files (*.*)|*.*",
+                    Filter = "txt files (*.txt)|*.txt|csv files (*.csv)|*.csv|xls files (*.xls)|*.xls|json files (*.json)|*.json|All files (*.*)|*.*",
                     FilterIndex = 2,
                     RestoreDirectory = true
 

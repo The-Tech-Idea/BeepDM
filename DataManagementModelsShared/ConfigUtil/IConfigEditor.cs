@@ -32,7 +32,8 @@ namespace TheTechIdea.Util
         List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
         List<AssemblyClassDefinition> BranchesClasses { get; set; }
          List<AssemblyClassDefinition> AppWritersClasses { get; set; }
-         List<AssemblyClassDefinition> ReportWritersClasses { get; set; } 
+        List<AssemblyClassDefinition> AppComponents { get; set; }
+        List<AssemblyClassDefinition> ReportWritersClasses { get; set; } 
         List<CategoryFolder> CategoryFolders { get; set; }
         List<Assembly> LoadedAssemblies { get; set; }
         List<Function2FunctionAction> Function2Functions { get; set; }

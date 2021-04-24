@@ -243,16 +243,23 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
             throw new NotImplementedException();
         }
 
-        public async Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
+        public virtual async Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
-            EntityStructure ent = Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName == EntityName).FirstOrDefault();
-            string filterstr = ent.CustomBuildQuery;
-            foreach (EntityParameters item in ent.Paramenters)
-            {
-                filterstr = filterstr.Replace("{" + item.parameterIndex + "}", ent.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault());
-            }
-
             var request = new HttpRequestMessage();
+            client = new HttpClient();
+            string filterstr="";
+            client.BaseAddress = new Uri(Dataconnection.ConnectionProp.Url);
+
+            EntityStructure ent = Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName == EntityName).FirstOrDefault();
+            if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.ApiKey))
+            {
+                Dataconnection.ConnectionProp.Url = Dataconnection.ConnectionProp.Url.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
+            }
+            if (!string.IsNullOrEmpty(filterstr))
+            {
+                filterstr = filterstr.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
+            }
+           
             request.Method = HttpMethod.Get;
             request.RequestUri = new Uri(Dataconnection.ConnectionProp.Url + "/" + filterstr);
             foreach (WebApiHeader item in Dataconnection.ConnectionProp.Headers)

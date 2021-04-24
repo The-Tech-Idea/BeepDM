@@ -119,7 +119,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
         }
 
-        //public IDataViewReader ViewReader { get; set; }
         string DataViewFile;
         string FileName;
       
@@ -184,7 +183,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
 
         }
-      
         public List<string> GetEntitesList()
         {
             ErrorObject.Flag = Errors.Ok;
@@ -226,7 +224,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             EntitiesNames = retval;
             return retval;
         }
-       
         public object GetEntity(string EntityName, List<ReportFilter> filter)
         {
             EntityStructure ent = GetEntityStructure(EntityName);
@@ -259,11 +256,15 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
             return retval;
         }
-       
+        public int EntityListIndex(int entityid)
+        {
+
+            return DataView.Entities.FindIndex(a => a.Id == entityid);
+        }
         public int EntityListIndex( string entityname)
         {
 
-            return Entities.FindIndex(a => a.EntityName == entityname);
+            return Entities.FindIndex(a => a.EntityName.Equals(entityname,StringComparison.OrdinalIgnoreCase));
         }
         public EntityStructure GetEntityStructure(string EntityName, bool refresh = false)
         {
@@ -325,8 +326,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             return null;
             //      return GetDataSourceObject(EntityName).GetEntityStructure(EntityName, refresh);
         }
-
-
         public Type GetEntityType(string entityname)
         {
             EntityStructure dh = Entities[EntityListIndex(entityname)];
@@ -354,9 +353,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
             return retval;
         }
-
-     
-
         public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
             EntityStructure dh = Entities[EntityListIndex(tablename)];
@@ -382,8 +378,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
             
         }
-
-
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             IDataSource ds = GetDataSourceObject(entityname);
@@ -407,7 +401,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
           
             
         }
-
         public IErrorsInfo ExecuteSql(string sql)
         {
             throw new NotImplementedException();
@@ -581,7 +574,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 {
                     RemoveEntity(item.Id);
                 }
-                DataView.Entities.Remove(DataView.Entities.Where(m => m.Id == EntityID).FirstOrDefault());
+                DataView.Entities.Remove(DataView.Entities[EntityListIndex(EntityID)]);
             }
             catch (Exception ex)
             {
@@ -608,7 +601,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                     {
                         RemoveChildEntities(item.Id);
                     }
-                    DataView.Entities.Remove(item);
+                    DataView.Entities.Remove(DataView.Entities[EntityListIndex(item.Id)]);
                 }
 
 
@@ -1055,11 +1048,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             return EntityIndex += 1;
         }
       
-        public int EntityListIndex(int entityid)
-        {
-
-            return DataView.Entities.FindIndex(a => a.Id == entityid);
-        }
+    
         #endregion "Misc and Util Methods"
         #region "Dataset and entity Structure Methods"
         public List<DataSet> GetDataSetForView(string viewname)
