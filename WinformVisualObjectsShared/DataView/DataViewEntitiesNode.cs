@@ -43,7 +43,7 @@ namespace TheTechIdea.Winforms.VIS
             }
             BranchText = entityStructure.Caption;
             MiscID = entityStructure.Id;
-            DataSourceName = DataView.DataViewDataSourceID;
+            DataSourceName = entityStructure.DataSourceID;
             ID = MiscID;
             if (pID != 0)
             {
@@ -255,6 +255,19 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
+        private List<ObjectItem> Createlistofitems()
+        {
+            List<ObjectItem> ob = new List<ObjectItem>(); 
+            ObjectItem it = new ObjectItem();
+            it.obj = this;
+            it.Name = "Branch";
+            ob.Add(it);
+            ObjectItem EntityStructureit = new ObjectItem();
+            EntityStructureit.obj = EntityStructure;
+            EntityStructureit.Name = "EntityStructure";
+            ob.Add(EntityStructureit);
+            return ob;
+        }
         [BranchDelegate(Caption = "Edit", Hidden = false, iconimage = "edit_entity.ico")]
         public IErrorsInfo EditEntity()
         {
@@ -263,15 +276,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                 EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.Id == EntityStructure.Id)];
                 string[] args = { "New View", null, null };
-                List<ObjectItem> ob = new List<ObjectItem>(); ;
-                ObjectItem it = new ObjectItem();
-                it.obj = this;
-                it.Name = "Branch";
-                ob.Add(it);
-                ObjectItem EntityStructureit = new ObjectItem();
-                EntityStructureit.obj = EntityStructure;
-                EntityStructureit.Name = "EntityStructure";
-                ob.Add(EntityStructureit);
+              
                 PassedArgs Passedarguments = new PassedArgs
                 {
                     Addin = null,
@@ -283,7 +288,7 @@ namespace TheTechIdea.Winforms.VIS
                     ObjectType = "VIEWENTITY",
                     DataSource = DataSource,
                     ObjectName = DataView.ViewName,
-                    Objects = ob,
+                    Objects = Createlistofitems(),
                     DatasourceName = EntityStructure.DataSourceID,
                     EventType = "VIEWENTITY"
 
@@ -309,15 +314,7 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
                 string[] args = { "New View", null, null };
-                List<ObjectItem> ob = new List<ObjectItem>(); ;
-                ObjectItem it = new ObjectItem();
-                it.obj = this;
-                it.Name = "Branch";
-                ob.Add(it);
-                ObjectItem EntityStructureit = new ObjectItem();
-                EntityStructureit.obj = EntityStructure;
-                EntityStructureit.Name = "EntityStructure";
-                ob.Add(EntityStructureit);
+               
                 PassedArgs Passedarguments = new PassedArgs
                 {
                     Addin = null,
@@ -329,7 +326,7 @@ namespace TheTechIdea.Winforms.VIS
                     ObjectType = "VIEWENTITY",
                     DataSource = DataSource,
                     ObjectName = DataView.ViewName,
-                    Objects = ob,
+                    Objects = Createlistofitems(),
                     EventType = "REMOVEENTITY"
 
                 };
@@ -445,19 +442,11 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
 
-                EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.EntityName == EntityStructure.EntityName)];
+                EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.Id == EntityStructure.Id)];
                 if (EntityStructure.Viewtype == ViewType.Table || EntityStructure.Viewtype == ViewType.Query || EntityStructure.Viewtype == ViewType.File)
                 {
                     string[] args = { "New View", null, null };
-                    List<ObjectItem> ob = new List<ObjectItem>(); ;
-                    ObjectItem it = new ObjectItem();
-                    it.obj = this;
-                    it.Name = "Branch";
-                    ob.Add(it);
-                    ObjectItem EntityStructureit = new ObjectItem();
-                    EntityStructureit.obj = EntityStructure;
-                    EntityStructureit.Name = "EntityStructure";
-                    ob.Add(EntityStructureit);
+                   
                     PassedArgs Passedarguments = new PassedArgs
                     {
                         Addin = null,
@@ -469,7 +458,7 @@ namespace TheTechIdea.Winforms.VIS
                         ObjectType = "VIEWENTITY",
                         DataSource = DataSource,
                         ObjectName = DataView.ViewName,
-                        Objects = ob,
+                        Objects = Createlistofitems(),
                         DatasourceName = EntityStructure.DataSourceID,
                         EventType = "CRUDENTITY"
 
@@ -608,11 +597,7 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
                 string[] args = { "New Query Entity", null, null };
-                List<ObjectItem> ob = new List<ObjectItem>(); ;
-                ObjectItem it = new ObjectItem();
-                it.obj = this;
-                it.Name = "Branch";
-                ob.Add(it);
+               
 
 
                 PassedArgs Passedarguments = new PassedArgs
@@ -627,7 +612,7 @@ namespace TheTechIdea.Winforms.VIS
                     DataSource = DataSource,
                     ObjectName = DataView.ViewName,
 
-                    Objects = ob,
+                    Objects = Createlistofitems(),
 
                     DatasourceName = DataView.DataViewDataSourceID,
                     EventType = "ENTITY"
@@ -671,7 +656,7 @@ namespace TheTechIdea.Winforms.VIS
                             else
                             {
                                 IDataSource srcds = DMEEditor.GetDataSource(entity.DataSourceID);
-                                entity = srcds.GetEntityStructure(entity, true);
+                                entity = (EntityStructure)srcds.GetEntityStructure(entity, true).Clone();
                                 entity.Caption = entity.EntityName;
                                 entity.DatasourceEntityName = entity.EntityName;
                                 entity.Created = false;
@@ -697,7 +682,7 @@ namespace TheTechIdea.Winforms.VIS
                             IDataSource srcds = DMEEditor.GetDataSource(br.DataSourceName);
                             if (srcds != null)
                             {
-                                EntityStructure entity = srcds.GetEntityStructure(br.BranchText, true);
+                                EntityStructure entity = (EntityStructure)srcds.GetEntityStructure(br.BranchText, true).Clone();
                                 entity.Caption = entity.EntityName;
                                 entity.DatasourceEntityName = entity.EntityName;
                                 entity.Created = false;

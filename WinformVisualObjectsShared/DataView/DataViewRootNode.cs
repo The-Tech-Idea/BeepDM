@@ -195,7 +195,10 @@ namespace TheTechIdea.Winforms.VIS
                         DMEEditor.ConfigEditor.SaveDataconnectionsValues();
                        
                         DataViewDataSource ds = (DataViewDataSource)DMEEditor.GetDataSource(f.ConnectionName);
-
+                        if (ds.DataView == null)
+                        {
+                            ds.DataView = ds.GenerateView(f.ConnectionName, f.ConnectionName);
+                        }
                         DataView = ds.DataView;
 
 
@@ -263,9 +266,11 @@ namespace TheTechIdea.Winforms.VIS
 
                         DataViewDataSource ds = (DataViewDataSource)DMEEditor.GetDataSource(f.ConnectionName);
 
+                        DataSource = DMEEditor.GetDataSource(f.ConnectionName);
                         DataView = ds.DataView;
+                      
 
-
+                        ds.WriteDataViewFile(fullname);
                         CreateViewNode(DataView.ViewID, DataView.ViewName, f.ConnectionName);
 
 

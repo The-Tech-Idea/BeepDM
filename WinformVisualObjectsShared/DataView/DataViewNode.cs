@@ -37,7 +37,7 @@ namespace TheTechIdea.Winforms.VIS
             //    ds.Entities.Clear();
             //    DMEEditor.ConfigEditor.SaveDataconnectionsValues();
             //}
-            if(ds!= null)  MiscID = ds.ViewID; 
+            if (ds != null) MiscID = ds.ViewID ; 
             DataSourceName = ConnectionName;
             if (pID != 0)
 
@@ -207,7 +207,7 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
                
-                ds = (DataViewDataSource)DMEEditor.GetDataSource(DataView.DataViewDataSourceID);
+                ds = (DataViewDataSource)DMEEditor.GetDataSource(DataSourceName);
              
                 if (ds != null)
                 {
@@ -255,13 +255,13 @@ namespace TheTechIdea.Winforms.VIS
                         }
                         else
                         {
-                            DMEEditor.Logger.WriteLog($"Could not Find Datasource File " + DataView.DataViewDataSourceID);
+                            DMEEditor.Logger.WriteLog($"Could not Find Datasource File " + DataSourceName);
                         }
 
                     }
                 }else
                 {
-                    DMEEditor.Logger.WriteLog($"Could not Find DataView File " + DataView.DataViewDataSourceID);
+                    DMEEditor.Logger.WriteLog($"Could not Find DataView File " + DataSourceName);
                 }
                 SaveView();
 
@@ -284,7 +284,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                 DMEEditor.ConfigEditor.SaveDataconnectionsValues();
                // ds.Dataview=DataView;
-                ds.WriteDataViewFile(DataView.DataViewDataSourceID);
+                ds.WriteDataViewFile(DataSourceName);
            
                 DMEEditor.AddLogMessage("Success", "Saved View", DateTime.Now, 0, null, Errors.Ok);
             }
@@ -304,14 +304,14 @@ namespace TheTechIdea.Winforms.VIS
             {
                 if (Visutil.controlEditor.InputBoxYesNo("Remove View", "Area you Sure ? you want to remove View???") == System.Windows.Forms.DialogResult.Yes)
                 {
-                    ConnectionProperties cn = DMEEditor.ConfigEditor.DataConnections.Where(x => x.ConnectionName.ToUpper() == Path.GetFileName(DataView.DataViewDataSourceID).ToUpper()).FirstOrDefault();
+                    ConnectionProperties cn = DMEEditor.ConfigEditor.DataConnections.Where(x => x.ConnectionName.Equals(Path.GetFileName(DataSourceName),StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                     string file = Path.Combine(cn.FilePath, cn.FileName);
                     try
                     {
 
-                        //ds.ViewReader.re.RemoveDataViewByVID(DataView.VID);
-                        DMEEditor.ConfigEditor.RemoveDataConnection(DataView.DataViewDataSourceID);
-                        DMEEditor.RemoveDataDource(DataView.DataViewDataSourceID);
+                      //ds.RemoveDataViewByVID(DataView.VID);
+                        DMEEditor.ConfigEditor.RemoveDataConnection(DataSourceName);
+                        DMEEditor.RemoveDataDource(DataSourceName);
                       
                         DMEEditor.AddLogMessage("Success", "Removed View from Views List", DateTime.Now, 0, null, Errors.Ok);
                     }
@@ -324,7 +324,7 @@ namespace TheTechIdea.Winforms.VIS
                     try
                     {
 
-                        DMEEditor.DataSources.Remove(DMEEditor.DataSources.Where(x => x.DatasourceName == DataView.ViewName).FirstOrDefault());
+                        DMEEditor.DataSources.Remove(DMEEditor.DataSources.Where(x => x.DatasourceName.Equals(DataSourceName,StringComparison.OrdinalIgnoreCase)).FirstOrDefault());
                         DMEEditor.AddLogMessage("Success", "Removed View from DataSource List", DateTime.Now, 0, null, Errors.Ok);
                     }
                     catch (Exception ex)
@@ -552,7 +552,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                // IBranch pbr = TreeEditor.Branches.Where(x => x.BranchType == EnumBranchType.Root && x.BranchClass == "VIEW").FirstOrDefault();
                //
-                ds = (DataViewDataSource)DMEEditor.GetDataSource(DataView.DataViewDataSourceID);
+                ds = (DataViewDataSource)DMEEditor.GetDataSource(DataSourceName);
               
                 
                 if (TreeEditor.args != null)
@@ -570,7 +570,7 @@ namespace TheTechIdea.Winforms.VIS
                             else
                             {
                                 IDataSource srcds = DMEEditor.GetDataSource(entity.DataSourceID);
-                                entity = srcds.GetEntityStructure(entity, true);
+                                entity = (EntityStructure)srcds.GetEntityStructure(entity, true).Clone();
                                 entity.Caption = entity.EntityName;
                                 entity.DatasourceEntityName = entity.EntityName;
                                 entity.Created = false;
@@ -578,7 +578,7 @@ namespace TheTechIdea.Winforms.VIS
                                 entity.ParentId = 1;
                                 entity.ViewID = DataView.ViewID;
                                 ds.CreateEntityAs(entity);
-                                DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataView.DataViewDataSourceID, entity);
+                                DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
                                 TreeEditor.AddBranch(this, dbent);
                                 dbent.CreateChildNodes();
                                 ChildBranchs.Add(dbent);
@@ -598,7 +598,7 @@ namespace TheTechIdea.Winforms.VIS
                                 IDataSource srcds = DMEEditor.GetDataSource(br.DataSourceName);
                                 if (srcds != null)
                                 {
-                                    EntityStructure entity = srcds.GetEntityStructure(br.BranchText, true);
+                                    EntityStructure entity = (EntityStructure)srcds.GetEntityStructure(br.BranchText, true).Clone();
                                     entity.Caption = entity.EntityName;
                                     entity.DatasourceEntityName = entity.EntityName;
                                     entity.Created = false;
@@ -606,7 +606,7 @@ namespace TheTechIdea.Winforms.VIS
                                     entity.ParentId = 1;
                                     entity.ViewID = DataView.ViewID;
                                     ds.CreateEntityAs(entity);
-                                    DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataView.DataViewDataSourceID, entity);
+                                    DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
                                     TreeEditor.AddBranch(this, dbent);
                                     dbent.CreateChildNodes();
                                     ChildBranchs.Add(dbent);

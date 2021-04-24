@@ -159,9 +159,61 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                return  ReadDataTable(EntityName, HeaderExist, 0, 0);
+                DataTable dt;
+                string qrystr="";
+               
+                dt =  ReadDataTable(EntityName, HeaderExist, 0, 0);
+               
+                    if (filter != null)
+                    {
+                        if (filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
+                        {
+                            
+                            foreach (ReportFilter item in filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)))
+                            {
+                                if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
+                                {
+                                    //  EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
+                                    if (item.Operator.ToLower() == "between")
+                                    {
+                                        if (item.valueType == "System.DateTime")
+                                        {
+                                        qrystr += "[" + item.FieldName + "] " + item.Operator + " '" + DateTime.Parse(item.FilterValue) + "' and  '" + DateTime.Parse(item.FilterValue1) +"'"+ Environment.NewLine;
+                                    }
+                                    else
+                                        {
+                                        qrystr += "[" + item.FieldName + "] " + item.Operator + " " + item.FilterValue + " and  " + item.FilterValue1 + " " + Environment.NewLine;
+                                    }
+                                       
+                                    }
+                                    else
+                                    {
+                                        if (item.valueType == "System.String")
+                                        {
+                                            qrystr += "[" + item.FieldName + "] " + item.Operator + " '" + item.FilterValue + "' " + Environment.NewLine;
+                                        }
+                                        else
+                                        {
+                                            qrystr += "["+item.FieldName + "] " + item.Operator + " " + item.FilterValue + " " + Environment.NewLine;
+                                        }
+                                       
+                                    }
+
+                                }
 
 
+
+                            }
+                        }
+
+                   if (!string.IsNullOrEmpty(qrystr))
+                    {
+                        dt = dt.Select(qrystr).CopyToDataTable();
+                    }
+                  
+                }
+                
+                return dt;
 
             }
             catch (Exception ex)

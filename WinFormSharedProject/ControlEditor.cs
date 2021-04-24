@@ -1507,7 +1507,7 @@ namespace TheTechIdea.Winforms.VIS
                                 break;
 
                             case "System.String":
-                                if (entityStructure.Fields.Where(p => p.fieldname == col.fieldname).FirstOrDefault().Size1 > 1)
+                                if (entityStructure.Fields.Where(p => p.fieldname == col.fieldname).FirstOrDefault().Size1 != 1)
                                 {
                                     t1 = new TextBox
                                     {

@@ -63,7 +63,16 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             if (ds != null && ds.ConnectionStatus== ConnectionState.Open)
             {
                 EntityName = e.CurrentEntity;
-                EntityStructure = ds.GetEntityStructure(EntityName, true);
+
+                if (e.Objects.Where(c => c.Name == "EntityStructure").Any())
+                {
+                    EntityStructure =(EntityStructure) e.Objects.Where(c => c.Name == "EntityStructure").FirstOrDefault().obj;
+                }
+                else
+                {
+                    EntityStructure = ds.GetEntityStructure(EntityName, true);
+                    e.Objects.Add(new ObjectItem { Name = "EntityStructure", obj = EntityStructure });
+                }
                 EntityStructure.Filters = new List<ReportFilter>();
                 enttype = ds.GetEntityType(EntityName);
                 if (EntityStructure != null)
@@ -72,7 +81,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                     {
                         if (EntityStructure.Fields.Count > 0)
                         {
-                            EntityName = EntityStructure.EntityName;
+                          
                             uc_filtercontrol1.SetConfig(pbl, plogger, putil, args, e, per);
 
                             // grid = dv.CreateGrid();

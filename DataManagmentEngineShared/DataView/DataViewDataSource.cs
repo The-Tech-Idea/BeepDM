@@ -174,7 +174,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
             else
             {
-                DataView = GenerateView(Path.GetFileNameWithoutExtension(filename), filepath);
+                DataView = GenerateView(filename, filepath);
                 WriteDataViewFile(DataViewFile);
 
             }
@@ -694,15 +694,15 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             {
                 retval = new DMDataView();
                 retval.ViewID = 0;
-                retval.EntityDataSourceID = ConnectionName;
+                retval.EntityDataSourceID = ViewName;
                 //    string schemaname = "";
-                retval.ViewName = ViewName.ToUpper();
-                retval.DataViewDataSourceID = ConnectionName;
+                retval.ViewName = ViewName;
+                retval.DataViewDataSourceID = ViewName;
                 retval.Viewtype = ViewType.Table;
                 retval.VID = Guid.NewGuid().ToString();
                 EntityStructure viewheader = new EntityStructure() { Id = 1, EntityName = ViewName };
 
-                viewheader.EntityName = ViewName.ToUpper();
+                viewheader.EntityName = ViewName;
                 viewheader.ViewID = retval.ViewID;
                 viewheader.ParentId = 0;
                 retval.Entities.Add(viewheader);
@@ -933,7 +933,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 //--- check entity already exist , if it does change Entity Name
                 if (CheckEntityExist(maintab.DatasourceEntityName))
                 {
-                    int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count();
+                    int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count()+1;
                     maintab.EntityName = maintab.DatasourceEntityName + "_" + cnt ;
                 }
 
