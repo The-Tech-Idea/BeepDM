@@ -18,6 +18,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         List<EntityField> Fields { get; set; }
         List<ReportFilter> Filters { get; set; }
         int Id { get; set; }
+        
         int ParentId { get; set; }
         List<EntityField> PrimaryKeys { get; set; }
         List<RelationShipKeys> Relations { get; set; }

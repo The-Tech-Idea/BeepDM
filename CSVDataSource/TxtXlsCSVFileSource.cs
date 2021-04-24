@@ -447,6 +447,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 }
 
                 FileData = GetExcelDataSet();
+                retval = Entities;
             }
             else
                 retval = Entities;

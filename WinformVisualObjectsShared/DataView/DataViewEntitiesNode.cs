@@ -261,20 +261,24 @@ namespace TheTechIdea.Winforms.VIS
 
             try
             {
-                EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.EntityName == EntityStructure.EntityName)];
+                EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.Id == EntityStructure.Id)];
                 string[] args = { "New View", null, null };
                 List<ObjectItem> ob = new List<ObjectItem>(); ;
                 ObjectItem it = new ObjectItem();
                 it.obj = this;
                 it.Name = "Branch";
                 ob.Add(it);
+                ObjectItem EntityStructureit = new ObjectItem();
+                EntityStructureit.obj = EntityStructure;
+                EntityStructureit.Name = "EntityStructure";
+                ob.Add(EntityStructureit);
                 PassedArgs Passedarguments = new PassedArgs
                 {
                     Addin = null,
                     AddinName = null,
                     AddinType = "",
                     DMView = DataView,
-                    CurrentEntity = EntityStructure.EntityName,
+                    CurrentEntity = EntityStructure.DatasourceEntityName,
                     Id = BranchID,
                     ObjectType = "VIEWENTITY",
                     DataSource = DataSource,
@@ -310,13 +314,17 @@ namespace TheTechIdea.Winforms.VIS
                 it.obj = this;
                 it.Name = "Branch";
                 ob.Add(it);
+                ObjectItem EntityStructureit = new ObjectItem();
+                EntityStructureit.obj = EntityStructure;
+                EntityStructureit.Name = "EntityStructure";
+                ob.Add(EntityStructureit);
                 PassedArgs Passedarguments = new PassedArgs
                 {
                     Addin = null,
                     AddinName = null,
                     AddinType = "",
                     DMView = DataView,
-                    CurrentEntity = EntityStructure.EntityName,
+                    CurrentEntity = EntityStructure.DatasourceEntityName,
                     Id = BranchID,
                     ObjectType = "VIEWENTITY",
                     DataSource = DataSource,
@@ -354,7 +362,7 @@ namespace TheTechIdea.Winforms.VIS
                 if (DataSource!=null)
                 {
 
-                    ds.GenerateDataViewForChildNode(DataSource, EntityStructure.Id, EntityStructure.EntityName, EntityStructure.SchemaOrOwnerOrDatabase, "");
+                    ds.GenerateDataViewForChildNode(DataSource, EntityStructure.Id, EntityStructure.DatasourceEntityName, EntityStructure.SchemaOrOwnerOrDatabase, "");
                     CreateChildNodes();
                     DMEEditor.AddLogMessage("Success", "Got child Nodes", DateTime.Now, 0, null, Errors.Ok);
                 }else
@@ -436,33 +444,42 @@ namespace TheTechIdea.Winforms.VIS
 
             try
             {
+
                 EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.EntityName == EntityStructure.EntityName)];
-                string[] args = { "New View", null, null };
-                List<ObjectItem> ob = new List<ObjectItem>(); ;
-                ObjectItem it = new ObjectItem();
-                it.obj = this;
-                it.Name = "Branch";
-                ob.Add(it);
-                PassedArgs Passedarguments = new PassedArgs
+                if (EntityStructure.Viewtype == ViewType.Table || EntityStructure.Viewtype == ViewType.Query || EntityStructure.Viewtype == ViewType.File)
                 {
-                    Addin = null,
-                    AddinName = null,
-                    AddinType = "",
-                    DMView = DataView,
-                    CurrentEntity = EntityStructure.EntityName,
-                    Id = BranchID,
-                    ObjectType = "CRUDENTITY",
-                    DataSource = DataSource,
-                    ObjectName = DataView.ViewName,
-                    Objects = ob,
-                    DatasourceName = DataView.DataViewDataSourceID,
-                    EventType = "CRUDENTITY"
+                    string[] args = { "New View", null, null };
+                    List<ObjectItem> ob = new List<ObjectItem>(); ;
+                    ObjectItem it = new ObjectItem();
+                    it.obj = this;
+                    it.Name = "Branch";
+                    ob.Add(it);
+                    ObjectItem EntityStructureit = new ObjectItem();
+                    EntityStructureit.obj = EntityStructure;
+                    EntityStructureit.Name = "EntityStructure";
+                    ob.Add(EntityStructureit);
+                    PassedArgs Passedarguments = new PassedArgs
+                    {
+                        Addin = null,
+                        AddinName = null,
+                        AddinType = "",
+                        DMView = DataView,
+                        CurrentEntity = EntityStructure.DatasourceEntityName,
+                        Id = BranchID,
+                        ObjectType = "VIEWENTITY",
+                        DataSource = DataSource,
+                        ObjectName = DataView.ViewName,
+                        Objects = ob,
+                        DatasourceName = EntityStructure.DataSourceID,
+                        EventType = "CRUDENTITY"
 
-                };
-              
-                 Visutil.ShowUserControlInContainer("uc_getentities", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
+                    };
 
-              //  DMEEditor.AddLogMessage("Success", "Added Database Connection", DateTime.Now, 0, null, Errors.Ok);
+                    Visutil.ShowUserControlInContainer("uc_getentities", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
+
+                }
+
+                //  DMEEditor.AddLogMessage("Success", "Added Database Connection", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {                string mes = "Could not Add Database Connection";
@@ -644,8 +661,9 @@ namespace TheTechIdea.Winforms.VIS
                     {
                         if (TreeEditor.args.Objects != null)
                         {
+                           
                             IBranch pbr = (IBranch)TreeEditor.args.Objects.Where(x => x.Name == "Branch").FirstOrDefault().obj;
-                            EntityStructure entity = (EntityStructure)TreeEditor.args.Objects.Where(x => x.Name == "Entity").FirstOrDefault().obj;
+                            EntityStructure entity = (EntityStructure)TreeEditor.args.Objects.Where(x => x.Name == "EntityStructure").FirstOrDefault().obj;
                             if (ds.CheckEntityExist(entity.EntityName))
                             {
                                 DMEEditor.AddLogMessage("Fail", $"Could Not Paste Entity {entity.EntityName}, it already exist", DateTime.Now, -1, null, Errors.Failed);

@@ -68,6 +68,7 @@ namespace TheTechIdea.ETL
             Visutil = (IVisUtil)obj.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
            
             branch = (IBranch)obj.Objects.Where(c => c.Name == "Branch").FirstOrDefault().obj;
+           
             if (obj.Objects.Where(c => c.Name == "ParentBranch").Any())
             {
                 Parentbranch = (IBranch)obj.Objects.Where(c => c.Name == "ParentBranch").FirstOrDefault().obj;
@@ -124,14 +125,15 @@ namespace TheTechIdea.ETL
                     EntityStructure.ParentId = -1;
                 }
                 EntityStructure.Drawn = false;
-               
+                this.nameTextBox.Enabled = true;
 
             }
             else
             {
-                EntityStructure = vds.GetEntityStructure(EntityName,true);
+                this.nameTextBox.Enabled = false;
+                EntityStructure = (EntityStructure)obj.Objects.Where(c => c.Name == "EntityStructure").FirstOrDefault().obj;
             }
-           
+
             this.dataHierarchyBindingSource.ResetBindings(true);
             this.fieldsBindingSource.ResetBindings(true);
             dataHierarchyBindingSource.DataSource = EntityStructure;
@@ -219,6 +221,8 @@ namespace TheTechIdea.ETL
                 if (!string.IsNullOrEmpty(this.captionTextBox1.Text) && !string.IsNullOrWhiteSpace(this.captionTextBox1.Text))
                 {
                     EntityStructure.Drawn = true;
+                    
+
                     if (vds.Entities.Where(o => o.EntityName == EntityStructure.EntityName).Any())
                     {
                         vds.Entities[vds.Entities.FindIndex(i => i.EntityName.Equals(EntityStructure.EntityName, StringComparison.OrdinalIgnoreCase))] = EntityStructure;

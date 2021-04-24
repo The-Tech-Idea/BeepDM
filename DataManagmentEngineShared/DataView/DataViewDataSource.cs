@@ -24,7 +24,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         public IErrorsInfo ErrorObject { get ; set ; }
         public string Id { get ; set ; }
         public IDMLogger Logger { get ; set ; }
-        public List<string> EntitiesNames { get ; set ; }
+        public List<string> EntitiesNames { get; set; } = new List<string>();
         public IDMEEditor DMEEditor { get ; set ; }
         public List<object> Records { get ; set ; }
         public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; } set { }  }
@@ -287,6 +287,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                         switch (dh.Viewtype)
                         {
                             case ViewType.Table:
+                                
                                 r= GetDataSourceObject(dh.EntityName).GetEntityStructure(dh, refresh);
                                 dh.Fields = r.Fields;
                                 dh.Relations = r.Relations;
@@ -404,17 +405,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         public IErrorsInfo ExecuteSql(string sql)
         {
             throw new NotImplementedException();
-            //if (ds.ConnectionStatus == ConnectionState.Open)
-            //{
-            //    ds = DMEEditor.GetDataSource(DatasourceName);
-            //    return ds.ExecuteSql(sql);
-            //}
-            //else
-            //{
-            //    DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
-            //}
-            //    return DMEEditor.ErrorObject;
-             
+         
         }
 
         public bool CreateEntityAs(EntityStructure entity)
@@ -575,6 +566,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                     RemoveEntity(item.Id);
                 }
                 DataView.Entities.Remove(DataView.Entities[EntityListIndex(EntityID)]);
+                EntitiesNames.Remove(DataView.Entities[EntityListIndex(EntityID)].EntityName);
             }
             catch (Exception ex)
             {
@@ -602,6 +594,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                         RemoveChildEntities(item.Id);
                     }
                     DataView.Entities.Remove(DataView.Entities[EntityListIndex(item.Id)]);
+                    EntitiesNames.Remove(DataView.Entities[EntityListIndex(item.Id)].EntityName);
                 }
 
 
@@ -666,7 +659,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             maintab.ParentId = DataView.Entities[0].Id;
 
             DataView.Entities.Add(maintab);
-
+            EntitiesNames.Add(maintab.EntityName);
             if (ds != null && ds.Count > 0)
             {
 
@@ -784,9 +777,14 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             maintab.EntityName = tablename;
             maintab.ViewID = DataView.ViewID;
             maintab.ParentId = ParentTableIndex;
-
+            maintab.DatasourceEntityName = tablename;
+            if (CheckEntityExist(maintab.DatasourceEntityName))
+            {
+                int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count();
+                maintab.EntityName = maintab.DatasourceEntityName + "_" + cnt + 1;
+            }
             DataView.Entities.Add(maintab);
-
+            EntitiesNames.Add(maintab.EntityName);
 
             if (ds != null && ds.Count > 0)
             {
@@ -800,7 +798,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                     foreach (ChildRelation r in ds)
                     {
                         EntityStructure a;
-                        a = GetEntityStructure(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, maintab.Id);
+                        a = GetEntityStructure(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id);
 
                     }
 
@@ -826,6 +824,12 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 maintab.ViewID = 0;
                 maintab.ParentId = DataView.Entities[0].Id;
                 maintab.DatabaseType = conn.DatasourceType;
+                maintab.DatasourceEntityName = tablename;
+                if (CheckEntityExist(maintab.DatasourceEntityName))
+                {
+                    int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count();
+                    maintab.EntityName = maintab.DatasourceEntityName + "_" + cnt + 1;
+                }
                 switch (maintab.DatabaseType)
                 {
                     case DataSourceType.Oracle:
@@ -876,6 +880,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 }
 
                 DataView.Entities.Add(maintab);
+                EntitiesNames.Add(maintab.EntityName);
                 if (ds != null && ds.Count > 0)
                 {
                     // var tb = ds.Tables[0];
@@ -914,7 +919,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         public int AddEntitytoDataView(EntityStructure maintab)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-            string tablename = maintab.EntityName;
+            string tablename = maintab.DatasourceEntityName;
             try
             {
                 maintab.Id = NextHearId();
@@ -924,13 +929,20 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 {
                     maintab.ParentId = DataView.Entities[0].Id;
                 }
-              
+
+                //--- check entity already exist , if it does change Entity Name
+                if (CheckEntityExist(maintab.DatasourceEntityName))
+                {
+                    int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count();
+                    maintab.EntityName = maintab.DatasourceEntityName + "_" + cnt ;
+                }
 
                 DataView.Entities.Add(maintab);
+                EntitiesNames.Add(maintab.EntityName);
                 IDataSource entityds = DMEEditor.GetDataSource(maintab.DataSourceID);
                 if (entityds != null && entityds.Category== DatasourceCategory.RDBMS)
                 {
-                    List<ChildRelation> ds = entityds.GetChildTablesList(maintab.EntityName, entityds.Dataconnection.ConnectionProp.SchemaName, null);
+                    List<ChildRelation> ds = entityds.GetChildTablesList(maintab.DatasourceEntityName, entityds.Dataconnection.ConnectionProp.SchemaName, null);
                     if (ds != null && ds.Count > 0)
                     {
                         // var tb = ds.Tables[0];
@@ -942,7 +954,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                             foreach (ChildRelation r in ds)
                             {
                                 EntityStructure a;
-                                a = GetEntityStructure(DataView, DataView.Entities, r.child_table, maintab.EntityName, r.child_column, r.parent_column, maintab.Id);
+                                a = GetEntityStructure(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id);
                             }
                         }
                     }

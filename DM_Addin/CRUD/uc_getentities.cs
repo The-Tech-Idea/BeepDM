@@ -108,10 +108,93 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
         #region "CRUD Methods"
         private void EditSelectedbutton_Click(object sender, EventArgs e)
         {
-            if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
+            if(EntityStructure.Viewtype!= ViewType.Table)
             {
-                if (dataGridView1.SelectedRows.Count > 0)
+                MessageBox.Show("Cannot Edit an Non Table Structure", "BeepDM");
+
+             
+            }else
+            {
+                if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
                 {
+                    if (dataGridView1.SelectedRows.Count > 0)
+                    {
+                        ob = EntitybindingSource.Current;
+                        if (Passedarg.Objects.Where(i => i.Name == EntityName).Any())
+                        {
+                            Passedarg.Objects.Remove(Passedarg.Objects.Where(i => i.Name == EntityName).FirstOrDefault());
+                        }
+                        if (Passedarg.Objects.Where(i => i.Name == "BindingSource").Any())
+                        {
+                            Passedarg.Objects.Remove(Passedarg.Objects.Where(i => i.Name == "BindingSource").FirstOrDefault());
+                        }
+                        Passedarg.Objects.Add(new ObjectItem() { Name = EntityName, obj = ob });
+                        Passedarg.Objects.Add(new ObjectItem() { Name = "BindingSource", obj = EntitybindingSource });
+                        Visutil.ShowUserControlPopUp("uc_updateentity", DMEEditor, new string[] { "" }, Passedarg);
+
+                    }
+                }
+
+
+            }
+        }
+        private void DeleteSelectedbutton_Click(object sender, EventArgs e)
+        {
+            if (EntityStructure.Viewtype != ViewType.Table)
+            {
+                MessageBox.Show("Cannot Edit an Non Table Structure", "BeepDM");
+
+
+            }
+            else
+            {
+                if (MessageBox.Show(this, "Delete", "Are you sure ? ", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
+                    {
+                        if (dataGridView1.SelectedRows.Count > 0)
+                        {
+                            object ob = EntitybindingSource.Current;
+                            try
+                            {
+                                if (ds.DeleteEntity(EntityName, ob).Flag == Errors.Failed)
+                                {
+                                    EntitybindingSource.RemoveCurrent();
+                                    RefreshData();
+                                    MessageBox.Show("Failed to Delete Record");
+
+                                }
+                                else
+                                {
+                                    MessageBox.Show("Success to Delete Record");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+
+                                throw;
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+        private void InsertNewEntitybutton_Click(object sender, EventArgs e)
+        {
+            if (EntityStructure.Viewtype != ViewType.Table)
+            {
+                MessageBox.Show("Cannot Edit an Non Table Structure", "BeepDM");
+
+
+            }
+            else
+            {
+                if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
+                {
+
+
+                    EntitybindingSource.AddNew();
                     ob = EntitybindingSource.Current;
                     if (Passedarg.Objects.Where(i => i.Name == EntityName).Any())
                     {
@@ -123,65 +206,10 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                     }
                     Passedarg.Objects.Add(new ObjectItem() { Name = EntityName, obj = ob });
                     Passedarg.Objects.Add(new ObjectItem() { Name = "BindingSource", obj = EntitybindingSource });
-                    Visutil.ShowUserControlPopUp("uc_updateentity", DMEEditor, new string[] { "" }, Passedarg);
+                    Visutil.ShowUserControlPopUp("uc_Insertentity", DMEEditor, new string[] { "" }, Passedarg);
+                    //  RefreshData();
 
                 }
-            }
-        }
-        private void DeleteSelectedbutton_Click(object sender, EventArgs e)
-        {
-            if (MessageBox.Show(this, "Delete", "Are you sure ? ", MessageBoxButtons.YesNo) == DialogResult.Yes)
-            {
-                if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
-                {
-                    if (dataGridView1.SelectedRows.Count > 0)
-                    {
-                        object ob = EntitybindingSource.Current;
-                        try
-                        {
-                            if (ds.DeleteEntity(EntityName, ob).Flag == Errors.Failed)
-                            {
-                                EntitybindingSource.RemoveCurrent();
-                                RefreshData();
-                                MessageBox.Show("Failed to Delete Record");
-
-                            }
-                            else
-                            {
-                                MessageBox.Show("Success to Delete Record");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-
-                            throw;
-                        }
-
-                    }
-                }
-            }
-        }
-        private void InsertNewEntitybutton_Click(object sender, EventArgs e)
-        {
-            if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
-            {
-
-
-                EntitybindingSource.AddNew();
-                ob = EntitybindingSource.Current;
-                if (Passedarg.Objects.Where(i => i.Name == EntityName).Any())
-                {
-                    Passedarg.Objects.Remove(Passedarg.Objects.Where(i => i.Name == EntityName).FirstOrDefault());
-                }
-                if (Passedarg.Objects.Where(i => i.Name == "BindingSource").Any())
-                {
-                    Passedarg.Objects.Remove(Passedarg.Objects.Where(i => i.Name == "BindingSource").FirstOrDefault());
-                }
-                Passedarg.Objects.Add(new ObjectItem() { Name = EntityName, obj = ob });
-                Passedarg.Objects.Add(new ObjectItem() { Name = "BindingSource", obj = EntitybindingSource });
-                Visutil.ShowUserControlPopUp("uc_Insertentity", DMEEditor, new string[] { "" }, Passedarg);
-                //  RefreshData();
-
             }
         }
         private void GetData()

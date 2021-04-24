@@ -896,7 +896,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             //    EntityStructure retval = new EntityStructure();
             // 
             DataTable tb = new DataTable();
-
+            string entname = fnd.EntityName;
             if ((fnd.Created == false)&&(fnd.ViewID==0))
             {
                 return fnd;
@@ -905,6 +905,11 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             {
                 if (refresh)
                 {
+                    if (fnd.EntityName.Equals(fnd.DatasourceEntityName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(fnd.DatasourceEntityName))
+                    {
+                        entname = fnd.DatasourceEntityName;
+                    }
+                    
                     fnd.DataSourceID = DatasourceName;
                     //  fnd.EntityName = EntityName;
                     if (fnd.Viewtype == ViewType.Query)
@@ -914,7 +919,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     }
                     else
                     {
-                        tb = GetTableSchema(fnd.EntityName);
+                       
+                            tb = GetTableSchema(entname);
+                        
+                       
                     }
 
                     if (tb.Rows.Count > 0)
@@ -1005,20 +1013,20 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         {
                             if ((fnd.Relations.Count == 0) || refresh)
                             {
-                                fnd.Relations = GetEntityforeignkeys(fnd.EntityName, Dataconnection.ConnectionProp.SchemaName);
+                                fnd.Relations = GetEntityforeignkeys(entname, Dataconnection.ConnectionProp.SchemaName);
                             }
                         }
 
-                        EntityStructure exist = Entities.Where(d => d.EntityName == fnd.EntityName).FirstOrDefault();
+                        EntityStructure exist = Entities.Where(d => d.EntityName.Equals(fnd.EntityName,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                         if (exist == null)
                         {
                             Entities.Add(fnd);
                         }
                         else
                         {
-                            Entities[Entities.FindIndex(o => o.EntityName == fnd.EntityName)].Fields = fnd.Fields;
-                            Entities[Entities.FindIndex(o => o.EntityName == fnd.EntityName)].Relations = fnd.Relations;
-                            Entities[Entities.FindIndex(o => o.EntityName == fnd.EntityName)].PrimaryKeys = fnd.PrimaryKeys;
+                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Fields = fnd.Fields;
+                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Relations = fnd.Relations;
+                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].PrimaryKeys = fnd.PrimaryKeys;
     
                         }
                     }
