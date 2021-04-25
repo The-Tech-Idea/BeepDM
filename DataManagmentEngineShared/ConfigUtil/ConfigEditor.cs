@@ -1219,6 +1219,42 @@ namespace TheTechIdea.Util
 			}
 		}
 		#endregion "Init Values"
+		#region "util"
+		public string CreateFileExtensionString()
+		{
+			List<ConnectionDriversConfig> clss = DataDriversClasses.Where(p => p.extensionstoHandle != null).ToList();
+			string retval = null;
+			if (clss != null)
+            {
+				IEnumerable<string> extensionslist = clss.Select(p => p.extensionstoHandle);
+				string extstring = string.Join(",", extensionslist);
+				List<string> exts = extstring.Split(',').Distinct().ToList();
+
+				foreach (string item in exts)
+				{
+					retval += item + " files(*." + item + ")|*."+item+"|";
+
+
+				}
+
+			}
+			
+			retval += "All files(*.*)|*.*";
+			return retval;
+		}
+		//DMEEditor.ConfigEditor.DataDriversClasses
+		//public ConnectionDriversConfig GetConnectionConfigForFile(string ext)
+  //      {
+		//	bool found = false;
+		//	List<AssemblyClassDefinition> cls= DataSourcesClasses.Where(o => o.classProperties.Category == DatasourceCategory.FILE && o.classProperties.FileType.Contains(ext)).ToList();
+  //          foreach (AssemblyClassDefinition item in cls)
+  //          {
+		//		//if(DataDriversClasses.Where(o => o.PackageName && o.version==item.)
+  //          }
+		////	return DataDriversClasses.Where(o => o.PackageName);
+
+		//}
+		#endregion
 		//----------------------------------------------------------------------------------------------
 		public IErrorsInfo Init()
 		{

@@ -257,17 +257,15 @@ namespace TheTechIdea.Winforms.VIS
             List<ConnectionProperties> retval = new List<ConnectionProperties>();
             try
             {
+                string extens = DMEEditor.ConfigEditor.CreateFileExtensionString();
                 OpenFileDialog openFileDialog1 = new System.Windows.Forms.OpenFileDialog()
                 {
-
-                    Title = "Browse Text Files",
-
+                    Title = "Browse Files",
                     CheckFileExists = true,
                     CheckPathExists = true,
-
-                    DefaultExt = "txt",
-                    Filter = "txt files (*.txt)|*.txt|csv files (*.csv)|*.csv|xls files (*.xls)|*.xls|json files (*.json)|*.json|All files (*.*)|*.*",
-                    FilterIndex = 2,
+                    DefaultExt = "*",
+                    Filter = extens,
+                    FilterIndex = 1,
                     RestoreDirectory = true
 
                     //ReadOnlyChecked = true,
@@ -286,33 +284,36 @@ namespace TheTechIdea.Winforms.VIS
                         {
                             FileName = Path.GetFileName(file),
                             FilePath = Path.GetDirectoryName(file),
-                            Ext = Path.GetExtension(file),
-                            ConnectionName = Path.GetFileName(file),
-                            DriverVersion = "1",
-                            DriverName = "FileReader",
+                            Ext = Path.GetExtension(file).Replace(".", "").ToLower(),
+                        ConnectionName = Path.GetFileName(file)
+                           
 
-
-
-
-                            //Fields = new List<EntityField>()
                         };
+                        string ext = Path.GetExtension(file).Replace(".", "").ToLower();
+                        List<ConnectionDriversConfig> clss = DMEEditor.ConfigEditor.DataDriversClasses.Where(p => p.extensionstoHandle != null).ToList();
+                        ConnectionDriversConfig c = clss.Where(o => o.extensionstoHandle.Contains(ext)).FirstOrDefault();
+
+                        f.DriverName = c.PackageName;
+                        f.DriverVersion = c.version;
+                        f.Category = c.DatasourceCategory;
+                        
                         switch (f.Ext.ToLower())
                         {
-                            case ".txt":
+                            case "txt":
                                 f.DatabaseType = DataSourceType.Text;
                                 break;
-                            case ".csv":
+                            case "csv":
                                 f.DatabaseType = DataSourceType.CSV;
                                 break;
-                            case ".xml":
+                            case "xml":
                                 f.DatabaseType = DataSourceType.xml;
 
                                 break;
-                            case ".json":
+                            case "json":
                                 f.DatabaseType = DataSourceType.Json;
                                 break;
-                            case ".xls":
-                            case ".xlsx":
+                            case "xls":
+                            case "xlsx":
                                 f.DatabaseType = DataSourceType.Xls;
                                 break;
                             default:

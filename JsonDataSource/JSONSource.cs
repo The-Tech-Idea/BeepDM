@@ -16,7 +16,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.FileManager
 {
-    [ClassProperties(Category = DatasourceCategory.FILE, DatasourceType =  DataSourceType.Json)]
+    [ClassProperties(Category = DatasourceCategory.FILE, DatasourceType =  DataSourceType.Json,FileType ="json")]
     public class JSONSource : IDataSource
     {
         public event EventHandler<PassedArgs> PassEvent;

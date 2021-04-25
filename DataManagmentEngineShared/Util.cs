@@ -77,7 +77,17 @@ namespace TheTechIdea.DataManagment_Engine
 
             string vr = cn.DriverVersion;
             string pk = cn.DriverName;
-            return DME.ConfigEditor.DataDriversClasses.Where(c => c.PackageName == pk && c.version == vr).FirstOrDefault();
+            ConnectionDriversConfig retval=DME.ConfigEditor.DataDriversClasses.Where(c => c.PackageName == pk && c.version == vr).FirstOrDefault();
+            if (retval == null)
+            {
+                if(cn.Category== DatasourceCategory.FILE)
+                {
+                    List<ConnectionDriversConfig> clss = DME.ConfigEditor.DataDriversClasses.Where(p => p.extensionstoHandle != null).ToList();
+                    string ext = Path.GetExtension(cn.FileName).Replace(".", "");
+                    retval = clss.Where(c => c.extensionstoHandle.Contains(ext)).FirstOrDefault(); 
+                }
+            }
+            return retval;
 
 
         }

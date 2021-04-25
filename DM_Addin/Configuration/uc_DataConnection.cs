@@ -117,13 +117,22 @@ namespace TheTechIdea.Configuration
                 }
              
             }
-            foreach (var item in DMEEditor.ConfigEditor.DataDriversClasses)
+            try
             {
-                if (!string.IsNullOrEmpty(item.PackageName))
+                foreach (var item in DMEEditor.ConfigEditor.DataDriversClasses)
                 {
-                    driverVersionComboBox.Items.Add(item.version);
+                    if (!string.IsNullOrEmpty(item.PackageName))
+                    {
+                        driverVersionComboBox.Items.Add(item.version);
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+
+               
+            }
+            
             //util.ConfigEditor.LoadDataConnectionsValues();
             dataConnectionsBindingSource.DataSource = null;
             ds =DMEEditor.ConfigEditor.DataConnections.Where(x=>x.Category==DatasourceCategory.RDBMS).ToList();
@@ -151,6 +160,7 @@ namespace TheTechIdea.Configuration
             DatasourceCategorycomboBox.SelectedValueChanged += DatasourceCategorycomboBox_SelectedValueChanged;
             this.Headesbutton.Click += Headesbutton_Click;
             this.Querybutton.Click += Querybutton_Click;
+            
 
         }
 

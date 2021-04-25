@@ -11,7 +11,7 @@ namespace TheTechIdea.DataManagment_Engine.ConfigUtil
         public string Caption { get; set; }
         public DatasourceCategory Category { get; set; }
         public DataSourceType DatasourceType { get; set; }
-        public FileTypes FileType { get; set; }
+        public string FileType { get; set; }
         public string iconimage { get; set; } = null;
         
     }

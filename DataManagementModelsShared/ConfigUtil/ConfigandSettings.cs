@@ -111,6 +111,7 @@ namespace TheTechIdea.Util
         public string classHandler { get; set; }
         public bool ADOType { get; set; } = false;
         public bool CreateLocal { get; set; } = false;
+        public string extensionstoHandle { get; set; }
         public DatasourceCategory DatasourceCategory { get; set; }
         public DataSourceType DatasourceType { get; set; }
     }

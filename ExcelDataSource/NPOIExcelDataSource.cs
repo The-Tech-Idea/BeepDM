@@ -18,7 +18,7 @@ using TheTechIdea.DataManagment_Engine.ConfigUtil;
 
 namespace TheTechIdea.DataManagment_Engine.FileManager
 {
-    [ClassProperties(Category = DatasourceCategory.FILE,DatasourceType =  DataSourceType.Xls)]
+    [ClassProperties(Category = DatasourceCategory.FILE,DatasourceType =  DataSourceType.Xls, FileType = "xls,xlsx")]
     public class NPOIExcelDataSource : IDataSource
     {
 

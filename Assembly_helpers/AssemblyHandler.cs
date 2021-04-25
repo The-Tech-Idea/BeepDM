@@ -109,7 +109,7 @@ namespace TheTechIdea.Tools
             DMEEditor.Utilfunction.Namespacelist = new List<string>();
             DMEEditor.Utilfunction.Classlist = new List<string>();
             DataDriversConfig = new List<ConnectionDriversConfig>();
-            AddEngineDefaultDrivers();
+           
             GetNonADODrivers();
             GetBuiltinClasses();
             try
@@ -200,7 +200,7 @@ namespace TheTechIdea.Tools
                 {
                     GetDrivers(item.DllLib);
                 }
-                CheckDriverAlreadyExistinList();
+           
 
                 foreach (string p in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.Addin).Select(x => x.FolderPath))
                 {
@@ -258,6 +258,8 @@ namespace TheTechIdea.Tools
                 DMEEditor.ErrorObject.Ex = ex;
                 DMEEditor.Logger.WriteLog($"Error Loading Addin Assemblies ({ex.Message})");
             }
+            AddEngineDefaultDrivers();
+            CheckDriverAlreadyExistinList();
             return DMEEditor.ErrorObject;
         }
         /// <summary>
@@ -1102,6 +1104,17 @@ namespace TheTechIdea.Tools
 
 
         }
+        public List<string> CreateFileExtensionString()
+        {
+            List<AssemblyClassDefinition> cls = DataSourcesClasses.Where(o => o.classProperties != null).ToList();
+           
+
+            IEnumerable<string> extensionslist = cls.Where(o => o.classProperties.Category == DatasourceCategory.FILE).Select(p => p.classProperties.FileType);
+            string extstring = string.Join(",", extensionslist);
+            return extstring.Split(',').ToList() ;
+           
+          
+        }
         public bool AddEngineDefaultDrivers()
         {
 
@@ -1114,27 +1127,34 @@ namespace TheTechIdea.Tools
                 DataviewDriver.DriverClass = "DataViewReader";
                 DataviewDriver.version = "1";
                 DataDriversConfig.Add(DataviewDriver);
-                ConnectionDriversConfig TXTFileDriver = new ConnectionDriversConfig();
-                TXTFileDriver.AdapterType = "DEFAULT";
-                TXTFileDriver.dllname = "DataManagmentEngine";
-                TXTFileDriver.PackageName = "FileReader";
-                TXTFileDriver.DriverClass = "FileReader";
-                TXTFileDriver.version = "1";
-                DataDriversConfig.Add(TXTFileDriver);
-                ConnectionDriversConfig JSONFileDriver = new ConnectionDriversConfig();
-                JSONFileDriver.AdapterType = "DEFAULT";
-                JSONFileDriver.dllname = "DataManagmentEngine";
-                JSONFileDriver.PackageName = "JSONFileReader";
-                JSONFileDriver.DriverClass = "JSONFileReader";
-                JSONFileDriver.version = "1";
-                DataDriversConfig.Add(JSONFileDriver);
-                ConnectionDriversConfig WebAPIDriver = new ConnectionDriversConfig();
-                WebAPIDriver.AdapterType = "DEFAULT";
-                WebAPIDriver.dllname = "DataManagmentEngine";
-                WebAPIDriver.PackageName = "WebApiReader";
-                WebAPIDriver.DriverClass = "WebApiReader";
-                WebAPIDriver.version = "1";
-                DataDriversConfig.Add(WebAPIDriver);
+                //----------------- 
+                // Get File extensions
+                //--------------
+                List<AssemblyClassDefinition> cls = DataSourcesClasses.Where(o => o.classProperties != null).ToList().Where(p => p.classProperties.Category == DatasourceCategory.FILE).ToList(); 
+                foreach (AssemblyClassDefinition item in cls)
+                {
+                   
+                    foreach (string extension in item.classProperties.FileType.Split(',').ToList())
+                    {
+                        ConnectionDriversConfig TXTFileDriver = new ConnectionDriversConfig();
+                        TXTFileDriver.AdapterType = "DEFAULT";
+                        TXTFileDriver.dllname = "DataManagmentEngine";
+                        //if (DataDriversConfig.Where(i => i.PackageName.Contains(extension.ToLower() + "FileReader")).Any())
+                        //{
+                        //    TXTFileDriver.version = DataDriversConfig.Where(i => i.PackageName.Contains(extension.ToLower() + "FileReader")).Max(i => i.version) + 1;
+                        //}
+                        TXTFileDriver.PackageName = item.className;//   extension.ToLower() + "FileReader";
+                        TXTFileDriver.DriverClass = item.className;
+                        TXTFileDriver.classHandler = item.className;
+                        TXTFileDriver.iconname = extension + ".ico";
+                        TXTFileDriver.extensionstoHandle = item.classProperties.FileType;
+                        TXTFileDriver.DatasourceCategory = DatasourceCategory.FILE;
+                        TXTFileDriver.version = "1";
+                        DataDriversConfig.Add(TXTFileDriver);
+                    }
+                  
+                }
+              
 
                 return true;
             }
