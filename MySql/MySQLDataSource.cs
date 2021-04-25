@@ -5,11 +5,13 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.DataBase
 {
+    [ClassProperties(Category = DatasourceCategory.RDBMS, DatasourceType = DataSourceType.Mysql)]
     public class MySQLDataSource : RDBSource
     {
 

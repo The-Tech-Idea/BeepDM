@@ -6,6 +6,7 @@ using System.Data;
 using System.Linq;
 using TheTechIdea;
 using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Workflow;
@@ -14,6 +15,7 @@ using TheTechIdea.Util;
 
 namespace DataManagmentEngineShared.DataBase
 {
+    [ClassProperties(Category = DatasourceCategory.RDBMS, DatasourceType =  DataSourceType.FireBird)]
     public class FireBirdDataSource : RDBSource
     {
         public FireBirdDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per) : base(datasourcename, logger, pDMEEditor, databasetype, per)

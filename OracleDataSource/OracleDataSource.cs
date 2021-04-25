@@ -6,6 +6,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
@@ -13,6 +14,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.DataBase
 {
+    [ClassProperties(Category = DatasourceCategory.RDBMS, DatasourceType =  DataSourceType.Oracle)]
     class OracleDataSource : RDBSource
     {
         public OracleDataSource(string datasourcename, IDMLogger logger, IDMEEditor DMEEditor, DataSourceType databasetype, IErrorsInfo per) : base(datasourcename, logger, DMEEditor, databasetype, per)

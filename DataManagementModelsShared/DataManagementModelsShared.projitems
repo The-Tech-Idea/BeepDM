@@ -28,6 +28,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\ILayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ClassProperties.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ConnectionProperties.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ConfigandSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\Enums.cs" />

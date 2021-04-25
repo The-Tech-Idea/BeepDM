@@ -5,6 +5,7 @@ using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Report;
@@ -14,6 +15,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.NOSQL.CouchDB
 {
+    [ClassProperties(Category = DatasourceCategory.NOSQL, DatasourceType = DataSourceType.CouchDB)]
     public class CouchDBDataSource : IDataSource
     {
         public event EventHandler<PassedArgs> PassEvent;

@@ -14,9 +14,11 @@ using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using System.IO;
 using TheTechIdea.DataManagment_Engine.Report;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 
 namespace TheTechIdea.DataManagment_Engine.FileManager
 {
+    [ClassProperties(Category = DatasourceCategory.FILE,DatasourceType =  DataSourceType.Xls)]
     public class NPOIExcelDataSource : IDataSource
     {
 

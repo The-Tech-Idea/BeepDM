@@ -17,6 +17,7 @@ using System.Text;
 
 namespace TheTechIdea.DataManagment_Engine.FileManager
 {
+    [ClassProperties(Category = DatasourceCategory.FILE, DatasourceType = DataSourceType.CSV|DataSourceType.Xls) ]
     public class TxtXlsCSVFileSource : IDataSource
     {
         public event EventHandler<PassedArgs> PassEvent;

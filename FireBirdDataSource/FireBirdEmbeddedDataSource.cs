@@ -5,12 +5,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
 namespace DataManagmentEngineShared.DataBase
 {
+    [ClassProperties(Category = DatasourceCategory.RDBMS, DatasourceType =  DataSourceType.FireBird)]
     public class FireBirdEmbeddedDataSource : RDBSource, ILocalDB
     {
         public bool CanCreateLocal { get ; set ; }

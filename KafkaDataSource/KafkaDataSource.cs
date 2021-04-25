@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.EventStream.Kafka;
@@ -16,12 +17,10 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.EventStream
 {
+    [ClassProperties(Category = DatasourceCategory.STREAM, DatasourceType =  DataSourceType.Kafka)]
     public class KafkaDataSource : IDataSource
     {
-        public KafkaDataSource()
-        {
-
-        }
+        
         public KafkaDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
         {
             DatasourceName = datasourcename;

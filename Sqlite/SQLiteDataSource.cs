@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
@@ -13,6 +14,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.DataBase
 {
+    [ClassProperties(Category = DatasourceCategory.RDBMS, DatasourceType = DataSourceType.SqlLite)]
     public class SQLiteDataSource : RDBSource, ILocalDB
 
     {

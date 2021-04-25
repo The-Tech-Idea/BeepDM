@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea;
 using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Report;
@@ -19,6 +20,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.NOSQL.RavenDB
 {
+    [ClassProperties(Category = DatasourceCategory.NOSQL, DatasourceType =  DataSourceType.RavenDB)]
     public class RavenDBDataSource :  IDataSource
     {
         public event EventHandler<PassedArgs> PassEvent;

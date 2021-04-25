@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Report;
@@ -13,6 +14,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.Redis
 {
+    [ClassProperties(Category = DatasourceCategory.NOSQL, DatasourceType =  DataSourceType.Redis)]
     public class RedisDataSource : IDataSource
     {
         public DataSourceType DatasourceType { get ; set ; }

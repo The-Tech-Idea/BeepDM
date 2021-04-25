@@ -13,6 +13,7 @@ using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.Addin;
 using TheTechIdea.DataManagment_Engine.AI;
 using TheTechIdea.DataManagment_Engine.AppBuilder;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.DataManagment_Engine.Workflow;
@@ -498,6 +499,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IDataSource";
+                                xcls.classProperties= (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
                                 DataSourcesClasses.Add(xcls);
                                 DMEEditor.ConfigEditor.DataSourcesClasses.Add(xcls);
                             }
