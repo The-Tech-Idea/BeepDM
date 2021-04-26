@@ -28,7 +28,8 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
         public DataSourceType DatasourceType { get; set; }
         public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;
-        public ConnectionState ConnectionStatus { get ;set ;}
+        ConnectionState pConnectionStatus;
+        public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; }  set { pConnectionStatus = value; }  }
         public List<string> EntitiesNames { get; set; } = new List<string>();
 
         public IDMEEditor DMEEditor { get; set; }
@@ -66,32 +67,20 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             };
             Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == datasourcename).FirstOrDefault();
          
-            FileTypes ft = FileTypes.Text;
-            switch (Dataconnection.ConnectionProp.Ext.ToLower())
-            {
-                case ".txt":
-                case ".csv":
-                    ft = FileTypes.Text;
-                    ; break;
-                case ".xls":
-                case ".xlsx":
-                    ft = FileTypes.Excel;
-                    break;
-
-            }
-            FileType = ft;
+          
+           
             Category = DatasourceCategory.FILE;
             FileName = Dataconnection.ConnectionProp.FileName;
             FilePath = Dataconnection.ConnectionProp.FilePath;
             SetupConfig();
             //Reader = new TxtXlsCSVReader(, Logger, DMEEditor, FileType, per, Dataconnection.ConnectionProp.FilePath, null);
-            ConnectionStatus = OpenConnection();
-            Dataconnection.ConnectionStatus = ConnectionStatus;
-            if (ConnectionStatus == ConnectionState.Open)
-            {
-               // Entities = Reader.Entities;
-                EntitiesNames = Entities.Select(o => o.EntityName).ToList();
-            }
+            //ConnectionStatus = OpenConnection();
+            //Dataconnection.ConnectionStatus = ConnectionStatus;
+            //if (ConnectionStatus == ConnectionState.Open)
+            //{
+            //   // Entities = Reader.Entities;
+            //    EntitiesNames = Entities.Select(o => o.EntityName).ToList();
+            //}
            // GetEntitesList();
             
           
@@ -102,9 +91,15 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
             try
             {
-               // List<EntityStructure> entlist = new List<EntityStructure>();
-                EntitiesNames = new List<string>();
-                EntitiesNames = getWorksheetNames().ToList();
+                ConnectionStatus = OpenConnection();
+                Dataconnection.ConnectionStatus = ConnectionStatus;
+                if (ConnectionStatus == ConnectionState.Open)
+                {
+                    EntitiesNames = new List<string>();
+                    EntitiesNames = getWorksheetNames().ToList();
+                }
+                // List<EntityStructure> entlist = new List<EntityStructure>();
+               
                 
 
                 //  DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == DatasourceName).FirstOrDefault().Entities =entlist ;
@@ -125,14 +120,22 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         }
         public EntityStructure GetEntityDataType(string EntityName)
         {
+            GetEntitesList();
 
             return Entities.Where(x => x.EntityName == EntityName).FirstOrDefault();
         }
         public Type GetEntityType(string EntityName)
         {
-            string filenamenoext = EntityName;
-            DMTypeBuilder.CreateNewObject(EntityName, EntityName, Entities.Where(x=>x.EntityName== EntityName).FirstOrDefault().Fields);
-            return DMTypeBuilder.myType;
+            ConnectionStatus = OpenConnection();
+            Dataconnection.ConnectionStatus = ConnectionStatus;
+            if (ConnectionStatus == ConnectionState.Open)
+            {
+                GetEntitesList();
+                string filenamenoext = EntityName;
+                DMTypeBuilder.CreateNewObject(EntityName, EntityName, Entities.Where(x => x.EntityName == EntityName).FirstOrDefault().Fields);
+                return DMTypeBuilder.myType;
+            }
+            return null;
         }
         //public async Task<object> GetEntityDataAsync(string entityname, string filterstr)
         //{
@@ -160,16 +163,20 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                DataTable dt;
+                DataTable dt=null;
                 string qrystr="";
-               
-                dt =  ReadDataTable(EntityName, HeaderExist, 0, 0);
-               
+                ConnectionStatus = OpenConnection();
+                
+                Dataconnection.ConnectionStatus = ConnectionStatus;
+                if (ConnectionStatus == ConnectionState.Open)
+                {
+                    dt = ReadDataTable(EntityName, HeaderExist, 0, 0);
+
                     if (filter != null)
                     {
                         if (filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
                         {
-                            
+
                             foreach (ReportFilter item in filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)))
                             {
                                 if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
@@ -179,13 +186,13 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                                     {
                                         if (item.valueType == "System.DateTime")
                                         {
-                                        qrystr += "[" + item.FieldName + "] " + item.Operator + " '" + DateTime.Parse(item.FilterValue) + "' and  '" + DateTime.Parse(item.FilterValue1) +"'"+ Environment.NewLine;
-                                    }
-                                    else
+                                            qrystr += "[" + item.FieldName + "] " + item.Operator + " '" + DateTime.Parse(item.FilterValue) + "' and  '" + DateTime.Parse(item.FilterValue1) + "'" + Environment.NewLine;
+                                        }
+                                        else
                                         {
-                                        qrystr += "[" + item.FieldName + "] " + item.Operator + " " + item.FilterValue + " and  " + item.FilterValue1 + " " + Environment.NewLine;
-                                    }
-                                       
+                                            qrystr += "[" + item.FieldName + "] " + item.Operator + " " + item.FilterValue + " and  " + item.FilterValue1 + " " + Environment.NewLine;
+                                        }
+
                                     }
                                     else
                                     {
@@ -195,9 +202,9 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                                         }
                                         else
                                         {
-                                            qrystr += "["+item.FieldName + "] " + item.Operator + " " + item.FilterValue + " " + Environment.NewLine;
+                                            qrystr += "[" + item.FieldName + "] " + item.Operator + " " + item.FilterValue + " " + Environment.NewLine;
                                         }
-                                       
+
                                     }
 
                                 }
@@ -207,12 +214,14 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                             }
                         }
 
-                   if (!string.IsNullOrEmpty(qrystr))
-                    {
-                        dt = dt.Select(qrystr).CopyToDataTable();
+                        if (!string.IsNullOrEmpty(qrystr))
+                        {
+                            dt = dt.Select(qrystr).CopyToDataTable();
+                        }
+
                     }
-                  
                 }
+              
                 
                 return dt;
 
@@ -383,12 +392,19 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
+            ConnectionStatus = OpenConnection();
+           // Dataconnection.ConnectionStatus = ConnectionStatus;
             if (ConnectionStatus == ConnectionState.Open)
             {
-                if (refresh || Entities.Count() == 0)
+                GetEntitesList();
+                if (ConnectionStatus == ConnectionState.Open)
                 {
-                    GetEntityStructures(refresh);
+                    if (refresh || Entities.Count() == 0)
+                    {
+                        GetEntityStructures(refresh);
+                    }
                 }
+               
             }
             return Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault();
         }
@@ -432,7 +448,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             {
                 ConnectionStatus = ConnectionState.Open;
 
-
+                Dataconnection.ConnectionStatus = ConnectionStatus;
 
                 return ConnectionState.Open;
 
@@ -440,6 +456,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             }
             else
             {
+                Dataconnection.ConnectionStatus = ConnectionStatus;
                 ConnectionStatus = ConnectionState.Broken;
                 return ConnectionState.Broken;
             }
@@ -451,6 +468,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == FileName).FirstOrDefault();
                 Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
                 ConnectionStatus = ConnectionState.Open;
+                Dataconnection.ConnectionStatus = ConnectionStatus;
                 if (Entities.Count == 0)
                 {
                     FileData = GetExcelDataSet();
@@ -461,14 +479,16 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
 
                 }
-
+                Dataconnection.ConnectionStatus = ConnectionStatus;
                 return ConnectionState.Open;
 
 
             }
             else
             {
+               
                 ConnectionStatus = ConnectionState.Broken;
+                Dataconnection.ConnectionStatus = ConnectionStatus;
                 return ConnectionState.Broken;
             }
         }
@@ -480,7 +500,8 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
             if (File.Exists(CombineFilePath))
             {
-
+                ConnectionStatus = ConnectionState.Open;
+                Dataconnection.ConnectionStatus = ConnectionStatus;
                 if ((Entities == null) || (Entities.Count == 0) || (refresh))
                 {
                     Entities = new List<EntityStructure>();
@@ -493,7 +514,8 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 }
                 else
                 {
-
+                    ConnectionStatus = ConnectionState.Broken;
+                    Dataconnection.ConnectionStatus = ConnectionStatus;
                     Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
                     Delimiter = Dataconnection.ConnectionProp.Delimiter;
 
@@ -607,15 +629,15 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             DataSet ds = new DataSet();
             using (var stream = File.Open(Path.Combine(FilePath, FileName), FileMode.Open, FileAccess.Read))
             {
-                switch (Dataconnection.ConnectionProp.Ext.ToLower())
+                switch (Dataconnection.ConnectionProp.Ext.Replace(".","").ToLower())
                 {
-                    case ".csv":
+                    case "csv":
                         reader = ExcelReaderFactory.CreateCsvReader(stream, ReaderConfig);
                         break;
-                    case ".xls":
+                    case "xls":
                         reader = ExcelReaderFactory.CreateBinaryReader(stream, ReaderConfig);
                         break;
-                    case ".xlsx":
+                    case "xlsx":
                         reader = ExcelReaderFactory.CreateOpenXmlReader(stream, ReaderConfig);
                         break;
                     default:

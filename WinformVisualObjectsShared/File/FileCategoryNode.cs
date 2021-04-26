@@ -142,7 +142,7 @@ namespace TheTechIdea.Winforms.VIS
                 {
                    
                     DMEEditor.ConfigEditor.AddDataConnection(f);
-                    DMEEditor.GetDataSource(f.FileName);
+                    DataSource= DMEEditor.GetDataSource(f.FileName);
                     CategoryFolder x = DMEEditor.ConfigEditor.CategoryFolders.Where(y => y.FolderName == BranchText && y.RootName == "FILE").FirstOrDefault();
 
                     if (x.items.Contains(f.FileName) == false)

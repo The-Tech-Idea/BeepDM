@@ -278,24 +278,28 @@ namespace TheTechIdea.Winforms.VIS
             {
                 int i = 0;
                 DataSource = (IDataSource)DMEEditor.GetDataSource(BranchText);
+                
                 if (DataSource != null)
                 {
-                    //fs = (TxtXlsCSVFileSource)DataSource;
-                    DataSource.GetEntitesList();
-                }
-
-                if (DataSource != null)
-                {
-
-                    if (DataSource.EntitiesNames.Count > 0)
+                  
+                    if ( DataSource.Entities.Count == 0)
                     {
-                        foreach (string n in DataSource.EntitiesNames)
-                        {
-                            CreateFileItemSheetsNode(i, n);
-                            i += 1;
-                        }
-
+                        DataSource.GetEntitesList();
                     }
+                    if (DataSource.Entities.Count> 0)
+                    {
+                        DataSource.EntitiesNames = DataSource.Entities.Select(o => o.EntityName).ToList();
+                        if (DataSource.EntitiesNames.Count > 0)
+                        {
+                            foreach (string n in DataSource.EntitiesNames)
+                            {
+                                CreateFileItemSheetsNode(i, n);
+                                i += 1;
+                            }
+
+                        }
+                    }
+                   
                 }
 
                 DMEEditor.AddLogMessage("Success", "Created child Nodes", DateTime.Now, 0, null, Errors.Ok);
