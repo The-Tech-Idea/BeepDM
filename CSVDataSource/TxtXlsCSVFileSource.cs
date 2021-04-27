@@ -428,7 +428,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         }
         public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
-            throw new NotImplementedException();
+            return (Task<object>)GetEntity(EntityName, Filter);
         }
         #region "Excel and CSV Reader"
         public ConnectionState OpenConnection()

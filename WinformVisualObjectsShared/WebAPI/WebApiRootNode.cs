@@ -220,7 +220,7 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
 
-                viewbr = new WebApiNode(TreeEditor, DMEEditor, this, WebApiName, TreeEditor.SeqID, EnumBranchType.DataPoint, "app.ico");
+                viewbr = new WebApiNode(TreeEditor, DMEEditor, this, WebApiName, TreeEditor.SeqID, EnumBranchType.DataPoint, "web.ico");
                 TreeEditor.AddBranch(this, viewbr);
                 ChildBranchs.Add(viewbr);
                 viewbr.CreateChildNodes();

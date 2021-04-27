@@ -134,15 +134,16 @@ namespace TheTechIdea.ETL
         private void GetDataButton_Click(object sender, EventArgs e)
 
         {
+            DMEEditor.Logger.PauseLog();
             string str = ent.CustomBuildQuery;
-            foreach (ReportFilter item in ent.Filters)
-            {
-                if(string.IsNullOrEmpty(item.FilterValue) || string.IsNullOrWhiteSpace(item.FilterValue))
-                {
-                    MessageBox.Show("Error, Please Fill all missing Fields");
-                    throw new InvalidOperationException("Error, Please Fill all missing Fields");
-                }
-            }
+            //foreach (ReportFilter item in ent.Filters)
+            //{
+            //    if(string.IsNullOrEmpty(item.FilterValue) || string.IsNullOrWhiteSpace(item.FilterValue))
+            //    {
+            //        MessageBox.Show("Error, Please Fill all missing Fields");
+            //       // throw new InvalidOperationException("Error, Please Fill all missing Fields");
+            //    }
+            //}
             foreach (EntityParameters item in ent.Paramenters)
             {
                 str = str.Replace("{" + item.parameterIndex + "}", ent.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault()) ;
@@ -159,10 +160,15 @@ namespace TheTechIdea.ETL
 
 
             this.dataGridView1.Refresh();
+            DMEEditor.Logger.StartLog();
         }
         private async Task<dynamic> GetOutputAsync(string CurrentEntity, List<ReportFilter> filter)
         {
+           
+
             return await webAPIData.GetEntityAsync(CurrentEntity, filter).ConfigureAwait(false);
+           
+
         }
 
     }

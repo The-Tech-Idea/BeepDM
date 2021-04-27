@@ -8,17 +8,41 @@ using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Report;
-using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Cloud
+namespace TheTechIdea.DataManagment_Engine.Hadoop
 {
-    [ClassProperties(Category = DatasourceCategory.CLOUD, DatasourceType = DataSourceType.WebService)]
-    public class GoogleCloudStorageDataService : IDataSource
-
+    [ClassProperties(Category = DatasourceCategory.NOSQL, DatasourceType = DataSourceType.Hadoop)]
+    public class HadoopDataSource : IDataSource
     {
-        public event EventHandler<PassedArgs> PassEvent;
+
+        public HadoopDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
+        {
+            DatasourceName = datasourcename;
+            Logger = logger;
+            ErrorObject = per;
+            DMEEditor = pDMEEditor;
+            DatasourceType = databasetype;
+            Category = DatasourceCategory.NOSQL;
+            Dataconnection = new HadoopDataConnection
+            {
+                Logger = logger,
+                ErrorObject = ErrorObject
+
+            };
+            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName == datasourcename).FirstOrDefault();
+            Dataconnection.ConnectionProp.Category = DatasourceCategory.NOSQL;
+            Dataconnection.ConnectionProp.DatabaseType = DataSourceType.MongoDB;
+            if (Dataconnection.ConnectionProp.Database != null)
+            {
+                if (Dataconnection.ConnectionProp.Database.Length > 0)
+                {
+                    GetEntitesList();
+                }
+            }
+        }
+
         public DataSourceType DatasourceType { get ; set ; }
         public DatasourceCategory Category { get ; set ; }
         public IDataConnection Dataconnection { get ; set ; }
@@ -27,18 +51,28 @@ namespace TheTechIdea.DataManagment_Engine.Cloud
         public string Id { get ; set ; }
         public IDMLogger Logger { get ; set ; }
         public List<string> EntitiesNames { get ; set ; }
-        public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
+        public List<EntityStructure> Entities { get ; set ; }
         public IDMEEditor DMEEditor { get ; set ; }
-        public List<object> Records { get ; set ; }
         public ConnectionState ConnectionStatus { get ; set ; }
-        public DataTable SourceEntityData { get ; set ; }
+
+        public event EventHandler<PassedArgs> PassEvent;
 
         public bool CheckEntityExist(string EntityName)
         {
             throw new NotImplementedException();
         }
 
+        public IErrorsInfo CreateEntities(List<EntityStructure> entities)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool CreateEntityAs(EntityStructure entity)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow)
         {
             throw new NotImplementedException();
         }
@@ -53,12 +87,7 @@ namespace TheTechIdea.DataManagment_Engine.Cloud
             throw new NotImplementedException();
         }
 
-        public DataSet GetChildTablesListFromCustomQuery(string tablename, string customquery)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IDataReader GetDataReader(string querystring)
+        public List<LScript> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
             throw new NotImplementedException();
         }
@@ -68,17 +97,12 @@ namespace TheTechIdea.DataManagment_Engine.Cloud
             throw new NotImplementedException();
         }
 
-        public Task<object> GetEntityDataAsync(string entityname, string filterstr)
-        {
-            throw new NotImplementedException();
-        }
-
         public object GetEntity(string EntityName, List<ReportFilter> filter)
         {
             throw new NotImplementedException();
         }
 
-        public  object RunQuery( string qrystr)
+        public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
             throw new NotImplementedException();
         }
@@ -88,12 +112,12 @@ namespace TheTechIdea.DataManagment_Engine.Cloud
             throw new NotImplementedException();
         }
 
-        public EntityStructure GetEntityStructure(string EntityName,bool refresh=false )
+        public EntityStructure GetEntityStructure(string EntityName, bool refresh)
         {
             throw new NotImplementedException();
         }
 
-        public DataTable GetEntityDataTable(string EntityName, string filterstr)
+        public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
             throw new NotImplementedException();
         }
@@ -103,44 +127,27 @@ namespace TheTechIdea.DataManagment_Engine.Cloud
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
-        {
-            throw new NotImplementedException();
-        }
-        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
-        {
-
-
-            throw new NotImplementedException();
-        }
-        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
+        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
             throw new NotImplementedException();
         }
 
-        public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
+        public object RunQuery(string qrystr)
         {
             throw new NotImplementedException();
         }
+
         public LScript RunScript(LScript dDLScripts)
         {
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo CreateEntities(List<EntityStructure> entities)
-        {
-            throw new NotImplementedException();
-        }
-        public List<LScript> GetCreateEntityScript(List<EntityStructure> entities = null)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
         {
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
-        {
-            throw new NotImplementedException();
-        }
-        public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
+        public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
             throw new NotImplementedException();
         }

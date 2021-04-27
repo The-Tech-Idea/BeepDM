@@ -18,6 +18,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
 {
+    [ClassProperties(Category = DatasourceCategory.WEBAPI, DatasourceType = DataSourceType.WebService)]
     public class EIAWebApiDatasource :IDataSource
     {
         public event EventHandler<PassedArgs> PassEvent;

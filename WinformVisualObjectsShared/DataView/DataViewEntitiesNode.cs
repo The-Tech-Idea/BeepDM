@@ -443,8 +443,7 @@ namespace TheTechIdea.Winforms.VIS
             {
 
                 EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.Id == EntityStructure.Id)];
-                if (EntityStructure.Viewtype == ViewType.Table || EntityStructure.Viewtype == ViewType.Query || EntityStructure.Viewtype == ViewType.File)
-                {
+               
                     string[] args = { "New View", null, null };
                    
                     PassedArgs Passedarguments = new PassedArgs
@@ -466,7 +465,7 @@ namespace TheTechIdea.Winforms.VIS
 
                     Visutil.ShowUserControlInContainer("uc_getentities", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
 
-                }
+                
 
                 //  DMEEditor.AddLogMessage("Success", "Added Database Connection", DateTime.Now, 0, null, Errors.Ok);
             }
@@ -661,10 +660,11 @@ namespace TheTechIdea.Winforms.VIS
                                 entity.DatasourceEntityName = entity.EntityName;
                                 entity.Created = false;
                                 entity.Id = ds.NextHearId();
+                                entity.DataSourceID = srcds.DatasourceName;
                                 entity.ParentId = ID;
                                 entity.ViewID = DataView.ViewID;
                                 ds.CreateEntityAs(entity);
-                                DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "entity.ico", DataView.DataViewDataSourceID, entity);
+                                DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataView.DataViewDataSourceID, entity);
                                 TreeEditor.AddBranch(this, dbent);
                                 dbent.CreateChildNodes();
                                 ChildBranchs.Add(dbent);
@@ -687,10 +687,11 @@ namespace TheTechIdea.Winforms.VIS
                                 entity.DatasourceEntityName = entity.EntityName;
                                 entity.Created = false;
                                 entity.Id = ds.NextHearId();
+                                entity.DataSourceID = srcds.DatasourceName;
                                 entity.ParentId = ID;
                                 entity.ViewID = DataView.ViewID;
                                 ds.CreateEntityAs(entity);
-                                DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "entity.ico", DataView.DataViewDataSourceID, entity);
+                                DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataView.DataViewDataSourceID, entity);
                                 TreeEditor.AddBranch(this, dbent);
                                 dbent.CreateChildNodes();
                                 ChildBranchs.Add(dbent);

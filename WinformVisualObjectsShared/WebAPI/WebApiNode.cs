@@ -120,159 +120,56 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
         #endregion "Interface Methods"
         #region "Exposed Interface"
 
-       
-        [BranchDelegate(Caption = "Get DataPoint")]
-        public IErrorsInfo GetDataPoint()
-        {
 
-            try
-            {
-                string[] args = { "New Query Entity", null, null };
-                List<ObjectItem> ob = new List<ObjectItem>(); ;
-                ObjectItem it = new ObjectItem();
-                it.obj = this;
-                it.Name = "Branch";
-                ob.Add(it);
-               
-              
-                IBranch RootWEBAPIBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "WEBAPI" && x.BranchType == EnumBranchType.Root)];
-                it = new ObjectItem();
-                it.obj = RootWEBAPIBranch;
-                it.Name = "RootWebApiBranch";
-                ob.Add(it);
-                PassedArgs Passedarguments = new PassedArgs
-                {
-                    Addin = null,
-                    AddinName = null,
-                    AddinType = "",
-                    DMView = null,
-                    CurrentEntity = BranchText,
-                    Id = 0,
-                    ObjectType = "WEBAPI",
-                    DataSource = null,
-                    ObjectName = TreeEditor.Branches[this.ParentBranchID].BranchText,
+        //[BranchDelegate(Caption = "Get DataPoint")]
+        //public IErrorsInfo GetDataPoint()
+        //{
 
-                    Objects = ob,
-
-                    DatasourceName = TreeEditor.Branches[this.ParentBranchID].BranchText,
-                    EventType = "GETDATAPOINT"
-
-                };
-                // ActionNeeded?.Invoke(this, Passedarguments);
-                Visutil.ShowUserControlPopUp("uc_AppCreateDefinition", DMEEditor, args, Passedarguments);
-
-                //  DMEEditor.AddLogMessage("Success", "Created Query Entity", DateTime.Now, 0, null, Errors.Ok);
-            }
-            catch (Exception ex)
-            {
-                string mes = "Could not Open App Generator";
-                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
-            };
-            return DMEEditor.ErrorObject;
-        }
-       
-        #endregion Exposed Interface"
-        #region "Other Methods"
-      
-        public bool CreateWebApiEntities()
-        {
-            try
-
-            {
-                TreeEditor.RemoveChildBranchs(this);
-                WebApiEntities webent;
-                List<EntityStructure> ls = new List<EntityStructure>();
-                ls = DMEEditor.ConfigEditor.DataConnections.Where(i => i.ConnectionName == BranchText).FirstOrDefault().Entities;
-                if (ls != null)
-                {
-                    foreach (EntityStructure item in ls)
-                    {
-
-                        webent = new WebApiEntities(TreeEditor, DMEEditor, this, item.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "app.ico",BranchText);
-                        TreeEditor.AddBranch(this, webent);
-                        ChildBranchs.Add(webent);
-                        //  webent.CreateChildNodes();
-                    }
-                }
-                
-               IDataSource ds = DMEEditor.GetDataSource(BranchText);
-                if (ds != null)
-                {
-                    ds.GetEntitesList();
-                    if (ds.Entities != null)
-                    {
-                        if (ds.Entities.Count > 0)
-                        {
-                            ls = ds.Entities;
-                            List<EntityStructure> rootent = ls.Where(i => i.ParentId == 0).ToList();
-                            foreach (EntityStructure item in rootent)
-                            {
-                                CreateNode(ls, item, this);
-                            }
-                        }
-                    }
-
-                }
+        //    try
+        //    {
+        //        string[] args = { "New Query Entity", null, null };
+        //        List<ObjectItem> ob = new List<ObjectItem>(); ;
+        //        ObjectItem it = new ObjectItem();
+        //        it.obj = this;
+        //        it.Name = "Branch";
+        //        ob.Add(it);
 
 
+        //        IBranch RootWEBAPIBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "WEBAPI" && x.BranchType == EnumBranchType.Root)];
+        //        it = new ObjectItem();
+        //        it.obj = RootWEBAPIBranch;
+        //        it.Name = "RootWebApiBranch";
+        //        ob.Add(it);
+        //        PassedArgs Passedarguments = new PassedArgs
+        //        {
+        //            Addin = null,
+        //            AddinName = null,
+        //            AddinType = "",
+        //            DMView = null,
+        //            CurrentEntity = BranchText,
+        //            Id = 0,
+        //            ObjectType = "WEBAPI",
+        //            DataSource = null,
+        //            ObjectName = TreeEditor.Branches[this.ParentBranchID].BranchText,
 
+        //            Objects = ob,
 
+        //            DatasourceName = TreeEditor.Branches[this.ParentBranchID].BranchText,
+        //            EventType = "GETDATAPOINT"
 
+        //        };
+        //        // ActionNeeded?.Invoke(this, Passedarguments);
+        //        Visutil.ShowUserControlPopUp("uc_AppCreateDefinition", DMEEditor, args, Passedarguments);
 
-                DMEEditor.AddLogMessage("Success", $"Generated WebApi node", DateTime.Now, 0, null, Errors.Ok);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                string errmsg = "Error in Generating App Version";
-                DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-                return false;
-            }
-
-
-        }
-        private void CreateNode(List<EntityStructure> entities,EntityStructure parententity,IBranch br)
-        {
-            try
-            {
-                List<EntityStructure> ls = entities.Where(i => i.ParentId == parententity.Id).ToList();
-                WebApiEntities webent;
-                foreach (var item in ls)
-                {
-                    webent = new WebApiEntities(TreeEditor, DMEEditor, br, item.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "app.ico",BranchText);
-                    TreeEditor.AddBranch(br, webent);
-                    ChildBranchs.Add(webent);
-                   
-                    if (entities.Where(i => i.ParentId == item.Id && i.Id != 0).Any())
-                    {
-                        CreateNode(entities, item,webent);
-                    }
-                }
-               
-            }
-            catch (Exception ex)
-            {
-
-                string errmsg = "Error in creating nodes for WebAPI";
-                DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
-        }
-        public IErrorsInfo GetFile()
-        {
-
-            try
-            {
-
-
-                DMEEditor.AddLogMessage("Success", "Loaded File", DateTime.Now, 0, null, Errors.Ok);
-            }
-            catch (Exception ex)
-            {
-                string mes = "Could not Load File";
-                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
-            };
-            return DMEEditor.ErrorObject;
-        }
+        //        //  DMEEditor.AddLogMessage("Success", "Created Query Entity", DateTime.Now, 0, null, Errors.Ok);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        string mes = "Could not Open App Generator";
+        //        DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+        //    };
+        //    return DMEEditor.ErrorObject;
+        //}
         [BranchDelegate(Caption = "Defaults")]
         public IErrorsInfo EditDefaults()
         {
@@ -321,6 +218,118 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
             return DMEEditor.ErrorObject;
 
         }
+        #endregion Exposed Interface"
+        #region "Other Methods"
+
+        public bool CreateWebApiEntities()
+        {
+            try
+
+            {
+                TreeEditor.RemoveChildBranchs(this);
+                WebApiEntities webent;
+                List<EntityStructure> ls = new List<EntityStructure>();
+                 DataSource = DMEEditor.GetDataSource(BranchText);
+                ls = DMEEditor.ConfigEditor.DataConnections.Where(i => i.ConnectionName == BranchText).FirstOrDefault().Entities;
+                if (ls != null)
+                {
+                    foreach (EntityStructure item in ls)
+                    {
+
+                        webent = new WebApiEntities(TreeEditor, DMEEditor, this, item.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "webapi.ico",BranchText);
+                        if (DataSource != null)
+                        {
+                            webent.DataSource = DataSource;
+                            webent.DataSourceName = DataSource.DatasourceName;
+                        }
+                       
+                        TreeEditor.AddBranch(this, webent);
+                        ChildBranchs.Add(webent);
+                        //  webent.CreateChildNodes();
+                    }
+                }
+                
+              
+                if (DataSource != null)
+                {
+                    DataSource.GetEntitesList();
+                    if (DataSource.Entities != null)
+                    {
+                        if (DataSource.Entities.Count > 0)
+                        {
+                            ls = DataSource.Entities;
+                            List<EntityStructure> rootent = ls.Where(i => i.ParentId == 0).ToList();
+                            foreach (EntityStructure item in rootent)
+                            {
+                                CreateNode(ls, item, this);
+                            }
+                        }
+                    }
+
+                }
+
+
+
+
+
+
+                DMEEditor.AddLogMessage("Success", $"Generated WebApi node", DateTime.Now, 0, null, Errors.Ok);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                string errmsg = "Error in Generating App Version";
+                DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return false;
+            }
+
+
+        }
+        private void CreateNode(List<EntityStructure> entities,EntityStructure parententity,IBranch br)
+        {
+            try
+            {
+                List<EntityStructure> ls = entities.Where(i => i.ParentId == parententity.Id).ToList();
+                WebApiEntities webent;
+                foreach (var item in ls)
+                {
+                    webent = new WebApiEntities(TreeEditor, DMEEditor, br, item.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, "app.ico",BranchText);
+                    webent.DataSource = DataSource;
+                    webent.DataSourceName = DataSource.DatasourceName;
+                    TreeEditor.AddBranch(br, webent);
+                    ChildBranchs.Add(webent);
+                   
+                    if (entities.Where(i => i.ParentId == item.Id && i.Id != 0).Any())
+                    {
+                        CreateNode(entities, item,webent);
+                    }
+                }
+               
+            }
+            catch (Exception ex)
+            {
+
+                string errmsg = "Error in creating nodes for WebAPI";
+                DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+        }
+        public IErrorsInfo GetFile()
+        {
+
+            try
+            {
+
+
+                DMEEditor.AddLogMessage("Success", "Loaded File", DateTime.Now, 0, null, Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                string mes = "Could not Load File";
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return DMEEditor.ErrorObject;
+        }
+      
         #endregion"Other Methods"
 
     }

@@ -29,9 +29,9 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL.CouchDB
         public List<string> EntitiesNames { get ; set ; }
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public IDMEEditor DMEEditor { get ; set ; }
-        public List<object> Records { get ; set ; }
+      
         public ConnectionState ConnectionStatus { get ; set ; }
-        public DataTable SourceEntityData { get ; set ; }
+  
 
         public bool CheckEntityExist(string EntityName)
         {
@@ -53,17 +53,8 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL.CouchDB
             throw new NotImplementedException();
         }
 
-        public DataSet GetChildTablesListFromCustomQuery(string tablename, string customquery)
-        {
-            throw new NotImplementedException();
-        }
 
         public List<string> GetEntitesList()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<object> GetEntityDataAsync(string entityname, string filterstr)
         {
             throw new NotImplementedException();
         }
@@ -79,11 +70,6 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL.CouchDB
         }
 
         public EntityStructure GetEntityStructure(string EntityName, bool refresh = false)
-        {
-            throw new NotImplementedException();
-        }
-
-        public DataTable GetEntityDataTable(string EntityName, string filterstr)
         {
             throw new NotImplementedException();
         }

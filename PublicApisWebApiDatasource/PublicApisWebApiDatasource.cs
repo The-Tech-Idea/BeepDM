@@ -60,7 +60,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.PublicApisWebApi
 
         public bool CheckEntityExist(string EntityName)
         {
-            throw new NotImplementedException();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).Any();
         }
 
         public bool CreateEntityAs(EntityStructure entity)
@@ -144,20 +144,23 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.PublicApisWebApi
 
         public EntityStructure GetEntityStructure(string EntityName, bool refresh)
         {
-            throw new NotImplementedException();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+
         }
 
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
-            throw new NotImplementedException();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         }
 
         public Type GetEntityType(string EntityName)
         {
-            throw new NotImplementedException();
+            EntityStructure x = GetEntityStructure(EntityName, false);
+            DMTypeBuilder.CreateNewObject(EntityName, EntityName, x.Fields);
+            return DMTypeBuilder.myType;
         }
 
-         public  object RunQuery( string qrystr)
+        public  object RunQuery( string qrystr)
         {
             throw new NotImplementedException();
         }

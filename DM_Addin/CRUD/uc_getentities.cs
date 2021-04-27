@@ -14,6 +14,8 @@ using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using TheTechIdea.DataManagment_Engine.Vis;
+using System.Reflection;
+using System.Collections;
 
 namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
 {
@@ -60,6 +62,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             Visutil = (IVisUtil)e.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
             ds = DMEEditor.GetDataSource(e.DatasourceName);
             ds.Dataconnection.OpenConnection();
+            ds.ConnectionStatus = ds.Dataconnection.ConnectionStatus;
             if (ds != null && ds.ConnectionStatus== ConnectionState.Open)
             {
                 EntityName = e.CurrentEntity;
@@ -74,7 +77,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                     e.Objects.Add(new ObjectItem { Name = "EntityStructure", obj = EntityStructure });
                 }
                 EntityStructure.Filters = new List<ReportFilter>();
-                enttype = ds.GetEntityType(EntityName);
+            //    enttype = ds.GetEntityType(EntityName);
                 if (EntityStructure != null)
                 {
                     if (EntityStructure.Fields != null)
@@ -169,7 +172,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                                 if (ds.DeleteEntity(EntityName, ob).Flag == Errors.Failed)
                                 {
                                     EntitybindingSource.RemoveCurrent();
-                                    RefreshData();
+                                    GetData();
                                     MessageBox.Show("Failed to Delete Record");
 
                                 }
@@ -221,34 +224,159 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                 }
             }
         }
-        private void GetData()
+        private async Task<dynamic> GetOutputAsync(string CurrentEntity, List<ReportFilter> filter)
         {
-            if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
+            return await ds.GetEntityAsync(CurrentEntity, filter).ConfigureAwait(false);
+        }
+        private void GetFieldForWebApi(dynamic retval)
+        {
+            Type tp = retval.GetType();
+            DataTable dt;
+            if (EntityStructure.Fields.Count == 0)
             {
-                object retval = ds.GetEntity(EntityName, EntityStructure.Filters);
-                if (retval != null)
+                if (tp.GetTypeInfo().ImplementedInterfaces.Contains(typeof(IList)))
                 {
-                    if (retval.GetType().FullName == "System.Data.DataTable")
-                    {
-                        DataList = DMEEditor.Utilfunction.ConvertTableToList((DataTable)retval, EntityStructure, ds.GetEntityType(EntityName));
-                    }
-                    else
-                    {
-                        DataList = (List<object>)retval;
-                    }
-
+                    dt = DMEEditor.Utilfunction.ToDataTable((IList) retval, DMEEditor.Utilfunction.GetListType(tp));
                 }
                 else
                 {
-                    DataList = null;
+                     dt = (DataTable)retval;
+                  
+                }
+                foreach (DataColumn item in dt.Columns)
+                {
+                    EntityField x = new EntityField();
+                    try
+                    {
+
+                        x.fieldname = item.ColumnName;
+                        x.fieldtype = item.DataType.ToString(); //"ColumnSize"
+                        x.Size1 = item.MaxLength;
+                        try
+                        {
+                            x.IsAutoIncrement = item.AutoIncrement;
+                        }
+                        catch (Exception)
+                        {
+
+                        }
+                        try
+                        {
+                            x.AllowDBNull = item.AllowDBNull;
+                        }
+                        catch (Exception)
+                        {
+
+
+                        }
+
+
+
+                        try
+                        {
+                            x.IsUnique = item.Unique;
+                        }
+                        catch (Exception)
+                        {
+
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.WriteLog("Error in Creating Field Type");
+                        ErrorObject.Flag = Errors.Failed;
+                        ErrorObject.Ex = ex;
+                    }
+
+                    if (x.IsKey)
+                    {
+                        EntityStructure.PrimaryKeys.Add(x);
+                    }
+
+
+                    EntityStructure.Fields.Add(x);
                 }
 
-                RefreshData();
+
+
+
+            }
+            ds.Entities[ds.Entities.FindIndex(p => p.EntityName == EntityStructure.EntityName)] = EntityStructure;
+            DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new ConfigUtil.DatasourceEntities { datasourcename = EntityStructure.DataSourceID, Entities = ds.Entities });
+        }
+        private void GetData()
+        {
+            object retval = null ;
+           
+            if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
+            {
+                if(ds.Category== DatasourceCategory.WEBAPI)
+                {
+                    try
+                    {
+                        Task<dynamic> output = GetOutputAsync(EntityName, EntityStructure.Filters);
+                        output.Wait();
+                        dynamic t = output.Result;
+                        Type tp = t.GetType();
+                        if (!tp.GetTypeInfo().ImplementedInterfaces.Contains(typeof(IList)))
+                        
+                        {
+                            retval = DMEEditor.ConfigEditor.JsonLoader.JsonToDataTable(t.ToString());
+                        }
+                        else
+                        {
+                            retval = t;
+                        }
+                      
+                       
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error, {ex.Message}");
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        retval = ds.GetEntity(EntityName, EntityStructure.Filters);
+                        
+                    }
+                    catch (Exception ex)
+                    {
+
+                        MessageBox.Show($"Error, {ex.Message}");
+                    }
+
+                }
+                if (retval != null)
+                {
+                    try
+                    {
+                        GetFieldForWebApi(retval);
+                    }
+                    catch (Exception ex)
+                    {
+
+                        throw;
+                    }
+                  
+                    //if (retval.GetType().FullName == "System.Data.DataTable")
+                    //{
+                    //    retval = DMEEditor.Utilfunction.ConvertTableToList((DataTable)retval, EntityStructure, DMEEditor.Utilfunction.GetEntityType(EntityStructure.EntityName,EntityStructure.Fields));
+                    //}
+                    
+                }
+                else
+                {
+                    retval = null;
+                }
+                RefreshData(retval);
             }
         }
-        private void RefreshData()
+        private void RefreshData(object obj)
         {
-            EntitybindingSource.DataSource = DataList;
+            EntitybindingSource.DataSource = obj;
             EntitybindingSource.ResetBindings(true);
             dataGridView1.AutoGenerateColumns = true;
             dataGridView1.DataSource = EntitybindingSource;
@@ -332,7 +460,10 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
 
         private void SubmitFilterbutton_Click(object sender, EventArgs e)
         {
+            DMEEditor.Logger.PauseLog();
+            
             GetData();
+            DMEEditor.Logger.StartLog();
         }
      
     }

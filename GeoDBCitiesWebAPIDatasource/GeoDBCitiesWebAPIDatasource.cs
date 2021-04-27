@@ -1,4 +1,4 @@
-﻿using DataManagmentEngineShared.WebAPI;
+﻿
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -7,18 +7,18 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using TheTechIdea;
-using TheTechIdea.DataManagment_Engine;
+
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Report;
-using TheTechIdea.DataManagment_Engine.WebAPI;
-using TheTechIdea.DataManagment_Engine.Workflow;
+
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.WebAPI.GeoDBCitiesWebAPI
 {
+    [ClassProperties(Category = DatasourceCategory.WEBAPI, DatasourceType = DataSourceType.WebService)]
     public class GeoDBCitiesWebAPIDatasource : WebAPIDataSource
     {
         

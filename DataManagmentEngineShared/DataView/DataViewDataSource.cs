@@ -987,7 +987,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                     iconname = "fileicon.ico";
                     break;
                 case ViewType.Url:
-                    iconname = "linkicon.ico";
+                    iconname = "webapi.ico";
                     break;
                 default:
                     break;

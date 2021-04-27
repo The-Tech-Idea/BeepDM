@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea;
 using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Report;
@@ -19,6 +20,7 @@ using static Dapr.Client.Autogen.Grpc.v1.Dapr;
 
 namespace DaprClient
 {
+    [ClassProperties(Category = DatasourceCategory.WEBAPI, DatasourceType = DataSourceType.WebService)]
     public class DaprDataSource : IDataSource
     {
         public Dapr.Client.DaprClient Client { get; set; }

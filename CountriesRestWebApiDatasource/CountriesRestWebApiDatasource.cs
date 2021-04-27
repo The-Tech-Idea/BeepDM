@@ -1,4 +1,5 @@
 ﻿using DataManagmentEngineShared.WebAPI;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Report;
@@ -15,7 +17,8 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.WebAPI.CountriesRest
 {
-   public class CountriesRestWebApiDatasource : IDataSource
+    [ClassProperties(Category = DatasourceCategory.WEBAPI, DatasourceType = DataSourceType.WebService)]
+    public class CountriesRestWebApiDatasource : IDataSource
 
     {
         public event EventHandler<PassedArgs> PassEvent;
@@ -40,8 +43,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.CountriesRest
             client = new HttpClient();
             Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName == datasourcename).FirstOrDefault();
             cn = (WebAPIDataConnection)Dataconnection;
-            cn.OpenConnection();
-            cn.ConnectionStatus = ConnectionStatus;
+          
 
         }
 
@@ -59,7 +61,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.CountriesRest
 
         public bool CheckEntityExist(string EntityName)
         {
-            throw new NotImplementedException();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).Any();
         }
 
         public bool CreateEntityAs(EntityStructure entity)
@@ -79,51 +81,72 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.CountriesRest
 
         public List<string> GetEntitesList()
         {
-            throw new NotImplementedException();
+            EntitiesNames=Dataconnection.ConnectionProp.Entities.Select(o=>o.EntityName).ToList();
+            return EntitiesNames;
         }
 
         public async Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
 
+            cn.OpenConnection();
+            ConnectionStatus = cn.ConnectionStatus;
+            if (ConnectionStatus== ConnectionState.Open)
+            {
+                EntityStructure ent = Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName == EntityName).FirstOrDefault();
+                string filterstr = ent.CustomBuildQuery;
+                foreach (EntityParameters item in ent.Paramenters)
+                {
+                    filterstr = filterstr.Replace("{" + item.parameterIndex + "}", ent.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault());
+                }
 
-            EntityStructure ent = Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName == EntityName).FirstOrDefault();
-            string filterstr = ent.CustomBuildQuery;
-            foreach (EntityParameters item in ent.Paramenters)
-            {
-                filterstr = filterstr.Replace("{" + item.parameterIndex + "}", ent.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault());
-            }
+                var request = new HttpRequestMessage();
+                request.Method = HttpMethod.Get;
+                request.RequestUri = new Uri(Dataconnection.ConnectionProp.Url + filterstr);
+                foreach (WebApiHeader item in Dataconnection.ConnectionProp.Headers)
+                {
+                    request.Headers.Add(item.headername, item.headervalue);
+                }
 
-            var request = new HttpRequestMessage();
-            request.Method = HttpMethod.Get;
-            request.RequestUri = new Uri(Dataconnection.ConnectionProp.Url +  filterstr);
-            foreach (WebApiHeader item in Dataconnection.ConnectionProp.Headers)
-            {
-                request.Headers.Add(item.headername, item.headervalue);
-            }
+                if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.ApiKey))
+                {
+                    Dataconnection.ConnectionProp.Url = Dataconnection.ConnectionProp.Url.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
+                }
+                if (!string.IsNullOrEmpty(filterstr))
+                {
+                    filterstr = filterstr.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
+                }
+                try
+                {
+                    //  var url = String.Format("{0}{1}", Dataconnection.ConnectionProp.Url, filterstr);
+                    client = new HttpClient();
+                    client.BaseAddress = new Uri(Dataconnection.ConnectionProp.Url);
+                    var response = await client.GetAsync(filterstr).ConfigureAwait(false);
+                    string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    List<Country> x = DMEEditor.ConfigEditor.JsonLoader.DeserializeObjectFromjsonString<Country>(body);
+                    if (ent.Fields.Count == 0)
+                    {
+                        ent.Fields = DMEEditor.Utilfunction.GetFieldFromGeneratedObject(x,typeof(Country));
+                        if(!Entities.Where(p => p.EntityName == ent.EntityName).Any())
+                        {
+                            Entities.Add(ent);
+                        }
+                        else
+                        {
+                            Entities[Entities.FindIndex(p => p.EntityName == ent.EntityName)] = ent;
+                        }
+                       
+                        DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new ConfigUtil.DatasourceEntities { datasourcename = ent.DataSourceID, Entities = Entities });
+                    }
+                    return x;
 
-            if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.ApiKey))
-            {
-                Dataconnection.ConnectionProp.Url = Dataconnection.ConnectionProp.Url.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
-            }
-            if (!string.IsNullOrEmpty(filterstr))
-            {
-                filterstr = filterstr.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
-            }
-            try
-            {
-              //  var url = String.Format("{0}{1}", Dataconnection.ConnectionProp.Url, filterstr);
-                client = new HttpClient();
-                client.BaseAddress = new Uri(Dataconnection.ConnectionProp.Url);
-                var response = await client.GetAsync(filterstr).ConfigureAwait(false);
-                string body= await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var x = DMEEditor.ConfigEditor.JsonLoader.DeserializeObjectString<Country>(body);
-                return x;
+                }
+                catch (Exception ex)
+                {
+                    return null;
+                }
+            }else
+                return null; ;
 
-            }
-            catch (Exception )
-            {
-                return null;
-            }
 
         }
 
@@ -140,17 +163,20 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.CountriesRest
 
         public EntityStructure GetEntityStructure(string EntityName, bool refresh)
         {
-            throw new NotImplementedException();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(EntityName,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            
         }
 
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
-            throw new NotImplementedException();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         }
 
         public Type GetEntityType(string EntityName)
         {
-            throw new NotImplementedException();
+            EntityStructure x = GetEntityStructure(EntityName,false);
+            DMTypeBuilder.CreateNewObject(EntityName, EntityName, x.Fields);
+            return DMTypeBuilder.myType;
         }
 
          public  object RunQuery( string qrystr)
@@ -158,21 +184,6 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.CountriesRest
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IMapping_rep Mapping = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow, IMapping_rep Mapping = null)
-        {
-
-
-            throw new NotImplementedException();
-        }
-        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow, IMapping_rep Mapping = null)
-        {
-            throw new NotImplementedException();
-        }
         public LScript RunScript(LScript dDLScripts)
         {
             throw new NotImplementedException();

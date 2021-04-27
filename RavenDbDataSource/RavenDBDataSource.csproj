@@ -113,7 +113,6 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RavenDBDataSource.cs" />
-    <Compile Include="RavenDBReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DataManagmentModels\DataManagmentModels.csproj">

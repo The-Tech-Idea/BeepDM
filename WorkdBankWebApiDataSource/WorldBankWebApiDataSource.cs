@@ -1,27 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TheTechIdea;
+using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Report;
-using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Cloud
+namespace WorkdBankWebApiDataSource
 {
-    [ClassProperties(Category = DatasourceCategory.CLOUD, DatasourceType = DataSourceType.WebService)]
-    public class AmazonCloudDynamoDbDataSource : IDataSource
-
+    [ClassProperties(Category = DatasourceCategory.WEBAPI, DatasourceType = DataSourceType.WebService)]
+    public class WorldBankWebApiDataSource : IDataSource
     {
-        public event EventHandler<PassedArgs> PassEvent;
-        public DataSourceType DatasourceType { get ; set ; }
-        public DatasourceCategory Category { get ; set ; }
+        public DataSourceType DatasourceType { get; set; } = DataSourceType.WebService;
+        public DatasourceCategory Category { get; set; } = DatasourceCategory.WEBAPI;
         public IDataConnection Dataconnection { get ; set ; }
         public string DatasourceName { get ; set ; }
         public IErrorsInfo ErrorObject { get ; set ; }
@@ -30,16 +28,26 @@ namespace TheTechIdea.DataManagment_Engine.Cloud
         public List<string> EntitiesNames { get ; set ; }
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public IDMEEditor DMEEditor { get ; set ; }
-        public List<object> Records { get ; set ; }
         public ConnectionState ConnectionStatus { get ; set ; }
-        public DataTable SourceEntityData { get ; set ; }
+
+        public event EventHandler<PassedArgs> PassEvent;
 
         public bool CheckEntityExist(string EntityName)
         {
             throw new NotImplementedException();
         }
 
+        public IErrorsInfo CreateEntities(List<EntityStructure> entities)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool CreateEntityAs(EntityStructure entity)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow)
         {
             throw new NotImplementedException();
         }
@@ -54,18 +62,22 @@ namespace TheTechIdea.DataManagment_Engine.Cloud
             throw new NotImplementedException();
         }
 
-     
+        public List<LScript> GetCreateEntityScript(List<EntityStructure> entities = null)
+        {
+            throw new NotImplementedException();
+        }
+
         public List<string> GetEntitesList()
         {
             throw new NotImplementedException();
         }
 
-        public Task<object> GetEntityDataAsync(string entityname, string filterstr)
+        public object GetEntity(string EntityName, List<ReportFilter> filter)
         {
             throw new NotImplementedException();
         }
 
-        public object GetEntity(string EntityName, List<ReportFilter> filter)
+        public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
             throw new NotImplementedException();
         }
@@ -85,19 +97,22 @@ namespace TheTechIdea.DataManagment_Engine.Cloud
             throw new NotImplementedException();
         }
 
-
         public Type GetEntityType(string EntityName)
         {
             throw new NotImplementedException();
         }
 
-        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
+        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
-
-
             throw new NotImplementedException();
         }
-        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
+
+        public object RunQuery(string qrystr)
+        {
+            throw new NotImplementedException();
+        }
+
+        public LScript RunScript(LScript dDLScripts)
         {
             throw new NotImplementedException();
         }
@@ -107,29 +122,7 @@ namespace TheTechIdea.DataManagment_Engine.Cloud
             throw new NotImplementedException();
         }
 
-        public  object RunQuery( string qrystr)
-        {
-            throw new NotImplementedException();
-        }
-        public LScript RunScript(LScript dDLScripts)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IErrorsInfo CreateEntities(List<EntityStructure> entities)
-        {
-            throw new NotImplementedException();
-        }
-        public List<LScript> GetCreateEntityScript(List<EntityStructure> entities = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
-        {
-            throw new NotImplementedException();
-        }
-        public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
+        public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
             throw new NotImplementedException();
         }

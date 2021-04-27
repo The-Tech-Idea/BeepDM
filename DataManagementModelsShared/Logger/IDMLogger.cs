@@ -9,5 +9,8 @@ namespace TheTechIdea.Logger
         event PropertyChangedEventHandler PropertyChanged;
         
         void WriteLog(string info);
+        void StartLog();
+        void StopLog();
+        void PauseLog();
     }
 }

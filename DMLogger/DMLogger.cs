@@ -12,7 +12,7 @@ namespace TheTechIdea.Logger
 
         public event EventHandler<string> Onevent;
         public event PropertyChangedEventHandler PropertyChanged;
-       
+        private bool logstatus = true;
         public DMLogger()
         {
             logger = new LoggerConfiguration()
@@ -25,11 +25,13 @@ namespace TheTechIdea.Logger
         private Serilog.ILogger logger { get; set; }
         public void WriteLog(string info)
         {
+            if (logstatus) {
+                logger.Information(info);
+
+                Onevent?.Invoke(this, info);
+            }
+            
            
-            logger.Information(info);
-          //  OnPropertyChanged("Log");
-            Onevent?.Invoke(this, info);
-           // Log.CloseAndFlush();
         }
         protected void OnPropertyChanged(string propertyName)
         {
@@ -37,5 +39,19 @@ namespace TheTechIdea.Logger
                 PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        public void StartLog()
+        {
+            logstatus = true;
+        }
+
+        public void StopLog()
+        {
+            logstatus = false;
+        }
+
+        public void PauseLog()
+        {
+            logstatus = false;
+        }
     }
 }

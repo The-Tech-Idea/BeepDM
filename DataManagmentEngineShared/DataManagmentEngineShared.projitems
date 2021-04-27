@@ -46,7 +46,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Util.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WEBAPIDataConnection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebAPIDataSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebAPIReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\CopyData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\CopyEntities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\CopyEntity.cs" />

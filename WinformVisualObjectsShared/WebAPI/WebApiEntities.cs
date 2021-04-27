@@ -20,7 +20,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
             BranchText = pBranchText;
             BranchType = pBranchType;
             DataSourceName = pDatasourcename;
-            IconImageName = "datapoint.ico";
+            IconImageName = "webapi.ico";
             if (pID != 0)
             {
                 ID = pID;
@@ -100,7 +100,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
                 ParentBranchID = pParentNode.ID;
                 BranchText = pBranchText;
                 BranchType = pBranchType;
-                //DataSourceName = pDatasourcename;
+                DataSourceName = pParentNode.DataSourceName;
                 IconImageName = pimagename;
                 if (pID != 0)
                 {
@@ -152,7 +152,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
                     Id = ID,
                     ObjectType = "WEBAPI",
                     DataSource = null,
-                    ObjectName = DataSourceBr.BranchText,
+                    ObjectName = DataSourceName,
 
                     Objects = ob,
 
@@ -209,6 +209,67 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
             catch (Exception ex)
             {
                 string mes = "Could not show Edit Control";
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return DMEEditor.ErrorObject;
+        }
+        [BranchDelegate(Caption = "Copy Entities")]
+        public IErrorsInfo CopyEntities()
+        {
+
+            try
+            {
+                List<string> ents = new List<string>();
+                if (TreeEditor.SelectedBranchs.Count > 0)
+                {
+                    if (DataSource == null)
+                    {
+                        DataSource = DMEEditor.GetDataSource(DataSourceName);
+                    }
+                    if (DataSource != null)
+                    {
+                        foreach (int item in TreeEditor.SelectedBranchs)
+                        {
+                            IBranch br = TreeEditor.GetBranch(item);
+                            ents.Add(br.BranchText);
+                            // EntityStructure = DataSource.GetEntityStructure(br.BranchText, true);
+
+                        }
+                        IBranch pbr = TreeEditor.GetBranch(ParentBranchID);
+                        List<ObjectItem> ob = new List<ObjectItem>(); ;
+                        ObjectItem it = new ObjectItem();
+                        it.obj = pbr;
+                        it.Name = "ParentBranch";
+                        ob.Add(it);
+
+                        PassedArgs args = new PassedArgs
+                        {
+                            ObjectName = "DATABASE",
+                            ObjectType = "TABLE",
+                            EventType = "COPYENTITIES",
+                            ParameterString1 = "COPYENTITIES",
+                            DataSource = DataSource,
+                            DatasourceName = DataSource.DatasourceName,
+                            CurrentEntity = BranchText,
+                            EntitiesNames = ents,
+                            Objects = ob
+                        };
+                        TreeEditor.args = args;
+                        DMEEditor.Passedarguments = args;
+                    }
+                    else
+                    {
+                        DMEEditor.AddLogMessage("Fail", "Could not get DataSource", DateTime.Now, -1, null, Errors.Failed);
+                    }
+
+                }
+
+                // TreeEditor.SendActionFromBranchToBranch(pbr, this, "Create View using Table");
+
+            }
+            catch (Exception ex)
+            {
+                string mes = "Could not Copy Entites";
                 DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
             };
             return DMEEditor.ErrorObject;

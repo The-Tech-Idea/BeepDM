@@ -13,6 +13,7 @@ namespace TheTechIdea.DataManagment_Engine.ConfigUtil
         public DataSourceType DatasourceType { get; set; }
         public string FileType { get; set; }
         public string iconimage { get; set; } = null;
+        public string returndataTypename { get; set; }
         
     }
 }

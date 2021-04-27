@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -31,6 +32,20 @@ namespace TheTechIdea.Util
                 List<T> lists = new List<T>();
                 return lists;
             }
+
+        }
+        public List<T> DeserializeObjectFromjsonString<T>(string jsonString)
+        {
+            var settings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                CheckAdditionalContent = true
+
+            };
+
+            return JsonConvert.DeserializeObject<List<T>>(jsonString, settings);
+           
 
         }
         public T DeserializeSingleObject<T>(string filename)
@@ -66,6 +81,56 @@ namespace TheTechIdea.Util
             };
             return JsonConvert.DeserializeObject<object>(stringobject, settings);
         }
+        public  DataTable JsonToDataTable(string jsonString)
+        {
+            //var jsonLinq = JObject.Parse(jsonString);
 
+            //// Find the first array using Linq  
+            //var srcArray = jsonLinq.Descendants().Where(d => d is JArray).First();
+            //var trgArray = new JArray();
+            //foreach (JObject row in srcArray.Children<JObject>())
+            //{
+            //    var cleanRow = new JObject();
+            //    foreach (JProperty column in row.Properties())
+            //    {
+            //        // Only include JValue types  
+            //        if (column.Value is JValue)
+            //        {
+            //            cleanRow.Add(column.Name, column.Value);
+            //        }
+            //    }
+            //    trgArray.Add(cleanRow);
+            //}
+            DataTable dt;
+            try
+            {
+                dt= JsonConvert.DeserializeObject<DataTable>(jsonString);
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    dt = ConverttoDataset(jsonString).Tables[0];
+                }
+                catch (Exception ex1)
+                {
+
+                    dt = null;
+                }
+              
+            }
+            return dt;
+        }
+        public DataSet ConverttoDataset(string jsonString)
+        {
+            return JsonConvert.DeserializeObject<DataSet>(jsonString);
+        }
+        public string CheckJsonType(JToken obj)
+        {
+          
+                return obj.Type.ToString();
+           
+        }
+        
     }
 }

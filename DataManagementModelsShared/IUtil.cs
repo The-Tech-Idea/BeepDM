@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -39,7 +40,10 @@ namespace TheTechIdea.DataManagment_Engine
         Type MakeGenericListofType(string typestring);
         List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype);
         DataRow ConvertItemClassToDataRow(EntityStructure ent);
-        List<EntityField> GetFieldFromGeneratedObject(object dt);
-
+        List<EntityField> GetFieldFromGeneratedObject(object dt, Type tp = null);
+         DataTable JsonToDataTable(string jsonString);
+        DataTable ToDataTable(IList list,Type tp);
+        Type GetEntityType(string EntityName, List<EntityField> Fields);
+        Type GetListType(object someList);
     }
 }

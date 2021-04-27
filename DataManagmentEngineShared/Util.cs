@@ -33,45 +33,11 @@ namespace TheTechIdea.DataManagment_Engine
 
         public IErrorsInfo ErrorObject { get; set; }
         public IDMEEditor DME { get; set; }
-        //public object GetInstance(string strFullyQualifiedName)
-        //{
-        //    Type type = Type.GetType(strFullyQualifiedName);
-        //    if (type != null)
-        //        return Activator.CreateInstance(type);
-        //    foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-        //    {
-        //        type = asm.GetType(strFullyQualifiedName);
-        //        if (type != null)
-        //            return Activator.CreateInstance(type);
-        //    }
-        //    return null;
-        //}
-        //public Type GetType(string strFullyQualifiedName)
-        //{
-        //    Type type = Type.GetType(strFullyQualifiedName);
-        //    if (type != null)
-        //        return type;
-        //    foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-        //    {
-        //        type = asm.GetType(strFullyQualifiedName);
-        //        if (type != null)
-        //            return type;
-        //    }
-        //    return null;
-        //}
-        //public dynamic GetTypeFromString(string strFullyQualifiedName)
-        //{
-        //    Type type = Type.GetType(strFullyQualifiedName);
-        //    if (type != null)
-        //        return type;
-        //    foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-        //    {
-        //        type = asm.GetType(strFullyQualifiedName);
-        //        if (type != null)
-        //            return type;
-        //    }
-        //    return null;
-        //}
+        public DataTable JsonToDataTable(string jsonString)
+        {
+
+            return DME.ConfigEditor.JsonLoader.JsonToDataTable(jsonString);
+        }
         public ConnectionDriversConfig LinkConnection2Drivers(IConnectionProperties cn)
         {
 
@@ -197,6 +163,36 @@ namespace TheTechIdea.DataManagment_Engine
 
 
             return dt;
+        }
+        public Type GetListType(object someList)
+        {
+            if (someList == null)
+                return null;
+
+            var type = someList.GetType();
+
+            if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(List<>))
+                return null;
+
+            return type.GetGenericArguments()[0];
+        }
+        public DataTable ToDataTable(IList list, Type tp)
+        {
+            PropertyDescriptorCollection props = TypeDescriptor.GetProperties(tp);
+            DataTable table = new DataTable();
+            for (int i = 0; i < props.Count; i++)
+            {
+                PropertyDescriptor prop = props[i];
+                table.Columns.Add(prop.Name, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType);
+            }
+            object[] values = new object[props.Count];
+            foreach (var item in list)
+            {
+                for (int i = 0; i < values.Length; i++)
+                    values[i] = props[i].GetValue(item) ?? DBNull.Value;
+                table.Rows.Add(values);
+            }
+            return table;
         }
         public DataTable CreateDataTableVer1(Object[] array)
         {
@@ -518,7 +514,6 @@ namespace TheTechIdea.DataManagment_Engine
             ifFileDownoadedchk = true;
             return ifFileDownoadedchk;
         }
-
         public Type GetTypeFromStringValue(string str)
         {
             byte byteValue;
@@ -569,7 +564,6 @@ namespace TheTechIdea.DataManagment_Engine
 
             // return listType.MakeGenericType(types);
         }
-
         public List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype)
         {
             List<object> retval = new List<object>();
@@ -645,8 +639,7 @@ namespace TheTechIdea.DataManagment_Engine
              dr= dt.NewRow();
             return dr;
         }
-
-        public List<EntityField> GetFieldFromGeneratedObject(object dt)
+        public List<EntityField> GetFieldFromGeneratedObject(object dt, Type tp=null)
         {
             List<EntityField> retval = new List<EntityField>();
             DataRow dr;
@@ -672,7 +665,7 @@ namespace TheTechIdea.DataManagment_Engine
             else
             {
                
-                foreach (PropertyInfo pr in dt.GetType().GetProperties())
+                foreach (PropertyInfo pr in tp.GetProperties() )
                 {
                  
                     DataColumn co = tb.Columns.Add(pr.Name);
@@ -726,6 +719,65 @@ namespace TheTechIdea.DataManagment_Engine
                 retval.Add(f);
             }
             return retval;
+        }
+        private  Type GetCollectionElementType(Type type)
+        {
+            if (null == type)
+                throw new ArgumentNullException("type");
+
+            // first try the generic way
+            // this is easy, just query the IEnumerable<T> interface for its generic parameter
+            var etype = typeof(IEnumerable<>);
+            foreach (var bt in type.GetInterfaces())
+                if (bt.IsGenericType && bt.GetGenericTypeDefinition() == etype)
+                    return bt.GetGenericArguments()[0];
+
+            // now try the non-generic way
+
+            // if it's a dictionary we always return DictionaryEntry
+            if (typeof(System.Collections.IDictionary).IsAssignableFrom(type))
+                return typeof(System.Collections.DictionaryEntry);
+
+            // if it's a list we look for an Item property with an int index parameter
+            // where the property type is anything but object
+            if (typeof(System.Collections.IList).IsAssignableFrom(type))
+            {
+                foreach (var prop in type.GetProperties())
+                {
+                    if ("Item" == prop.Name && typeof(object) != prop.PropertyType)
+                    {
+                        var ipa = prop.GetIndexParameters();
+                        if (1 == ipa.Length && typeof(int) == ipa[0].ParameterType)
+                        {
+                            return prop.PropertyType;
+                        }
+                    }
+                }
+            }
+
+            // if it's a collection, we look for an Add() method whose parameter is 
+            // anything but object
+            if (typeof(System.Collections.ICollection).IsAssignableFrom(type))
+            {
+                foreach (var meth in type.GetMethods())
+                {
+                    if ("Add" == meth.Name)
+                    {
+                        var pa = meth.GetParameters();
+                        if (1 == pa.Length && typeof(object) != pa[0].ParameterType)
+                            return pa[0].ParameterType;
+                    }
+                }
+            }
+            if (typeof(System.Collections.IEnumerable).IsAssignableFrom(type))
+                return typeof(object);
+            return null;
+        }
+        public  Type GetEntityType(string EntityName,List<EntityField> Fields)
+        {
+            
+            DMTypeBuilder.CreateNewObject(EntityName, EntityName, Fields);
+            return DMTypeBuilder.myType;
         }
 
     }

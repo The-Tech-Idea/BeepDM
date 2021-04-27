@@ -35,7 +35,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
         public HttpClient client { get; set; } = new HttpClient();
 
         WebAPIDataConnection cn;
-        // WebAPIReader Reader;
+      
         public WebAPIDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
         {
             DatasourceName = datasourcename;
@@ -65,7 +65,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
         //        if (GetHttpClient())
         //        {
         //            Task<string> retval = GetResponseAsync();
-                    
+
         //            SourceEntityData =(DataTable)  DMEEditor.ConfigEditor.JsonLoader.DeserializeObjectString<DataTable>(retval.ToString());
 
         //        }
@@ -76,7 +76,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
 
         //        return false;
         //    }
-           
+
         //}
         //private bool GetHttpClient()
         //{
@@ -107,9 +107,9 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
         //        return "Error";
         //    }
         //}
-        public virtual bool CheckEntityExist(string EntityName)
+        public bool CheckEntityExist(string EntityName)
         {
-            throw new NotImplementedException();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).Any();
         }
 
         public virtual bool CreateEntityAs(EntityStructure entity)
@@ -165,7 +165,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
 
         public virtual object GetEntity(string EntityName, List<ReportFilter> filter)
         {
-            EntityStructure ent = GetEntityStructure(EntityName);
+            EntityStructure ent = GetEntityStructure(EntityName,false);
             string str = ent.CustomBuildQuery;
             foreach (ReportFilter item in ent.Filters)
             {
@@ -194,15 +194,22 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
             throw new NotImplementedException();
         }
 
-        public virtual EntityStructure GetEntityStructure(string EntityName,bool refresh=false )
+        public EntityStructure GetEntityStructure(string EntityName, bool refresh)
         {
-            throw new NotImplementedException();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+
         }
 
-
-        public virtual Type GetEntityType(string EntityName)
+        public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
-            throw new NotImplementedException();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+        }
+
+        public Type GetEntityType(string EntityName)
+        {
+            EntityStructure x = GetEntityStructure(EntityName, false);
+            DMTypeBuilder.CreateNewObject(EntityName, EntityName, x.Fields);
+            return DMTypeBuilder.myType;
         }
 
         public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData)
@@ -220,10 +227,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
             throw new NotImplementedException();
         }
 
-        public virtual EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
-        {
-            throw new NotImplementedException();
-        }
+        
         public LScript RunScript(LScript dDLScripts)
         {
             throw new NotImplementedException();

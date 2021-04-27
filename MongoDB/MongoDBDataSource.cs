@@ -52,11 +52,7 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
             Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName == datasourcename).FirstOrDefault();
             Dataconnection.ConnectionProp.Category = DatasourceCategory.NOSQL;
             Dataconnection.ConnectionProp.DatabaseType = DataSourceType.MongoDB;
-            //Reader = new MongoDBReader(Dataconnection.ConnectionProp.ConnectionName, Dataconnection.ConnectionProp.Database, DMEEditor, Dataconnection, null);
-        //    Dataconnection.ConnectionStatus = Reader.State;
-           
-
-           // ConnectionStatus = Reader.State;
+      
             CurrentDatabase = Dataconnection.ConnectionProp.Database;
             if (CurrentDatabase != null)
             {
@@ -65,8 +61,6 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
                     GetEntitesList();
                 }
             }
-
-
 
         }
 

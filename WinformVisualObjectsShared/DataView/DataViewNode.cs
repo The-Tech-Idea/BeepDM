@@ -574,9 +574,15 @@ namespace TheTechIdea.Winforms.VIS
                                 entity.Caption = entity.EntityName;
                                 entity.DatasourceEntityName = entity.EntityName;
                                 entity.Created = false;
+                                entity.DataSourceID = srcds.DatasourceName;
                                 entity.Id = ds.NextHearId();
                                 entity.ParentId = 1;
                                 entity.ViewID = DataView.ViewID;
+                                if ( srcds.Category== DatasourceCategory.WEBAPI)
+                                {
+                                    entity.DatabaseType = DataSourceType.WebService;
+                                    entity.Viewtype = ViewType.Url;
+                                }
                                 ds.CreateEntityAs(entity);
                                 DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
                                 TreeEditor.AddBranch(this, dbent);
@@ -602,10 +608,16 @@ namespace TheTechIdea.Winforms.VIS
                                     entity.Caption = entity.EntityName;
                                     entity.DatasourceEntityName = entity.EntityName;
                                     entity.Created = false;
+                                     entity.DataSourceID = srcds.DatasourceName;
                                     entity.Id = ds.NextHearId();
                                     entity.ParentId = 1;
                                     entity.ViewID = DataView.ViewID;
-                                    ds.CreateEntityAs(entity);
+                                if (srcds.Category == DatasourceCategory.WEBAPI)
+                                {
+                                    entity.DatabaseType = DataSourceType.WebService;
+                                    entity.Viewtype = ViewType.Url;
+                                }
+                                ds.CreateEntityAs(entity);
                                     DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
                                     TreeEditor.AddBranch(this, dbent);
                                     dbent.CreateChildNodes();
