@@ -44,7 +44,6 @@ namespace TheTechIdea.Configuration
         public IUtil util { get; set; }
         public IVisUtil Visutil { get; set; }
         public IDMEEditor DMEEditor { get; set; }
-        string DataSourceCategoryType=DatasourceCategory.RDBMS.ToString();
         #region "IAddinVisSchema"
         public string RootNodeName { get; set; } = "Configuration";
         public string CatgoryName { get; set; }
@@ -60,6 +59,8 @@ namespace TheTechIdea.Configuration
         public string BranchDescription { get; set; } = "";
         public string BranchClass { get; set; } = "ADDIN";
         #endregion "IAddinVisSchema"
+        string DataSourceCategoryType =DatasourceCategory.RDBMS.ToString();
+    
         IBranch branch;
         List<ConnectionProperties> ds { get; set; }= new List<ConnectionProperties>();
        // public event EventHandler<PassedArgs> OnObjectSelected;

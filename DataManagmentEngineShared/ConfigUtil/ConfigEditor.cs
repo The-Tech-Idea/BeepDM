@@ -328,7 +328,7 @@ namespace TheTechIdea.Util
 		#region"Mapping Save and Load Methods"
 		public void SaveMappingSchemaValue(string mapname)
 		{
-			Map_Schema retval = MappingSchema.Where(x => x.SchemaName == mapname).FirstOrDefault();
+			Map_Schema retval = MappingSchema.Where(x => x.SchemaName.Equals(mapname,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 			if (retval != null)
 			{
 				string path = Path.Combine(ConfigPath, mapname + ".json");
@@ -338,7 +338,7 @@ namespace TheTechIdea.Util
 		}
 		public Map_Schema LoadMappingSchema(string mapname)
 		{
-			Map_Schema Existingretval = MappingSchema.Where(x => x.SchemaName == mapname).FirstOrDefault();
+			Map_Schema Existingretval = MappingSchema.Where(x => x.SchemaName .Equals(mapname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 			Map_Schema retval = null;
 			string path = Path.Combine(ConfigPath, mapname + ".json");
 			//File.WriteAllText(path, JsonConvert.SerializeObject(ts));
@@ -440,7 +440,7 @@ namespace TheTechIdea.Util
 		}
 		public bool DataConnectionExist(string ConnectionName)
 		{
-			return DataConnections.Any(x => x.ConnectionName.ToLower() == ConnectionName.ToLower());
+			return DataConnections.Any(x => x.ConnectionName.Equals(ConnectionName, StringComparison.OrdinalIgnoreCase));
 		}
 		public bool AddDataConnection(ConnectionProperties cn)
 		{ try
@@ -471,10 +471,10 @@ namespace TheTechIdea.Util
 
 			try
 			{
-				var cnlist = DataConnections.Where(x => x.Category.ToString() == category).ToList();
+				var cnlist = DataConnections.Where(x => x.Category.ToString().Equals(category,StringComparison.OrdinalIgnoreCase)).ToList();
 				foreach (ConnectionProperties dt in cnlist)
 				{
-					ConnectionProperties dc = ls.Where(x => x.ConnectionName == dt.ConnectionName).FirstOrDefault();
+					ConnectionProperties dc = ls.Where(x => x.ConnectionName.Equals(dt.ConnectionName,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 					if (dc == null)
 
 					{
@@ -483,7 +483,7 @@ namespace TheTechIdea.Util
 				}
 				foreach (ConnectionProperties item in ls)
 				{
-					ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName == item.ConnectionName).FirstOrDefault();
+					ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.Equals(item.ConnectionName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 					if (dc != null)
 					{
 						dc = item;
@@ -506,7 +506,7 @@ namespace TheTechIdea.Util
 		public bool RemoveConnByName(string pname)
 		{
 
-			int i = DataConnections.FindIndex(x => x.ConnectionName == pname);
+			int i = DataConnections.FindIndex(x => x.ConnectionName.Equals(pname, StringComparison.OrdinalIgnoreCase));
 
 			return DataConnections.Remove(DataConnections[i]);
 		}
@@ -522,7 +522,7 @@ namespace TheTechIdea.Util
 
 			try
 			{
-				ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.ToLower() == pname.ToLower()).FirstOrDefault();
+				ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.Equals(pname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 				if (dc != null)
 				{
 					DataConnections.Remove(dc);
@@ -581,7 +581,7 @@ namespace TheTechIdea.Util
 		{
 			try
 			{
-				CategoryFolder x = CategoryFolders.Where(y => y.FolderName == pfoldername && y.RootName == prootname).FirstOrDefault();
+				CategoryFolder x = CategoryFolders.Where(y => y.FolderName.Equals(pfoldername,StringComparison.OrdinalIgnoreCase) && y.RootName.Equals( prootname,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 				CategoryFolders.Remove(x);
 				SaveCategoryFoldersValues();
 				return true;
@@ -713,9 +713,9 @@ namespace TheTechIdea.Util
 			DataSourceFieldProperties retval = null ;
 			if (AppfieldProperties != null)
 			{
-				if (AppfieldProperties.Any(i => i.DatasourceName == dsname))
+				if (AppfieldProperties.Any(i => i.DatasourceName.Equals(dsname,StringComparison.OrdinalIgnoreCase)))
 				{
-					retval = AppfieldProperties.Where(i => i.DatasourceName == dsname).FirstOrDefault();
+					retval = AppfieldProperties.Where(i => i.DatasourceName.Equals(dsname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 					return retval;
 				}
 				else
@@ -741,7 +741,7 @@ namespace TheTechIdea.Util
 		public bool RemoveLayerByName(string LayerName)
 		{
 			
-			int i = CompositeQueryLayers.FindIndex(x => x.LayerName.ToLower() == LayerName.ToLower());
+			int i = CompositeQueryLayers.FindIndex(x => x.LayerName.Equals(LayerName,StringComparison.OrdinalIgnoreCase));
 			if (i > -1)
 			{
 				return CompositeQueryLayers.Remove(CompositeQueryLayers[i]);
@@ -753,7 +753,7 @@ namespace TheTechIdea.Util
 		public bool RemoveLayerByID(string ID)
 		{
 			
-			int i = CompositeQueryLayers.FindIndex(x => x.ID == ID);
+			int i = CompositeQueryLayers.FindIndex(x => x.ID.Equals(ID,StringComparison.OrdinalIgnoreCase));
 			if (i > -1)
 			{
 				return CompositeQueryLayers.Remove(CompositeQueryLayers[i]);
@@ -781,14 +781,14 @@ namespace TheTechIdea.Util
 		public bool RemoveAppByName(string AppName)
 		{
 
-			int i = Apps.FindIndex(x => x.AppName == AppName);
+			int i = Apps.FindIndex(x => x.AppName.Equals(AppName,StringComparison.OrdinalIgnoreCase));
 
 			return Apps.Remove(Apps[i]);
 		}
 		public bool RemoveAppByID(string ID)
 		{
 
-			int i = Apps.FindIndex(x => x.ID == ID);
+			int i = Apps.FindIndex(x => x.ID.Equals(ID,StringComparison.OrdinalIgnoreCase));
 
 			return Apps.Remove(Apps[i]);
 		}
@@ -1048,58 +1048,63 @@ namespace TheTechIdea.Util
 					LoadConfigValues();
 					if (Config.Folders == null)
 					{
-						Config.Folders.Add(new StorageFolders(ExePath + @"\Config\", FolderFileTypes.Config));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\Addin\", FolderFileTypes.Addin));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\DataFiles\", FolderFileTypes.DataFiles));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\DataViews\", FolderFileTypes.DataView));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\ProjectData\", FolderFileTypes.ProjectData));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\ProjectClasses\", FolderFileTypes.ProjectClass));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\ConnectionDrivers\", FolderFileTypes.ConnectionDriver));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\GFX\", FolderFileTypes.GFX));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\OtherDll\", FolderFileTypes.OtherDLL));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\Entities\", FolderFileTypes.Entities));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\Mapping\", FolderFileTypes.Mapping));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\WorkFlow\", FolderFileTypes.WorkFlows));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\Scripts\", FolderFileTypes.Scripts));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\Scripts\Logs", FolderFileTypes.ScriptsLogs));
+						Config.Folders.Add(new StorageFolders(ExePath + @"Config", FolderFileTypes.Config));
+						Config.Folders.Add(new StorageFolders(ExePath + @"Addin", FolderFileTypes.Addin));
+						Config.Folders.Add(new StorageFolders(ExePath + @"DataFiles", FolderFileTypes.DataFiles));
+						Config.Folders.Add(new StorageFolders(ExePath + @"DataViews", FolderFileTypes.DataView));
+						Config.Folders.Add(new StorageFolders(ExePath + @"ProjectDat", FolderFileTypes.ProjectData));
+						Config.Folders.Add(new StorageFolders(ExePath + @"ProjectClasses", FolderFileTypes.ProjectClass));
+						Config.Folders.Add(new StorageFolders(ExePath + @"ConnectionDrivers", FolderFileTypes.ConnectionDriver));
+						Config.Folders.Add(new StorageFolders(ExePath + @"GFX", FolderFileTypes.GFX));
+						Config.Folders.Add(new StorageFolders(ExePath + @"OtherDll", FolderFileTypes.OtherDLL));
+						Config.Folders.Add(new StorageFolders(ExePath + @"Entities", FolderFileTypes.Entities));
+						Config.Folders.Add(new StorageFolders(ExePath + @"Mapping", FolderFileTypes.Mapping));
+						Config.Folders.Add(new StorageFolders(ExePath + @"WorkFlow", FolderFileTypes.WorkFlows));
+						Config.Folders.Add(new StorageFolders(ExePath + @"Scripts", FolderFileTypes.Scripts));
+						Config.Folders.Add(new StorageFolders(ExePath + @"Scripts\Logs", FolderFileTypes.ScriptsLogs));
 					}
 					if (Config.ExePath != ExePath)
 					{
-						Config.Folders.Clear();
-						Config.Folders.Add(new StorageFolders(ExePath + @"\config\", FolderFileTypes.Config));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\Addin\", FolderFileTypes.Addin));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\DataFiles\", FolderFileTypes.DataFiles));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\DataViews\", FolderFileTypes.DataView));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\ProjectData\", FolderFileTypes.ProjectData));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\ProjectClasses\", FolderFileTypes.ProjectClass));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\ConnectionDrivers\", FolderFileTypes.ConnectionDriver));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\GFX\", FolderFileTypes.GFX));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\OtherDll\", FolderFileTypes.OtherDLL));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\Entities\", FolderFileTypes.Entities));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\Mapping\", FolderFileTypes.Mapping));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\WorkFlow\", FolderFileTypes.WorkFlows));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\Scripts\", FolderFileTypes.Scripts));
-						Config.Folders.Add(new StorageFolders(ExePath + @"\Scripts\Logs", FolderFileTypes.ScriptsLogs));
+						Config.ExePath = ExePath;
+                        foreach (StorageFolders fold in Config.Folders)
+                        {
+							var dirName = new DirectoryInfo(fold.FolderPath).Name;
+							fold.FolderPath = ExePath+  dirName;
+                        }
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\config\", FolderFileTypes.Config));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\Addin\", FolderFileTypes.Addin));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\DataFiles\", FolderFileTypes.DataFiles));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\DataViews\", FolderFileTypes.DataView));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\ProjectData\", FolderFileTypes.ProjectData));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\ProjectClasses\", FolderFileTypes.ProjectClass));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\ConnectionDrivers\", FolderFileTypes.ConnectionDriver));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\GFX\", FolderFileTypes.GFX));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\OtherDll\", FolderFileTypes.OtherDLL));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\Entities\", FolderFileTypes.Entities));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\Mapping\", FolderFileTypes.Mapping));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\WorkFlow\", FolderFileTypes.WorkFlows));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\Scripts\", FolderFileTypes.Scripts));
+						//Config.Folders.Add(new StorageFolders(ExePath + @"\Scripts\Logs", FolderFileTypes.ScriptsLogs));
 					}
 					
 				}
 				else
 				{
 					Config = new ConfigandSettings();
-					Config.Folders.Add(new StorageFolders(ExePath + @"\Config\", FolderFileTypes.Config));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\Addin\", FolderFileTypes.Addin));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\DataFiles\", FolderFileTypes.DataFiles));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\DataViews\", FolderFileTypes.DataView));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\ProjectData\", FolderFileTypes.ProjectData));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\ProjectClasses\", FolderFileTypes.ProjectClass));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\ConnectionDrivers\", FolderFileTypes.ConnectionDriver));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\GFX\", FolderFileTypes.GFX));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\OtherDll\", FolderFileTypes.OtherDLL));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\Entities\", FolderFileTypes.Entities));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\Mapping\", FolderFileTypes.Mapping));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\WorkFlow\", FolderFileTypes.WorkFlows));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\Scripts\", FolderFileTypes.Scripts));
-					Config.Folders.Add(new StorageFolders(ExePath + @"\Scripts\Logs", FolderFileTypes.ScriptsLogs));
+					Config.Folders.Add(new StorageFolders(ExePath + @"Config", FolderFileTypes.Config));
+					Config.Folders.Add(new StorageFolders(ExePath + @"Addin", FolderFileTypes.Addin));
+					Config.Folders.Add(new StorageFolders(ExePath + @"DataFiles", FolderFileTypes.DataFiles));
+					Config.Folders.Add(new StorageFolders(ExePath + @"DataViews", FolderFileTypes.DataView));
+					Config.Folders.Add(new StorageFolders(ExePath + @"ProjectData", FolderFileTypes.ProjectData));
+					Config.Folders.Add(new StorageFolders(ExePath + @"ProjectClasses", FolderFileTypes.ProjectClass));
+					Config.Folders.Add(new StorageFolders(ExePath + @"ConnectionDrivers", FolderFileTypes.ConnectionDriver));
+					Config.Folders.Add(new StorageFolders(ExePath + @"GFX", FolderFileTypes.GFX));
+					Config.Folders.Add(new StorageFolders(ExePath + @"OtherDll", FolderFileTypes.OtherDLL));
+					Config.Folders.Add(new StorageFolders(ExePath + @"Entities", FolderFileTypes.Entities));
+					Config.Folders.Add(new StorageFolders(ExePath + @"Mapping", FolderFileTypes.Mapping));
+					Config.Folders.Add(new StorageFolders(ExePath + @"WorkFlow", FolderFileTypes.WorkFlows));
+					Config.Folders.Add(new StorageFolders(ExePath + @"Scripts", FolderFileTypes.Scripts));
+					Config.Folders.Add(new StorageFolders(ExePath + @"Scripts\Logs", FolderFileTypes.ScriptsLogs));
 
 					Config.SystemEntryFormName = @"Frm_MainDisplayForm";
 					//Config.DSEntryFormName = @"uc_DataConnection";
@@ -1108,24 +1113,24 @@ namespace TheTechIdea.Util
 				
 				}
 				//Check Folders exist
-				CreateDirConfig(Path.Combine(ExePath + @"\Config\"), FolderFileTypes.Config);
-				CreateDirConfig(Path.Combine(ExePath + @"\Addin\"), FolderFileTypes.Addin);
-				CreateDirConfig(Path.Combine(ExePath + @"\DataFiles\"), FolderFileTypes.DataFiles);
-				CreateDirConfig(Path.Combine(ExePath + @"\DataViews\"), FolderFileTypes.DataView);
-				CreateDirConfig(Path.Combine(ExePath + @"\ProjectData\"), FolderFileTypes.ProjectData);
-				CreateDirConfig(Path.Combine(ExePath + @"\ProjectClasses\"), FolderFileTypes.ProjectClass);
-				CreateDirConfig(Path.Combine(ExePath + @"\ConnectionDrivers\"), FolderFileTypes.ConnectionDriver);
-				CreateDirConfig(Path.Combine(ExePath + @"\GFX\"), FolderFileTypes.GFX);
-				CreateDirConfig(Path.Combine(ExePath + @"\OtherDll\"), FolderFileTypes.OtherDLL);
-				CreateDirConfig(Path.Combine(ExePath + @"\Entities\"), FolderFileTypes.Entities);
-				CreateDirConfig(Path.Combine(ExePath + @"\Mapping\"), FolderFileTypes.Mapping);
-				CreateDirConfig(Path.Combine(ExePath + @"\WorkFlow\"), FolderFileTypes.WorkFlows);
-				CreateDirConfig(Path.Combine(ExePath + @"\Scripts\"), FolderFileTypes.Scripts);
-				CreateDirConfig(Path.Combine(ExePath + @"\Scripts\Logs\"), FolderFileTypes.ScriptsLogs);
+				CreateDirConfig(Path.Combine(ExePath + @"Config"), FolderFileTypes.Config);
+				CreateDirConfig(Path.Combine(ExePath + @"Addin"), FolderFileTypes.Addin);
+				CreateDirConfig(Path.Combine(ExePath + @"DataFiles"), FolderFileTypes.DataFiles);
+				CreateDirConfig(Path.Combine(ExePath + @"DataViews"), FolderFileTypes.DataView);
+				CreateDirConfig(Path.Combine(ExePath + @"ProjectData"), FolderFileTypes.ProjectData);
+				CreateDirConfig(Path.Combine(ExePath + @"ProjectClasses"), FolderFileTypes.ProjectClass);
+				CreateDirConfig(Path.Combine(ExePath + @"ConnectionDrivers"), FolderFileTypes.ConnectionDriver);
+				CreateDirConfig(Path.Combine(ExePath + @"GFX"), FolderFileTypes.GFX);
+				CreateDirConfig(Path.Combine(ExePath + @"OtherDll"), FolderFileTypes.OtherDLL);
+				CreateDirConfig(Path.Combine(ExePath + @"Entities"), FolderFileTypes.Entities);
+				CreateDirConfig(Path.Combine(ExePath + @"Mapping"), FolderFileTypes.Mapping);
+				CreateDirConfig(Path.Combine(ExePath + @"WorkFlow"), FolderFileTypes.WorkFlows);
+				CreateDirConfig(Path.Combine(ExePath + @"Scripts"), FolderFileTypes.Scripts);
+				CreateDirConfig(Path.Combine(ExePath + @"Scripts\Logs\"), FolderFileTypes.ScriptsLogs);
 				
 				if (Config.ConfigPath == null)
 				{
-					Config.ConfigPath = Path.Combine(ExePath + @"\Config\");
+					Config.ConfigPath = Path.Combine(ExePath + @"Config");
 
 				}
 				if (ConfigPath == null)
@@ -1135,62 +1140,62 @@ namespace TheTechIdea.Util
 				}
 				if (Config.ScriptsPath == null)
 				{
-					Config.ScriptsPath = Path.Combine(ExePath + @"\Scripts\");
+					Config.ScriptsPath = Path.Combine(ExePath + @"Scripts");
 
 				}
 				if (Config.ScriptsLogsPath == null)
 				{
-					Config.ScriptsLogsPath = Path.Combine(ExePath + @"\Scripts\Logs\");
+					Config.ScriptsLogsPath = Path.Combine(ExePath + @"Scripts\Logs");
 
 				}
 				if (Config.ProjectDataPath == null)
 				{
-					Config.ProjectDataPath = Path.Combine(ExePath + @"\ProjectData\");
+					Config.ProjectDataPath = Path.Combine(ExePath + @"ProjectData");
 
 				}
 				if (Config.DataViewPath == null)
 				{
-					Config.DataViewPath = Path.Combine(ExePath + @"\DataViews\");
+					Config.DataViewPath = Path.Combine(ExePath + @"DataViews");
 
 				}
 				if (Config.DataFilePath == null)
 				{
-					Config.DataFilePath = Path.Combine(ExePath + @"\DataFiles\");
+					Config.DataFilePath = Path.Combine(ExePath + @"DataFiles");
 
 				}
 				if (Config.AddinPath == null)
 				{
-					Config.AddinPath = Path.Combine(ExePath + @"\Addin\");
+					Config.AddinPath = Path.Combine(ExePath + @"Addin");
 
 				}
 				if (Config.ClassPath == null)
 				{
-					Config.ClassPath = Path.Combine(ExePath + @"\ProjectClasses\");
+					Config.ClassPath = Path.Combine(ExePath + @"ProjectClasses");
 
 				}
 				if (Config.EntitiesPath == null)
 				{
-					Config.EntitiesPath = Path.Combine(ExePath + @"\Entities\");
+					Config.EntitiesPath = Path.Combine(ExePath + @"Entities");
 
 				}
 				if (Config.GFXPath == null)
 				{
-					Config.GFXPath = Path.Combine(ExePath + @"\GFX\");
+					Config.GFXPath = Path.Combine(ExePath + @"GFX");
 
 				}
 				if (Config.MappingPath == null)
 				{
-					Config.MappingPath = Path.Combine(ExePath + @"\Mapping\");
+					Config.MappingPath = Path.Combine(ExePath + @"Mapping");
 
 				}
 				if (Config.OtherDLLPath == null)
 				{
-					Config.OtherDLLPath = Path.Combine(ExePath + @"\OtherDll\");
+					Config.OtherDLLPath = Path.Combine(ExePath + @"OtherDll");
 
 				}
 				if (Config.WorkFlowPath == null)
 				{
-					Config.WorkFlowPath = Path.Combine(ExePath + @"\WorkFlow\");
+					Config.WorkFlowPath = Path.Combine(ExePath + @"WorkFlow");
 
 				}
 				SaveConfigValues();
@@ -1213,7 +1218,7 @@ namespace TheTechIdea.Util
 				Directory.CreateDirectory(path);
 
 			}
-			if (Config.Folders.Any(item => item.FolderPath == path) == false)
+			if (!Config.Folders.Any(item => item.FolderPath.Equals(path,StringComparison.OrdinalIgnoreCase)))
 			{
 				Config.Folders.Add(new StorageFolders(path, foldertype));
 			}
@@ -1242,18 +1247,7 @@ namespace TheTechIdea.Util
 			retval += "All files(*.*)|*.*";
 			return retval;
 		}
-		//DMEEditor.ConfigEditor.DataDriversClasses
-		//public ConnectionDriversConfig GetConnectionConfigForFile(string ext)
-  //      {
-		//	bool found = false;
-		//	List<AssemblyClassDefinition> cls= DataSourcesClasses.Where(o => o.classProperties.Category == DatasourceCategory.FILE && o.classProperties.FileType.Contains(ext)).ToList();
-  //          foreach (AssemblyClassDefinition item in cls)
-  //          {
-		//		//if(DataDriversClasses.Where(o => o.PackageName && o.version==item.)
-  //          }
-		////	return DataDriversClasses.Where(o => o.PackageName);
-
-		//}
+		
 		#endregion
 		//----------------------------------------------------------------------------------------------
 		public IErrorsInfo Init()

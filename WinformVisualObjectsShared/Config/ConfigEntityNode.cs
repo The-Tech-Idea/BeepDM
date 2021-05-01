@@ -62,13 +62,6 @@ namespace TheTechIdea.Winforms.VIS
         public int MiscID { get; set; }
         public AddinTreeStructure AddinTreeStructure { get; set; }
 
-       // public event EventHandler<PassedArgs> BranchSelected;
-       // public event EventHandler<PassedArgs> BranchDragEnter;
-       // public event EventHandler<PassedArgs> BranchDragDrop;
-       // public event EventHandler<PassedArgs> BranchDragLeave;
-       // public event EventHandler<PassedArgs> BranchDragClick;
-       // public event EventHandler<PassedArgs> BranchDragDoubleClick;
-       // public event EventHandler<PassedArgs> ActionNeeded;
         #endregion "Properties"
         #region "Interface Methods"
         public IErrorsInfo CreateChildNodes()
