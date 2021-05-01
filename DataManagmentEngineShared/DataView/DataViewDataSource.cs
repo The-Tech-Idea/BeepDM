@@ -26,7 +26,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         public IDMLogger Logger { get ; set ; }
         public List<string> EntitiesNames { get; set; } = new List<string>();
         public IDMEEditor DMEEditor { get ; set ; }
-        public List<object> Records { get ; set ; }
         public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; } set { }  }
         public DataTable SourceEntityData { get ; set ; }
         public IDMDataView DataView { get; set; } = new DMDataView();
@@ -87,7 +86,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         public  bool Editable { get ; set ; }
         public string EntityDataSourceID { get ; set ; }
         public string CompositeLayerDataSourceID { get; set; }
-       
         public string DataViewDataSourceID
         {
             get
@@ -118,10 +116,8 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 DataView.VID = value;
             }
         }
-
         string DataViewFile;
         string FileName;
-      
         public bool FileLoaded { get; set; } = false;
         int EntityIndex { get; set; } = 0;
         IDataSource ds;
@@ -142,8 +138,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             };
             string filename = Path.GetFileName(datasourcename);
             string filepath; //= DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.DataView).FirstOrDefault().FolderPath;
-           
-          
             if (DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == filename).Any())
             {
                 Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == filename).FirstOrDefault();
@@ -170,17 +164,12 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             if (Dataconnection.ConnectionStatus== ConnectionState.Open)
             {
                 LoadView();
-
             }
             else
             {
                 DataView = GenerateView(filename, filepath);
                 WriteDataViewFile(DataViewFile);
-
             }
-
-
-
 
         }
         public List<string> GetEntitesList()
@@ -228,31 +217,33 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         {
             EntityStructure ent = GetEntityStructure(EntityName);
             string querystr = "";
-            object retval;
-            switch (ent.Viewtype)
+            object retval=null;
+            if (ent != null)
             {
-                case ViewType.Table:
-                    querystr = ent.EntityName;
-                    retval=GetDataSourceObject(EntityName).GetEntity(querystr, filter);
-                    break;
-                case ViewType.Query:
-                    querystr = ent.CustomBuildQuery;
-                    retval = GetDataSourceObject(EntityName).GetEntity(querystr, filter);
-                    //retval = GetDataSourceObject(EntityName).RunQuery(querystr);
-                    break;
-                case ViewType.Code:
-                    retval = null; 
-                    break;
-                case ViewType.File:
-                    retval = null;
-                    break;
-                case ViewType.Url:
-                    retval = null;
-                    break;
-                default:
-                    retval = null;
-                    break;
+                querystr = ent.EntityName;
+                retval = GetDataSourceObject(EntityName).GetEntity(querystr, filter);
+                //switch (ent.Viewtype)
+                //{
+                //    case ViewType.File:
+                //    case ViewType.Url:
+                //    case ViewType.Table:
+                        
+                //        break;
+                //    case ViewType.Query:
+                //        querystr = ent.CustomBuildQuery;
+                //        retval = GetDataSourceObject(EntityName).GetEntity(querystr, filter);
+                //        //retval = GetDataSourceObject(EntityName).RunQuery(querystr);
+                //        break;
+                //    case ViewType.Code:
+                //        retval = null;
+                //        break;
+                   
+                //    default:
+                //        retval = null;
+                //        break;
+                //}
             }
+           
 
             return retval;
         }
@@ -407,7 +398,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             throw new NotImplementedException();
          
         }
-
         public bool CreateEntityAs(EntityStructure entity)
         {
             try
@@ -426,7 +416,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
             
         }
-
         public bool CheckEntityExist(string entityname)
         {
             if (Entities.Any(x=> string.Equals(x.EntityName, entityname, StringComparison.OrdinalIgnoreCase)))
@@ -438,8 +427,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
       
         }
-
-       
         private IDataSource GetDataSourceObject(string entityname)
         {
             IDataSource retval;
@@ -456,9 +443,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
 
         }
-
-
-         public  object RunQuery( string qrystr)
+        public  object RunQuery( string qrystr)
         {
             throw new NotImplementedException();
            // ds = DMEEditor.GetDataSource(DatasourceName);
@@ -478,7 +463,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         {
             return GetDataSourceObject(EntityName).DeleteEntity(EntityName, DeletedDataRow);
         }
-
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
             switch (fnd.Viewtype)
@@ -515,7 +499,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
            
         }
-
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
           //  ds = DMEEditor.GetDataSource(DatasourceName);
@@ -543,14 +526,13 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
             return ls;
         }
-
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
             throw new NotImplementedException();
         }
         public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
-            throw new NotImplementedException();
+            return (Task<object>)GetEntity(EntityName, Filter);
         }
         #region "DataView Methods"
 

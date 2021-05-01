@@ -34,6 +34,7 @@ namespace TheTechIdea.Configuration
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(uc_webapiQueryParameters));
             this.entitiesBindingNavigator = new System.Windows.Forms.BindingNavigator(this.components);
             this.bindingNavigatorAddNewItem = new System.Windows.Forms.ToolStripButton();
+            this.entitiesBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.bindingNavigatorCountItem = new System.Windows.Forms.ToolStripLabel();
             this.bindingNavigatorDeleteItem = new System.Windows.Forms.ToolStripButton();
             this.bindingNavigatorMoveFirstItem = new System.Windows.Forms.ToolStripButton();
@@ -49,6 +50,7 @@ namespace TheTechIdea.Configuration
             this.fieldsBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.bindingNavigator1 = new System.Windows.Forms.BindingNavigator(this.components);
             this.bindingNavigatorAddNewItem1 = new System.Windows.Forms.ToolStripButton();
+            this.paramentersBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.bindingNavigatorCountItem1 = new System.Windows.Forms.ToolStripLabel();
             this.bindingNavigatorDeleteItem1 = new System.Windows.Forms.ToolStripButton();
             this.bindingNavigatorMoveFirstItem1 = new System.Windows.Forms.ToolStripButton();
@@ -60,24 +62,24 @@ namespace TheTechIdea.Configuration
             this.bindingNavigatorMoveLastItem1 = new System.Windows.Forms.ToolStripButton();
             this.bindingNavigatorSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.dataGridView2 = new System.Windows.Forms.DataGridView();
-            this.paramentersBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.entitiesBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.parameterNameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.parameterIndexDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Id = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.ParentId = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dataGridViewTextBoxColumn11 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dataGridViewTextBoxColumn12 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dataGridViewTextBoxColumn13 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.KeyToken = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.parameterNameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.parameterIndexDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             label9 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.entitiesBindingNavigator)).BeginInit();
             this.entitiesBindingNavigator.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.entitiesBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.fieldsBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.bindingNavigator1)).BeginInit();
             this.bindingNavigator1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.paramentersBindingSource)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.entitiesBindingSource)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).BeginInit();
             this.SuspendLayout();
             // 
             // label9
@@ -116,7 +118,7 @@ namespace TheTechIdea.Configuration
             this.entitiesBindingNavigator.MovePreviousItem = this.bindingNavigatorMovePreviousItem;
             this.entitiesBindingNavigator.Name = "entitiesBindingNavigator";
             this.entitiesBindingNavigator.PositionItem = this.bindingNavigatorPositionItem;
-            this.entitiesBindingNavigator.Size = new System.Drawing.Size(482, 25);
+            this.entitiesBindingNavigator.Size = new System.Drawing.Size(681, 25);
             this.entitiesBindingNavigator.TabIndex = 0;
             this.entitiesBindingNavigator.Text = "bindingNavigator1";
             // 
@@ -128,6 +130,10 @@ namespace TheTechIdea.Configuration
             this.bindingNavigatorAddNewItem.RightToLeftAutoMirrorImage = true;
             this.bindingNavigatorAddNewItem.Size = new System.Drawing.Size(23, 22);
             this.bindingNavigatorAddNewItem.Text = "Add new";
+            // 
+            // entitiesBindingSource
+            // 
+            this.entitiesBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DataBase.EntityStructure);
             // 
             // bindingNavigatorCountItem
             // 
@@ -222,6 +228,8 @@ namespace TheTechIdea.Configuration
             this.dataGridView1.AutoGenerateColumns = false;
             this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridView1.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.Id,
+            this.ParentId,
             this.dataGridViewTextBoxColumn11,
             this.dataGridViewTextBoxColumn12,
             this.dataGridViewTextBoxColumn13,
@@ -229,7 +237,7 @@ namespace TheTechIdea.Configuration
             this.dataGridView1.DataSource = this.entitiesBindingSource;
             this.dataGridView1.Location = new System.Drawing.Point(3, 63);
             this.dataGridView1.Name = "dataGridView1";
-            this.dataGridView1.Size = new System.Drawing.Size(476, 302);
+            this.dataGridView1.Size = new System.Drawing.Size(675, 302);
             this.dataGridView1.TabIndex = 46;
             // 
             // fieldsBindingSource
@@ -275,6 +283,11 @@ namespace TheTechIdea.Configuration
             this.bindingNavigatorAddNewItem1.RightToLeftAutoMirrorImage = true;
             this.bindingNavigatorAddNewItem1.Size = new System.Drawing.Size(23, 22);
             this.bindingNavigatorAddNewItem1.Text = "Add new";
+            // 
+            // paramentersBindingSource
+            // 
+            this.paramentersBindingSource.DataMember = "Paramenters";
+            this.paramentersBindingSource.DataSource = this.entitiesBindingSource;
             // 
             // bindingNavigatorCountItem1
             // 
@@ -363,17 +376,37 @@ namespace TheTechIdea.Configuration
             this.dataGridView2.DataSource = this.paramentersBindingSource;
             this.dataGridView2.Location = new System.Drawing.Point(51, 371);
             this.dataGridView2.Name = "dataGridView2";
-            this.dataGridView2.Size = new System.Drawing.Size(378, 248);
+            this.dataGridView2.Size = new System.Drawing.Size(440, 248);
             this.dataGridView2.TabIndex = 49;
             // 
-            // paramentersBindingSource
+            // parameterNameDataGridViewTextBoxColumn
             // 
-            this.paramentersBindingSource.DataMember = "Paramenters";
-            this.paramentersBindingSource.DataSource = this.entitiesBindingSource;
+            this.parameterNameDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.parameterNameDataGridViewTextBoxColumn.DataPropertyName = "parameterName";
+            this.parameterNameDataGridViewTextBoxColumn.HeaderText = "Parameter Name";
+            this.parameterNameDataGridViewTextBoxColumn.Name = "parameterNameDataGridViewTextBoxColumn";
             // 
-            // entitiesBindingSource
+            // parameterIndexDataGridViewTextBoxColumn
             // 
-            this.entitiesBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DataBase.EntityStructure);
+            this.parameterIndexDataGridViewTextBoxColumn.DataPropertyName = "parameterIndex";
+            this.parameterIndexDataGridViewTextBoxColumn.HeaderText = "Index";
+            this.parameterIndexDataGridViewTextBoxColumn.Name = "parameterIndexDataGridViewTextBoxColumn";
+            // 
+            // Id
+            // 
+            this.Id.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
+            this.Id.DataPropertyName = "Id";
+            this.Id.HeaderText = "Id";
+            this.Id.Name = "Id";
+            this.Id.Width = 41;
+            // 
+            // ParentId
+            // 
+            this.ParentId.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
+            this.ParentId.DataPropertyName = "ParentId";
+            this.ParentId.HeaderText = "ParentId";
+            this.ParentId.Name = "ParentId";
+            this.ParentId.Width = 72;
             // 
             // dataGridViewTextBoxColumn11
             // 
@@ -400,19 +433,6 @@ namespace TheTechIdea.Configuration
             this.KeyToken.HeaderText = "Key Token";
             this.KeyToken.Name = "KeyToken";
             // 
-            // parameterNameDataGridViewTextBoxColumn
-            // 
-            this.parameterNameDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.parameterNameDataGridViewTextBoxColumn.DataPropertyName = "parameterName";
-            this.parameterNameDataGridViewTextBoxColumn.HeaderText = "Parameter Name";
-            this.parameterNameDataGridViewTextBoxColumn.Name = "parameterNameDataGridViewTextBoxColumn";
-            // 
-            // parameterIndexDataGridViewTextBoxColumn
-            // 
-            this.parameterIndexDataGridViewTextBoxColumn.DataPropertyName = "parameterIndex";
-            this.parameterIndexDataGridViewTextBoxColumn.HeaderText = "Index";
-            this.parameterIndexDataGridViewTextBoxColumn.Name = "parameterIndexDataGridViewTextBoxColumn";
-            // 
             // uc_webapiQueryParameters
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -423,18 +443,18 @@ namespace TheTechIdea.Configuration
             this.Controls.Add(this.dataGridView1);
             this.Controls.Add(this.entitiesBindingNavigator);
             this.Name = "uc_webapiQueryParameters";
-            this.Size = new System.Drawing.Size(482, 653);
+            this.Size = new System.Drawing.Size(681, 653);
             ((System.ComponentModel.ISupportInitialize)(this.entitiesBindingNavigator)).EndInit();
             this.entitiesBindingNavigator.ResumeLayout(false);
             this.entitiesBindingNavigator.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.entitiesBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.fieldsBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.bindingNavigator1)).EndInit();
             this.bindingNavigator1.ResumeLayout(false);
             this.bindingNavigator1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.paramentersBindingSource)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.entitiesBindingSource)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -472,11 +492,13 @@ namespace TheTechIdea.Configuration
         private System.Windows.Forms.ToolStripSeparator bindingNavigatorSeparator5;
         private System.Windows.Forms.DataGridView dataGridView2;
         private System.Windows.Forms.BindingSource paramentersBindingSource;
+        private System.Windows.Forms.DataGridViewTextBoxColumn parameterNameDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn parameterIndexDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Id;
+        private System.Windows.Forms.DataGridViewTextBoxColumn ParentId;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn11;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn12;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn13;
         private System.Windows.Forms.DataGridViewTextBoxColumn KeyToken;
-        private System.Windows.Forms.DataGridViewTextBoxColumn parameterNameDataGridViewTextBoxColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn parameterIndexDataGridViewTextBoxColumn;
     }
 }

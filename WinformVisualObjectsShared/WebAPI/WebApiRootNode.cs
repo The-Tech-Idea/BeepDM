@@ -223,7 +223,7 @@ namespace TheTechIdea.Winforms.VIS
                 viewbr = new WebApiNode(TreeEditor, DMEEditor, this, WebApiName, TreeEditor.SeqID, EnumBranchType.DataPoint, "web.ico");
                 TreeEditor.AddBranch(this, viewbr);
                 ChildBranchs.Add(viewbr);
-                viewbr.CreateChildNodes();
+             //   viewbr.CreateChildNodes();
 
                 //    DMEEditor.AddLogMessage("Success", "Added Database Connection", DateTime.Now, 0, null, Errors.Ok);
             }

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 using System.Windows.Forms;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
@@ -60,8 +61,8 @@ namespace TheTechIdea.Winforms.VIS
         public Font tagFont { get; set; } = new Font("Helvetica", 8, FontStyle.Bold);
         private bool busy = false;
         IDM_Addin sender;
-
-
+        WaitWndFun waitForm = new WaitWndFun();
+        Thread loadthread;
         #region "Branch Handling"
         public string CheckifBranchExistinCategory(string BranchName, string pRootName)
         {
@@ -272,6 +273,37 @@ namespace TheTechIdea.Winforms.VIS
         public IBranch GetBranch(int pID)
         {
             return Branches.Where(c => c.BranchID == pID).FirstOrDefault();
+        }
+
+
+
+        public void ShowWaiting()
+        {
+
+            waitForm.Show(Visutil.DisplayPanel.Parent.Parent.Parent.Parent);
+
+        }
+        public void HideWaiting()
+        {
+            waitForm.Close();
+        }
+        public void ChangeWaitingCaption(string Caption)
+        {
+            if (waitForm != null)
+            {
+                waitForm.ChangeCaption(Caption);
+
+
+            }
+        }
+
+
+        public void AddCommentsWaiting(string comment)
+        {
+            if (waitForm != null)
+            {
+                waitForm.AddComment(comment);
+            }
         }
         public IBranch GetBranchByMiscID(int pID)
         {

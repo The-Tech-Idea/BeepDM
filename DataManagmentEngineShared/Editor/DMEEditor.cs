@@ -106,12 +106,12 @@ namespace TheTechIdea.DataManagment_Engine
                                     ds1.Entities = ConfigEditor.LoadDataSourceEntitiesValues(ds1.DatasourceName).Entities;
                                 }
 
-                                if (ds1.Entities.Count == 0)
-                                {
-                                    ds1.Entities = ds1.Dataconnection.ConnectionProp.Entities;
+                                //if (ds1.Entities.Count == 0)
+                                //{
+                                //    ds1.Entities = ds1.Dataconnection.ConnectionProp.Entities;
 
-                                    ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = pdatasourcename, Entities = ds1.Entities });
-                                }
+                                //    ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = pdatasourcename, Entities = ds1.Entities });
+                                //}
                             }
                             
                         }else

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Vis;
@@ -20,7 +21,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
             BranchText = pBranchText;
             BranchType = pBranchType;
             DataSourceName = pDatasourcename;
-            IconImageName = "webapi.ico";
+           IconImageName = pimagename;
             if (pID != 0)
             {
                 ID = pID;
@@ -39,7 +40,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
         public string Name { get; set; }
         public string BranchText { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Entity;
+        public EnumBranchType BranchType { get; set; } 
         public int BranchID { get; set; }
         public string IconImageName { get; set; }
         public string BranchStatus { get; set; }
@@ -63,8 +64,6 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
 
             try
             {
-             
-
                 DMEEditor.AddLogMessage("Success", "Added Child Nodes", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
@@ -119,49 +118,83 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-
-        [BranchDelegate(Caption = "Get")]
-        public IErrorsInfo GetData()
+        [BranchDelegate(Caption = "Get Series(s)/Data")]
+        public IErrorsInfo GetDataAsync()
         {
 
             try
             {
-                string[] args = { "New Query Entity", null, null };
-                List<ObjectItem> ob = new List<ObjectItem>(); ;
-                ObjectItem it = new ObjectItem();
-                it.obj = this;
-                it.Name = "Branch";
-                ob.Add(it);
-                IBranch DataSourceBr = TreeEditor.GetBranch(this.ParentBranchID);
-                it = new ObjectItem();
-                it.obj = DataSourceBr;
-                it.Name = "ParentBranch";
-                ob.Add(it);
-                IBranch RootWEBAPIBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "WEBAPI" && x.BranchType == EnumBranchType.Root)];
-                it = new ObjectItem();
-                it.obj = RootWEBAPIBranch;
-                it.Name = "RootWebApiBranch";
-                ob.Add(it);
-                PassedArgs Passedarguments = new PassedArgs
+                if (BranchType== EnumBranchType.Entity)
                 {
-                    Addin = null,
-                    AddinName = null,
-                    AddinType = "",
-                    DMView = null,
-                    CurrentEntity = BranchText,
-                    Id = ID,
-                    ObjectType = "WEBAPI",
-                    DataSource = null,
-                    ObjectName = DataSourceName,
+                    string[] args = { "New Query Entity", null, null };
+                    List<ObjectItem> ob = new List<ObjectItem>(); ;
+                    ObjectItem it = new ObjectItem();
+                    it.obj = this;
+                    it.Name = "Branch";
+                    ob.Add(it);
+                    IBranch DataSourceBr = TreeEditor.GetBranch(this.ParentBranchID);
+                    it = new ObjectItem();
+                    it.obj = DataSourceBr;
+                    it.Name = "ParentBranch";
+                    ob.Add(it);
+                    IBranch RootWEBAPIBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "WEBAPI" && x.BranchType == EnumBranchType.Root)];
+                    it = new ObjectItem();
+                    it.obj = RootWEBAPIBranch;
+                    it.Name = "RootWebApiBranch";
+                    ob.Add(it);
+                    PassedArgs Passedarguments = new PassedArgs
+                    {
+                        Addin = null,
+                        AddinName = null,
+                        AddinType = "",
+                        DMView = null,
+                        CurrentEntity = BranchText,
+                        Id = ID,
+                        ObjectType = "WEBAPI",
+                        DataSource = null,
+                        ObjectName = DataSourceName,
 
-                    Objects = ob,
+                        Objects = ob,
 
-                    DatasourceName = DataSourceName,
-                    EventType = "GETDATAPOINT"
+                        DatasourceName = DataSourceName,
+                        EventType = "GETDATAPOINT"
 
-                };
-                // ActionNeeded?.Invoke(this, Passedarguments);
-                Visutil.ShowUserControlInContainer("uc_webapiGetQuery", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
+                    };
+                    // ActionNeeded?.Invoke(this, Passedarguments);
+                    Visutil.ShowUserControlInContainer("uc_webapiGetQuery", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
+                }else
+                {
+                    DMEEditor.ErrorObject.Flag = Errors.Ok;
+                    DMEEditor.Logger.WriteLog($"Filling View Entities Web Api");
+                    try
+                    {
+                        bool loadv = false;
+                        if (ChildBranchs.Count > 0)
+                        {
+                            if (Visutil.controlEditor.InputBoxYesNo("Beep", "Do you want to over write th existing View Structure?") == DialogResult.Yes)
+                            {
+                                TreeEditor.RemoveChildBranchs(this);
+                                loadv = true;
+                            }
+                        }
+                        else
+                        {
+                            loadv = true;
+                        }
+                        if (loadv)
+                        {
+                             CreateWebApiEntitiesAsync();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        DMEEditor.Logger.WriteLog($"Error in Filling Web Api Entites ({ex.Message}) ");
+                        DMEEditor.ErrorObject.Flag = Errors.Failed;
+                        DMEEditor.ErrorObject.Ex = ex;
+                    }
+                    return DMEEditor.ErrorObject;
+                }
+              
 
             }
             catch (Exception ex)
@@ -219,50 +252,54 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
 
             try
             {
-                List<string> ents = new List<string>();
-                if (TreeEditor.SelectedBranchs.Count > 0)
+                if (BranchType == EnumBranchType.Entity)
                 {
-                    if (DataSource == null)
+                    List<string> ents = new List<string>();
+                    if (TreeEditor.SelectedBranchs.Count > 0)
                     {
-                        DataSource = DMEEditor.GetDataSource(DataSourceName);
-                    }
-                    if (DataSource != null)
-                    {
-                        foreach (int item in TreeEditor.SelectedBranchs)
+                        if (DataSource == null)
                         {
-                            IBranch br = TreeEditor.GetBranch(item);
-                            ents.Add(br.BranchText);
-                            // EntityStructure = DataSource.GetEntityStructure(br.BranchText, true);
-
+                            DataSource = DMEEditor.GetDataSource(DataSourceName);
                         }
-                        IBranch pbr = TreeEditor.GetBranch(ParentBranchID);
-                        List<ObjectItem> ob = new List<ObjectItem>(); ;
-                        ObjectItem it = new ObjectItem();
-                        it.obj = pbr;
-                        it.Name = "ParentBranch";
-                        ob.Add(it);
-
-                        PassedArgs args = new PassedArgs
+                        if (DataSource != null)
                         {
-                            ObjectName = "DATABASE",
-                            ObjectType = "TABLE",
-                            EventType = "COPYENTITIES",
-                            ParameterString1 = "COPYENTITIES",
-                            DataSource = DataSource,
-                            DatasourceName = DataSource.DatasourceName,
-                            CurrentEntity = BranchText,
-                            EntitiesNames = ents,
-                            Objects = ob
-                        };
-                        TreeEditor.args = args;
-                        DMEEditor.Passedarguments = args;
-                    }
-                    else
-                    {
-                        DMEEditor.AddLogMessage("Fail", "Could not get DataSource", DateTime.Now, -1, null, Errors.Failed);
-                    }
+                            foreach (int item in TreeEditor.SelectedBranchs)
+                            {
+                                IBranch br = TreeEditor.GetBranch(item);
+                                ents.Add(br.BranchText);
+                                // EntityStructure = DataSource.GetEntityStructure(br.BranchText, true);
 
+                            }
+                            IBranch pbr = TreeEditor.GetBranch(ParentBranchID);
+                            List<ObjectItem> ob = new List<ObjectItem>(); ;
+                            ObjectItem it = new ObjectItem();
+                            it.obj = pbr;
+                            it.Name = "ParentBranch";
+                            ob.Add(it);
+
+                            PassedArgs args = new PassedArgs
+                            {
+                                ObjectName = "DATABASE",
+                                ObjectType = "TABLE",
+                                EventType = "COPYENTITIES",
+                                ParameterString1 = "COPYENTITIES",
+                                DataSource = DataSource,
+                                DatasourceName = DataSource.DatasourceName,
+                                CurrentEntity = BranchText,
+                                EntitiesNames = ents,
+                                Objects = ob
+                            };
+                            TreeEditor.args = args;
+                            DMEEditor.Passedarguments = args;
+                        }
+                        else
+                        {
+                            DMEEditor.AddLogMessage("Fail", "Could not get DataSource", DateTime.Now, -1, null, Errors.Failed);
+                        }
+
+                    }
                 }
+                 
 
                 // TreeEditor.SendActionFromBranchToBranch(pbr, this, "Create View using Table");
 
@@ -276,8 +313,124 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
         }
         #endregion Exposed Interface"
         #region "Other Methods"
+       
+        public async Task<bool> CreateWebApiEntitiesAsync()
+        {
+            try
+
+            {
+                TreeEditor.RemoveChildBranchs(this);
+                WebApiEntities webent;
+               
+                DataSource = DMEEditor.GetDataSource(DataSourceName);
+
+                if (DataSource != null)
+                {
+                    DataSource.GetEntitesList();
+                        
+                    if (DataSource.Entities != null)
+                    {
+                        if (DataSource.Entities.Count > 0)
+                        {
+                            EntityStructure = DataSource.GetEntityStructure(BranchText, false);
+                            List<EntityStructure> rootent = DataSource.Entities.Where(i => i.ParentId == EntityStructure.Id).ToList();
+
+                            if (rootent.Count == 0)
+                            {
+                                DataSource.GetChildTablesList(EntityStructure.EntityName, EntityStructure.Id.ToString(),null);
+                                rootent = DataSource.Entities.Where(i => i.ParentId == EntityStructure.Id).ToList();
+                            }
+                           
+                            TreeEditor.ShowWaiting();
+                            CreateEntitiesJob(rootent);
+                            TreeEditor.HideWaiting();
+                            
+                         
+                            
+                        }
+                    }
+
+                }
 
 
+
+
+
+
+                DMEEditor.AddLogMessage("Success", $"Generated WebApi node", DateTime.Now, 0, null, Errors.Ok);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                string errmsg = "Error in Generating App Version";
+                DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return false;
+            }
+
+
+        }
+        private void CreateEntitiesJob(List<EntityStructure> rootent)
+        {
+            int cnt = rootent.Count;
+            int startcnt = 1;
+            TreeEditor.ChangeWaitingCaption($"Getting Web Api Entities/Categories Total:{cnt}");
+            foreach (EntityStructure item in rootent)
+            {
+                string iconimage = "webapi.ico";
+                EnumBranchType branchType = EnumBranchType.Entity;
+                if (item.Category == "Category")
+                {
+                    iconimage = "webapicategory.ico";
+                    branchType = EnumBranchType.DataPoint;
+                }
+                WebApiEntities webentmain = new WebApiEntities(TreeEditor, DMEEditor, this, item.EntityName, TreeEditor.SeqID, branchType, iconimage, DataSourceName);
+                webentmain.DataSource = DataSource;
+                webentmain.DataSourceName = DataSource.DatasourceName;
+
+                TreeEditor.AddBranch(this, webentmain);
+                ChildBranchs.Add(webentmain);
+                TreeEditor.AddCommentsWaiting($"{startcnt} - Added {item.EntityName} to WebAPI DataSource");
+                startcnt += 1;
+                CreateNode(DataSource.Entities, item, webentmain);
+
+            }
+        }
+        private void CreateNode(List<EntityStructure> entities, EntityStructure parententity, IBranch br)
+        {
+            try
+            {
+
+                List<EntityStructure> ls = entities.Where(i => i.ParentId == parententity.Id).ToList();
+                WebApiEntities webent;
+                foreach (var item in ls)
+                {
+                    string iconimage = "webapi.ico";
+                    EnumBranchType branchType = EnumBranchType.Entity;
+                    if (item.Category == "Category")
+                    {
+                        iconimage = "webapicategory.ico";
+                        branchType = EnumBranchType.DataPoint;
+                    }
+                    webent = new WebApiEntities(TreeEditor, DMEEditor, br, item.EntityName, TreeEditor.SeqID, branchType, iconimage, BranchText);
+                    webent.DataSource = DataSource;
+                    webent.DataSourceName = DataSource.DatasourceName;
+                    TreeEditor.AddBranch(br, webent);
+                    ChildBranchs.Add(webent);
+
+                    if (entities.Where(i => i.ParentId == item.Id && i.Id != 0).Any())
+                    {
+                        CreateNode(entities, item, webent);
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+
+                string errmsg = "Error in creating nodes for WebAPI";
+                DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+        }
         public IErrorsInfo GetFile()
         {
 

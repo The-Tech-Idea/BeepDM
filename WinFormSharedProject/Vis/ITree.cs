@@ -39,8 +39,11 @@ namespace TheTechIdea.DataManagment_Engine.Vis
         IErrorsInfo RunMethod(object branch, string MethodName);
         IErrorsInfo CreateRootTree();
         IErrorsInfo CopySelectedEntities();
+        void ShowWaiting();
+        void HideWaiting();
+        void ChangeWaitingCaption(string Caption);
 
+        void AddCommentsWaiting(string comment);
 
-       
     }
 }

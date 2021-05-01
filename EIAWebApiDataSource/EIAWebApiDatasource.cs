@@ -77,74 +77,105 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
 
         public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
-            throw new NotImplementedException();
+            EntityStructure ent=Entities.Where(p=>p.EntityName.Equals(tablename,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            List<EntityStructure> ents=  GetSeriesList(ent);
+            Entities.AddRange(ents);
+            return null;
         }
 
         public List<string> GetEntitesList()
         {
             try
             {
-               
-                //---------------Get Categories---------------- -
-
-                if (Entities.Count == 0)
-                    
+                if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.ApiKey))
                 {
-                    DatasourceEntities f = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(DatasourceName);
-                    if (f != null)
+                    if (Entities.Count == 0)
+
                     {
-                        Entities = f.Entities;
-                    }
-                    
-
-                }
-                if (Entities == null || Entities.Count()==0)
-                {
-
-                    string retval = GetCategoriesDataAsync("GetCategories", @"/category/?api_key=7535ABF7E83252CB08E4300380DFA02D&category_id=371").Result;
-                       var data = JObject.Parse(retval);
-                       var categorytk = data.SelectToken("category");
-                      
-                  
-                    Category categorys = JsonConvert.DeserializeObject<Category>(categorytk.ToString());
-
-                    int i = 1;
-                    foreach (Childcategory item in categorys.childcategories)
-                    {
-                        EntityStructure x = new EntityStructure();
-                        x.ParentId = 0;
-                        x.Id = i;
-                        i += 1;
-                        x.EntityName = item.name;
-                        x.Viewtype = ViewType.Url;
-                        x.Category = "WEBAPI";
-                        x.DataSourceID = DatasourceName;
-                        x.CustomBuildQuery = $"/category/?api_key=7535ABF7E83252CB08E4300380DFA02D&category_id={item.category_id}";
-                        Entities.Add(x);
-                     //   retval = GetCategoriesDataAsync("GetCategories", x.CustomBuildQuery).Result;
-                        var ou = GetCategoriesDataAsync("GetCategories", x.CustomBuildQuery);
-                        ou.Wait();
-                        data = JObject.Parse(ou.Result);
-                        categorytk = data.SelectToken("category");
-                        Category ct = JsonConvert.DeserializeObject<Category>(categorytk.ToString());
-                        foreach (Childcategory cc in ct.childcategories)
+                        DatasourceEntities f = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(DatasourceName);
+                        if (f != null)
                         {
-                            createentities(cc, x);
+                            Entities = f.Entities;
                         }
-                     
-                       
+
+
                     }
+                    DMEEditor.AddLogMessage("Log Time", $"started International Energy Data {DateTime.Now}", DateTime.Now, 2134384, "International Energy Data", Errors.Ok);
+
+                    if (!Entities.Where(o => o.EntityName.Equals("International Energy Data", StringComparison.OrdinalIgnoreCase)).Any())
+                    {
+                        CreateCategories(2134384, "International Energy Data", 0);
+                    }
+                    DMEEditor.AddLogMessage("Log Time", $"started Petroleum {DateTime.Now}", DateTime.Now, 2134384, "Petroleum", Errors.Ok);
+                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
+                    if (!Entities.Where(o => o.EntityName.Equals("Petroleum", StringComparison.OrdinalIgnoreCase)).Any())
+                    {
+                        CreateCategories(714755, "Petroleum", 0);
+                    }
+                    DMEEditor.AddLogMessage("Log Time", $"started  Crude Oil Imports {DateTime.Now}", DateTime.Now, 2134384, "Crude Oil Imports", Errors.Ok);
+                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
+                    if (!Entities.Where(o => o.EntityName.Equals("Crude Oil Imports", StringComparison.OrdinalIgnoreCase)).Any())
+                    {
+                        CreateCategories(1292190, "Crude Oil Imports", 0);
+                    }
+                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
+
+
+
+
+
+                    //string retval = GetCategoriesDataAsync("GetCategories", $"/category/?api_key={Dataconnection.ConnectionProp.ApiKey}&category_id=371").Result;
+                    //    var data = JObject.Parse(retval);
+                    //    var categorytk = data.SelectToken("category");
+
+
+                    //    Category categorys = JsonConvert.DeserializeObject<Category>(categorytk.ToString());
+
+                    //    int i = 1;
+                    //    foreach (Childcategory item in categorys.childcategories)
+                    //    {
+                    //        if (!Entities.Where(o => o.EntityName.Equals(item.name, StringComparison.OrdinalIgnoreCase)).Any())
+                    //        {
+                    //            EntityStructure x = new EntityStructure();
+                    //            x.ParentId = 0;
+                    //            x.Id = i;
+                    //            i += 1;
+                    //            x.EntityName = item.name;
+                    //            x.Viewtype = ViewType.Url;
+
+                    //            x.DataSourceID = DatasourceName;
+                    //            x.Category = "Category";
+                    //            x.CustomBuildQuery = $"/category/?api_key={Dataconnection.ConnectionProp.ApiKey}&category_id={item.category_id}";
+                    //            Entities.Add(x);
+                    //            var ou = GetCategoriesDataAsync("GetCategories", x.CustomBuildQuery);
+                    //            ou.Wait();
+                    //            data = JObject.Parse(ou.Result);
+                    //            categorytk = data.SelectToken("category");
+                    //            Category ct = JsonConvert.DeserializeObject<Category>(categorytk.ToString());
+                    //            foreach (Childcategory cc in ct.childcategories)
+                    //            {
+                    //                CreateChildCategories(cc, x);
+                    //            }
+
+                    //            DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
+                    //        }
+
+                    //    }
+
+                    //}
+                    EntitiesNames.Clear();
+                    EntitiesNames = Entities.Select(p => p.EntityName).ToList();
+
+                    
+                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
 
                 }
-                EntitiesNames.Clear();
-                foreach (EntityStructure item in Entities)
+                //---------------Get Categories---------------- -
+                if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.ApiKey))
                 {
-                    item.CustomBuildQuery = item.CustomBuildQuery.Replace("api_key=@apikey}", "api_key=@apikey");
-                    EntitiesNames.Add(item.EntityName);
 
                 }
-                DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
-                return EntitiesNames;
+                 return EntitiesNames;
                
             }
             catch (Exception )
@@ -153,35 +184,46 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
                 return null;
             }
         }
-        private void createentities( Childcategory item,EntityStructure entity)
+        #region "EIA Methods"
+        private void CreateCategories(int categoryid,string categoryname, int entityid)
         {
-            EntityStructure x = new EntityStructure();
-            x.Id= Entities.Max(u => u.Id) + 1;
-            x.ParentId = entity.Id;
-            x.EntityName = item.name;
-            x.Viewtype = ViewType.Url;
-            x.Category = "WEBAPI";
-            x.DataSourceID = DatasourceName;
-            x.CustomBuildQuery = $"/category/?api_key=@apikey&category_id={item.category_id}";
-            Entities.Add(x);
-            var retval = GetCategoriesDataAsync("GetCategories", x.CustomBuildQuery);
+            EntityStructure catent = new EntityStructure();
+            if (Entities.Count == 0)
+            {
+                catent.Id =  1;
+            }
+            else
+            {
+                catent.Id = Entities.Max(u => u.Id) + 1;
+            }
+           
+            catent.ParentId = entityid;
+            catent.EntityName = categoryname;
+            catent.Viewtype = ViewType.Url;
+            catent.Category = "Category";
+            catent.DataSourceID = DatasourceName;
+            catent.CustomBuildQuery = $"/category/?api_key={Dataconnection.ConnectionProp.ApiKey}&category_id={categoryid}";
+            Entities.Add(catent);
+            var retval = GetCategoriesDataAsync("GetCategories", catent.CustomBuildQuery);
             retval.Wait();
 
             var data = JObject.Parse(retval.Result);
             var categorytk = data.SelectToken("category");
             Category categorys = JsonConvert.DeserializeObject<Category>(categorytk.ToString());
-           
+
             //if (categorys.childseries.Count() > 0)
             //{
             //    foreach (Childsery childs in categorys.childseries)
             //    {
-            //        x = new EntityStructure();
-            //        x.Id = Entities.Max(u => u.Id) + 1;
-            //        x.ParentId = entity.Id;
-            //        x.EntityName = childs.name;
-            //        x.Viewtype = ViewType.Url;
-            //        x.CustomBuildQuery = $"/category/?api_key=7535ABF7E83252CB08E4300380DFA02D&series_id={childs.series_id}";
-            //        Entities.Add(x);
+            //        EntityStructure serent = new EntityStructure();
+            //        serent = new EntityStructure();
+            //        serent.Id = Entities.Max(u => u.Id) + 1;
+            //        serent.ParentId = catent.Id;
+            //        serent.EntityName = childs.name;
+            //        serent.Viewtype = ViewType.Url;
+            //        serent.Category = "Series";
+            //        serent.CustomBuildQuery = $"/series/?api_key={Dataconnection.ConnectionProp.ApiKey}&series_id={childs.series_id}";
+            //        Entities.Add(serent);
             //    }
             //  ;
             //}
@@ -189,19 +231,216 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
             {
                 foreach (Childcategory ct in categorys.childcategories)
                 {
-                    createentities(ct, x);
+                    CreateChildCategories(ct, catent.Id);
                 }
 
-               
+
+            }
+        }
+        private void CreateChildCategories(Childcategory item, int entityid)
+        {
+            EntityStructure catent = new EntityStructure();
+            if (Entities.Count == 0)
+            {
+                catent.Id = 1;
+            }
+            else
+            {
+                catent.Id = Entities.Max(u => u.Id) + 1;
+            }
+            catent.ParentId = entityid;
+            catent.EntityName = item.name;
+            catent.Viewtype = ViewType.Url;
+            catent.Category = "Category";
+            catent.DataSourceID = DatasourceName;
+            catent.CustomBuildQuery = $"/category/?api_key={Dataconnection.ConnectionProp.ApiKey}&category_id={item.category_id}";
+            Entities.Add(catent);
+            var retval = GetCategoriesDataAsync("GetCategories", catent.CustomBuildQuery);
+            retval.Wait();
+
+            var data = JObject.Parse(retval.Result);
+            var categorytk = data.SelectToken("category");
+            Category categorys = JsonConvert.DeserializeObject<Category>(categorytk.ToString());
+
+            //if (categorys.childseries.Count() > 0)
+            //{
+            //    foreach (Childsery childs in categorys.childseries)
+            //    {
+            //        EntityStructure serent = new EntityStructure();
+            //        serent = new EntityStructure();
+            //        serent.Id = Entities.Max(u => u.Id) + 1;
+            //        serent.ParentId = catent.Id;
+            //        serent.EntityName = childs.name;
+            //        serent.Viewtype = ViewType.Url;
+            //        serent.Category = "Series";
+            //        serent.CustomBuildQuery = $"/series/?api_key={Dataconnection.ConnectionProp.ApiKey}&series_id={childs.series_id}";
+            //        Entities.Add(serent);
+            //    }
+            //  ;
+            //}
+            if (categorys.childcategories.Count() > 0)
+            {
+                foreach (Childcategory ct in categorys.childcategories)
+                {
+                    CreateChildCategories(ct, catent.Id);
+                }
+
+
+            }
+        }
+        public List<EntityStructure> GetSeriesList(string CategoryID,int entityid)
+        {
+
+            List<EntityStructure> entities = new List<EntityStructure>();
+            try
+            {
+              
+                var retval = GetCategoriesDataAsync("GetCategories", $"/category/?api_key={Dataconnection.ConnectionProp.ApiKey}&category_id={CategoryID}");
+                retval.Wait();
+
+                var data = JObject.Parse(retval.Result);
+                var categorytk = data.SelectToken("category");
+                Category categorys = JsonConvert.DeserializeObject<Category>(categorytk.ToString());
+
+                if (categorys.childseries.Count() > 0)
+                {
+                    foreach (Childsery childs in categorys.childseries)
+                    {
+                        EntityStructure serent = new EntityStructure();
+                        serent = new EntityStructure();
+                        if (Entities.Count == 0)
+                        {
+                            serent.Id = 1;
+                        }
+                        else
+                        {
+                            serent.Id = Entities.Max(u => u.Id) + 1;
+                        }
+                        serent.ParentId = entityid;
+                        serent.EntityName = childs.name;
+                        serent.Viewtype = ViewType.Url;
+                        serent.Category = "Series";
+                        serent.CustomBuildQuery = $"/series/?api_key={Dataconnection.ConnectionProp.ApiKey}&series_id={childs.series_id}";
+                        Entities.Add(serent);
+                        entities.Add(serent);
+                    }
+                  ;
+                }
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+            return entities;
+        }
+        public List<EntityStructure> GetSeriesList(EntityStructure ent)
+        {
+            List<EntityStructure> entities = new List<EntityStructure>();
+            try
+            {
+
+                var retval = GetCategoriesDataAsync("GetCategories", ent.CustomBuildQuery);
+                retval.Wait();
+
+                var data = JObject.Parse(retval.Result);
+                var categorytk = data.SelectToken("category");
+                Category categorys = JsonConvert.DeserializeObject<Category>(categorytk.ToString());
+
+                if (categorys.childseries.Count() > 0)
+                {
+                    foreach (Childsery childs in categorys.childseries)
+                    {
+                        EntityStructure serent = new EntityStructure();
+                        serent = new EntityStructure();
+                        if (Entities.Count == 0)
+                        {
+                            serent.Id = 1;
+                        }
+                        else
+                        {
+                            serent.Id = Entities.Max(u => u.Id) + 1;
+                        }
+                        serent.ParentId = ent.Id;
+                        serent.EntityName = childs.name;
+                        serent.Viewtype = ViewType.Url;
+                        serent.Category = "Series";
+                        serent.CustomBuildQuery = $"/series/?api_key={Dataconnection.ConnectionProp.ApiKey}&series_id={childs.series_id}";
+                        Entities.Add(serent);
+                        entities.Add(serent);
+                    }
+                  ;
+                }
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+            return entities;
+        }
+        public List<EntityStructure> GetSeriesList(string CategoryID)
+        {
+            List<EntityStructure> entities = new List<EntityStructure>();
+            try
+            {
+
+                var retval = GetCategoriesDataAsync("GetCategories", $"/category/?api_key={Dataconnection.ConnectionProp.ApiKey}&category_id={CategoryID}");
+                retval.Wait();
+
+                var data = JObject.Parse(retval.Result);
+                var categorytk = data.SelectToken("category");
+                Category categorys = JsonConvert.DeserializeObject<Category>(categorytk.ToString());
+
+                if (categorys.childseries.Count() > 0)
+                {
+                    foreach (Childsery childs in categorys.childseries)
+                    {
+                        EntityStructure serent = new EntityStructure();
+                        serent = new EntityStructure();
+                        if (Entities.Count == 0)
+                        {
+                            serent.Id = 1;
+                        }
+                        else
+                        {
+                            serent.Id = Entities.Max(u => u.Id) + 1;
+                        }
+                       // serent.ParentId = entityid;
+                        serent.EntityName = childs.name;
+                        serent.Viewtype = ViewType.Url;
+                        serent.Category = "Series";
+                        serent.CustomBuildQuery = $"/series/?api_key={Dataconnection.ConnectionProp.ApiKey}&series_id={childs.series_id}";
+                        Entities.Add(serent);
+                        entities.Add(serent);
+                    }
+                  ;
+                }
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+            return entities;
+        }
+        public  async Task<string> GetSeries(string seriesId)
+        {
+           
+            using (var httpClient = new HttpClient())
+            {
+
+                var response = await httpClient.GetAsync($"http://api.eia.gov/series/?api_key={Dataconnection.ConnectionProp.ApiKey}&series_id={seriesId}");
+
+                return await response.Content.ReadAsStringAsync();
             }
         }
         private async Task<string> GetCategoriesDataAsync(string EntityName, string filterstr)
         {
             var request = new HttpRequestMessage();
-            client = new HttpClient();
-            client.BaseAddress = new Uri(Dataconnection.ConnectionProp.Url);
+          
 
-            EntityStructure ent = Entities.Where(o => o.EntityName == EntityName).FirstOrDefault();
+            EntityStructure ent = Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName == EntityName).FirstOrDefault();
             if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.ApiKey))
             {
                 Dataconnection.ConnectionProp.Url = Dataconnection.ConnectionProp.Url.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
@@ -216,7 +455,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
             {
                 request.Headers.Add(item.headername, item.headervalue);
             }
-          
+
             using (var response = await client.SendAsync(request).ConfigureAwait(false))
             {
                 //    response.EnsureSuccessStatusCode();
@@ -229,15 +468,17 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
                 //    var categories = location.SelectToken(ent.KeyToken);
                 //    retval = categories.ToString();
                 //}
-               
+
                 return retval;
             }
         }
 
+        #endregion
+
         public async Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
 
-            EntityStructure ent = Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName == EntityName).FirstOrDefault();
+            EntityStructure ent = Entities.Where(o => o.EntityName == EntityName).FirstOrDefault();
             string filterstr = ent.CustomBuildQuery;
             foreach (EntityParameters item in ent.Paramenters)
             {
@@ -267,49 +508,52 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
                 //    response.EnsureSuccessStatusCode();
                 var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 string retval = body;
-                if (!string.IsNullOrEmpty(ent.KeyToken) || !string.IsNullOrWhiteSpace(ent.KeyToken))
+                if (ent.Category=="Series")
                 {
                     var data = JObject.Parse(body);
-                    var location = data.SelectToken("category");
-                    var categories = location.SelectToken(ent.KeyToken);
-                    retval = categories.ToString();
+                    var location = data.SelectToken("series");
+                //    var categories = location.SelectToken(ent.KeyToken);
+                    retval = location.ToString();
                 }
-                var y = DMEEditor.ConfigEditor.JsonLoader.DeserializeObjectString<List<dynamic>>(retval);
+                var y = DMEEditor.ConfigEditor.JsonLoader.DeserializeObjectString<List<Series>>(retval);
                 return y;
             }
         }
-      
-
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             throw new NotImplementedException();
         }
-
         public EntityStructure GetEntityStructure(string EntityName, bool refresh)
         {
-            throw new NotImplementedException();
-        }
+            if (Entities.Count > 0)
+            {
+                return Entities[Entities.FindIndex(p => p.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase))];
+            }
+            else
+                return null;
 
+        }
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
-            throw new NotImplementedException();
+            if (Entities.Count > 0)
+            {
+                return Entities[Entities.FindIndex(p => p.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))];
+            }
+            else
+                return null;
         }
-
         public Type GetEntityType(string EntityName)
         {
-            throw new NotImplementedException();
+            return typeof(Series);
         }
-
-         public  object RunQuery( string qrystr)
+        public  object RunQuery( string qrystr)
         {
             throw new NotImplementedException();
         }
-
         public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IMapping_rep Mapping = null)
         {
             throw new NotImplementedException();
         }
-
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow, IMapping_rep Mapping = null)
         {
 
@@ -324,7 +568,6 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
         {
             throw new NotImplementedException();
         }
-
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
             throw new NotImplementedException();
@@ -333,30 +576,25 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
         {
             throw new NotImplementedException();
         }
-
         public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
         {
             throw new NotImplementedException();
         }
-
         public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
             throw new NotImplementedException();
         }
-
         public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow)
         {
             throw new NotImplementedException();
         }
-
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
             throw new NotImplementedException();
         }
-
         public object GetEntity(string EntityName, List<ReportFilter> filter)
         {
-            throw new NotImplementedException();
+          return  GetEntityAsync(EntityName, filter);
         }
     }
 }

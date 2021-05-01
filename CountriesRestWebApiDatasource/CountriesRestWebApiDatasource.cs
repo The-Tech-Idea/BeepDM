@@ -174,9 +174,9 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.CountriesRest
 
         public Type GetEntityType(string EntityName)
         {
-            EntityStructure x = GetEntityStructure(EntityName,false);
-            DMTypeBuilder.CreateNewObject(EntityName, EntityName, x.Fields);
-            return DMTypeBuilder.myType;
+            //EntityStructure x = GetEntityStructure(EntityName,false);
+            //DMTypeBuilder.CreateNewObject(EntityName, EntityName, x.Fields);
+            return typeof(Country);
         }
 
          public  object RunQuery( string qrystr)
