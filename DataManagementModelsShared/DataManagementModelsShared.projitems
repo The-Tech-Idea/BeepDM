@@ -62,7 +62,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\QuerySqlRepo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\QueryStructure.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBSourceADP.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DataView\IDataViewReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\IETL.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\LScript.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\IRDBMSHelper.cs" />

@@ -76,6 +76,29 @@ namespace DXReportBuilder
             ErrorObject = per;
             DMEEditor = pbl;
             Visutil = (IVisUtil)e.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
+            foreach (IDataSource ds in DMEEditor.DataSources.Where(o=>o.Category== DatasourceCategory.VIEWS && o.DatasourceName.Contains("TestView")))
+            {
+                if (ds != null)
+                {
+                    if(ds.ConnectionStatus== ConnectionState.Open)
+                    {
+                        ds.GetEntitesList();
+                        foreach (string item in ds.EntitiesNames)
+                        {
+                            object ls =ds.GetEntity(item, null);
+                            if (ls != null)
+                            {
+                                snapControl1.DataSources.Add(item, ls);
+                            }
+                          
+                        }
+                    }
+                   
+                }
+                
+                
+            }
+            
         }
     }
 }

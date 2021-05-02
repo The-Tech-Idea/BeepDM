@@ -43,7 +43,7 @@ namespace TheTechIdea.Winforms.VIS
         #region "Properties"
         public int ID { get; set; }
         public EntityStructure EntityStructure { get; set; }
-        public int Order { get; set; } = 15;
+        public int Order { get; set; } = 999;
         public string Name { get; set; }
         public string BranchText { get; set; } = "Configuration";
         public IDMEEditor DMEEditor { get; set; }

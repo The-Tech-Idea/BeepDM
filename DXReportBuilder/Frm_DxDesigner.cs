@@ -66,6 +66,7 @@ namespace DXReportBuilder
             ErrorObject = per;
             DMEEditor = pbl;
             Visutil = (IVisUtil)e.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
+           
         }
     }
 }

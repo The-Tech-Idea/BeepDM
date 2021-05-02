@@ -24,7 +24,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBDataConnection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewConnection.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\BackGroundWorkerThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\DataTypesHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\ETL.cs" />

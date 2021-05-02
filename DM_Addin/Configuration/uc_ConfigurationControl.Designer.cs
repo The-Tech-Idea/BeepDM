@@ -58,9 +58,9 @@
             // 
             // Savebutton
             // 
-            this.Savebutton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.Savebutton.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.Savebutton.Font = new System.Drawing.Font("Rockwell Extra Bold", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Savebutton.Location = new System.Drawing.Point(830, 583);
+            this.Savebutton.Location = new System.Drawing.Point(405, 617);
             this.Savebutton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.Savebutton.Name = "Savebutton";
             this.Savebutton.Size = new System.Drawing.Size(154, 37);
@@ -94,7 +94,7 @@
             this.addinFoldersDataGridView.RowHeadersVisible = false;
             this.addinFoldersDataGridView.RowHeadersWidth = 62;
             this.addinFoldersDataGridView.RowTemplate.Height = 28;
-            this.addinFoldersDataGridView.Size = new System.Drawing.Size(971, 515);
+            this.addinFoldersDataGridView.Size = new System.Drawing.Size(971, 559);
             this.addinFoldersDataGridView.TabIndex = 0;
             // 
             // foldersBindingSource
@@ -105,7 +105,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Trebuchet MS", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(17, 27);
+            this.label1.Location = new System.Drawing.Point(9, 30);
             this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(64, 22);
@@ -236,6 +236,7 @@
             this.SavetoolStripButton1.Name = "SavetoolStripButton1";
             this.SavetoolStripButton1.Size = new System.Drawing.Size(59, 28);
             this.SavetoolStripButton1.Text = "Save";
+            this.SavetoolStripButton1.Visible = false;
             this.SavetoolStripButton1.Click += new System.EventHandler(this.SavetoolStripButton1_Click);
             // 
             // folderPathDataGridViewTextBoxColumn

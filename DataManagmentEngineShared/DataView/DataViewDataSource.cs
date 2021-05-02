@@ -193,7 +193,13 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 }
                 foreach (EntityStructure i in DataView.Entities.Where(x=>x.Id>1))
                 {
-                    retval.Add(i.EntityName);
+                    if (string.IsNullOrEmpty(i.DatasourceEntityName))
+                    {
+                        retval.Add(i.EntityName);
+                    }
+                    else
+                        retval.Add(i.DatasourceEntityName);
+                    
                 }
 
 
@@ -215,36 +221,45 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         }
         public object GetEntity(string EntityName, List<ReportFilter> filter)
         {
-            EntityStructure ent = GetEntityStructure(EntityName);
-            string querystr = "";
-            object retval=null;
-            if (ent != null)
+            object retval = null;
+            IDataSource ds = GetDataSourceObject(EntityName);
+            if (ds != null)
             {
-                querystr = ent.EntityName;
-                retval = GetDataSourceObject(EntityName).GetEntity(querystr, filter);
-                //switch (ent.Viewtype)
-                //{
-                //    case ViewType.File:
-                //    case ViewType.Url:
-                //    case ViewType.Table:
-                        
-                //        break;
-                //    case ViewType.Query:
-                //        querystr = ent.CustomBuildQuery;
-                //        retval = GetDataSourceObject(EntityName).GetEntity(querystr, filter);
-                //        //retval = GetDataSourceObject(EntityName).RunQuery(querystr);
-                //        break;
-                //    case ViewType.Code:
-                //        retval = null;
-                //        break;
+                if(ds.ConnectionStatus== ConnectionState.Open)
+                {
+                    EntityStructure ent = GetEntityStructure(EntityName);
+                    string querystr = "";
                    
-                //    default:
-                //        retval = null;
-                //        break;
-                //}
-            }
-           
+                    if (ent != null)
+                    {
+                        querystr = ent.EntityName;
+                        retval = GetDataSourceObject(EntityName).GetEntity(querystr, filter);
+                        //switch (ent.Viewtype)
+                        //{
+                        //    case ViewType.File:
+                        //    case ViewType.Url:
+                        //    case ViewType.Table:
 
+                        //        break;
+                        //    case ViewType.Query:
+                        //        querystr = ent.CustomBuildQuery;
+                        //        retval = GetDataSourceObject(EntityName).GetEntity(querystr, filter);
+                        //        //retval = GetDataSourceObject(EntityName).RunQuery(querystr);
+                        //        break;
+                        //    case ViewType.Code:
+                        //        retval = null;
+                        //        break;
+
+                        //    default:
+                        //        retval = null;
+                        //        break;
+                        //}
+                    }
+
+
+                   
+                }
+            }
             return retval;
         }
         public int EntityListIndex(int entityid)
@@ -434,11 +449,14 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             if (dh==null)
             {
                 retval = DMEEditor.GetDataSource(DataView.EntityDataSourceID);
+               
             }
             else
             {
                 retval= DMEEditor.GetDataSource(dh.DataSourceID);
             }
+            retval.Dataconnection.OpenConnection();
+            retval.ConnectionStatus = Dataconnection.ConnectionStatus;
             return retval;
 
 

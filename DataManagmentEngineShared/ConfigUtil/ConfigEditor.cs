@@ -1126,7 +1126,7 @@ namespace TheTechIdea.Util
 				CreateDirConfig(Path.Combine(ExePath + @"Mapping"), FolderFileTypes.Mapping);
 				CreateDirConfig(Path.Combine(ExePath + @"WorkFlow"), FolderFileTypes.WorkFlows);
 				CreateDirConfig(Path.Combine(ExePath + @"Scripts"), FolderFileTypes.Scripts);
-				CreateDirConfig(Path.Combine(ExePath + @"Scripts\Logs\"), FolderFileTypes.ScriptsLogs);
+				CreateDirConfig(Path.Combine(ExePath + @"Scripts\Logs"), FolderFileTypes.ScriptsLogs);
 				
 				if (Config.ConfigPath == null)
 				{
