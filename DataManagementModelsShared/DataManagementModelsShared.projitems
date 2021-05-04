@@ -83,6 +83,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Report\ReportBlockColumns.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Report\ReportFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Report\ReportDefinition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportsList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Report\ReportTemplet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\assemblies_rep.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\AssemblyItem.cs" />

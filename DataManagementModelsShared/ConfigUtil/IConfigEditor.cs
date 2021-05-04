@@ -39,7 +39,8 @@ namespace TheTechIdea.Util
         List<Function2FunctionAction> Function2Functions { get; set; }
         List<Event> Events { get; set; }
         List<AddinTreeStructure> AddinTreeStructure { get; set; }
-        List<ReportTemplate> Reports { get; set; }
+        List<ReportTemplate> ReportsDefinition { get; set; }
+        List<ReportsList> Reportslist { get; set; }
         List<CompositeLayer> CompositeQueryLayers { get; set; }
         List<App> Apps { get; set; }
         List<EntityStructure> EntityCreateObjects { get; set; }
@@ -69,7 +70,7 @@ namespace TheTechIdea.Util
         List<ConnectionDriversConfig> LoadConnectionDriversConfigValues();
         void SaveConnectionDriversConfigValues();
         void SaveReportsValues();
-        List<ReportTemplate> LoadReportsValues();
+        List<ReportsList> LoadReportsValues();
         List<QuerySqlRepo> LoadQueryFile();
         void SaveQueryFile();
         void SaveMappingValues();
@@ -116,6 +117,9 @@ namespace TheTechIdea.Util
         DataSourceFieldProperties LoadAppFieldPropertiesValues(string dsname);
 
         string CreateFileExtensionString();
+        void SaveReportDefinitionsValues();
+
+        List<ReportTemplate> LoadReportsDefinitionValues();
 
 
 

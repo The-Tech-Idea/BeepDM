@@ -228,32 +228,30 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 if(ds.ConnectionStatus== ConnectionState.Open)
                 {
                     EntityStructure ent = GetEntityStructure(EntityName);
-                    string querystr = "";
+                 
                    
                     if (ent != null)
                     {
-                        querystr = ent.EntityName;
-                        retval = GetDataSourceObject(EntityName).GetEntity(querystr, filter);
-                        //switch (ent.Viewtype)
-                        //{
-                        //    case ViewType.File:
-                        //    case ViewType.Url:
-                        //    case ViewType.Table:
+                       
+                      
+                        switch (ent.Viewtype)
+                        {
+                            case ViewType.File:
+                            case ViewType.Url:
+                            case ViewType.Table:
+                            case ViewType.Query:
+                             
+                                retval = GetDataSourceObject(EntityName).GetEntity(EntityName, filter);
+                                //retval = GetDataSourceObject(EntityName).RunQuery(querystr);
+                                break;
+                            case ViewType.Code:
+                                retval = null;
+                                break;
 
-                        //        break;
-                        //    case ViewType.Query:
-                        //        querystr = ent.CustomBuildQuery;
-                        //        retval = GetDataSourceObject(EntityName).GetEntity(querystr, filter);
-                        //        //retval = GetDataSourceObject(EntityName).RunQuery(querystr);
-                        //        break;
-                        //    case ViewType.Code:
-                        //        retval = null;
-                        //        break;
-
-                        //    default:
-                        //        retval = null;
-                        //        break;
-                        //}
+                            default:
+                                retval = null;
+                                break;
+                        }
                     }
 
 
@@ -288,26 +286,23 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 else
                 {
                     ds.Dataconnection.OpenConnection();
+                    ds.ConnectionStatus = ds.Dataconnection.ConnectionStatus;
                     if (ds.ConnectionStatus== ConnectionState.Open)
                     {
                         switch (dh.Viewtype)
                         {
                             case ViewType.Table:
-                                
-                                r= GetDataSourceObject(dh.EntityName).GetEntityStructure(dh, refresh);
+                            case ViewType.Query:
+                            case ViewType.File:
+                            case ViewType.Url:
+                                r = GetDataSourceObject(dh.EntityName).GetEntityStructure(dh, refresh);
                                 dh.Fields = r.Fields;
                                 dh.Relations = r.Relations;
                                 dh.PrimaryKeys = r.PrimaryKeys;
                                 break;
-                            case ViewType.Query:
+                           
 
                             case ViewType.Code:
-
-                            case ViewType.File:
-
-                            case ViewType.Url:
-
-
                             default:
                                 break;
 

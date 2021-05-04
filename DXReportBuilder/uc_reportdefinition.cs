@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TheTechIdea;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.DataView;
@@ -15,40 +16,39 @@ using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
-using TheTechIdea.Winforms.VIS;
 
-namespace TheTechIdea.ETL
+namespace DXReportBuilder
 {
-    public partial class uc_Report : UserControl, IDM_Addin
+    public partial class uc_reportdefinition : UserControl, IDM_Addin
     {
-        public uc_Report()
+        public uc_reportdefinition()
         {
             InitializeComponent();
         }
 
         public string ParentName { get; set; }
-        public string AddinName { get; set; } = "Reports";
-        public string Description { get; set; } = "Reports";
+        public string AddinName { get; set; } = "Reports Definition";
+        public string Description { get; set; } = "Reports Definition";
         public string ObjectName { get; set; }
         public string ObjectType { get; set; } = "UserControl";
         public Boolean DefaultCreate { get; set; } = true;
-        public string DllPath { get ; set ; }
-        public string DllName { get ; set ; }
-        public string NameSpace { get ; set ; }
-        public DataSet Dset { get ; set ; }
-        public IErrorsInfo ErrorObject { get ; set ; }
-        public IDMLogger Logger { get ; set ; }
-        public IDMEEditor DMEEditor { get ; set ; }
-        public EntityStructure EntityStructure { get ; set ; }
-        public string EntityName { get ; set ; }
-        public PassedArgs Passedarg { get ; set ; }
-      //  private IDMDataView MyDataView;
+        public string DllPath { get; set; }
+        public string DllName { get; set; }
+        public string NameSpace { get; set; }
+        public DataSet Dset { get; set; }
+        public IErrorsInfo ErrorObject { get; set; }
+        public IDMLogger Logger { get; set; }
+        public IDMEEditor DMEEditor { get; set; }
+        public EntityStructure EntityStructure { get; set; }
+        public string EntityName { get; set; }
+        public PassedArgs Passedarg { get; set; }
+        //  private IDMDataView MyDataView;
         public IVisUtil Visutil { get; set; }
         DataViewDataSource ds;
         IBranch RootBranch;
         IBranch branch;
 
-       // public event EventHandler<PassedArgs> OnObjectSelected;
+        // public event EventHandler<PassedArgs> OnObjectSelected;
 
         public void RaiseObjectSelected()
         {
@@ -59,7 +59,7 @@ namespace TheTechIdea.ETL
         {
             throw new NotImplementedException();
         }
-
+       
         public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
         {
             Passedarg = e;
@@ -67,9 +67,10 @@ namespace TheTechIdea.ETL
             ErrorObject = per;
             DMEEditor = pbl;
             Visutil = (IVisUtil)e.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
+           
 
             branch = (IBranch)e.Objects.Where(c => c.Name == "Branch").FirstOrDefault().obj;
-            RootBranch = (IBranch)e.Objects.Where(c => c.Name == "RootReportBranch").FirstOrDefault().obj;
+           // RootBranch = (IBranch)e.Objects.Where(c => c.Name == "RootReportBranch").FirstOrDefault().obj;
             this.reportWritersClassesBindingSource.DataSource = DMEEditor.ConfigEditor.ReportWritersClasses;
             this.reportsBindingSource.DataSource = DMEEditor.ConfigEditor.ReportsDefinition;
             this.reportsBindingSource.AddingNew += ReportsBindingSource_AddingNew;
@@ -81,7 +82,7 @@ namespace TheTechIdea.ETL
             {
                 reportsBindingSource.AddNew();
                 blocksBindingSource.AddNew();
-                this.nameTextBox.Enabled =true;
+                this.nameTextBox.Enabled = true;
             }
             else
             {
@@ -98,16 +99,15 @@ namespace TheTechIdea.ETL
             this.blocksBindingSource.CurrentChanged += BlocksBindingSource_CurrentChanged;
             this.packageNameComboBox.SelectedValueChanged += PackageNameComboBox_SelectedValueChanged;
             this.RemoveBlockbutton.Click += RemoveBlockbutton_Click;
-            
+
             //this.blockColumnsDataGridView.CellClick += BlockColumnsDataGridView_CellClick;
 
             //this.blockColumnsDataGridView.CellContentClick += BlockColumnsDataGridView_CellContentClick;
 
             #region "Drag and Drop events"
-            this.titleTextBox.DragLeave += TitleTextBox_DragLeave;
-            this.subTitleTextBox.DragLeave += SubTitleTextBox_DragLeave;
-            this.HeaderpictureBox.DragEnter += HeaderpictureBox_DragEnter;
            
+          //  this.HeaderpictureBox.DragEnter += HeaderpictureBox_DragEnter;
+
             #endregion
         }
 
@@ -120,22 +120,6 @@ namespace TheTechIdea.ETL
         }
 
 
-        #region "Drag Handling Events"
-        private void HeaderpictureBox_DragEnter(object sender, DragEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void SubTitleTextBox_DragLeave(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void TitleTextBox_DragLeave(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-        #endregion
 
 
         //private void BlockColumnsDataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -171,28 +155,34 @@ namespace TheTechIdea.ETL
                 if (!string.IsNullOrEmpty(this.viewIDComboBox.Text))
                 {
                     ds = (DataViewDataSource)DMEEditor.GetDataSource(this.viewIDComboBox.Text);
-                    EntityStructure ent = ds.GetEntityStructure(this.entityIDComboBox.Text, true);
-                    List<ReportBlockColumns> ls = new List<ReportBlockColumns>();
-                    if (ent != null)
+                    ds.Dataconnection.OpenConnection();
+                    ds.ConnectionStatus = ds.Dataconnection.ConnectionStatus;
+                    if (ds.ConnectionStatus== ConnectionState.Open)
                     {
-                        int i = 0;
-                        foreach (EntityField item in ent.Fields)
+                        EntityStructure ent = ds.GetEntityStructure(this.entityIDComboBox.Text, true);
+                        List<ReportBlockColumns> ls = new List<ReportBlockColumns>();
+                        if (ent != null)
                         {
-                            ReportBlockColumns c = new ReportBlockColumns();
-                            c.ColumnName = item.fieldname;
-                            c.ColumnSeq = i;
-                            c.DisplayName = item.fieldname;
-                            c.Show = true;
-                            i += 1;
+                            int i = 0;
+                            foreach (EntityField item in ent.Fields)
+                            {
+                                ReportBlockColumns c = new ReportBlockColumns();
+                                c.ColumnName = item.fieldname;
+                                c.ColumnSeq = i;
+                                c.DisplayName = item.fieldname;
+                                c.Show = true;
+                                i += 1;
 
-                            ls.Add(c);
+                                ls.Add(c);
+                            }
+                            x.BlockColumns = ls;
+
                         }
-                        x.BlockColumns = ls;
-
                     }
+                    
                 }
-                
-               
+
+
             }
         }
         private void RunReportbutton_Click(object sender, EventArgs e)
@@ -210,19 +200,20 @@ namespace TheTechIdea.ETL
                     {
                         if (!string.IsNullOrEmpty(report.OutputFile))
                         {
-                            
+
                             ShowReport(report.OutputFile);
                         }
 
                     }
                 }
-            }else
+            }
+            else
             {
-                this.nameTextBox.Text = this.nameTextBox.Text.Replace(" ","");
+                this.nameTextBox.Text = this.nameTextBox.Text.Replace(" ", "");
                 MessageBox.Show("Report Name Should not have any spaces");
             }
-           
-          
+
+
         }
         private void ShowReport(string htmlfile)
         {
@@ -258,7 +249,7 @@ namespace TheTechIdea.ETL
             try
 
             {
-                if (string.IsNullOrEmpty(this.nameTextBox.Text) || string.IsNullOrEmpty(this.titleTextBox.Text) || string.IsNullOrEmpty(this.subTitleTextBox.Text) )
+                if (string.IsNullOrEmpty(this.nameTextBox.Text) )
                 {
                     DMEEditor.AddLogMessage("Fail", $"Please Check All required Fields entered", DateTime.Now, 0, null, Errors.Ok);
                     MessageBox.Show($"Please Check All required Fields entered");
@@ -272,42 +263,34 @@ namespace TheTechIdea.ETL
                     this.blocksBindingSource.EndEdit();
                     this.reportsBindingSource.EndEdit();
                     DMEEditor.ConfigEditor.SaveReportDefinitionsValues();
-                    RootBranch.CreateChildNodes();
+                    branch.CreateChildNodes();
                     MessageBox.Show($"Generated Report:{nameTextBox.Text}");
                     DMEEditor.AddLogMessage("Success", $"Generated Report", DateTime.Now, 0, null, Errors.Ok);
                     this.ParentForm.Close();
                 }
-              
-               
+
+
             }
             catch (Exception ex)
             {
                 string errmsg = "Error in Generating Report";
                 DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-                
+
             }
-           
-        
+
+
         }
 
         private void AddBlockbutton_Click(object sender, EventArgs e)
         {
             blocksBindingSource.AddNew();
-        }
-
-        private void BlocksBindingSource_AddingNew(object sender, AddingNewEventArgs e)
-        {
-            ReportBlock x = new ReportBlock();
-            e.NewObject = x;
-            ReportTemplate t = (ReportTemplate)reportsBindingSource.Current;
-            if (t.Blocks == null)
-            {
-                t.Blocks = new List<ReportBlock>();
-            }
+            ReportBlock x = (ReportBlock)blocksBindingSource.Current;
             if (!string.IsNullOrEmpty(this.viewIDComboBox.Text))
             {
                 ds = (DataViewDataSource)DMEEditor.GetDataSource(this.viewIDComboBox.Text);
                 EntityStructure ent = ds.GetEntityStructure(this.entityIDComboBox.Text, true);
+                x.EntityID = this.entityIDComboBox.Text;
+                x.ViewID = this.viewIDComboBox.Text;
                 List<ReportBlockColumns> ls = new List<ReportBlockColumns>();
                 if (ent != null)
                 {
@@ -329,8 +312,13 @@ namespace TheTechIdea.ETL
 
             }
 
+        }
 
-            t.Blocks.Add(x);
+        private void BlocksBindingSource_AddingNew(object sender, AddingNewEventArgs e)
+        {
+            ReportBlock x = new ReportBlock();
+            e.NewObject = x;
+           
         }
 
         private void ReportsBindingSource_AddingNew(object sender, AddingNewEventArgs e)
@@ -340,6 +328,7 @@ namespace TheTechIdea.ETL
             x.SubTitle.Text = null;
             x.Header.Text = null;
             x.Footer.Text = null;
+            x.Blocks = new List<ReportBlock>();
             e.NewObject = x;
         }
 
@@ -356,7 +345,7 @@ namespace TheTechIdea.ETL
                     {
                         this.entityIDComboBox.Items.Add(item);
                     }
-                                       
+
                 }
             }
         }
@@ -364,7 +353,7 @@ namespace TheTechIdea.ETL
         {
             if (!string.IsNullOrEmpty(this.viewIDComboBox.Text))
             {
-                
+
                 if (!string.IsNullOrEmpty(this.packageNameComboBox.Text))
                 {
                     this.ReportOutPutTypecomboBox.Items.Clear();
@@ -379,3 +368,4 @@ namespace TheTechIdea.ETL
         }
     }
 }
+

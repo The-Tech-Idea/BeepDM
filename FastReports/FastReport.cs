@@ -18,7 +18,7 @@ namespace TheTechIdea.DataManagment_Engine.Report
         public bool Excel { get ; set ; }
 
    
-        public string OutputFile { get; }
+        public string OutputFile { get; set; }
 
         public IErrorsInfo RunReport(ReportType reportType, string outputFile)
         {

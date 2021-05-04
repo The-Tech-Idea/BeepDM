@@ -31,8 +31,8 @@ namespace TheTechIdea.DataManagment_Engine.Report
         public bool Csv { get; set; }
         public bool PDF { get; set; }
         public bool Excel { get; set; }
-        private string mOutputFile;
-        public string OutputFile { get => mOutputFile; }
+      //  private string mOutputFile;
+        public string OutputFile { get; set; }
         public IReportDefinition Definition { get ; set ; }
         public ReportOutput reportOutput { get; set; }
 
@@ -69,17 +69,17 @@ namespace TheTechIdea.DataManagment_Engine.Report
                     switch (reportType)
                     {
                         case ReportType.html:
-                            mOutputFile = outputFile;
+                            OutputFile = outputFile;
                             CreateHtmlReport();
                             break;
                         case ReportType.xls:
-                            mOutputFile = outputFile;
+                            OutputFile = outputFile;
                             break;
                         case ReportType.csv:
-                            mOutputFile = outputFile;
+                            OutputFile = outputFile;
                             break;
                         case ReportType.pdf:
-                            mOutputFile = outputFile;
+                            OutputFile = outputFile;
                             break;
                         case ReportType.txt:
                             try
@@ -98,7 +98,7 @@ namespace TheTechIdea.DataManagment_Engine.Report
                                 Form form = new Form();
                                 form.Controls.Add(reportView);
                                 reportView.Dock = DockStyle.Fill;
-                                mOutputFile = null;
+                                OutputFile = null;
                                 DMEEditor.AddLogMessage("Success", $"Creating Report", DateTime.Now, 0, null, Errors.Ok);
                                 form.ShowDialog();
                             }

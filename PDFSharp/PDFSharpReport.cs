@@ -28,8 +28,8 @@ namespace TheTechIdea.DataManagment_Engine.Report
         public bool Csv { get ; set ; }
         public bool PDF { get; set; } = true;
         public bool Excel { get ; set ; }
-        private string mOutputFile;
-        public string OutputFile { get=> mOutputFile; }
+      //  private string mOutputFile;
+        public string OutputFile { get; set; }
         public IErrorsInfo RunReport(ReportType reportType, string outputFile)
         {
             try
@@ -48,7 +48,7 @@ namespace TheTechIdea.DataManagment_Engine.Report
                   
                     pdfRenderer.PdfDocument.Save(outputFile);
                     
-                    mOutputFile = outputFile;
+                    OutputFile = outputFile;
                 }
 
 

@@ -2230,6 +2230,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     adp.InsertCommand = cmdBuilder.GetInsertCommand(true);
                     adp.UpdateCommand = cmdBuilder.GetUpdateCommand(true);
                     adp.DeleteCommand = cmdBuilder.GetDeleteCommand(true);
+                    
 
                 }
                 catch (Exception ex)

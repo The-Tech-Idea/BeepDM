@@ -1,7 +1,5 @@
-﻿using DXReportBuilder.DXTree;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,27 +7,49 @@ using TheTechIdea;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.Addin;
 using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Util;
-
-namespace DXReportBuilder.Tree
+namespace DXReportBuilder.DXTree
 {
-    public class DXTreeRootNode : IBranch, ITreeView, IOrder
+    public class DXReportDesignerNode : IBranch, ITreeView
     {
+        public DXReportDesignerNode()
+        {
+
+        }
+        public DXReportDesignerNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename, string ConnectionName)
+        {
+
+
+
+            TreeEditor = pTreeEditor;
+            DMEEditor = pDMEEditor;
+            ParentBranchID = pParentNode.ID;
+            BranchText = pBranchText;
+            BranchType = pBranchType;
+            ReportDefinition = ConnectionName;
+            //  IconImageName = pimagename;
+
+            if (pID != 0)
+
+            {
+                ID = pID;
+                BranchID = pID;
+            }
+        }
+
         #region "Properties"
         public int ID { get; set; }
         public EntityStructure EntityStructure { get; set; }
-        public int Order { get; set; } = 17;
         public string Name { get; set; }
-        public string BranchText { get; set; } = "Reporting";
+        public string BranchText { get; set; } = "Report Designer";
         public IDMEEditor DMEEditor { get; set; }
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Root;
+        public EnumBranchType BranchType { get; set; } = EnumBranchType.DataPoint;
         public int BranchID { get; set; }
-        public string IconImageName { get; set; } = "reports.ico";
+        public string IconImageName { get; set; } = "reportdesigner.ico";
         public string BranchStatus { get; set; }
         public int ParentBranchID { get; set; }
         public string BranchDescription { get; set; }
@@ -40,12 +60,9 @@ namespace DXReportBuilder.Tree
         public object TreeStrucure { get; set; }
         public IVisUtil Visutil { get; set; }
         public int MiscID { get; set; }
-
-
+        public AddinTreeStructure AddinTreeStructure { get; set; }
+        public string ReportDefinition;
         #endregion "Properties"
-
-
-
         #region "Interface Methods"
         public IErrorsInfo CreateChildNodes()
         {
@@ -80,22 +97,6 @@ namespace DXReportBuilder.Tree
             throw new NotImplementedException();
         }
 
-        //#region "Reports L/S"
-        //public List<ReportTemplate> Reports { get; set; } = new List<ReportTemplate>();
-        //public void SaveReportsValues()
-        //{
-        //    string path = Path.Combine(DMEEditor.ConfigEditor.ConfigPath, "DXreports.json");
-        //    DMEEditor.ConfigEditor.JsonLoader.Serialize(path, Reports);
-
-        //}
-        //public List<ReportTemplate> LoadReportsValues()
-        //{
-        //    string path = Path.Combine(DMEEditor.ConfigEditor.ConfigPath, "DXreports.json");
-        //    Reports = DMEEditor.ConfigEditor.JsonLoader.DeserializeObject<ReportTemplate>(path);
-        //    return Reports;
-        //}
-        //#endregion "Reports L/S"
-      
         public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
         {
             try
@@ -110,7 +111,7 @@ namespace DXReportBuilder.Tree
                 {
                     ID = pID;
                 }
-               
+
                 //   DMEEditor.AddLogMessage("Success", "Set Config OK", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
@@ -122,45 +123,85 @@ namespace DXReportBuilder.Tree
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Create New Report")]
-        public IErrorsInfo CreateReport()
+        [BranchDelegate(Caption = "Show", Hidden = false)]
+        public IErrorsInfo Show()
         {
 
             try
             {
-                string[] args = { "New Query Entity", null, null };
+                string[] args = { BranchText };
+                
                 List<ObjectItem> ob = new List<ObjectItem>(); ;
                 ObjectItem it = new ObjectItem();
-                it.obj = this;
-                it.Name = "Branch";
+                it.obj = DMEEditor.ConfigEditor.ReportsDefinition.Where(p => p.Name.Equals(BranchText, StringComparison.OrdinalIgnoreCase)).FirstOrDefault(); ;
+                it.Name = "ReportDefinition";
                 ob.Add(it);
-               
-                //Reports
-              
                 PassedArgs Passedarguments = new PassedArgs
-                {
+                {  // Obj= obj,
                     Addin = null,
                     AddinName = null,
-                    AddinType = "",
+                    AddinType = null,
                     DMView = null,
-                    CurrentEntity = null,
-                    ObjectType = "GENERATEREPORT",
-                    DataSource = null,
-                    ObjectName = null,
-                    Id = 1,
-                    Objects = ob,
-                    DatasourceName = null,
-                    EventType = "GENERATEREPORT"
+                    CurrentEntity = BranchText,
+                    ObjectName = ReportDefinition,
+                    Id = BranchID,
+                    Objects=ob,
+                    ObjectType = "DXREPORT",
+                    DataSource = DataSource,
+                    EventType = "Run"
 
                 };
-                // ActionNeeded?.Invoke(this, Passedarguments);
-                Visutil.ShowUserControlPopUp("uc_reportdefinition", DMEEditor, args, Passedarguments);
 
-                DMEEditor.AddLogMessage("Success", "Created Query Entity", DateTime.Now, 0, null, Errors.Ok);
+                
+                    Visutil.ShowFormFromAddin("Frm_DxDesigner", DMEEditor, args, Passedarguments);
+               
+
+                DMEEditor.AddLogMessage("Success", "Shown Module " + BranchText, DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-                string mes = "Could not Create Query Entity";
+                string mes = "Could not Show Module " + BranchText;
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return DMEEditor.ErrorObject;
+        }
+        [BranchDelegate(Caption = "DoubleClick", Hidden = true, DoubleClick = true)]
+        public IErrorsInfo DoubleClick()
+        {
+
+            try
+            {
+              
+                string[] args = { BranchText };
+                List<ObjectItem> ob = new List<ObjectItem>(); ;
+                ObjectItem it = new ObjectItem();
+                it.obj = DMEEditor.ConfigEditor.ReportsDefinition.Where(p => p.Name.Equals(BranchText, StringComparison.OrdinalIgnoreCase)).FirstOrDefault(); ;
+                it.Name = "ReportDefinition";
+                ob.Add(it);
+                PassedArgs Passedarguments = new PassedArgs
+                {  // Obj= obj,
+                    Addin = null,
+                    AddinName = null,
+                    AddinType = null,
+                    DMView = null,
+                    CurrentEntity = BranchText,
+                    ObjectName = ReportDefinition,
+                    Id = BranchID,
+                    Objects=ob,
+                    ObjectType = "DXREPORT",
+                    DataSource = DataSource,
+                    EventType = "Run"
+
+                };
+
+                    Visutil.ShowFormFromAddin("Frm_DxDesigner", DMEEditor, args, Passedarguments);
+                
+
+                DMEEditor.AddLogMessage("Success", "Shown Module " + BranchText, DateTime.Now, 0, null, Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                string mes = "Could not Show Module " + BranchText;
                 DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
             };
             return DMEEditor.ErrorObject;
@@ -172,33 +213,13 @@ namespace DXReportBuilder.Tree
 
             try
             {
-                foreach (ReportTemplate item in DMEEditor.ConfigEditor.ReportsDefinition)
-                {
-                    if (!ChildBranchs.Where(p => p.BranchText.Equals(item.Name, StringComparison.OrdinalIgnoreCase)).Any())
-                    {
-                        DXReportDefinitionNode entityNode = new DXReportDefinitionNode(TreeEditor, DMEEditor, this, item.Name, TreeEditor.SeqID, EnumBranchType.DataPoint, "reportdefinition.ico", item.Name);
-                        TreeEditor.AddBranch(this, entityNode);
-                        ChildBranchs.Add(entityNode);
-                        entityNode.CreateChildNodes();
-                    }
-                  
-                }
-                //foreach (AddinTreeStructure item in DMEEditor.ConfigEditor.AddinTreeStructure)
-                //{
-                //    if (BranchText == item.RootName)
-                //    {
-                //        DXTreeEntityNode entityNode = new DXTreeEntityNode(TreeEditor, DMEEditor, this, item.NodeName, TreeEditor.SeqID, EnumBranchType.Entity, item.Imagename, item.className);
-                //        entityNode.AddinTreeStructure = item;
-                //        TreeEditor.AddBranch(this, entityNode);
-                //        ChildBranchs.Add(entityNode);
-                //    }
-                //}
 
-                DMEEditor.AddLogMessage("Success", "Created report Definitions nodes", DateTime.Now, 0, null, Errors.Ok);
+
+                DMEEditor.AddLogMessage("Success", "Created child Nodes", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-                string mes = "Could not Create report Definitions Nodes";
+                string mes = "Could not Create child Nodes";
                 DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
             };
             return DMEEditor.ErrorObject;

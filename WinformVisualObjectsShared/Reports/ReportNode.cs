@@ -262,7 +262,7 @@ namespace TheTechIdea.Winforms.VIS.Reports
             try
             {
 
-                foreach (var item in DMEEditor.ConfigEditor.Reports)
+                foreach (var item in DMEEditor.ConfigEditor.ReportsDefinition)
                 {
 
                 }

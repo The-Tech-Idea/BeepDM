@@ -1389,7 +1389,7 @@ namespace DXReportBuilder
 
         #endregion
 
-        private DevExpress.XtraReports.UserDesigner.XRDesignMdiController reportDesigner1;
+        public DevExpress.XtraReports.UserDesigner.XRDesignMdiController reportDesigner1;
         private DevExpress.XtraReports.UserDesigner.XRDesignBarManager xrDesignBarManager1;
         private DevExpress.XtraBars.Bar bar2;
         private DevExpress.XtraReports.UserDesigner.DesignBar designBar1;

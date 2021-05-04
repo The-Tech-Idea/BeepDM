@@ -115,9 +115,9 @@ namespace TheTechIdea.Winforms.VIS
         public IDM_Addin ShowUserControlInContainer(string usercontrolname, Control Container, IDMEEditor pDMEEditor, string[] args, PassedArgs e)
         {
            // string path = System.IO.Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath) + @"\Addin\";
-            if (LLoader.AddIns.Where(x => x.ObjectName == usercontrolname).Any())
+            if (LLoader.AddIns.Where(x => x.ObjectName.Equals(usercontrolname,StringComparison.OrdinalIgnoreCase)).Any())
             {
-                return ShowUserControlDialogOnControl( LLoader.AddIns.Where(c => c.ObjectName == usercontrolname).FirstOrDefault().DllName, usercontrolname, Container, pDMEEditor, args, e);
+                return ShowUserControlDialogOnControl( LLoader.AddIns.Where(c => c.ObjectName.Equals(usercontrolname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault().DllName, usercontrolname, Container, pDMEEditor, args, e);
             }
             else
             {
@@ -127,11 +127,11 @@ namespace TheTechIdea.Winforms.VIS
         }
         public IDM_Addin ShowUserControlPopUp(string usercontrolname, IDMEEditor pDMEEditor, string[] args, PassedArgs e)
         {
-            if (LLoader.AddIns.Where(x => x.ObjectName == usercontrolname).Any())
+            if (LLoader.AddIns.Where(x => x.ObjectName.Equals(usercontrolname,StringComparison.OrdinalIgnoreCase)).Any())
             {
-                string path = LLoader.AddIns.Where(x => x.ObjectName == usercontrolname).FirstOrDefault().DllPath;
+                string path = LLoader.AddIns.Where(x => x.ObjectName.Equals(usercontrolname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault().DllPath;
 
-                return ShowUserControlDialog(path, LLoader.AddIns.Where(c => c.ObjectName == usercontrolname).FirstOrDefault().DllName, usercontrolname, pDMEEditor, args, e);
+                return ShowUserControlDialog(path, LLoader.AddIns.Where(c => c.ObjectName.Equals(usercontrolname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault().DllName, usercontrolname, pDMEEditor, args, e);
             }else
             {
               return  null;
@@ -141,9 +141,9 @@ namespace TheTechIdea.Winforms.VIS
         public IDM_Addin ShowFormFromAddin( string formname, IDMEEditor pDMEEditor, string[] args, PassedArgs e)
         {
 
-            if (LLoader.AddIns.Where(x => x.ObjectName == formname).Any())
+            if (LLoader.AddIns.Where(x => x.ObjectName.Equals(formname,StringComparison.OrdinalIgnoreCase)).Any())
             {
-                return ShowFormDialog(LLoader.AddIns.Where(c => c.ObjectName == formname).FirstOrDefault().DllName, formname, pDMEEditor, args, e);
+                return ShowFormDialog(LLoader.AddIns.Where(c => c.ObjectName.Equals(formname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault().DllName, formname, pDMEEditor, args, e);
             }
             else
             {
@@ -169,7 +169,7 @@ namespace TheTechIdea.Winforms.VIS
                 {
                     //Assembly assembly = Assembly.LoadFile(path);
                     //Type type = assembly.GetType(dllname + ".UserControls." + formname);
-                    Type type = LLoader.AddIns.Where(c => c.ObjectName == formname).FirstOrDefault().GetType(); //dllname.Remove(dllname.IndexOf(".")) + ".Forms." + formname
+                    Type type = LLoader.AddIns.Where(c => c.ObjectName.Equals(formname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault().GetType(); //dllname.Remove(dllname.IndexOf(".")) + ".Forms." + formname
 
                     uc = (UserControl)Activator.CreateInstance(type);
                     if (uc != null)
@@ -226,7 +226,7 @@ namespace TheTechIdea.Winforms.VIS
                 try
                 {
                     // Assembly assembly = Assembly.LoadFile(path);
-                    Type type = LLoader.AddIns.Where(c => c.ObjectName == formname).FirstOrDefault().GetType(); //dllname.Remove(dllname.IndexOf(".")) + ".Forms." + formname
+                    Type type = LLoader.AddIns.Where(c => c.ObjectName.Equals(formname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault().GetType(); //dllname.Remove(dllname.IndexOf(".")) + ".Forms." + formname
                     form = (Form)Activator.CreateInstance(type);
                     if (form != null)
                     {
@@ -278,7 +278,7 @@ namespace TheTechIdea.Winforms.VIS
                 {
                     // Assembly assembly = Assembly.LoadFile(path);
                     //Type type = assembly.GetType(dllname + ".UserControls." + formname);
-                    Type type = LLoader.AddIns.Where(c => c.ObjectName == formname).FirstOrDefault().GetType();
+                    Type type = LLoader.AddIns.Where(c => c.ObjectName.Equals(formname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault().GetType();
                     UserControl uc = (UserControl)Activator.CreateInstance(type);
                     if (uc != null)
                     {

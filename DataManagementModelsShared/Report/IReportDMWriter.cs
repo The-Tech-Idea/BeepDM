@@ -15,7 +15,7 @@ namespace TheTechIdea.DataManagment_Engine.Report
         bool Csv { get; set; }
         bool PDF { get; set; }
         bool Excel { get; set; }
-        string OutputFile { get; }
+        string OutputFile { get; set; }
         IErrorsInfo RunReport( ReportType reportType, string outputFile);
       
 

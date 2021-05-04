@@ -43,7 +43,7 @@ namespace TheTechIdea.Winforms.VIS
         public EntityStructure EntityStructure { get; set; }
         public int Order { get; set; } = 10;
         public string Name { get; set; }
-        public string BranchText { get; set; } = "Report";
+        public string BranchText { get; set; } = "Reports";
         public IDMEEditor DMEEditor { get; set; }
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
@@ -206,7 +206,7 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
                 TreeEditor.RemoveChildBranchs(this);
-                foreach (ReportTemplate i in DMEEditor.ConfigEditor.Reports)
+                foreach (ReportTemplate i in DMEEditor.ConfigEditor.ReportsDefinition)
                 {
 
                     if (TreeEditor.CheckifBranchExistinCategory(i.Name, "REPORT") == null)

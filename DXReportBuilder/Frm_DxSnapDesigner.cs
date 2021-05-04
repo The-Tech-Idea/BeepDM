@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using TheTechIdea;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
@@ -55,14 +56,9 @@ namespace DXReportBuilder
         public string BranchClass { get; set; } = "REPORTING";
         #endregion "IAddinVisSchema"
         IVisUtil Visutil;
-        public void CopyDataToSnap()
-        {
-            foreach (var item in sourceInfo.dxdatasources)
-            {
-                snapControl1.Document.DataSources.Add(item);
-            }
-            
-        }
+        public IReportDefinition ReportDefinition { get; set; }
+        public ReportDataManager reportOutput { get; set; }
+       
 
         public void Run(string param1)
         {
@@ -75,30 +71,30 @@ namespace DXReportBuilder
             Logger = plogger;
             ErrorObject = per;
             DMEEditor = pbl;
-            Visutil = (IVisUtil)e.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
-            foreach (IDataSource ds in DMEEditor.DataSources.Where(o=>o.Category== DatasourceCategory.VIEWS && o.DatasourceName.Contains("TestView")))
-            {
-                if (ds != null)
-                {
-                    if(ds.ConnectionStatus== ConnectionState.Open)
-                    {
-                        ds.GetEntitesList();
-                        foreach (string item in ds.EntitiesNames)
-                        {
-                            object ls =ds.GetEntity(item, null);
-                            if (ls != null)
-                            {
-                                snapControl1.DataSources.Add(item, ls);
-                            }
-                          
-                        }
-                    }
-                   
-                }
-                
-                
-            }
             
+            if (e != null)
+            {
+                if (e.Objects != null)
+                {
+                    if (e.Objects.Where(c => c.Name == "VISUTIL").Any())
+                    {
+                        Visutil = (IVisUtil)e.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
+                    }
+
+                    if (e.Objects.Where(c => c.Name == "ReportDefinition").Any())
+                    {
+                        ReportDefinition = (IReportDefinition)e.Objects.Where(c => c.Name == "ReportDefinition").FirstOrDefault().obj;
+                        reportOutput = new ReportDataManager(DMEEditor, ReportDefinition);
+                        snapControl1.Document.BeginUpdateDataSource();
+                        snapControl1.Document.DataSources.Add("Data", reportOutput.GetDataSet());
+                        snapControl1.Document.EndUpdateDataSource();
+                        // snapControl1.ShowPrintPreview();
+                    }
+                }
+            }
+          
+            
+           
         }
     }
 }

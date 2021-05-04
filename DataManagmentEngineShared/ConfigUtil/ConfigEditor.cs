@@ -56,7 +56,9 @@ namespace TheTechIdea.Util
 		public List<Function2FunctionAction> Function2Functions { get; set; } = new List<Function2FunctionAction>();
 		public List<ObjectTypes> objectTypes { get; set; } = new List<ObjectTypes>();
 		public List<Event> Events { get; set; } = new List<Event>();
-		public List<ReportTemplate> Reports { get; set; } = new List<ReportTemplate>();
+		public List<ReportTemplate> ReportsDefinition { get; set; } = new List<ReportTemplate>();
+		public List<ReportsList> Reportslist { get; set; } = new List<ReportsList>();
+		//ReportsList
 		public List<CompositeLayer> CompositeQueryLayers { get; set; } = new List<CompositeLayer>();
 		
 		public List<EntityStructure> EntityCreateObjects { get; set; } = new List<EntityStructure>();
@@ -681,19 +683,31 @@ namespace TheTechIdea.Util
 		#region "Reports L/S"
 		public void SaveReportsValues()
 		{
-			string path = Path.Combine(ConfigPath, "reports.json");
-			JsonLoader.Serialize(path, Reports);
+			string path = Path.Combine(ConfigPath, "Reportslist.json");
+			JsonLoader.Serialize(path, Reportslist);
 			
 		}
-		public List<ReportTemplate> LoadReportsValues()
+		public List<ReportsList> LoadReportsValues()
 		{
-			string path = Path.Combine(ConfigPath, "reports.json");
-			Reports =JsonLoader.DeserializeObject<ReportTemplate>(path);
-			return Reports;
+			string path = Path.Combine(ConfigPath, "Reportslist.json");
+			Reportslist = JsonLoader.DeserializeObject<ReportsList>(path);
+			return Reportslist;
+		}
+		public void SaveReportDefinitionsValues()
+		{
+			string path = Path.Combine(ConfigPath, "reportsDefinition.json");
+			JsonLoader.Serialize(path, ReportsDefinition);
+
+		}
+		public List<ReportTemplate> LoadReportsDefinitionValues()
+		{
+			string path = Path.Combine(ConfigPath, "reportsDefinition.json");
+			ReportsDefinition = JsonLoader.DeserializeObject<ReportTemplate>(path);
+			return ReportsDefinition;
 		}
 		#endregion "Reports L/S"
 		#region "AppFieldProperties L/S"
-		
+
 		public void SaveAppFieldPropertiesValues()
 		{
 			foreach (var item in AppfieldProperties)
@@ -1268,6 +1282,7 @@ namespace TheTechIdea.Util
 				LoadCompositeLayersValues();
 				LoadAppValues();
 				LoadReportsValues();
+				LoadReportsDefinitionValues();
 				ReadWork();
 				LoadObjectTypes();
 				LoadMappingSchema();

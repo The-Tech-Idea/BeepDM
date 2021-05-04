@@ -18,8 +18,8 @@ namespace TheTechIdea.DataManagment_Engine.Report
         public bool PDF { get ; set ; }
         public bool Excel { get ; set ; }
 
-        private string mOutputFile;
-        public string OutputFile { get => mOutputFile; }
+      //  private string mOutputFile;
+        public string OutputFile { get; set; }
 
         public IErrorsInfo RunReport(ReportType reportType, string outputFile)
         {

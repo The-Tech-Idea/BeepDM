@@ -26,8 +26,8 @@ namespace TheTechIdea.DataManagment_Engine.Report
         public bool PDF { get; set; }
         public bool Excel { get; set; } = true;
       
-        private string mOutputFile;
-        public string OutputFile { get => mOutputFile; }
+       
+        public string OutputFile { get ; set; }
         //HtmlReportWriter htmlReportWriter;
        // ExcelReportWriter excelReportWriter;
        // DelimitedTextReportWriter delimitedTextReportWriter;
@@ -116,7 +116,7 @@ namespace TheTechIdea.DataManagment_Engine.Report
                     outputstream = fileStream;
                     var writer = new HtmlReportWriter();
                     writer.WriteReport(report, outputstream);
-                    mOutputFile = outputFile + "." + reportType.ToString();
+                    OutputFile = outputFile + "." + reportType.ToString();
                     DMEEditor.AddLogMessage("Success", $"Creating Doddle Report", DateTime.Now, 0, null, Errors.Ok);
                 }
                   

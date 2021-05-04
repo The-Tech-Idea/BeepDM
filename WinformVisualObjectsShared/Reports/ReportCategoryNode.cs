@@ -70,7 +70,7 @@ namespace TheTechIdea.Winforms.VIS.Reports
                 {
                     foreach (string item in p.items)
                     {
-                        ReportTemplate i = DMEEditor.ConfigEditor.Reports.Where(x => x.Name == item).FirstOrDefault();
+                        ReportTemplate i = DMEEditor.ConfigEditor.ReportsDefinition.Where(x => x.Name == item).FirstOrDefault();
 
                         if (i != null)
                         {
