@@ -83,24 +83,52 @@ namespace TheTechIdea.DDL
                 var t = databaseTypeComboBox.Items.Add(c.ConnectionName);
 
             }
-
-
-            // DMEEditor.DDLEditor.ReadFieldTypes();
-
             DMEEditor.ConfigEditor.LoadTablesEntities(); 
             fieldtypeDataGridViewTextBoxColumn.DataSource = DMEEditor.typesHelper.GetNetDataTypes2();
             this.entitiesBindingNavigatorSaveItem.Click += EntitiesBindingNavigatorSaveItem_Click;
             entitiesBindingSource.DataSource = DMEEditor.ConfigEditor.EntityCreateObjects;
+            this.entitiesBindingSource.AddingNew += EntitiesBindingSource_AddingNew;
+            this.fieldsBindingSource.AddingNew += FieldsBindingSource_AddingNew;
             this.CreateinDBbutton.Click += CreateinDBbutton_Click1;
             this.fieldsDataGridView.DataError += FieldsDataGridView_DataError;
             // this.databaseTypeComboBox.SelectedIndexChanged += DatabaseTypeComboBox_SelectedIndexChanged;
         }
 
-        private void EntitiesBindingNavigatorSaveItem_Click(object sender, EventArgs e)
+        private void FieldsBindingSource_AddingNew(object sender, AddingNewEventArgs e)
         {
-            DMEEditor.ConfigEditor.SaveTablesEntities(DMEEditor.ConfigEditor.EntityCreateObjects);
+            EntityStructure entityStructure = (EntityStructure)entitiesBindingSource.Current;
+            EntityField entityField = new EntityField();
+            entityField.EntityName = entityStructure.EntityName;
+            
         }
 
+        private void EntitiesBindingSource_AddingNew(object sender, AddingNewEventArgs e)
+        {
+            EntityStructure entityStructure = new EntityStructure();
+            entityStructure.Drawn = false;
+            entityStructure.Editable = true;
+            e.NewObject = entityStructure;
+        }
+
+        private void EntitiesBindingNavigatorSaveItem_Click(object sender, EventArgs e)
+        {
+            save();
+
+
+        }
+        private void save()
+        {
+            try
+            {
+                DMEEditor.ConfigEditor.SaveTablesEntities();
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Fail", $"Could not Save Entity Creation Script {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+            }
+
+        }
         private void CreateinDBbutton_Click1(object sender, EventArgs e)
         {
 
@@ -108,17 +136,20 @@ namespace TheTechIdea.DDL
             {
                 tb = (EntityStructure)entitiesBindingSource.Current;
                 SourceConnection = DMEEditor.GetDataSource(databaseTypeComboBox.Text);
+                SourceConnection.Dataconnection.OpenConnection();
+                SourceConnection.ConnectionStatus = SourceConnection.Dataconnection.ConnectionStatus;
                 if (SourceConnection.ConnectionStatus == ConnectionState.Open)
                 {
-                     SourceConnection.CreateEntityAs( tb);
+                    tb.DatasourceEntityName = tb.EntityName;
+                     SourceConnection.CreateEntityAs(tb);
                     if (DMEEditor.ErrorObject.Flag == Errors.Ok)
                     {
-                        MessageBox.Show("Table Creation Success", "Beep");
+                        MessageBox.Show("Entity Creation Success", "Beep");
                         DMEEditor.AddLogMessage("Success", "Table Creation Success", DateTime.Now, -1, "", Errors.Failed);
                     }
                     else
                     {
-                        string mes = "Table Creation Failed";
+                        string mes = "Entity Creation Failed";
                         MessageBox.Show(mes, "Beep");
                         DMEEditor.AddLogMessage("Create Table", mes, DateTime.Now, -1, mes, Errors.Failed);
                     }
@@ -126,7 +157,7 @@ namespace TheTechIdea.DDL
                 }
                 else
                 {
-                    MessageBox.Show("Table Creation Not Success Could not open Database", "Beep");
+                    MessageBox.Show("Entity Creation Not Success Could not open Database", "Beep");
                     DMEEditor.AddLogMessage("Fail", "Table Creation Not Success Could not open Database", DateTime.Now, -1, "", Errors.Failed);
                 }
 
@@ -136,7 +167,7 @@ namespace TheTechIdea.DDL
             catch (Exception ex)
             {
 
-                string mes = "Table Creation Failed";
+                string mes = "Entity Creation Failed";
                 MessageBox.Show(mes, "Beep");
                 DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
             };
@@ -154,7 +185,7 @@ namespace TheTechIdea.DDL
 
         private void SaveTableConfigbutton_Click(object sender, EventArgs e)
         {
-            DMEEditor.ConfigEditor.SaveTablesEntities(DMEEditor.ConfigEditor.EntityCreateObjects);
+            save();
         }
 
         private void NewTablebutton_Click(object sender, EventArgs e)

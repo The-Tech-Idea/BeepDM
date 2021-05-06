@@ -651,6 +651,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             maintab.DataSourceID = conn.DatasourceName;
             maintab.EntityName = tablename.ToUpper();
             maintab.ViewID = DataView.ViewID;
+            maintab.DatasourceEntityName = tablename;
             maintab.ParentId = DataView.Entities[0].Id;
 
             DataView.Entities.Add(maintab);
@@ -1002,11 +1003,11 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 schemaname = rdb.GetSchemaName();
             }
 
-            if (Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.ToUpper() == childtable.ToUpper()).Count() == 0)//f => f.Id == childtable &&
+            if (!Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.Equals(childtable,StringComparison.OrdinalIgnoreCase)).Any())//f => f.Id == childtable &&
             {
                 a = new EntityStructure() { Id = pkid, ParentId = pid, EntityName = childtable.ToUpper(), ViewID = v.ViewID };
                 a.DataSourceID = v.Entities.Where(x => x.Id == pid).FirstOrDefault().DataSourceID;
-
+                a.DatasourceEntityName = childtable;
                 a.Relations = ds.GetEntityforeignkeys(childtable.ToUpper(), schemaname);
 
                 Rootnamespacelist.Add(a);
@@ -1017,6 +1018,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             {
                 a = Rootnamespacelist.Where(f => f.ParentId == pid).FirstOrDefault(); //f.Id == childtable &&
                 a.DataSourceID = v.EntityDataSourceID;
+                a.DatasourceEntityName = childtable;
                 a.Relations.Add(new RelationShipKeys { EntityColumnID = childcolumn.ToUpper(), ParentEntityColumnID = parentcolumn.ToUpper(), ParentEntityID = parenttable.ToUpper() });
 
             }

@@ -149,18 +149,18 @@ namespace DXReportBuilder
             DevExpress.Utils.SerializableAppearanceObject serializableAppearanceObject4 = new DevExpress.Utils.SerializableAppearanceObject();
             DevExpress.XtraBars.Ribbon.ReduceOperation reduceOperation1 = new DevExpress.XtraBars.Ribbon.ReduceOperation();
             DevExpress.XtraBars.Ribbon.ReduceOperation reduceOperation2 = new DevExpress.XtraBars.Ribbon.ReduceOperation();
-            this.stylesRibbonPageGroup1 = new DevExpress.XtraRichEdit.UI.StylesRibbonPageGroup();
-            this.galleryChangeStyleItem1 = new DevExpress.XtraRichEdit.UI.GalleryChangeStyleItem();
             this.themesRibbonPageGroup1 = new DevExpress.Snap.Extensions.UI.ThemesRibbonPageGroup();
             this.themesGalleryBarItem1 = new DevExpress.Snap.Extensions.UI.ThemesGalleryBarItem();
+            this.stylesRibbonPageGroup1 = new DevExpress.XtraRichEdit.UI.StylesRibbonPageGroup();
+            this.galleryChangeStyleItem1 = new DevExpress.XtraRichEdit.UI.GalleryChangeStyleItem();
             this.snapControl1 = new DevExpress.Snap.SnapControl();
             this.ribbonControl1 = new DevExpress.XtraBars.Ribbon.RibbonControl();
             this.undoItem1 = new DevExpress.XtraRichEdit.UI.UndoItem();
             this.redoItem1 = new DevExpress.XtraRichEdit.UI.RedoItem();
-            this.fileNewItem1 = new DevExpress.XtraRichEdit.UI.FileNewItem();
-            this.fileOpenItem1 = new DevExpress.XtraRichEdit.UI.FileOpenItem();
+         //   this.fileNewItem1 = new DevExpress.XtraRichEdit.UI.FileNewItem();
+          //  this.fileOpenItem1 = new DevExpress.XtraRichEdit.UI.FileOpenItem();
             this.fileSaveItem1 = new DevExpress.XtraRichEdit.UI.FileSaveItem();
-            this.fileSaveAsItem1 = new DevExpress.XtraRichEdit.UI.FileSaveAsItem();
+          //  this.fileSaveAsItem1 = new DevExpress.XtraRichEdit.UI.FileSaveAsItem();
             this.commandBarItem1 = new DevExpress.Snap.Extensions.UI.CommandBarItem();
             this.quickPrintItem1 = new DevExpress.XtraRichEdit.UI.QuickPrintItem();
             this.printItem1 = new DevExpress.XtraRichEdit.UI.PrintItem();
@@ -578,24 +578,6 @@ namespace DXReportBuilder
             ((System.ComponentModel.ISupportInitialize)(this.dMEEditorBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
-            // stylesRibbonPageGroup1
-            // 
-            this.stylesRibbonPageGroup1.Glyph = ((System.Drawing.Image)(resources.GetObject("stylesRibbonPageGroup1.Glyph")));
-            this.stylesRibbonPageGroup1.ItemLinks.Add(this.galleryChangeStyleItem1);
-            this.stylesRibbonPageGroup1.Name = "stylesRibbonPageGroup1";
-            // 
-            // galleryChangeStyleItem1
-            // 
-            // 
-            // 
-            // 
-            this.galleryChangeStyleItem1.Gallery.ColumnCount = 10;
-            this.galleryChangeStyleItem1.Gallery.Groups.AddRange(new DevExpress.XtraBars.Ribbon.GalleryItemGroup[] {
-            galleryItemGroup1});
-            this.galleryChangeStyleItem1.Gallery.ImageSize = new System.Drawing.Size(65, 46);
-            this.galleryChangeStyleItem1.Id = 64;
-            this.galleryChangeStyleItem1.Name = "galleryChangeStyleItem1";
-            // 
             // themesRibbonPageGroup1
             // 
             this.themesRibbonPageGroup1.Glyph = ((System.Drawing.Image)(resources.GetObject("themesRibbonPageGroup1.Glyph")));
@@ -613,6 +595,24 @@ namespace DXReportBuilder
             this.themesGalleryBarItem1.Gallery.RowCount = 1;
             this.themesGalleryBarItem1.Id = 240;
             this.themesGalleryBarItem1.Name = "themesGalleryBarItem1";
+            // 
+            // stylesRibbonPageGroup1
+            // 
+            this.stylesRibbonPageGroup1.Glyph = ((System.Drawing.Image)(resources.GetObject("stylesRibbonPageGroup1.Glyph")));
+            this.stylesRibbonPageGroup1.ItemLinks.Add(this.galleryChangeStyleItem1);
+            this.stylesRibbonPageGroup1.Name = "stylesRibbonPageGroup1";
+            // 
+            // galleryChangeStyleItem1
+            // 
+            // 
+            // 
+            // 
+            this.galleryChangeStyleItem1.Gallery.ColumnCount = 10;
+            this.galleryChangeStyleItem1.Gallery.Groups.AddRange(new DevExpress.XtraBars.Ribbon.GalleryItemGroup[] {
+            galleryItemGroup1});
+            this.galleryChangeStyleItem1.Gallery.ImageSize = new System.Drawing.Size(65, 46);
+            this.galleryChangeStyleItem1.Id = 64;
+            this.galleryChangeStyleItem1.Name = "galleryChangeStyleItem1";
             // 
             // snapControl1
             // 
@@ -632,10 +632,10 @@ namespace DXReportBuilder
             this.ribbonControl1.ExpandCollapseItem,
             this.undoItem1,
             this.redoItem1,
-            this.fileNewItem1,
-            this.fileOpenItem1,
+           // this.fileNewItem1,
+            //this.fileOpenItem1,
             this.fileSaveItem1,
-            this.fileSaveAsItem1,
+           // this.fileSaveAsItem1,
             this.commandBarItem1,
             this.quickPrintItem1,
             this.printItem1,
@@ -971,24 +971,29 @@ namespace DXReportBuilder
             this.redoItem1.Name = "redoItem1";
             // 
             // fileNewItem1
-            // 
-            this.fileNewItem1.Id = 3;
-            this.fileNewItem1.Name = "fileNewItem1";
-            // 
-            // fileOpenItem1
-            // 
-            this.fileOpenItem1.Id = 4;
-            this.fileOpenItem1.Name = "fileOpenItem1";
+            //// 
+            //this.fileNewItem1.Id = 3;
+            //this.fileNewItem1.Name = "fileNewItem1";
+            //this.fileNewItem1.Visibility = DevExpress.XtraBars.BarItemVisibility.Never;
+            //// 
+            //// fileOpenItem1
+            //// 
+            //this.fileOpenItem1.Id = 4;
+            //this.fileOpenItem1.Name = "fileOpenItem1";
+            //this.fileOpenItem1.Visibility = DevExpress.XtraBars.BarItemVisibility.Never;
             // 
             // fileSaveItem1
             // 
             this.fileSaveItem1.Id = 5;
             this.fileSaveItem1.Name = "fileSaveItem1";
+            this.fileSaveItem1.Visibility = DevExpress.XtraBars.BarItemVisibility.Never;
             // 
             // fileSaveAsItem1
-            // 
-            this.fileSaveAsItem1.Id = 6;
-            this.fileSaveAsItem1.Name = "fileSaveAsItem1";
+            //// 
+            //this.fileSaveAsItem1.Id = 6;
+            //this.fileSaveAsItem1.Name = "fileSaveAsItem1";
+            //this.fileSaveAsItem1.RememberLastCommand = true;
+            //this.fileSaveAsItem1.Visibility = DevExpress.XtraBars.BarItemVisibility.Never;
             // 
             // commandBarItem1
             // 
@@ -3435,10 +3440,10 @@ namespace DXReportBuilder
             // 
             this.commonRibbonPageGroup1.ItemLinks.Add(this.undoItem1);
             this.commonRibbonPageGroup1.ItemLinks.Add(this.redoItem1);
-            this.commonRibbonPageGroup1.ItemLinks.Add(this.fileNewItem1, "N");
-            this.commonRibbonPageGroup1.ItemLinks.Add(this.fileOpenItem1, "O");
+          //  this.commonRibbonPageGroup1.ItemLinks.Add(this.fileNewItem1, "N");
+           // this.commonRibbonPageGroup1.ItemLinks.Add(this.fileOpenItem1, "O");
             this.commonRibbonPageGroup1.ItemLinks.Add(this.fileSaveItem1, "S");
-            this.commonRibbonPageGroup1.ItemLinks.Add(this.fileSaveAsItem1, "A");
+           // this.commonRibbonPageGroup1.ItemLinks.Add(this.fileSaveAsItem1, "A");
             this.commonRibbonPageGroup1.ItemLinks.Add(this.commandBarItem1);
             this.commonRibbonPageGroup1.ItemLinks.Add(this.quickPrintItem1);
             this.commonRibbonPageGroup1.ItemLinks.Add(this.printItem1, "P");
@@ -3735,6 +3740,7 @@ namespace DXReportBuilder
             // snapDocumentManager1
             // 
             this.snapDocumentManager1.ClientControl = this.snapControl1;
+            this.snapDocumentManager1.MenuManager = this.ribbonControl1;
             this.snapDocumentManager1.View = this.noDocumentsView1;
             this.snapDocumentManager1.ViewCollection.AddRange(new DevExpress.XtraBars.Docking2010.Views.BaseView[] {
             this.noDocumentsView1});
@@ -3743,10 +3749,10 @@ namespace DXReportBuilder
             // 
             this.snapBarController1.BarItems.Add(this.undoItem1);
             this.snapBarController1.BarItems.Add(this.redoItem1);
-            this.snapBarController1.BarItems.Add(this.fileNewItem1);
-            this.snapBarController1.BarItems.Add(this.fileOpenItem1);
+          //  this.snapBarController1.BarItems.Add(this.fileNewItem1);
+          // this.snapBarController1.BarItems.Add(this.fileOpenItem1);
             this.snapBarController1.BarItems.Add(this.fileSaveItem1);
-            this.snapBarController1.BarItems.Add(this.fileSaveAsItem1);
+           // this.snapBarController1.BarItems.Add(this.fileSaveAsItem1);
             this.snapBarController1.BarItems.Add(this.commandBarItem1);
             this.snapBarController1.BarItems.Add(this.quickPrintItem1);
             this.snapBarController1.BarItems.Add(this.printItem1);
@@ -4094,10 +4100,6 @@ namespace DXReportBuilder
         private DevExpress.XtraBars.Ribbon.RibbonControl ribbonControl1;
         private DevExpress.XtraRichEdit.UI.UndoItem undoItem1;
         private DevExpress.XtraRichEdit.UI.RedoItem redoItem1;
-        private DevExpress.XtraRichEdit.UI.FileNewItem fileNewItem1;
-        private DevExpress.XtraRichEdit.UI.FileOpenItem fileOpenItem1;
-        private DevExpress.XtraRichEdit.UI.FileSaveItem fileSaveItem1;
-        private DevExpress.XtraRichEdit.UI.FileSaveAsItem fileSaveAsItem1;
         private DevExpress.Snap.Extensions.UI.CommandBarItem commandBarItem1;
         private DevExpress.XtraRichEdit.UI.QuickPrintItem quickPrintItem1;
         private DevExpress.XtraRichEdit.UI.PrintItem printItem1;
@@ -4452,7 +4454,6 @@ namespace DXReportBuilder
         private DevExpress.XtraCharts.UI.ChartAppearanceRibbonPageGroup chartAppearanceRibbonPageGroup1;
         private DevExpress.XtraCharts.UI.ChartWizardRibbonPageGroup chartWizardRibbonPageGroup1;
         private DevExpress.XtraRichEdit.UI.FileRibbonPage fileRibbonPage1;
-        private DevExpress.XtraRichEdit.UI.CommonRibbonPageGroup commonRibbonPageGroup1;
         private DevExpress.XtraRichEdit.UI.InfoRibbonPageGroup infoRibbonPageGroup1;
         private DevExpress.Snap.Extensions.UI.DataRibbonPageGroup dataRibbonPageGroup1;
         private DevExpress.XtraRichEdit.UI.HomeRibbonPage homeRibbonPage1;
@@ -4490,9 +4491,14 @@ namespace DXReportBuilder
         private DevExpress.XtraBars.Docking.ControlContainer fieldListDockPanel1_Container;
         private DevExpress.Snap.Extensions.UI.ReportExplorerDockPanel reportExplorerDockPanel1;
         private DevExpress.XtraBars.Docking.ControlContainer reportExplorerDockPanel1_Container;
-        private DevExpress.Snap.Extensions.SnapDocumentManager snapDocumentManager1;
         private DevExpress.XtraBars.Docking2010.Views.NoDocuments.NoDocumentsView noDocumentsView1;
         private DevExpress.Snap.Extensions.SnapBarController snapBarController1;
         private System.Windows.Forms.BindingSource dMEEditorBindingSource;
+        public DevExpress.XtraRichEdit.UI.CommonRibbonPageGroup commonRibbonPageGroup1;
+        public DevExpress.Snap.Extensions.SnapDocumentManager snapDocumentManager1;
+       // public DevExpress.XtraRichEdit.UI.FileOpenItem fileOpenItem1;
+        public DevExpress.XtraRichEdit.UI.FileSaveItem fileSaveItem1;
+       // public DevExpress.XtraRichEdit.UI.FileSaveAsItem fileSaveAsItem1;
+       // public DevExpress.XtraRichEdit.UI.FileNewItem fileNewItem1;
     }
 }

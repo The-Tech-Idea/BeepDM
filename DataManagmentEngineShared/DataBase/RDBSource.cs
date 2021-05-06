@@ -873,6 +873,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 refresh = true;
                 retval.DataSourceID = DatasourceName;
                 retval.EntityName = EntityName;
+                retval.DatasourceEntityName = EntityName;
+                retval.Caption = EntityName;
                 if (EntityName.ToUpper().Contains("SELECT") || EntityName.ToUpper().Contains("WHERE"))
                 {
                     retval.Viewtype = ViewType.Query;
@@ -897,9 +899,15 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             // 
             DataTable tb = new DataTable();
             string entname = fnd.EntityName;
+            if (string.IsNullOrEmpty(fnd.DatasourceEntityName))
+            {
+                fnd.DatasourceEntityName = fnd.EntityName;
+            }
             if ((fnd.Created == false)&&(fnd.ViewID==0))
             {
+                
                 return fnd;
+
             }
             else
             {
@@ -2058,6 +2066,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             IDbCommand cmd = GetDataCommand();
             cmd.CommandText = querystring;
             IDataReader dt = cmd.ExecuteReader();
+            
             return dt;
 
         }
@@ -2308,9 +2317,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             catch (Exception ex)
             {
-                Logger.WriteLog($"Unsuccessfully Retrieve Child tables list {ex.Message}");
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
+                
                 DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
                 return null;
             }

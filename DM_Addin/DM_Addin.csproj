@@ -134,6 +134,12 @@
     <Compile Include="ETL\uc_DataEntityStructureViewer.Designer.cs">
       <DependentUpon>uc_DataEntityStructureViewer.cs</DependentUpon>
     </Compile>
+    <Compile Include="ETL\uc_linkentitytoanother.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="ETL\uc_linkentitytoanother.Designer.cs">
+      <DependentUpon>uc_linkentitytoanother.cs</DependentUpon>
+    </Compile>
     <Compile Include="RDLCReport\DynamicReport.cs" />
     <Compile Include="RDLCReport\DynamicReport1.cs">
       <DependentUpon>DynamicReport.tt</DependentUpon>
@@ -375,6 +381,9 @@
     <EmbeddedResource Include="ETL\uc_DataEntityStructureViewer.resx">
       <DependentUpon>uc_DataEntityStructureViewer.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="ETL\uc_linkentitytoanother.resx">
+      <DependentUpon>uc_linkentitytoanother.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="RDLCReport\ReportForm.resx">
       <DependentUpon>ReportForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -503,7 +512,6 @@
     <None Include="Properties\DataSources\TheTechIdea.DataManagment_Engine.DataBase.EntityStructure.datasource" />
     <None Include="Properties\DataSources\TheTechIdea.DataManagment_Engine.DataView.DataViewConnection.datasource" />
     <None Include="Properties\DataSources\TheTechIdea.DataManagment_Engine.DataView.DataViewDataSource.datasource" />
-    <None Include="Properties\DataSources\TheTechIdea.DataManagment_Engine.DataView.DataViewReader.datasource" />
     <None Include="Properties\DataSources\TheTechIdea.DataManagment_Engine.DMEEditor1.datasource" />
     <None Include="Properties\DataSources\TheTechIdea.Util.ConfigEditor.datasource" />
     <None Include="Resources\database.png" />

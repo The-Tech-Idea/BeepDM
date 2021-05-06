@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -335,6 +336,66 @@ namespace DXReportBuilder
               
             }
 
+        }
+        #endregion
+        #region "Files Management"
+        public string GetReportFilePath(IReportDefinition reportDefinition)
+        {
+            string retval=null;
+            try
+            {
+                CreateReportsFolder();
+                if (DMEEditor.ErrorObject.Flag==Errors.Ok)
+                {
+                    retval = Path.Combine(DMEEditor.ConfigEditor.Config.ExePath + @"Reports",reportDefinition.Name);
+                }
+                return retval;
+            }
+            catch (Exception ex)
+            {
+                string errmsg = $"Error getting File for {reportDefinition.Name} ";
+                DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+
+        }
+        private IErrorsInfo CreateReportsFolder()
+        {
+            try
+            {
+                if (DMEEditor.ConfigEditor.Config.Folders == null)
+                {
+                    DMEEditor.ConfigEditor.Config.Folders.Add(new StorageFolders(DMEEditor.ConfigEditor.Config.ExePath + @"Reports", FolderFileTypes.Reports));
+                }
+                if (!DMEEditor.ConfigEditor.Config.Folders.Where(i => i.FolderFilesType == FolderFileTypes.Reports).Any())
+                {
+                    DMEEditor.ConfigEditor.Config.Folders.Add(new StorageFolders(DMEEditor.ConfigEditor.Config.ExePath + @"Reports", FolderFileTypes.Reports));
+                }
+               CreateDir(Path.Combine(DMEEditor.ConfigEditor.Config.ExePath + @"Reports"), FolderFileTypes.Config);
+
+                DMEEditor.ConfigEditor.SaveConfigValues();
+
+            }
+            catch (Exception ex)
+            {
+
+                string errmsg = $"Error Creating Reports Folder";
+                DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+
+        private void CreateDir(string path, FolderFileTypes foldertype)
+        {
+            if (Directory.Exists(path) == false)
+            {
+                Directory.CreateDirectory(path);
+
+            }
+            if (!DMEEditor.ConfigEditor.Config.Folders.Any(item => item.FolderPath.Equals(path, StringComparison.OrdinalIgnoreCase)))
+            {
+                DMEEditor.ConfigEditor.Config.Folders.Add(new StorageFolders(path, foldertype));
+            }
         }
         #endregion
         public DataSet GetDataSet()

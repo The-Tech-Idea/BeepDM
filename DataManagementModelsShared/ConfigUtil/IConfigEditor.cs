@@ -104,7 +104,7 @@ namespace TheTechIdea.Util
         List<App> LoadAppValues();
         List<EntityStructure> LoadTablesEntities();
 
-        void SaveTablesEntities(List<EntityStructure> entities);
+        void SaveTablesEntities();
         DatasourceEntities LoadDataSourceEntitiesValues(string dsname);
         void SaveDataSourceEntitiesValues(DatasourceEntities datasourceEntities);
         void CreateDirConfig(string path, FolderFileTypes foldertype);

@@ -180,6 +180,7 @@ namespace DXReportBuilder
             this.blockColumnsDataGridView.Name = "blockColumnsDataGridView";
             this.blockColumnsDataGridView.Size = new System.Drawing.Size(477, 183);
             this.blockColumnsDataGridView.TabIndex = 55;
+            this.blockColumnsDataGridView.Visible = false;
             // 
             // Show
             // 
@@ -362,7 +363,7 @@ namespace DXReportBuilder
             this.Controls.Add(nameLabel);
             this.Controls.Add(this.nameTextBox);
             this.Name = "uc_reportdefinition";
-            this.Size = new System.Drawing.Size(591, 571);
+            this.Size = new System.Drawing.Size(594, 571);
             ((System.ComponentModel.ISupportInitialize)(this.reportsBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.blocksBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.reportWritersClassesBindingSource)).EndInit();

@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.DataView;
 using TheTechIdea.DataManagment_Engine.Vis;
@@ -241,15 +242,20 @@ namespace TheTechIdea.Winforms.VIS
                                 {
 
                                     DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, tb.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(tb.Viewtype), DataView.DataViewDataSourceID, tb);
+                                    if (string.IsNullOrEmpty(tb.DatasourceEntityName))
+                                    {
+                                        DataView.Entities[ds.EntityListIndex(tb.EntityName)].DatasourceEntityName = tb.EntityName;
+                                    }
                                     dbent.ID = tb.Id;
-                                    dbent.DataSourceName = tb.DataSourceID;
+                                   // dbent.DataSourceName = tb.DataSourceID;
                                     TreeEditor.AddBranch(this, dbent);
                                     dbent.CreateChildNodes();
                                     ChildBranchs.Add(dbent);
                                     i += 1;
-
+                                    
                                 }
-
+                                ds.WriteDataViewFile(DataSourceName);
+                                DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DataSourceName, Entities = DataView.Entities });
                             }
                            
                         }
@@ -608,7 +614,7 @@ namespace TheTechIdea.Winforms.VIS
                                     entity.Caption = entity.EntityName;
                                     entity.DatasourceEntityName = entity.EntityName;
                                     entity.Created = false;
-                                     entity.DataSourceID = srcds.DatasourceName;
+                                    entity.DataSourceID = srcds.DatasourceName;
                                     entity.Id = ds.NextHearId();
                                     entity.ParentId = 1;
                                     entity.ViewID = DataView.ViewID;

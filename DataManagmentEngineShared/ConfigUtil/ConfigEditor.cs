@@ -873,13 +873,14 @@ namespace TheTechIdea.Util
 		public List<EntityStructure> LoadTablesEntities()
 		{
 			string path = Path.Combine(ConfigPath, "DDLCreateTables.json");
-			return JsonLoader.DeserializeObject<EntityStructure>(path);
+			 EntityCreateObjects=JsonLoader.DeserializeObject<EntityStructure>(path);
+			return EntityCreateObjects;
 
 		}
-		public void SaveTablesEntities(List<EntityStructure> entities)
+		public void SaveTablesEntities()
 		{
 				string path = Path.Combine(ConfigPath, "DDLCreateTables.json");
-				JsonLoader.Serialize(path, entities);
+				JsonLoader.Serialize(path, EntityCreateObjects);
 		}
 		#endregion
 		#region "DataTypes L/S"

@@ -1,8 +1,10 @@
-﻿using System;
+﻿using DevExpress.XtraRichEdit;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -58,8 +60,8 @@ namespace DXReportBuilder
         IVisUtil Visutil;
         public IReportDefinition ReportDefinition { get; set; }
         public ReportDataManager reportOutput { get; set; }
-       
 
+        string reportpath;
         public void Run(string param1)
         {
             throw new NotImplementedException();
@@ -71,6 +73,8 @@ namespace DXReportBuilder
             Logger = plogger;
             ErrorObject = per;
             DMEEditor = pbl;
+            snapControl1.BeforeExport += SnapControl1_BeforeExport;
+           // snapControl1.DocumentLoaded += SnapControl1_DocumentLoaded;
             
             if (e != null)
             {
@@ -84,7 +88,20 @@ namespace DXReportBuilder
                     if (e.Objects.Where(c => c.Name == "ReportDefinition").Any())
                     {
                         ReportDefinition = (IReportDefinition)e.Objects.Where(c => c.Name == "ReportDefinition").FirstOrDefault().obj;
+                      
                         reportOutput = new ReportDataManager(DMEEditor, ReportDefinition);
+                        reportpath=reportOutput.GetReportFilePath(ReportDefinition);
+                        if (File.Exists(reportpath + ".snx"))
+                        {
+                            snapControl1.LoadDocument(reportpath+".snx");
+                        }else
+                        {
+                            snapControl1.SaveDocument(reportpath + ".snx");
+                        }
+                        //fileNewItem1.Visibility = DevExpress.XtraBars.BarItemVisibility.Never;
+                        //fileOpenItem1.Visibility = DevExpress.XtraBars.BarItemVisibility.Never;
+                        //fileSaveAsItem1.Visibility = DevExpress.XtraBars.BarItemVisibility.Never;
+                       // fileSaveItem1.Visibility = DevExpress.XtraBars.BarItemVisibility.Never;
                         snapControl1.Document.BeginUpdateDataSource();
                         snapControl1.Document.DataSources.Add("Data", reportOutput.GetDataSet());
                         snapControl1.Document.EndUpdateDataSource();
@@ -95,6 +112,14 @@ namespace DXReportBuilder
           
             
            
+        }
+
+
+       
+
+        private void SnapControl1_BeforeExport(object sender, DevExpress.XtraRichEdit.BeforeExportEventArgs e)
+        {
+          
         }
     }
 }

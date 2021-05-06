@@ -125,8 +125,8 @@ namespace DXReportBuilder.DXTree
     }
     #endregion "Interface Methods"
     #region "Exposed Interface"
-    [BranchDelegate(Caption = "Show", Hidden = false)]
-    public IErrorsInfo Show()
+    [BranchDelegate(Caption = "Edit", Hidden = false)]
+    public IErrorsInfo Edit()
     {
 
         try
@@ -166,7 +166,48 @@ namespace DXReportBuilder.DXTree
         };
         return DMEEditor.ErrorObject;
     }
-    [BranchDelegate(Caption = "DoubleClick", Hidden = true, DoubleClick = true)]
+        [BranchDelegate(Caption = "Preview", Hidden = false)]
+        public IErrorsInfo Preview()
+        {
+
+            try
+            {
+                string[] args = { BranchText };
+                List<ObjectItem> ob = new List<ObjectItem>(); ;
+                ObjectItem it = new ObjectItem();
+                it.obj = DMEEditor.ConfigEditor.ReportsDefinition.Where(p => p.Name.Equals(ReportDefinition, StringComparison.OrdinalIgnoreCase)).FirstOrDefault(); ;
+                it.Name = "ReportDefinition";
+                ob.Add(it);
+                PassedArgs Passedarguments = new PassedArgs
+                {  // Obj= obj,
+                    Addin = null,
+                    AddinName = null,
+                    AddinType = null,
+                    DMView = null,
+                    CurrentEntity = BranchText,
+                    ObjectName = ReportDefinition,
+                    Id = BranchID,
+                    Objects = ob,
+                    ObjectType = "DXSNAPREPORT",
+                    DataSource = DataSource,
+                    EventType = "Run"
+
+                };
+
+
+                Visutil.ShowFormFromAddin("uc_snapreportviewer", DMEEditor, args, Passedarguments);
+
+
+                DMEEditor.AddLogMessage("Success", "Shown Module " + BranchText, DateTime.Now, 0, null, Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                string mes = "Could not Show Module " + BranchText;
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return DMEEditor.ErrorObject;
+        }
+        [BranchDelegate(Caption = "DoubleClick", Hidden = true, DoubleClick = true)]
     public IErrorsInfo DoubleClick()
     {
 

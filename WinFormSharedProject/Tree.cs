@@ -309,22 +309,22 @@ namespace TheTechIdea.Winforms.VIS
         {
             return Branches.Where(c => c.MiscID == pID).FirstOrDefault();
         }
-        public IErrorsInfo MoveBranchToParent(IBranch CategoryBranch, IBranch CurrentBranch)
+        public IErrorsInfo MoveBranchToParent(IBranch ParentBranch, IBranch CurrentBranch)
         {
 
             try
             {
-                TreeNode CategoryBranchNode = GetTreeNodeByTag(CategoryBranch.BranchID.ToString(), TreeV.Nodes);
+                TreeNode ParentBranchNode = GetTreeNodeByTag(ParentBranch.BranchID.ToString(), TreeV.Nodes);
                 TreeNode CurrentBranchNode = GetTreeNodeByTag(CurrentBranch.BranchID.ToString(), TreeV.Nodes);
                 string foldername = CheckifBranchExistinCategory(CurrentBranch.BranchText, CurrentBranch.BranchClass);
                 if (foldername != null)
                 {
-                    RemoveEntityFromCategory(CategoryBranch.BranchClass, foldername, CurrentBranch.BranchText);
+                    RemoveEntityFromCategory(ParentBranch.BranchClass, foldername, CurrentBranch.BranchText);
                 }
                 TreeV.Nodes.Remove(CurrentBranchNode);
-                CategoryBranchNode.Nodes.Add(CurrentBranchNode);
+             
 
-                CategoryFolder CurFodler = DMEEditor.ConfigEditor.CategoryFolders.Where(y => y.RootName == CategoryBranch.BranchClass).FirstOrDefault();
+                CategoryFolder CurFodler = DMEEditor.ConfigEditor.CategoryFolders.Where(y => y.RootName == ParentBranch.BranchClass).FirstOrDefault();
                 if (CurFodler != null)
                 {
                     if (CurFodler.items.Contains(CurrentBranch.BranchText) == false)
@@ -333,7 +333,7 @@ namespace TheTechIdea.Winforms.VIS
                     }
                 }
 
-                CategoryFolder NewFolder = DMEEditor.ConfigEditor.CategoryFolders.Where(y => y.FolderName == CategoryBranch.BranchText && y.RootName == CategoryBranch.BranchClass).FirstOrDefault();
+                CategoryFolder NewFolder = DMEEditor.ConfigEditor.CategoryFolders.Where(y => y.FolderName == ParentBranch.BranchText && y.RootName == ParentBranch.BranchClass).FirstOrDefault();
                 if (NewFolder != null)
                 {
                     if (NewFolder.items.Contains(CurrentBranch.BranchText) == false)
@@ -341,7 +341,22 @@ namespace TheTechIdea.Winforms.VIS
                         NewFolder.items.Add(CurrentBranch.BranchText);
                     }
                 }
+                if ((ParentBranch.BranchType == EnumBranchType.Entity) && (ParentBranch.BranchClass == "VIEW" && CurrentBranch.BranchClass == "VIEW") && (ParentBranch.DataSourceName == CurrentBranch.DataSourceName))
+                {
+                    DataViewDataSource vds = (DataViewDataSource)DMEEditor.GetDataSource(CurrentBranch.DataSourceName);
+                    if (vds.Entities[vds.EntityListIndex(ParentBranch.MiscID)].Id == vds.Entities[vds.EntityListIndex(CurrentBranch.MiscID)].ParentId)
+                    {
 
+                    } else
+                    {
+                        vds.Entities[vds.EntityListIndex(CurrentBranch.MiscID)].ParentId = vds.Entities[vds.EntityListIndex(ParentBranch.MiscID)].Id;
+                    }
+                  
+
+                }
+                
+                    ParentBranchNode.Nodes.Add(CurrentBranchNode);
+               
                 DMEEditor.ConfigEditor.SaveCategoryFoldersValues();
 
                 DMEEditor.AddLogMessage("Success", "Moved Branch successfully", DateTime.Now, 0, null, Errors.Ok);
@@ -1425,18 +1440,19 @@ namespace TheTechIdea.Winforms.VIS
                             }
 
                             break;
-                        case EnumBranchType.DataPoint:
+                     
                             break;
                         case EnumBranchType.Category:
-                            if (dragedBranch.BranchType == EnumBranchType.DataPoint)
-                            {
-                                MoveBranchToParent(targetBranch, dragedBranch);
-                            }
-
-                            break;
+                        case EnumBranchType.DataPoint:
                         case EnumBranchType.Entity:
-
-
+                            if (dragedBranch.BranchClass == "VIEW")
+                            {
+                                if (dragedBranch.BranchType == EnumBranchType.Entity  && dragedBranch.DataSourceName==targetBranch.DataSourceName)
+                                {
+                                    MoveBranchToParent(targetBranch, dragedBranch);
+                                }
+                            }
+                          
 
                             break;
                         default:

@@ -43,7 +43,7 @@ namespace TheTechIdea.Winforms.VIS
             }
             BranchText = entityStructure.Caption;
             MiscID = entityStructure.Id;
-            DataSourceName = entityStructure.DataSourceID;
+            DataSourceName = pDSName; //entityStructure.DataSourceID;
             ID = MiscID;
             if (pID != 0)
             {
@@ -298,6 +298,48 @@ namespace TheTechIdea.Winforms.VIS
 
 
               
+                DMEEditor.AddLogMessage("Success", "Edit Control Shown", DateTime.Now, 0, null, Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                string mes = "Could not show Edit Control";
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return DMEEditor.ErrorObject;
+        }
+        [BranchDelegate(Caption = "Link", Hidden = false, iconimage = "edit_entity.ico")]
+        public IErrorsInfo LinkEntity()
+        {
+
+            try
+            {
+                EntityStructure = ds.Entities[ds.Entities.FindIndex(o => o.Id == EntityStructure.Id)];
+                string[] args = { "New View", null, null };
+                if (string.IsNullOrEmpty(EntityStructure.DatasourceEntityName))
+                {
+                    EntityStructure.DatasourceEntityName = EntityStructure.EntityName;
+                }
+                PassedArgs Passedarguments = new PassedArgs
+                {
+                    Addin = null,
+                    AddinName = null,
+                    AddinType = "",
+                    DMView = DataView,
+                    CurrentEntity = EntityStructure.DatasourceEntityName,
+                    Id = BranchID,
+                    ObjectType = "LINKENTITY",
+                    DataSource = DataSource,
+                    ObjectName = DataView.ViewName,
+                    Objects = Createlistofitems(),
+                    DatasourceName = EntityStructure.DataSourceID,
+                    EventType = "LINKENTITY"
+
+                };
+                //ActionNeeded?.Invoke(this, Passedarguments);
+                Visutil.ShowUserControlPopUp("uc_linkentitytoanother", DMEEditor, args, Passedarguments);
+
+
+
                 DMEEditor.AddLogMessage("Success", "Edit Control Shown", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)

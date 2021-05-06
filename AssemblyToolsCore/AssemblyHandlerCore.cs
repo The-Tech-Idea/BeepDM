@@ -10,6 +10,7 @@ using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.Addin;
 using TheTechIdea.DataManagment_Engine.AI;
 using TheTechIdea.DataManagment_Engine.AppBuilder;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.DataManagment_Engine.Workflow;
@@ -82,11 +83,11 @@ namespace TheTechIdea.Tools.AssemblyHandling
         public IErrorsInfo GetBuiltinClasses()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-           
+
             // look through assembly list
             Assembly currentAssem = Assembly.GetExecutingAssembly();
             Assembly rootassembly = Assembly.GetEntryAssembly();
-          
+
             try
             {
                 ScanAssembly(currentAssem);
@@ -109,14 +110,13 @@ namespace TheTechIdea.Tools.AssemblyHandling
 
                 DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
-            var assemblies = rootassembly.GetReferencedAssemblies();
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine"));
             try
             {
-                foreach (AssemblyName item in assemblies)
+                foreach (Assembly item in assemblies)
                 {
-                    var assembly = Assembly.Load(item);
-                    ScanAssembly(assembly);
-                    DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(assembly);
+                    ScanAssembly(item);
+                    DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(item);
                 }
 
             }
@@ -125,7 +125,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
 
                 DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
-         
+
             return DMEEditor.ErrorObject;
 
         }
@@ -141,7 +141,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
             DMEEditor.Utilfunction.Namespacelist = new List<string>();
             DMEEditor.Utilfunction.Classlist = new List<string>();
             DataDriversConfig = new List<ConnectionDriversConfig>();
-            AddEngineDefaultDrivers();
+
             GetNonADODrivers();
             GetBuiltinClasses();
             try
@@ -232,7 +232,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 {
                     GetDrivers(item.DllLib);
                 }
-                CheckDriverAlreadyExistinList();
+
 
                 foreach (string p in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.Addin).Select(x => x.FolderPath))
                 {
@@ -283,7 +283,6 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 }
 
                 //------------------------------
-                
             }
             catch (System.Exception ex)
             {
@@ -291,6 +290,8 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 DMEEditor.ErrorObject.Ex = ex;
                 DMEEditor.Logger.WriteLog($"Error Loading Addin Assemblies ({ex.Message})");
             }
+            AddEngineDefaultDrivers();
+            CheckDriverAlreadyExistinList();
             return DMEEditor.ErrorObject;
         }
         /// <summary>
@@ -490,48 +491,87 @@ namespace TheTechIdea.Tools.AssemblyHandling
                             p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
                             //-------------------------------------------------------
                             // Get DataBase Drivers
-                            if (type.ImplementedInterfaces.Where(i => i.Name == "IDataSource").Any() )
+                            if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
                             {
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
+                                xcls.type = type;
+                                xcls.componentType = "IDataSource";
+                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
                                 DataSourcesClasses.Add(xcls);
                                 DMEEditor.ConfigEditor.DataSourcesClasses.Add(xcls);
                             }
                             //-------------------------------------------------------
                             // Get WorkFlow Definitions
-                            if (type.ImplementedInterfaces.Where(i => i.Name == "IWorkFlowAction").Any() )
+                            if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
                             {
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
+                                xcls.type = type;
+                                xcls.componentType = "IWorkFlowAction";
                                 DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
                             }
                             //-------------------------------------------------------
                             // Get IAppBuilder  Definitions
-                            if (type.ImplementedInterfaces.Where(i => i.Name == "IAppBuilder").Any() )
+                            if (type.ImplementedInterfaces.Contains(typeof(IAppBuilder)))
                             {
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
+                                xcls.type = type;
+                                xcls.componentType = "IAppBuilder";
                                 DMEEditor.ConfigEditor.AppWritersClasses.Add(xcls);
                             }
-                            //-------------------------------------------------------
-                            // Get Reports Implementations Definitions
-                            if (type.ImplementedInterfaces.Where(i => i.Name == "IReportDMWriter").Any())
+                            if (type.ImplementedInterfaces.Contains(typeof(IAppComponent)))
                             {
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
+                                xcls.type = type;
+                                xcls.componentType = "IAppComponent";
+                                DMEEditor.ConfigEditor.AppComponents.Add(xcls);
+                            }
+                            if (type.ImplementedInterfaces.Contains(typeof(IAppDesigner)))
+                            {
+                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                                xcls.className = type.Name;
+                                xcls.dllname = type.Module.Name;
+                                xcls.PackageName = type.FullName;
+                                xcls.type = type;
+                                xcls.componentType = "IAppDesigner";
+                                DMEEditor.ConfigEditor.AppComponents.Add(xcls);
+                            }
+                            if (type.ImplementedInterfaces.Contains(typeof(IAppScreen)))
+                            {
+                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                                xcls.className = type.Name;
+                                xcls.dllname = type.Module.Name;
+                                xcls.PackageName = type.FullName;
+                                xcls.type = type;
+                                xcls.componentType = "IAppScreen";
+                                DMEEditor.ConfigEditor.AppComponents.Add(xcls);
+                            }
+
+                            //-------------------------------------------------------
+                            // Get Reports Implementations Definitions
+                            if (type.ImplementedInterfaces.Contains(typeof(IReportDMWriter)))
+                            {
+                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                                xcls.className = type.Name;
+                                xcls.dllname = type.Module.Name;
+                                xcls.PackageName = type.FullName;
+                                xcls.componentType = "IReportDMWriter";
                                 DMEEditor.ConfigEditor.ReportWritersClasses.Add(xcls);
                             }
                             //-------------------------------------------------------
-                            // Get IBranch Definitions //IAddinVisSchema
-                            if (type.ImplementedInterfaces.Where(i=>i.Name=="IBranch").Any() )
+                            // Get IBranch Definitions
+                            if (type.ImplementedInterfaces.Contains(typeof(IBranch)))
                             {
 
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
@@ -539,7 +579,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
-                                //   xcls.RootName = brcls.BranchClass;
+                                xcls.componentType = "IBranch";
                                 xcls.type = type;
                                 //   xcls.RootName = "AI";
                                 //   xcls.BranchType = brcls.BranchType;
@@ -555,9 +595,10 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                     x.Hidden = methodAttribute.Hidden;
                                     x.Click = methodAttribute.Click;
                                     x.DoubleClick = methodAttribute.DoubleClick;
+                                    x.iconimage = methodAttribute.iconimage;
                                     xcls.Methods.Add(x);
                                 }
-                                if (type.ImplementedInterfaces.Where(i => i.Name == "IOrder").Any() )
+                                if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
                                 {
                                     try
                                     {
@@ -576,14 +617,14 @@ namespace TheTechIdea.Tools.AssemblyHandling
                             }
                             // --- Get all AI app Interfaces
                             //-----------------------------------------------------
-                            if (type.ImplementedInterfaces.Where(i => i.Name == "IAAPP").Any() )
+                            if (type.ImplementedInterfaces.Contains(typeof(IAAPP)))
                             {
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
                                 xcls.Methods = new List<MethodsClass>();
                                 xcls.className = type.Name;
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
-
+                                xcls.componentType = "IAAPP";
                                 foreach (MethodInfo methods in type.GetMethods()
                                              .Where(m => m.GetCustomAttributes(typeof(MLMethod), false).Length > 0)
                                               .ToArray())
@@ -597,6 +638,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                     x.Click = methodAttribute.Click;
                                     x.type = typeof(MLMethod);
                                     x.DoubleClick = methodAttribute.DoubleClick;
+
                                     xcls.Methods.Add(x);
                                 }
                                 foreach (MethodInfo methods in type.GetMethods()
@@ -612,6 +654,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                     x.Click = methodAttribute.Click;
                                     x.type = typeof(MLPredict);
                                     x.DoubleClick = methodAttribute.DoubleClick;
+
                                     xcls.Methods.Add(x);
                                 }
                                 foreach (MethodInfo methods in type.GetMethods()
@@ -659,7 +702,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                     x.DoubleClick = methodAttribute.DoubleClick;
                                     xcls.Methods.Add(x);
                                 }
-                                if (type.ImplementedInterfaces.Where(i => i.Name == "IOrder").Any())
+                                if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
                                 {
                                     try
                                     {
@@ -698,7 +741,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
         }
         #endregion "Class Extractors"
         #region "Helpers"
-      
+
         public object CreateInstanceFromString(string typeName, params object[] args)
         {
             object instance = null;
@@ -1043,27 +1086,34 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 DataviewDriver.DriverClass = "DataViewReader";
                 DataviewDriver.version = "1";
                 DataDriversConfig.Add(DataviewDriver);
-                ConnectionDriversConfig TXTFileDriver = new ConnectionDriversConfig();
-                TXTFileDriver.AdapterType = "DEFAULT";
-                TXTFileDriver.dllname = "DataManagmentEngine";
-                TXTFileDriver.PackageName = "FileReader";
-                TXTFileDriver.DriverClass = "FileReader";
-                TXTFileDriver.version = "1";
-                DataDriversConfig.Add(TXTFileDriver);
-                ConnectionDriversConfig JSONFileDriver = new ConnectionDriversConfig();
-                JSONFileDriver.AdapterType = "DEFAULT";
-                JSONFileDriver.dllname = "DataManagmentEngine";
-                JSONFileDriver.PackageName = "JSONFileReader";
-                JSONFileDriver.DriverClass = "JSONFileReader";
-                JSONFileDriver.version = "1";
-                DataDriversConfig.Add(JSONFileDriver);
-                ConnectionDriversConfig WebAPIDriver = new ConnectionDriversConfig();
-                WebAPIDriver.AdapterType = "DEFAULT";
-                WebAPIDriver.dllname = "DataManagmentEngine";
-                WebAPIDriver.PackageName = "WebApiReader";
-                WebAPIDriver.DriverClass = "WebApiReader";
-                WebAPIDriver.version = "1";
-                DataDriversConfig.Add(WebAPIDriver);
+                //----------------- 
+                // Get File extensions
+                //--------------
+                List<AssemblyClassDefinition> cls = DataSourcesClasses.Where(o => o.classProperties != null).ToList().Where(p => p.classProperties.Category == DatasourceCategory.FILE).ToList();
+                foreach (AssemblyClassDefinition item in cls)
+                {
+
+                    foreach (string extension in item.classProperties.FileType.Split(',').ToList())
+                    {
+                        ConnectionDriversConfig TXTFileDriver = new ConnectionDriversConfig();
+                        TXTFileDriver.AdapterType = "DEFAULT";
+                        TXTFileDriver.dllname = "DataManagmentEngine";
+                        //if (DataDriversConfig.Where(i => i.PackageName.Contains(extension.ToLower() + "FileReader")).Any())
+                        //{
+                        //    TXTFileDriver.version = DataDriversConfig.Where(i => i.PackageName.Contains(extension.ToLower() + "FileReader")).Max(i => i.version) + 1;
+                        //}
+                        TXTFileDriver.PackageName = item.className;//   extension.ToLower() + "FileReader";
+                        TXTFileDriver.DriverClass = item.className;
+                        TXTFileDriver.classHandler = item.className;
+                        TXTFileDriver.iconname = extension + ".ico";
+                        TXTFileDriver.extensionstoHandle = item.classProperties.FileType;
+                        TXTFileDriver.DatasourceCategory = DatasourceCategory.FILE;
+                        TXTFileDriver.version = "1";
+                        DataDriversConfig.Add(TXTFileDriver);
+                    }
+
+                }
+
 
                 return true;
             }

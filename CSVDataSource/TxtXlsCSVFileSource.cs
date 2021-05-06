@@ -678,6 +678,8 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                         entityData.Viewtype = ViewType.File;
                         entityData.DatabaseType = DataSourceType.Text;
                         entityData.DataSourceID = FileName;
+                        entityData.DatasourceEntityName = tb.TableName;
+                        entityData.Caption = tb.TableName;
                         entityData.EntityName = sheetname;
                         List<EntityField> Fields = new List<EntityField>();
                         int y = 0;

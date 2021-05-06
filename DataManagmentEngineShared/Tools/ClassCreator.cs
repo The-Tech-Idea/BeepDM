@@ -30,19 +30,16 @@ namespace TheTechIdea.Tools
         {
 
         }
-
-       
         public void CompileClassFromText(string SourceString,string output)
         {
             CSharpCodeProvider codeProvider = new CSharpCodeProvider();
-            ICodeCompiler icc = codeProvider.CreateCompiler();
+          //  ICodeCompiler icc = codeProvider.CreateCompiler();
             System.CodeDom.Compiler.CompilerParameters parameters = new CompilerParameters();
             parameters.GenerateExecutable = true;
             parameters.OutputAssembly = output;
-            CompilerResults results = icc.CompileAssemblyFromSource(parameters, SourceString);
+            CompilerResults results = codeProvider.CompileAssemblyFromSource(parameters, SourceString);
 
         }
-        
         public string CreateClass(string classname, List<EntityField> flds, string outpath,string NameSpacestring= "TheTechIdea.ProjectClasses")
         {
             outputpath = outpath;
@@ -54,7 +51,7 @@ namespace TheTechIdea.Tools
 
             foreach (var f in flds)
                 AddProperties(f.fieldname.ToLower(), MemberAttributes.Public | MemberAttributes.Final, Type.GetType(f.fieldtype), "");
-                AddProperties("ClassName", MemberAttributes.Public | MemberAttributes.Final, Type.GetType("System.String"), "");
+                AddProperties("Name", MemberAttributes.Public | MemberAttributes.Final, Type.GetType("System.String"), "");
             if (outputpath == null)
             {
                 outputpath = Environment.CurrentDirectory;
@@ -233,11 +230,7 @@ namespace TheTechIdea.Tools
         //    MethodInfo sayHelloMethod = typeof(IHello).GetMethod("SayHello");
         //    helloWorldTypeBuilder.DefineMethodOverride(myMethodBuilder, sayHelloMethod);
         //}
-        private static void loadByAssemblyNameAndTypeName(string assemblyName, string typeName)
-        {
-            Assembly loadedAssembly = Assembly.LoadFile(assemblyName);
-
-        }
+       
        
     }
 }
