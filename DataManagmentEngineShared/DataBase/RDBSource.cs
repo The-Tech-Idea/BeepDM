@@ -903,9 +903,11 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             {
                 fnd.DatasourceEntityName = fnd.EntityName;
             }
-            if ((fnd.Created == false)&&(fnd.ViewID==0))
+            if (fnd.Created == false)
             {
-                
+                fnd.Created = false;
+                fnd.Drawn = false;
+                fnd.Editable = true;
                 return fnd;
 
             }
@@ -913,11 +915,18 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             {
                 if (refresh)
                 {
-                    if (fnd.EntityName.Equals(fnd.DatasourceEntityName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(fnd.DatasourceEntityName))
+                    if (!fnd.EntityName.Equals(fnd.DatasourceEntityName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(fnd.DatasourceEntityName))
                     {
                         entname = fnd.DatasourceEntityName;
                     }
-                    
+                    if (string.IsNullOrEmpty(fnd.DatasourceEntityName))
+                    {
+                        fnd.DatasourceEntityName=entname;
+                    }
+                    if (string.IsNullOrEmpty(fnd.Caption))
+                    {
+                        fnd.Caption = entname;
+                    }
                     fnd.DataSourceID = DatasourceName;
                     //  fnd.EntityName = EntityName;
                     if (fnd.Viewtype == ViewType.Query)
@@ -938,7 +947,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         fnd.Fields = new List<EntityField>();
                         fnd.PrimaryKeys = new List<EntityField>();
                         DataRow rt = tb.Rows[0];
-
+                        fnd.Created = true;
+                        fnd.Editable = false;
+                        fnd.Drawn = true;
                         foreach (DataRow r in rt.Table.Rows)
                         {
                             EntityField x = new EntityField();
@@ -1032,17 +1043,18 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         }
                         else
                         {
+                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Created = true;
+                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Editable = false;
+                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Drawn = true;
                             Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Fields = fnd.Fields;
                             Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Relations = fnd.Relations;
                             Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].PrimaryKeys = fnd.PrimaryKeys;
     
                         }
                     }
+                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new ConfigUtil.DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
                 }
-                else
-                {
-                    DMEEditor.ErrorObject.Flag = Errors.Failed;
-                }
+              
             }
            
 
@@ -1156,8 +1168,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             try
             {
 
-                if (EntitiesNames.Count() == 0)
-                {
+              //  if (EntitiesNames.Count() == 0)
+             //   {
                     string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getlistoftables, null, Dataconnection.ConnectionProp.SchemaName, null, DMEEditor.ConfigEditor.QueryList, DatasourceType);
                     IDbDataAdapter adp = GetDataAdapter(sql, null);
                     adp.Fill(ds);
@@ -1169,12 +1181,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     foreach (DataRow row in tb.Rows)
                     {
                         EntitiesNames.Add(row.Field<string>("TABLE_NAME"));
-                      
-                        i += 1;
+                       
+                       
+                    i += 1;
                     }
                     if (Entities.Count > 0)
                     {
-                        List<string> ename = Entities.Select(p => p.EntityName).ToList();
+                        List<string> ename = Entities.Select(p => p.EntityName.ToUpper()).ToList();
                         List<string> diffnames = ename.Except(EntitiesNames).ToList();
                         if (diffnames.Count > 0)
                         {
@@ -1188,10 +1201,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     Logger.WriteLog("Successfully Retrieve tables list ");
 
 
-                } else
-                {
-                    return EntitiesNames;
-                }
+                //} else
+                //{
+                //    return EntitiesNames;
+                //}
 
 
             }
@@ -1231,7 +1244,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             {
                 GetEntitesList();
             }
-            retval = EntitiesNames.ConvertAll(d => d.ToUpper()).Contains(EntityName.ToUpper());
+            string entspace = Regex.Replace(EntityName, @"\s+", "_");
+            retval = EntitiesNames.ConvertAll(d => d.ToUpper()).Contains(entspace.ToUpper());
+          
 
             return retval;
         }
@@ -1242,7 +1257,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             if (CheckEntityExist(entity.EntityName) == false)
             {
 
-                CreateEntity(entity);
+                string createstring=CreateEntity(entity);
+                DMEEditor.ErrorObject=ExecuteSql(createstring);
                 if (DMEEditor.ErrorObject.Flag == Errors.Failed)
                 {
                     retval = false;
@@ -1767,7 +1783,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             
             try
             {
-                if (f.fieldCategory == DbFieldCategory.Numeric)
+                if (f.IsAutoIncrement)
                 {
                     switch (Dataconnection.ConnectionProp.DatabaseType)
                     {
@@ -1777,7 +1793,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                             AutnumberString = "NULL AUTO_INCREMENT";
                             break;
                         case DataSourceType.Oracle:
-                            AutnumberString = "CREATE SEQUENCE " + f.fieldname + "_seq MINVALUE 1 START WITH 1 INCREMENT BY 1 CACHE 1; ";
+                            //select substr(banner,instr(banner,'Release')+7,instr(banner,'-')-instr(banner,'.')) from v$version
+                            //where instr(banner,'Oracle')> 0
+
+                            AutnumberString = " GENERATED BY DEFAULT ON NULL AS IDENTITY";// "CREATE SEQUENCE " + f.fieldname + "_seq MINVALUE 1 START WITH 1 INCREMENT BY 1 CACHE 1 ";
                             break;
                         case DataSourceType.SqlCompact:
                             AutnumberString = "IDENTITY(1,1)";

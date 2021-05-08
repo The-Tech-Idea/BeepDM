@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>TheTechIdea.DataManagment_Engine.Database</RootNamespace>
+ </PropertyGroup>
+<ItemGroup>
+		<Compile Include="..\MySql\*.cs" />
+		<EmbeddedResource Include="..\MySql\**\*.resx" />
+</ItemGroup>
+<ItemGroup>
+  <PackageReference Include="MySql.Data" Version="8.0.24" />
+</ItemGroup>
+<ItemGroup>
+  <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+</ItemGroup>
+<Target Name="CopyTarget" AfterTargets="Build">
+		<ItemGroup>
+			<DataReaders Include="$(TargetDir)\MySqlDataSourceCore.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\netcoreapp3.1\ProjectClasses" SkipUnchangedFiles="true" />
+	</Target>
+</Project>

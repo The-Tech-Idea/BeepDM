@@ -86,6 +86,7 @@
             this.uc_DynamicTree1.AutoScroll = true;
             this.uc_DynamicTree1.AutoScrollMargin = new System.Drawing.Size(5, 5);
             this.uc_DynamicTree1.AutoScrollMinSize = new System.Drawing.Size(5, 5);
+            this.uc_DynamicTree1.AutoSize = true;
             this.uc_DynamicTree1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.uc_DynamicTree1.DefaultCreate = false;
             this.uc_DynamicTree1.Description = "Dynamic Data View Tree";
@@ -123,7 +124,7 @@
             // 
             this.splitContainer1.Panel2.Controls.Add(this.uc_logpanel1);
             this.splitContainer1.Size = new System.Drawing.Size(1006, 743);
-            this.splitContainer1.SplitterDistance = 586;
+            this.splitContainer1.SplitterDistance = 588;
             this.splitContainer1.SplitterWidth = 3;
             this.splitContainer1.TabIndex = 1;
             // 
@@ -150,7 +151,7 @@
             this.uc_logpanel1.ObjectType = "UserControl";
             this.uc_logpanel1.ParentName = null;
             this.uc_logpanel1.Passedarg = null;
-            this.uc_logpanel1.Size = new System.Drawing.Size(1006, 154);
+            this.uc_logpanel1.Size = new System.Drawing.Size(1006, 152);
             this.uc_logpanel1.SourceConnection = null;
             this.uc_logpanel1.TabIndex = 0;
             // 
@@ -179,6 +180,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.DisplayControlsplitContainer1)).EndInit();
             this.DisplayControlsplitContainer1.ResumeLayout(false);
             this.MenusplitContainer.Panel1.ResumeLayout(false);
+            this.MenusplitContainer.Panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.MenusplitContainer)).EndInit();
             this.MenusplitContainer.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);

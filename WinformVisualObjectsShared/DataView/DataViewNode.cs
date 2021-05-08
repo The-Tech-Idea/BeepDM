@@ -611,6 +611,12 @@ namespace TheTechIdea.Winforms.VIS
                                 if (srcds != null)
                                 {
                                     EntityStructure entity = (EntityStructure)srcds.GetEntityStructure(br.BranchText, true).Clone();
+                                    if (DataSource.CheckEntityExist(entity.EntityName))
+                                    {   
+                                        DMEEditor.AddLogMessage("Fail", $"Could Not Paste Entity {entity.EntityName}, it already exist", DateTime.Now, -1, null, Errors.Failed);
+                                    }
+                                    else
+                                    {
                                     entity.Caption = entity.EntityName;
                                     entity.DatasourceEntityName = entity.EntityName;
                                     entity.Created = false;
@@ -618,17 +624,19 @@ namespace TheTechIdea.Winforms.VIS
                                     entity.Id = ds.NextHearId();
                                     entity.ParentId = 1;
                                     entity.ViewID = DataView.ViewID;
-                                if (srcds.Category == DatasourceCategory.WEBAPI)
-                                {
-                                    entity.DatabaseType = DataSourceType.WebService;
-                                    entity.Viewtype = ViewType.Url;
-                                }
-                                ds.CreateEntityAs(entity);
+                                    if (srcds.Category == DatasourceCategory.WEBAPI)
+                                    {
+                                        entity.DatabaseType = DataSourceType.WebService;
+                                        entity.Viewtype = ViewType.Url;
+                                    }
+                                    ds.CreateEntityAs(entity);
                                     DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
                                     TreeEditor.AddBranch(this, dbent);
                                     dbent.CreateChildNodes();
                                     ChildBranchs.Add(dbent);
                                     DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                                }
+                                  
                                 }
                                
 

@@ -5,6 +5,7 @@ using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.Addin;
@@ -125,7 +126,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
 
                 DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
-
+           
             return DMEEditor.ErrorObject;
 
         }
@@ -771,6 +772,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
           
             return null;
         }
+        private readonly object _resolutionLock = new object();
         public Type GetType(string strFullyQualifiedName)
         {
             Type type = Type.GetType(strFullyQualifiedName);
@@ -794,9 +796,22 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 if (type != null)
                     return type;
             }
-           
-
+            AppDomain.CurrentDomain.GetAssemblies();
+             var assem = AppDomain.CurrentDomain.GetAssemblies();
+            foreach (Assembly item in assem)
+            {
+              //  var assembly = Assembly.Load(item);
+                type = item.GetType(strFullyQualifiedName);
+                // type = asm.GetType(strFullyQualifiedName);
+                if (type != null)
+                    return type;
+            }
             return null;
+        }
+        private Assembly Context_Resolving(AssemblyLoadContext context, AssemblyName assemblyName)
+        {
+            var expectedPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assemblyName.Name + ".dll");
+            return context.LoadFromAssemblyPath(expectedPath);
         }
         public bool RunMethod(object ObjInstance, string FullClassName, string MethodName)
         {

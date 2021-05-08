@@ -26,7 +26,7 @@ namespace TheTechIdea.Winforms.VIS
             ParentBranchID = pParentNode.ID;
             BranchText = pBranchText;
             BranchType =  EnumBranchType.Entity;
-            IconImageName = "databaseentities.ico";
+            IconImageName = pimagename;
             EntityStructure = new EntityStructure();
             EntityStructure.DataSourceID = ds.DatasourceName;
             EntityStructure.Viewtype = ViewType.Table;
@@ -61,14 +61,7 @@ namespace TheTechIdea.Winforms.VIS
         public object TreeStrucure { get ; set ; }
         public IVisUtil Visutil { get ; set ; }
         public int MiscID { get; set; }
-       // public event EventHandler<PassedArgs> BranchSelected;
-       // public event EventHandler<PassedArgs> BranchDragEnter;
-       // public event EventHandler<PassedArgs> BranchDragDrop;
-       // public event EventHandler<PassedArgs> BranchDragLeave;
-       // public event EventHandler<PassedArgs> BranchDragClick;
-       // public event EventHandler<PassedArgs> BranchDragDoubleClick;
-       // public event EventHandler<PassedArgs> ActionNeeded;
-
+       
         public IErrorsInfo CreateChildNodes()
         {
             throw new NotImplementedException();
@@ -118,48 +111,7 @@ namespace TheTechIdea.Winforms.VIS
         }
 
         #region "Methods"
-        //[BranchDelegate(Caption = "Single Record CRUD")]
-        //public IErrorsInfo CRUDSingleRecord()
-        //{
-
-        //    try
-        //    {
-        //        List<ObjectItem> ob = new List<ObjectItem>(); ;
-        //        ObjectItem it = new ObjectItem();
-        //        it.obj = this;
-        //        it.Name = "Branch";
-        //        ob.Add(it);
-        //        string[] args = new string[] { BranchText, DataSource.Dataconnection.ConnectionProp.SchemaName, null };
-        //        PassedArgs Passedarguments = new PassedArgs
-        //        {
-        //            Addin = null,
-        //            AddinName = null,
-        //            AddinType = "",
-        //            DMView = null,
-        //            CurrentEntity = BranchText,
-        //            Id = BranchID,
-        //            ObjectType = "RDBMSTABLE",
-        //            DataSource = DataSource,
-        //            ObjectName = BranchText,
-        //            Objects = ob,
-        //            DatasourceName = DataSource.DatasourceName,
-        //            EventType = "CRUDENTITY"
-
-        //        };
-        //        //ActionNeeded?.Invoke(this, Passedarguments);
-
-        //         Visutil.ShowUserControlInContainer("uc_getentities", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
-
-
-        //        DMEEditor.AddLogMessage("Success", "Created Crud Single Record", DateTime.Now, 0, null, Errors.Ok);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        string mes = "Could not Create Crud Single Record";
-        //        DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
-        //    };
-        //    return DMEEditor.ErrorObject;
-        //}
+       
         [BranchDelegate(Caption = "Data Edit")]
         public IErrorsInfo DataEdit()
         {
@@ -229,40 +181,40 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Copy Entity")]
-        public IErrorsInfo CopyEntity()
-        {
+        //[BranchDelegate(Caption = "Copy Entity")]
+        //public IErrorsInfo CopyEntity()
+        //{
 
-            try
-            {
-                // IBranch pbr = TreeEditor.Branches.Where(x => x.BranchType == EnumBranchType.Root && x.BranchClass == "VIEW").FirstOrDefault();
+        //    try
+        //    {
+        //        // IBranch pbr = TreeEditor.Branches.Where(x => x.BranchType == EnumBranchType.Root && x.BranchClass == "VIEW").FirstOrDefault();
               
-                EntityStructure = DataSource.GetEntityStructure(BranchText,true);
+        //        EntityStructure = DataSource.GetEntityStructure(BranchText,true);
                 
-                PassedArgs args = new PassedArgs
-                {
-                    ObjectName = "DATABASE",
-                    ObjectType = "TABLE",
-                    EventType = "COPYENTITY",
-                    ParameterString1 = "COPYENTITY",
-                    DataSource=DataSource,
-                    DatasourceName=DataSource.DatasourceName,
-                    CurrentEntity=BranchText,
-                    Objects = new List<ObjectItem> { new ObjectItem { Name = "Branch", obj = this }, new ObjectItem { Name = "Entity", obj = EntityStructure } }
-                };
-                TreeEditor.args = args;
+        //        PassedArgs args = new PassedArgs
+        //        {
+        //            ObjectName = "DATABASE",
+        //            ObjectType = "TABLE",
+        //            EventType = "COPYENTITY",
+        //            ParameterString1 = "COPYENTITY",
+        //            DataSource=DataSource,
+        //            DatasourceName=DataSource.DatasourceName,
+        //            CurrentEntity=BranchText,
+        //            Objects = new List<ObjectItem> { new ObjectItem { Name = "Branch", obj = this }, new ObjectItem { Name = "Entity", obj = EntityStructure } }
+        //        };
+        //        TreeEditor.args = args;
                
-               // TreeEditor.SendActionFromBranchToBranch(pbr, this, "Create View using Table");
+        //       // TreeEditor.SendActionFromBranchToBranch(pbr, this, "Create View using Table");
 
-            }
-            catch (Exception ex)
-            {
-                string mes = "Could not Copy entites ";
-                DMEEditor.AddLogMessage("Fail", mes + ex.Message, DateTime.Now, -1, mes, Errors.Failed);
-            };
-            return DMEEditor.ErrorObject;
-        }
-        [BranchDelegate(Caption = "Copy Entities")]
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        string mes = "Could not Copy entites ";
+        //        DMEEditor.AddLogMessage("Fail", mes + ex.Message, DateTime.Now, -1, mes, Errors.Failed);
+        //    };
+        //    return DMEEditor.ErrorObject;
+        //}
+        [BranchDelegate(Caption = "Copy Entity(s)")]
         public IErrorsInfo CopyEntities()
         {
 
@@ -271,12 +223,12 @@ namespace TheTechIdea.Winforms.VIS
                 List<string> ents = new List<string>();
                 if (TreeEditor.SelectedBranchs.Count > 0)
                 {
-                    if (DataSource == null)
-                    {
-                        DataSource = DMEEditor.GetDataSource(DataSourceName);
-                    }
-                    if (DataSource != null)
-                    {
+                    //if (DataSource == null)
+                    //{
+                    //    DataSource = DMEEditor.GetDataSource(DataSourceName);
+                    //}
+                    //if (DataSource != null)
+                    //{
                         foreach (int item in TreeEditor.SelectedBranchs)
                         {
                             IBranch br = TreeEditor.GetBranch(item);
@@ -305,10 +257,10 @@ namespace TheTechIdea.Winforms.VIS
                         };
                         TreeEditor.args = args;
                         DMEEditor.Passedarguments = args;
-                    }else
-                    {
-                        DMEEditor.AddLogMessage("Fail", "Could not get DataSource", DateTime.Now, -1, null, Errors.Failed);
-                    }
+                    //}else
+                    //{
+                    //    DMEEditor.AddLogMessage("Fail", "Could not get DataSource", DateTime.Now, -1, null, Errors.Failed);
+                    //}
                     
                 }
               

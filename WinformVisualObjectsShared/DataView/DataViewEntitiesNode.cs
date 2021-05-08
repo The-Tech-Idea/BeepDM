@@ -674,50 +674,60 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Paste Entity(s)",iconimage ="paste.ico")]
+        [BranchDelegate(Caption = "Paste Entity(s)")]
         public IErrorsInfo PasteEntity()
         {
 
             try
             {
-                   ds = (DataViewDataSource)DMEEditor.GetDataSource(DataView.DataViewDataSourceID);
+                // IBranch pbr = TreeEditor.Branches.Where(x => x.BranchType == EnumBranchType.Root && x.BranchClass == "VIEW").FirstOrDefault();
+                //
+                ds = (DataViewDataSource)DMEEditor.GetDataSource(DataSourceName);
+
+
                 if (TreeEditor.args != null)
                 {
-                    if (TreeEditor.args.EventType == "COPYENTITY" || TreeEditor.args.EventType == "DragandDropEntity")
+                    //   TreeEditor.args.Objects.Add(new ObjectItem { Name = "ParentBranch", obj = this });
+                    if (TreeEditor.args.EventType == "COPYENTITY")
                     {
-                        if (TreeEditor.args.Objects != null)
-                        {
-                           
-                            IBranch pbr = (IBranch)TreeEditor.args.Objects.Where(x => x.Name == "Branch").FirstOrDefault().obj;
-                            EntityStructure entity = (EntityStructure)TreeEditor.args.Objects.Where(x => x.Name == "EntityStructure").FirstOrDefault().obj;
-                            if (ds.CheckEntityExist(entity.EntityName))
-                            {
-                                DMEEditor.AddLogMessage("Fail", $"Could Not Paste Entity {entity.EntityName}, it already exist", DateTime.Now, -1, null, Errors.Failed);
-                            }
-                            else
-                            {
-                                IDataSource srcds = DMEEditor.GetDataSource(entity.DataSourceID);
-                                entity = (EntityStructure)srcds.GetEntityStructure(entity, true).Clone();
-                                entity.Caption = entity.EntityName;
-                                entity.DatasourceEntityName = entity.EntityName;
-                                entity.Created = false;
-                                entity.Id = ds.NextHearId();
-                                entity.DataSourceID = srcds.DatasourceName;
-                                entity.ParentId = ID;
-                                entity.ViewID = DataView.ViewID;
-                                ds.CreateEntityAs(entity);
-                                DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataView.DataViewDataSourceID, entity);
-                                TreeEditor.AddBranch(this, dbent);
-                                dbent.CreateChildNodes();
-                                ChildBranchs.Add(dbent);
-                                DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
-                            }
 
+                        //  IBranch pbr = (IBranch)TreeEditor.args.Objects.Where(x => x.Name == "Branch").FirstOrDefault().obj;
+                        EntityStructure entity = (EntityStructure)TreeEditor.args.Objects.Where(x => x.Name == "Entity").FirstOrDefault().obj;
+                        if (ds.CheckEntityExist(entity.EntityName))
+                        {
+                            DMEEditor.AddLogMessage("Fail", $"Could Not Paste Entity {entity.EntityName}, it already exist", DateTime.Now, -1, null, Errors.Failed);
                         }
+                        else
+                        {
+                            IDataSource srcds = DMEEditor.GetDataSource(entity.DataSourceID);
+                            entity = (EntityStructure)srcds.GetEntityStructure(entity, true).Clone();
+                            entity.Caption = entity.EntityName;
+                            entity.DatasourceEntityName = entity.EntityName;
+                            entity.Created = false;
+                            entity.DataSourceID = srcds.DatasourceName;
+                            entity.Id = ds.NextHearId();
+                            entity.ParentId = 1;
+                            entity.ViewID = DataView.ViewID;
+                            if (srcds.Category == DatasourceCategory.WEBAPI)
+                            {
+                                entity.DatabaseType = DataSourceType.WebService;
+                                entity.Viewtype = ViewType.Url;
+                            }
+                            ds.CreateEntityAs(entity);
+                            DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
+                            TreeEditor.AddBranch(this, dbent);
+                            dbent.CreateChildNodes();
+                            ChildBranchs.Add(dbent);
+                            DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                        }
+
+
                     }
                     else
-                    if (TreeEditor.SelectedBranchs.Count > 0 && TreeEditor.args.EventType == "COPYENTITIES")
+                     if (TreeEditor.SelectedBranchs.Count > 0 && TreeEditor.args.EventType == "COPYENTITIES")
                     {
+
+
                         foreach (int item in TreeEditor.SelectedBranchs)
                         {
                             IBranch br = TreeEditor.GetBranch(item);
@@ -725,23 +735,37 @@ namespace TheTechIdea.Winforms.VIS
                             if (srcds != null)
                             {
                                 EntityStructure entity = (EntityStructure)srcds.GetEntityStructure(br.BranchText, true).Clone();
-                                entity.Caption = entity.EntityName;
-                                entity.DatasourceEntityName = entity.EntityName;
-                                entity.Created = false;
-                                entity.Id = ds.NextHearId();
-                                entity.DataSourceID = srcds.DatasourceName;
-                                entity.ParentId = ID;
-                                entity.ViewID = DataView.ViewID;
-                                ds.CreateEntityAs(entity);
-                                DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataView.DataViewDataSourceID, entity);
-                                TreeEditor.AddBranch(this, dbent);
-                                dbent.CreateChildNodes();
-                                ChildBranchs.Add(dbent);
-                                DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                                if (DataSource.CheckEntityExist(entity.EntityName))
+                                {
+                                    DMEEditor.AddLogMessage("Fail", $"Could Not Paste Entity {entity.EntityName}, it already exist", DateTime.Now, -1, null, Errors.Failed);
+                                }
+                                else
+                                {
+                                    entity.Caption = entity.EntityName;
+                                    entity.DatasourceEntityName = entity.EntityName;
+                                    entity.Created = false;
+                                    entity.DataSourceID = srcds.DatasourceName;
+                                    entity.Id = ds.NextHearId();
+                                    entity.ParentId = 1;
+                                    entity.ViewID = DataView.ViewID;
+                                    if (srcds.Category == DatasourceCategory.WEBAPI)
+                                    {
+                                        entity.DatabaseType = DataSourceType.WebService;
+                                        entity.Viewtype = ViewType.Url;
+                                    }
+                                    ds.CreateEntityAs(entity);
+                                    DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
+                                    TreeEditor.AddBranch(this, dbent);
+                                    dbent.CreateChildNodes();
+                                    ChildBranchs.Add(dbent);
+                                    DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                                }
+                                
                             }
 
 
                         }
+
                     }
                 }
             }

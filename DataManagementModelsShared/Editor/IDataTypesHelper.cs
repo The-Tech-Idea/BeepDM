@@ -20,6 +20,6 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         //string[] GetSqliteDataTypes();
         //string[] GetSqlServerDataTypes();
         string GetDataType(string DSname, EntityField fld);
-      
+        string GetFieldTypeWoConversion(string DSname, EntityField fld);
     }
 }

@@ -82,7 +82,7 @@ namespace TheTechIdea.DDL
             this.mappingBindingNavigator.MovePreviousItem = this.bindingNavigatorMovePreviousItem;
             this.mappingBindingNavigator.Name = "mappingBindingNavigator";
             this.mappingBindingNavigator.PositionItem = this.bindingNavigatorPositionItem;
-            this.mappingBindingNavigator.Size = new System.Drawing.Size(418, 31);
+            this.mappingBindingNavigator.Size = new System.Drawing.Size(358, 31);
             this.mappingBindingNavigator.TabIndex = 1;
             this.mappingBindingNavigator.Text = "bindingNavigator1";
             // 
@@ -142,8 +142,9 @@ namespace TheTechIdea.DDL
             // 
             this.bindingNavigatorPositionItem.AccessibleName = "Position";
             this.bindingNavigatorPositionItem.AutoSize = false;
+            this.bindingNavigatorPositionItem.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.bindingNavigatorPositionItem.Name = "bindingNavigatorPositionItem";
-            this.bindingNavigatorPositionItem.Size = new System.Drawing.Size(40, 23);
+            this.bindingNavigatorPositionItem.Size = new System.Drawing.Size(35, 23);
             this.bindingNavigatorPositionItem.Text = "0";
             this.bindingNavigatorPositionItem.ToolTipText = "Current position";
             // 
@@ -194,33 +195,32 @@ namespace TheTechIdea.DDL
             this.mappingDataGridView.DataSource = this.mappingBindingSource;
             this.mappingDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.mappingDataGridView.Location = new System.Drawing.Point(0, 31);
-            this.mappingDataGridView.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.mappingDataGridView.Margin = new System.Windows.Forms.Padding(2);
             this.mappingDataGridView.Name = "mappingDataGridView";
             this.mappingDataGridView.RowHeadersWidth = 62;
             this.mappingDataGridView.RowTemplate.Height = 28;
-            this.mappingDataGridView.Size = new System.Drawing.Size(418, 752);
+            this.mappingDataGridView.Size = new System.Drawing.Size(358, 648);
             this.mappingDataGridView.TabIndex = 2;
             // 
             // DataSourcedataGridViewTextBoxColumn3
             // 
+            this.DataSourcedataGridViewTextBoxColumn3.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.DataSourcedataGridViewTextBoxColumn3.DataPropertyName = "DataSourceName";
             this.DataSourcedataGridViewTextBoxColumn3.HeaderText = "Data Source";
             this.DataSourcedataGridViewTextBoxColumn3.MinimumWidth = 8;
             this.DataSourcedataGridViewTextBoxColumn3.Name = "DataSourcedataGridViewTextBoxColumn3";
             this.DataSourcedataGridViewTextBoxColumn3.Resizable = System.Windows.Forms.DataGridViewTriState.True;
             this.DataSourcedataGridViewTextBoxColumn3.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
-            this.DataSourcedataGridViewTextBoxColumn3.Width = 150;
             // 
             // NetDataTypedataGridViewTextBoxColumn4
             // 
-            this.NetDataTypedataGridViewTextBoxColumn4.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
+            this.NetDataTypedataGridViewTextBoxColumn4.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.NetDataTypedataGridViewTextBoxColumn4.DataPropertyName = "NetDataType";
             this.NetDataTypedataGridViewTextBoxColumn4.HeaderText = ".Net DataType";
             this.NetDataTypedataGridViewTextBoxColumn4.MinimumWidth = 8;
             this.NetDataTypedataGridViewTextBoxColumn4.Name = "NetDataTypedataGridViewTextBoxColumn4";
             this.NetDataTypedataGridViewTextBoxColumn4.Resizable = System.Windows.Forms.DataGridViewTriState.True;
             this.NetDataTypedataGridViewTextBoxColumn4.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
-            this.NetDataTypedataGridViewTextBoxColumn4.Width = 105;
             // 
             // DataSourceDataTypedataGridViewTextBoxColumn5
             // 
@@ -233,13 +233,13 @@ namespace TheTechIdea.DDL
             // 
             // uc_DBFieldType
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.mappingDataGridView);
             this.Controls.Add(this.mappingBindingNavigator);
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "uc_DBFieldType";
-            this.Size = new System.Drawing.Size(418, 783);
+            this.Size = new System.Drawing.Size(358, 679);
             ((System.ComponentModel.ISupportInitialize)(this.mappingBindingNavigator)).EndInit();
             this.mappingBindingNavigator.ResumeLayout(false);
             this.mappingBindingNavigator.PerformLayout();

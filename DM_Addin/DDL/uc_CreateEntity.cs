@@ -83,15 +83,84 @@ namespace TheTechIdea.DDL
                 var t = databaseTypeComboBox.Items.Add(c.ConnectionName);
 
             }
-            DMEEditor.ConfigEditor.LoadTablesEntities(); 
-            fieldtypeDataGridViewTextBoxColumn.DataSource = DMEEditor.typesHelper.GetNetDataTypes2();
+         //   DMEEditor.ConfigEditor.LoadTablesEntities();
+            fieldtypeDataGridViewTextBoxColumn.DataSource = dataTypesMapBindingSource;
+            //fieldtypeDataGridViewTextBoxColumn.DataSource = DMEEditor.typesHelper.GetNetDataTypes2();
             this.entitiesBindingNavigatorSaveItem.Click += EntitiesBindingNavigatorSaveItem_Click;
             entitiesBindingSource.DataSource = DMEEditor.ConfigEditor.EntityCreateObjects;
             this.entitiesBindingSource.AddingNew += EntitiesBindingSource_AddingNew;
             this.fieldsBindingSource.AddingNew += FieldsBindingSource_AddingNew;
             this.CreateinDBbutton.Click += CreateinDBbutton_Click1;
             this.fieldsDataGridView.DataError += FieldsDataGridView_DataError;
+            this.databaseTypeComboBox.SelectedIndexChanged += DatabaseTypeComboBox_SelectedIndexChanged;
+           // this.fieldsDataGridView.RowValidated += FieldsDataGridView_RowValidated;
+            this.fieldsDataGridView.RowValidating += FieldsDataGridView_RowValidating;
+            this.fieldsDataGridView.CellEndEdit += FieldsDataGridView_CellEndEdit;
             // this.databaseTypeComboBox.SelectedIndexChanged += DatabaseTypeComboBox_SelectedIndexChanged;
+        }
+
+        private void FieldsDataGridView_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+            DataGridViewRow row = fieldsDataGridView.Rows[e.RowIndex];
+            DataGridViewCell fieldtype = row.Cells[2];
+            DataGridViewCell size1 = row.Cells[3];
+            DataGridViewCell nperc = row.Cells[4];
+            DataGridViewCell nscale = row.Cells[5];
+            if (e.ColumnIndex == 2)
+            {
+                if (fieldtype.Value.ToString().Contains("N"))
+                {
+                    size1.ReadOnly = false;
+                    nperc.ReadOnly = true;
+                    nscale.ReadOnly = true;
+                }
+                if (fieldtype.Value.ToString().Contains("P,S"))
+                {
+                    size1.ReadOnly = true;
+                    nperc.ReadOnly = false;
+                    nscale.ReadOnly = false;
+                }
+            }
+        }
+
+        private void FieldsDataGridView_RowValidating(object sender, DataGridViewCellCancelEventArgs e)
+        {
+            DataGridViewRow row = fieldsDataGridView.Rows[e.RowIndex];
+            DataGridViewCell id = row.Cells[0];
+            DataGridViewCell fieldname = row.Cells[1];
+            DataGridViewCell fieldtype = row.Cells[2];
+            DataGridViewCell size1 = row.Cells[3];
+            DataGridViewCell nperc = row.Cells[4];
+           
+            DataGridViewCell nscale = row.Cells[5];
+            DataGridViewCell Autoinc = row.Cells[6];
+            DataGridViewCell isdbnull = row.Cells[7];
+            DataGridViewCell ischeck = row.Cells[8];
+            DataGridViewCell isunique = row.Cells[9];
+            DataGridViewCell iskey = row.Cells[10];
+
+         //   e.Cancel = !(IsDoc(Docnamecell) && IsGender(Gendercell) && IsAddress(Addresscell) && IsContactno(Contactnocell) && IsDate(Datecell));
+        }
+
+       
+
+        private void DatabaseTypeComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(this.databaseTypeComboBox.Text))
+            {
+                ConnectionProperties connection = DMEEditor.ConfigEditor.DataConnections.Where(o => o.ConnectionName.Equals(this.databaseTypeComboBox.Text, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                ConnectionDriversConfig conf = DMEEditor.Utilfunction.LinkConnection2Drivers(connection);              
+                if (conf != null)
+                {
+                    //   AssemblyClassDefinition def = DMEEditor.ConfigEditor.DataSourcesClasses.Where(u => u.PackageName.Equals(connection.DriverName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                    //if (def != null)
+                    //{
+                    dataTypesMapBindingSource.DataSource = DMEEditor.ConfigEditor.DataTypesMap.Where(p => p.DataSourceName.Equals(conf.classHandler, StringComparison.OrdinalIgnoreCase)).Distinct();
+                    //}
+                 
+                }
+                  
+            }
         }
 
         private void FieldsBindingSource_AddingNew(object sender, AddingNewEventArgs e)
@@ -141,7 +210,8 @@ namespace TheTechIdea.DDL
                 if (SourceConnection.ConnectionStatus == ConnectionState.Open)
                 {
                     tb.DatasourceEntityName = tb.EntityName;
-                     SourceConnection.CreateEntityAs(tb);
+                    
+                    SourceConnection.CreateEntityAs(tb);
                     if (DMEEditor.ErrorObject.Flag == Errors.Ok)
                     {
                         MessageBox.Show("Entity Creation Success", "Beep");

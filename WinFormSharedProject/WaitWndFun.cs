@@ -48,14 +48,14 @@ namespace TheTechIdea.Winforms.VIS
             // if (loadingForm != null)
             // {
             //  loadingForm.BeginInvoke(new System.Threading.ThreadStart(loadingForm.CloseForm));
-            Thread.Sleep(300);
+            Thread.Sleep(100);
             loadingForm.ChangeCaption(newCaption);
            // }
 
         }
         public void AddComment(String comment)
         {
-            Thread.Sleep(300);
+            Thread.Sleep(100);
             loadingForm.AddComment(comment);
         }
     }

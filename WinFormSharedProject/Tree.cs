@@ -674,7 +674,8 @@ namespace TheTechIdea.Winforms.VIS
             TreeV.ImageList = images;
             TreeV.ItemHeight = 32;
             TreeV.SelectedImageKey = SelectIcon;
-          
+            //TreeV.Dock = DockStyle.Fill;
+            //TreeV.SendToBack();
             CreateDelagates();
         }
         #endregion

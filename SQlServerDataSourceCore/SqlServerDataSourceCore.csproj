@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>TheTechIdea.DataManagment_Engine.Database</RootNamespace>
+ </PropertyGroup>
+<ItemGroup>
+		<Compile Include="..\SQLServerDataSource\*.cs" />
+		<EmbeddedResource Include="..\SQLServerDataSource\**\*.resx" />
+</ItemGroup>
+<ItemGroup>
+  <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
+</ItemGroup>
+<ItemGroup>
+  <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+</ItemGroup>
+<Target Name="CopyTarget" AfterTargets="Build">
+		<ItemGroup>
+			<DataReaders Include="$(TargetDir)\SQLServerDataSourceCore.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\netcoreapp3.1\ProjectClasses" SkipUnchangedFiles="true" />
+	</Target>
+
+</Project>
