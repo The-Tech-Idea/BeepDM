@@ -32,6 +32,7 @@ namespace TheTechIdea.Winforms.VIS
             EntityStructure.Viewtype = ViewType.Table;
             EntityStructure.EntityName = pBranchText;
             DataSourceName = ds.DatasourceName;
+
             if (pID != 0)
             {
                 ID = pID;
@@ -364,7 +365,41 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
+        [BranchDelegate(Caption = "Drop")]
+        public IErrorsInfo DropEntity()
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+           
+            try
+            {
+              if(Visutil.controlEditor.InputBoxYesNo("Beep DM","Are you sure you ?")== DialogResult.Yes)
+                {
+                    EntityStructure = DataSource.GetEntityStructure(BranchText, true);
 
+                    DataSource.ExecuteSql($"Drop Table {EntityStructure.DatasourceEntityName}");
+                    if (DMEEditor.ErrorObject.Flag== Errors.Ok)
+                    {
+                        TreeEditor.RemoveBranch(this);
+
+                        DMEEditor.AddLogMessage("Success", $"Droped Entity {EntityStructure.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                    }
+                    else
+                    {
+                        DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {EntityStructure.EntityName} - {DMEEditor.ErrorObject.Message}", DateTime.Now, -1, null, Errors.Failed);
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+               
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
+                DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {EntityStructure.EntityName} - {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+
+        }
         #endregion
     }
 }

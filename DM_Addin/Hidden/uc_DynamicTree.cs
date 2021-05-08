@@ -82,6 +82,7 @@ namespace TheTechIdea.Hidden
         private void Checkbutton_Click(object sender, EventArgs e)
         {
             treeView1.CheckBoxes = !treeView1.CheckBoxes;
+            TreeEditor.SelectedBranchs.Clear();
         }
     }
 }
