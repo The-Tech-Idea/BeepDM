@@ -17,6 +17,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         public DataSourceType DatabaseType { get; set; }
         public string StatusDescription { get; set; }
         public string DataSourceID { get; set; }
+
         //---------------- View Entity Properties ---------------
         public string CustomBuildQuery { get; set; }
         public int ParentId { get; set; }

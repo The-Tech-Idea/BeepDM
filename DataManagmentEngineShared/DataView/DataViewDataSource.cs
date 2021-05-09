@@ -191,7 +191,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
                     Entities = DataView.Entities;
                 }
-                foreach (EntityStructure i in DataView.Entities.Where(x=>x.Id>1))
+                foreach (EntityStructure i in DataView.Entities) //.Where(x=>x.Id>1)
                 {
                     if (string.IsNullOrEmpty(i.DatasourceEntityName))
                     {
@@ -428,9 +428,9 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         }
         public bool CheckEntityExist(string entityname)
         {
-            if (Entities.Any(x=> string.Equals(x.EntityName, entityname, StringComparison.OrdinalIgnoreCase)))
+            if (Entities.Any(x=> x.EntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase)))
             {
-                return GetDataSourceObject(entityname).CheckEntityExist(entityname);
+                return true;
             }else
             {
                 return false;
@@ -632,18 +632,18 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             List<ChildRelation> ds = conn.GetChildTablesList(tablename, SchemaName, Filterparamters);
-            if (DataView.Entities.Count == 0)
-            {
+            //if (DataView.Entities.Count == 0)
+            //{
 
 
-                EntityStructure viewheader = new EntityStructure() { Id = NextHearId(), EntityName = DataView.ViewName };
-                viewheader.DataSourceID = conn.DatasourceName;
-                viewheader.EntityName = DataView.ViewName.ToUpper();
-                viewheader.ParentId = 0;
-                viewheader.ViewID = DataView.ViewID;
+            //    EntityStructure viewheader = new EntityStructure() { Id = NextHearId(), EntityName = DataView.ViewName };
+            //    viewheader.DataSourceID = conn.DatasourceName;
+            //    viewheader.EntityName = DataView.ViewName.ToUpper();
+            //    viewheader.ParentId = 0;
+            //    viewheader.ViewID = DataView.ViewID;
 
-                DataView.Entities.Add(viewheader);
-            }
+            //    DataView.Entities.Add(viewheader);
+            //}
 
 
             //  maxcnt = DataView.Entities.Max(m => m.Id);
@@ -652,7 +652,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             maintab.EntityName = tablename.ToUpper();
             maintab.ViewID = DataView.ViewID;
             maintab.DatasourceEntityName = tablename;
-            maintab.ParentId = DataView.Entities[0].Id;
+            maintab.ParentId = 0;
 
             DataView.Entities.Add(maintab);
             EntitiesNames.Add(maintab.EntityName);
@@ -668,7 +668,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                     foreach (ChildRelation r in ds)
                     {
                         EntityStructure a;
-                        a = GetEntityStructure(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, maintab.Id);
+                        a = SetupEntityInView(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, maintab.Id, conn.DatasourceName);
 
 
 
@@ -691,17 +691,16 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 retval = new DMDataView();
                 retval.ViewID = 0;
                 retval.EntityDataSourceID = ViewName;
-                //    string schemaname = "";
                 retval.ViewName = ViewName;
                 retval.DataViewDataSourceID = ViewName;
                 retval.Viewtype = ViewType.Table;
                 retval.VID = Guid.NewGuid().ToString();
-                EntityStructure viewheader = new EntityStructure() { Id = 1, EntityName = ViewName };
+                //EntityStructure viewheader = new EntityStructure() { Id = 1, EntityName = ViewName };
 
-                viewheader.EntityName = ViewName;
-                viewheader.ViewID = retval.ViewID;
-                viewheader.ParentId = 0;
-                retval.Entities.Add(viewheader);
+                //viewheader.EntityName = ViewName;
+                //viewheader.ViewID = retval.ViewID;
+                //viewheader.ParentId = 0;
+                //retval.Entities.Add(viewheader);
 
             }
             catch (Exception ex)
@@ -739,7 +738,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                                 foreach (ChildRelation r in ds)
                                 {
                                     EntityStructure a;
-                                    a = GetEntityStructure(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, pd.Id);
+                                    a = SetupEntityInView(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, pd.Id, conn.DatasourceName);
 
                                 }
                             }
@@ -794,7 +793,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                     foreach (ChildRelation r in ds)
                     {
                         EntityStructure a;
-                        a = GetEntityStructure(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id);
+                        a = SetupEntityInView(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id,conn.DatasourceName);
 
                     }
 
@@ -818,7 +817,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 maintab.DataSourceID = conn.DatasourceName;
                 maintab.EntityName = tablename.ToUpper();
                 maintab.ViewID = 0;
-                maintab.ParentId = DataView.Entities[0].Id;
+                maintab.ParentId = 0;
                 maintab.DatabaseType = conn.DatasourceType;
                 maintab.DatasourceEntityName = tablename;
                 if (CheckEntityExist(maintab.DatasourceEntityName))
@@ -888,7 +887,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                         foreach (ChildRelation r in ds)
                         {
                             EntityStructure a;
-                            a = GetEntityStructure(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, maintab.Id);
+                            a = SetupEntityInView(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, maintab.Id, conn.DatasourceName);
 
 
 
@@ -919,11 +918,10 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             try
             {
                 maintab.Id = NextHearId();
-            //    maintab.EntityName = tablename.ToUpper();
                 maintab.ViewID = 0;
                 if (maintab.ParentId == -1)
                 {
-                    maintab.ParentId = DataView.Entities[0].Id;
+                    maintab.ParentId = 0;
                 }
 
                 //--- check entity already exist , if it does change Entity Name
@@ -950,7 +948,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                             foreach (ChildRelation r in ds)
                             {
                                 EntityStructure a;
-                                a = GetEntityStructure(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id);
+                                a = SetupEntityInView(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id, entityds.DatasourceName);
                             }
                         }
                     }
@@ -990,12 +988,12 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
             return iconname;
         }
-        private EntityStructure GetEntityStructure(IDMDataView v, List<EntityStructure> Rootnamespacelist, string childtable, string parenttable, string childcolumn, string parentcolumn, int pid)
+        private EntityStructure SetupEntityInView(IDMDataView v, List<EntityStructure> Rootnamespacelist, string childtable, string parenttable, string childcolumn, string parentcolumn, int pid,string Datasourcename)
         {
 
             EntityStructure a;
             int pkid = NextHearId();
-            IDataSource ds = (IDataSource)DMEEditor.GetDataSource(v.Entities.Where(x => x.Id == pid).FirstOrDefault().DataSourceID);
+            IDataSource ds = DMEEditor.GetDataSource(Datasourcename);
             string schemaname = "";
             if (ds.Category == DatasourceCategory.RDBMS)
             {
@@ -1005,26 +1003,28 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
             if (!Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.Equals(childtable,StringComparison.OrdinalIgnoreCase)).Any())//f => f.Id == childtable &&
             {
-                a = new EntityStructure() { Id = pkid, ParentId = pid, EntityName = childtable.ToUpper(), ViewID = v.ViewID };
-                a.DataSourceID = v.Entities.Where(x => x.Id == pid).FirstOrDefault().DataSourceID;
-                a.DatasourceEntityName = childtable;
-                a.Relations = ds.GetEntityforeignkeys(childtable.ToUpper(), schemaname);
-
+                //a = new EntityStructure() { Id = pkid, ParentId = pid, EntityName = childtable.ToUpper(), ViewID = v.ViewID };
+                //a.DataSourceID = v.Entities.Where(x => x.Id == pid).FirstOrDefault().DataSourceID;
+                //a.DatasourceEntityName = childtable;
+                //a.Relations = ds.GetEntityforeignkeys(childtable.ToUpper(), schemaname);
+               
+                a = (EntityStructure)ds.GetEntityStructure(childtable, true).Clone();
+                a.ParentId = pid;
+                a.Id = NextHearId();
                 Rootnamespacelist.Add(a);
 
 
             }
             else
             {
-                a = Rootnamespacelist.Where(f => f.ParentId == pid).FirstOrDefault(); //f.Id == childtable &&
-                a.DataSourceID = v.EntityDataSourceID;
+                a = Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.Equals(childtable, StringComparison.OrdinalIgnoreCase)).FirstOrDefault(); //f.Id == childtable &&
+              //  a.DataSourceID = DatasourceName;
                 a.DatasourceEntityName = childtable;
                 a.Relations.Add(new RelationShipKeys { EntityColumnID = childcolumn.ToUpper(), ParentEntityColumnID = parentcolumn.ToUpper(), ParentEntityID = parenttable.ToUpper() });
 
             }
             return a;
         }
-
         public EntityStructure GetEntity(string entityname)
         {
             EntityStructure retval = null;
@@ -1048,16 +1048,22 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
             if (DataView.Entities != null)
             {
-                if (DataView.Entities.Max(p => p.Id) > EntityIndex)
+                if (DataView.Entities.Count >0)
                 {
-                    EntityIndex = DataView.Entities.Max(p => p.Id);
+                    if (DataView.Entities.Max(p => p.Id) > EntityIndex)
+                    {
+                        EntityIndex = DataView.Entities.Max(p => p.Id);
+                    }
                 }
+                else
+                {
+                    EntityIndex = 0;
+                }
+                
             }
 
             return EntityIndex += 1;
         }
-      
-    
         #endregion "Misc and Util Methods"
         #region "Dataset and entity Structure Methods"
         public List<DataSet> GetDataSetForView(string viewname)
@@ -1199,7 +1205,6 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
             return DMEEditor.ErrorObject;
         }
-
         #endregion "Dataset and entity Structure Methods"
         #region Read/write Views to file
         public void WriteDataViewFile(string filename)

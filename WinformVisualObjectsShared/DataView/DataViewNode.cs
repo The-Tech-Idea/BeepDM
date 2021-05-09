@@ -236,7 +236,7 @@ namespace TheTechIdea.Winforms.VIS
                             if (DataView != null)
                             {
                                 TreeEditor.RemoveChildBranchs(this);
-                                List<EntityStructure> cr = DataView.Entities.Where(cx => (cx.Id != 0) && (cx.ParentId == 1)).ToList();
+                                List<EntityStructure> cr = DataView.Entities.Where(cx => cx.ParentId == 0).ToList();
                                 int i = 0;
                                 foreach (EntityStructure tb in cr)
                                 {
@@ -582,7 +582,7 @@ namespace TheTechIdea.Winforms.VIS
                                 entity.Created = false;
                                 entity.DataSourceID = srcds.DatasourceName;
                                 entity.Id = ds.NextHearId();
-                                entity.ParentId = 1;
+                                entity.ParentId = 0;
                                 entity.ViewID = DataView.ViewID;
                                 if ( srcds.Category== DatasourceCategory.WEBAPI)
                                 {
@@ -592,9 +592,10 @@ namespace TheTechIdea.Winforms.VIS
                                 ds.CreateEntityAs(entity);
                                 DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
                                 TreeEditor.AddBranch(this, dbent);
-                                dbent.CreateChildNodes();
                                 ChildBranchs.Add(dbent);
-                                DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                                dbent.CreateChildNodes();
+                              
+                            //    DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
                             }
 
                         
@@ -611,7 +612,7 @@ namespace TheTechIdea.Winforms.VIS
                                 if (srcds != null)
                                 {
                                     EntityStructure entity = (EntityStructure)srcds.GetEntityStructure(br.BranchText, true).Clone();
-                                    if (DataSource.CheckEntityExist(entity.EntityName))
+                                    if (ds.CheckEntityExist(entity.EntityName))
                                     {   
                                         DMEEditor.AddLogMessage("Fail", $"Could Not Paste Entity {entity.EntityName}, it already exist", DateTime.Now, -1, null, Errors.Failed);
                                     }
@@ -622,7 +623,7 @@ namespace TheTechIdea.Winforms.VIS
                                     entity.Created = false;
                                     entity.DataSourceID = srcds.DatasourceName;
                                     entity.Id = ds.NextHearId();
-                                    entity.ParentId = 1;
+                                    entity.ParentId = 0;
                                     entity.ViewID = DataView.ViewID;
                                     if (srcds.Category == DatasourceCategory.WEBAPI)
                                     {
@@ -632,9 +633,10 @@ namespace TheTechIdea.Winforms.VIS
                                     ds.CreateEntityAs(entity);
                                     DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
                                     TreeEditor.AddBranch(this, dbent);
-                                    dbent.CreateChildNodes();
                                     ChildBranchs.Add(dbent);
-                                    DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                                    dbent.CreateChildNodes();
+                                   
+                                   // DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
                                 }
                                   
                                 }
@@ -652,7 +654,34 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
+        [BranchDelegate(Caption = "Clear View")]
+        public IErrorsInfo ClearView()
+        {
 
+            try
+            {
+                // IBranch pbr = TreeEditor.Branches.Where(x => x.BranchType == EnumBranchType.Root && x.BranchClass == "VIEW").FirstOrDefault();
+                //
+                ds = (DataViewDataSource)DMEEditor.GetDataSource(DataSourceName);
+                
+
+                if (ds != null)
+                {
+                    ds.Dataconnection.OpenConnection();
+                    ds.Entities.Clear();
+                    DMEEditor.ConfigEditor.SaveDataconnectionsValues();
+                    // ds.Dataview=DataView;
+                    ds.WriteDataViewFile(DataSourceName);
+
+                }
+            }
+            catch (Exception ex)
+            {
+                string mes = "Could not Added Entity ";
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return DMEEditor.ErrorObject;
+        }
         #endregion Exposed Interface"
         #region "Other Methods"
         public IErrorsInfo GetFile()

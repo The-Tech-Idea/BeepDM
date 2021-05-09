@@ -192,8 +192,18 @@ namespace TheTechIdea.ETL
                 compositeQueryLayersBindingSource.EndEdit();
                 ILocalDB db = (ILocalDB)DMEEditor.CreateLocalDataSourceConnection(cn,cn.ConnectionName,package.classHandler);
                 db.CreateDB();
+             
                 DMEEditor.ConfigEditor.AddDataConnection(cn);
                 DMEEditor.ConfigEditor.SaveDataconnectionsValues();
+               
+                //--------------------
+                CompositeLayerDataSource compositeLayerDataSource = new CompositeLayerDataSource(cn.ConnectionName, DMEEditor.Logger, DMEEditor, cn.DatabaseType, DMEEditor.ErrorObject);
+                ConnectionDriversConfig driversConfig = DMEEditor.Utilfunction.LinkConnection2Drivers(cn);
+                compositeLayerDataSource.Dataconnection.ConnectionProp = cn;
+                compositeLayerDataSource.Dataconnection.DataSourceDriver = driversConfig;
+                compositeLayerDataSource.LocalDB = (ILocalDB)ds;
+                compositeLayerDataSource.Dataconnection.OpenConnection();
+                compositeLayerDataSource.GetAllEntitiesFromDataView();
                 DMEEditor.ConfigEditor.SaveCompositeLayersValues();
                 RootCompositeLayerBranch.CreateChildNodes();
                 MessageBox.Show($"Creating Composite Layer for view {branch.BranchText}");

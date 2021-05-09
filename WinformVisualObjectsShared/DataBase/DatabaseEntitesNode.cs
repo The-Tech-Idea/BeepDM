@@ -380,7 +380,7 @@ namespace TheTechIdea.Winforms.VIS
                     if (DMEEditor.ErrorObject.Flag== Errors.Ok)
                     {
                         TreeEditor.RemoveBranch(this);
-
+                        DataSource.Entities.RemoveAt(DataSource.Entities.FindIndex(p => p.DatasourceEntityName == EntityStructure.DatasourceEntityName));
                         DMEEditor.AddLogMessage("Success", $"Droped Entity {EntityStructure.EntityName}", DateTime.Now, -1, null, Errors.Ok);
                     }
                     else

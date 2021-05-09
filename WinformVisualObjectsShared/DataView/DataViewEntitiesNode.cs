@@ -43,11 +43,11 @@ namespace TheTechIdea.Winforms.VIS
             }
             BranchText = entityStructure.Caption;
             MiscID = entityStructure.Id;
-            DataSourceName = pDSName; //entityStructure.DataSourceID;
-            ID = MiscID;
+            DataSourceName = entityStructure.DataSourceID; //entityStructure.DataSourceID;
+           
             if (pID != 0)
             {
-               
+                ID = pID;
                 BranchID = pID;
             }
         }
@@ -111,7 +111,7 @@ namespace TheTechIdea.Winforms.VIS
                 if (branch == null)
                 {
                    
-                    dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, ParentBranch, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(i.Viewtype), DataView.DataViewDataSourceID, i);
+                    dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, ParentBranch, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(i.Viewtype),ds.DatasourceName, i);
                     TreeEditor.AddBranch(ParentBranch, dbent);
                     dbent.CreateChildNodes();
                     ChildBranchs.Add(dbent);
@@ -121,7 +121,7 @@ namespace TheTechIdea.Winforms.VIS
                     if (!ChildBranchs.Where(x => x.BranchText == i.EntityName).Any())
                     {
                        
-                        dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, ParentBranch, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(i.Viewtype), DataView.DataViewDataSourceID, i);
+                        dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, ParentBranch, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(i.Viewtype), ds.DatasourceName, i);
                         TreeEditor.AddBranch(ParentBranch, dbent);
                         dbent.CreateChildNodes();
                         ChildBranchs.Add(dbent);
@@ -153,19 +153,22 @@ namespace TheTechIdea.Winforms.VIS
                 List<EntityStructure> cr = DataView.Entities.Where(cx => (cx.Id != EntityStructure.Id) && (cx.ParentId == EntityStructure.Id) ).ToList();
                 foreach (EntityStructure i in cr)
                 {
-                    if (ChildBranchs.Where(x=>x.BranchText== i.EntityName).Any()==false)
-                    {
-                        
-                        dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(i.Viewtype), DataView.DataViewDataSourceID, i);
-                        TreeEditor.AddBranch(this, dbent);
-                        dbent.CreateChildNodes();
-                        ChildBranchs.Add(dbent);
-                    }
-                    else
-                    {
-                        dbent = ChildBranchs.Where(x => x.BranchText == i.EntityName).FirstOrDefault();
-                        dbent.CreateChildNodes();
-                    }
+                    //if (ChildBranchs.Count == 0)
+                    //{
+                        if (ChildBranchs.Where(x => x.BranchText == i.EntityName).Any() == false)
+                        {
+
+                            dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, i.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(i.Viewtype), ds.DatasourceName, i);
+                            TreeEditor.AddBranch(this, dbent);
+                            ChildBranchs.Add(dbent);
+                            dbent.CreateChildNodes();
+                           
+                        }
+                        else
+                        {
+                            dbent = ChildBranchs.Where(x => x.BranchText == i.EntityName).FirstOrDefault();
+                            dbent.CreateChildNodes();
+                        }
 
                     List<EntityStructure> childs = DataView.Entities.Where(cx => (cx.Id != i.Id) && (cx.ParentId == i.Id)).ToList();
                     if (childs != null)
@@ -176,6 +179,9 @@ namespace TheTechIdea.Winforms.VIS
                         }
                     }
 
+                    // }
+
+
 
 
                 }
@@ -184,7 +190,7 @@ namespace TheTechIdea.Winforms.VIS
             }
             catch (Exception ex)
             {
-                string mes = "Could not Add Database Connection";
+                string mes = "Could not Create Child Node";
                 DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
             };
             return DMEEditor.ErrorObject;
@@ -512,7 +518,7 @@ namespace TheTechIdea.Winforms.VIS
                 //  DMEEditor.AddLogMessage("Success", "Added Database Connection", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
-            {                string mes = "Could not Add Database Connection";
+            {                string mes = "Could not Edit Entity";
                 DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
             };
             return DMEEditor.ErrorObject;

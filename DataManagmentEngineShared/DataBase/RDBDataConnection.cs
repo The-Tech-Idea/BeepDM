@@ -77,7 +77,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 {
                     ErrorObject.Flag = Errors.Ok;
                     ConnectionStatus = DbConn.State;
-                    Logger.WriteLog("Database Already Open");
+                 //   Logger.WriteLog("Database Already Open");
                     ErrorObject.Flag = Errors.Ok;
                     return DbConn.State;
                 }
@@ -92,7 +92,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     DbConn = (IDbConnection) DMEEditor.assemblyHandler.GetInstance(DataSourceDriver.DbConnectionType);
 
                     DbConn.ConnectionString = ReplaceValueFromConnectionString(); //ConnectionProp.ConnectionString;
-                    Logger.WriteLog("Init  DbConn for  Server");
+                 //   Logger.WriteLog("Init  DbConn for  Server");
                 }
                 catch (Exception e)
                 {

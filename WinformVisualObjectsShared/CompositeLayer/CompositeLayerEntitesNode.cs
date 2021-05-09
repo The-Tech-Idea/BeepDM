@@ -234,8 +234,8 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Edit", Hidden = false)]
-        public IErrorsInfo EditEntity()
+        [BranchDelegate(Caption = "View Structure", Hidden = false)]
+        public IErrorsInfo ViewStructure()
         {
 
             try
@@ -245,10 +245,6 @@ namespace TheTechIdea.Winforms.VIS
                 ObjectItem it = new ObjectItem();
                 it.obj = this;
                 it.Name = "Branch";
-                ob.Add(it);
-                 it = new ObjectItem();
-                it.obj = compositeLayerDataSource;
-                it.Name = "Clayer";
                 ob.Add(it);
                 PassedArgs Passedarguments = new PassedArgs
                 {
@@ -260,18 +256,18 @@ namespace TheTechIdea.Winforms.VIS
                     Id = BranchID,
                     ObjectType = "RDBMSENTITY",
                     DataSource = DataSource,
-                    ObjectName =compositeLayerDataSource.LayerInfo.LayerName,
+                    ObjectName = EntityStructure.DataSourceID,
                     Objects = ob,
                     DatasourceName = EntityStructure.DataSourceID,
-                    EventType = "CLAYERENTITY"
+                    EventType = "RDBMSENTITY"
 
                 };
                 //ActionNeeded?.Invoke(this, Passedarguments);
-                Visutil.ShowUserControlPopUp("Uc_DataViewEntityEditor", DMEEditor, args, Passedarguments);
+                Visutil.ShowUserControlPopUp("uc_DataEntityStructureViewer", DMEEditor, args, Passedarguments);
 
 
 
-                DMEEditor.AddLogMessage("Success", "Edit Control Shown", DateTime.Now, 0, null, Errors.Ok);
+                //  DMEEditor.AddLogMessage("Success", "Edit Control Shown", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
@@ -419,6 +415,46 @@ namespace TheTechIdea.Winforms.VIS
                 DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
             };
             return DMEEditor.ErrorObject;
+        }
+        [BranchDelegate(Caption = "Drop")]
+        public IErrorsInfo DropEntity()
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+
+            try
+            {
+                if (Visutil.controlEditor.InputBoxYesNo("Beep DM", "Are you sure you ?") == DialogResult.Yes)
+                {
+                    EntityStructure = DataSource.GetEntityStructure(BranchText, true);
+                    if (EntityStructure.Created)
+                    {
+                        DataSource.ExecuteSql($"Drop Table {EntityStructure.DatasourceEntityName}");
+                    }
+                    
+                    
+                    if (DMEEditor.ErrorObject.Flag == Errors.Ok)
+                    {
+                        TreeEditor.RemoveBranch(this);
+                        compositeLayerDataSource.Entities.RemoveAt(DataSource.Entities.FindIndex(p => p.DatasourceEntityName == EntityStructure.DatasourceEntityName));
+                        DMEEditor.ConfigEditor.SaveCompositeLayersValues();
+                        DMEEditor.AddLogMessage("Success", $"Droped Entity {EntityStructure.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                    }
+                    else
+                    {
+                        DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {EntityStructure.EntityName} - {DMEEditor.ErrorObject.Message}", DateTime.Now, -1, null, Errors.Failed);
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
+                DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {EntityStructure.EntityName} - {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+
         }
         #endregion
     }

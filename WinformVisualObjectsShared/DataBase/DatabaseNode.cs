@@ -48,7 +48,6 @@ namespace TheTechIdea.Winforms.VIS
                     ID = pID;
                     BranchID = ID;
                 }
-
                 DMEEditor.AddLogMessage("Success", "Set Config OK", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
@@ -57,9 +56,7 @@ namespace TheTechIdea.Winforms.VIS
                 DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
             };
             return DMEEditor.ErrorObject;
-
         }
-     
         public string Name { get; set; }
         public EntityStructure EntityStructure { get; set; }
         public string BranchText { get; set; }
@@ -82,41 +79,26 @@ namespace TheTechIdea.Winforms.VIS
         public object TreeStrucure { get ; set ; }
         public IVisUtil Visutil { get ; set ; }
         public int MiscID { get; set; }
-       // public event EventHandler<PassedArgs> BranchSelected;
-       // public event EventHandler<PassedArgs> BranchDragEnter;
-       // public event EventHandler<PassedArgs> BranchDragDrop;
-       // public event EventHandler<PassedArgs> BranchDragLeave;
-       // public event EventHandler<PassedArgs> BranchDragClick;
-       // public event EventHandler<PassedArgs> BranchDragDoubleClick;
-       // public event EventHandler<PassedArgs> ActionNeeded;
-
         public IErrorsInfo CreateChildNodes()
         {
             throw new NotImplementedException();
         }
-
         public IErrorsInfo CreateDelegateMenu()
         {
             throw new NotImplementedException();
         }
-
-      
-
         public IErrorsInfo ExecuteBranchAction(string ActionName)
         {
             throw new NotImplementedException();
         }
-
         public IErrorsInfo MenuItemClicked(string ActionNam)
         {
             throw new NotImplementedException();
         }
-
         public IErrorsInfo RemoveChildNodes()
         {
             throw new NotImplementedException();
         }
-      
         [BranchDelegate(Caption = "Get Entities")]
         public IErrorsInfo CreateDatabaseEntites()
         {
@@ -147,21 +129,15 @@ namespace TheTechIdea.Winforms.VIS
                                 iconimage = "databaseentities.ico";
                             }
                             DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this,tb , TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
-                            
                             dbent.DataSourceName = DataSource.DatasourceName;
                             dbent.DataSource = DataSource;
                             ChildBranchs.Add(dbent);
                             TreeEditor.AddBranch(this, dbent);
                             i += 1;
-
-
                         }
                     }
 
                 }
-                
-
-
             }
             catch (Exception ex)
             {
@@ -624,7 +600,6 @@ namespace TheTechIdea.Winforms.VIS
         public IErrorsInfo DropEntities()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-
             try
             {
                 if (Visutil.controlEditor.InputBoxYesNo("Beep DM", "Are you sure you ?") == DialogResult.Yes)
@@ -634,7 +609,6 @@ namespace TheTechIdea.Winforms.VIS
                         foreach (int item in TreeEditor.SelectedBranchs)
                         {
                             IBranch br = TreeEditor.GetBranch(item);
-                           
                             if (br.DataSourceName == DataSourceName)
                             {
                                 IDataSource srcds = DMEEditor.GetDataSource(br.DataSourceName);
@@ -651,17 +625,13 @@ namespace TheTechIdea.Winforms.VIS
                                     DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {ent.EntityName} - {DMEEditor.ErrorObject.Message}", DateTime.Now, -1, null, Errors.Failed);
                                 }
                             }
-                            
                         }
                         DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = DataSourceName, Entities = DataSource.Entities });
                     }
-                   
                 }
-
             }
             catch (Exception ex)
             {
-
                 DMEEditor.ErrorObject.Flag = Errors.Failed;
                 DMEEditor.ErrorObject.Ex = ex;
                 DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {EntityStructure.EntityName} - {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
