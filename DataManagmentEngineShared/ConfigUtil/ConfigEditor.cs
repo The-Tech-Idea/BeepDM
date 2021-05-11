@@ -273,6 +273,23 @@ namespace TheTechIdea.Util
 			return JsonLoader.DeserializeSingleObject<DatasourceEntities>(path);
 
 		}
+		public bool RemoveDataSourceEntitiesValues(string dsname)
+		{
+			string path = Path.Combine(ExePath + @"\Entities\", dsname + "_entities.json");
+            try
+            {
+				File.Delete(path);
+				return true;
+			}
+            catch (IOException ex)
+            {
+
+				return false;
+            }
+			
+			
+
+		}
 		public void SaveDataSourceEntitiesValues(DatasourceEntities datasourceEntities)
 		{
 			string path = Path.Combine(ExePath + @"\Entities\", datasourceEntities.datasourcename + "_entities.json");

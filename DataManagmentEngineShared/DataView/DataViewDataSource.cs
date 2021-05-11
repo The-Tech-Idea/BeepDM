@@ -276,42 +276,38 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
             {
                 EntityStructure r = new EntityStructure();
-                EntityStructure dh = Entities[EntityListIndex(EntityName)];
-                ds = DMEEditor.GetDataSource(dh.DataSourceID);
-                if (ds == null)
-                {
-                    DMEEditor.AddLogMessage("Error", "Could not Find DataSource " + dh.DataSourceID, DateTime.Now, dh.Id, dh.EntityName, Errors.Failed);
-
-                }
-                else
-                {
-                    ds.Dataconnection.OpenConnection();
-                    ds.ConnectionStatus = ds.Dataconnection.ConnectionStatus;
-                    if (ds.ConnectionStatus== ConnectionState.Open)
+                EntityStructure dh = (EntityStructure)Entities[EntityListIndex(EntityName)].Clone();
+              
+                    if (refresh)
                     {
-                        switch (dh.Viewtype)
-                        {
-                            case ViewType.Table:
-                            case ViewType.Query:
-                            case ViewType.File:
-                            case ViewType.Url:
-                                r = GetDataSourceObject(dh.EntityName).GetEntityStructure(dh, refresh);
-                                dh.Fields = r.Fields;
-                                dh.Relations = r.Relations;
-                                dh.PrimaryKeys = r.PrimaryKeys;
-                                break;
-                           
+                       
+                            switch (dh.Viewtype)
+                            {
+                                case ViewType.Table:
+                                case ViewType.Query:
+                                case ViewType.File:
+                                case ViewType.Url:
+                                    r = (EntityStructure)GetDataSourceObject(dh.EntityName).GetEntityStructure(dh, refresh).Clone();
+                                    dh.Fields = r.Fields;
+                                    dh.Relations = r.Relations;
+                                    dh.PrimaryKeys = r.PrimaryKeys;
+                                    break;
 
-                            case ViewType.Code:
-                            default:
-                                break;
 
-                        }
+                                case ViewType.Code:
+                                default:
+                                    break;
+
+                            }
+
                         
                     }
+                    else
+                    {
+                        return dh;
+                    }
                    
-                }
-
+               
 
                 return dh;
             }

@@ -49,7 +49,7 @@ namespace TheTechIdea.ETL
         DataViewDataSource ds;
         IBranch RootCompositeLayerBranch;
         CompositeLayer Layer;
-
+        WaitFormFunc waitForm;
         IBranch branch;
         public void RaiseObjectSelected()
         {
@@ -148,7 +148,7 @@ namespace TheTechIdea.ETL
              try
 
             {
-               
+                
 
                 if (string.IsNullOrEmpty(this.layerNameTextBox.Text)|| string.IsNullOrEmpty(this.localDBDriverVersionComboBox.Text) || string.IsNullOrEmpty(this.layerNameTextBox.Text) )
                 {
@@ -190,22 +190,40 @@ namespace TheTechIdea.ETL
                 Layer.DataViewDataSourceName = this.dataViewDataSourceNameComboBox.Text;
                 Layer.Entities = new List<EntityStructure>();
                 compositeQueryLayersBindingSource.EndEdit();
+                DMEEditor.ConfigEditor.RemoveDataSourceEntitiesValues(Layer.DataSourceName);
                 ILocalDB db = (ILocalDB)DMEEditor.CreateLocalDataSourceConnection(cn,cn.ConnectionName,package.classHandler);
                 db.CreateDB();
              
                 DMEEditor.ConfigEditor.AddDataConnection(cn);
                 DMEEditor.ConfigEditor.SaveDataconnectionsValues();
-               
+              //  DMEEditor.ConfigEditor.SaveCompositeLayersValues();
                 //--------------------
-                CompositeLayerDataSource compositeLayerDataSource = new CompositeLayerDataSource(cn.ConnectionName, DMEEditor.Logger, DMEEditor, cn.DatabaseType, DMEEditor.ErrorObject);
-                ConnectionDriversConfig driversConfig = DMEEditor.Utilfunction.LinkConnection2Drivers(cn);
-                compositeLayerDataSource.Dataconnection.ConnectionProp = cn;
-                compositeLayerDataSource.Dataconnection.DataSourceDriver = driversConfig;
-                compositeLayerDataSource.LocalDB = (ILocalDB)ds;
-                compositeLayerDataSource.Dataconnection.OpenConnection();
-                compositeLayerDataSource.GetAllEntitiesFromDataView();
-                DMEEditor.ConfigEditor.SaveCompositeLayersValues();
-                RootCompositeLayerBranch.CreateChildNodes();
+                try
+                {
+                    waitForm = new WaitFormFunc();
+                    waitForm.Show(this.ParentForm);
+                    CompositeLayerDataSource compositeLayerDataSource = new CompositeLayerDataSource(cn.ConnectionName, DMEEditor.Logger, DMEEditor, cn.DatabaseType, DMEEditor.ErrorObject);
+                    ConnectionDriversConfig driversConfig = DMEEditor.Utilfunction.LinkConnection2Drivers(cn);
+                    compositeLayerDataSource.Dataconnection.ConnectionProp = cn;
+                    compositeLayerDataSource.Dataconnection.DataSourceDriver = driversConfig;
+                    compositeLayerDataSource.LocalDB = db;
+                    compositeLayerDataSource.Dataconnection.OpenConnection();
+                 //   Visutil.treeEditor.ShowWaiting();
+                 //   Visutil.treeEditor.ChangeWaitingCaption($"Getting  Composed Layer Entities Total:{compositeLayerDataSource.Entities.Count}");
+                    compositeLayerDataSource.GetAllEntitiesFromDataView();
+                //    Visutil.treeEditor.HideWaiting();
+                    DMEEditor.ConfigEditor.SaveCompositeLayersValues();
+                    RootCompositeLayerBranch.CreateChildNodes();
+                    waitForm.Close();
+                }
+                catch (Exception ex1)
+                {
+
+                    string errmsg = $"Error Creating Composite Layer for view";
+                    waitForm.Close();
+                    DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex1.Message}", DateTime.Now, 0, null, Errors.Failed);
+                }
+              
                 MessageBox.Show($"Creating Composite Layer for view {branch.BranchText}");
                 DMEEditor.AddLogMessage("Success", $"Creating Composite Layer for view {branch.BranchText}", DateTime.Now, 0, null, Errors.Ok);
                 this.ParentForm.Close();

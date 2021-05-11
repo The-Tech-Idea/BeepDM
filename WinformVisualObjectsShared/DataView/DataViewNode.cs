@@ -238,6 +238,8 @@ namespace TheTechIdea.Winforms.VIS
                                 TreeEditor.RemoveChildBranchs(this);
                                 List<EntityStructure> cr = DataView.Entities.Where(cx => cx.ParentId == 0).ToList();
                                 int i = 0;
+                                TreeEditor.ShowWaiting();
+                                TreeEditor.ChangeWaitingCaption($"Getting  DataView Entities Total:{DataView.Entities.Count}");
                                 foreach (EntityStructure tb in cr)
                                 {
 
@@ -247,14 +249,17 @@ namespace TheTechIdea.Winforms.VIS
                                         DataView.Entities[ds.EntityListIndex(tb.EntityName)].DatasourceEntityName = tb.EntityName;
                                     }
                                     dbent.ID = tb.Id;
-                                   // dbent.DataSourceName = tb.DataSourceID;
+                                    TreeEditor.AddCommentsWaiting($"{i} - Added Main Entity {tb.EntityName} ");
                                     TreeEditor.AddBranch(this, dbent);
                                     dbent.CreateChildNodes();
+                                    TreeEditor.AddCommentsWaiting($"{i} - Added Child Branch for Entity {tb.EntityName} ");
                                     ChildBranchs.Add(dbent);
                                     i += 1;
                                     
                                 }
+                                TreeEditor.HideWaiting();
                                 ds.WriteDataViewFile(DataSourceName);
+                                
                                 DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DataSourceName, Entities = DataView.Entities });
                             }
                            

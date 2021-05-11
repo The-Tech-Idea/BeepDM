@@ -69,7 +69,7 @@ namespace TheTechIdea.Hidden
             var o= obj.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault();
             Visutil = (IVisUtil)o.obj;
             Visutil.DisplayPanel=(Control)this.splitContainer1.Panel1;
-
+            Visutil.ParentForm = this;
             this.uc_logpanel1.SetConfig(pDMEEditor, Logger, putil, args, obj, per);
             this.uc_DynamicTree1.SetConfig(pDMEEditor, Logger, putil, args, obj, per);
             this.Shown += Frm_MainDisplayForm_Shown;

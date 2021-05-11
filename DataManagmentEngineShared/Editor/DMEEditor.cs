@@ -378,8 +378,12 @@ namespace TheTechIdea.DataManagment_Engine
                         ds.Dataconnection.DbConn.Close();
                         ds.Dataconnection.DbConn.Dispose();
                     }
-               
-                    DataSources.Remove(ds);
+                    if (ds.Dataconnection.DataSourceDriver.CreateLocal)
+                    {
+                        ConfigEditor.RemoveDataSourceEntitiesValues(ds.DatasourceName);
+                    }
+                        DataSources.Remove(ds);
+                   
                 }
                 else
                 {

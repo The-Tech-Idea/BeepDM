@@ -107,6 +107,7 @@ namespace TheTechIdea.Util
         void SaveTablesEntities();
         DatasourceEntities LoadDataSourceEntitiesValues(string dsname);
         void SaveDataSourceEntitiesValues(DatasourceEntities datasourceEntities);
+        bool RemoveDataSourceEntitiesValues(string dsname);
         void CreateDirConfig(string path, FolderFileTypes foldertype);
          void ReadWork();
       

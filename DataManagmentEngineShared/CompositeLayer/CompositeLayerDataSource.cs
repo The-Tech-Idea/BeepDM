@@ -96,27 +96,35 @@ namespace TheTechIdea.DataManagment_Engine.CompositeLayer
                 if (DataViewSource == null && !string.IsNullOrEmpty(LayerInfo.DataViewDataSourceName))
                 {
                     DataViewSource = (DataViewDataSource)DMEEditor.GetDataSource(LayerInfo.DataViewDataSourceName);
-                    List<string> ls = DataViewSource.GetEntitesList();
+                    IEnumerable<string> ls = DataViewSource.GetEntitesList().Distinct();
                     if (LayerInfo.Entities == null)
                     {
                         LayerInfo.Entities = new List<EntityStructure>();
                     }
+                    List<string> ents = ls.Except(LayerInfo.Entities.Select(p => p.EntityName).Distinct()).ToList();
                     // 
-                    foreach (string item in ls)
+                    foreach (string item in ents)
                     {
                         try
                         {
-                            string entityname = Regex.Replace(item, @"\s+", "_");
-                            if (!LayerInfo.Entities.Where(x => x.EntityName == entityname).Any())
-
-                            {
+                           // string entityname = Regex.Replace(item, @"\s+", "_");
+                            //if (!LayerInfo.Entities.Where(x => x.EntityName.Equals(item,StringComparison.OrdinalIgnoreCase)).Any())
+                            //{
                                 EntityStructure a = new EntityStructure();
-                                a = (EntityStructure)DataViewSource.GetEntityStructure(item).Clone();
-                                a.EntityName = a.EntityName.ToUpper();
-                                a.Created = false;
-                                a.DataSourceID = DataViewSource.DatasourceName;
-                                LayerInfo.Entities.Add(a);
-                            }
+                                try
+                                {
+                                    a = (EntityStructure)DataViewSource.GetEntityStructure(item, false);
+                                    a.Created = false;
+                                    a.DataSourceID = DatasourceName;
+                                    LayerInfo.Entities.Add(a);
+                                }
+                                catch (Exception eee)
+                                {
+
+                                   
+                                }
+                              
+                           // }
 
                         }
                         catch (Exception er)

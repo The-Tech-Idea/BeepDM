@@ -43,9 +43,10 @@ namespace TheTechIdea.Winforms.VIS
             get { return mdisplay; }
             set { mdisplay = value; }
         }
-       // IWinFormAddin WinformCtl = null;
+        public Form ParentForm { get; set; }
+        // IWinFormAddin WinformCtl = null;
 
-      //  public event EventHandler<PassedArgs> OnObjectSelected;
+        //  public event EventHandler<PassedArgs> OnObjectSelected;
         //----------------------------------------------------
         #region Show Form or UserControl using Addin Interface
         private List<ObjectItem> CreateArgsParameterForVisUtil()

@@ -11,6 +11,8 @@ namespace TheTechIdea.DataManagment_Engine.Editor
     {
 
         public event EventHandler<ProgressChangedEventArgs> ReportProgress;
+        public event EventHandler<RunWorkerCompletedEventArgs> JobCompleted;
+
         private BackgroundWorker backgroundWorker1;
         public int percentCompleted { get; set; }
         public PassedArgs args { get; set; }
@@ -95,7 +97,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 // succeeded.
                 // resultLabel.Text = e.Result.ToString();
             }
-
+            JobCompleted?.Invoke(sender, e);
             // Enable the UpDown control.
 
         }

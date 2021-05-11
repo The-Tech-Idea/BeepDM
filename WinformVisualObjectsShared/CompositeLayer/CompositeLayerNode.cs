@@ -164,7 +164,7 @@ namespace TheTechIdea.Winforms.VIS
         public IErrorsInfo GetEntites()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-          
+            string iconimage;
             try
             {
               if (compositeLayerDataSource != null)
@@ -180,8 +180,15 @@ namespace TheTechIdea.Winforms.VIS
                     
                         foreach (EntityStructure tb in compositeLayerDataSource.LayerInfo.Entities)
                         {
-                            
-                            CompositeLayerEntitesNode dbent = new CompositeLayerEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumBranchType.Entity, "entity.ico", compositeLayerDataSource);
+                            if (tb.Created == false)
+                            {
+                                iconimage = "entitynotcreated.ico";
+                            }
+                            else
+                            {
+                                iconimage = "databaseentities.ico";
+                            }
+                            CompositeLayerEntitesNode dbent = new CompositeLayerEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumBranchType.Entity, iconimage, compositeLayerDataSource);
                             TreeEditor.AddBranch(this, dbent);
                             dbent.DataSourceName = compositeLayerDataSource.DatasourceName;
                             dbent.compositeLayerDataSource = compositeLayerDataSource;
@@ -298,7 +305,10 @@ namespace TheTechIdea.Winforms.VIS
                                 EventType = "RUNSCRIPT"
 
                             };
+                     //   WaitFormFunc waitForm = new WaitFormFunc();
+                    //    waitForm.Show(Visutil.ParentForm);
                         DMEEditor.ETL.script= CreateScript();
+                    //    waitForm.Close();
                         Visutil.ShowUserControlInContainer("uc_ScriptRun", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
 
 
@@ -634,8 +644,10 @@ namespace TheTechIdea.Winforms.VIS
         private LScriptHeader CreateScript()
         {
             List<EntityStructure> ls = new List<EntityStructure>();
-        
+            TreeEditor.ShowWaiting();
+            TreeEditor.ChangeWaitingCaption($"Generating Scripts for  Entities Total:{compositeLayerDataSource.LayerInfo.Entities.Count}");
             ls = compositeLayerDataSource.LayerInfo.Entities.Where(x => x.Created == false).ToList();
+            int i = 0;
             if (ls.Count > 0)
             {
                 DMEEditor.ETL.script = new LScriptHeader();
@@ -643,15 +655,17 @@ namespace TheTechIdea.Winforms.VIS
                 DMEEditor.ETL.GetCreateEntityScript(compositeLayerDataSource, ls);
                 foreach (var item in ls)
                 {
+                    TreeEditor.AddCommentsWaiting($"{i} - Creating script for Entity {item.EntityName} ");
                     LScript upscript = new LScript();
                     upscript.sourcedatasourcename = item.DataSourceID;
                     upscript.entityname = item.EntityName;
                     upscript.destinationdatasourcename = compositeLayerDataSource.DatasourceName;
                     upscript.scriptType = DDLScriptType.CopyData;
                     DMEEditor.ETL.script.Scripts.Add(upscript);
+                    i += 1;
                 }
             }
-
+            TreeEditor.HideWaiting();
             return DMEEditor.ETL.script;
             
         }

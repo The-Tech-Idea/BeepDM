@@ -280,7 +280,7 @@ namespace TheTechIdea.Winforms.VIS
         public void ShowWaiting()
         {
 
-            waitForm.Show(Visutil.DisplayPanel.Parent.Parent.Parent.Parent);
+            waitForm.Show(Visutil.ParentForm);
 
         }
         public void HideWaiting()

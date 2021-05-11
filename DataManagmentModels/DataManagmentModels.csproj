@@ -46,4 +46,8 @@
   </ItemGroup>
   <Import Project="..\DataManagementModelsShared\DataManagementModelsShared.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
 </Project>

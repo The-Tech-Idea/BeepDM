@@ -1394,7 +1394,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             {//-- Create Create string
                 int i = 1;
                 t1.EntityName = Regex.Replace(t1.EntityName, @"\s+", "_");
-                createtablestring += t1.EntityName + "\n(";
+                createtablestring += "["+t1.EntityName + "]\n(";
                 if (t1.Fields.Count == 0)
                 {
                     // t1=ds.GetEntityStructure()
@@ -1402,7 +1402,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 foreach (EntityField dbf in t1.Fields)
                 {
 
-                    createtablestring += "\n" + dbf.fieldname + " " + DMEEditor.typesHelper.GetDataType(DatasourceName, dbf) + " ";
+                    createtablestring += "\n " + dbf.fieldname + " " + DMEEditor.typesHelper.GetDataType(DatasourceName, dbf) + " ";
                     if (dbf.IsAutoIncrement)
                     {
                         dbf.fieldname = Regex.Replace(dbf.fieldname, @"\s+", "_");
@@ -1672,16 +1672,12 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
                     forkeys = forkeys.Remove(forkeys.Length - 1, 1);
                     refkeys = refkeys.Remove(refkeys.Length - 1, 1);
-                    retval += @" ALTER TABLE " + t1.EntityName + " ADD CONSTRAINT " + t1.EntityName + i + r.Next(10, 1000) + "  FOREIGN KEY (" + forkeys + ")  REFERENCES " + item + "(" + refkeys + ") \n";
+                    retval += @" ALTER TABLE [" + t1.EntityName + "] ADD CONSTRAINT " + t1.EntityName + i + r.Next(10, 1000) + "  FOREIGN KEY (" + forkeys + ")  REFERENCES " + item + "(" + refkeys + "); \n";
                 }
 
 
-                if (i >= 1)
-                {
-                    retval = retval.Remove(retval.Length - 2);
-                    retval += "\n";
-                }
-                else
+                if (i ==0)
+                
                 {
                     retval = "";
                 }
@@ -1708,33 +1704,30 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 int i = 0;
                 IDataSource ds;
                 // Generate Forign Keys
-
                 if (entity.Relations != null)
                 {
                     if (entity.Relations.Count > 0)
                     {
-                        LScript x = new LScript();
-                        x.destinationdatasourcename = DatasourceName;
-                        ds = DMEEditor.GetDataSource(entity.DataSourceID);
-                        x.ddl = CreateAlterRalationString(entity);
-                        x.entityname = entity.EntityName;
-                        x.scriptType = DDLScriptType.AlterFor;
-                        rt.Add(x);
-
+                        string relations=CreateAlterRalationString(entity);
+                        string[] rels = relations.Split(';');
+                        foreach (string rl in rels)
+                        {
+                            LScript x = new LScript();
+                            x.destinationdatasourcename = DatasourceName;
+                            ds = DMEEditor.GetDataSource(entity.DataSourceID);
+                            x.ddl = rl;
+                            x.entityname = entity.EntityName;
+                            x.scriptType = DDLScriptType.AlterFor;
+                            rt.Add(x);
+                        }
                         i += 1;
-
                     }
                 }
-
-
             }
             catch (Exception ex)
             {
-
                 DMEEditor.AddLogMessage("Fail", $"Error in getting For. Keys from Database ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
-
             }
-
             return rt;
         }
         private List<LScript> CreateForKeyRelationScripts(List<EntityStructure> entities)

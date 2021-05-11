@@ -47,6 +47,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)Vis\ITree.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\MenuItemAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\VisEnums.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WaitForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)WaitForm.Designer.cs">
+      <DependentUpon>WaitForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)WaitFormFunc.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WaitWndFun.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -55,6 +62,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)ReportGenrerator\uc_ReportPreview.resx">
       <DependentUpon>uc_ReportPreview.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)WaitForm.resx">
+      <DependentUpon>WaitForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

@@ -61,7 +61,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
         public string start { get; set; }
         public string end { get; set; }
         public DateTime updated { get; set; }
-        public object[][] data { get; set; }
+      //  public object[][] data { get; set; }
     }
 
 }

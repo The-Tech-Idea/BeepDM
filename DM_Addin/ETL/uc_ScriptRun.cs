@@ -108,16 +108,17 @@ namespace TheTechIdea.ETL
             Passedarg.Objects.Add(item1);
             backgroundWorker = new BackgroundWorkerThread(Passedarg);
             backgroundWorker.ReportProgress += BackgroundWorker_ReportProgress;
-            backgroundWorker1.RunWorkerCompleted += BackgroundWorker1_RunWorkerCompleted;
+            backgroundWorker.JobCompleted += BackgroundWorker_JobCompleted;
             progressBar1.Step = 2;
             backgroundWorker.RunWorker(Passedarg);
 
         }
 
-        private void BackgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private void BackgroundWorker_JobCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             MessageBox.Show("Job Completed");
         }
+
 
      
 
