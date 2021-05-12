@@ -274,9 +274,6 @@ namespace TheTechIdea.Winforms.VIS
         {
             return Branches.Where(c => c.BranchID == pID).FirstOrDefault();
         }
-
-
-
         public void ShowWaiting()
         {
 
@@ -296,8 +293,6 @@ namespace TheTechIdea.Winforms.VIS
 
             }
         }
-
-
         public void AddCommentsWaiting(string comment)
         {
             if (waitForm != null)
@@ -526,7 +521,7 @@ namespace TheTechIdea.Winforms.VIS
                     {
 
                         IBranch br = createdActivator();
-                        if (br.BranchText == "IronPython")
+                        if (br.BranchText == "AI")
                         {
                             Console.WriteLine("Found");
                         }

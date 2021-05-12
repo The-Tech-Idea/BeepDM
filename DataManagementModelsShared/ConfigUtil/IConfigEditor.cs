@@ -41,6 +41,7 @@ namespace TheTechIdea.Util
         List<AddinTreeStructure> AddinTreeStructure { get; set; }
         List<ReportTemplate> ReportsDefinition { get; set; }
         List<ReportsList> Reportslist { get; set; }
+        List<ReportsList> AIScriptslist { get; set; }
         List<CompositeLayer> CompositeQueryLayers { get; set; }
         List<App> Apps { get; set; }
         List<EntityStructure> EntityCreateObjects { get; set; }
@@ -119,8 +120,9 @@ namespace TheTechIdea.Util
 
         string CreateFileExtensionString();
         void SaveReportDefinitionsValues();
-
         List<ReportTemplate> LoadReportsDefinitionValues();
+        void SaveAIScriptsValues();
+        List<ReportsList> LoadAIScriptsValues();
 
 
 

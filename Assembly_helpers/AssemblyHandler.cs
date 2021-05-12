@@ -1,5 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
+﻿//using Microsoft.CodeAnalysis;
+//using Microsoft.CodeAnalysis.CSharp;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -268,7 +268,7 @@ namespace TheTechIdea.Tools
         /// <param name="Path"></param>
         /// <param name="FolderFileTypes"></param>
         /// <returns></returns>
-        private string LoadAssembly(string path, FolderFileTypes fileTypes)
+        public string LoadAssembly(string path, FolderFileTypes fileTypes)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             string res = "";
@@ -515,6 +515,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IWorkFlowAction";
+                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
                                 DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
                             }
                             //-------------------------------------------------------
@@ -527,6 +528,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IAppBuilder";
+                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
                                 DMEEditor.ConfigEditor.AppWritersClasses.Add(xcls);
                             }
                             if (type.ImplementedInterfaces.Contains(typeof(IAppComponent)))
@@ -537,6 +539,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IAppComponent";
+                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
                                 DMEEditor.ConfigEditor.AppComponents.Add(xcls);
                             }
                             if (type.ImplementedInterfaces.Contains(typeof(IAppDesigner)))
@@ -547,6 +550,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IAppDesigner";
+                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
                                 DMEEditor.ConfigEditor.AppComponents.Add(xcls);
                             }
                             if (type.ImplementedInterfaces.Contains(typeof(IAppScreen)))
@@ -557,6 +561,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IAppScreen";
+                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
                                 DMEEditor.ConfigEditor.AppComponents.Add(xcls);
                             }
                             
@@ -569,6 +574,7 @@ namespace TheTechIdea.Tools
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
                                 xcls.componentType = "IReportDMWriter";
+                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
                                 DMEEditor.ConfigEditor.ReportWritersClasses.Add(xcls);
                             }
                             //-------------------------------------------------------
@@ -583,7 +589,14 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.componentType = "IBranch";
                                 xcls.type = type;
-                             //   xcls.RootName = "AI";
+                                
+                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                                if (xcls.classProperties != null)
+                                {
+                                    xcls.RootName = xcls.classProperties.FileType;
+                                }
+                                
+                                //   xcls.RootName = "AI";
                                 //   xcls.BranchType = brcls.BranchType;
                                 foreach (MethodInfo methods in type.GetMethods()
                                              .Where(m => m.GetCustomAttributes(typeof(BranchDelegate), false).Length > 0)
@@ -768,13 +781,13 @@ namespace TheTechIdea.Tools
             // Ignore missing resources
             if (args.Name.Contains(".resources"))
                 return null;
-
+            string filename = args.Name.Split(',')[0] + ".dll".ToLower();
             // check for assemblies already loaded
             //   var s = AppDomain.CurrentDomain.GetAssemblies();
-            Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName == args.Name);
+            Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName == filename);
             if (assembly == null)
             {
-                assemblies_rep s = Assemblies.FirstOrDefault(a => a.DllLib.FullName == args.Name);
+                assemblies_rep s = Assemblies.FirstOrDefault(a => a.DllLib.FullName == filename);
                 if (s != null)
                 {
                     assembly = s.DllLib;
@@ -783,19 +796,42 @@ namespace TheTechIdea.Tools
             }
             if (assembly != null)
                 return assembly;
-            foreach (var moduleDir in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver && c.FolderFilesType == FolderFileTypes.ProjectClass && c.FolderFilesType == FolderFileTypes.OtherDLL))
+            foreach (var moduleDir in DMEEditor.ConfigEditor.Config.Folders.Where(c =>  c.FolderFilesType == FolderFileTypes.OtherDLL))
             {
                 var di = new DirectoryInfo(moduleDir.FolderPath);
-                var module = di.GetFiles().FirstOrDefault(i => i.Name == args.Name + ".dll");
+                var module = di.GetFiles().FirstOrDefault(i => i.Name == filename );
                 if (module != null)
                 {
                     return Assembly.LoadFrom(module.FullName);
                 }
             }
+            if (assembly != null)
+                return assembly;
+            foreach (var moduleDir in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver))
+            {
+                var di = new DirectoryInfo(moduleDir.FolderPath);
+                var module = di.GetFiles().FirstOrDefault(i => i.Name == filename);
+                if (module != null)
+                {
+                    return Assembly.LoadFrom(module.FullName);
+                }
+            }
+            if (assembly != null)
+                return assembly;
+            foreach (var moduleDir in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass))
+            {
+                var di = new DirectoryInfo(moduleDir.FolderPath);
+                var module = di.GetFiles().FirstOrDefault(i => i.Name == filename);
+                if (module != null)
+                {
+                    return Assembly.LoadFrom(module.FullName);
+                }
+            }
+           
+             
             return null;
 
         }
-      
         public object GetInstance(string strFullyQualifiedName)
         {
             Type type = GetType(strFullyQualifiedName);
@@ -1166,48 +1202,48 @@ namespace TheTechIdea.Tools
             };
         }
         #endregion
-        public void CreateAssembly(Dictionary<string, string> propertiesToEmit)
-        {
-            Assembly ourAssembly= null;
-            if (ourAssembly == null)
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.AppendLine("using System;");
-                sb.AppendLine("public class MyClass");
-                sb.AppendLine("{");
-                sb.AppendLine("  public static void Main()");
-                sb.AppendLine("  {");
-                sb.AppendLine("  }");
-                foreach (var kvp in propertiesToEmit)
-                {
-                    sb.AppendLine($"  public {kvp.Value} {kvp.Key}" + " { get; set; }");
-                }
-                sb.AppendLine("  public  MyClass CreateFromDynamic(Dictionary<string, object> sourceItem)");
-                sb.AppendLine("  {");
-                sb.AppendLine("     MyClass newOne = new MyClass();");
-                foreach (var kvp in propertiesToEmit)
-                {
-                    sb.AppendLine($@"  newOne.{kvp.Key} = sourceItem[""{kvp.Key}""];");
-                }
-                sb.AppendLine("  return newOne;");
-                sb.AppendLine("  }");
-                sb.AppendLine("}");
+        //public void CreateAssembly(Dictionary<string, string> propertiesToEmit)
+        //{
+        //    Assembly ourAssembly= null;
+        //    if (ourAssembly == null)
+        //    {
+        //        StringBuilder sb = new StringBuilder();
+        //        sb.AppendLine("using System;");
+        //        sb.AppendLine("public class MyClass");
+        //        sb.AppendLine("{");
+        //        sb.AppendLine("  public static void Main()");
+        //        sb.AppendLine("  {");
+        //        sb.AppendLine("  }");
+        //        foreach (var kvp in propertiesToEmit)
+        //        {
+        //            sb.AppendLine($"  public {kvp.Value} {kvp.Key}" + " { get; set; }");
+        //        }
+        //        sb.AppendLine("  public  MyClass CreateFromDynamic(Dictionary<string, object> sourceItem)");
+        //        sb.AppendLine("  {");
+        //        sb.AppendLine("     MyClass newOne = new MyClass();");
+        //        foreach (var kvp in propertiesToEmit)
+        //        {
+        //            sb.AppendLine($@"  newOne.{kvp.Key} = sourceItem[""{kvp.Key}""];");
+        //        }
+        //        sb.AppendLine("  return newOne;");
+        //        sb.AppendLine("  }");
+        //        sb.AppendLine("}");
 
-                var tree = CSharpSyntaxTree.ParseText(sb.ToString());
-                var mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
-                var dictsLib = MetadataReference.CreateFromFile(typeof(Dictionary<,>).Assembly.Location);
+        //        var tree = CSharpSyntaxTree.ParseText(sb.ToString());
+        //        var mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
+        //        var dictsLib = MetadataReference.CreateFromFile(typeof(Dictionary<,>).Assembly.Location);
 
-                var compilation = CSharpCompilation.Create("MyCompilation",
-                    syntaxTrees: new[] { tree }, references: new[] { mscorlib, dictsLib });
+        //        var compilation = CSharpCompilation.Create("MyCompilation",
+        //            syntaxTrees: new[] { tree }, references: new[] { mscorlib, dictsLib });
 
-                //Emit to stream
-                var ms = new MemoryStream();
-                var emitResult = compilation.Emit(ms);
+        //        //Emit to stream
+        //        var ms = new MemoryStream();
+        //        var emitResult = compilation.Emit(ms);
 
-                //Load into currently running assembly. Normally we'd probably
-                //want to do this in an AppDomain
-                ourAssembly = Assembly.Load(ms.ToArray());
-            }
-        }
+        //        //Load into currently running assembly. Normally we'd probably
+        //        //want to do this in an AppDomain
+        //        ourAssembly = Assembly.Load(ms.ToArray());
+        //    }
+        //}
     }
 }

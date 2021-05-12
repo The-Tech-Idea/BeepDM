@@ -33,12 +33,12 @@
             // 
             // TextBox1
             // 
-            this.TextBox1.BackColor = System.Drawing.Color.White;
+            this.TextBox1.BackColor = System.Drawing.Color.Black;
             this.TextBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.TextBox1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.TextBox1.ForeColor = System.Drawing.Color.Black;
+            this.TextBox1.ForeColor = System.Drawing.Color.Gold;
             this.TextBox1.Location = new System.Drawing.Point(0, 0);
-            this.TextBox1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.TextBox1.Margin = new System.Windows.Forms.Padding(2);
             this.TextBox1.Name = "TextBox1";
             this.TextBox1.ReadOnly = true;
             this.TextBox1.Size = new System.Drawing.Size(889, 106);
@@ -50,7 +50,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.TextBox1);
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "uc_logpanel";
             this.Size = new System.Drawing.Size(889, 106);
             this.ResumeLayout(false);

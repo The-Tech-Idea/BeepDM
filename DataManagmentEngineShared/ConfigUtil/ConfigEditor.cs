@@ -58,6 +58,7 @@ namespace TheTechIdea.Util
 		public List<Event> Events { get; set; } = new List<Event>();
 		public List<ReportTemplate> ReportsDefinition { get; set; } = new List<ReportTemplate>();
 		public List<ReportsList> Reportslist { get; set; } = new List<ReportsList>();
+		public List<ReportsList> AIScriptslist { get; set; } = new List<ReportsList>();
 		//ReportsList
 		public List<CompositeLayer> CompositeQueryLayers { get; set; } = new List<CompositeLayer>();
 		
@@ -698,6 +699,18 @@ namespace TheTechIdea.Util
 		}
 		#endregion "Configuration L/S"
 		#region "Reports L/S"
+		public void SaveAIScriptsValues()
+		{
+			string path = Path.Combine(ConfigPath, "AIScripts.json");
+			JsonLoader.Serialize(path, AIScriptslist);
+
+		}
+		public List<ReportsList> LoadAIScriptsValues()
+		{
+			string path = Path.Combine(ConfigPath, "AIScripts.json");
+			AIScriptslist = JsonLoader.DeserializeObject<ReportsList>(path);
+			return AIScriptslist;
+		}
 		public void SaveReportsValues()
 		{
 			string path = Path.Combine(ConfigPath, "Reportslist.json");
@@ -1074,10 +1087,13 @@ namespace TheTechIdea.Util
 			ErrorObject.Flag = Errors.Ok;
 			try
 			{
-				string path = Path.Combine(ExePath, "Config.json");
+				string exedir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+				string path = Path.Combine(exedir, "Config.json");
+
 				if (File.Exists(path))
 				{
 					LoadConfigValues();
+
 					if (Config.Folders == null)
 					{
 						Config.Folders.Add(new StorageFolders(ExePath + @"Config", FolderFileTypes.Config));
@@ -1094,33 +1110,24 @@ namespace TheTechIdea.Util
 						Config.Folders.Add(new StorageFolders(ExePath + @"WorkFlow", FolderFileTypes.WorkFlows));
 						Config.Folders.Add(new StorageFolders(ExePath + @"Scripts", FolderFileTypes.Scripts));
 						Config.Folders.Add(new StorageFolders(ExePath + @"Scripts\Logs", FolderFileTypes.ScriptsLogs));
-					}
-					if (Config.ExePath != ExePath)
-					{
-						Config.ExePath = ExePath;
-                        foreach (StorageFolders fold in Config.Folders)
-                        {
-							var dirName = new DirectoryInfo(fold.FolderPath).Name;
-							fold.FolderPath = ExePath+  dirName;
-                        }
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\config\", FolderFileTypes.Config));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\Addin\", FolderFileTypes.Addin));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\DataFiles\", FolderFileTypes.DataFiles));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\DataViews\", FolderFileTypes.DataView));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\ProjectData\", FolderFileTypes.ProjectData));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\ProjectClasses\", FolderFileTypes.ProjectClass));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\ConnectionDrivers\", FolderFileTypes.ConnectionDriver));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\GFX\", FolderFileTypes.GFX));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\OtherDll\", FolderFileTypes.OtherDLL));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\Entities\", FolderFileTypes.Entities));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\Mapping\", FolderFileTypes.Mapping));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\WorkFlow\", FolderFileTypes.WorkFlows));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\Scripts\", FolderFileTypes.Scripts));
-						//Config.Folders.Add(new StorageFolders(ExePath + @"\Scripts\Logs", FolderFileTypes.ScriptsLogs));
+                    }
+                    else // check if path of exe has changed
+                    {
+						if (Config.ExePath != exedir)
+						{
+							Config.ExePath = exedir;
+							ExePath = exedir;
+							foreach (StorageFolders fold in Config.Folders)
+							{
+								var dirName = new DirectoryInfo(fold.FolderPath).Name;
+								fold.FolderPath = exedir + dirName;
+							}
+
+						}
 					}
 					
 				}
-				else
+				else //if file does not exist first run
 				{
 					Config = new ConfigandSettings();
 					Config.Folders.Add(new StorageFolders(ExePath + @"Config", FolderFileTypes.Config));
@@ -1225,9 +1232,14 @@ namespace TheTechIdea.Util
 					Config.OtherDLLPath = Path.Combine(ExePath + @"OtherDll");
 
 				}
-				if (Config.WorkFlowPath == null)
-				{
+				//if (Config.WorkFlowPath == null)
+				//{
 					Config.WorkFlowPath = Path.Combine(ExePath + @"WorkFlow");
+
+				//}
+				if (Config.ConnectionDriversPath == null)
+				{
+					Config.ConnectionDriversPath = Path.Combine(ExePath + @"ConnectionDrivers");
 
 				}
 				SaveConfigValues();
