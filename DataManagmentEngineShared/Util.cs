@@ -164,6 +164,27 @@ namespace TheTechIdea.DataManagment_Engine
 
             return dt;
         }
+        public DataTable CreateDataTableFromListofStrings(List<string> strings)
+        {
+            DataTable dt = new DataTable();
+            string[] headers = strings[0].Split(',');
+            foreach (string header in headers)
+            {
+                dt.Columns.Add(header);
+            }
+            for (int j = 1; j < strings.Count-1; j++)
+            {
+                string[] rows = strings[j].Split(',');
+                DataRow dr = dt.NewRow();
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    dr[i] = rows[i];
+                }
+                dt.Rows.Add(dr);
+            }
+            
+            return dt;
+        }
         public Type GetListType(object someList)
         {
             if (someList == null)

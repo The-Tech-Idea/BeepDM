@@ -45,5 +45,6 @@ namespace TheTechIdea.DataManagment_Engine
         DataTable ToDataTable(IList list,Type tp);
         Type GetEntityType(string EntityName, List<EntityField> Fields);
         Type GetListType(object someList);
+        DataTable CreateDataTableFromListofStrings(List<string> strings);
     }
 }

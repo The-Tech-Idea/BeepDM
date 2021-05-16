@@ -70,6 +70,8 @@ namespace TheTechIdea.Hidden
                 this.TextBox1.BeginInvoke(new Action(() =>
                 {
                     this.TextBox1.AppendText(e + Environment.NewLine);
+                    TextBox1.SelectionStart = TextBox1.Text.Length;
+                    TextBox1.ScrollToCaret();
                 }));
             }
         
