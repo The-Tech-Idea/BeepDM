@@ -9,11 +9,6 @@
     <Import_RootNamespace>TheTechIdea.DataManagment_Engine</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)Addin\" />
-    <Folder Include="$(MSBuildThisFileDirectory)AppBuilder\" />
-    <Folder Include="$(MSBuildThisFileDirectory)NOSQL\" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ConfigEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\DMTypeBuilder.cs" />
@@ -54,5 +49,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\RulesParser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlowEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlowStepEditor.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)Addin\addins.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)AppBuilder\apppbuilders.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)NOSQL\nosql.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

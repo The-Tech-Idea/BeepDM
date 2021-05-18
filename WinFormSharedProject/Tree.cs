@@ -858,6 +858,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                 string drname = null ;
                 string iconname=null;
+                ConnectionDriversConfig connectionDrivers;
                 if (DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName == Connectioname).Any())
                 {
                      drname = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName == Connectioname).FirstOrDefault().DriverName;
@@ -868,11 +869,21 @@ namespace TheTechIdea.Winforms.VIS
                     string drversion = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName == Connectioname).FirstOrDefault().DriverVersion;
                     if (DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.version == drversion && c.DriverClass == drname).Any())
                     {
-                        iconname = DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.version == drversion && c.DriverClass == drname).FirstOrDefault().iconname;
+
+                         connectionDrivers = DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.version == drversion && c.DriverClass == drname).FirstOrDefault();
+                        if (connectionDrivers != null)
+                        {
+                            iconname = connectionDrivers.iconname;
+                        }                            
                     }
                     else
                     {
-                         iconname = DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.DriverClass == drname).FirstOrDefault().iconname;
+                        connectionDrivers = DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.DriverClass == drname).FirstOrDefault();
+                        if (connectionDrivers != null)
+                        {
+                            iconname = connectionDrivers.iconname;
+                        }
+                        
                     }
                     
                     int imgindx = TreeV.ImageList.Images.IndexOfKey(iconname);

@@ -277,16 +277,16 @@ namespace TheTechIdea.Util
 		public bool RemoveDataSourceEntitiesValues(string dsname)
 		{
 			string path = Path.Combine(ExePath + @"\Entities\", dsname + "_entities.json");
-            try
-            {
+			try
+			{
 				File.Delete(path);
 				return true;
 			}
-            catch (IOException ex)
-            {
+			catch (IOException ex)
+			{
 
 				return false;
-            }
+			}
 			
 			
 
@@ -1094,82 +1094,47 @@ namespace TheTechIdea.Util
 				{
 					LoadConfigValues();
 
-					if (Config.Folders == null)
-					{
-						Config.Folders.Add(new StorageFolders(ExePath + @"Config", FolderFileTypes.Config));
-						Config.Folders.Add(new StorageFolders(ExePath + @"Addin", FolderFileTypes.Addin));
-						Config.Folders.Add(new StorageFolders(ExePath + @"DataFiles", FolderFileTypes.DataFiles));
-						Config.Folders.Add(new StorageFolders(ExePath + @"DataViews", FolderFileTypes.DataView));
-						Config.Folders.Add(new StorageFolders(ExePath + @"ProjectDat", FolderFileTypes.ProjectData));
-						Config.Folders.Add(new StorageFolders(ExePath + @"ProjectClasses", FolderFileTypes.ProjectClass));
-						Config.Folders.Add(new StorageFolders(ExePath + @"ConnectionDrivers", FolderFileTypes.ConnectionDriver));
-						Config.Folders.Add(new StorageFolders(ExePath + @"GFX", FolderFileTypes.GFX));
-						Config.Folders.Add(new StorageFolders(ExePath + @"OtherDll", FolderFileTypes.OtherDLL));
-						Config.Folders.Add(new StorageFolders(ExePath + @"Entities", FolderFileTypes.Entities));
-						Config.Folders.Add(new StorageFolders(ExePath + @"Mapping", FolderFileTypes.Mapping));
-						Config.Folders.Add(new StorageFolders(ExePath + @"WorkFlow", FolderFileTypes.WorkFlows));
-						Config.Folders.Add(new StorageFolders(ExePath + @"Scripts", FolderFileTypes.Scripts));
-						Config.Folders.Add(new StorageFolders(ExePath + @"Scripts\Logs", FolderFileTypes.ScriptsLogs));
-                    }
-                    else // check if path of exe has changed
-                    {
-						if (Config.ExePath != exedir)
+					if (Config.ExePath != exedir)
 						{
 							Config.ExePath = exedir;
 							ExePath = exedir;
 							foreach (StorageFolders fold in Config.Folders)
 							{
 								var dirName = new DirectoryInfo(fold.FolderPath).Name;
-								fold.FolderPath = exedir + dirName;
+								fold.FolderPath = Path.Combine(exedir , dirName);
 							}
 
 						}
-					}
+				//}
 					
 				}
 				else //if file does not exist first run
 				{
 					Config = new ConfigandSettings();
-					Config.Folders.Add(new StorageFolders(ExePath + @"Config", FolderFileTypes.Config));
-					Config.Folders.Add(new StorageFolders(ExePath + @"Addin", FolderFileTypes.Addin));
-					Config.Folders.Add(new StorageFolders(ExePath + @"DataFiles", FolderFileTypes.DataFiles));
-					Config.Folders.Add(new StorageFolders(ExePath + @"DataViews", FolderFileTypes.DataView));
-					Config.Folders.Add(new StorageFolders(ExePath + @"ProjectData", FolderFileTypes.ProjectData));
-					Config.Folders.Add(new StorageFolders(ExePath + @"ProjectClasses", FolderFileTypes.ProjectClass));
-					Config.Folders.Add(new StorageFolders(ExePath + @"ConnectionDrivers", FolderFileTypes.ConnectionDriver));
-					Config.Folders.Add(new StorageFolders(ExePath + @"GFX", FolderFileTypes.GFX));
-					Config.Folders.Add(new StorageFolders(ExePath + @"OtherDll", FolderFileTypes.OtherDLL));
-					Config.Folders.Add(new StorageFolders(ExePath + @"Entities", FolderFileTypes.Entities));
-					Config.Folders.Add(new StorageFolders(ExePath + @"Mapping", FolderFileTypes.Mapping));
-					Config.Folders.Add(new StorageFolders(ExePath + @"WorkFlow", FolderFileTypes.WorkFlows));
-					Config.Folders.Add(new StorageFolders(ExePath + @"Scripts", FolderFileTypes.Scripts));
-					Config.Folders.Add(new StorageFolders(ExePath + @"Scripts\Logs", FolderFileTypes.ScriptsLogs));
-
-					Config.SystemEntryFormName = @"Frm_MainDisplayForm";
-					//Config.DSEntryFormName = @"uc_DataConnection";
-				
-
 				
 				}
+				//Config.SystemEntryFormName = @"Frm_MainDisplayForm";
 				//Check Folders exist
-				CreateDirConfig(Path.Combine(ExePath + @"Config"), FolderFileTypes.Config);
-				CreateDirConfig(Path.Combine(ExePath + @"Addin"), FolderFileTypes.Addin);
-				CreateDirConfig(Path.Combine(ExePath + @"DataFiles"), FolderFileTypes.DataFiles);
-				CreateDirConfig(Path.Combine(ExePath + @"DataViews"), FolderFileTypes.DataView);
-				CreateDirConfig(Path.Combine(ExePath + @"ProjectData"), FolderFileTypes.ProjectData);
-				CreateDirConfig(Path.Combine(ExePath + @"ProjectClasses"), FolderFileTypes.ProjectClass);
-				CreateDirConfig(Path.Combine(ExePath + @"ConnectionDrivers"), FolderFileTypes.ConnectionDriver);
-				CreateDirConfig(Path.Combine(ExePath + @"GFX"), FolderFileTypes.GFX);
-				CreateDirConfig(Path.Combine(ExePath + @"OtherDll"), FolderFileTypes.OtherDLL);
-				CreateDirConfig(Path.Combine(ExePath + @"Entities"), FolderFileTypes.Entities);
-				CreateDirConfig(Path.Combine(ExePath + @"Mapping"), FolderFileTypes.Mapping);
-				CreateDirConfig(Path.Combine(ExePath + @"WorkFlow"), FolderFileTypes.WorkFlows);
-				CreateDirConfig(Path.Combine(ExePath + @"Scripts"), FolderFileTypes.Scripts);
-				CreateDirConfig(Path.Combine(ExePath + @"Scripts\Logs"), FolderFileTypes.ScriptsLogs);
-				
+				CreateDirConfig(Path.Combine(ExePath ,"Config"), FolderFileTypes.Config);
+				CreateDirConfig(Path.Combine(ExePath ,"Addin"), FolderFileTypes.Addin);
+				CreateDirConfig(Path.Combine(ExePath ,"DataFiles"), FolderFileTypes.DataFiles);
+				CreateDirConfig(Path.Combine(ExePath ,"DataViews"), FolderFileTypes.DataView);
+				CreateDirConfig(Path.Combine(ExePath ,"ProjectData"), FolderFileTypes.ProjectData);
+				CreateDirConfig(Path.Combine(ExePath,"ProjectClasses"), FolderFileTypes.ProjectClass);
+				CreateDirConfig(Path.Combine(ExePath ,"ConnectionDrivers"), FolderFileTypes.ConnectionDriver);
+				CreateDirConfig(Path.Combine(ExePath ,"GFX"), FolderFileTypes.GFX);
+				CreateDirConfig(Path.Combine(ExePath ,"OtherDll"), FolderFileTypes.OtherDLL);
+				CreateDirConfig(Path.Combine(ExePath ,"Entities"), FolderFileTypes.Entities);
+				CreateDirConfig(Path.Combine(ExePath ,"Mapping"), FolderFileTypes.Mapping);
+				CreateDirConfig(Path.Combine(ExePath ,"WorkFlow"), FolderFileTypes.WorkFlows);
+				CreateDirConfig(Path.Combine(ExePath ,"Scripts"), FolderFileTypes.Scripts);
+				CreateDirConfig(Path.Combine(ExePath ,"Scripts\\Logs"), FolderFileTypes.ScriptsLogs);
+				CreateDirConfig(Path.Combine(ExePath ,"AI"), FolderFileTypes.ProjectClass);
+				CreateDirConfig(Path.Combine(ExePath ,"Reports"), FolderFileTypes.Reports);
+				Config.ExePath = exedir;
 				if (Config.ConfigPath == null)
 				{
-					Config.ConfigPath = Path.Combine(ExePath + @"Config");
+					Config.ConfigPath = Path.Combine(ExePath ,"Config");
 
 				}
 				if (ConfigPath == null)
@@ -1179,67 +1144,67 @@ namespace TheTechIdea.Util
 				}
 				if (Config.ScriptsPath == null)
 				{
-					Config.ScriptsPath = Path.Combine(ExePath + @"Scripts");
+					Config.ScriptsPath = Path.Combine(ExePath ,"Scripts");
 
 				}
 				if (Config.ScriptsLogsPath == null)
 				{
-					Config.ScriptsLogsPath = Path.Combine(ExePath + @"Scripts\Logs");
+					Config.ScriptsLogsPath = Path.Combine(ExePath ,"Scripts\\Logs");
 
 				}
 				if (Config.ProjectDataPath == null)
 				{
-					Config.ProjectDataPath = Path.Combine(ExePath + @"ProjectData");
+					Config.ProjectDataPath = Path.Combine(ExePath ,"ProjectData");
 
 				}
 				if (Config.DataViewPath == null)
 				{
-					Config.DataViewPath = Path.Combine(ExePath + @"DataViews");
+					Config.DataViewPath = Path.Combine(ExePath ,"DataViews");
 
 				}
 				if (Config.DataFilePath == null)
 				{
-					Config.DataFilePath = Path.Combine(ExePath + @"DataFiles");
+					Config.DataFilePath = Path.Combine(ExePath ,"DataFiles");
 
 				}
 				if (Config.AddinPath == null)
 				{
-					Config.AddinPath = Path.Combine(ExePath + @"Addin");
+					Config.AddinPath = Path.Combine(ExePath ,"Addin");
 
 				}
 				if (Config.ClassPath == null)
 				{
-					Config.ClassPath = Path.Combine(ExePath + @"ProjectClasses");
+					Config.ClassPath = Path.Combine(ExePath ,"ProjectClasses");
 
 				}
 				if (Config.EntitiesPath == null)
 				{
-					Config.EntitiesPath = Path.Combine(ExePath + @"Entities");
+					Config.EntitiesPath = Path.Combine(ExePath ,"Entities");
 
 				}
 				if (Config.GFXPath == null)
 				{
-					Config.GFXPath = Path.Combine(ExePath + @"GFX");
+					Config.GFXPath = Path.Combine(ExePath ,"GFX");
 
 				}
 				if (Config.MappingPath == null)
 				{
-					Config.MappingPath = Path.Combine(ExePath + @"Mapping");
+					Config.MappingPath = Path.Combine(ExePath ,"Mapping");
 
 				}
 				if (Config.OtherDLLPath == null)
 				{
-					Config.OtherDLLPath = Path.Combine(ExePath + @"OtherDll");
+					Config.OtherDLLPath = Path.Combine(ExePath ,"OtherDll");
 
 				}
 				//if (Config.WorkFlowPath == null)
 				//{
-					Config.WorkFlowPath = Path.Combine(ExePath + @"WorkFlow");
+					Config.WorkFlowPath = Path.Combine(ExePath ,"WorkFlow");
 
 				//}
 				if (Config.ConnectionDriversPath == null)
 				{
-					Config.ConnectionDriversPath = Path.Combine(ExePath + @"ConnectionDrivers");
+					Config.ConnectionDriversPath = Path.Combine(ExePath ,"ConnectionDrivers");
 
 				}
 				SaveConfigValues();
@@ -1257,12 +1222,13 @@ namespace TheTechIdea.Util
 		}
 		public void CreateDirConfig(string path, FolderFileTypes foldertype)
 		{
-			if (Directory.Exists(path) == false)
+			if (!Directory.Exists(path))
 			{
 				Directory.CreateDirectory(path);
 
 			}
-			if (!Config.Folders.Any(item => item.FolderPath.Equals(path,StringComparison.OrdinalIgnoreCase)))
+			
+			if (!Config.Folders.Any(item => item.FolderPath.Equals(@path,StringComparison.OrdinalIgnoreCase)))
 			{
 				Config.Folders.Add(new StorageFolders(path, foldertype));
 			}
@@ -1274,7 +1240,7 @@ namespace TheTechIdea.Util
 			List<ConnectionDriversConfig> clss = DataDriversClasses.Where(p => p.extensionstoHandle != null).ToList();
 			string retval = null;
 			if (clss != null)
-            {
+			{
 				IEnumerable<string> extensionslist = clss.Select(p => p.extensionstoHandle);
 				string extstring = string.Join(",", extensionslist);
 				List<string> exts = extstring.Split(',').Distinct().ToList();

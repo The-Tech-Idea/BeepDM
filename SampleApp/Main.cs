@@ -130,12 +130,13 @@ namespace DataManagment_Engine
                 Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
                 // Setup the Entry Screen 
                 // the screen has to be in one the Addin DLL's loaded by the Assembly loader
+              
 
-                if (Config_editor.Config.SystemEntryFormName == null)
-                {
-                    Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
 
-                }
+
+                //}
+                Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
+                
                 vis.ShowMainDisplayForm();
                 //if (DMEEditor.ErrorObject.Flag== Errors.Failed)
                 //{
