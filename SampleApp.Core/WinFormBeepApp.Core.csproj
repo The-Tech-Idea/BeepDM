@@ -259,6 +259,7 @@
     <None Remove="GFX\xml.ico" />
     <None Remove="GFX\zip.ico" />
     <None Remove="Mapping\HereweAddAllmapping.txt" />
+    <None Remove="OtherDLL\HereweAddotherdll.txt" />
     <None Remove="ProjectClasses\HereweputDLL.txt" />
     <None Remove="ProjectData\OilandGas\IHS\activity-codes_210667110913052332.xls" />
     <None Remove="ProjectData\OilandGas\IHS\Additive-Type.xlsx" />
@@ -1099,6 +1100,9 @@
     <Content Include="Mapping\HereweAddAllmapping.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="OtherDLL\HereweAddotherdll.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="ProjectClasses\HereweputDLL.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -1399,10 +1403,6 @@
     <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="3.21.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.8.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="OtherDLL\" />
   </ItemGroup>
 
 </Project>
