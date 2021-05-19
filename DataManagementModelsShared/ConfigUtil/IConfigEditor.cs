@@ -123,6 +123,7 @@ namespace TheTechIdea.Util
         List<ReportTemplate> LoadReportsDefinitionValues();
         void SaveAIScriptsValues();
         List<ReportsList> LoadAIScriptsValues();
+     
 
 
 

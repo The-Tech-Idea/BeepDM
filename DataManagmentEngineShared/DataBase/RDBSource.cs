@@ -987,7 +987,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                                 }
                                 try
                                 {
-                                    x.IsKey = r.Field<bool>("IsKey");
+                                    
+                                        x.IsKey = r.Field<bool>("IsKey");
+                                  
+                                  
                                 }
                                 catch (Exception)
                                 {
@@ -995,9 +998,20 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                                 }
                                 try
                                 {
-                                    x.NumericPrecision = r.Field<short>("NumericPrecision");
-                                    x.NumericScale = r.Field<short>("NumericScale");
+                                  if (x.fieldtype == "System.Decimal" || x.fieldtype=="System.Float" || x.fieldtype == "System.Double") 
+                                    {
+                                        var NumericPrecision = r["NumericPrecision"];
+                                        var NumericScale = r["NumericScale"];
+                                        if (NumericPrecision != System.DBNull.Value && NumericScale != System.DBNull.Value)
+                                        {
+                                            x.NumericPrecision = (short)NumericPrecision;
+                                            x.NumericScale = (short)NumericScale;
+                                        }
+                                    }
 
+                                    
+                                 
+                                 
 
                                 }
                                 catch (Exception)
@@ -1006,7 +1020,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                                 }
                                 try
                                 {
-                                    x.IsUnique = r.Field<bool>("IsUnique");
+                                    
+                                        x.IsUnique = r.Field<bool>("IsUnique");
+                                   
+                               
                                 }
                                 catch (Exception)
                                 {
@@ -1052,7 +1069,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
     
                         }
                     }
-                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new ConfigUtil.DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
+                  
                 }
               
             }
@@ -1323,9 +1340,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             catch (Exception ex)
             {
 
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in Loading Goreign Key for Table View ({ex.Message}) ");
+                //ErrorObject.Flag = Errors.Failed;
+                //ErrorObject.Ex = ex;
+                //Logger.WriteLog($"Error in Loading Goreign Key for Table View ({ex.Message}) ");
 
             }
             return fk;
@@ -2330,7 +2347,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             catch (Exception ex)
             {
                 
-                DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+              //  DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
                 return null;
             }
 

@@ -59,9 +59,7 @@ namespace TheTechIdea.Util
 		public List<ReportTemplate> ReportsDefinition { get; set; } = new List<ReportTemplate>();
 		public List<ReportsList> Reportslist { get; set; } = new List<ReportsList>();
 		public List<ReportsList> AIScriptslist { get; set; } = new List<ReportsList>();
-		//ReportsList
 		public List<CompositeLayer> CompositeQueryLayers { get; set; } = new List<CompositeLayer>();
-		
 		public List<EntityStructure> EntityCreateObjects { get; set; } = new List<EntityStructure>();
 		public List<DatatypeMapping> DataTypesMap { get; set; } = new List<DatatypeMapping>();
 		public List<DataSourceFieldProperties> AppfieldProperties { get; set; } = new List<DataSourceFieldProperties>();
@@ -1129,7 +1127,7 @@ namespace TheTechIdea.Util
 				CreateDirConfig(Path.Combine(ExePath ,"WorkFlow"), FolderFileTypes.WorkFlows);
 				CreateDirConfig(Path.Combine(ExePath ,"Scripts"), FolderFileTypes.Scripts);
 				CreateDirConfig(Path.Combine(ExePath ,"Scripts\\Logs"), FolderFileTypes.ScriptsLogs);
-				CreateDirConfig(Path.Combine(ExePath ,"AI"), FolderFileTypes.ProjectClass);
+				CreateDirConfig(Path.Combine(ExePath ,"AI"), FolderFileTypes.Scripts);
 				CreateDirConfig(Path.Combine(ExePath ,"Reports"), FolderFileTypes.Reports);
 				Config.ExePath = exedir;
 				if (Config.ConfigPath == null)

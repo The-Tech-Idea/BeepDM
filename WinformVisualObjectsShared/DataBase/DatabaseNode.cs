@@ -106,6 +106,7 @@ namespace TheTechIdea.Winforms.VIS
        //     DMEEditor.Logger.WriteLog($"Filling Database Entites ) ");
             try
             {
+                EntityStructure ent;
                 string iconimage;
                 DataSource = (IRDBSource)DMEEditor.GetDataSource(BranchText);
                 if (DataSource != null)
@@ -114,12 +115,44 @@ namespace TheTechIdea.Winforms.VIS
                     if (DataSource.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
                         DataSource.GetEntitesList();
-                       
+                        List<string> ename = DataSource.EntitiesNames.ToList();
+                        List<string> existing = DataSource.Entities.Select(o => o.EntityName).ToList();
+                        List<string> diffnames = ename.Except(existing).ToList();
                         TreeEditor.RemoveChildBranchs(this);
                         int i = 0;
-                        foreach (string tb in DataSource.EntitiesNames)
+                       
+                            TreeEditor.ShowWaiting();
+                            TreeEditor.ChangeWaitingCaption($"Getting  RDBMS Entities Total:{ diffnames.Count}");
+                            foreach (string tb in diffnames) //
+                            {
+                                TreeEditor.AddCommentsWaiting($"{i} - Added {tb} to {DataSourceName}");
+                                  ent = DataSource.GetEntityStructure(tb, true);
+                               
+
+                                if (ent.Created == false)
+                                {
+                                    iconimage = "entitynotcreated.ico";
+                                }
+                                else
+                                {
+                                    iconimage = "databaseentities.ico";
+                                }
+                                DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
+                                dbent.DataSourceName = DataSource.DatasourceName;
+                                dbent.DataSource = DataSource;
+                                ChildBranchs.Add(dbent);
+                                TreeEditor.AddBranch(this, dbent);
+                                i += 1;
+                            }
+                            TreeEditor.HideWaiting();
+                        //------------------------------- Draw Existing Entities
+                        foreach (string tb in existing) //
                         {
-                            EntityStructure ent = DataSource.GetEntityStructure(tb, false);
+                           
+                         
+                            ent = DataSource.GetEntityStructure(tb, false);
+                          
+
                             if (ent.Created == false)
                             {
                                 iconimage = "entitynotcreated.ico";
@@ -128,13 +161,17 @@ namespace TheTechIdea.Winforms.VIS
                             {
                                 iconimage = "databaseentities.ico";
                             }
-                            DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this,tb , TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
+                            DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
                             dbent.DataSourceName = DataSource.DatasourceName;
                             dbent.DataSource = DataSource;
                             ChildBranchs.Add(dbent);
                             TreeEditor.AddBranch(this, dbent);
                             i += 1;
                         }
+                        //------------------------------------------------------
+                   
+                      
+                        DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = DataSourceName, Entities = DataSource.Entities });
                     }
 
                 }
