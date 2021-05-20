@@ -12,7 +12,7 @@ using System.Linq;
 
 using System.Windows.Forms;
 using TheTechIdea.Util;
-
+using System.Drawing;
 
 namespace TheTechIdea.Hidden
 {
@@ -85,6 +85,15 @@ namespace TheTechIdea.Hidden
         private void Frm_MainDisplayForm_Shown(object sender, EventArgs e)
         {
             uc_logpanel1.startLoggin = true;
+            Rectangle resolutionRect = System.Windows.Forms.Screen.FromControl(this).Bounds;
+            if (this.Width != resolutionRect.Width || this.Height != resolutionRect.Height)
+            {
+                Rectangle screen = Screen.PrimaryScreen.WorkingArea;
+                int w = Width >= screen.Width ? screen.Width : (screen.Width + Width) / 2;
+                int h = Height >= screen.Height ? screen.Height : (screen.Height + Height) / 2;
+                this.Location = new Point((screen.Width - w) / 2, (screen.Height - h) / 2);
+                this.Size = new Size(w, h);
+            }
         }
 
       
