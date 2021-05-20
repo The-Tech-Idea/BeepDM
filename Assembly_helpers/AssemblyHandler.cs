@@ -112,34 +112,8 @@ namespace TheTechIdea.Tools
            
             GetNonADODrivers();
             GetBuiltinClasses();
-            try
-            {
-                foreach (string p in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL).Select(x => x.FolderPath))
-                {
-                    try
-                    {
-                        LoadAssembly(p, FolderFileTypes.OtherDLL);
-                    }
-                    catch (FileLoadException loadEx)
-                    {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
-                        res = "The Assembly has already been loaded" + loadEx.Message;
-                        // MessageBox.Show("The Assembly has already been loaded" + loadEx.Message, "Simple ODM", MessageBoxButtons.OK);
-                    } // The Assembly has already been loaded.
-                    catch (BadImageFormatException imgEx)
-                    {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
-                        // MessageBox.Show(imgEx.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly.
-                        res = imgEx.Message;
-                    }
-                    catch (Exception ex)
-                    {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
-                        // MessageBox.Show(ex.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly
-                        res = ex.Message;
-                    }
-
-                }
+          
+         
                 foreach (string p in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver).Select(x => x.FolderPath))
                 {
                     try
@@ -194,8 +168,33 @@ namespace TheTechIdea.Tools
                     }
 
                 }
+                foreach (string p in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL).Select(x => x.FolderPath))
+            {
+                try
+                {
+                    LoadAssembly(p, FolderFileTypes.OtherDLL);
+                }
+                catch (FileLoadException loadEx)
+                {
+                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    res = "The Assembly has already been loaded" + loadEx.Message;
+                    // MessageBox.Show("The Assembly has already been loaded" + loadEx.Message, "Simple ODM", MessageBoxButtons.OK);
+                } // The Assembly has already been loaded.
+                catch (BadImageFormatException imgEx)
+                {
+                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    // MessageBox.Show(imgEx.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly.
+                    res = imgEx.Message;
+                }
+                catch (Exception ex)
+                {
+                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    // MessageBox.Show(ex.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly
+                    res = ex.Message;
+                }
 
-                // Get Driver from Loaded Assembly
+            }
+            // Get Driver from Loaded Assembly
                 foreach (assemblies_rep item in Assemblies)
                 {
                     GetDrivers(item.DllLib);
@@ -251,13 +250,7 @@ namespace TheTechIdea.Tools
                 }
                
                 //------------------------------
-            }
-            catch (System.Exception ex)
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.Logger.WriteLog($"Error Loading Addin Assemblies ({ex.Message})");
-            }
+           
             AddEngineDefaultDrivers();
             CheckDriverAlreadyExistinList();
             return DMEEditor.ErrorObject;
@@ -277,7 +270,7 @@ namespace TheTechIdea.Tools
             {
                 try
                 {
-                    Assembly loadedAssembly = Assembly.LoadFile(dll);
+                    Assembly loadedAssembly = Assembly.LoadFrom(dll);
 
                     assemblies_rep x = new assemblies_rep(loadedAssembly, path, dll, fileTypes);
                     Assemblies.Add(x);
@@ -454,7 +447,7 @@ namespace TheTechIdea.Tools
                     catch (Exception ex)
                     {
 
-                        DMEEditor.Logger.WriteLog($"error in creating addin {ex.Message} ");
+                //        DMEEditor.Logger.WriteLog($"error in creating addin {ex.Message} ");
                     }
                 }
 
@@ -742,7 +735,7 @@ namespace TheTechIdea.Tools
                 {
 
                     string mes = "";
-                    DMEEditor.AddLogMessage(ex.Message, "Could not exported  types" + mes, DateTime.Now, -1, mes, Errors.Failed);
+                  //  DMEEditor.AddLogMessage(ex.Message, "Could not exported  types" + mes, DateTime.Now, -1, mes, Errors.Failed);
                 };
 
                 return true;
@@ -750,7 +743,7 @@ namespace TheTechIdea.Tools
             catch (Exception ex)
             {
                 string mes = "";
-                DMEEditor.AddLogMessage(ex.Message, "Could not scan assembly " + mes, DateTime.Now, -1, mes, Errors.Failed);
+              //  DMEEditor.AddLogMessage(ex.Message, "Could not scan assembly " + mes, DateTime.Now, -1, mes, Errors.Failed);
                 return false;
             };
         }
@@ -782,12 +775,13 @@ namespace TheTechIdea.Tools
             if (args.Name.Contains(".resources"))
                 return null;
             string filename = args.Name.Split(',')[0] + ".dll".ToLower();
+            string filenamewo = args.Name.Split(',')[0];
             // check for assemblies already loaded
             //   var s = AppDomain.CurrentDomain.GetAssemblies();
-            Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName == filename);
+            Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName.StartsWith(filenamewo));
             if (assembly == null)
             {
-                assemblies_rep s = Assemblies.FirstOrDefault(a => a.DllLib.FullName == filename);
+                assemblies_rep s = Assemblies.FirstOrDefault(a => a.DllLib.FullName.StartsWith(filenamewo));
                 if (s != null)
                 {
                     assembly = s.DllLib;
@@ -911,7 +905,7 @@ namespace TheTechIdea.Tools
                 t = asm.GetExportedTypes();
             }
             else
-                t = asm.GetTypes();
+                t = asm.GetTypes().Where(typeof(IDbDataAdapter).IsAssignableFrom).ToArray();
             foreach (var mytype in t)
             {
                 try
@@ -1118,20 +1112,27 @@ namespace TheTechIdea.Tools
                 }
                 
             }
-            catch (Exception ex1)
+            catch (ReflectionTypeLoadException ex1)
             {
 
-                DMEEditor.Logger.WriteLog($"error Cannot find defined types from assembly {ex1.Message} ");
-                //try
-                //{
+                StringBuilder sb = new StringBuilder();
+                foreach (Exception exSub in ex1.LoaderExceptions)
+                {
+                    sb.AppendLine(exSub.Message);
+                    FileNotFoundException exFileNotFound = exSub as FileNotFoundException;
+                    if (exFileNotFound != null)
+                    {
+                        if (!string.IsNullOrEmpty(exFileNotFound.FusionLog))
+                        {
+                            sb.AppendLine("Fusion Log:");
+                            sb.AppendLine(exFileNotFound.FusionLog);
+                        }
+                    }
+                    sb.AppendLine();
+                }
+                string errorMessage = sb.ToString();
 
-                //    GetNonADODrivers(asm);
-
-                //}
-                //catch (Exception ex2)
-                //{
-
-                //    DMEEditor.Logger.WriteLog($"error Cannot find exported types from assembly {ex2.Message} ");
+                DMEEditor.Logger.WriteLog($"error Cannot find exported types from assembly {errorMessage} ");
                 //}
             }
 
