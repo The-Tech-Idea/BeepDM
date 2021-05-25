@@ -61,7 +61,7 @@ namespace TheTechIdea.Winforms.VIS
             // label1
             // 
             this.label1.Dock = System.Windows.Forms.DockStyle.Left;
-            this.label1.Image = global::TheTechIdea.Winforms.VIS.Properties.Resources.Spin_1s_200px;
+           // this.label1.Image = global::TheTechIdea.Winforms.VIS.Properties.Resources.Spin_1s_200px;
             this.label1.Location = new System.Drawing.Point(0, 0);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(167, 165);

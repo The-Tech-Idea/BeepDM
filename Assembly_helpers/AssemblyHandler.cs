@@ -23,8 +23,6 @@ using TypeInfo = System.Reflection.TypeInfo;
 
 namespace TheTechIdea.Tools
 {
-    
-
     public class AssemblyHandler : IAssemblyHandler
     {
         ParentChildObject a;

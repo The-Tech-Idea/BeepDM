@@ -45,7 +45,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
             PluginLoadContext loadContext = new PluginLoadContext(pluginLocation);
             return loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(pluginLocation)));
         }
-        private string LoadAssembly(string path, FolderFileTypes fileTypes)
+        public string LoadAssembly(string path, FolderFileTypes fileTypes)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             string res = "";
@@ -81,6 +81,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
             return res;
         }
         #region "Loaders"
+
         public IErrorsInfo GetBuiltinClasses()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;

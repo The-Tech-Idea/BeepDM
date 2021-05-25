@@ -6,7 +6,10 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>TheTechIdea.Winforms.VIS</RootNamespace>
   </PropertyGroup>
-  
+  <!--<ItemGroup>
+    <Compile Include="..\DM_VIS\**\*.cs" />
+    <EmbeddedResource Include="..\DM_VIS\**\*.resx" />
+  </ItemGroup>-->
   <ItemGroup>
     <Compile Include="..\WinFormSharedProject\**\*.cs" />
     <EmbeddedResource Include="..\WinFormSharedProject\**\*.resx" />
@@ -33,11 +36,11 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-<Target Name="CopyTarget" AfterTargets="Build">
+<!--<Target Name="CopyTarget" AfterTargets="Build">
 		<ItemGroup>
 			<DataReaders Include="$(TargetDir)\WinformCore.dll" />
 		</ItemGroup>
-		<!--<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
-		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\netcoreapp3.1\ProjectClasses" SkipUnchangedFiles="true" />-->
-	</Target>
+		--><!--<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\netcoreapp3.1\ProjectClasses" SkipUnchangedFiles="true" />--><!--
+	</Target>-->
 </Project>
