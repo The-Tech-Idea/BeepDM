@@ -12,9 +12,6 @@
 		<ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj">
 		  <Private>false</Private>
 		</ProjectReference>
-		<ProjectReference Include="..\Tools\Tools.csproj">
-		  <Private>false</Private>
-		</ProjectReference>
 		<ProjectReference Include="..\WinformCore\WinformCore.csproj">
 		  <Private>false</Private>
 		</ProjectReference>
@@ -24,9 +21,7 @@
 		<EmbeddedResource Include="..\DM_Addin\**\*.resx" />
 </ItemGroup>
 <ItemGroup>
-	<Compile Remove="..\DM_Addin\obj\Debug\**" />
-	<Compile Remove="..\DM_Addin\obj\Release\**" />
-	<Compile Remove="..\DM_Addin\obj\Win32\Debug\**" />
+	<Compile Remove="..\DM_Addin\obj\**" />
 	<Compile Remove="..\DM_Addin\Properties\**" />
 	<EmbeddedResource Remove="..\DM_Addin\Properties\**" />
 </ItemGroup>
@@ -34,7 +29,7 @@
   <Compile Remove="..\DM_Addin\RDLCReport\DynamicReport1.cs" />
 </ItemGroup>
 <ItemGroup>
-  <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.774.44" />
+  <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.818.41" />
   <PackageReference Include="ReportViewerCore.WinForms" Version="15.1.13" />
 </ItemGroup>
 <ItemGroup>

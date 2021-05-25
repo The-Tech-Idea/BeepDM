@@ -350,7 +350,6 @@
     <None Remove="ProjectData\OilandGas\OilandGasDataTypes\well_types.xls" />
     <None Remove="ProjectData\titanic.csv" />
     <None Remove="Scripts\HereweAddAllscripts.txt" />
-    <None Remove="Scripts\Logs\HereweAddAllscriptlogs.txt" />
     <None Remove="WorkFlow\DataWorkFlow.json" />
   </ItemGroup>
 

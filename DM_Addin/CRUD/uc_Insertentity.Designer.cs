@@ -43,9 +43,10 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             // panel1
             // 
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(0, 60);
+            this.panel1.Location = new System.Drawing.Point(0, 92);
+            this.panel1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1000, 740);
+            this.panel1.Size = new System.Drawing.Size(1500, 1139);
             this.panel1.TabIndex = 1;
             // 
             // panel2
@@ -55,50 +56,54 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.panel2.Controls.Add(this.SaveEntitybutton);
             this.panel2.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel2.Location = new System.Drawing.Point(0, 0);
+            this.panel2.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(1000, 60);
+            this.panel2.Size = new System.Drawing.Size(1500, 92);
             this.panel2.TabIndex = 0;
             // 
             // subtitlelabel
             // 
             this.subtitlelabel.AutoSize = true;
-            this.subtitlelabel.Font = new System.Drawing.Font("Calibri", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.subtitlelabel.ForeColor = System.Drawing.Color.SteelBlue;
-            this.subtitlelabel.Location = new System.Drawing.Point(27, 34);
+            this.subtitlelabel.Location = new System.Drawing.Point(40, 52);
+            this.subtitlelabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.subtitlelabel.Name = "subtitlelabel";
-            this.subtitlelabel.Size = new System.Drawing.Size(73, 15);
+            this.subtitlelabel.Size = new System.Drawing.Size(99, 20);
             this.subtitlelabel.TabIndex = 8;
             this.subtitlelabel.Text = "Data Source";
             // 
             // EntityNamelabel
             // 
             this.EntityNamelabel.AutoSize = true;
-            this.EntityNamelabel.Font = new System.Drawing.Font("Britannic Bold", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.EntityNamelabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.EntityNamelabel.ForeColor = System.Drawing.Color.SteelBlue;
-            this.EntityNamelabel.Location = new System.Drawing.Point(26, 11);
+            this.EntityNamelabel.Location = new System.Drawing.Point(39, 7);
+            this.EntityNamelabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.EntityNamelabel.Name = "EntityNamelabel";
-            this.EntityNamelabel.Size = new System.Drawing.Size(119, 23);
+            this.EntityNamelabel.Size = new System.Drawing.Size(153, 29);
             this.EntityNamelabel.TabIndex = 6;
             this.EntityNamelabel.Text = "Entity Name";
             // 
             // SaveEntitybutton
             // 
             this.SaveEntitybutton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.SaveEntitybutton.Location = new System.Drawing.Point(913, 34);
+            this.SaveEntitybutton.Location = new System.Drawing.Point(1370, 52);
+            this.SaveEntitybutton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.SaveEntitybutton.Name = "SaveEntitybutton";
-            this.SaveEntitybutton.Size = new System.Drawing.Size(75, 23);
+            this.SaveEntitybutton.Size = new System.Drawing.Size(112, 35);
             this.SaveEntitybutton.TabIndex = 7;
             this.SaveEntitybutton.Text = "Save";
             this.SaveEntitybutton.UseVisualStyleBackColor = true;
             // 
             // uc_Insertentity
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.panel2);
+            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Name = "uc_Insertentity";
-            this.Size = new System.Drawing.Size(1000, 800);
+            this.Size = new System.Drawing.Size(1500, 1231);
             ((System.ComponentModel.ISupportInitialize)(this.EntitybindingSource)).EndInit();
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();

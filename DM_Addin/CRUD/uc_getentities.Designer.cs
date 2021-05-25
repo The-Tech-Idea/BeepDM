@@ -62,6 +62,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.Location = new System.Drawing.Point(0, 0);
+            this.splitContainer1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
@@ -75,8 +76,9 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.splitContainer1.Panel2.AutoScroll = true;
             this.splitContainer1.Panel2.Controls.Add(this.dataGridView1);
             this.splitContainer1.Panel2.Controls.Add(this.gridTitlepanel);
-            this.splitContainer1.Size = new System.Drawing.Size(1200, 800);
-            this.splitContainer1.SplitterDistance = 373;
+            this.splitContainer1.Size = new System.Drawing.Size(1800, 1231);
+            this.splitContainer1.SplitterDistance = 559;
+            this.splitContainer1.SplitterWidth = 6;
             this.splitContainer1.TabIndex = 0;
             // 
             // Filterpanel
@@ -84,9 +86,10 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.Filterpanel.AutoScroll = true;
             this.Filterpanel.Controls.Add(this.uc_filtercontrol1);
             this.Filterpanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.Filterpanel.Location = new System.Drawing.Point(0, 91);
+            this.Filterpanel.Location = new System.Drawing.Point(0, 140);
+            this.Filterpanel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Filterpanel.Name = "Filterpanel";
-            this.Filterpanel.Size = new System.Drawing.Size(373, 709);
+            this.Filterpanel.Size = new System.Drawing.Size(559, 1091);
             this.Filterpanel.TabIndex = 1;
             // 
             // uc_filtercontrol1
@@ -105,13 +108,14 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.uc_filtercontrol1.ErrorObject = null;
             this.uc_filtercontrol1.Location = new System.Drawing.Point(0, 0);
             this.uc_filtercontrol1.Logger = null;
+            this.uc_filtercontrol1.Margin = new System.Windows.Forms.Padding(6, 8, 6, 8);
             this.uc_filtercontrol1.Name = "uc_filtercontrol1";
             this.uc_filtercontrol1.NameSpace = null;
             this.uc_filtercontrol1.ObjectName = null;
             this.uc_filtercontrol1.ObjectType = null;
             this.uc_filtercontrol1.ParentName = null;
             this.uc_filtercontrol1.Passedarg = null;
-            this.uc_filtercontrol1.Size = new System.Drawing.Size(373, 709);
+            this.uc_filtercontrol1.Size = new System.Drawing.Size(559, 1091);
             this.uc_filtercontrol1.TabIndex = 0;
             // 
             // filterTitlepanel
@@ -122,35 +126,39 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.filterTitlepanel.Controls.Add(this.SubmitFilterbutton);
             this.filterTitlepanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.filterTitlepanel.Location = new System.Drawing.Point(0, 0);
+            this.filterTitlepanel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.filterTitlepanel.Name = "filterTitlepanel";
-            this.filterTitlepanel.Size = new System.Drawing.Size(373, 91);
+            this.filterTitlepanel.Size = new System.Drawing.Size(559, 140);
             this.filterTitlepanel.TabIndex = 0;
             // 
             // Filtercaptionlabel
             // 
             this.Filtercaptionlabel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.Filtercaptionlabel.Location = new System.Drawing.Point(4, 30);
+            this.Filtercaptionlabel.Location = new System.Drawing.Point(8, 47);
+            this.Filtercaptionlabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.Filtercaptionlabel.Name = "Filtercaptionlabel";
-            this.Filtercaptionlabel.Size = new System.Drawing.Size(366, 32);
+            this.Filtercaptionlabel.Size = new System.Drawing.Size(549, 49);
             this.Filtercaptionlabel.TabIndex = 0;
             this.Filtercaptionlabel.Text = "Where id=?";
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Britannic Bold", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(3, 7);
+            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.Location = new System.Drawing.Point(4, 4);
+            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(58, 23);
+            this.label1.Size = new System.Drawing.Size(74, 29);
             this.label1.TabIndex = 1;
             this.label1.Text = "Filter";
             // 
             // SubmitFilterbutton
             // 
             this.SubmitFilterbutton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.SubmitFilterbutton.Location = new System.Drawing.Point(295, 65);
+            this.SubmitFilterbutton.Location = new System.Drawing.Point(441, 100);
+            this.SubmitFilterbutton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.SubmitFilterbutton.Name = "SubmitFilterbutton";
-            this.SubmitFilterbutton.Size = new System.Drawing.Size(75, 23);
+            this.SubmitFilterbutton.Size = new System.Drawing.Size(112, 35);
             this.SubmitFilterbutton.TabIndex = 0;
             this.SubmitFilterbutton.Text = "Submit";
             this.SubmitFilterbutton.UseVisualStyleBackColor = true;
@@ -165,12 +173,14 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridView1.DataSource = this.EntitybindingSource;
             this.dataGridView1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dataGridView1.Location = new System.Drawing.Point(0, 91);
+            this.dataGridView1.Location = new System.Drawing.Point(0, 140);
+            this.dataGridView1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.dataGridView1.Name = "dataGridView1";
             this.dataGridView1.ReadOnly = true;
             this.dataGridView1.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.Sunken;
+            this.dataGridView1.RowHeadersWidth = 62;
             this.dataGridView1.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridView1.Size = new System.Drawing.Size(823, 709);
+            this.dataGridView1.Size = new System.Drawing.Size(1235, 1091);
             this.dataGridView1.TabIndex = 1;
             // 
             // gridTitlepanel
@@ -185,16 +195,18 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.gridTitlepanel.Controls.Add(this.InsertNewEntitybutton);
             this.gridTitlepanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.gridTitlepanel.Location = new System.Drawing.Point(0, 0);
+            this.gridTitlepanel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.gridTitlepanel.Name = "gridTitlepanel";
-            this.gridTitlepanel.Size = new System.Drawing.Size(823, 91);
+            this.gridTitlepanel.Size = new System.Drawing.Size(1235, 140);
             this.gridTitlepanel.TabIndex = 0;
             // 
             // Printbutton
             // 
             this.Printbutton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.Printbutton.Location = new System.Drawing.Point(490, 65);
+            this.Printbutton.Location = new System.Drawing.Point(736, 100);
+            this.Printbutton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Printbutton.Name = "Printbutton";
-            this.Printbutton.Size = new System.Drawing.Size(75, 23);
+            this.Printbutton.Size = new System.Drawing.Size(112, 35);
             this.Printbutton.TabIndex = 7;
             this.Printbutton.Text = "Print";
             this.Printbutton.UseVisualStyleBackColor = true;
@@ -203,41 +215,44 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             // 
             this.expandbutton.FlatAppearance.BorderSize = 0;
             this.expandbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-          //  this.expandbutton.Image = global::TheTechIdea.Properties.Resources.expand_arrows_24px;
-            this.expandbutton.Location = new System.Drawing.Point(3, 65);
+            this.expandbutton.Location = new System.Drawing.Point(4, 100);
+            this.expandbutton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.expandbutton.Name = "expandbutton";
-            this.expandbutton.Size = new System.Drawing.Size(25, 23);
+            this.expandbutton.Size = new System.Drawing.Size(38, 35);
             this.expandbutton.TabIndex = 6;
             this.expandbutton.UseVisualStyleBackColor = true;
             // 
             // subtitlelabel
             // 
             this.subtitlelabel.AutoSize = true;
-            this.subtitlelabel.Font = new System.Drawing.Font("Calibri", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.subtitlelabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.subtitlelabel.ForeColor = System.Drawing.Color.SteelBlue;
-            this.subtitlelabel.Location = new System.Drawing.Point(15, 30);
+            this.subtitlelabel.Location = new System.Drawing.Point(21, 59);
+            this.subtitlelabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.subtitlelabel.Name = "subtitlelabel";
-            this.subtitlelabel.Size = new System.Drawing.Size(73, 15);
+            this.subtitlelabel.Size = new System.Drawing.Size(110, 20);
             this.subtitlelabel.TabIndex = 5;
             this.subtitlelabel.Text = "Data Source";
             // 
             // EntityNamelabel
             // 
             this.EntityNamelabel.AutoSize = true;
-            this.EntityNamelabel.Font = new System.Drawing.Font("Britannic Bold", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.EntityNamelabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.EntityNamelabel.ForeColor = System.Drawing.Color.SteelBlue;
-            this.EntityNamelabel.Location = new System.Drawing.Point(14, 7);
+            this.EntityNamelabel.Location = new System.Drawing.Point(21, 11);
+            this.EntityNamelabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.EntityNamelabel.Name = "EntityNamelabel";
-            this.EntityNamelabel.Size = new System.Drawing.Size(119, 23);
+            this.EntityNamelabel.Size = new System.Drawing.Size(153, 29);
             this.EntityNamelabel.TabIndex = 2;
             this.EntityNamelabel.Text = "Entity Name";
             // 
             // EditSelectedbutton
             // 
             this.EditSelectedbutton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.EditSelectedbutton.Location = new System.Drawing.Point(733, 65);
+            this.EditSelectedbutton.Location = new System.Drawing.Point(1101, 100);
+            this.EditSelectedbutton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.EditSelectedbutton.Name = "EditSelectedbutton";
-            this.EditSelectedbutton.Size = new System.Drawing.Size(75, 23);
+            this.EditSelectedbutton.Size = new System.Drawing.Size(112, 35);
             this.EditSelectedbutton.TabIndex = 4;
             this.EditSelectedbutton.Text = "Edit Selected";
             this.EditSelectedbutton.UseVisualStyleBackColor = true;
@@ -245,9 +260,10 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             // DeleteSelectedbutton
             // 
             this.DeleteSelectedbutton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.DeleteSelectedbutton.Location = new System.Drawing.Point(652, 65);
+            this.DeleteSelectedbutton.Location = new System.Drawing.Point(979, 100);
+            this.DeleteSelectedbutton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.DeleteSelectedbutton.Name = "DeleteSelectedbutton";
-            this.DeleteSelectedbutton.Size = new System.Drawing.Size(75, 23);
+            this.DeleteSelectedbutton.Size = new System.Drawing.Size(112, 35);
             this.DeleteSelectedbutton.TabIndex = 3;
             this.DeleteSelectedbutton.Text = "Delete Selected";
             this.DeleteSelectedbutton.UseVisualStyleBackColor = true;
@@ -255,20 +271,22 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             // InsertNewEntitybutton
             // 
             this.InsertNewEntitybutton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.InsertNewEntitybutton.Location = new System.Drawing.Point(571, 65);
+            this.InsertNewEntitybutton.Location = new System.Drawing.Point(857, 100);
+            this.InsertNewEntitybutton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.InsertNewEntitybutton.Name = "InsertNewEntitybutton";
-            this.InsertNewEntitybutton.Size = new System.Drawing.Size(75, 23);
+            this.InsertNewEntitybutton.Size = new System.Drawing.Size(112, 35);
             this.InsertNewEntitybutton.TabIndex = 2;
             this.InsertNewEntitybutton.Text = "New";
             this.InsertNewEntitybutton.UseVisualStyleBackColor = true;
             // 
             // uc_getentities
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.splitContainer1);
+            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Name = "uc_getentities";
-            this.Size = new System.Drawing.Size(1200, 800);
+            this.Size = new System.Drawing.Size(1800, 1231);
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
