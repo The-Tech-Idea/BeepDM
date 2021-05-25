@@ -4,6 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net5.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,9 +39,36 @@
     <None Remove="config\ObjectTypes.json" />
     <None Remove="config\QueryList.json" />
     <None Remove="config\reports.json" />
+    <None Remove="ConnectionDrivers\BouncyCastle.Crypto.dll" />
+    <None Remove="ConnectionDrivers\Dapper.dll" />
+    <None Remove="ConnectionDrivers\ExcelDataReader.DataSet.dll" />
+    <None Remove="ConnectionDrivers\ExcelDataReader.dll" />
+    <None Remove="ConnectionDrivers\Google.Protobuf.dll" />
+    <None Remove="ConnectionDrivers\K4os.Compression.LZ4.dll" />
+    <None Remove="ConnectionDrivers\K4os.Compression.LZ4.Streams.dll" />
+    <None Remove="ConnectionDrivers\K4os.Hash.xxHash.dll" />
+    <None Remove="ConnectionDrivers\Microsoft.ReportViewer.Common.dll" />
+    <None Remove="ConnectionDrivers\Microsoft.ReportViewer.DataVisualization.dll" />
+    <None Remove="ConnectionDrivers\Microsoft.ReportViewer.ProcessingObjectModel.dll" />
+    <None Remove="ConnectionDrivers\Microsoft.ReportViewer.WinForms.dll" />
     <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.Core.dll" />
     <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.WinForms.dll" />
     <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.Wpf.dll" />
+    <None Remove="ConnectionDrivers\Microsoft.Win32.SystemEvents.dll" />
+    <None Remove="ConnectionDrivers\MySql.Data.dll" />
+    <None Remove="ConnectionDrivers\Oracle.ManagedDataAccess.dll" />
+    <None Remove="ConnectionDrivers\System.Configuration.ConfigurationManager.dll" />
+    <None Remove="ConnectionDrivers\System.Data.SqlClient.dll" />
+    <None Remove="ConnectionDrivers\System.Data.SQLite.dll" />
+    <None Remove="ConnectionDrivers\System.Drawing.Common.dll" />
+    <None Remove="ConnectionDrivers\System.Security.Cryptography.ProtectedData.dll" />
+    <None Remove="ConnectionDrivers\System.Security.Permissions.dll" />
+    <None Remove="ConnectionDrivers\System.Text.Encoding.CodePages.dll" />
+    <None Remove="ConnectionDrivers\System.Windows.Extensions.dll" />
+    <None Remove="ConnectionDrivers\Ubiety.Dns.Core.dll" />
+    <None Remove="ConnectionDrivers\WebView2Loader.dll" />
+    <None Remove="ConnectionDrivers\win-x86\native\SQLite.Interop.dll" />
+    <None Remove="ConnectionDrivers\Zstandard.Net.dll" />
     <None Remove="DataFiles\Alaska.sdf" />
     <None Remove="DataFiles\etl.s3db" />
     <None Remove="DataFiles\firebirddb.fdb" />
@@ -97,6 +125,7 @@
     <None Remove="Entities\pi_r_sub_basin_263132110913052332.xls_entities.json" />
     <None Remove="Entities\porosity_type.xls_entities.json" />
     <None Remove="Entities\porosity_type_210689110913052332.xls_entities.json" />
+    <None Remove="Entities\PPDM38.json_entities.json" />
     <None Remove="Entities\ppdm38_oracle_entities.json" />
     <None Remove="Entities\Predominant-fluid-recovery.xls_entities.json" />
     <None Remove="Entities\principal_meridian.xls_entities.json" />
@@ -118,6 +147,7 @@
     <None Remove="Entities\rig_status.xls_entities.json" />
     <None Remove="Entities\Show-type.xls_entities.json" />
     <None Remove="Entities\show_type.xls_entities.json" />
+    <None Remove="Entities\SqlServer_ppdm38_entities.json" />
     <None Remove="Entities\SqlServer_ppdm38_properties.json" />
     <None Remove="Entities\state-and-counties.xlsx_entities.json" />
     <None Remove="Entities\states.xls_entities.json" />
@@ -447,6 +477,93 @@
     <Content Include="config\reports.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="ConnectionDrivers\BouncyCastle.Crypto.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Dapper.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\ExcelDataReader.DataSet.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\ExcelDataReader.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Google.Protobuf.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\K4os.Compression.LZ4.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\K4os.Compression.LZ4.Streams.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\K4os.Hash.xxHash.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Microsoft.ReportViewer.Common.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Microsoft.ReportViewer.DataVisualization.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Microsoft.ReportViewer.ProcessingObjectModel.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Microsoft.ReportViewer.WinForms.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Microsoft.Web.WebView2.Core.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Microsoft.Web.WebView2.WinForms.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Microsoft.Win32.SystemEvents.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\MySql.Data.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Oracle.ManagedDataAccess.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\System.Configuration.ConfigurationManager.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\System.Data.SqlClient.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\System.Data.SQLite.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\System.Drawing.Common.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\System.Security.Cryptography.ProtectedData.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\System.Security.Permissions.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\System.Text.Encoding.CodePages.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\System.Windows.Extensions.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Ubiety.Dns.Core.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\win-x64\native\SQLite.Interop.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\win-x86\native\SQLite.Interop.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ConnectionDrivers\Zstandard.Net.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="DataFiles\Alaska.sdf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -615,6 +732,9 @@
     <Content Include="Entities\porosity_type_210689110913052332.xls_entities.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Entities\PPDM38.json_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Entities\ppdm38_oracle_entities.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -676,6 +796,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Entities\show_type.xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\SqlServer_ppdm38_entities.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Entities\SqlServer_ppdm38_properties.json">
@@ -1402,6 +1525,12 @@
     <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="3.21.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.8.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ConnectionDrivers\WebView2Loader.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

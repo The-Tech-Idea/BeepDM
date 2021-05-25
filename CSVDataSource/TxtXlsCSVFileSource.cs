@@ -66,9 +66,9 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
             };
             Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == datasourcename).FirstOrDefault();
-         
-          
-           
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+
             Category = DatasourceCategory.FILE;
             FileName = Dataconnection.ConnectionProp.FileName;
             FilePath = Dataconnection.ConnectionProp.FilePath;

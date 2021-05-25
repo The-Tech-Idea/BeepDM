@@ -90,8 +90,19 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 {
 
                     DbConn = (IDbConnection) DMEEditor.assemblyHandler.GetInstance(DataSourceDriver.DbConnectionType);
+                    if (DbConn != null)
+                    {
+                        DbConn.ConnectionString = ReplaceValueFromConnectionString(); //ConnectionProp.ConnectionString;
+                    }
+                    else
+                    {
+                        ConnectionStatus = ConnectionState.Broken;
+                        DMEEditor.AddLogMessage("Fail", $"Could Find DataSource Drivers {DataSourceDriver.classHandler}", DateTime.Now, 0, null, Errors.Failed);
+                        return ConnectionState.Broken;
+                    }
+                        
 
-                    DbConn.ConnectionString = ReplaceValueFromConnectionString(); //ConnectionProp.ConnectionString;
+                    
                  //   Logger.WriteLog("Init  DbConn for  Server");
                 }
                 catch (Exception e)

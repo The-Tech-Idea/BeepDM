@@ -1,4 +1,5 @@
-﻿using System;
+﻿using McMaster.NETCore.Plugins;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -30,21 +31,38 @@ namespace TheTechIdea.Tools.AssemblyHandling
         public List<IDM_Addin> AddIns { get; set; } = new List<IDM_Addin>();
         public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
         private List<ConnectionDriversConfig> DataDriversConfig = new List<ConnectionDriversConfig>();
+        #region "Plugin Loader"
+        static PluginLoadContext  PluginLoadContext;
+        AssemblyDependencyResolver _resolver;
+        AssemblyLoadContext loadContext;
+        static Assembly LoadPlugin(string relativePath)
+        {
+            string pluginLocation = Path.GetFullPath(Path.Combine(relativePath, relativePath.Replace('\\', Path.DirectorySeparatorChar)));
+            PluginLoadContext.SetResolver(pluginLocation);
+          return  PluginLoadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(pluginLocation)));
+
+          
+        }
+
+      
+        #endregion
 
         public AssemblyHandlerCore()
         {
 
+            PluginLoadContext = new PluginLoadContext();
             DataSourcesClasses = new List<AssemblyClassDefinition>();
         }
-        static Assembly LoadPlugin(string relativePath)
-        {
-            // Navigate up to the solution root
+        //static Assembly LoadPlugin(string relativePath)
+        //{
+        //    // Navigate up to the solution root
           
-            string pluginLocation = Path.GetFullPath(Path.Combine(relativePath, relativePath.Replace('\\', Path.DirectorySeparatorChar)));
-            Console.WriteLine($"Loading commands from: {pluginLocation}");
-            PluginLoadContext loadContext = new PluginLoadContext(pluginLocation);
-            return loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(pluginLocation)));
-        }
+        //    string pluginLocation = Path.GetFullPath(Path.Combine(relativePath, relativePath.Replace('\\', Path.DirectorySeparatorChar)));
+        //    Console.WriteLine($"Loading commands from: {pluginLocation}");
+        //    loadContext = new PluginLoadContext(pluginLocation);
+          
+        //    return loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(pluginLocation)));
+        //}
         public string LoadAssembly(string path, FolderFileTypes fileTypes)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -81,7 +99,6 @@ namespace TheTechIdea.Tools.AssemblyHandling
             return res;
         }
         #region "Loaders"
-
         public IErrorsInfo GetBuiltinClasses()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -234,8 +251,6 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 {
                     GetDrivers(item.DllLib);
                 }
-
-
                 foreach (string p in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.Addin).Select(x => x.FolderPath))
                 {
                     try
@@ -279,6 +294,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                     catch (Exception ex)
                     {
                         DMEEditor.ErrorObject.Flag = Errors.Failed;
+                        DMEEditor.AddLogMessage("Fail", $"Error Scanning DLL {s.DllLib}-{ex.Message}", DateTime.Now, 0, ex.Message, Errors.Failed);
                         res = ex.Message;
                     }
 
@@ -307,7 +323,6 @@ namespace TheTechIdea.Tools.AssemblyHandling
         #region "Class ordering"
         public ParentChildObject RearrangeAddin(string p, string parentid, string Objt)
         {
-
             ParentChildObject a;
             if (parentid == null)
             {
@@ -315,14 +330,12 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 {
                     a = new ParentChildObject() { id = p, ParentID = null, ObjType = Objt, AddinName = Name, Description = Descr };
                     DMEEditor.Utilfunction.FunctionHierarchy.Add(a);
-
                 }
                 else
                 {
                     a = DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == null && f.ObjType == Objt).FirstOrDefault();
 
                 }
-
             }
             else
             {
@@ -338,7 +351,6 @@ namespace TheTechIdea.Tools.AssemblyHandling
 
                 }
             }
-
             return a;
         }
         public List<ParentChildObject> GetAddinObjects(Assembly asm)
@@ -459,7 +471,6 @@ namespace TheTechIdea.Tools.AssemblyHandling
                 }
 
             }
-
             DMEEditor.ConfigEditor.SaveAddinTreeStructure();
             return DMEEditor.Utilfunction.FunctionHierarchy;
         }
@@ -743,7 +754,6 @@ namespace TheTechIdea.Tools.AssemblyHandling
         }
         #endregion "Class Extractors"
         #region "Helpers"
-
         public object CreateInstanceFromString(string typeName, params object[] args)
         {
             object instance = null;
@@ -764,7 +774,6 @@ namespace TheTechIdea.Tools.AssemblyHandling
 
             return instance;
         }
-    
         public object GetInstance(string strFullyQualifiedName)
         {
             Type type = GetType(strFullyQualifiedName);
@@ -776,6 +785,9 @@ namespace TheTechIdea.Tools.AssemblyHandling
         private readonly object _resolutionLock = new object();
         public Type GetType(string strFullyQualifiedName)
         {
+
+
+            //-----------------------------------------------
             Type type = Type.GetType(strFullyQualifiedName);
             if (type != null)
                 return type;
@@ -1142,4 +1154,6 @@ namespace TheTechIdea.Tools.AssemblyHandling
         }
         #endregion
     }
+
+   
 }

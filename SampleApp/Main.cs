@@ -54,7 +54,7 @@ namespace DataManagment_Engine
         }
         public MainApp()
         {
-            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+        
             Container = Configure();
             using (var scope = Container.BeginLifetimeScope())
             {
