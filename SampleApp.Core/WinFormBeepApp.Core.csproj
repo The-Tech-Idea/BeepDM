@@ -43,6 +43,7 @@
     <None Remove="ConnectionDrivers\Dapper.dll" />
     <None Remove="ConnectionDrivers\ExcelDataReader.DataSet.dll" />
     <None Remove="ConnectionDrivers\ExcelDataReader.dll" />
+    <None Remove="ConnectionDrivers\FirebirdSql.Data.FirebirdClient.dll" />
     <None Remove="ConnectionDrivers\Google.Protobuf.dll" />
     <None Remove="ConnectionDrivers\K4os.Compression.LZ4.dll" />
     <None Remove="ConnectionDrivers\K4os.Compression.LZ4.Streams.dll" />
@@ -489,6 +490,9 @@
     <Content Include="ConnectionDrivers\ExcelDataReader.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="ConnectionDrivers\FirebirdSql.Data.FirebirdClient.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="ConnectionDrivers\Google.Protobuf.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -555,7 +559,7 @@
     <Content Include="ConnectionDrivers\Ubiety.Dns.Core.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="ConnectionDrivers\win-x64\native\SQLite.Interop.dll">
+    <Content Include="ConnectionDrivers\SQLite.Interop.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="ConnectionDrivers\win-x86\native\SQLite.Interop.dll">
@@ -1531,6 +1535,10 @@
     <Content Include="ConnectionDrivers\WebView2Loader.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ConnectionDrivers\win-x64\native\" />
   </ItemGroup>
 
 </Project>

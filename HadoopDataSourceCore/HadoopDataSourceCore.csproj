@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>TheTechIdea.DataManagment_Engine.Database</RootNamespace>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\HadoopDataSource\*.cs" />
+    <EmbeddedResource Include="..\HadoopDataSource\**\*.resx" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+  </ItemGroup>
+  <Target Name="CopyTarget" AfterTargets="Build">
+    <ItemGroup>
+      <DataReaders Include="$(TargetDir)\HadoopDataSourceCore.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

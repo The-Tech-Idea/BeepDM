@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>TheTechIdea.DataManagment_Engine.Database</RootNamespace>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Postgre\*.cs" />
+    <EmbeddedResource Include="..\Postgre\**\*.resx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+  </ItemGroup>
+  <Target Name="CopyTarget" AfterTargets="Build">
+    <ItemGroup>
+      <DataReaders Include="$(TargetDir)\PostgreDataSourceCore.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

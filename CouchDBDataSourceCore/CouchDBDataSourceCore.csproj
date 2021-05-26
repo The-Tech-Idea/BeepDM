@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>TheTechIdea.DataManagment_Engine.Database</RootNamespace>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\CouchDBDataSource\*.cs" />
+    <EmbeddedResource Include="..\CouchDBDataSource\**\*.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="..\CouchDBDataSource\CouchDbReader.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CouchDB.NET" Version="3.1.0" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
+  </ItemGroup>
+  <Target Name="CopyTarget" AfterTargets="Build">
+    <ItemGroup>
+      <DataReaders Include="$(TargetDir)\CouchDBDataSourceCore.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
+  </Target>
+</Project>
