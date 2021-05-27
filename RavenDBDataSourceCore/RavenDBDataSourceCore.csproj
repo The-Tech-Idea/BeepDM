@@ -11,6 +11,10 @@
     <Compile Include="..\RavenDbDataSource\*.cs" />
     <EmbeddedResource Include="..\RavenDbDataSource\**\*.resx" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="RavenDB.Client" Version="5.1.8" />
+    <PackageReference Include="RavenDB.Embedded" Version="5.1.8" />
+  </ItemGroup>
  
   <ItemGroup>
     <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />

@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net5.0</TargetFramework>
@@ -7,19 +6,20 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\Postgre\*.cs" />
-    <EmbeddedResource Include="..\Postgre\**\*.resx" />
+    <Compile Include="..\FireBaseDataSourceCore\*.cs" />
+    <EmbeddedResource Include="..\FireBaseDataSourceCore\**\*.resx" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Npgsql" Version="5.0.5" />
+    <PackageReference Include="Google.Cloud.Firestore" Version="2.4.0" />
   </ItemGroup>
+  
 
   <ItemGroup>
     <ProjectReference Include="..\DataManagment_Engine\DataManagmentEngine.csproj" />
   </ItemGroup>
   <Target Name="CopyTarget" AfterTargets="Build">
     <ItemGroup>
-      <DataReaders Include="$(TargetDir)\PostgreDataSourceCore.dll" />
+      <DataReaders Include="$(TargetDir)\FireBaseDataSourceCore.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(DataReaders)" DestinationFolder="$(ProjectDir)..\SampleApp.Core\bin\Debug\net5.0-windows\ProjectClasses" SkipUnchangedFiles="true" />
   </Target>

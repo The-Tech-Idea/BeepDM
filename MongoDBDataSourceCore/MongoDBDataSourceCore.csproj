@@ -12,7 +12,10 @@
     <EmbeddedResource Include="..\MongoDB\**\*.resx" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="FirebirdSql.Data.FirebirdClient" Version="8.0.1" />
+    <Compile Remove="..\MongoDB\MongoDBReader.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MongoDB.Driver" Version="2.12.3" />
   </ItemGroup>
 
   <ItemGroup>
