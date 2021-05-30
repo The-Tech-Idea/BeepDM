@@ -150,7 +150,8 @@ namespace TheTechIdea.Configuration
                         bool ok= dB.CreateDB();
                         if (ok)
                         {
-                            ds.ConnectionStatus = ds.Dataconnection.OpenConnection();
+                            //ds.ConnectionStatus = ds.Dataconnection.OpenConnection();
+                            DMEEditor.OpenDataSource(cn.ConnectionName);
                         }
                         DMEEditor.ConfigEditor.AddDataConnection(cn);
                         DMEEditor.ConfigEditor.SaveDataconnectionsValues();

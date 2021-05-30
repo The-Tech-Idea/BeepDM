@@ -41,7 +41,8 @@ namespace TheTechIdea.Winforms.VIS
                     compositeLayerDataSource.Dataconnection.DataSourceDriver = driversConfig;
                     IDataSource ds = DMEEditor.CreateLocalDataSourceConnection(cn, cn.ConnectionName, driversConfig.classHandler);
                     compositeLayerDataSource.LocalDB = (ILocalDB)ds;
-                    compositeLayerDataSource.Dataconnection.OpenConnection();
+                    DMEEditor.OpenDataSource(cn.ConnectionName);
+                  //  compositeLayerDataSource.Dataconnection.OpenConnection();
                 }
                 catch (Exception )
                 {
@@ -169,7 +170,8 @@ namespace TheTechIdea.Winforms.VIS
             {
               if (compositeLayerDataSource != null)
                 {
-                    compositeLayerDataSource.Dataconnection.OpenConnection();
+                    DMEEditor.OpenDataSource(compositeLayerDataSource.DatasourceName);
+                  //  compositeLayerDataSource.Dataconnection.OpenConnection();
 
                     if (compositeLayerDataSource.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
@@ -225,7 +227,8 @@ namespace TheTechIdea.Winforms.VIS
                 {
                     if (compositeLayerDataSource.ConnectionStatus != System.Data.ConnectionState.Open)
                     {
-                        compositeLayerDataSource.Dataconnection.OpenConnection();
+                        DMEEditor.OpenDataSource(compositeLayerDataSource.DatasourceName);
+                        //compositeLayerDataSource.Dataconnection.OpenConnection();
                     }
                     if (compositeLayerDataSource.ConnectionStatus == System.Data.ConnectionState.Open)
                     {

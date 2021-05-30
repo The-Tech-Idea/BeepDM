@@ -69,6 +69,63 @@ namespace TheTechIdea.DataManagment_Engine
 
 
         }
+        public bool OpenDataSource(string pdatasourcename)
+        {
+            try
+            {
+                IDataSource ds1 = null;
+                ds1 = DataSources.Where(f => f.DatasourceName.Equals(pdatasourcename, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                if (ds1 == null)
+                {
+                    GetDataSource(pdatasourcename);
+                  
+                }
+                if (ds1 != null)
+                {
+                    ds1.ConnectionStatus = ds1.Dataconnection.OpenConnection();
+                    if (ds1.ConnectionStatus == ConnectionState.Open)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
+                    return false;
+
+            }
+            catch (Exception ex)
+            {
+
+                AddLogMessage("Fail", $"Could not Open DataSource Connection {ex.Message}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                return false;
+            }
+
+        }
+        public bool CloseDataSource(string pdatasourcename)
+        {
+            try
+            {
+                IDataSource ds1 = GetDataSource(pdatasourcename);
+                if (ds1 != null)
+                {
+                    ds1.ConnectionStatus = ds1.Dataconnection.CloseConn();
+                }
+                else
+                {
+                    return false;
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+
+                AddLogMessage("Fail", $"Could not Open DataSource Connection {ex.Message}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                return false;
+            }
+        }
         public IDataSource GetDataSource(string pdatasourcename)
         {
             IDataSource ds1=null;
@@ -80,7 +137,7 @@ namespace TheTechIdea.DataManagment_Engine
 
                 try
                 {
-                    ds1 = DataSources.Where(f => string.Equals( f.DatasourceName, pdatasourcename, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                    ds1 = DataSources.Where(f => f.DatasourceName.Equals(pdatasourcename, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                 }
                 catch (Exception ex)
                 {

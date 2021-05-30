@@ -19,7 +19,6 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
         public IDMLogger Logger { get ; set ; }
         public IErrorsInfo ErrorObject { get ; set ; }
         public IDbConnection DbConn { get ; set ; }
-
         public ConnectionState OpenConnection()
         {
             throw new NotImplementedException();
@@ -61,11 +60,14 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
         {
             throw new NotImplementedException();
         }
-
         public ConnectionState OpenConnection(DataSourceType dbtype, string connectionstring)
         {
             throw new NotImplementedException();
         }
-       
+
+        public ConnectionState CloseConn()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

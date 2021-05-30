@@ -140,7 +140,8 @@ namespace TheTechIdea.Winforms.VIS
                 DataSource = (IDataSource)DMEEditor.GetDataSource(BranchText);
                 if (DataSource != null)
                 {
-                    DataSource.Dataconnection.OpenConnection();
+                    //  DataSource.Dataconnection.OpenConnection();
+                    DMEEditor.OpenDataSource(BranchText);
                     if (DataSource.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
                         DataSource.GetEntitesList();

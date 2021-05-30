@@ -244,13 +244,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PostgreDataSourceCore", "Po
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RavenDBDataSourceCore", "RavenDBDataSourceCore\RavenDBDataSourceCore.csproj", "{EA799AED-78D8-4F77-82F4-33BAAAF3A0D4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CouchBaseDataSourceCore", "CouchBaseDataSourceCore\CouchBaseDataSourceCore.csproj", "{1DCBE413-0567-4CF0-B8D1-E193A0505D19}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CouchBaseDataSourceCore", "CouchBaseDataSourceCore\CouchBaseDataSourceCore.csproj", "{1DCBE413-0567-4CF0-B8D1-E193A0505D19}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CouchBaseDataSource", "CouchBaseDataSource\CouchBaseDataSource.csproj", "{D4F0C629-29D2-460B-89B1-1DD6A4178295}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FireBaseDataSource", "FireBaseDataSource\FireBaseDataSource.csproj", "{E55C055C-A093-4344-820A-379CDE04EFBD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FireBaseDataSourceCore", "FireBaseDataSourceCore\FireBaseDataSourceCore.csproj", "{06F097C4-AB2D-4EA9-B6DB-2815BCCDC8D7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FireBaseDataSourceCore", "FireBaseDataSourceCore\FireBaseDataSourceCore.csproj", "{06F097C4-AB2D-4EA9-B6DB-2815BCCDC8D7}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution

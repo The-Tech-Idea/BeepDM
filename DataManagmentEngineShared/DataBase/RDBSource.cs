@@ -2102,7 +2102,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         #region "Dapper"
         public virtual List<T> GetData<T>(string sql)
         {
-           
+           // DMEEditor.OpenDataSource(ds.DatasourceName);
             if (Dataconnection.OpenConnection() == ConnectionState.Open)
             {
                 return Dataconnection.DbConn.Query<T>(sql).AsList<T>();

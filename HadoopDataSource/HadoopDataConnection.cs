@@ -21,6 +21,11 @@ namespace TheTechIdea.DataManagment_Engine.Hadoop
         public IErrorsInfo ErrorObject { get ; set ; }
         public IDbConnection DbConn { get ; set ; }
 
+        public ConnectionState CloseConn()
+        {
+            throw new NotImplementedException();
+        }
+
         public ConnectionState OpenConnection()
         {
             throw new NotImplementedException();

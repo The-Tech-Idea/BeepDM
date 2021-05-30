@@ -23,6 +23,11 @@ namespace TheTechIdea.DataManagment_Engine.EventStream.Kafka
         public ProducerConfig ProdConfig { get; set; }
         public ConsumerConfig ConsConfig { get; set; }
 
+        public ConnectionState CloseConn()
+        {
+            throw new NotImplementedException();
+        }
+
         public ConnectionState OpenConnection()
         {
             try

@@ -24,8 +24,6 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         public IDbConnection DbConn { get ; set ; }
         public ConnectionState OpenConnection()
         {
-
-
             return OpenConn();
         }
         public string ReplaceValueFromConnectionString()
@@ -45,8 +43,6 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             if (string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString) == false)
             {
                 rep = DataSourceDriver.ConnectionString.Replace("{File}", ConnectionProp.ConnectionString);
-
-
             }
             if (string.IsNullOrWhiteSpace(ConnectionProp.Url) == false)
             {
@@ -54,12 +50,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 // rep =ConnectionProp.Url;
 
             }
-
-
             return rep;
-
-
-
         }
         private ConnectionState OpenConn()
         {
@@ -72,11 +63,6 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                     Logger.WriteLog(str);
                     ErrorObject.Flag = Errors.Ok;
                     ConnectionStatus = ConnectionState.Open;
-                 
-                   
-
-
-
                 }
                 else
                 {
@@ -87,7 +73,6 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                     ConnectionStatus = ConnectionState.Broken;
                     //ErrorObject.Ex = e;
                 }
-
             }
             else
             {
@@ -97,10 +82,6 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 ErrorObject.Message = str;
                 ConnectionStatus = ConnectionState.Closed;
             }
-            
-
-           
-
             Logger.WriteLog("Open File Function End");
             return ConnectionStatus;
         }
@@ -113,6 +94,19 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         public ConnectionState OpenConnection(DataSourceType dbtype, string connectionstring)
         {
             throw new NotImplementedException();
+        }
+        public virtual ConnectionState CloseConn()
+        {
+            if (File.Exists(Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)))
+            {
+                DMEEditor.AddLogMessage("Success", $"Closed Connection for File { ConnectionProp.FileName}", DateTime.Now, 0, ConnectionProp.FileName, Errors.Ok);
+                ConnectionStatus = ConnectionState.Closed;
+            }else
+            {
+                DMEEditor.AddLogMessage("Success", $"Could not find File { ConnectionProp.FileName} to close", DateTime.Now, 0, ConnectionProp.FileName, Errors.Failed);
+                ConnectionStatus = ConnectionState.Broken;
+            }
+            return ConnectionStatus;
         }
     }
 }

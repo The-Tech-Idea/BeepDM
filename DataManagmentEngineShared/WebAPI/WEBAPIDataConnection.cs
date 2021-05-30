@@ -101,5 +101,44 @@ namespace DataManagmentEngineShared.WebAPI
         {
             throw new NotImplementedException();
         }
+        public virtual ConnectionState CloseConn()
+        {
+            if (DbConn != null)
+            {
+                if (DbConn.State == ConnectionState.Open)
+                {
+                    ErrorObject.Flag = Errors.Ok;
+
+                    try
+                    {
+                      //  DbConn.Close();
+                        ConnectionStatus = ConnectionState.Closed;
+                    }
+                    catch (Exception ex)
+                    {
+                        DMEEditor.AddLogMessage("Fail", $"Could not close Connetion Database Function End {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+
+                    }
+
+                    return DbConn.State;
+                }
+                else
+                {
+                    ConnectionStatus = ConnectionState.Closed;
+                    return ConnectionStatus;
+                }
+
+
+            }
+            else
+            {
+                ConnectionStatus = ConnectionState.Closed;
+                return ConnectionStatus;
+            }
+
+
+            Logger.WriteLog("Closed Database Function End");
+
+        }
     }
 }

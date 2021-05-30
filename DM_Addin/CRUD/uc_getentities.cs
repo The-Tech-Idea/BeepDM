@@ -61,7 +61,8 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             DMEEditor = pbl;
             Visutil = (IVisUtil)e.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
             ds = DMEEditor.GetDataSource(e.DatasourceName);
-            ds.Dataconnection.OpenConnection();
+            // ds.Dataconnection.OpenConnection();
+            DMEEditor.OpenDataSource(e.DatasourceName);
             ds.ConnectionStatus = ds.Dataconnection.ConnectionStatus;
             if (ds != null && ds.ConnectionStatus== ConnectionState.Open)
             {

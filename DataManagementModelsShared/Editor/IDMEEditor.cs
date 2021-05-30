@@ -33,7 +33,8 @@ namespace TheTechIdea.DataManagment_Engine
         IDataSource CreateLocalDataSourceConnection(ConnectionProperties dataConnection, string pdatasourcename, string ClassDBHandlerName);
         bool RemoveDataDource(string pdatasourcename);
         bool CheckDataSourceExist(string pdatasourcename);
-      
+        bool OpenDataSource(string pdatasourcename);
+        bool CloseDataSource(string pdatasourcename);
         AssemblyClassDefinition GetDataSourceClass(string DatasourceName);
         void AddLogMessage(string pLogType, string pLogMessage, DateTime pLogData, int pRecordID, string pMiscData, Errors pFlag);
         void AddLogMessage(string pLogMessage);

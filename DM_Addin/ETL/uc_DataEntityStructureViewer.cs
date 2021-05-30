@@ -261,7 +261,8 @@ namespace TheTechIdea.ETL
                 {
                     if (ds != null)
                     {
-                        ds.ConnectionStatus = SourceConnection.Dataconnection.OpenConnection();
+                       // ds.ConnectionStatus = SourceConnection.Dataconnection.OpenConnection();
+                        DMEEditor.OpenDataSource(dataSourceIDComboBox.Items[dataSourceIDComboBox.SelectedIndex].ToString());
                         if (ErrorObject.Flag == Errors.Ok)
                         {
                             DMEEditor.DataSources.Add(SourceConnection);

@@ -1230,6 +1230,12 @@
     <Content Include="Entities\SqlServer_ppdm39_entities.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="DataViews\PPDM38.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="DataViews\PPDM39.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="packages.config" />
     <Content Include="DataFiles\ppdm38.s3db">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

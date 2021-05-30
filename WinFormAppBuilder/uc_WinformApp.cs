@@ -108,7 +108,8 @@ namespace TheTechIdea.ETL
 
             EntityStructure = ds.GetEntityStructure(e.Node.Text, true);
             IDataSource entds = DMEEditor.GetDataSource(EntityStructure.DataSourceID);
-            entds.Dataconnection.OpenConnection();
+         //   entds.Dataconnection.OpenConnection();
+            DMEEditor.OpenDataSource(EntityStructure.DataSourceID);
             if (entds.ConnectionStatus == ConnectionState.Open)
             {
                 

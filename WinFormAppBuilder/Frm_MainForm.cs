@@ -99,7 +99,8 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         {
             EntityStructure = ds.GetEntityStructure(e.Node.Text, true);
             IDataSource entds = DMEEditor.GetDataSource(EntityStructure.DataSourceID);
-            entds.Dataconnection.OpenConnection();
+            DMEEditor.OpenDataSource(EntityStructure.DataSourceID);
+          //  entds.Dataconnection.OpenConnection();
             if (entds.ConnectionStatus == ConnectionState.Open)
             {
                 ShowCRUD();

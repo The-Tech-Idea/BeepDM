@@ -128,6 +128,9 @@
     <None Remove="Entities\porosity_type_210689110913052332.xls_entities.json" />
     <None Remove="Entities\PPDM38.json_entities.json" />
     <None Remove="Entities\ppdm38_oracle_entities.json" />
+    <None Remove="Entities\ppdm38_sqlite_entities.json" />
+    <None Remove="Entities\PPDM39.json_entities.json" />
+    <None Remove="Entities\ppdm39_oracle_entities.json" />
     <None Remove="Entities\Predominant-fluid-recovery.xls_entities.json" />
     <None Remove="Entities\principal_meridian.xls_entities.json" />
     <None Remove="Entities\principal_meridian_210690110913052332.xls_entities.json" />
@@ -150,9 +153,12 @@
     <None Remove="Entities\show_type.xls_entities.json" />
     <None Remove="Entities\SqlServer_ppdm38_entities.json" />
     <None Remove="Entities\SqlServer_ppdm38_properties.json" />
+    <None Remove="Entities\SqlServer_ppdm39_entities.json" />
     <None Remove="Entities\state-and-counties.xlsx_entities.json" />
     <None Remove="Entities\states.xls_entities.json" />
     <None Remove="Entities\state_and_counties .xls_entities.json" />
+    <None Remove="Entities\TestView.json_entities.json" />
+    <None Remove="Entities\TestView1.json_entities.json" />
     <None Remove="Entities\test_result.xls_entities.json" />
     <None Remove="Entities\test_result_210705110913052332.xls_entities.json" />
     <None Remove="Entities\test_subtype.xls_entities.json" />
@@ -742,6 +748,15 @@
     <Content Include="Entities\ppdm38_oracle_entities.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Entities\ppdm38_sqlite_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\PPDM39.json_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\ppdm39_oracle_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Entities\Predominant-fluid-recovery.xls_entities.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -808,6 +823,9 @@
     <Content Include="Entities\SqlServer_ppdm38_properties.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Entities\SqlServer_ppdm39_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Entities\state-and-counties.xlsx_entities.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -815,6 +833,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Entities\state_and_counties .xls_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\TestView.json_entities.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Entities\TestView1.json_entities.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Entities\test_result.xls_entities.json">

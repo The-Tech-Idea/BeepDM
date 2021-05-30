@@ -60,7 +60,8 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             EntitybindingSource.AllowNew = false;
             SaveEntitybutton.Click += SaveEntitybutton_Click;
             ds = DMEEditor.GetDataSource(e.DatasourceName);
-            ds.Dataconnection.OpenConnection();
+            //ds.Dataconnection.OpenConnection();
+            DMEEditor.OpenDataSource(e.DatasourceName);
             if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
             {
                 EntityStructure = ds.GetEntityStructure(e.CurrentEntity, true);

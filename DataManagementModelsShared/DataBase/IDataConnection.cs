@@ -20,6 +20,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         string ReplaceValueFromConnectionString();
         ConnectionState OpenConnection(DataSourceType dbtype, string host, int port, string database, string userid, string password, string parameters);
         ConnectionState OpenConnection(DataSourceType dbtype, string connectionstring);
+        ConnectionState CloseConn();
 
     }
 }

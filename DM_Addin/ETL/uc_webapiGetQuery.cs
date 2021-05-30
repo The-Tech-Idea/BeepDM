@@ -77,7 +77,8 @@ namespace TheTechIdea.ETL
             webAPIData = DMEEditor.GetDataSource(e.DatasourceName);
             if (webAPIData != null)
             {
-                webAPIData.Dataconnection.OpenConnection();
+               // webAPIData.Dataconnection.OpenConnection();
+                DMEEditor.OpenDataSource(e.DatasourceName);
                 CurrentEntity = e.CurrentEntity;
                 ConnectionProperties cn = DMEEditor.ConfigEditor.DataConnections.Where(p => string.Equals(p.ConnectionName, e.DatasourceName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                 ent = webAPIData.Entities.Where(o => string.Equals(o.EntityName, e.CurrentEntity, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();

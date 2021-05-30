@@ -205,7 +205,8 @@ namespace TheTechIdea.DDL
             {
                 tb = (EntityStructure)entitiesBindingSource.Current;
                 SourceConnection = DMEEditor.GetDataSource(databaseTypeComboBox.Text);
-                SourceConnection.Dataconnection.OpenConnection();
+                DMEEditor.OpenDataSource(databaseTypeComboBox.Text);
+                //SourceConnection.Dataconnection.OpenConnection();
                 SourceConnection.ConnectionStatus = SourceConnection.Dataconnection.ConnectionStatus;
                 if (SourceConnection.ConnectionStatus == ConnectionState.Open)
                 {

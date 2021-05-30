@@ -109,6 +109,19 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         {
             throw new NotImplementedException();
         }
-
+        public virtual ConnectionState CloseConn()
+        {
+            if (File.Exists(Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)))
+            {
+                DMEEditor.AddLogMessage("Success", $"Closed Connection for File { ConnectionProp.FileName}", DateTime.Now, 0, ConnectionProp.FileName, Errors.Ok);
+                ConnectionStatus = ConnectionState.Closed;
+            }
+            else
+            {
+                DMEEditor.AddLogMessage("Success", $"Could not find File { ConnectionProp.FileName} to close", DateTime.Now, 0, ConnectionProp.FileName, Errors.Failed);
+                ConnectionStatus = ConnectionState.Broken;
+            }
+            return ConnectionStatus;
+        }
     }
 }

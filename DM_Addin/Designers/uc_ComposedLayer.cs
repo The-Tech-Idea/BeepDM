@@ -207,9 +207,10 @@ namespace TheTechIdea.ETL
                     compositeLayerDataSource.Dataconnection.ConnectionProp = cn;
                     compositeLayerDataSource.Dataconnection.DataSourceDriver = driversConfig;
                     compositeLayerDataSource.LocalDB = db;
-                    compositeLayerDataSource.Dataconnection.OpenConnection();
-                 //   Visutil.treeEditor.ShowWaiting();
-                 //   Visutil.treeEditor.ChangeWaitingCaption($"Getting  Composed Layer Entities Total:{compositeLayerDataSource.Entities.Count}");
+                    // compositeLayerDataSource.Dataconnection.OpenConnection();
+                    DMEEditor.OpenDataSource(cn.ConnectionName);
+                    //   Visutil.treeEditor.ShowWaiting();
+                    //   Visutil.treeEditor.ChangeWaitingCaption($"Getting  Composed Layer Entities Total:{compositeLayerDataSource.Entities.Count}");
                     compositeLayerDataSource.GetAllEntitiesFromDataView();
                 //    Visutil.treeEditor.HideWaiting();
                     DMEEditor.ConfigEditor.SaveCompositeLayersValues();

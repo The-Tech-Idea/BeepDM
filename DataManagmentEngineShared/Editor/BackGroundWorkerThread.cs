@@ -143,9 +143,10 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                
                 if (destds != null )
                 {
-                    destds.Dataconnection.OpenConnection();
-                  //  srcds.Dataconnection.OpenConnection();
-                    if(destds.ConnectionStatus== System.Data.ConnectionState.Open)
+                   // destds.Dataconnection.OpenConnection();
+                    DME.OpenDataSource(sc.destinationdatasourcename);
+                    //  srcds.Dataconnection.OpenConnection();
+                    if (destds.ConnectionStatus== System.Data.ConnectionState.Open)
                     {
                         if (sc.scriptType == DDLScriptType.CreateTable)
                         {
@@ -210,8 +211,10 @@ namespace TheTechIdea.DataManagment_Engine.Editor
 
                 if (destds != null && srcds != null)
                 {
-                    destds.Dataconnection.OpenConnection();
-                    srcds.Dataconnection.OpenConnection();
+                   // destds.Dataconnection.OpenConnection();
+                   // srcds.Dataconnection.OpenConnection();
+                    DME.OpenDataSource(sc.destinationdatasourcename);
+                    DME.OpenDataSource(sc.sourcedatasourcename);
                     if (destds.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
                         if (sc.scriptType == DDLScriptType.CopyData)
@@ -279,7 +282,8 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 if (destds != null )
                 {
                     destds.Dataconnection.OpenConnection();
-              //      srcds.Dataconnection.OpenConnection();
+                    DME.OpenDataSource(sc.destinationdatasourcename);
+                    //      srcds.Dataconnection.OpenConnection();
                     if (destds.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
                         if (sc.scriptType == DDLScriptType.AlterFor)

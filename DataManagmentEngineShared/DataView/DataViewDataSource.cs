@@ -137,10 +137,11 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
             };
             string filename = Path.GetFileName(datasourcename);
+            List<ConnectionProperties> cnlist = DMEEditor.ConfigEditor.DataConnections.Where(p => p.FileName != null && p.Category == DatasourceCategory.VIEWS).ToList();
             string filepath; //= DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.DataView).FirstOrDefault().FolderPath;
-            if (DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == filename).Any())
+            if (cnlist.Where(c => c.FileName.Equals(filename, StringComparison.OrdinalIgnoreCase)).Any())
             {
-                Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == filename).FirstOrDefault();
+                Dataconnection.ConnectionProp = cnlist.Where(c => c.FileName.Equals(filename,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                 filepath = Dataconnection.ConnectionProp.FilePath;
 
 
@@ -155,21 +156,23 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 Dataconnection.ConnectionProp.DatabaseType = DataSourceType.Json;
                 Dataconnection.ConnectionProp.DriverVersion = "1";
                 Dataconnection.ConnectionProp.DriverName = "DataViewReader";
+                Dataconnection.ConnectionProp.ConnectionName = filename;
                 DMEEditor.ConfigEditor.DataConnections.Add((ConnectionProperties)Dataconnection.ConnectionProp);
                 DMEEditor.ConfigEditor.SaveDataconnectionsValues();
 
             }
             DataViewFile = Path.Combine(filepath, filename);
-            Dataconnection.OpenConnection();
-            if (Dataconnection.ConnectionStatus== ConnectionState.Open)
-            {
-                LoadView();
-            }
-            else
-            {
-                DataView = GenerateView(filename, filepath);
-                WriteDataViewFile(DataViewFile);
-            }
+         //   DMEEditor.OpenDataSource(filename);
+          //  Dataconnection.OpenConnection();
+            //if (Dataconnection.ConnectionStatus== ConnectionState.Open)
+            //{
+            //    LoadView();
+            //}
+            //else
+            //{
+            //    DataView = GenerateView(filename, filepath);
+            //    WriteDataViewFile(DataViewFile);
+            //}
 
         }
         public List<string> GetEntitesList()

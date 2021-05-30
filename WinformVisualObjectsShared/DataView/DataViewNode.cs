@@ -187,7 +187,7 @@ namespace TheTechIdea.Winforms.VIS
                             AddinType = "",
                             DMView = DataView,
                             CurrentEntity = BranchText,
-                            Id = DataView.Entities[0].Id,
+                            Id = 0,
                             ObjectType = "EDITVIEW",
                             DataSource = ds,
                             ObjectName = DataView.ViewName,
@@ -234,7 +234,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                
                 ds = (DataViewDataSource)DMEEditor.GetDataSource(DataSourceName);
-                
+                DMEEditor.OpenDataSource(DataSourceName);
                 if (ds != null )
                 {
                  if (ds.ConnectionStatus != System.Data.ConnectionState.Open)
@@ -595,7 +595,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                 // IBranch pbr = TreeEditor.Branches.Where(x => x.BranchType == EnumBranchType.Root && x.BranchClass == "VIEW").FirstOrDefault();
                 ds = (DataViewDataSource)DMEEditor.GetDataSource(DataSourceName);
-
+                DMEEditor.OpenDataSource(DataSourceName);
                 if (ds != null)
                 {
                     if (ds.ConnectionStatus != System.Data.ConnectionState.Open)
@@ -712,11 +712,12 @@ namespace TheTechIdea.Winforms.VIS
                 // IBranch pbr = TreeEditor.Branches.Where(x => x.BranchType == EnumBranchType.Root && x.BranchClass == "VIEW").FirstOrDefault();
                 //
                 ds = (DataViewDataSource)DMEEditor.GetDataSource(DataSourceName);
-                
 
+                DMEEditor.OpenDataSource(DataSourceName);
                 if (ds != null)
                 {
-                    ds.Dataconnection.OpenConnection();
+                    DMEEditor.OpenDataSource(DataSourceName);
+                  //  ds.Dataconnection.OpenConnection();
                     ds.Entities.Clear();
                     DMEEditor.ConfigEditor.SaveDataconnectionsValues();
                     // ds.Dataview=DataView;

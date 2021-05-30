@@ -207,6 +207,44 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             Logger.WriteLog("Open Database Function End");
             return ConnectionStatus;
         }
+        public virtual ConnectionState CloseConn()
+        {
+            if (DbConn != null)
+            {
+                if (DbConn.State == ConnectionState.Open)
+                {
+                    ErrorObject.Flag = Errors.Ok;
+                    
+                    try
+                    {
+                        DbConn.Close();
+                        ConnectionStatus = ConnectionState.Closed;
+                    }
+                    catch (Exception ex)
+                    {
+                        DMEEditor.AddLogMessage("Fail",$"Could not close Connetion Database Function End {ex.Message}",DateTime.Now,0,null,Errors.Failed);
+
+                    }
+                   
+                    return DbConn.State;
+                }else
+                {
+                    ConnectionStatus = ConnectionState.Closed;
+                    return ConnectionStatus;
+                }
+
+
+            }
+            else
+            {
+                ConnectionStatus = ConnectionState.Closed;
+                return ConnectionStatus;
+            }
+         
+
+            Logger.WriteLog("Closed Database Function End");
+            
+        }
         public object GetInstance(string strFullyQualifiedName)
         {
             Type type = Type.GetType(strFullyQualifiedName);

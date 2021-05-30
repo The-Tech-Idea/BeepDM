@@ -111,7 +111,8 @@ namespace TheTechIdea.Winforms.VIS
                 DataSource = (IRDBSource)DMEEditor.GetDataSource(BranchText);
                 if (DataSource != null)
                 {
-                    DataSource.Dataconnection.OpenConnection();
+                    DMEEditor.OpenDataSource(BranchText);
+                   // DataSource.Dataconnection.OpenConnection();
                     if (DataSource.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
                         DataSource.GetEntitesList();
@@ -519,7 +520,8 @@ namespace TheTechIdea.Winforms.VIS
                 DataSource = (IRDBSource)DMEEditor.GetDataSource(BranchText);
                 if (DataSource != null)
                 {
-                    DataSource.Dataconnection.OpenConnection();
+                    DMEEditor.OpenDataSource(BranchText);
+                  //  DataSource.Dataconnection.OpenConnection();
                     if (DataSource.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
                         if (Visutil.controlEditor.InputBoxYesNo("Beep DM", "Are you sure, this might take some time?") == System.Windows.Forms.DialogResult.Yes)
@@ -584,7 +586,8 @@ namespace TheTechIdea.Winforms.VIS
                 DataSource = (IRDBSource)DMEEditor.GetDataSource(BranchText);
                 if (DataSource != null)
                 {
-                    DataSource.Dataconnection.OpenConnection();
+                    DMEEditor.OpenDataSource(BranchText);
+                  //  DataSource.Dataconnection.OpenConnection();
                     if (DataSource.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
                         if (Visutil.controlEditor.InputBoxYesNo("Beep DM", "Are you sure, this might take some time?") == System.Windows.Forms.DialogResult.Yes)

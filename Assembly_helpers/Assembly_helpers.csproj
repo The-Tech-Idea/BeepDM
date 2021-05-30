@@ -95,6 +95,7 @@
     <ProjectReference Include="..\DM_VIS\Winform.csproj">
       <Project>{0246f046-95c7-4713-b6d7-4ae829600c39}</Project>
       <Name>Winform</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
