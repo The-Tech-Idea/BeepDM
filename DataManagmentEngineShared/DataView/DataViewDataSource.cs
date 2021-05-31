@@ -455,7 +455,17 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
 
         }
-        public  object RunQuery( string qrystr)
+        public ConnectionState Openconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public object RunQuery( string qrystr)
         {
             throw new NotImplementedException();
            // ds = DMEEditor.GetDataSource(DatasourceName);

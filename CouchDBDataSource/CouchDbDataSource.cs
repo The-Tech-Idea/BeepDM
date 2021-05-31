@@ -29,7 +29,16 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL.CouchDB
         public List<string> EntitiesNames { get ; set ; }
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public IDMEEditor DMEEditor { get ; set ; }
-      
+        public ConnectionState Openconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            throw new NotImplementedException();
+        }
+
         public ConnectionState ConnectionStatus { get ; set ; }
   
 

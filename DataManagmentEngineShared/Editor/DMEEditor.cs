@@ -69,7 +69,7 @@ namespace TheTechIdea.DataManagment_Engine
 
 
         }
-        public bool OpenDataSource(string pdatasourcename)
+        public ConnectionState OpenDataSource(string pdatasourcename)
         {
             try
             {
@@ -82,25 +82,17 @@ namespace TheTechIdea.DataManagment_Engine
                 }
                 if (ds1 != null)
                 {
-                    ds1.ConnectionStatus = ds1.Dataconnection.OpenConnection();
-                    if (ds1.ConnectionStatus == ConnectionState.Open)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
+                    return ds1.Openconnection();
                 }
                 else
-                    return false;
+                    return ConnectionState.Broken; 
 
             }
             catch (Exception ex)
             {
 
                 AddLogMessage("Fail", $"Could not Open DataSource Connection {ex.Message}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
-                return false;
+                return ConnectionState.Broken; 
             }
 
         }
@@ -108,16 +100,23 @@ namespace TheTechIdea.DataManagment_Engine
         {
             try
             {
+                ConnectionState st= ConnectionState.Closed;
                 IDataSource ds1 = GetDataSource(pdatasourcename);
                 if (ds1 != null)
                 {
-                    ds1.ConnectionStatus = ds1.Dataconnection.CloseConn();
+                     st= ds1.Dataconnection.CloseConn();
                 }
                 else
                 {
                     return false;
                 }
-                return true;
+                if (st == ConnectionState.Open)
+                {
+                    return true;
+                }
+                else
+                    return false;
+               
             }
             catch (Exception ex)
             {
@@ -430,11 +429,11 @@ namespace TheTechIdea.DataManagment_Engine
                 
                 if (ds != null)
                 {
-                    if (ds.Dataconnection.DbConn != null)
-                    {
-                        ds.Dataconnection.DbConn.Close();
-                        ds.Dataconnection.DbConn.Dispose();
-                    }
+                    //if (ds.Dataconnection.DbConn != null)
+                    //{
+                    //    ds.Dataconnection.DbConn.Close();
+                    //    ds.Dataconnection.DbConn.Dispose();
+                    //}
                     if (ds.Dataconnection.DataSourceDriver.CreateLocal)
                     {
                         ConfigEditor.RemoveDataSourceEntitiesValues(ds.DatasourceName);

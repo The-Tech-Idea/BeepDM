@@ -41,6 +41,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         public IDMEEditor DMEEditor { get; set; }
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public IDataConnection Dataconnection { get; set; }
+        public RDBDataConnection RDBMSConnection { get { return (RDBDataConnection)Dataconnection; } }
         public LScriptTracker trackingHeader { get; set; } = new LScriptTracker();
         public RDBSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
         {
@@ -61,6 +62,25 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
         }
         #region "IDataSource Interface Methods"
+        public ConnectionState Openconnection()
+        {
+           if (RDBMSConnection != null)
+            {
+                ConnectionStatus= RDBMSConnection.OpenConnection();
+               
+            }
+            return ConnectionStatus;
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            if (RDBMSConnection != null)
+            {
+                ConnectionStatus = RDBMSConnection.CloseConn();
+
+            }
+            return ConnectionStatus;
+        }
 
         #region "Repo Methods"
         public virtual IErrorsInfo ExecuteSql(string sql)
@@ -136,7 +156,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             ErrorObject.Flag = Errors.Ok;
             EntityStructure DataStruct = GetEntityStructure(EntityName);
 
-            IDbCommand command = Dataconnection.DbConn.CreateCommand();
+            IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
 
 
             int CurrentRecord = 0;
@@ -322,7 +342,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             DataRow dr;
             string msg = "";
             //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
-            IDbCommand command = Dataconnection.DbConn.CreateCommand();
+            IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
             var ti = Activator.CreateInstance(enttype);
             // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
@@ -448,8 +468,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             DataRowView dv;
             DataTable tb;
             DataRow dr;
-            var sqlTran = Dataconnection.DbConn.BeginTransaction();
-            IDbCommand command = Dataconnection.DbConn.CreateCommand();
+            var sqlTran = RDBMSConnection.DbConn.BeginTransaction();
+            IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
             var ti = Activator.CreateInstance(enttype);
             // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
@@ -579,7 +599,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             DataRow dr;
             string msg = "";
             //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
-            IDbCommand command = Dataconnection.DbConn.CreateCommand();
+            IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
             var ti = Activator.CreateInstance(enttype);
             // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
@@ -2105,7 +2125,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
            // DMEEditor.OpenDataSource(ds.DatasourceName);
             if (Dataconnection.OpenConnection() == ConnectionState.Open)
             {
-                return Dataconnection.DbConn.Query<T>(sql).AsList<T>();
+                return RDBMSConnection.DbConn.Query<T>(sql).AsList<T>();
 
             }
             else
@@ -2119,7 +2139,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         {
             if (Dataconnection.OpenConnection() == ConnectionState.Open)
             {
-                return Dataconnection.DbConn.ExecuteAsync(sql, parameters);
+                return RDBMSConnection.DbConn.ExecuteAsync(sql, parameters);
             }
             else
                 return null;
@@ -2176,7 +2196,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             {
                 if(Dataconnection.OpenConnection()== ConnectionState.Open)
                 {
-                    cmd = Dataconnection.DbConn.CreateCommand();
+                    cmd = RDBMSConnection.DbConn.CreateCommand();
                 }else
                 {
                     cmd = null;
@@ -2220,7 +2240,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 ObjectActivator<DbCommandBuilder> cmdbuilderActivator = GetActivator<DbCommandBuilder>(BuilderConstructer);
                
                 //create an instance:
-                adp = (IDbDataAdapter)adpActivator(Sql,Dataconnection.DbConn);
+                adp = (IDbDataAdapter)adpActivator(Sql, RDBMSConnection.DbConn);
 
 
                 try
@@ -2363,6 +2383,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             throw new NotImplementedException();
         }
 
+     
         #endregion
 
 

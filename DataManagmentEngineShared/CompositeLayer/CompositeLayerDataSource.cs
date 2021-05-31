@@ -177,7 +177,7 @@ namespace TheTechIdea.DataManagment_Engine.CompositeLayer
         {
             try
             {
-                Dataconnection.DbConn.Close();
+                RDBMSConnection.DbConn.Close();
             }
             catch (Exception)
             {

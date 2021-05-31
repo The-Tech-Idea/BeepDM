@@ -47,6 +47,15 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
             cn.ConnectionStatus = ConnectionStatus;
 
         }
+        public ConnectionState Openconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            throw new NotImplementedException();
+        }
 
         public DataSourceType DatasourceType { get ; set ; }
         public DatasourceCategory Category { get ; set ; }

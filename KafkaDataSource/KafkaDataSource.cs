@@ -45,6 +45,16 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
             Kafkadataconnection = (KafkaDataConnection)Dataconnection;
 
         }
+        public ConnectionState Openconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            throw new NotImplementedException();
+        }
+
         public event EventHandler<PassedArgs> PassEvent;
         public DataSourceType DatasourceType { get ; set ; }
         public DatasourceCategory Category { get ; set ; }

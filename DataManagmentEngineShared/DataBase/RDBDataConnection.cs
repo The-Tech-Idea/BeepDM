@@ -16,6 +16,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         public ConnectionDriversConfig DataSourceDriver { get; set; }
         public IDMLogger Logger { get; set; }
         public IErrorsInfo ErrorObject { get; set; }
+    
         public IConnectionProperties ConnectionProp { get; set; } = new ConnectionProperties();
         public RDBDataConnection()
         {

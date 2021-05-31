@@ -44,6 +44,16 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
             }
             CreateDB();
         }
+        public ConnectionState Openconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            throw new NotImplementedException();
+        }
+
         public DataSourceType DatasourceType { get; set; }
         public DatasourceCategory Category { get; set; }
         public IDataConnection Dataconnection { get; set; }
@@ -161,7 +171,7 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
 
             {
 
-                Dataconnection.DbConn.Close();
+             //   Dataconnection.DbConn.Close();
 
 
                 DMEEditor.AddLogMessage("Success", $"Closing connection to SQL Compact Database", DateTime.Now, 0, null, Errors.Ok);

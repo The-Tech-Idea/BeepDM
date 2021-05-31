@@ -24,6 +24,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         List<T> GetData<T>(string sql);
         Task SaveData<T>(string sql, T parameters);
         string GetSchemaName();
+       
 
 
     }

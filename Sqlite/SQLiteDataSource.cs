@@ -122,9 +122,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             try
             {
                 SQLiteConnection.ClearAllPools();
-                if (base.Dataconnection.DbConn != null)
+                if (base.RDBMSConnection.DbConn != null)
                 {
-                    base.Dataconnection.DbConn.Close();
+                    base.RDBMSConnection.DbConn.Close();
                 }
              
 

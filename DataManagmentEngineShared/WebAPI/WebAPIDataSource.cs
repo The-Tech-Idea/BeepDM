@@ -58,6 +58,16 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
             cn.ConnectionStatus = ConnectionStatus;
            // GetEntitesList();
         }
+        public ConnectionState Openconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            throw new NotImplementedException();
+        }
+
         //private bool GetData()
         //{
         //    try

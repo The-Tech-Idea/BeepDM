@@ -48,7 +48,8 @@ namespace TheTechIdea
         IErrorsInfo InsertEntity(string EntityName, object InsertedData);
         object GetEntity(string EntityName, List<ReportFilter> filter);
         Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter);
-   
+        ConnectionState Openconnection();
+        ConnectionState Closeconnection();
 
     }
 }

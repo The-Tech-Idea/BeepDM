@@ -124,10 +124,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             try
 
             {
-                if (base.Dataconnection.DbConn!=null)
+                if (base.RDBMSConnection.DbConn!=null)
                 {
-                    base.Dataconnection.DbConn.Close();
-                    base.Dataconnection.DbConn.Dispose();
+                    base.RDBMSConnection.DbConn.Close();
+                    base.RDBMSConnection.DbConn.Dispose();
                 }
                
                 DMEEditor.AddLogMessage("Success", $"Closing connection to SQL Compact Database", DateTime.Now, 0, null, Errors.Ok);

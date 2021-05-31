@@ -32,6 +32,15 @@ namespace TheTechIdea.DataManagment_Engine.Cloud
         public List<object> Records { get ; set ; }
         public ConnectionState ConnectionStatus { get ; set ; }
         public DataTable SourceEntityData { get ; set ; }
+        public ConnectionState Openconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            throw new NotImplementedException();
+        }
 
         public bool CheckEntityExist(string EntityName)
         {

@@ -36,6 +36,15 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             Dataconnection.ConnectionStatus = ConnectionStatus;
            
         }
+        public ConnectionState Openconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            throw new NotImplementedException();
+        }
 
         private CsvTextFieldParser fieldParser = null;
         public DataSourceType DatasourceType { get; set; } = DataSourceType.CSV;

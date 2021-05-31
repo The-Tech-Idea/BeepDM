@@ -85,6 +85,17 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             
           
         }
+        public ConnectionState Openconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+
         public List<string> GetEntitesList()
         {
             ErrorObject.Flag = Errors.Ok;

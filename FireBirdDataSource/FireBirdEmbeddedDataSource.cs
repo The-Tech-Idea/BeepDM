@@ -133,7 +133,7 @@ namespace DataManagmentEngineShared.DataBase
 
             {
 
-                base.Dataconnection.DbConn.Close();
+                base.RDBMSConnection.DbConn.Close();
 
 
                 DMEEditor.AddLogMessage("Success", $"Closing connection to SQL Compact Database", DateTime.Now, 0, null, Errors.Ok);

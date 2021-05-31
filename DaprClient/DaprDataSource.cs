@@ -47,6 +47,15 @@ namespace DaprClient
 
 
         }
+        public ConnectionState Openconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            throw new NotImplementedException();
+        }
 
         public DataSourceType DatasourceType { get; set; } = DataSourceType.WebService;
         public DatasourceCategory Category { get; set; } = DatasourceCategory.WEBAPI;

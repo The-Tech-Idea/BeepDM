@@ -40,6 +40,15 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
 
         }
+        public ConnectionState Openconnection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            throw new NotImplementedException();
+        }
 
         public DataSourceType DatasourceType { get; set; } = DataSourceType.Xls;
         public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;

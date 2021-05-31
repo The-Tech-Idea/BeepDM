@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Logger;
@@ -33,7 +34,7 @@ namespace TheTechIdea.DataManagment_Engine
         IDataSource CreateLocalDataSourceConnection(ConnectionProperties dataConnection, string pdatasourcename, string ClassDBHandlerName);
         bool RemoveDataDource(string pdatasourcename);
         bool CheckDataSourceExist(string pdatasourcename);
-        bool OpenDataSource(string pdatasourcename);
+        ConnectionState OpenDataSource(string pdatasourcename);
         bool CloseDataSource(string pdatasourcename);
         AssemblyClassDefinition GetDataSourceClass(string DatasourceName);
         void AddLogMessage(string pLogType, string pLogMessage, DateTime pLogData, int pRecordID, string pMiscData, Errors pFlag);
