@@ -234,7 +234,8 @@ namespace TheTechIdea.Winforms.VIS
             {
                
                 ds = (DataViewDataSource)DMEEditor.GetDataSource(DataSourceName);
-                DMEEditor.OpenDataSource(DataSourceName);
+                ds.Openconnection();
+               // DMEEditor.OpenDataSource(DataSourceName);
                 if (ds != null )
                 {
                  if (ds.ConnectionStatus != System.Data.ConnectionState.Open)

@@ -67,7 +67,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
            if (RDBMSConnection != null)
             {
                 ConnectionStatus= RDBMSConnection.OpenConnection();
-               
+                Dataconnection.ConnectionStatus = ConnectionStatus;
             }
             return ConnectionStatus;
         }

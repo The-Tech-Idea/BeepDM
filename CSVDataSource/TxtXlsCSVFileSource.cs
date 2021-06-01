@@ -87,7 +87,8 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         }
         public ConnectionState Openconnection()
         {
-            throw new NotImplementedException();
+            ConnectionStatus = Dataconnection.OpenConnection();
+            return ConnectionStatus;
         }
 
         public ConnectionState Closeconnection()
@@ -108,8 +109,13 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 {
                     EntitiesNames = new List<string>();
                     EntitiesNames = getWorksheetNames().ToList();
+                    Entities.Clear();
+                    foreach (var item in EntitiesNames)
+                    {
+                        Entities.Add(GetEntityStructure(item, true));
+                    }
                 }
-                // List<EntityStructure> entlist = new List<EntityStructure>();
+               
                
                 
 
@@ -380,7 +386,10 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 }
 
             }
-       
+            //if (Entities.Count != EntitiesNames.Count)
+            //{
+            //    GetEntitesList();
+            //}
            return Entities.Where(x => string.Equals(x.EntityName, EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 
         }

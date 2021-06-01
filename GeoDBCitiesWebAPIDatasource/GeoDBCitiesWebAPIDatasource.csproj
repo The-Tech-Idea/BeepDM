@@ -56,10 +56,6 @@
       <Project>{45983087-5e0e-4bfb-86c1-a5bc54d2a86f}</Project>
       <Name>DataManagmentEngine</Name>
     </ProjectReference>
-    <ProjectReference Include="..\WebApiDataSource\WebApiDataSource.csproj">
-      <Project>{fef72801-abbf-47f4-817b-375bee7112b4}</Project>
-      <Name>WebApiDataSource</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

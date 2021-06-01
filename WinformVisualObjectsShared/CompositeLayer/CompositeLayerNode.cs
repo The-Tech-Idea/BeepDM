@@ -170,8 +170,8 @@ namespace TheTechIdea.Winforms.VIS
             {
               if (compositeLayerDataSource != null)
                 {
-                    DMEEditor.OpenDataSource(compositeLayerDataSource.DatasourceName);
-                  //  compositeLayerDataSource.Dataconnection.OpenConnection();
+                    compositeLayerDataSource.Dataconnection.ConnectionStatus= DMEEditor.OpenDataSource(compositeLayerDataSource.DatasourceName);
+                         
 
                     if (compositeLayerDataSource.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
@@ -266,7 +266,7 @@ namespace TheTechIdea.Winforms.VIS
                
                 if (compositeLayerDataSource != null)
                 {
-                   
+                    compositeLayerDataSource.ConnectionStatus = DMEEditor.OpenDataSource(compositeLayerDataSource.DatasourceName);
                     if (compositeLayerDataSource.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
                         CheckCreatedentities();
@@ -354,6 +354,7 @@ namespace TheTechIdea.Winforms.VIS
                                 }
                                 else
                                 {
+                                    compositeLayerDataSource.ConnectionStatus = DMEEditor.OpenDataSource(compositeLayerDataSource.DatasourceName);
                                     entity.Created = false;
                                     compositeLayerDataSource.LayerInfo.Entities.Add(entity);
                                     DMEEditor.ConfigEditor.SaveCompositeLayersValues();
@@ -626,6 +627,7 @@ namespace TheTechIdea.Winforms.VIS
                 {
                     if (TreeEditor.args.ObjectType == "COPYDEFAULTS")
                     {
+                          compositeLayerDataSource.ConnectionStatus= DMEEditor.OpenDataSource(compositeLayerDataSource.DatasourceName);
                         List<DefaultValue> defaults = (List<DefaultValue>)TreeEditor.args.Objects[0].obj;
                         DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == BranchText)].DatasourceDefaults = defaults;
                         DMEEditor.ConfigEditor.SaveDataconnectionsValues();

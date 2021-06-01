@@ -75,6 +75,7 @@ namespace TheTechIdea.ETL
             if (branch.DataSourceName != null)
             {
                 ds = (DataViewDataSource)DMEEditor.GetDataSource(branch.DataSourceName);
+                ds.Openconnection();
             }
            
             dataViewDataSourceNameComboBox.Items.Clear();
@@ -209,6 +210,7 @@ namespace TheTechIdea.ETL
                     compositeLayerDataSource.LocalDB = db;
                     // compositeLayerDataSource.Dataconnection.OpenConnection();
                     DMEEditor.OpenDataSource(cn.ConnectionName);
+                    compositeLayerDataSource.Openconnection();
                     //   Visutil.treeEditor.ShowWaiting();
                     //   Visutil.treeEditor.ChangeWaitingCaption($"Getting  Composed Layer Entities Total:{compositeLayerDataSource.Entities.Count}");
                     compositeLayerDataSource.GetAllEntitiesFromDataView();

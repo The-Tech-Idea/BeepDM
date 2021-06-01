@@ -457,7 +457,12 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         }
         public ConnectionState Openconnection()
         {
-            throw new NotImplementedException();
+            ConnectionStatus= Dataconnection.OpenConnection();
+            if (ConnectionStatus== ConnectionState.Open)
+            {
+                LoadView();
+            }
+            return ConnectionStatus;
         }
 
         public ConnectionState Closeconnection()
