@@ -67,6 +67,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
            if (RDBMSConnection != null)
             {
                 ConnectionStatus= RDBMSConnection.OpenConnection();
+                
                 Dataconnection.ConnectionStatus = ConnectionStatus;
             }
             return ConnectionStatus;
@@ -1217,7 +1218,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     int i = 0;
                     foreach (DataRow row in tb.Rows)
                     {
-                        EntitiesNames.Add(row.Field<string>("TABLE_NAME"));
+                        EntitiesNames.Add(row.Field<string>("TABLE_NAME").ToUpper());
                        
                        
                     i += 1;
@@ -1230,12 +1231,12 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         {
                             foreach (string item in diffnames)
                             {
-                                EntitiesNames.Add(item);
+                                EntitiesNames.Add(item.ToUpper());
                             }
                         }
                     }
 
-                    Logger.WriteLog("Successfully Retrieve tables list ");
+                    //Logger.WriteLog("Successfully Retrieve tables list ");
 
 
                 //} else
@@ -1525,7 +1526,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 }
 
 
-                DMEEditor.AddLogMessage("Success", $"Generated Script", DateTime.Now, 0, null, Errors.Ok);
+            //    DMEEditor.AddLogMessage("Success", $"Generated Script", DateTime.Now, 0, null, Errors.Ok);
 
             }
             catch (Exception ex)
@@ -1556,7 +1557,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 rt.Add(x);
                 rt.AddRange(CreateForKeyRelationScripts(entity));
 
-                DMEEditor.AddLogMessage("Success", $"Generated Script", DateTime.Now, 0, null, Errors.Ok);
+           //     DMEEditor.AddLogMessage("Success", $"Generated Script", DateTime.Now, 0, null, Errors.Ok);
 
             }
             catch (Exception ex)
@@ -2331,7 +2332,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 tb = reader.GetSchemaTable();
                 reader.Close();
                 cmd.Dispose();
-                Logger.WriteLog("Executed Sql Successfully");
+               // Logger.WriteLog("Executed Sql Successfully");
 
             }
             catch (Exception ex)

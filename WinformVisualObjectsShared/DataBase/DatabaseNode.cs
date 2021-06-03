@@ -117,7 +117,7 @@ namespace TheTechIdea.Winforms.VIS
                     {
                         DataSource.GetEntitesList();
                         List<string> ename = DataSource.EntitiesNames.ToList();
-                        List<string> existing = DataSource.Entities.Select(o => o.EntityName).ToList();
+                        List<string> existing = DataSource.Entities.Select(o => o.EntityName.ToUpper()).ToList();
                         List<string> diffnames = ename.Except(existing).ToList();
                         TreeEditor.RemoveChildBranchs(this);
                         int i = 0;
@@ -147,7 +147,7 @@ namespace TheTechIdea.Winforms.VIS
                             }
                             TreeEditor.HideWaiting();
                         //------------------------------- Draw Existing Entities
-                        foreach (string tb in existing) //
+                         foreach (string tb in existing) //
                         {
                            
                          
