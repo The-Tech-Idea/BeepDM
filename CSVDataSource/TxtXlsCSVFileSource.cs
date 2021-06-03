@@ -486,20 +486,20 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             if (File.Exists(CombineFilePath))
             {
                 Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == FileName).FirstOrDefault();
-                Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
+              //  Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
                 ConnectionStatus = ConnectionState.Open;
                 Dataconnection.ConnectionStatus = ConnectionStatus;
-                if (Entities.Count == 0)
-                {
-                    FileData = GetExcelDataSet();
-                    Entities = GetEntityStructures(false);
-                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = FileName, Entities = Entities });
-                    // ConnProp.Entities = Entities;
-                    DMEEditor.ConfigEditor.SaveDataconnectionsValues();
+                //if (Entities.Count == 0)
+                //{
+                //    FileData = GetExcelDataSet();
+                //    Entities = GetEntityStructures(false);
+                //    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = FileName, Entities = Entities });
+                //    // ConnProp.Entities = Entities;
+                //    DMEEditor.ConfigEditor.SaveDataconnectionsValues();
 
 
-                }
-                Dataconnection.ConnectionStatus = ConnectionStatus;
+                //}
+              
                 return ConnectionState.Open;
 
 
@@ -687,13 +687,14 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
 
                     ds = GetExcelDataSet();
-
+                  
                     int i = 0;
                     foreach (DataTable tb in ds.Tables)
                     {
                         EntityStructure entityData = new EntityStructure();
 
                         string sheetname;
+                      
                         sheetname = tb.TableName;
                         entityData.Viewtype = ViewType.File;
                         entityData.DatabaseType = DataSourceType.Text;
@@ -702,29 +703,29 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                         entityData.Caption = tb.TableName;
                         entityData.EntityName = sheetname;
                         List<EntityField> Fields = new List<EntityField>();
-                        int y = 0;
-                        foreach (DataColumn field in tb.Columns)
-                        {
+                       // int y = 0;
+                        //foreach (DataColumn field in tb.Columns)
+                        //{
 
-                            Console.WriteLine("        " + field.ColumnName + ": " + field.DataType);
+                        //    Console.WriteLine("        " + field.ColumnName + ": " + field.DataType);
 
-                            EntityField f = new EntityField();
+                        //    EntityField f = new EntityField();
 
 
-                            //  f.tablename = sheetname;
-                            f.fieldname = field.ColumnName;
-                            f.fieldtype = field.DataType.ToString();
-                            f.ValueRetrievedFromParent = false;
-                            f.EntityName = sheetname;
-                            f.FieldIndex = y;
-                            Fields.Add(f);
-                            y += 1;
+                        //    //  f.tablename = sheetname;
+                        //    f.fieldname = field.ColumnName;
+                        //    f.fieldtype = field.DataType.ToString();
+                        //    f.ValueRetrievedFromParent = false;
+                        //    f.EntityName = sheetname;
+                        //    f.FieldIndex = y;
+                        //    Fields.Add(f);
+                        //    y += 1;
 
-                        }
+                        //}
 
-                        i += 1;
+                        //i += 1;
                         entityData.Fields = new List<EntityField>();
-                        entityData.Fields.AddRange(Fields);
+                        entityData.Fields.AddRange(GetFieldTypes(tb.TableName, tb.Columns));
                         Entities.Add(entityData);
                     }
 
@@ -829,7 +830,10 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         public DataTable ReadDataTable(string sheetname, bool HeaderExist = true, int fromline = 0, int toline = 100)
         {
 
-            FileData = GetExcelDataSet();
+            if (FileData == null)
+            {
+                FileData = GetExcelDataSet();
+            }
             return ReadDataTable(GetSheetNumber(FileData, sheetname), HeaderExist, fromline, toline); ;
         }
        
@@ -926,6 +930,10 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             //reader.AsDataSet(ExcelDataSetConfig);
             if (GetFileState() == ConnectionState.Open)
             {
+                if (FileData == null)
+                {
+                    FileData = GetExcelDataSet();
+                }
                 var workSheet = FileData.Tables[sheet];
                 var rows = from DataRow a in workSheet.Rows select a;
                 return rows;
@@ -958,6 +966,110 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             //var workSheet = reader.AsDataSet().Tables[sheet];
             //var rows = from DataRow a in workSheet.Rows select a;
             return FileData.Tables[sheetno];
+        }
+        private List<EntityField> GetFieldTypes(string sheetname,DataColumnCollection datac)
+        {
+            try
+            {
+                List<DataRow> dt= getData(sheetname).ToList();
+                List<EntityField> flds = new List<EntityField>() ;
+                int y = 0;
+                //----------------------------------------
+                foreach (DataColumn field in datac)
+                {
+                    EntityField f = new EntityField();
+
+
+                    //  f.tablename = sheetname;
+                    f.fieldname = field.ColumnName;
+                    f.fieldtype = field.DataType.ToString();
+                    f.ValueRetrievedFromParent = false;
+                    f.EntityName = sheetname;
+                    f.FieldIndex = y;
+                    flds.Add(f);
+                    y += 1;
+                    if (f.Checked == false)
+                    {
+                        bool foundval = true;
+                        int i = 0;
+                        while (foundval)
+                        {
+                            DataRow dr = dt[i];
+                            if (dr[f.fieldname] != DBNull.Value)
+                            {
+                                string valstring = dr[f.fieldname].ToString();
+                                decimal dval;
+                                double dblval;
+                                long longval;
+                                bool boolval;
+                                int intval;
+                                short shortval;
+                                float floatval;
+                                DateTime dateval=DateTime.Now;
+
+
+                                if (decimal.TryParse(valstring,out dval))
+                                {
+                                    f.fieldtype = "System.decimal";
+
+                                }else
+                                if (double.TryParse(valstring, out dblval))
+                                {
+                                    f.fieldtype = "System.double";
+                                }
+                                else
+                                if (DateTime.TryParse(valstring, out dateval))
+                                {
+                                    f.fieldtype = "System.DateTime";
+
+                                }
+                                else
+                                    if (long.TryParse(valstring, out longval))
+                                {
+                                    f.fieldtype = "System.long";
+
+                                }
+                                else
+                                    if (bool.TryParse(valstring, out boolval))
+                                {
+                                    f.fieldtype = "System.bool";
+
+                                }
+                                else
+                                    if (float.TryParse(valstring, out floatval))
+                                {
+                                    f.fieldtype = "System.float";
+
+                                }
+                                else
+                                if(int.TryParse(valstring, out intval))
+                                {
+                                    f.fieldtype = "System.int";
+
+                                }
+                                else
+                                    if(short.TryParse(valstring, out shortval))
+                                {
+                                    f.fieldtype = "System.short";
+
+                                }
+                                else
+                                    f.fieldtype = "System.string";
+                                f.Checked = true;
+                                foundval = false    ;
+                            }
+                            i += 1;
+                        }
+                    }
+                   
+                }
+                return flds;
+            }
+            catch (Exception ex)
+            {
+
+                return null;
+            }
         }
         #endregion
 

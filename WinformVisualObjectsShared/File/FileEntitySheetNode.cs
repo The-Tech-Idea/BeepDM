@@ -128,7 +128,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Show", Hidden = false)]
+        [BranchDelegate(Caption = "Show", Hidden = false,  DoubleClick =true)]
         public IErrorsInfo Show()
         {
 
@@ -157,7 +157,7 @@ namespace TheTechIdea.Winforms.VIS
                 };
                 //  Visutil.ShowUserControlInContainer("uc_txtfileManager", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
                 Visutil.ShowUserControlInContainer("uc_getentities", Visutil.DisplayPanel, DMEEditor, args, Passedarguments);
-                DMEEditor.AddLogMessage("Success", "Show File", DateTime.Now, 0, null, Errors.Ok);
+            //    DMEEditor.AddLogMessage("Success", "Show File", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {

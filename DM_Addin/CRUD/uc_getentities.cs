@@ -78,7 +78,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                     EntityStructure = ds.GetEntityStructure(EntityName, true);
                     e.Objects.Add(new ObjectItem { Name = "EntityStructure", obj = EntityStructure });
                 }
-                EntityStructure.Filters = new List<ReportFilter>();
+         
             //    enttype = ds.GetEntityType(EntityName);
                 if (EntityStructure != null)
                 {
@@ -95,6 +95,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                         }
                     }
                 }
+                EntityStructure.Filters = new List<ReportFilter>();
             }
             SubmitFilterbutton.Click += SubmitFilterbutton_Click;
             expandbutton.Click += Expandbutton_Click;

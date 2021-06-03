@@ -73,10 +73,11 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                     e.Objects.Add(new ObjectItem { Name = "EntityStructure", obj = EntityStructure });
                 }
                
-                EntityStructure.Filters = new List<ReportFilter>();
-                enttype = ds.GetEntityType(EntityName);
+               
+            //    enttype = ds.GetEntityType(EntityName);
                 if (EntityStructure != null)
                 {
+                    EntityStructure.Filters = new List<ReportFilter>();
                     if (EntityStructure.Fields != null)
                     {
                         if (EntityStructure.Fields.Count > 0)
@@ -89,6 +90,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                         }
                     }
                 }
+              
             }
         }
         private List<FilterType> AddFilterTypes()

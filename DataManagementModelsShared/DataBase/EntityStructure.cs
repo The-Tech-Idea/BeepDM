@@ -80,12 +80,12 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         public short NumericPrecision { get; set; }
         public short NumericScale { get; set; }
         public DbFieldCategory fieldCategory { get; set; } = DbFieldCategory.String;
-        public Boolean IsAutoIncrement { get; set; } = false;
-        public Boolean AllowDBNull { get; set; } = false;
-        public Boolean IsCheck { get; set; } = false;
-        public Boolean IsUnique { get; set; } = false;
-        public Boolean IsKey { get; set; } = false;
-
+        public bool IsAutoIncrement { get; set; } = false;
+        public bool AllowDBNull { get; set; } = false;
+        public bool IsCheck { get; set; } = false;
+        public bool IsUnique { get; set; } = false;
+        public bool IsKey { get; set; } = false;
+        public bool Checked { get; set; } = false;
         public int FieldIndex { get; set; }
         public bool ValueRetrievedFromParent { get; set; }
      //   public string statusdescription { get; set; }

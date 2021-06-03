@@ -21,6 +21,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         short NumericScale { get; set; }
         int Size1 { get; set; }
         int Size2 { get; set; }
-       // string statusdescription { get; set; }
+        bool Checked { get; set; }
+        // string statusdescription { get; set; }
     }
 }

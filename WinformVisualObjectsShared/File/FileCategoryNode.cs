@@ -229,6 +229,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                 string ext = Path.GetExtension(FileName).Remove(0, 1);
                 IconImageName = ext + ".ico";
+               
                 viewbr = new FileEntityNode(TreeEditor, DMEEditor, this, FileName, TreeEditor.SeqID, EnumBranchType.DataPoint, IconImageName, FileName);
                 viewbr.DataSource = DataSource;
                // viewbr.DataSourceName = DataSourceName;

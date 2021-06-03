@@ -281,11 +281,9 @@ namespace TheTechIdea.Winforms.VIS
                 
                 if (DataSource != null)
                 {
-                  
-                    if ( DataSource.Entities.Count == 0)
-                    {
-                        DataSource.GetEntitesList();
-                    }
+                    DataSource.GetEntitesList();
+
+                   
                     if (DataSource.Entities.Count> 0)
                     {
                         DataSource.EntitiesNames = DataSource.Entities.Select(o => o.EntityName).ToList();

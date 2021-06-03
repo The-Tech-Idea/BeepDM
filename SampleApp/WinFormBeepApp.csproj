@@ -264,6 +264,9 @@
     <Content Include="ConnectionDrivers\ExcelDataReader.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="ConnectionDrivers\FileHelpers.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="ConnectionDrivers\HereweAddAllConnectionDrivers.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
