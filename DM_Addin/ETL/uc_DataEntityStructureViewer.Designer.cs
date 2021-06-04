@@ -41,6 +41,8 @@ namespace TheTechIdea.ETL
             System.Windows.Forms.Label keyTokenLabel;
             System.Windows.Forms.Label editableLabel;
             System.Windows.Forms.Label label3;
+            System.Windows.Forms.Label captionLabel;
+            System.Windows.Forms.Label label4;
             this.primaryKeysBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.dataHierarchyBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.relationShipsBindingSource = new System.Windows.Forms.BindingSource(this.components);
@@ -80,6 +82,8 @@ namespace TheTechIdea.ETL
             this.keyTokenTextBox = new System.Windows.Forms.TextBox();
             this.editableCheckBox = new System.Windows.Forms.CheckBox();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
+            this.captionTextBox1 = new System.Windows.Forms.TextBox();
+            this.textBox1 = new System.Windows.Forms.TextBox();
             label2 = new System.Windows.Forms.Label();
             label1 = new System.Windows.Forms.Label();
             customBuildQueryLabel = new System.Windows.Forms.Label();
@@ -91,6 +95,8 @@ namespace TheTechIdea.ETL
             keyTokenLabel = new System.Windows.Forms.Label();
             editableLabel = new System.Windows.Forms.Label();
             label3 = new System.Windows.Forms.Label();
+            captionLabel = new System.Windows.Forms.Label();
+            label4 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.primaryKeysBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataHierarchyBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.relationShipsBindingSource)).BeginInit();
@@ -139,7 +145,7 @@ namespace TheTechIdea.ETL
             // viewIDLabel
             // 
             viewIDLabel.AutoSize = true;
-            viewIDLabel.Location = new System.Drawing.Point(99, 100);
+            viewIDLabel.Location = new System.Drawing.Point(98, 138);
             viewIDLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             viewIDLabel.Name = "viewIDLabel";
             viewIDLabel.Size = new System.Drawing.Size(47, 13);
@@ -159,7 +165,7 @@ namespace TheTechIdea.ETL
             // viewtypeLabel
             // 
             viewtypeLabel.AutoSize = true;
-            viewtypeLabel.Location = new System.Drawing.Point(93, 124);
+            viewtypeLabel.Location = new System.Drawing.Point(92, 162);
             viewtypeLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             viewtypeLabel.Name = "viewtypeLabel";
             viewtypeLabel.Size = new System.Drawing.Size(53, 13);
@@ -169,12 +175,57 @@ namespace TheTechIdea.ETL
             // dataSourceIDLabel
             // 
             dataSourceIDLabel.AutoSize = true;
-            dataSourceIDLabel.Location = new System.Drawing.Point(62, 75);
+            dataSourceIDLabel.Location = new System.Drawing.Point(61, 113);
             dataSourceIDLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             dataSourceIDLabel.Name = "dataSourceIDLabel";
             dataSourceIDLabel.Size = new System.Drawing.Size(84, 13);
             dataSourceIDLabel.TabIndex = 20;
             dataSourceIDLabel.Text = "Data Source ID:";
+            // 
+            // showLabel
+            // 
+            showLabel.AutoSize = true;
+            showLabel.Location = new System.Drawing.Point(196, 191);
+            showLabel.Name = "showLabel";
+            showLabel.Size = new System.Drawing.Size(37, 13);
+            showLabel.TabIndex = 37;
+            showLabel.Text = "Show:";
+            // 
+            // keyTokenLabel
+            // 
+            keyTokenLabel.AutoSize = true;
+            keyTokenLabel.Location = new System.Drawing.Point(81, 218);
+            keyTokenLabel.Name = "keyTokenLabel";
+            keyTokenLabel.Size = new System.Drawing.Size(62, 13);
+            keyTokenLabel.TabIndex = 35;
+            keyTokenLabel.Text = "Key Token:";
+            // 
+            // editableLabel
+            // 
+            editableLabel.AutoSize = true;
+            editableLabel.Location = new System.Drawing.Point(92, 190);
+            editableLabel.Name = "editableLabel";
+            editableLabel.Size = new System.Drawing.Size(48, 13);
+            editableLabel.TabIndex = 33;
+            editableLabel.Text = "Editable:";
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new System.Drawing.Point(280, 191);
+            label3.Name = "label3";
+            label3.Size = new System.Drawing.Size(47, 13);
+            label3.TabIndex = 39;
+            label3.Text = "Created:";
+            // 
+            // captionLabel
+            // 
+            captionLabel.AutoSize = true;
+            captionLabel.Location = new System.Drawing.Point(99, 26);
+            captionLabel.Name = "captionLabel";
+            captionLabel.Size = new System.Drawing.Size(46, 13);
+            captionLabel.TabIndex = 41;
+            captionLabel.Text = "Caption:";
             // 
             // primaryKeysBindingSource
             // 
@@ -476,7 +527,7 @@ namespace TheTechIdea.ETL
             // viewIDTextBox
             // 
             this.viewIDTextBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "ViewID", true));
-            this.viewIDTextBox.Location = new System.Drawing.Point(150, 97);
+            this.viewIDTextBox.Location = new System.Drawing.Point(149, 135);
             this.viewIDTextBox.Margin = new System.Windows.Forms.Padding(2);
             this.viewIDTextBox.Name = "viewIDTextBox";
             this.viewIDTextBox.ReadOnly = true;
@@ -486,6 +537,7 @@ namespace TheTechIdea.ETL
             // nameTextBox
             // 
             this.nameTextBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "EntityName", true));
+            this.nameTextBox.Enabled = false;
             this.nameTextBox.Location = new System.Drawing.Point(149, 48);
             this.nameTextBox.Margin = new System.Windows.Forms.Padding(2);
             this.nameTextBox.Name = "nameTextBox";
@@ -495,8 +547,9 @@ namespace TheTechIdea.ETL
             // viewtypeComboBox
             // 
             this.viewtypeComboBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "Viewtype", true));
+            this.viewtypeComboBox.Enabled = false;
             this.viewtypeComboBox.FormattingEnabled = true;
-            this.viewtypeComboBox.Location = new System.Drawing.Point(150, 121);
+            this.viewtypeComboBox.Location = new System.Drawing.Point(149, 159);
             this.viewtypeComboBox.Margin = new System.Windows.Forms.Padding(2);
             this.viewtypeComboBox.Name = "viewtypeComboBox";
             this.viewtypeComboBox.Size = new System.Drawing.Size(200, 21);
@@ -505,94 +558,91 @@ namespace TheTechIdea.ETL
             // dataSourceIDComboBox
             // 
             this.dataSourceIDComboBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "DataSourceID", true));
+            this.dataSourceIDComboBox.Enabled = false;
             this.dataSourceIDComboBox.FormattingEnabled = true;
-            this.dataSourceIDComboBox.Location = new System.Drawing.Point(150, 72);
+            this.dataSourceIDComboBox.Location = new System.Drawing.Point(149, 110);
             this.dataSourceIDComboBox.Margin = new System.Windows.Forms.Padding(2);
             this.dataSourceIDComboBox.Name = "dataSourceIDComboBox";
             this.dataSourceIDComboBox.Size = new System.Drawing.Size(200, 21);
             this.dataSourceIDComboBox.TabIndex = 22;
-            // 
-            // showLabel
-            // 
-            showLabel.AutoSize = true;
-            showLabel.Location = new System.Drawing.Point(107, 208);
-            showLabel.Name = "showLabel";
-            showLabel.Size = new System.Drawing.Size(37, 13);
-            showLabel.TabIndex = 37;
-            showLabel.Text = "Show:";
             // 
             // showCheckBox
             // 
             this.showCheckBox.Checked = true;
             this.showCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.showCheckBox.DataBindings.Add(new System.Windows.Forms.Binding("CheckState", this.dataHierarchyBindingSource, "Show", true));
-            this.showCheckBox.Location = new System.Drawing.Point(150, 203);
+            this.showCheckBox.Location = new System.Drawing.Point(233, 185);
             this.showCheckBox.Name = "showCheckBox";
-            this.showCheckBox.Size = new System.Drawing.Size(104, 24);
+            this.showCheckBox.Size = new System.Drawing.Size(47, 24);
             this.showCheckBox.TabIndex = 38;
             this.showCheckBox.UseVisualStyleBackColor = true;
             // 
-            // keyTokenLabel
-            // 
-            keyTokenLabel.AutoSize = true;
-            keyTokenLabel.Location = new System.Drawing.Point(82, 180);
-            keyTokenLabel.Name = "keyTokenLabel";
-            keyTokenLabel.Size = new System.Drawing.Size(62, 13);
-            keyTokenLabel.TabIndex = 35;
-            keyTokenLabel.Text = "Key Token:";
-            // 
             // keyTokenTextBox
             // 
-            this.keyTokenTextBox.Location = new System.Drawing.Point(150, 177);
+            this.keyTokenTextBox.Location = new System.Drawing.Point(149, 215);
             this.keyTokenTextBox.Name = "keyTokenTextBox";
             this.keyTokenTextBox.Size = new System.Drawing.Size(100, 20);
             this.keyTokenTextBox.TabIndex = 36;
-            // 
-            // editableLabel
-            // 
-            editableLabel.AutoSize = true;
-            editableLabel.Location = new System.Drawing.Point(96, 152);
-            editableLabel.Name = "editableLabel";
-            editableLabel.Size = new System.Drawing.Size(48, 13);
-            editableLabel.TabIndex = 33;
-            editableLabel.Text = "Editable:";
             // 
             // editableCheckBox
             // 
             this.editableCheckBox.Checked = true;
             this.editableCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.editableCheckBox.DataBindings.Add(new System.Windows.Forms.Binding("CheckState", this.dataHierarchyBindingSource, "Editable", true));
-            this.editableCheckBox.Location = new System.Drawing.Point(150, 147);
+            this.editableCheckBox.Enabled = false;
+            this.editableCheckBox.Location = new System.Drawing.Point(149, 185);
             this.editableCheckBox.Name = "editableCheckBox";
-            this.editableCheckBox.Size = new System.Drawing.Size(104, 24);
+            this.editableCheckBox.Size = new System.Drawing.Size(47, 24);
             this.editableCheckBox.TabIndex = 34;
             this.editableCheckBox.ThreeState = true;
             this.editableCheckBox.UseVisualStyleBackColor = true;
-            // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Location = new System.Drawing.Point(98, 232);
-            label3.Name = "label3";
-            label3.Size = new System.Drawing.Size(47, 13);
-            label3.TabIndex = 39;
-            label3.Text = "Created:";
             // 
             // checkBox1
             // 
             this.checkBox1.Checked = true;
             this.checkBox1.CheckState = System.Windows.Forms.CheckState.Checked;
             this.checkBox1.DataBindings.Add(new System.Windows.Forms.Binding("CheckState", this.dataHierarchyBindingSource, "Created", true));
-            this.checkBox1.Location = new System.Drawing.Point(150, 227);
+            this.checkBox1.Enabled = false;
+            this.checkBox1.Location = new System.Drawing.Point(327, 185);
             this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(104, 24);
+            this.checkBox1.Size = new System.Drawing.Size(47, 24);
             this.checkBox1.TabIndex = 40;
             this.checkBox1.UseVisualStyleBackColor = true;
+            // 
+            // captionTextBox1
+            // 
+            this.captionTextBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "Caption", true));
+            this.captionTextBox1.Location = new System.Drawing.Point(149, 23);
+            this.captionTextBox1.Name = "captionTextBox1";
+            this.captionTextBox1.Size = new System.Drawing.Size(396, 20);
+            this.captionTextBox1.TabIndex = 42;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new System.Drawing.Point(69, 74);
+            label4.Name = "label4";
+            label4.Size = new System.Drawing.Size(76, 13);
+            label4.TabIndex = 43;
+            label4.Text = "Original Name:";
+            // 
+            // textBox1
+            // 
+            this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "OriginalEntityName", true));
+            this.textBox1.Enabled = false;
+            this.textBox1.Location = new System.Drawing.Point(149, 71);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(396, 20);
+            this.textBox1.TabIndex = 44;
             // 
             // uc_DataEntityStructureViewer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(label4);
+            this.Controls.Add(this.textBox1);
+            this.Controls.Add(captionLabel);
+            this.Controls.Add(this.captionTextBox1);
             this.Controls.Add(label3);
             this.Controls.Add(this.checkBox1);
             this.Controls.Add(showLabel);
@@ -675,5 +725,7 @@ namespace TheTechIdea.ETL
         private System.Windows.Forms.TextBox keyTokenTextBox;
         private System.Windows.Forms.CheckBox editableCheckBox;
         private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.TextBox captionTextBox1;
+        private System.Windows.Forms.TextBox textBox1;
     }
 }

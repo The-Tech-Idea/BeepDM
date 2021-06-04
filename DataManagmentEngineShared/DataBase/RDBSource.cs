@@ -67,8 +67,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
            if (RDBMSConnection != null)
             {
                 ConnectionStatus= RDBMSConnection.OpenConnection();
-                
-                Dataconnection.ConnectionStatus = ConnectionStatus;
+           //     Dataconnection = RDBMSConnection;
+               
             }
             return ConnectionStatus;
         }
@@ -78,7 +78,12 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             if (RDBMSConnection != null)
             {
                 ConnectionStatus = RDBMSConnection.CloseConn();
-
+                Dataconnection.CloseConn();
+            }
+            if (Dataconnection != null)
+            {
+               
+                Dataconnection.CloseConn();
             }
             return ConnectionStatus;
         }
@@ -198,16 +203,20 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                                     updatestring = GetInsertString(EntityName,  DataStruct);
                                     break;
                             }
-
+                            command.Parameters.Clear();
                             command.CommandText = updatestring;
                             foreach (EntityField item in DataStruct.Fields)
                             {
-                                IDbDataParameter parameter = command.CreateParameter();
-                                parameter.Value = r[item.fieldname];
-                                parameter.ParameterName = "p_" + item.fieldname;
-                                //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
-                                command.Parameters.Add(parameter);
-
+                              
+                                if(!command.Parameters.Contains("p_" + Regex.Replace(item.fieldname, @"\s+", "_")))
+                                {
+                                    IDbDataParameter parameter = command.CreateParameter();
+                                    parameter.Value = r[item.fieldname];
+                                    parameter.ParameterName = "p_" + Regex.Replace(item.fieldname, @"\s+", "_") ;
+                                    //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
+                                    command.Parameters.Add(parameter);
+                                }
+                               
                             }
 
 
@@ -238,11 +247,11 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                             };
                             if (DataStruct.PrimaryKeys != null)
                             {
-                                if (DataStruct.PrimaryKeys.Count <= 1)
+                                if (DataStruct.PrimaryKeys.Count == 1)
                                 {
                                     args.ParameterString1 = r[DataStruct.PrimaryKeys[0].fieldname].ToString();
                                 }
-                                if (DataStruct.PrimaryKeys.Count <= 2)
+                                if (DataStruct.PrimaryKeys.Count == 2)
                                 {
                                     args.ParameterString2 = r[DataStruct.PrimaryKeys[1].fieldname].ToString();
                                 }
@@ -399,10 +408,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 foreach (EntityField item in DataStruct.Fields)
                 {
                     IDbDataParameter parameter = command.CreateParameter();
-                    //System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(item.fieldname);
-                    //var v = PropAInfo.GetValue(ti);
-
-                   // parameter.Value = dr[item.fieldname];
                     parameter.ParameterName = "p_" + item.fieldname;
                     if (item.fieldtype == "System.DateTime")
                     {
@@ -412,8 +417,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
                     }else
                     { parameter.Value = dr[item.fieldname]; }
-                    //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
-                    command.Parameters.Add(parameter);
+                     command.Parameters.Add(parameter);
 
                 }
 
@@ -608,17 +612,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             {
                 dv = (DataRowView)InsertedData;
                 dr = dv.Row;
-                //foreach (EntityField col in DataStruct.Fields)
-                //{
-                //    // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
-                //    //if (dr[col.fieldname] != System.DBNull.Value)
-                //    //{
-                //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-                //        PropAInfo.SetValue(ti, dr[col.fieldname], null);
-                //    //}
-
-                //}
-
+           
             }
             else
                if (InsertedData.GetType().FullName == "System.Data.DataRow")
@@ -886,7 +880,16 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         public virtual EntityStructure GetEntityStructure(string EntityName, bool refresh = false)
         {
             EntityStructure retval = new EntityStructure();
-            EntityStructure fnd = Entities.Where(d => d.EntityName == EntityName).FirstOrDefault();
+            if (Entities.Count == 0)
+            {
+                GetEntitesList();
+            }
+            EntityStructure fnd = Entities.Where(d => d.EntityName.Equals(EntityName,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            if (fnd == null)
+            {
+                List<EntityStructure> ls = Entities.Where(d => !string.IsNullOrEmpty(d.OriginalEntityName)).ToList();
+                fnd = ls.Where(d => d.OriginalEntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            }
             //  DataTable tb = new DataTable();
 
             if (fnd == null)
@@ -896,6 +899,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 retval.EntityName = EntityName;
                 retval.DatasourceEntityName = EntityName;
                 retval.Caption = EntityName;
+              
                 if (EntityName.ToUpper().Contains("SELECT") || EntityName.ToUpper().Contains("WHERE"))
                 {
                     retval.Viewtype = ViewType.Query;
@@ -906,6 +910,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     retval.Viewtype = ViewType.Table;
                     retval.CustomBuildQuery = null;
                 }
+              //  return null;
             } else
             {
                 retval = fnd;
@@ -1278,10 +1283,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         public bool CheckEntityExist(string EntityName)
         {
             bool retval = false;
-            if (EntitiesNames.Count == 0)
-            {
+         
                 GetEntitesList();
-            }
+           
             string entspace = Regex.Replace(EntityName, @"\s+", "_");
             retval = EntitiesNames.ConvertAll(d => d.ToUpper()).Contains(entspace.ToUpper());
           
@@ -1440,10 +1444,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 foreach (EntityField dbf in t1.Fields)
                 {
 
-                    createtablestring += "\n " + dbf.fieldname + " " + DMEEditor.typesHelper.GetDataType(DatasourceName, dbf) + " ";
+                    createtablestring += "\n [" + dbf.fieldname + "] " + DMEEditor.typesHelper.GetDataType(DatasourceName, dbf) + " ";
                     if (dbf.IsAutoIncrement)
                     {
-                        dbf.fieldname = Regex.Replace(dbf.fieldname, @"\s+", "_");
+                      //  dbf.fieldname = Regex.Replace(dbf.fieldname, @"\s+", "_");
                         string autonumberstring = "";
                         autonumberstring = CreateAutoNumber(dbf);
                         if (DMEEditor.ErrorObject.Flag == Errors.Ok)
@@ -1903,8 +1907,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 //if (!DBNull.Value.Equals(row[item.fieldname]))
                 //{
                     // insertfieldname = Regex.Replace(item.fieldname, @"\s+", "");
-                    Insertstr += item.fieldname + ",";
-                    Valuestr += "@p_" + item.fieldname + ",";
+                    Insertstr += "["+item.fieldname + "],";
+                    Valuestr += "@p_" + Regex.Replace(item.fieldname, @"\s+", "_") + ",";
                     //switch (item.fieldtype)
                     //{
                     //    case "System.String":
@@ -1963,9 +1967,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             //     EntityName = Regex.Replace(EntityName, @"\s+", "");
             string Updatestr = @"Update " + EntityName + "  set " + Environment.NewLine;
             string Valuestr = "";
-            // var insertfieldname = "";
-            //string datafieldname = "";
-            //string typefield = "";
+           
             int i = DataStruct.Fields.Count();
             int t = 0;
             foreach (EntityField item in DataStruct.Fields)
@@ -1974,37 +1976,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 {
                    
                         //     insertfieldname = Regex.Replace(item.fieldname, @"\s+", "_");
-                        Updatestr += item.fieldname + "=";
+                        Updatestr += "["+item.fieldname + "]=";
                         Updatestr += "@p_" + item.fieldname + ",";
-                        //switch (item.fieldtype)
-                        //{
-                        //    case "System.String":
-                        //        if (row[item.fieldname].ToString().Contains("'"))
-                        //        {
-                        //            string ve = row[item.fieldname].ToString();
-                        //            ve = ve.Replace("'", "''");
-                        //            Updatestr += "'" + ve + "',";
-                        //        }
-                        //        else
-                        //        {
-                        //            Updatestr += "'" + row[item.fieldname] + "',";
-                        //        }
-
-                        //        break;
-                        //    case "System.Int":
-                        //        Updatestr += "" + row[item.fieldname] + ",";
-                        //        break;
-                        //    case "System.DateTime":
-                        //        DateTime time = (DateTime)row[item.fieldname];
-                        //        Updatestr += "'" + time.ToString(dateformat) + "'";
-                        //        break;
-                        //    default:
-                        //        Updatestr += "'" + row[item.fieldname] + "',";
-                        //        break;
-                        //}
-                   
-
-
+                       
                 }
 
 
@@ -2021,33 +1995,14 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                
                     if (t == 1)
                     {
-                        Updatestr += item.fieldname + "=";
+                        Updatestr +="["+ item.fieldname + "]=";
                     }
                     else
                     {
-                        Updatestr += " and " + item.fieldname + "=";
+                        Updatestr += " and [" + item.fieldname + "]=";
                     }
                     Updatestr += "@p_" + item.fieldname + "";
-                    //    Updatestr += item.fieldname + "=";
-                    //switch (item.fieldtype)
-                    //{
-                    //    case "System.String":
-                    //        Updatestr += "'" + row[item.fieldname] + "'";
-                    //        break;
-                    //    case "System.Int":
-                    //        Updatestr += "" + row[item.fieldname] + "";
-                    //        break;
-                    //    case "System.DateTime":
-                    //        DateTime time = (DateTime)row[item.fieldname];
-                    //        Updatestr += "'" + time.ToString(dateformat) + "'";
-                    //        break;
-                    //    default:
-                    //        Updatestr += "'" + row[item.fieldname] + "'";
-                    //        break;
-                    //}
-                
-
-
+                  
                 t += 1;
             }
             //  Updatestr = Updatestr.Remove(Valuestr.Length - 1);
@@ -2078,30 +2033,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                
                     if (t == 1)
                     {
-                        Updatestr += item.fieldname + "=";
+                        Updatestr += "["+item.fieldname + "]=";
                     }
                     else
                     {
-                        Updatestr += " and " + item.fieldname + "=";
+                        Updatestr += " and [" + item.fieldname + "]=";
                     }
                     Updatestr += "@p_" + item.fieldname + "";
-                    //    Updatestr += item.fieldname + "=";
-                    //switch (item.fieldtype)
-                    //{
-                    //    case "System.String":
-                    //        Updatestr += "'" + row[item.fieldname] + "'";
-                    //        break;
-                    //    case "System.Int":
-                    //        Updatestr += "" + row[item.fieldname] + "";
-                    //        break;
-                    //    case "System.DateTime":
-                    //        DateTime time = (DateTime)row[item.fieldname];
-                    //        Updatestr += "'" + time.ToString(dateformat) + "'";
-                    //        break;
-                    //    default:
-                    //        Updatestr += "'" + row[item.fieldname] + "'";
-                    //        break;
-                    //}
                 
 
 

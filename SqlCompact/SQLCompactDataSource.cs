@@ -143,9 +143,14 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         {
             try
             {
-                this.ExecuteSql($"ALTER TABLE {t1.EntityName} NOCHECK CONSTRAINT ALL");
-                DMEEditor.ErrorObject.Message = "successfull Disabled SQlCompact FK Constraints";
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
+                if (t1 != null)
+                {
+                    this.ExecuteSql($"ALTER TABLE {t1.EntityName} NOCHECK CONSTRAINT ALL");
+                    DMEEditor.ErrorObject.Message = "successfull Disabled SQlCompact FK Constraints";
+                    DMEEditor.ErrorObject.Flag = Errors.Ok;
+
+                }
+             
             }
             catch (Exception ex)
             {

@@ -78,20 +78,13 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
                     EntityStructure = ds.GetEntityStructure(EntityName, true);
                     e.Objects.Add(new ObjectItem { Name = "EntityStructure", obj = EntityStructure });
                 }
-         
-            //    enttype = ds.GetEntityType(EntityName);
                 if (EntityStructure != null)
                 {
                     if (EntityStructure.Fields != null)
                     {
                         if (EntityStructure.Fields.Count > 0)
                         {
-                          
-                            uc_filtercontrol1.SetConfig(pbl, plogger, putil, args, e, per);
-
-                            // grid = dv.CreateGrid();
-                            //Filterpanel.Controls.Add(dv.GridView);
-                            //CreateFilterGrid();
+                         uc_filtercontrol1.SetConfig(pbl, plogger, putil, args, e, per);
                         }
                     }
                 }

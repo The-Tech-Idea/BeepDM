@@ -253,6 +253,8 @@ namespace TheTechIdea.Winforms.VIS
                     AddinType = "",
                     DMView = null,
                     CurrentEntity = BranchText,
+                    ParameterString1=EntityStructure.DatasourceEntityName,
+                    ParameterString2 = EntityStructure.OriginalEntityName,
                     Id = BranchID,
                     ObjectType = "RDBMSENTITY",
                     DataSource = DataSource,

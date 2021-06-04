@@ -270,8 +270,13 @@ namespace TheTechIdea.DataManagment_Engine.DataView
         }
         public int EntityListIndex( string entityname)
         {
+            int retval= Entities.FindIndex(a => a.EntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
+            if (retval == -1)
+            {
+                retval = Entities.FindIndex(a => a.OriginalEntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
 
-            return Entities.FindIndex(a => a.EntityName.Equals(entityname,StringComparison.OrdinalIgnoreCase));
+            }
+            return retval;
         }
         public EntityStructure GetEntityStructure(string EntityName, bool refresh = false)
         {
@@ -280,8 +285,8 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             {
                 EntityStructure r = new EntityStructure();
                 EntityStructure dh = (EntityStructure)Entities[EntityListIndex(EntityName)].Clone();
-              
-                    if (refresh)
+                
+                if (refresh)
                     {
                        
                             switch (dh.Viewtype)

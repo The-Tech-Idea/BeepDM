@@ -386,11 +386,12 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 }
 
             }
-            //if (Entities.Count != EntitiesNames.Count)
-            //{
-            //    GetEntitesList();
-            //}
-           return Entities.Where(x => string.Equals(x.EntityName, EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            EntityStructure retval=Entities.Where(x => string.Equals(x.EntityName, EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            if (retval == null)
+            {
+                retval = Entities.Where(x => string.Equals(x.OriginalEntityName, EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            }
+            return retval;
 
         }
 
@@ -414,9 +415,8 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         {
             ConnectionStatus = OpenConnection();
            // Dataconnection.ConnectionStatus = ConnectionStatus;
-            if (ConnectionStatus == ConnectionState.Open)
-            {
-                GetEntitesList();
+           
+
                 if (ConnectionStatus == ConnectionState.Open)
                 {
                     if (refresh || Entities.Count() == 0)
@@ -425,7 +425,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                     }
                 }
                
-            }
+           
             return Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault();
         }
         public LScript RunScript(LScript dDLScripts)
@@ -453,15 +453,15 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         #region "Excel and CSV Reader"
         public ConnectionState OpenConnection()
         {
-            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == FileName).FirstOrDefault();
-            if (DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName) == null)
-            {
+            //Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == FileName).FirstOrDefault();
+            //if (DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName) == null)
+            //{
                 GetEntityStructures(true);
-            }
-            else
-            {
+            //}
+            //else
+           // {
                 Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
-            };
+            //};
 
             CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
             if (File.Exists(CombineFilePath))
@@ -703,29 +703,11 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                         entityData.Caption = tb.TableName;
                         entityData.EntityName = sheetname;
                         List<EntityField> Fields = new List<EntityField>();
-                       // int y = 0;
-                        //foreach (DataColumn field in tb.Columns)
-                        //{
-
-                        //    Console.WriteLine("        " + field.ColumnName + ": " + field.DataType);
-
-                        //    EntityField f = new EntityField();
-
-
-                        //    //  f.tablename = sheetname;
-                        //    f.fieldname = field.ColumnName;
-                        //    f.fieldtype = field.DataType.ToString();
-                        //    f.ValueRetrievedFromParent = false;
-                        //    f.EntityName = sheetname;
-                        //    f.FieldIndex = y;
-                        //    Fields.Add(f);
-                        //    y += 1;
-
-                        //}
-
-                        //i += 1;
+                      
+                      
                         entityData.Fields = new List<EntityField>();
                         entityData.Fields.AddRange(GetFieldTypes(tb.TableName, tb.Columns));
+                        entityData.Fields = GetStringSizeFromTable(entityData.Fields, tb);
                         Entities.Add(entityData);
                     }
 
@@ -974,6 +956,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 List<DataRow> dt= getData(sheetname).ToList();
                 List<EntityField> flds = new List<EntityField>() ;
                 int y = 0;
+
                 //----------------------------------------
                 foreach (DataColumn field in datac)
                 {
@@ -991,6 +974,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                     if (f.Checked == false)
                     {
                         bool foundval = true;
+                      
                         int i = 0;
                         while (foundval)
                         {
@@ -1010,12 +994,12 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
                                 if (decimal.TryParse(valstring,out dval))
                                 {
-                                    f.fieldtype = "System.decimal";
+                                    f.fieldtype = "System.Decimal";
 
                                 }else
                                 if (double.TryParse(valstring, out dblval))
                                 {
-                                    f.fieldtype = "System.double";
+                                    f.fieldtype = "System.Double";
                                 }
                                 else
                                 if (DateTime.TryParse(valstring, out dateval))
@@ -1026,36 +1010,43 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                                 else
                                     if (long.TryParse(valstring, out longval))
                                 {
-                                    f.fieldtype = "System.long";
+                                    f.fieldtype = "System.Long";
 
                                 }
                                 else
                                     if (bool.TryParse(valstring, out boolval))
                                 {
-                                    f.fieldtype = "System.bool";
+                                    f.fieldtype = "System.Bool";
 
                                 }
                                 else
                                     if (float.TryParse(valstring, out floatval))
                                 {
-                                    f.fieldtype = "System.float";
+                                    f.fieldtype = "System.Float";
 
                                 }
                                 else
                                 if(int.TryParse(valstring, out intval))
                                 {
-                                    f.fieldtype = "System.int";
+                                    f.fieldtype = "System.Int";
 
                                 }
                                 else
                                     if(short.TryParse(valstring, out shortval))
                                 {
-                                    f.fieldtype = "System.short";
+                                    f.fieldtype = "System.Short";
 
                                 }
                                 else
-                                    f.fieldtype = "System.string";
+                                    f.fieldtype = "System.String";
+                               
                                 f.Checked = true;
+                                f.AllowDBNull = true;
+                                f.IsAutoIncrement = false;
+                                f.IsCheck = false;
+                                f.IsKey = false;
+                                f.IsUnique = false;
+                                
                                 foundval = false    ;
                             }
                             i += 1;
@@ -1071,6 +1062,43 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 return null;
             }
         }
+        private List<EntityField> GetStringSizeFromTable(List<EntityField> entityFields ,DataTable tb)
+        {
+            foreach (DataRow r in tb.Rows)
+            {
+                foreach (EntityField fld in entityFields)
+                {
+                    if (fld.fieldtype.Equals("System.string", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (r[fld.fieldname] != DBNull.Value)
+                        {
+                            if (!string.IsNullOrEmpty(r[fld.fieldname].ToString()))
+                            {
+                                if (r[fld.fieldname].ToString().Length > fld.Size1)
+                                {
+                                    fld.Size1 = r[fld.fieldname].ToString().Length;
+                                }
+                           
+                            }
+                        }
+                        
+                    }
+                }
+            }
+            foreach (EntityField fld in entityFields)
+            {
+                if (fld.fieldtype.Equals("System.string", StringComparison.OrdinalIgnoreCase))
+                {
+                  if (fld.Size1==0)
+                  {
+                        fld.Size1 = 150;
+                  }
+
+                }
+            }
+            return entityFields;
+        }
+
         #endregion
 
     }

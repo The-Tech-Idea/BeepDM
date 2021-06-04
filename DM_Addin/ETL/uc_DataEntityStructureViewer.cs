@@ -92,16 +92,43 @@ namespace TheTechIdea.ETL
             }
 
            
-                EntityStructure = SourceConnection.GetEntityStructure(EntityName, true);
-            
-           
+            EntityStructure = SourceConnection.GetEntityStructure(EntityName, true);
+            if (EntityStructure == null)
+            {
+                if (!string.IsNullOrEmpty(e.ParameterString1))
+                {
+                    EntityStructure = SourceConnection.GetEntityStructure(e.ParameterString1, true);
+                }
+                
+            }
+            if (EntityStructure == null)
+            {
+                if (!string.IsNullOrEmpty(e.ParameterString2))
+                {
+                    EntityStructure = SourceConnection.GetEntityStructure(e.ParameterString2, true);
+                }
 
+            }
+            if (EntityStructure == null)
+            {
+                if (!string.IsNullOrEmpty(e.ParameterString3))
+                {
+                    EntityStructure = SourceConnection.GetEntityStructure(e.ParameterString3, true);
+                }
 
+            }
+            if (EntityStructure == null)
+            {
+                MessageBox.Show("Cannot Find Entity in DataSource");
 
-
-            this.dataHierarchyBindingSource.ResetBindings(true);
-            this.fieldsBindingSource.ResetBindings(true);
-            dataHierarchyBindingSource.DataSource = EntityStructure;
+            }
+            else
+            {
+                this.dataHierarchyBindingSource.ResetBindings(true);
+                this.fieldsBindingSource.ResetBindings(true);
+                dataHierarchyBindingSource.DataSource = EntityStructure;
+            }
+          
         }
         private void ValidateFieldsbutton_Click(object sender, EventArgs e)
         {
@@ -167,51 +194,6 @@ namespace TheTechIdea.ETL
                 }
 
                 DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = Passedarg.DatasourceName, Entities = SourceConnection.Entities });
-
-                //switch (Passedarg.EventType)
-                //{
-                //    case "VIEWENTITY":
-                //        if (EntityName != null)
-                //        {
-                //            MyDataView.Entities[ds.ViewReader.EntityListIndex(MyEntity.Id)] = MyEntity;
-                //        }
-                //        else
-                //        {
-                //            if (MyDataView.Entities.Where(j => j.EntityName == MyEntity.EntityName).Any())
-                //            {
-                //                var t = MyDataView.Entities[ds.ViewReader.EntityListIndex(MyEntity.Id)];
-                //                t = MyEntity;
-                //            }
-                //            else
-                //            {
-                //                MyDataView.Entities.Add(MyEntity);
-                //            }
-                //        }
-                //        ds.Dataview = MyDataView;
-                //        break;
-                //    case "LAYERENTITY":
-                //        IDataSource layer = DMEEditor.GetDataSource(Passedarg.DatasourceName);
-                //        // cn = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(p => p.ConnectionName == Args.DatasourceName)];
-
-                //        layer.Entities[layer.Entities.FindIndex(p => p.EntityName.ToLower() == MyEntity.EntityName.ToLower())] = MyEntity;
-                //        break;
-                //    case "CLAYERENTITY":
-                //        cds.LayerInfo.Entities[cds.LayerInfo.Entities.FindIndex(o => o.EntityName == MyEntity.EntityName)] = MyEntity;
-                //        DMEEditor.ConfigEditor.SaveCompositeLayersValues();
-                //        break;
-                //    case "RDBMSENTITY":
-                //        IDataSource dblayer = DMEEditor.GetDataSource(Passedarg.DatasourceName);
-                //       // cn = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(p => p.ConnectionName == Args.DatasourceName)];
-
-                //        dblayer.Entities[dblayer.Entities.FindIndex(p => p.EntityName.ToLower() == MyEntity.EntityName.ToLower())] = MyEntity;
-                //        DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = Passedarg.DatasourceName, Entities = dblayer.Entities });
-                //        break;
-
-                //    default:
-                //        break;
-                //}
-
-
 
                 MessageBox.Show("Entity Saved successfully", "Beep");
 

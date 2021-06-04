@@ -275,7 +275,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "View Structure", Hidden = false)]
+        [BranchDelegate(Caption = "View Structure", Hidden = false,DoubleClick =true)]
         public IErrorsInfo ViewStructure()
         {
 

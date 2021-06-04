@@ -10,8 +10,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
     {
 
         public int Id { get; set; }
-        private string entname;
-        public string EntityName { get { return entname; } set { entname = value;  } }
+        private string m_entname;
+        private string m_OriginalEntityName;
+        public string EntityName { get { return m_entname; } set { m_OriginalEntityName = m_entname; m_entname = value;  } }
+        public string OriginalEntityName { get { return m_OriginalEntityName; } set { m_OriginalEntityName = value; } }
         public string DatasourceEntityName { get; set; }
         public string Caption { get; set; }
         public DataSourceType DatabaseType { get; set; }
@@ -73,7 +75,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
     {
 
         public int id { get; set; }
-        public string fieldname { get; set; }
+        private string p_fieldname;
+        public string fieldname { get { return p_fieldname; } set { p_oribinalfieldname = p_fieldname;p_fieldname=value ; } }
+        private string p_oribinalfieldname;
+        public string Originalfieldname { get { return p_oribinalfieldname; } set { p_oribinalfieldname = value; } }
         public string fieldtype { get; set; } = "Text"; //string or numeric or date gets filled later.by pick list 
         public int Size1 { get; set; }
         public int Size2 { get; set; }

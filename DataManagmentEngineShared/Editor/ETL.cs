@@ -218,6 +218,10 @@ namespace TheTechIdea.DataManagment_Engine.Editor
 
 
                 EntityStructure item = sourceds.GetEntityStructure(entity, true);
+                if (item == null)
+                {
+                    item = sourceds.GetEntityStructure(entity, true);
+                }
                 if (destds.Category == DatasourceCategory.RDBMS)
                 {
 
@@ -229,9 +233,12 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                    //     DMEEditor.AddLogMessage("Copy Data", $"Started Copying Data for {item.EntityName}", DateTime.Now, 0, null, Errors.Ok);
                        
                         object srcTb;
+                    string entname;
+                    
                         var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
                         src.Wait();
                         srcTb = src.Result;
+                    
                         var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(item.EntityName, srcTb); });
                         dst.Wait();
                         DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data for {entity} on {destds.DatasourceName}", DateTime.Now, 0, null, Errors.Ok);

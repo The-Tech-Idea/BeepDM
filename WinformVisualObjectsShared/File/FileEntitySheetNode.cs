@@ -128,6 +128,48 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
+        [BranchDelegate(Caption = "View Structure", Hidden = false, DoubleClick = true)]
+        public IErrorsInfo ViewStructure()
+        {
+
+            try
+            {
+                string[] args = { "New View", null, null };
+                List<ObjectItem> ob = new List<ObjectItem>(); ;
+                ObjectItem it = new ObjectItem();
+                it.obj = this;
+                it.Name = "Branch";
+                ob.Add(it);
+                PassedArgs Passedarguments = new PassedArgs
+                {
+                    Addin = null,
+                    AddinName = null,
+                    AddinType = "",
+                    DMView = null,
+                    CurrentEntity = BranchText,
+                    Id = BranchID,
+                    ObjectType = "FILEENTITY",
+                    DataSource = DataSource,
+                    ObjectName = DataSource.DatasourceName,
+                    Objects = ob,
+                    DatasourceName = DataSource.DatasourceName,
+                    EventType = "FILEENTITY"
+
+                };
+                //ActionNeeded?.Invoke(this, Passedarguments);
+                Visutil.ShowUserControlPopUp("uc_DataEntityStructureViewer", DMEEditor, args, Passedarguments);
+
+
+
+                //  DMEEditor.AddLogMessage("Success", "Edit Control Shown", DateTime.Now, 0, null, Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                string mes = "Could not show Edit Control";
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return DMEEditor.ErrorObject;
+        }
         [BranchDelegate(Caption = "Show", Hidden = false,  DoubleClick =true)]
         public IErrorsInfo Show()
         {

@@ -35,6 +35,7 @@
             System.Windows.Forms.Label customBuildQueryLabel;
             System.Windows.Forms.Label viewIDLabel;
             System.Windows.Forms.Label captionLabel;
+            System.Windows.Forms.Label label1;
             this.dataSourceIDComboBox = new System.Windows.Forms.ComboBox();
             this.dataHierarchyBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.viewtypeComboBox = new System.Windows.Forms.ComboBox();
@@ -96,12 +97,14 @@
             this.filterValue1DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.filtersBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.captionTextBox1 = new System.Windows.Forms.TextBox();
+            this.textBox1 = new System.Windows.Forms.TextBox();
             dataSourceIDLabel = new System.Windows.Forms.Label();
             viewtypeLabel = new System.Windows.Forms.Label();
             nameLabel = new System.Windows.Forms.Label();
             customBuildQueryLabel = new System.Windows.Forms.Label();
             viewIDLabel = new System.Windows.Forms.Label();
             captionLabel = new System.Windows.Forms.Label();
+            label1 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.dataHierarchyBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.fieldsDataGridView)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.fieldsBindingSource)).BeginInit();
@@ -127,7 +130,7 @@
             // dataSourceIDLabel
             // 
             dataSourceIDLabel.AutoSize = true;
-            dataSourceIDLabel.Location = new System.Drawing.Point(71, 89);
+            dataSourceIDLabel.Location = new System.Drawing.Point(71, 141);
             dataSourceIDLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             dataSourceIDLabel.Name = "dataSourceIDLabel";
             dataSourceIDLabel.Size = new System.Drawing.Size(84, 13);
@@ -137,7 +140,7 @@
             // viewtypeLabel
             // 
             viewtypeLabel.AutoSize = true;
-            viewtypeLabel.Location = new System.Drawing.Point(92, 138);
+            viewtypeLabel.Location = new System.Drawing.Point(92, 190);
             viewtypeLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             viewtypeLabel.Name = "viewtypeLabel";
             viewtypeLabel.Size = new System.Drawing.Size(63, 13);
@@ -168,18 +171,27 @@
             // viewIDLabel
             // 
             viewIDLabel.AutoSize = true;
-            viewIDLabel.Location = new System.Drawing.Point(108, 114);
+            viewIDLabel.Location = new System.Drawing.Point(108, 166);
             viewIDLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             viewIDLabel.Name = "viewIDLabel";
             viewIDLabel.Size = new System.Drawing.Size(47, 13);
             viewIDLabel.TabIndex = 12;
             viewIDLabel.Text = "View ID:";
             // 
+            // captionLabel
+            // 
+            captionLabel.AutoSize = true;
+            captionLabel.Location = new System.Drawing.Point(109, 51);
+            captionLabel.Name = "captionLabel";
+            captionLabel.Size = new System.Drawing.Size(46, 13);
+            captionLabel.TabIndex = 23;
+            captionLabel.Text = "Caption:";
+            // 
             // dataSourceIDComboBox
             // 
             this.dataSourceIDComboBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "DataSourceID", true));
             this.dataSourceIDComboBox.FormattingEnabled = true;
-            this.dataSourceIDComboBox.Location = new System.Drawing.Point(159, 86);
+            this.dataSourceIDComboBox.Location = new System.Drawing.Point(159, 138);
             this.dataSourceIDComboBox.Margin = new System.Windows.Forms.Padding(2);
             this.dataSourceIDComboBox.Name = "dataSourceIDComboBox";
             this.dataSourceIDComboBox.Size = new System.Drawing.Size(200, 21);
@@ -193,7 +205,7 @@
             // 
             this.viewtypeComboBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "Viewtype", true));
             this.viewtypeComboBox.FormattingEnabled = true;
-            this.viewtypeComboBox.Location = new System.Drawing.Point(159, 135);
+            this.viewtypeComboBox.Location = new System.Drawing.Point(159, 187);
             this.viewtypeComboBox.Margin = new System.Windows.Forms.Padding(2);
             this.viewtypeComboBox.Name = "viewtypeComboBox";
             this.viewtypeComboBox.Size = new System.Drawing.Size(200, 21);
@@ -421,7 +433,7 @@
             // viewIDTextBox
             // 
             this.viewIDTextBox.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "ViewID", true));
-            this.viewIDTextBox.Location = new System.Drawing.Point(159, 111);
+            this.viewIDTextBox.Location = new System.Drawing.Point(159, 163);
             this.viewIDTextBox.Margin = new System.Windows.Forms.Padding(2);
             this.viewIDTextBox.Name = "viewIDTextBox";
             this.viewIDTextBox.ReadOnly = true;
@@ -431,7 +443,7 @@
             // SaveEntitybutton
             // 
             this.SaveEntitybutton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(254)));
-            this.SaveEntitybutton.Location = new System.Drawing.Point(159, 160);
+            this.SaveEntitybutton.Location = new System.Drawing.Point(159, 212);
             this.SaveEntitybutton.Margin = new System.Windows.Forms.Padding(2);
             this.SaveEntitybutton.Name = "SaveEntitybutton";
             this.SaveEntitybutton.Size = new System.Drawing.Size(99, 23);
@@ -714,15 +726,6 @@
             this.filtersBindingSource.DataMember = "Filters";
             this.filtersBindingSource.DataSource = this.dataHierarchyBindingSource;
             // 
-            // captionLabel
-            // 
-            captionLabel.AutoSize = true;
-            captionLabel.Location = new System.Drawing.Point(109, 51);
-            captionLabel.Name = "captionLabel";
-            captionLabel.Size = new System.Drawing.Size(46, 13);
-            captionLabel.TabIndex = 23;
-            captionLabel.Text = "Caption:";
-            // 
             // captionTextBox1
             // 
             this.captionTextBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "Caption", true));
@@ -731,11 +734,31 @@
             this.captionTextBox1.Size = new System.Drawing.Size(356, 20);
             this.captionTextBox1.TabIndex = 24;
             // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new System.Drawing.Point(79, 77);
+            label1.Name = "label1";
+            label1.Size = new System.Drawing.Size(76, 13);
+            label1.TabIndex = 25;
+            label1.Text = "Original Name:";
+            // 
+            // textBox1
+            // 
+            this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "OriginalEntityName", true));
+            this.textBox1.Enabled = false;
+            this.textBox1.Location = new System.Drawing.Point(159, 74);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(356, 20);
+            this.textBox1.TabIndex = 26;
+            // 
             // Uc_DataViewEntityEditor
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.Controls.Add(label1);
+            this.Controls.Add(this.textBox1);
             this.Controls.Add(captionLabel);
             this.Controls.Add(this.captionTextBox1);
             this.Controls.Add(this.groupBox2);
@@ -847,5 +870,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn filterValue1DataGridViewTextBoxColumn;
         private System.Windows.Forms.BindingSource filtersBindingSource;
         private System.Windows.Forms.TextBox captionTextBox1;
+        private System.Windows.Forms.TextBox textBox1;
     }
 }

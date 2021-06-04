@@ -93,9 +93,14 @@ namespace TheTechIdea.DataManagment_Engine.CompositeLayer
         {
             try
             {
-                if (DataViewSource == null && !string.IsNullOrEmpty(LayerInfo.DataViewDataSourceName))
+                if (!string.IsNullOrEmpty(LayerInfo.DataViewDataSourceName))
                 {
                     DataViewSource = (DataViewDataSource)DMEEditor.GetDataSource(LayerInfo.DataViewDataSourceName);
+                }
+             
+                if (DataViewSource != null )
+                {
+                   
                     IEnumerable<string> ls = DataViewSource.GetEntitesList().Distinct();
                     if (LayerInfo.Entities == null)
                     {
@@ -115,7 +120,12 @@ namespace TheTechIdea.DataManagment_Engine.CompositeLayer
                                 {
                                     a = (EntityStructure)DataViewSource.GetEntityStructure(item, false);
                                     a.Created = false;
-                                    a.DataSourceID = DatasourceName;
+                                    if (a.Caption != a.EntityName)
+                                    {
+                                    a.DatasourceEntityName = a.EntityName;   
+                                     a.EntityName = a.Caption;
+                                    }
+                                  //  a.DataSourceID = DataViewSource.DatasourceName;
                                     LayerInfo.Entities.Add(a);
                                 }
                                 catch (Exception eee)

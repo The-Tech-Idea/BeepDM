@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -28,33 +29,8 @@ namespace TheTechIdea.Winforms.VIS
             BranchText = pBranchText;
             DataSourceName = pBranchText;
             BranchType = pBranchType;
-            CLayer = CLayer;
-            ConnectionProperties cn = DMEEditor.ConfigEditor.DataConnections.Where(x => x.ConnectionName == pClayer.DataSourceName).FirstOrDefault();
-           if (cn != null)
-            {
-                ConnectionDriversConfig driversConfig = DMEEditor.Utilfunction.LinkConnection2Drivers(cn);
-                try
-                {
-                    compositeLayerDataSource = new CompositeLayerDataSource(cn.ConnectionName, DMEEditor.Logger, DMEEditor, cn.DatabaseType, DMEEditor.ErrorObject);
-                    //  compositeLayerDataSource.LayerInfo = DMEEditor.ConfigEditor.CompositeQueryLayers[DMEEditor.ConfigEditor.CompositeQueryLayers.FindIndex(x => x.LayerName == cn.CompositeLayerName)];
-                    compositeLayerDataSource.Dataconnection.ConnectionProp = cn;
-                    compositeLayerDataSource.Dataconnection.DataSourceDriver = driversConfig;
-                    IDataSource ds = DMEEditor.CreateLocalDataSourceConnection(cn, cn.ConnectionName, driversConfig.classHandler);
-                    compositeLayerDataSource.LocalDB = (ILocalDB)ds;
-                    DMEEditor.OpenDataSource(cn.ConnectionName);
-                  //  compositeLayerDataSource.Dataconnection.OpenConnection();
-                }
-                catch (Exception )
-                {
-
-                   
-                }
-                
-            }else
-            {
-                MessageBox.Show("Error: Could not Find Local Database for Composite Layer");
-            }
-           
+            CLayer = pClayer;
+         
             if (pID != 0)
             {
                 ID = pID;
@@ -168,12 +144,11 @@ namespace TheTechIdea.Winforms.VIS
             string iconimage;
             try
             {
-              if (compositeLayerDataSource != null)
+                OpenCompositeDataSource();
+                if (compositeLayerDataSource != null)
                 {
-                    compositeLayerDataSource.Dataconnection.ConnectionStatus= DMEEditor.OpenDataSource(compositeLayerDataSource.DatasourceName);
-                         
-
-                    if (compositeLayerDataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+                  
+                    if (compositeLayerDataSource.ConnectionStatus == ConnectionState.Open)
                     {
 
                         CheckCreatedentities();
@@ -223,13 +198,10 @@ namespace TheTechIdea.Winforms.VIS
            
             try
             {
-               if (compositeLayerDataSource != null)
+                OpenCompositeDataSource();
+                if (compositeLayerDataSource != null)
                 {
-                    if (compositeLayerDataSource.ConnectionStatus != System.Data.ConnectionState.Open)
-                    {
-                        DMEEditor.OpenDataSource(compositeLayerDataSource.DatasourceName);
-                        //compositeLayerDataSource.Dataconnection.OpenConnection();
-                    }
+                    
                     if (compositeLayerDataSource.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
                        
@@ -258,15 +230,10 @@ namespace TheTechIdea.Winforms.VIS
             DMEEditor.Logger.WriteLog($"Filling Database Entites ) ");
             try
             {
-                //IDataSource layerds;
-               // IDataSource ds;
-              //  layerds = DMEEditor.GetDataSource(compositeLayerDataSource.LayerInfo.DataSourceName);
-               // List<EntityStructure> ls = new List<EntityStructure>();
-               // ls = compositeLayerDataSource.LayerInfo.Entities.Where(x => x.Created == false).ToList();
-               
+                OpenCompositeDataSource();
                 if (compositeLayerDataSource != null)
                 {
-                    compositeLayerDataSource.ConnectionStatus = DMEEditor.OpenDataSource(compositeLayerDataSource.DatasourceName);
+
                     if (compositeLayerDataSource.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
                         CheckCreatedentities();
@@ -337,38 +304,41 @@ namespace TheTechIdea.Winforms.VIS
 
             try
             {
-                if (TreeEditor.args != null)
+                OpenCompositeDataSource();
+                if(compositeLayerDataSource.ConnectionStatus== ConnectionState.Open)
                 {
-                    if (TreeEditor.args.EventType == "COPYENTITIES")
+                    if (TreeEditor.args != null)
                     {
-                        if (TreeEditor.args.Objects != null)
+                        if (TreeEditor.args.EventType == "COPYENTITIES")
                         {
-                            foreach (var item in TreeEditor.args.EntitiesNames)
+                            if (TreeEditor.args.Objects != null)
                             {
-                                IDataSource ds = DMEEditor.GetDataSource(TreeEditor.args.DatasourceName);
-                                IBranch pbr = (IBranch)TreeEditor.args.Objects.Where(x => x.Name == "ParentBranch").FirstOrDefault().obj;
-                                EntityStructure entity = (EntityStructure) ds.GetEntityStructure(item, true); ;
-                                if (compositeLayerDataSource.CheckEntityExist(entity.EntityName))
+                                foreach (var item in TreeEditor.args.EntitiesNames)
                                 {
-                                    DMEEditor.AddLogMessage("Fail", $"Could Not Paste Entity {entity.EntityName}, it already exist", DateTime.Now, -1, null, Errors.Failed);
+                                    IDataSource ds = DMEEditor.GetDataSource(TreeEditor.args.DatasourceName);
+                                    IBranch pbr = (IBranch)TreeEditor.args.Objects.Where(x => x.Name == "ParentBranch").FirstOrDefault().obj;
+                                    EntityStructure entity = (EntityStructure)ds.GetEntityStructure(item, true); ;
+                                    if (compositeLayerDataSource.CheckEntityExist(entity.EntityName))
+                                    {
+                                        DMEEditor.AddLogMessage("Fail", $"Could Not Paste Entity {entity.EntityName}, it already exist", DateTime.Now, -1, null, Errors.Failed);
+                                    }
+                                    else
+                                    {
+                                        compositeLayerDataSource.ConnectionStatus = DMEEditor.OpenDataSource(compositeLayerDataSource.DatasourceName);
+                                        entity.Created = false;
+                                        compositeLayerDataSource.LayerInfo.Entities.Add(entity);
+                                        DMEEditor.ConfigEditor.SaveCompositeLayersValues();
+                                        GetEntites();
+                                        DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                                    }
                                 }
-                                else
-                                {
-                                    compositeLayerDataSource.ConnectionStatus = DMEEditor.OpenDataSource(compositeLayerDataSource.DatasourceName);
-                                    entity.Created = false;
-                                    compositeLayerDataSource.LayerInfo.Entities.Add(entity);
-                                    DMEEditor.ConfigEditor.SaveCompositeLayersValues();
-                                    GetEntites();
-                                    DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
-                                }
-                            }
-                         
 
+
+                            }
                         }
                     }
                 }
-
-                // TreeEditor.SendActionFromBranchToBranch(pbr, this, "Create View using Table");
+            
 
             }
             catch (Exception ex)
@@ -440,12 +410,14 @@ namespace TheTechIdea.Winforms.VIS
                 if (Visutil.controlEditor.InputBoxYesNo("Remove Layer", "Area you Sure ? you want to remove Layer???") == System.Windows.Forms.DialogResult.Yes)
                 {
                     ConnectionProperties cn = DMEEditor.ConfigEditor.DataConnections.Where(x => string.Equals(Path.GetFileName(BranchText), x.ConnectionName, StringComparison.OrdinalIgnoreCase) ).FirstOrDefault();
-                    string file = Path.Combine(cn.FilePath, cn.FileName);
-                    bool ok=false;
+                 
+                  
                     try
                     {
                         if (cn != null)
                         {
+                            string file = Path.Combine(cn.FilePath, cn.FileName);
+                            bool ok = false;
                             if (DMEEditor.ConfigEditor.CompositeQueryLayers.Any(p=> string.Equals(p.LayerName, cn.ConnectionName, StringComparison.OrdinalIgnoreCase) ))
                             {
                                  ok = DMEEditor.ConfigEditor.RemoveLayerByName(cn.ConnectionName);
@@ -646,32 +618,84 @@ namespace TheTechIdea.Winforms.VIS
       
         #endregion "Exposed Methods"
         #region "Util"
+        private ConnectionState OpenCompositeDataSource()
+        {
+            ConnectionProperties cn = DMEEditor.ConfigEditor.DataConnections.Where(x => x.ConnectionName == CLayer.DataSourceName).FirstOrDefault();
+            if (cn != null)
+            {
+                if (compositeLayerDataSource == null)
+                {
+                    ConnectionDriversConfig driversConfig = DMEEditor.Utilfunction.LinkConnection2Drivers(cn);
+                    compositeLayerDataSource = new CompositeLayerDataSource(cn.ConnectionName, DMEEditor.Logger, DMEEditor, cn.DatabaseType, DMEEditor.ErrorObject);
+                }
+                if (compositeLayerDataSource.ConnectionStatus != ConnectionState.Open)
+                {
+                    if (cn != null)
+                    {
+                        //
+                        try
+                        {
+
+                            IDataSource localdb = (IDataSource)DMEEditor.GetDataSource(cn.ConnectionName);
+
+                            compositeLayerDataSource.Dataconnection = localdb.Dataconnection;
+                            compositeLayerDataSource.LocalDB = (ILocalDB)localdb;
+                            compositeLayerDataSource.Openconnection();
+                            return compositeLayerDataSource.ConnectionStatus;
+                        }
+                        catch (Exception ex)
+                        {
+
+                            MessageBox.Show($"Error: Could not Find Composite Database {cn.ConnectionName}-{ex.Message}");
+                            return compositeLayerDataSource.ConnectionStatus;
+                        }
+
+                    }
+                    else
+                    {
+                        MessageBox.Show("Error: Could not Find Local Database for Composite Layer");
+                    }
+
+                }
+
+                return compositeLayerDataSource.ConnectionStatus;
+            }
+            else
+                return ConnectionState.Broken;
+           
+        }
         private LScriptHeader CreateScript()
         {
-            List<EntityStructure> ls = new List<EntityStructure>();
-            TreeEditor.ShowWaiting();
-            TreeEditor.ChangeWaitingCaption($"Generating Scripts for  Entities Total:{compositeLayerDataSource.LayerInfo.Entities.Count}");
-            ls = compositeLayerDataSource.LayerInfo.Entities.Where(x => x.Created == false).ToList();
-            int i = 0;
-            if (ls.Count > 0)
+            if (OpenCompositeDataSource() == ConnectionState.Open)
             {
-                DMEEditor.ETL.script = new LScriptHeader();
-                DMEEditor.ETL.script.scriptSource = compositeLayerDataSource.DatasourceName;
-                DMEEditor.ETL.GetCreateEntityScript(compositeLayerDataSource, ls);
-                foreach (var item in ls)
+                List<EntityStructure> ls = new List<EntityStructure>();
+                TreeEditor.ShowWaiting();
+                TreeEditor.ChangeWaitingCaption($"Generating Scripts for  Entities Total:{compositeLayerDataSource.LayerInfo.Entities.Count}");
+                ls = compositeLayerDataSource.LayerInfo.Entities.Where(x => x.Created == false).ToList();
+                int i = 0;
+                if (ls.Count > 0)
                 {
-                    TreeEditor.AddCommentsWaiting($"{i} - Creating script for Entity {item.EntityName} ");
-                    LScript upscript = new LScript();
-                    upscript.sourcedatasourcename = item.DataSourceID;
-                    upscript.entityname = item.EntityName;
-                    upscript.destinationdatasourcename = compositeLayerDataSource.DatasourceName;
-                    upscript.scriptType = DDLScriptType.CopyData;
-                    DMEEditor.ETL.script.Scripts.Add(upscript);
-                    i += 1;
+                    DMEEditor.ETL.script = new LScriptHeader();
+                    DMEEditor.ETL.script.scriptSource = compositeLayerDataSource.DatasourceName;
+                    DMEEditor.ETL.GetCreateEntityScript(compositeLayerDataSource, ls);
+                    foreach (var item in ls)
+                    {
+                        TreeEditor.AddCommentsWaiting($"{i} - Creating script for Entity {item.EntityName} ");
+                        LScript upscript = new LScript();
+                        upscript.sourcedatasourcename = item.DataSourceID;
+                        upscript.entityname = item.EntityName;
+                        upscript.destinationdatasourcename = compositeLayerDataSource.DatasourceName;
+                        upscript.scriptType = DDLScriptType.CopyData;
+                        DMEEditor.ETL.script.Scripts.Add(upscript);
+                        i += 1;
+                    }
                 }
+                TreeEditor.HideWaiting();
+                return DMEEditor.ETL.script;
             }
-            TreeEditor.HideWaiting();
-            return DMEEditor.ETL.script;
+            else
+                return null;
+           
             
         }
         #endregion
