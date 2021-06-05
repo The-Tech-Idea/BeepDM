@@ -276,6 +276,11 @@ namespace TheTechIdea.DataManagment_Engine.DataView
                 retval = Entities.FindIndex(a => a.OriginalEntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
 
             }
+            if (retval == -1)
+            {
+                retval = Entities.FindIndex(a => a.DatasourceEntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
+
+            }
             return retval;
         }
         public EntityStructure GetEntityStructure(string EntityName, bool refresh = false)

@@ -683,7 +683,11 @@ namespace TheTechIdea.Winforms.VIS
                         TreeEditor.AddCommentsWaiting($"{i} - Creating script for Entity {item.EntityName} ");
                         LScript upscript = new LScript();
                         upscript.sourcedatasourcename = item.DataSourceID;
-                        upscript.entityname = item.EntityName;
+                        upscript.sourceentityname = item.EntityName;
+                        upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
+
+                        upscript.destinationDatasourceEntityName= item.EntityName;
+                        upscript.destinationentityname = item.EntityName;
                         upscript.destinationdatasourcename = compositeLayerDataSource.DatasourceName;
                         upscript.scriptType = DDLScriptType.CopyData;
                         DMEEditor.ETL.script.Scripts.Add(upscript);

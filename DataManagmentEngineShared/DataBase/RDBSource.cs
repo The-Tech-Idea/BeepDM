@@ -20,6 +20,7 @@ using TheTechIdea.DataManagment_Engine.Editor;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
 using TheTechIdea.DataManagment_Engine.Report;
+using System.Data.SqlTypes;
 
 namespace TheTechIdea.DataManagment_Engine.DataBase
 {
@@ -143,7 +144,59 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
 
         }
-       
+       private IDbCommand CreateCommandParameters(IDbCommand  command, DataRow r,EntityStructure DataStruct)
+        {
+            command.Parameters.Clear();
+            foreach (EntityField item in DataStruct.Fields)
+            {
+
+                if (!command.Parameters.Contains("p_" + Regex.Replace(item.fieldname, @"\s+", "_")))
+                {
+                    IDbDataParameter parameter = command.CreateParameter();
+                    if (!item.fieldtype.Equals("System.String", StringComparison.OrdinalIgnoreCase) && !item.fieldtype.Equals("System.DateTime", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
+                        {
+                            parameter.Value = Convert.ToDecimal(null);
+                        }
+                        else
+                        {
+                            parameter.Value = r[item.fieldname];
+                        }
+                    }
+                    else
+                        if (item.fieldtype.Equals("System.DateTime", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
+                        {
+
+                            parameter.Value = SqlDateTime.Null;
+                            parameter.DbType = DbType.DateTime;
+                        }
+                        else
+                        {
+                            parameter.DbType = DbType.DateTime;
+                            try
+                            {
+                                parameter.Value = DateTime.Parse(r[item.fieldname].ToString());
+                            }
+                            catch (FormatException formatex)
+                            {
+
+                                parameter.Value = SqlDateTime.Null;
+                            }
+                        }
+                    }
+                    else
+                        parameter.Value = r[item.fieldname];
+                    parameter.ParameterName = "p_" + Regex.Replace(item.fieldname, @"\s+", "_");
+                    //   parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
+                    command.Parameters.Add(parameter);
+                }
+
+            }
+            return command;
+        }
         public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData)
         {
             if (UploadData.GetType().ToString() != "System.Data.DataTable")
@@ -203,33 +256,11 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                                     updatestring = GetInsertString(EntityName,  DataStruct);
                                     break;
                             }
-                            command.Parameters.Clear();
+                          
                             command.CommandText = updatestring;
-                            foreach (EntityField item in DataStruct.Fields)
-                            {
+                            command=CreateCommandParameters(command, r, DataStruct);
 
-                                if (!command.Parameters.Contains("p_" + Regex.Replace(item.fieldname, @"\s+", "_")))
-                                {
-                                    IDbDataParameter parameter = command.CreateParameter();
-                                    if (!item.fieldtype.Equals("System.String", StringComparison.OrdinalIgnoreCase) && !item.fieldtype.Equals("System.DateTime", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString()=="")
-                                        {
-                                            parameter.Value =Convert.ToDecimal(null);
-                                        }else
-                                        {
-                                            parameter.Value = r[item.fieldname];
-                                        }
-                                    }else
-                                        parameter.Value = r[item.fieldname];
-                                    parameter.ParameterName = "p_" + Regex.Replace(item.fieldname, @"\s+", "_") ;
-                                 //   parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
-                                    command.Parameters.Add(parameter);
-                                }
-                               
-                            }
-
-                            errorstring = updatestring.Clone().ToString();
+                             errorstring = updatestring.Clone().ToString();
                             foreach (EntityField item in DataStruct.Fields)
                             {
                                 try
@@ -397,16 +428,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             {
                 dv = (DataRowView)UploadDataRow;
                 dr = dv.Row;
-                //foreach (EntityField col in DataStruct.Fields)
-                //{
-                //    // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
-                //    //if (dr[col.fieldname] != System.DBNull.Value)
-                //    //{
-                //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-                //        PropAInfo.SetValue(ti, dr[col.fieldname], null);
-                //    //}
-
-                //}
 
             } else 
             if (UploadDataRow.GetType().FullName == "System.Data.DataRow")
@@ -439,27 +460,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             try
             {
                 string updatestring = GetUpdateString(EntityName,  DataStruct);
-
-
                 command.CommandText = updatestring;
-                foreach (EntityField item in DataStruct.Fields)
-                {
-                    IDbDataParameter parameter = command.CreateParameter();
-                    parameter.ParameterName = "p_" + item.fieldname;
-                    if (item.fieldtype == "System.DateTime")
-                    {
-                        parameter.DbType = DbType.DateTime;
-                        parameter.Value = DateTime.Parse(dr[item.fieldname].ToString());
-
-
-                    }else
-                    { parameter.Value = dr[item.fieldname]; }
-                     command.Parameters.Add(parameter);
-
-                }
-
-
-              
+                command = CreateCommandParameters(command,dr, DataStruct);
                 int rowsUpdated = command.ExecuteNonQuery();
                 if (rowsUpdated > 0)
                 {
@@ -565,29 +567,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 command.Transaction = sqlTran;
                 command.CommandText = updatestring;
 
-                foreach (EntityField item in DataStruct.Fields)
-                {
-                    IDbDataParameter parameter = command.CreateParameter();
-                    //System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(item.fieldname);
-                    //var v = PropAInfo.GetValue(ti);
-
-                    parameter.ParameterName = "p_" + item.fieldname;
-                    if (item.fieldtype == "System.DateTime")
-                    {
-                        parameter.DbType = DbType.DateTime;
-                        parameter.Value = DateTime.Parse(dr[item.fieldname].ToString());
-
-
-                    }
-                    else
-                    { parameter.Value = dr[item.fieldname]; }
-                    //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
-                    command.Parameters.Add(parameter);
-
-                }
-
-
-
+                command = CreateCommandParameters(command, dr, DataStruct);
                 int rowsUpdated = command.ExecuteNonQuery();
                 if (rowsUpdated > 0)
                 {
@@ -683,26 +663,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
 
                 command.CommandText = updatestring;
-                foreach (EntityField item in DataStruct.Fields)
-                {
-                    IDbDataParameter parameter = command.CreateParameter();
-                    //System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(item.fieldname);
-                    //var v = PropAInfo.GetValue(ti);
-
-                    parameter.ParameterName = "p_" + item.fieldname;
-                    if (item.fieldtype == "System.DateTime")
-                    {
-                        parameter.DbType = DbType.DateTime;
-                        parameter.Value = DateTime.Parse(dr[item.fieldname].ToString());
-
-
-                    }
-                    else
-                    { parameter.Value = dr[item.fieldname]; }
-                    //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
-                    command.Parameters.Add(parameter);
-
-                }
+                command = CreateCommandParameters(command, dr, DataStruct);
 
                 int rowsUpdated = command.ExecuteNonQuery();
                 if (rowsUpdated > 0)
@@ -1447,7 +1408,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             t.Wait();
             scripts.errorsInfo = t.Result;
             scripts.errormessage = DMEEditor.ErrorObject.Message;
-            trackingHeader.currenrecordentity = scripts.entityname;
+            trackingHeader.currenrecordentity = scripts.sourceentityname;
             trackingHeader.currentrecorddatasourcename = scripts.destinationdatasourcename;
 
             trackingHeader.scriptType = scripts.scriptType;
@@ -1455,7 +1416,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             PassedArgs x = new PassedArgs();
             x.CurrentEntity = trackingHeader.currenrecordentity;
             x.DatasourceName = DatasourceName;
-            x.CurrentEntity = scripts.entityname;
+            x.CurrentEntity = scripts.sourceentityname;
             x.Objects.Add(new ObjectItem { obj = trackingHeader, Name = "TrackingHeader" });
 
             return scripts;
@@ -1559,7 +1520,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     x.destinationdatasourcename = DatasourceName;
 
                     x.ddl = CreateEntity(item);
-                    x.entityname = item.EntityName;
+                    x.sourceentityname = item.EntityName;
+                    x.sourceDatasourceEntityName = item.DatasourceEntityName;
                     x.scriptType = DDLScriptType.CreateTable;
                     rt.Add(x);
                     rt.AddRange(CreateForKeyRelationScripts(item));
@@ -1593,7 +1555,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 LScript x = new LScript();
                 x.destinationdatasourcename = DatasourceName;
                 x.ddl = CreateEntity(entity);
-                x.entityname = entity.EntityName;
+                x.sourceDatasourceEntityName = entity.DatasourceEntityName;
+                x.sourceentityname = entity.EntityName;
                 x.scriptType = DDLScriptType.CreateTable;
                 rt.Add(x);
                 rt.AddRange(CreateForKeyRelationScripts(entity));
@@ -1794,8 +1757,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                             LScript x = new LScript();
                             x.destinationdatasourcename = DatasourceName;
                             ds = DMEEditor.GetDataSource(entity.DataSourceID);
+                            x.sourceDatasourceEntityName = entity.DatasourceEntityName;
                             x.ddl = rl;
-                            x.entityname = entity.EntityName;
+                            x.sourceentityname = entity.EntityName;
                             x.scriptType = DDLScriptType.AlterFor;
                             rt.Add(x);
                         }
@@ -1828,8 +1792,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                             LScript x = new LScript();
                             x.destinationdatasourcename = item.DataSourceID;
                             ds = DMEEditor.GetDataSource(item.DataSourceID);
+                            x.sourceDatasourceEntityName = item.DatasourceEntityName;
                             x.ddl = CreateAlterRalationString(item);
-                            x.entityname = item.EntityName;
+                            x.sourceentityname = item.EntityName;
                             x.scriptType = DDLScriptType.AlterFor;
                             rt.Add(x);
                             //alteraddForignKey.Add(x);
@@ -2270,7 +2235,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 catch (Exception ex)
                 {
 
-                    DMEEditor.AddLogMessage("Fail", $"Error in Creating builder commands {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+                   // DMEEditor.AddLogMessage("Fail", $"Error in Creating builder commands {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
                 }
 
                 adp.MissingSchemaAction = MissingSchemaAction.AddWithKey;

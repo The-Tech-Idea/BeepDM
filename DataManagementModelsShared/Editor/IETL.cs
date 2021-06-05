@@ -15,10 +15,10 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         LScriptHeader script { get; set; }
         LScriptTrackHeader trackingHeader { get; set; }
         IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities, bool CreateMissingEntity = true);
-        IErrorsInfo CopyEntityStructure(IDataSource sourceds, IDataSource destds, string entity, bool CreateMissingEntity = true);
+        IErrorsInfo CopyEntityStructure(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, bool CreateMissingEntity = true);
         IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, bool CreateMissingEntity = true);
         IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, bool CreateMissingEntity = true);
-        IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string entity, bool CreateMissingEntity = true);
+        IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string srcentity,string destentity, bool CreateMissingEntity = true);
         IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, bool CreateMissingEntity = true);
         List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities);
         List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities);

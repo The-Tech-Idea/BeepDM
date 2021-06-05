@@ -152,7 +152,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         {
                             sc.errorsInfo = destds.ExecuteSql(sc.ddl); // t.Result;
                             LScriptTracker tr = new LScriptTracker();
-                            tr.currenrecordentity = sc.entityname;
+                            tr.currenrecordentity = sc.sourceentityname;
                             tr.currentrecorddatasourcename = sc.destinationdatasourcename;
                            // tr.currenrecordindex = i;
                             tr.scriptType = sc.scriptType;
@@ -187,7 +187,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         sc.errorsInfo = DME.ErrorObject;
                         sc.errormessage = DME.ErrorObject.Message;
                         LScriptTracker tr = new LScriptTracker();
-                        tr.currenrecordentity = sc.entityname;
+                        tr.currenrecordentity = sc.sourceentityname;
                         tr.currentrecorddatasourcename = sc.destinationdatasourcename;
                       //  tr.currenrecordindex = i;
                         tr.scriptType = sc.scriptType;
@@ -208,7 +208,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
 
                 destds = DME.GetDataSource(sc.destinationdatasourcename);
                 srcds = DME.GetDataSource(sc.sourcedatasourcename);
-
+                string srcentityname;
                 if (destds != null && srcds != null)
                 {
                    // destds.Dataconnection.OpenConnection();
@@ -219,11 +219,11 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                     {
                         if (sc.scriptType == DDLScriptType.CopyData)
                         {
-
-                            sc.errorsInfo = DME.ETL.CopyEntityData(srcds, destds, sc.entityname, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
+                            
+                            sc.errorsInfo = DME.ETL.CopyEntityData(srcds, destds, sc.sourceDatasourceEntityName,sc.destinationentityname, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
                             sc.errormessage = DME.ErrorObject.Message;
                             LScriptTracker tr = new LScriptTracker();
-                            tr.currenrecordentity = sc.entityname;
+                            tr.currenrecordentity = sc.sourceentityname;
                             tr.currentrecorddatasourcename = sc.destinationdatasourcename;
                          //   tr.currenrecordindex = i;
                             tr.scriptType = sc.scriptType;
@@ -258,7 +258,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                        sc.errorsInfo = DME.ErrorObject;
                         sc.errormessage = DME.ErrorObject.Message;
                         LScriptTracker tr = new LScriptTracker();
-                        tr.currenrecordentity = sc.entityname;
+                        tr.currenrecordentity = sc.sourceentityname;
                         tr.currentrecorddatasourcename = sc.destinationdatasourcename;
                        // tr.currenrecordindex = i;
                         tr.scriptType = sc.scriptType;
@@ -292,7 +292,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                            sc.errorsInfo = destds.ExecuteSql(sc.ddl);
                             sc.errormessage = DME.ErrorObject.Message;
                             LScriptTracker tr = new LScriptTracker();
-                            tr.currenrecordentity = sc.entityname;
+                            tr.currenrecordentity = sc.sourceentityname;
                             tr.currentrecorddatasourcename = sc.destinationdatasourcename;
                            // tr.currenrecordindex = i;
                             tr.scriptType = sc.scriptType;
@@ -332,7 +332,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         sc.errorsInfo = DME.ErrorObject;
                         sc.errormessage = DME.ErrorObject.Message;
                         LScriptTracker tr = new LScriptTracker();
-                        tr.currenrecordentity = sc.entityname;
+                        tr.currenrecordentity = sc.sourceentityname;
                         tr.currentrecorddatasourcename = sc.destinationdatasourcename;
                        // tr.currenrecordindex = i;
                         tr.scriptType = sc.scriptType;

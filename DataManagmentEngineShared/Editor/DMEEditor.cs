@@ -455,6 +455,25 @@ namespace TheTechIdea.DataManagment_Engine
                 return false;
             };
         }
+        public EntityStructure GetEntityStructure(string entityname,string datasourcename)
+        {
+            IDataSource ds = null;
+            EntityStructure entity = null;
+            try
+            {
+                ds = GetDataSource(datasourcename);
+                if (ds != null)
+                {
+                    entity= ds.GetEntityStructure(entityname,true);
+                }
+                return entity;
+            }
+            catch (Exception ex)
+            {
+
+                return entity;
+            }
+        }
         public bool CheckDataSourceExist(string pdatasourcename)
         {
 
