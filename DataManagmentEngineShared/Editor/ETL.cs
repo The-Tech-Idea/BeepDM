@@ -224,17 +224,13 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 }
                 if (destds.Category == DatasourceCategory.RDBMS)
                 {
-
                     IRDBSource rDB = (IRDBSource)destds;
                     rDB.DisableFKConstraints(item);
                 }
                 if (destds.CreateEntityAs(item))
                     {
-                   //     DMEEditor.AddLogMessage("Copy Data", $"Started Copying Data for {item.EntityName}", DateTime.Now, 0, null, Errors.Ok);
-                       
-                        object srcTb;
+                       object srcTb;
                     string entname;
-                    
                         var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
                         src.Wait();
                         srcTb = src.Result;
@@ -242,7 +238,6 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(item.EntityName, srcTb); });
                         dst.Wait();
                         DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data for {entity} on {destds.DatasourceName}", DateTime.Now, 0, null, Errors.Ok);
-                       
 
                     }
                     else

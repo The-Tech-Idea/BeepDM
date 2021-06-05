@@ -164,7 +164,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
 
-
+            string errorstring = "";
             int CurrentRecord = 0;
             int highestPercentageReached = 0;
             int numberToCompute = 0;
@@ -207,19 +207,56 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                             command.CommandText = updatestring;
                             foreach (EntityField item in DataStruct.Fields)
                             {
-                              
-                                if(!command.Parameters.Contains("p_" + Regex.Replace(item.fieldname, @"\s+", "_")))
+
+                                if (!command.Parameters.Contains("p_" + Regex.Replace(item.fieldname, @"\s+", "_")))
                                 {
                                     IDbDataParameter parameter = command.CreateParameter();
-                                    parameter.Value = r[item.fieldname];
+                                    if (!item.fieldtype.Equals("System.String", StringComparison.OrdinalIgnoreCase) && !item.fieldtype.Equals("System.DateTime", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString()=="")
+                                        {
+                                            parameter.Value =Convert.ToDecimal(null);
+                                        }else
+                                        {
+                                            parameter.Value = r[item.fieldname];
+                                        }
+                                    }else
+                                        parameter.Value = r[item.fieldname];
                                     parameter.ParameterName = "p_" + Regex.Replace(item.fieldname, @"\s+", "_") ;
-                                    //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
+                                 //   parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
                                     command.Parameters.Add(parameter);
                                 }
                                
                             }
 
+                            errorstring = updatestring.Clone().ToString();
+                            foreach (EntityField item in DataStruct.Fields)
+                            {
+                                try
+                                {
+                                    string s;
+                                    string f;
+                                    if (r[item.fieldname] == DBNull.Value)
+                                    {
+                                        s = "\' \'";
+                                    }
+                                    else
+                                    {
+                                        s ="\'"+ r[item.fieldname].ToString()+"\'";
+                                    }
+                                    f = "@p_" + Regex.Replace(item.fieldname, @"\s+", "_");
+                                    errorstring = errorstring.Replace(f, s);
+                                }
+                                catch (Exception ex1)
+                                {
 
+                                    
+                                }
+                              
+                                   
+                                
+
+                            }
                             string msg = "";
                             int rowsUpdated = command.ExecuteNonQuery();
                             if (rowsUpdated > 0)
@@ -274,7 +311,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
                             args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
                             PassEvent?.Invoke(this, args);
-                            DMEEditor.AddLogMessage("Success", msg, DateTime.Now, 0, null, Errors.Ok);
+                           // DMEEditor.AddLogMessage("Success", msg, DateTime.Now, 0, null, Errors.Ok);
                         }
                         catch (Exception er)
                         {
@@ -293,12 +330,12 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                             tr.currenrecordindex = i;
                             tr.scriptType = DDLScriptType.CopyData;
                             tr.errorsInfo = DMEEditor.ErrorObject;
-                            tr.errormessage = $"Fail to insert/update/delete  Record {i} to {EntityName} : {er.Message} :  {updatestring} ";
+                            tr.errormessage = $"Fail to insert/update/delete  Record {i} to {EntityName} : {er.Message} :  {errorstring} ";
                             DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
                             args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
                             PassEvent?.Invoke(this, args);
                             //  DMEEditor.RaiseEvent(this, args);
-                            DMEEditor.AddLogMessage("Fail", $"Fail to insert/update/delete  Record {i} to {EntityName} {er.Message}", DateTime.Now, 0, null, Errors.Failed);
+                          //  DMEEditor.AddLogMessage("Fail", $"Fail to insert/update/delete  Record {i} to {EntityName} {er.Message}", DateTime.Now, 0, null, Errors.Failed);
                         }
                     }
 

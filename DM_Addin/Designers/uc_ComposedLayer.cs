@@ -201,8 +201,8 @@ namespace TheTechIdea.ETL
                 //--------------------
                 try
                 {
-                    waitForm = new WaitFormFunc();
-                    waitForm.Show(this.ParentForm);
+                  //  waitForm = new WaitFormFunc();
+                  //  waitForm.Show(this.ParentForm);
                     CompositeLayerDataSource compositeLayerDataSource = new CompositeLayerDataSource(cn.ConnectionName, DMEEditor.Logger, DMEEditor, cn.DatabaseType, DMEEditor.ErrorObject);
                     ConnectionDriversConfig driversConfig = DMEEditor.Utilfunction.LinkConnection2Drivers(cn);
                     compositeLayerDataSource.Dataconnection.ConnectionProp = cn;
@@ -217,13 +217,13 @@ namespace TheTechIdea.ETL
                 //    Visutil.treeEditor.HideWaiting();
                     DMEEditor.ConfigEditor.SaveCompositeLayersValues();
                     RootCompositeLayerBranch.CreateChildNodes();
-                    waitForm.Close();
+                 //   waitForm.Close();
                 }
                 catch (Exception ex1)
                 {
 
                     string errmsg = $"Error Creating Composite Layer for view";
-                    waitForm.Close();
+                 //   waitForm.Close();
                     DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex1.Message}", DateTime.Now, 0, null, Errors.Failed);
                 }
               

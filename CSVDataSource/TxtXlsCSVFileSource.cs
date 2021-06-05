@@ -951,10 +951,11 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         }
         private List<EntityField> GetFieldTypes(string sheetname,DataColumnCollection datac)
         {
+            List<DataRow> dt = getData(sheetname).ToList();
+            List<EntityField> flds = new List<EntityField>();
             try
             {
-                List<DataRow> dt= getData(sheetname).ToList();
-                List<EntityField> flds = new List<EntityField>() ;
+               
                 int y = 0;
 
                 //----------------------------------------
@@ -1050,6 +1051,10 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                                 foundval = false    ;
                             }
                             i += 1;
+                            if (i >= dt.Count)
+                            {
+                                foundval = false;
+                            }
                         }
                     }
                    
