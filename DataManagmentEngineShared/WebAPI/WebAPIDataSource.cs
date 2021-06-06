@@ -177,6 +177,10 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
         {
             EntityStructure ent = GetEntityStructure(EntityName,false);
             string str = ent.CustomBuildQuery;
+            if (ent.Filters == null)
+            {
+                ent.Filters = new List<ReportFilter>();
+            }
             foreach (ReportFilter item in ent.Filters)
             {
                 if (string.IsNullOrEmpty(item.FilterValue) || string.IsNullOrWhiteSpace(item.FilterValue))

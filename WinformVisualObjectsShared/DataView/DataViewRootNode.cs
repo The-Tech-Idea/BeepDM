@@ -195,14 +195,10 @@ namespace TheTechIdea.Winforms.VIS
                         DMEEditor.ConfigEditor.SaveDataconnectionsValues();
                        
                         DataViewDataSource ds = (DataViewDataSource)DMEEditor.GetDataSource(f.ConnectionName);
-                        if (ds.DataView == null)
-                        {
-                            ds.DataView = ds.GenerateView(f.ConnectionName, f.ConnectionName);
-                        }
+                        ds.DataView = ds.GenerateView(f.ConnectionName, f.ConnectionName);
                         DataView = ds.DataView;
-
-
-                        CreateViewNode(DataView.ViewID, DataView.ViewName, f.ConnectionName);
+                        ds.WriteDataViewFile(fullname);
+                        IBranch br = CreateViewNode(DataView.ViewID, DataView.ViewName, f.ConnectionName);
                         DMEEditor.AddLogMessage("Success", "Added View", DateTime.Now, 0, null, Errors.Ok);
 
                     }
@@ -371,7 +367,7 @@ namespace TheTechIdea.Winforms.VIS
 
                 viewbr = new DataViewNode(TreeEditor, DMEEditor, this, ViewName, TreeEditor.SeqID, EnumBranchType.DataPoint, "dataview.ico", Connectionname);
             
-                viewbr.DataSource = DataSource;
+               // viewbr.DataSource = DataSource;
                 viewbr.DataSourceName = Connectionname;
                 viewbr.ID = id;
 
