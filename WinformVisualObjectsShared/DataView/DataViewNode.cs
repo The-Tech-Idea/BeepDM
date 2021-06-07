@@ -622,7 +622,7 @@ namespace TheTechIdea.Winforms.VIS
                                     IDataSource srcds = DMEEditor.GetDataSource(entity.DataSourceID);
                                     entity = (EntityStructure)srcds.GetEntityStructure(entity, true).Clone();
                                     entity.Caption = entity.EntityName;
-                                    entity.DatasourceEntityName = entity.EntityName;
+                                    entity.DatasourceEntityName = entity.DatasourceEntityName;
                                     entity.Created = false;
                                     entity.DataSourceID = srcds.DatasourceName;
                                     entity.Id = ds.NextHearId();
@@ -663,7 +663,7 @@ namespace TheTechIdea.Winforms.VIS
                                         else
                                         {
                                             entity.Caption = entity.EntityName;
-                                            entity.DatasourceEntityName = entity.EntityName;
+                                            entity.DatasourceEntityName = entity.DatasourceEntityName;
                                             entity.Created = false;
                                             entity.DataSourceID = srcds.DatasourceName;
                                             entity.Id = ds.NextHearId();
