@@ -68,55 +68,19 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
             throw new NotImplementedException();
         }
 
-        //private bool GetData()
-        //{
-        //    try
-        //    {
-        //        if (GetHttpClient())
-        //        {
-        //            Task<string> retval = GetResponseAsync();
+        public int GetEntityIdx(string entityName)
+        {
+            if (Entities.Count > 0)
+            {
+                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                return -1;
+            }
 
-        //            SourceEntityData =(DataTable)  DMEEditor.ConfigEditor.JsonLoader.DeserializeObjectString<DataTable>(retval.ToString());
 
-        //        }
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-
-        //        return false;
-        //    }
-
-        //}
-        //private bool GetHttpClient()
-        //{
-        //    try
-        //    {
-        //        _client = ClientFactory.CreateClient(DatasourceName);
-        //      //  _client.DefaultRequestHeaders. = Dataconnection.ConnectionProp.KeyToken;
-        //        _client.BaseAddress = new Uri(cn.ConnectionProp.Url);
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-
-        //        return false;
-        //    }
-
-        //}
-        //private async Task<string> GetResponseAsync()
-        //{
-        //    try
-        //    {
-        //        string retstring = await _client.GetFromJsonAsync<string>("");
-        //        return retstring;
-        //    }
-        //    catch (Exception ex)
-        //    {
-
-        //        return "Error";
-        //    }
-        //}
+        }
         public bool CheckEntityExist(string EntityName)
         {
             return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).Any();

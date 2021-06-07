@@ -1238,6 +1238,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         {
                             foreach (string item in diffnames)
                             {
+                                int idx = Entities.FindIndex(p => p.EntityName.Equals(item, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(item, StringComparison.OrdinalIgnoreCase));
+                                Entities[idx].Created = false;
                                 EntitiesNames.Add(item.ToUpper());
                             }
                         }
@@ -1289,10 +1291,26 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 GetEntitesList();
            
             string entspace = Regex.Replace(EntityName, @"\s+", "_");
-            retval = EntitiesNames.ConvertAll(d => d.ToUpper()).Contains(entspace.ToUpper());
-          
+           // int idx = Entities.FindIndex(p => p.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase));
+            retval = EntitiesNames.ConvertAll(d => d.ToUpper()).Contains(entspace.ToUpper()) ;
 
+            ///-------------
+            ///check if its created
+            ///
+           
             return retval;
+        }
+        public int GetEntityIdx(string entityName)
+        {
+            if (Entities.Count > 0)
+            {
+                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+            }else
+            {
+                return -1;
+            }
+            
+
         }
         public bool CreateEntityAs(EntityStructure entity)
         {

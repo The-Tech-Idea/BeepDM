@@ -68,20 +68,7 @@ namespace TheTechIdea.ETL
             {
                 RootAppBranch = (IBranch)e.Objects.Where(c => c.Name == "RootBranch").FirstOrDefault().obj;
             }
-            //foreach (var item in Enum.GetValues(typeof(DDLScriptType)))
-            //{
-            //    scriptTypeComboBox.Items.Add(item);
-            //}
            
-            //if (e.Objects.Where(c => c.Name == "Script").Any())
-            //{
-                
-            //    ScriptHeader = (LScriptHeader)e.Objects.Where(c => c.Name == "Script").FirstOrDefault().obj;
-            //}
-            //if (ScriptHeader==null)
-            //{
-              //  ScriptHeader = DMEEditor.ETL.script;
-            //}
             this.dataConnectionsBindingSource.DataSource = DMEEditor.ConfigEditor.DataConnections;
             scriptBindingSource.DataSource = DMEEditor.ETL.script.Scripts;
 

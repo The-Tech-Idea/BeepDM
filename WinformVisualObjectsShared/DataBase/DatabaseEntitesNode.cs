@@ -369,24 +369,33 @@ namespace TheTechIdea.Winforms.VIS
         public IErrorsInfo DropEntity()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-           
+            bool entityexist = true;
             try
             {
               if(Visutil.controlEditor.InputBoxYesNo("Beep DM","Are you sure you ?")== DialogResult.Yes)
                 {
+                   
                     EntityStructure = DataSource.GetEntityStructure(BranchText, true);
+                    if (EntityStructure!=null) 
+                    {
+                        entityexist = DataSource.Entities[DataSource.GetEntityIdx(EntityStructure.EntityName)].Created;
+                        if (entityexist && DataSource.CheckEntityExist(EntityStructure.EntityName))
+                        {
+                            DataSource.ExecuteSql($"Drop Table {EntityStructure.DatasourceEntityName}");
+                        }
+                        if (DMEEditor.ErrorObject.Flag == Errors.Ok|| !entityexist)
+                        {
+                            TreeEditor.RemoveBranch(this);
+                            DataSource.Entities.RemoveAt(DataSource.Entities.FindIndex(p => p.DatasourceEntityName == EntityStructure.DatasourceEntityName));
+                            DMEEditor.AddLogMessage("Success", $"Droped Entity {EntityStructure.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                        }
+                        else
+                        {
 
-                    DataSource.ExecuteSql($"Drop Table {EntityStructure.DatasourceEntityName}");
-                    if (DMEEditor.ErrorObject.Flag== Errors.Ok)
-                    {
-                        TreeEditor.RemoveBranch(this);
-                        DataSource.Entities.RemoveAt(DataSource.Entities.FindIndex(p => p.DatasourceEntityName == EntityStructure.DatasourceEntityName));
-                        DMEEditor.AddLogMessage("Success", $"Droped Entity {EntityStructure.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                            DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {EntityStructure.EntityName} - {DMEEditor.ErrorObject.Message}", DateTime.Now, -1, null, Errors.Failed);
+                        }
                     }
-                    else
-                    {
-                        DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {EntityStructure.EntityName} - {DMEEditor.ErrorObject.Message}", DateTime.Now, -1, null, Errors.Failed);
-                    }
+                     
                 }
 
             }

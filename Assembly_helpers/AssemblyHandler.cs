@@ -62,7 +62,7 @@ namespace TheTechIdea.Tools
             catch (Exception ex)
             {
 
-                DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
+             //   DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
 
             try
@@ -74,7 +74,7 @@ namespace TheTechIdea.Tools
             catch (Exception ex)
             {
 
-                DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
+               // DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
             var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine"));
             try
@@ -89,7 +89,7 @@ namespace TheTechIdea.Tools
             catch (Exception ex)
             {
 
-                DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
+                //DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
         
             return DMEEditor.ErrorObject;
@@ -1090,7 +1090,7 @@ namespace TheTechIdea.Tools
             catch (Exception ex)
             {
 
-                DMEEditor.Logger.WriteLog($"error in creating addin {ex.Message} ");
+            //    DMEEditor.Logger.WriteLog($"error in creating addin {ex.Message} ");
                
             }
 

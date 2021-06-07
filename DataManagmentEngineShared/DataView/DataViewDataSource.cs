@@ -1288,6 +1288,11 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
         }
 
+        public int GetEntityIdx(string entityName)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
         #endregion
     }

@@ -127,7 +127,7 @@ namespace TheTechIdea.Winforms.VIS
                             foreach (string tb in diffnames) //
                             {
                                 TreeEditor.AddCommentsWaiting($"{i} - Added {tb} to {DataSourceName}");
-                                  ent = DataSource.GetEntityStructure(tb, true);
+                                ent = DataSource.GetEntityStructure(tb, true);
                                
 
                                 if (ent.Created == false)
@@ -383,8 +383,9 @@ namespace TheTechIdea.Winforms.VIS
             {
                 string iconimage = "";
                 int cnt = 0;
+                List<EntityStructure> ls = new List<EntityStructure>();
                 DataSource = DMEEditor.GetDataSource(DataSourceName);
-
+                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "RDBMS" && x.BranchType == EnumBranchType.Root)];
                 if (DataSource.Entities != null)
                 {
                     if (DataSource.Entities.Count == 0)
@@ -454,6 +455,7 @@ namespace TheTechIdea.Winforms.VIS
                         {
                             IBranch br = TreeEditor.GetBranch(item);
                             IDataSource srcds = DMEEditor.GetDataSource(br.DataSourceName);
+                            
                             if (srcds != null)
                             {
                                 EntityStructure entity = (EntityStructure)srcds.GetEntityStructure(br.BranchText, true).Clone();
@@ -473,33 +475,46 @@ namespace TheTechIdea.Winforms.VIS
                                     entity.ViewID = 0;
                                     entity.DatabaseType = srcds.DatasourceType;
                                     entity.Viewtype = ViewType.Table;
-                                    if (DataSource.CreateEntityAs(entity))
-                                    {
-                                        entity.Created = true;
-
-                                        DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
-                                    }
-                                    else
-                                    {
-                                        entity.Created = false;
-                                        DMEEditor.AddLogMessage("Fail", $"Error Copying Entity {entity.EntityName} - {DMEEditor.ErrorObject.Message}", DateTime.Now, -1, null, Errors.Failed);
-                                    }
-                                    if (entity.Created == false)
-                                    {
-                                        iconimage = "entitynotcreated.ico";
-                                    }
-                                    else
-                                    {
-                                        iconimage = "databaseentities.ico";
-                                    }
-                                    DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
-                                    TreeEditor.AddBranch(this, dbent);
-                                    dbent.DataSourceName = DataSource.DatasourceName;
-                                    dbent.DataSource = DataSource;
-                                    ChildBranchs.Add(dbent);
+                                    ls.Add(entity);
+                                   
+                                    
+                                    
                                 }
                               
                             }
+                        }
+                        LScriptHeader scriptHeader = TreeEditor.CreateScriptToCopyEntities(DataSource, ls, true);
+                        if (scriptHeader != null)
+                        {
+                            TreeEditor.ShowRunScriptGUI(RootBranch,this, DataSource, scriptHeader);
+                        }
+                        foreach (var entity in ls)
+                        {
+                            if (DataSource.CreateEntityAs(entity))
+                            {
+                                entity.Created = true;
+
+                                DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
+                            }
+                            else
+                            {
+                                entity.Created = false;
+                                DMEEditor.AddLogMessage("Fail", $"Error Copying Entity {entity.EntityName} - {DMEEditor.ErrorObject.Message}", DateTime.Now, -1, null, Errors.Failed);
+                            }
+                            if (entity.Created == false)
+                            {
+                                iconimage = "entitynotcreated.ico";
+                            }
+                            else
+                            {
+                                iconimage = "databaseentities.ico";
+                            }
+
+                            DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
+                            TreeEditor.AddBranch(this, dbent);
+                            dbent.DataSourceName = DataSource.DatasourceName;
+                            dbent.DataSource = DataSource;
+                            ChildBranchs.Add(dbent);
                         }
                     }
                 }

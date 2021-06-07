@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -10,6 +11,7 @@ using System.Windows.Forms;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.DataView;
+using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Util;
 
@@ -1632,6 +1634,97 @@ namespace TheTechIdea.Winforms.VIS
 
             // Select the node at the mouse position.
             TreeV.SelectedNode = TreeV.GetNodeAt(targetPoint);
+        }
+        #endregion
+        #region "Data Managemet Shared"
+        public LScriptHeader CreateScriptToCopyEntities(IDataSource dest,List<EntityStructure> entities,bool copydata=true)
+        {
+            if (dest.Openconnection() == ConnectionState.Open)
+            {
+                List<EntityStructure> ls = new List<EntityStructure>();
+                ShowWaiting();
+                ChangeWaitingCaption($"Generating Scripts for Entities Total:{entities.Count}");
+                ls = entities;
+                int i = 0;
+                if (ls.Count > 0)
+                {
+                    DMEEditor.ETL.script = new LScriptHeader();
+                    DMEEditor.ETL.script.scriptSource = dest.DatasourceName;
+                    DMEEditor.ETL.GetCreateEntityScript(dest, ls);
+                    if (copydata)
+                    {
+                        foreach (var item in ls)
+                        {
+                            AddCommentsWaiting($"{i} - Creating script for Copy Data for Entity {item.EntityName} ");
+                            LScript upscript = new LScript();
+                            upscript.sourcedatasourcename = item.DataSourceID;
+                            upscript.sourceentityname = item.EntityName;
+                            upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
+
+                            upscript.destinationDatasourceEntityName = item.DatasourceEntityName;
+                            upscript.destinationentityname = item.EntityName;
+
+                            upscript.destinationdatasourcename = dest.DatasourceName;
+                            upscript.scriptType = DDLScriptType.CopyData;
+                            DMEEditor.ETL.script.Scripts.Add(upscript);
+                            i += 1;
+                        }
+                    }
+                    
+                }
+                HideWaiting();
+                DMEEditor.AddLogMessage("Success", "Copy Entities Script Generated", DateTime.Now, 0, "", Errors.Failed);
+                return DMEEditor.ETL.script;
+            }
+            else
+            {
+                DMEEditor.AddLogMessage("Fail", " Could not Open the desitination Datasource", DateTime.Now, 0, "", Errors.Failed);
+                return null;
+            }
+               
+
+
+        }
+        public IErrorsInfo ShowRunScriptGUI(IBranch RootBranch, IBranch Branch ,IDataSource ds, LScriptHeader script)
+        {
+            string[] args = { "New Query Entity", null, null };
+            List<ObjectItem> ob = new List<ObjectItem>(); ;
+            ObjectItem it = new ObjectItem();
+            it.obj = Branch;
+            it.Name = "Branch";
+            ob.Add(it);
+          
+            it = new ObjectItem();
+            it.obj = RootBranch;
+            it.Name = "RootBranch";
+            ob.Add(it);
+            it = new ObjectItem();
+            it.obj = DMEEditor;
+            it.Name = "DMEEDITOR";
+            ob.Add(it);
+            it = new ObjectItem();
+            it.obj = ds;
+            it.Name = "DATASOURCE";
+            ob.Add(it);
+            PassedArgs Passedarguments = new PassedArgs
+            {
+                Addin = null,
+                AddinName = null,
+                AddinType = "",
+                DMView = null,
+                CurrentEntity = null,
+                ObjectType = "SCRIPT",
+                DataSource = ds,
+                ObjectName = ds.DatasourceName,
+                Objects = ob,
+                DatasourceName = null,
+                EventType = "RUNSCRIPT"
+
+            };
+         
+            DMEEditor.ETL.script = script;
+            Visutil.ShowUserControlPopUp("uc_ScriptRun",  DMEEditor, args, Passedarguments);
+            return DMEEditor.ErrorObject;
         }
         #endregion
     }
