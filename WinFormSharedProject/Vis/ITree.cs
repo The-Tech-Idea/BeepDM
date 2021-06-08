@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.Util;
 
 
@@ -42,8 +44,10 @@ namespace TheTechIdea.DataManagment_Engine.Vis
         void ShowWaiting();
         void HideWaiting();
         void ChangeWaitingCaption(string Caption);
-
         void AddCommentsWaiting(string comment);
+
+        LScriptHeader CreateScriptToCopyEntities(IDataSource dest, List<EntityStructure> entities, bool copydata = true);
+        IErrorsInfo ShowRunScriptGUI(IBranch RootBranch, IBranch Branch ,IDataSource ds, LScriptHeader script);
 
     }
 }

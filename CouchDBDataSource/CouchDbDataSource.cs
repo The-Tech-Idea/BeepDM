@@ -28,6 +28,19 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL.CouchDB
         public IDMLogger Logger { get ; set ; }
         public List<string> EntitiesNames { get ; set ; }
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
+        public int GetEntityIdx(string entityName)
+        {
+            if (Entities.Count > 0)
+            {
+                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                return -1;
+            }
+
+
+        }
         public IDMEEditor DMEEditor { get ; set ; }
         public ConnectionState Openconnection()
         {

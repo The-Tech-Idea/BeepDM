@@ -228,8 +228,20 @@ namespace TheTechIdea.DataManagment_Engine.CompositeLayer
             }
         }
 
-       
+        public int GetEntityIdx(string entityName)
+        {
+            if (Entities.Count > 0)
+            {
+                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                return -1;
+            }
 
-     
+
+        }
+
+
     }
 }

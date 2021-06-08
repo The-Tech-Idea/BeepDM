@@ -49,7 +49,19 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         {
             throw new NotImplementedException();
         }
+        public int GetEntityIdx(string entityName)
+        {
+            if (Entities.Count > 0)
+            {
+                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                return -1;
+            }
 
+
+        }
         public DataSourceType DatasourceType { get; set; } = DataSourceType.Xls;
         public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;
         public IDataConnection Dataconnection { get ; set ; }

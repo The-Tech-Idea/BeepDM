@@ -35,6 +35,7 @@ namespace TheTechIdea
         bool CreateEntityAs(EntityStructure entity);
         Type GetEntityType(string EntityName);
         bool CheckEntityExist(string EntityName);
+        int GetEntityIdx(string entityName);
         List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters);
         List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName);
         EntityStructure GetEntityStructure(string EntityName, bool refresh );

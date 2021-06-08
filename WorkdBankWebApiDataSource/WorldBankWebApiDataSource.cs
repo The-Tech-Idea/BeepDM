@@ -31,6 +31,19 @@ namespace WorkdBankWebApiDataSource
         public ConnectionState ConnectionStatus { get ; set ; }
 
         public event EventHandler<PassedArgs> PassEvent;
+        public int GetEntityIdx(string entityName)
+        {
+            if (Entities.Count > 0)
+            {
+                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                return -1;
+            }
+
+
+        }
         public ConnectionState Openconnection()
         {
             throw new NotImplementedException();

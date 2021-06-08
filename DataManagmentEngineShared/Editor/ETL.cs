@@ -303,6 +303,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
+
          //-----------------------
         public IErrorsInfo RunScript(  )
         {
