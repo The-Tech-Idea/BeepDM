@@ -49,20 +49,10 @@ namespace TheTechIdea.Tools.AssemblyHandling
 
         public AssemblyHandlerCore()
         {
-
             PluginLoadContext = new PluginLoadContext();
             DataSourcesClasses = new List<AssemblyClassDefinition>();
         }
-        //static Assembly LoadPlugin(string relativePath)
-        //{
-        //    // Navigate up to the solution root
-          
-        //    string pluginLocation = Path.GetFullPath(Path.Combine(relativePath, relativePath.Replace('\\', Path.DirectorySeparatorChar)));
-        //    Console.WriteLine($"Loading commands from: {pluginLocation}");
-        //    loadContext = new PluginLoadContext(pluginLocation);
-          
-        //    return loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(pluginLocation)));
-        //}
+
         public string LoadAssembly(string path, FolderFileTypes fileTypes)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
