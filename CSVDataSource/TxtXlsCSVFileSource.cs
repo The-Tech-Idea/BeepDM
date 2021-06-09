@@ -23,25 +23,16 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         public event EventHandler<PassedArgs> PassEvent;
         public string Id { get; set; }
         public string DatasourceName { get; set; }
-    
-        public FileTypes FileType { get; set; }
-
-        public DataSourceType DatasourceType { get; set; }
+        public DataSourceType DatasourceType { get; set; } = DataSourceType.CSV;
         public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;
         ConnectionState pConnectionStatus;
         public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; }  set { pConnectionStatus = value; }  }
         public List<string> EntitiesNames { get; set; } = new List<string>();
-
         public IDMEEditor DMEEditor { get; set; }
         public IErrorsInfo ErrorObject { get; set; }
         public IDMLogger Logger { get; set; }
-        public List<object> Records { get; set; }
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>(); 
-
-      
         public bool HeaderExist { get; set; }
-     
-       // public TxtXlsCSVReader Reader { get; set; }
         public IDataConnection Dataconnection { get; set ; }
         string FileName;
         string FilePath;
@@ -73,16 +64,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             FileName = Dataconnection.ConnectionProp.FileName;
             FilePath = Dataconnection.ConnectionProp.FilePath;
             SetupConfig();
-            //Reader = new TxtXlsCSVReader(, Logger, DMEEditor, FileType, per, Dataconnection.ConnectionProp.FilePath, null);
-            //ConnectionStatus = OpenConnection();
-            //Dataconnection.ConnectionStatus = ConnectionStatus;
-            //if (ConnectionStatus == ConnectionState.Open)
-            //{
-            //   // Entities = Reader.Entities;
-            //    EntitiesNames = Entities.Select(o => o.EntityName).ToList();
-            //}
-           // GetEntitesList();
-            
+          
           
 
         }
@@ -168,26 +150,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             }
             return null;
         }
-        //public async Task<object> GetEntityDataAsync(string entityname, string filterstr)
-        //{
-
-        //    ErrorObject.Flag = Errors.Ok;
-        //    try
-        //    {
-        //        return await Task.Run(() => Reader.ReadList(0, HeaderExist, 0, 0));
-              
-              
-
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        ErrorObject.Flag = Errors.Failed;
-        //        ErrorObject.Ex = ex;
-        //        Logger.WriteLog($"Error in getting File Data ({ex.Message}) ");
-        //        return null;
-        //    }
-           
-        //}
+     
         public  object GetEntity(string EntityName, List<ReportFilter> filter)
         {
 
@@ -274,13 +237,6 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             try
             {
 
-
-
-                //Entities = new List<string>();
-                //Entities.Add(Fileconnection.FileName);
-
-
-
                 Logger.WriteLog("Successfully Retrieve Entites list ");
 
             }
@@ -294,58 +250,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             return ErrorObject;
         }
      
-        //public async Task<List<object>> GetSampleData(bool HeaderExist)
-        //{
-        //    ErrorObject.Flag = Errors.Ok;
-        //    try
-        //    {
-
-
-        //        SampleLines = await Task.Run(() => Reader.ReadList(0, HeaderExist, 0,100));
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        ErrorObject.Flag = Errors.Failed;
-        //        ErrorObject.Ex = ex;
-        //        Logger.WriteLog($"Error in getting Sample Data  ({ex.Message}) ");
-        //    }
-        //    return SampleLines;
-        //}
-        //public DataTable GetSampleDataTable(bool HeaderExist)
-        //{
-        //    ErrorObject.Flag = Errors.Ok;
-        //    try
-        //    {
-
-
-        //        SourceEntityData = Reader.ReadDataTable(0,HeaderExist, 0, 100);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        ErrorObject.Flag = Errors.Failed;
-        //        ErrorObject.Ex = ex;
-        //        Logger.WriteLog($"Error in getting Sample Data  ({ex.Message}) ");
-        //    }
-        //    return SourceEntityData;
-        //}
-        //public DataTable GetEntityDataTable(string EntityName, string filterstr)
-        //{
-        //    ErrorObject.Flag = Errors.Ok;
-        //    try
-        //    {
-
-        //        SourceEntityData = Reader.ReadDataTable(0, HeaderExist, fromline, toline);
-
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        ErrorObject.Flag = Errors.Failed;
-        //        ErrorObject.Ex = ex;
-        //        Logger.WriteLog($"Error in getting File Data ({ex.Message}) ");
-        //    }
-        //    return SourceEntityData;
-
-        //}
+    
 
         public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
@@ -503,24 +408,10 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
               //  Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
                 ConnectionStatus = ConnectionState.Open;
                 Dataconnection.ConnectionStatus = ConnectionStatus;
-                //if (Entities.Count == 0)
-                //{
-                //    FileData = GetExcelDataSet();
-                //    Entities = GetEntityStructures(false);
-                //    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = FileName, Entities = Entities });
-                //    // ConnProp.Entities = Entities;
-                //    DMEEditor.ConfigEditor.SaveDataconnectionsValues();
-
-
-                //}
-              
                 return ConnectionState.Open;
-
-
             }
             else
             {
-               
                 ConnectionStatus = ConnectionState.Broken;
                 Dataconnection.ConnectionStatus = ConnectionStatus;
                 return ConnectionState.Broken;
