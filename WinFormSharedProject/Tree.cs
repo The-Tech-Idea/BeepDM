@@ -521,12 +521,7 @@ namespace TheTechIdea.Winforms.VIS
                     ObjectActivator<IBranch> createdActivator = GetActivator<IBranch>(ctor);
                     try
                     {
-
                         IBranch br = createdActivator();
-                        if (br.BranchText == "AI")
-                        {
-                            Console.WriteLine("Found");
-                        }
                         if (br.BranchType == EnumBranchType.Root)
                         {
 
