@@ -108,10 +108,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 }
                 catch (Exception e)
                 {
-                    Logger.WriteLog($"Error in  Init for Sql Database ,{e.Message}");
-                    ErrorObject.Flag = Errors.Failed;
-                    ErrorObject.Message = e.Message;
-                    ErrorObject.Ex = e;
+                    DMEEditor.AddLogMessage("Fail", $"Could not get instance Driver for {ConnectionProp.ConnectionName}- {e.Message}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Failed);
+                  
                 }
 
 
@@ -128,7 +126,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         if (System.IO.File.Exists(Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)))
                         {
                             DbConn.Open();
-                            Logger.WriteLog("Success in open Database");
+                            DMEEditor.AddLogMessage("Success", $"Open RDBMS Connection to {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Ok);
                             ConnectionStatus = DbConn.State;
 
                         }
@@ -140,64 +138,66 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     else
                     {
                         DbConn.Open();
-                        Logger.WriteLog("Success in open Database");
+                        DMEEditor.AddLogMessage("Success", $"Open RDBMS Connection to {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Ok);
                         ConnectionStatus = DbConn.State;
+                        if (ConnectionStatus== ConnectionState.Open)
+                        {
+                            // Check if need to change schema name
+                            if (ConnectionProp.DatabaseType == DataSourceType.Oracle || ConnectionProp.DatabaseType == DataSourceType.SqlServer)
+                            {
+
+                                if (ConnectionProp.SchemaName != null)
+                                {
+                                    IDbCommand cmd = DbConn.CreateCommand();
+                                    switch (ConnectionProp.DatabaseType)
+                                    {
+                                        case DataSourceType.Oracle:
+
+                                            cmd.CommandText = $"ALTER SESSION SET CURRENT_SCHEMA = {ConnectionProp.SchemaName}";
+
+                                            break;
+                                        case DataSourceType.SqlServer:
+                                            cmd.CommandText = $"ALTER LOGIN {ConnectionProp.UserID} with DEFAULT_DATABASE = {ConnectionProp.Database}";
+                                            break;
+
+                                    }
+                                    try
+                                    {
+                                        var x = cmd.ExecuteNonQuery();
+
+                                        ConnectionStatus = DbConn.State;
+                                    }
+
+                                    catch (Exception e)
+                                    {
+                                        DMEEditor.AddLogMessage("Fail", $"Could not alter Schema for RDBMS  to {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Failed);
+
+                                    }
+
+                                }
+                            }
+                        }
+
                     }
                  
-                    // Check if need to change schema name
-                    if (ConnectionProp.DatabaseType == DataSourceType.Oracle || ConnectionProp.DatabaseType == DataSourceType.SqlServer)
-                    {
-
-                        if (ConnectionProp.SchemaName != null)
-                        {
-                            IDbCommand cmd = DbConn.CreateCommand();
-                            switch (ConnectionProp.DatabaseType)
-                            {
-                                case DataSourceType.Oracle:
-
-                                    cmd.CommandText = $"ALTER SESSION SET CURRENT_SCHEMA = {ConnectionProp.SchemaName}";
-
-                                    break;
-                                case DataSourceType.SqlServer:
-                                    cmd.CommandText = $"ALTER LOGIN {ConnectionProp.UserID} with DEFAULT_DATABASE = {ConnectionProp.Database}";
-                                    break;
-
-                            }
-                            try
-                            {
-                                var x = cmd.ExecuteNonQuery();
-                                Logger.WriteLog("Success in Alter Schema");
-                                ConnectionStatus = DbConn.State;
-                            }
-
-                            catch (Exception e)
-                            {
-                                Logger.WriteLog("Error in Alter Schema");
-                                ErrorObject.Flag = Errors.Failed;
-                                ErrorObject.Message = e.Message;
-                                ErrorObject.Ex = e;
-                            }
-
-                        }
-                    }
+                  
 
 
                 }else
                 {
-                    Logger.WriteLog($"Could not get datasource drivers Database ");
+                    DMEEditor.AddLogMessage("Fail", $"Could not get Drivers for RDBMS Connection to {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Failed);
+                   
                     ConnectionStatus = ConnectionState.Closed;
-                    ErrorObject.Message = "Could not get datasource drivers Database ";
-                    ErrorObject.Flag = Errors.Failed;
+                  
                 }
             }
 
             catch (Exception e)
             {
-                Logger.WriteLog($"Couldnot open Database ,{e.Message}");
+                DMEEditor.AddLogMessage("Fail", $"Could not Open RDBMS Connection to {ConnectionProp.ConnectionName}- {e.Message}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Failed);
+               
                 ConnectionStatus = DbConn.State;
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Message = e.Message;
-                ErrorObject.Ex = e;
+                
                 //    throw;
             }
             
@@ -241,24 +241,11 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 ConnectionStatus = ConnectionState.Closed;
                 return ConnectionStatus;
             }
-         
 
-            Logger.WriteLog("Closed Database Function End");
-            
-        }
-        public object GetInstance(string strFullyQualifiedName)
-        {
-            Type type = Type.GetType(strFullyQualifiedName);
-            if (type != null)
-                return Activator.CreateInstance(type);
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                type = asm.GetType(strFullyQualifiedName);
-                if (type != null)
-                    return Activator.CreateInstance(type);
-            }
-            return null;
-        }
 
+            DMEEditor.AddLogMessage("Success", $"Closed RDBMS Connection to {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Ok);
+
+        }
+      
     }
 }
