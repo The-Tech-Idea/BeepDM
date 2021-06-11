@@ -59,17 +59,15 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 if (File.Exists(Path.Combine(ConnectionProp.FilePath,ConnectionProp.FileName)))
                 {
                     string str = $"Found File  ,{Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)}";
-                    ErrorObject.Message = str;
-                    Logger.WriteLog(str);
-                    ErrorObject.Flag = Errors.Ok;
+                   
+                    DMEEditor.AddLogMessage("Success", str, DateTime.Now, -1, "", Errors.Ok);
                     ConnectionStatus = ConnectionState.Open;
                 }
                 else
                 {
                     string str = $"Error in finding File  ,{Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)}";
-                    Logger.WriteLog(str);
-                    ErrorObject.Flag = Errors.Failed;
-                    ErrorObject.Message = str;
+                
+                    DMEEditor.AddLogMessage("Fail", str, DateTime.Now, -1, "", Errors.Failed);
                     ConnectionStatus = ConnectionState.Broken;
                     //ErrorObject.Ex = e;
                 }
@@ -77,12 +75,10 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             else
             {
                 string str = $"Error No Path Exist  ,{ConnectionProp.FilePath}";
-                Logger.WriteLog(str);
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Message = str;
+                DMEEditor.AddLogMessage("Fail", str, DateTime.Now, -1, "", Errors.Failed);
                 ConnectionStatus = ConnectionState.Closed;
             }
-            Logger.WriteLog("Open File Function End");
+            DMEEditor.AddLogMessage("Success", $"File Found {ConnectionProp.FileName}", DateTime.Now, -1, "", Errors.Ok);
             return ConnectionStatus;
         }
 

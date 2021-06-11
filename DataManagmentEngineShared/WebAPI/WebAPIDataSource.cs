@@ -126,9 +126,9 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
             }
             catch (Exception ex)
             {
-                Logger.WriteLog($"Unsuccessfully Retrieve Entites list {ex.Message}");
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
+                DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Entites list for {DatasourceName} ({ex.Message})", DateTime.Now, 0,DatasourceName, Errors.Ok);
+
+
             }
 
             return EntitiesNames;

@@ -172,9 +172,8 @@ namespace TheTechIdea.DataManagment_Engine
                             
                         }else
                         {
-                            ErrorObject.Flag = Errors.Failed;
-                            ErrorObject.Message = "Error Datasource Not found";
-                            Logger.WriteLog($"Error in Opening Connection ({ErrorObject.Message})");
+                           
+                            AddLogMessage("Fail", $"Error in Opening Connection ({ErrorObject.Message})", DateTime.Now, -1, "", Errors.Failed);
                         }
                        
                       
@@ -182,9 +181,7 @@ namespace TheTechIdea.DataManagment_Engine
                     catch (Exception ex)
                     {
 
-                        ErrorObject.Flag = Errors.Failed;
-                        ErrorObject.Ex = ex;
-                        Logger.WriteLog($"Error in Opening Connection ({ex.Message})");
+                        AddLogMessage("Fail", $"Error in Opening Connection ({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
 
                         return null;
                     }
@@ -277,10 +274,7 @@ namespace TheTechIdea.DataManagment_Engine
                 {
 
 
-                    ErrorObject.Flag = Errors.Failed;
-                    ErrorObject.Ex = ex;
-                    Logger.WriteLog($"Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})");
-
+                    AddLogMessage("Fail", $"Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
                     return null;
 
                 }
@@ -336,10 +330,8 @@ namespace TheTechIdea.DataManagment_Engine
             {
 
 
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})");
-
+              
+                AddLogMessage("Fail", "Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})", DateTime.Now, 0, pdatasourcename, Errors.Failed);
                 return null;
 
             }
@@ -377,8 +369,8 @@ namespace TheTechIdea.DataManagment_Engine
                     ds.Dataconnection.ReplaceValueFromConnectionString();
                     ILocalDB dB = (ILocalDB)ds;
                     DataSources.Add(ds);
-                    Logger.WriteLog($"Success Created Local Database " + pdatasourcename);
 
+                    AddLogMessage("Fail", $"Success Created Local Database  {pdatasourcename}", DateTime.Now, -1, "", Errors.Failed);
                     return ds;
                 }else
                 {
@@ -407,10 +399,8 @@ namespace TheTechIdea.DataManagment_Engine
             {
 
 
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})");
-
+                
+                AddLogMessage("Fail", $"Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
                 return null;
 
             }

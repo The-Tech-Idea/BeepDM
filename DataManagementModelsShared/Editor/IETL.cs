@@ -8,6 +8,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
 {
     public interface IETL
     {
+        event EventHandler<PassedArgs> PassEvent;
         IDMEEditor DMEEditor { get; set; }
         List<EntityStructure> Entities { get; set; }
         List<string> EntitiesNames { get; set; }
@@ -22,7 +23,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, bool CreateMissingEntity = true);
         List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities);
         List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities);
-        IErrorsInfo RunScript();
+        IErrorsInfo RunScript(IProgress<int> progress);
       
     }
 }

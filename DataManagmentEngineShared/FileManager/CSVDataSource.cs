@@ -151,27 +151,32 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             
             try
             {
-
-                if (tb.Columns.Count==0)
+                if (tb != null)
                 {
-                    Getfields();
-
-                }
-                if (tb.Columns.Count > 0)
-                {   int i = 1;
-                    while ((fieldParser.EndOfData == false)||(i<=nrofrows))
+                    if (tb.Columns.Count == 0)
                     {
-                        string[] f= fieldParser.ReadFields();
-                        DataRow r = tb.NewRow();
-                        foreach (DataColumn cl in tb.Columns)
+                        Getfields();
+
+                    }
+                    if (tb.Columns.Count > 0)
+                    {
+                        int i = 1;
+                        while ((fieldParser.EndOfData == false) || (i <= nrofrows))
                         {
+                            string[] f = fieldParser.ReadFields();
+                            DataRow r = tb.NewRow();
+                            foreach (DataColumn cl in tb.Columns)
+                            {
 
-                            r[cl.Ordinal] = f[cl.Ordinal];
+                                r[cl.Ordinal] = f[cl.Ordinal];
 
+                            }
+                            i += 1;
                         }
-                        i += 1;
                     }
                 }
+               
+               
                 return tb;
 
             }
@@ -248,9 +253,8 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             catch (Exception ex)
             {
 
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting File Data ({ex.Message}) ");
+                DMEEditor.AddLogMessage("Fail", $"Error in getting File Data({ ex.Message}) ", DateTime.Now, -1, "", Errors.Failed);
+               
                 return null;
             }
         }

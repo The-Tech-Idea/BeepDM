@@ -106,10 +106,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 }
                 catch (Exception ex)
                 {
-                    // Logger.WriteLog("Error Running Script ");
-                    ErrorObject.Flag = Errors.Failed;
+                   
                     cmd.Dispose();
-                    //ErrorObject.Message = "Error Running Script ";
+                   
                     DMEEditor.AddLogMessage("Fail", " Could not run Script" + ex.Message, DateTime.Now, -1, ex.Message, Errors.Failed);
 
                 }
@@ -135,10 +134,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             catch (Exception ex)
             {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
+              
                 cmd.Dispose();
-                Logger.WriteLog($"Error in getting entity Data ({ex.Message}) ");
+                DMEEditor.AddLogMessage("Fail", $"Error in getting entity Data({ ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+               
                 return null;
             }
 
@@ -208,17 +207,19 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 }
                 //  RunCopyDataBackWorker(EntityName,  UploadData,  Mapping );
                 #region "Update Code"
-                string str;
-                IDbTransaction sqlTran;
+              
+                //IDbTransaction sqlTran;
 
                 DataTable tb = (DataTable)UploadData;
                 // DMEEditor.classCreator.CreateClass();
                 //List<object> f = DMEEditor.Utilfunction.GetListByDataTable(tb);
                 ErrorObject.Flag = Errors.Ok;
                 EntityStructure DataStruct = GetEntityStructure(EntityName);
-
                 IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
 
+               
+                //RunUpdateEntities(tb, EntityName, DataStruct, command);
+                string str = "";
                 string errorstring = "";
                 int CurrentRecord = 0;
                 int highestPercentageReached = 0;
@@ -344,6 +345,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
                                 args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
                                 PassEvent?.Invoke(this, args);
+                                DMEEditor.RaiseEvent(this, args);
+                                //DMEEditor.RaiseEvent(this, args);
                                 // DMEEditor.AddLogMessage("Success", msg, DateTime.Now, 0, null, Errors.Ok);
                             }
                             catch (Exception er)
@@ -367,15 +370,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                                 DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
                                 args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
                                 PassEvent?.Invoke(this, args);
+                                DMEEditor.RaiseEvent(this, args);
+                                // DMEEditor.RaiseEvent(this, args);
                                 //  DMEEditor.RaiseEvent(this, args);
                                 //  DMEEditor.AddLogMessage("Fail", $"Fail to insert/update/delete  Record {i} to {EntityName} {er.Message}", DateTime.Now, 0, null, Errors.Failed);
                             }
                         }
-
-
-
                         command.Dispose();
-                        //    sqlTran.Commit();
                         DMEEditor.AddLogMessage("Success", $"Finished Uploading Data to {EntityName}", DateTime.Now, 0, null, Errors.Ok);
                     }
 
@@ -384,39 +385,17 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 catch (Exception ex)
                 {
                     ErrorObject.Ex = ex;
-
                     command.Dispose();
-                    try
-                    {
-                        // Attempt to roll back the transaction.
-                        //   sqlTran.Rollback();
-                        str = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
-                    }
-                    catch (Exception exRollback)
-                    {
-                        // Throws an InvalidOperationException if the connection
-                        // is closed or the transaction has already been rolled
-                        // back on the server.
-                        // Console.WriteLine(exRollback.Message);
-                        str = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
-                        ErrorObject.Ex = exRollback;
-                    }
-                    str = "Unsuccessfully no Data has been written to Data Source";
 
 
                 }
                 #endregion
             }
-
-
-
             return ErrorObject;
         }
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
-
-
-            // DataRow tb = object UploadDataRow;
+           // DataRow tb = object UploadDataRow;
             ErrorObject.Flag = Errors.Ok;
             EntityStructure DataStruct = GetEntityStructure(EntityName, true);
             DataRowView dv;
@@ -865,9 +844,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             catch (Exception ex)
             {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting entity Data ({ex.Message}) ");
+                
+                DMEEditor.AddLogMessage("Fail", $"Error in getting entity Data({ ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+             
                 return null;
             }
 
@@ -878,7 +857,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             return (Task<object>)GetEntity(EntityName, Filter);
         }
         #endregion
-
         public virtual EntityStructure GetEntityStructure(string EntityName, bool refresh = false)
         {
             EntityStructure retval = new EntityStructure();
@@ -1060,9 +1038,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                             }
                             catch (Exception ex)
                             {
-                                Logger.WriteLog("Error in Creating Field Type");
-                                ErrorObject.Flag = Errors.Failed;
-                                ErrorObject.Ex = ex;
+                            
+                                DMEEditor.AddLogMessage("Fail", $"Error in Creating Field Type({ ex.Message})", DateTime.Now, 0, entname, Errors.Failed);
                             }
 
                             if (x.IsKey)
@@ -1245,21 +1222,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         }
                     }
 
-                    //Logger.WriteLog("Successfully Retrieve tables list ");
-
-
-                //} else
-                //{
-                //    return EntitiesNames;
-                //}
-
+                  
 
             }
             catch (Exception ex)
             {
-                Logger.WriteLog($"Unsuccessfully Retrieve tables list {ex.Message}");
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
+                DMEEditor.AddLogMessage("Fail", $"Error in getting  Table List ({ ex.Message})", DateTime.Now, 0, DatasourceName, Errors.Failed);
+              
             }
 
             return EntitiesNames;
@@ -1384,10 +1353,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             catch (Exception ex)
             {
-
-                //ErrorObject.Flag = Errors.Failed;
-                //ErrorObject.Ex = ex;
-                //Logger.WriteLog($"Error in Loading Goreign Key for Table View ({ex.Message}) ");
+                DMEEditor.AddLogMessage("Fail", $"Error in getting  forgien key entities for {entityname} ({ ex.Message})", DateTime.Now, 0, entityname, Errors.Failed);
 
             }
             return fk;
@@ -1409,14 +1375,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 else
                     return null;
                  
-                //  Logger.WriteLog("Successfully Retrieve Child Table list");
+            
 
             }
             catch (Exception ex)
             {
-                Logger.WriteLog($"Unsuccessfully Retrieve Child tables list {ex.Message}");
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
+                DMEEditor.AddLogMessage("Fail", $"Error in getting  child entities for {tablename} ({ ex.Message})", DateTime.Now, 0, tablename, Errors.Failed);
+               
                 return null;
             }
 
@@ -1517,10 +1482,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             catch (System.Exception ex)
             {
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Ex = ex;
+                DMEEditor.AddLogMessage("Fail", $"Error Creating Entity {t1.EntityName}  ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
                 createtablestring = "";
-                Logger.WriteLog($"Error in  Creating Table " + t1.EntityName + "   ({ex.Message})");
+               
 
 
             }
@@ -1874,16 +1838,12 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     }
                 }
 
-                Logger.WriteLog($"Successed in AutoNumber Creation");
             }
             catch (System.Exception ex)
             {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-
-                Logger.WriteLog($"Error in Relation ({ex.Message})");
-
-
+               
+                DMEEditor.AddLogMessage("Fail", $"Error Creating Auto number Field {f.EntityName} and {f.fieldname} ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+              
             }
 
             return AutnumberString;
@@ -1902,10 +1862,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             catch (System.Exception ex)
             {
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Ex = ex;
+               
                 createtablestring = null;
-                Logger.WriteLog($"Error in  Creating Table " + t1.EntityName + "   ({ex.Message})");
+               
+                DMEEditor.AddLogMessage("Fail", $"Error in  Creating Table " + t1.EntityName + "   ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
 
 
             }
@@ -2167,7 +2127,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     DMEEditor.AddLogMessage("Fail", $"Error in Creating Data Command, Cannot get DataSource", DateTime.Now, -1,DatasourceName, Errors.Failed);
                 }
                
-                //    Logger.WriteLog("Created Data Command");
+              
 
             }
             catch (Exception ex)
@@ -2263,7 +2223,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 adp.MissingSchemaAction = MissingSchemaAction.AddWithKey;
                 adp.MissingMappingAction = MissingMappingAction.Passthrough;
 
-                Logger.WriteLog("Created Adapter");
+               
                 ErrorObject.Flag = Errors.Ok;
             }
             catch (Exception ex)
@@ -2294,15 +2254,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 tb = reader.GetSchemaTable();
                 reader.Close();
                 cmd.Dispose();
-               // Logger.WriteLog("Executed Sql Successfully");
+            
 
             }
             catch (Exception ex)
             {
-
-                Logger.WriteLog($"unsuccessfully Executed Sql ({ex.Message})");
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
+                DMEEditor.AddLogMessage("Fail", $"unsuccessfully Executed Sql ({ex.Message})", DateTime.Now, 0, TableName, Errors.Failed);
+                
             }
 
             //}
@@ -2330,7 +2288,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             catch (Exception ex)
             {
                 
-              //  DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
                 return null;
             }
 
@@ -2346,9 +2304,232 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             throw new NotImplementedException();
         }
 
-     
-        #endregion
 
+        #endregion
+        #region "Background Processes"
+        private void RunUpdateEntities(DataTable tb, string EntityName, EntityStructure DataStruct, IDbCommand command)
+        {
+
+            string errorstring = "";
+            int CurrentRecord = 0;
+            int highestPercentageReached = 0;
+            int numberToCompute = 0;
+            int percentComplete = 0;
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.WorkerReportsProgress = true;
+            worker.WorkerSupportsCancellation = true;
+            worker.RunWorkerAsync();
+            worker.DoWork += (sender, e) => {
+                try
+                {
+                    if (tb != null)
+                    {
+
+                        numberToCompute = tb.Rows.Count;
+                        tb.TableName = EntityName;
+                        // int i = 0;
+                        string updatestring = null;
+                        DataTable changes = tb;//.GetChanges();
+                        for (int i = 0; i < tb.Rows.Count; i++)
+                        {
+                            try
+                            {
+                                DataRow r = tb.Rows[i];
+
+                                CurrentRecord = i;
+                                switch (r.RowState)
+                                {
+                                    case DataRowState.Unchanged:
+                                    case DataRowState.Added:
+                                        updatestring = GetInsertString(EntityName, DataStruct);
+
+
+                                        break;
+                                    case DataRowState.Deleted:
+                                        updatestring = GetDeleteString(EntityName, DataStruct);
+                                        break;
+                                    case DataRowState.Modified:
+                                        updatestring = GetUpdateString(EntityName, DataStruct);
+                                        break;
+                                    default:
+                                        updatestring = GetInsertString(EntityName, DataStruct);
+                                        break;
+                                }
+
+                                command.CommandText = updatestring;
+                                command = CreateCommandParameters(command, r, DataStruct);
+                                errorstring = updatestring.Clone().ToString();
+                                foreach (EntityField item in DataStruct.Fields)
+                                {
+                                    try
+                                    {
+                                        string s;
+                                        string f;
+                                        if (r[item.fieldname] == DBNull.Value)
+                                        {
+                                            s = "\' \'";
+                                        }
+                                        else
+                                        {
+                                            s = "\'" + r[item.fieldname].ToString() + "\'";
+                                        }
+                                        f = "@p_" + Regex.Replace(item.fieldname, @"\s+", "_");
+                                        errorstring = errorstring.Replace(f, s);
+                                    }
+                                    catch (Exception ex1)
+                                    {
+
+
+                                    }
+
+                                }
+                                string msg = "";
+                                int rowsUpdated = command.ExecuteNonQuery();
+                                if (rowsUpdated > 0)
+                                {
+                                    msg = $"Successfully I/U/D  Record {i} to {EntityName} : {updatestring}";
+                                }
+                                else
+                                {
+                                    msg = $"Fail to I/U/D  Record {i} to {EntityName} : {updatestring}";
+                                }
+                                 percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
+                                if (percentComplete > highestPercentageReached)
+                                {
+                                    highestPercentageReached = percentComplete;
+
+                                }
+                                PassedArgs args = new PassedArgs
+                                {
+                                    CurrentEntity = EntityName,
+                                    DatasourceName = DatasourceName,
+                                    DataSource = this,
+                                    EventType = "UpdateEntity",
+                                };
+                                if (DataStruct.PrimaryKeys != null)
+                                {
+                                    if (DataStruct.PrimaryKeys.Count == 1)
+                                    {
+                                        args.ParameterString1 = r[DataStruct.PrimaryKeys[0].fieldname].ToString();
+                                    }
+                                    if (DataStruct.PrimaryKeys.Count == 2)
+                                    {
+                                        args.ParameterString2 = r[DataStruct.PrimaryKeys[1].fieldname].ToString();
+                                    }
+                                    if (DataStruct.PrimaryKeys.Count == 3)
+                                    {
+                                        args.ParameterString3 = r[DataStruct.PrimaryKeys[2].fieldname].ToString();
+
+                                    }
+                                }
+                                args.ParameterInt1 = percentComplete;
+                                LScriptTracker tr = new LScriptTracker();
+                                tr.currenrecordentity = EntityName;
+                                tr.currentrecorddatasourcename = DatasourceName;
+                                tr.currenrecordindex = i;
+                                tr.scriptType = DDLScriptType.CopyData;
+                                tr.errorsInfo = DMEEditor.ErrorObject;
+                                tr.errormessage = msg;
+                                DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
+                                args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
+                              }
+                            catch (Exception er)
+                            {
+                               errorstring = $"Fail to insert/update/delete  Record {CurrentRecord} to {EntityName}  :  {errorstring} ";
+                            }
+                            worker.ReportProgress(percentComplete);
+                            if (worker.CancellationPending)
+                            {
+                                e.Cancel =true;
+                            }
+                        }
+
+                        command.Dispose();
+                        DMEEditor.AddLogMessage("Success", $"Finished Uploading Data to {EntityName}", DateTime.Now, 0, null, Errors.Ok);
+                    }
+
+
+                }
+                catch (Exception ex)
+                {
+                    ErrorObject.Ex = ex;
+                    command.Dispose();
+                    e.Cancel = true;
+
+
+                }
+            };
+            worker.ProgressChanged += (sender, e) =>
+            {
+                PassedArgs args = new PassedArgs
+                {
+                    CurrentEntity = EntityName,
+                    DatasourceName = DatasourceName,
+                    DataSource = this,
+                    EventType = "UpdateEntity",
+
+
+                };
+                LScriptTracker tr = new LScriptTracker();
+                tr.currenrecordentity = EntityName;
+                tr.currentrecorddatasourcename = DatasourceName;
+                tr.currenrecordindex = CurrentRecord;
+                tr.scriptType = DDLScriptType.CopyData;
+                tr.errorsInfo = DMEEditor.ErrorObject;
+                tr.errormessage = errorstring;
+                DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
+                args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
+                PassEvent?.Invoke(this, args);
+
+            };
+            worker.RunWorkerCompleted += (sender, e) =>
+            {
+                PassedArgs args;
+                if (e.Error!=null)
+                {
+                     args = new PassedArgs
+                    {
+                        CurrentEntity = EntityName,
+                        DatasourceName = DatasourceName,
+                        DataSource = this,
+                        EventType = "ErrorFinishedUpdateEntity",
+                        ParameterString1 = e.Error.Message
+
+                    };
+                }
+                else
+                    if (e.Cancelled)
+                {
+
+                     args = new PassedArgs
+                    {
+                        CurrentEntity = EntityName,
+                        DatasourceName = DatasourceName,
+                        DataSource = this,
+                        EventType = "CanceledUpdateEntity",
+                        
+
+                    };
+                }
+                else
+                {
+                     args = new PassedArgs
+                    {
+                        CurrentEntity = EntityName,
+                        DatasourceName = DatasourceName,
+                        DataSource = this,
+                        EventType = "FinishedUpdateEntity",
+
+
+                    };
+                  
+                }
+                PassEvent?.Invoke(this, args);
+            };
+         }
+
+        
+        #endregion
 
 
 

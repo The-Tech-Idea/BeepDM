@@ -107,10 +107,7 @@ namespace TheTechIdea.DataManagment_Engine.Workflow.Actions
                     }
                     else
                     {
-                        string errmsg = "Error No Target Table Data exist ";
-                        ErrorObject.Flag = Errors.Failed;
-                        ErrorObject.Message = errmsg;
-                        logger.WriteLog(errmsg);
+                        DMEEditor.AddLogMessage("Fail", $"Error No Target Table Data exist  {OutParameters[0].DatasourceName}", DateTime.Now, -1, "", Errors.Failed);
                     }
 
                 }
@@ -119,7 +116,7 @@ namespace TheTechIdea.DataManagment_Engine.Workflow.Actions
                     string errmsg = "Error No Source Table Data exist ";
                     ErrorObject.Flag = Errors.Failed;
                     ErrorObject.Message = errmsg;
-                    logger.WriteLog(errmsg);
+                    DMEEditor.AddLogMessage("Fail", $"Error No Source Table Data exist  {InParameters[0].DatasourceName}", DateTime.Now, -1, "", Errors.Failed);
                 }
 
 
@@ -127,11 +124,7 @@ namespace TheTechIdea.DataManagment_Engine.Workflow.Actions
             }
             catch (Exception ex)
             {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-
-                logger.WriteLog($"Error in Copying Table ({ex.Message})");
-
+                DMEEditor.AddLogMessage("Fail", $"Error in Copying  {OutParameters[0].DatasourceName} to  {OutParameters[0].DatasourceName}", DateTime.Now, -1, "", Errors.Failed);
 
             }
 

@@ -76,21 +76,20 @@ namespace DataManagmentEngineShared.WebAPI
             {
                  string str = $" Found WebApi  : {ConnectionProp.Url}";
                     ErrorObject.Message = str;
-                    Logger.WriteLog(str);
-                    ErrorObject.Flag = Errors.Ok;
+                     DMEEditor.AddLogMessage("Success", str, DateTime.Now, -1, "", Errors.Ok);
+                     ErrorObject.Flag = Errors.Ok;
                     ConnectionStatus = ConnectionState.Open;
 
                 }
                 else
                 {
                     string str = $"Error in finding WebApi  ,{ConnectionProp.Url}";
-                    Logger.WriteLog(str);
-                    ErrorObject.Flag = Errors.Failed;
-                    ErrorObject.Message = str;
-                    ConnectionStatus = ConnectionState.Broken;
+                  
+                    DMEEditor.AddLogMessage("Error", str, DateTime.Now, -1,"", Errors.Failed);
+                ConnectionStatus = ConnectionState.Broken;
                     //ErrorObject.Ex = e;
                 }
-            Logger.WriteLog("Open File Function End");
+            DMEEditor.AddLogMessage("Success", $"WebAPI {ConnectionProp.ConnectionName} Found", DateTime.Now, -1, "", Errors.Ok);
             return ConnectionStatus;
         }
         public ConnectionState OpenConnection(DataSourceType dbtype, string host, int port, string database, string userid, string password, string parameters)
@@ -133,11 +132,13 @@ namespace DataManagmentEngineShared.WebAPI
             else
             {
                 ConnectionStatus = ConnectionState.Closed;
+                DMEEditor.AddLogMessage("Sucess", $"Closed WebAPI {ConnectionProp.ConnectionName} ", DateTime.Now, -1, "", Errors.Failed);
                 return ConnectionStatus;
+
             }
 
-
-            Logger.WriteLog("Closed Database Function End");
+          
+            
 
         }
     }

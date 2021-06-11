@@ -76,49 +76,54 @@ namespace TheTechIdea.ETL
             this.StopButton.Click += StopButton_Click;
             // this.CreateScriptButton.Click += CreateScriptButton_Click;
             this.trackingscriptBindingSource.DataSource = DMEEditor.ETL.trackingHeader.trackingscript;
-            //this.DMEEditor.PassEvent += DMEEditor_PassEvent;
+           
+            
            
         }
 
-       
-
       
+
         private void StopButton_Click(object sender, EventArgs e)
         {
+            
             backgroundWorker.RequestCancel();
         }
-        private void RunScriptbutton_Click(object sender, EventArgs e)
+        private  void RunScriptbutton_Click(object sender, EventArgs e)
         {
-            ObjectItem item1 = new ObjectItem();
-            item1.obj = DMEEditor;
-            item1.Name = "DMEEDITOR";
-            Passedarg.Objects.Add(item1);
-            backgroundWorker = new BackgroundWorkerThread(Passedarg);
-            backgroundWorker.ReportProgress += BackgroundWorker_ReportProgress;
-            backgroundWorker.JobCompleted += BackgroundWorker_JobCompleted;
+            RunScripts();
+
+        }
+        private async Task RunScripts()
+        {
             progressBar1.Step = 2;
-            backgroundWorker.RunWorker(Passedarg);
-
+            
+            var progress = new Progress<int>(percent =>
+            {
+                progressBar1.Text = percent + "%";
+                progressBar1.Value = percent;
+                update();
+            });
+           
+            await Task.Run(() =>
+            {
+                DMEEditor.ETL.RunScript(progress);
+           //     progressBar1.Value = 100;
+               
+            });
+            MessageBox.Show("Done");
         }
-
-        private void BackgroundWorker_JobCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            MessageBox.Show("Job Completed");
-        }
-
-
-     
-
-      
         private void update()
         {
-
             scriptBindingSource.DataSource = DMEEditor.ETL.script.Scripts;
-            this.trackingscriptBindingSource.DataSource = DMEEditor.ETL.trackingHeader.trackingscript;
-            this.scriptBindingSource.ResetBindings( true);
-            this.scriptDataGridView.Refresh();
+            trackingscriptBindingSource.DataSource = DMEEditor.ETL.trackingHeader.trackingscript;
             this.trackingscriptBindingSource.ResetBindings(true);
+            this.scriptBindingSource. ResetBindings( true); 
+            this.scriptDataGridView.Update();
+            this.scriptDataGridView.Refresh();
+            this.trackingscriptDataGridView.Update();
             this.trackingscriptDataGridView.Refresh();
+            
+           
         }
         #region" background worker"
         BackgroundWorker backgroundWorker1 = new BackgroundWorker();
@@ -127,9 +132,13 @@ namespace TheTechIdea.ETL
             progressBar1.Value = e.ProgressPercentage;
             update();
         }
+        private void BackgroundWorker_JobCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            MessageBox.Show("Job Completed");
+        }
 
-     
-       
+
+
         #endregion
     }
 }

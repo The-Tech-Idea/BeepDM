@@ -76,10 +76,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             {
                 if (DbConn.State == ConnectionState.Open)
                 {
-                    ErrorObject.Flag = Errors.Ok;
+                    
                     ConnectionStatus = DbConn.State;
-                 //   Logger.WriteLog("Database Already Open");
-                    ErrorObject.Flag = Errors.Ok;
+                    DMEEditor.AddLogMessage("Success", $"RDBMS already Open {ConnectionProp.ConnectionName}", DateTime.Now, -1, "", Errors.Ok);
+                   
                     return DbConn.State;
                 }
 
@@ -104,7 +104,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         
 
                     
-                 //   Logger.WriteLog("Init  DbConn for  Server");
+                
                 }
                 catch (Exception e)
                 {
@@ -200,12 +200,12 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 
                 //    throw;
             }
+
+
+
+
+            DMEEditor.AddLogMessage("Success", $"Successfully RDBMS Open  {ConnectionProp.ConnectionName}", DateTime.Now, -1, "", Errors.Ok);
             
-
-
-            
-
-            Logger.WriteLog("Open Database Function End");
             return ConnectionStatus;
         }
         public virtual ConnectionState CloseConn()
@@ -239,11 +239,12 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             else
             {
                 ConnectionStatus = ConnectionState.Closed;
+                DMEEditor.AddLogMessage("Success", $"Closing RDBMS Connection  {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Ok);
                 return ConnectionStatus;
             }
 
 
-            DMEEditor.AddLogMessage("Success", $"Closed RDBMS Connection to {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Ok);
+          
 
         }
       

@@ -86,17 +86,13 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
             else
             {
-                string str = $"Error No Path Exist  ,{filen}";
-                Logger.WriteLog(str);
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Message = str;
+               
+                DMEEditor.AddLogMessage("Fail", $"Error No Path Exist  ,{filen}", DateTime.Now, -1, "", Errors.Failed);
                 ConnectionStatus = ConnectionState.Closed;
             }
 
 
 
-
-            Logger.WriteLog("Open File Function End");
             return ConnectionStatus;
         }
         

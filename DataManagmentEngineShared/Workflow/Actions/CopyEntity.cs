@@ -68,34 +68,28 @@ namespace TheTechIdea.DataManagment_Engine.Workflow.Actions
                         Inds = DMEEditor.GetDataSource(InParameters[0].DatasourceName);
                         if (Inds==null)
                         {
-                            string errmsg = "Error In DataSource  does not exists ";
-                            ErrorObject.Flag = Errors.Failed;
-                            ErrorObject.Message = errmsg;
-                            logger.WriteLog(errmsg);
+                           
+                            DMEEditor.AddLogMessage("Fail", $"Error In DataSource does not exists   {InParameters[0].DatasourceName}", DateTime.Now, -1, "", Errors.Failed);
                         }
                         else
                         {
                             Outds = DMEEditor.GetDataSource(OutParameters[0].DatasourceName);
                             if (Outds == null)
                             {
-                                string errmsg = "Error Out DataSource does not exists ";
-                                ErrorObject.Flag = Errors.Failed;
-                                ErrorObject.Message = errmsg;
-                                logger.WriteLog(errmsg);
+
+                                DMEEditor.AddLogMessage("Fail", $"Error Out DataSource does not exists   {OutParameters[0].DatasourceName}", DateTime.Now, -1, "", Errors.Failed);
                             }
                             else //---- Everything Checks OK we can Procceed with Copy
                             {
                                 string SourceEntityName = InParameters[0].CurrentEntity;
                                 if (Outds.CheckEntityExist(SourceEntityName) == false)
                                 {
-                                    Outds.CreateEntityAs(Inds.GetEntityStructure(SourceEntityName,false));
-                                 //   DMEEditor.viewEditor.AddTableToDataView
-                                } else
-                                {
-                                    string errmsg = "Entity already Exist at Destination";
-                                    ErrorObject.Flag = Errors.Failed;
-                                    ErrorObject.Message = errmsg;
-                                    logger.WriteLog(errmsg);
+                                    Outds.CreateEntityAs(Inds.GetEntityStructure(SourceEntityName, false));
+                                    //   DMEEditor.viewEditor.AddTableToDataView
+                                }
+                                else
+                                { 
+                                DMEEditor.AddLogMessage("Fail", $"Entity already Exist at Destination   {SourceEntityName}. in {InParameters[0].DatasourceName}", DateTime.Now, -1, "", Errors.Failed);
                                 }
 
 
@@ -108,19 +102,15 @@ namespace TheTechIdea.DataManagment_Engine.Workflow.Actions
                     }
                     else
                     {
-                        string errmsg = "Error No Target Table Data exist ";
-                        ErrorObject.Flag = Errors.Failed;
-                        ErrorObject.Message = errmsg;
-                        logger.WriteLog(errmsg);
+                       
+                        DMEEditor.AddLogMessage("Fail", $"Error No Target Table Data exist   {OutParameters[0].DatasourceName}", DateTime.Now, -1, "", Errors.Failed);
                     }
 
                 }
                 else
                 {
-                    string errmsg = "Error No Source Table Data exist ";
-                    ErrorObject.Flag = Errors.Failed;
-                    ErrorObject.Message = errmsg;
-                    logger.WriteLog(errmsg);
+                    
+                    DMEEditor.AddLogMessage("Fail", $"Error No Source Table Data exist {InParameters[0].CurrentEntity}. in  {InParameters[0].DatasourceName} ", DateTime.Now, -1, "", Errors.Failed);
                 }
                 
 
@@ -128,12 +118,10 @@ namespace TheTechIdea.DataManagment_Engine.Workflow.Actions
             }
             catch (Exception ex)
             {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
+                
+                
 
-                logger.WriteLog($"Error in Copying Table ({ex.Message})");
-
-
+                DMEEditor.AddLogMessage("Fail", $"Error in  Copy {InParameters[0].CurrentEntity}. from   {InParameters[0].DatasourceName} to  {OutParameters[0].DatasourceName}({ex.Message})" , DateTime.Now, -1, "", Errors.Failed);
             }
 
             return ErrorObject;

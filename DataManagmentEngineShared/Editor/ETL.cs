@@ -15,8 +15,9 @@ namespace TheTechIdea.DataManagment_Engine.Editor
     {
         public ETL()
         {
-           
+
         }
+        public event EventHandler<PassedArgs> PassEvent;
         public IDMEEditor DMEEditor { get; set; }
         public PassedArgs Passedargs { get; set; }
 
@@ -29,7 +30,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             DMEEditor.ErrorObject.Flag = Errors.Ok;
 
             int i = 0;
-          
+
             List<LScript> retval = new List<LScript>();
 
             try
@@ -37,9 +38,9 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 // Generate Create Table First
                 foreach (EntityStructure item in entities)
                 {
-                   // ds = DMEEditor.GetDataSource(item.DataSourceID);
+                    // ds = DMEEditor.GetDataSource(item.DataSourceID);
                     List<EntityStructure> ls = new List<EntityStructure>();
-                    List<LScript>  rt = new List<LScript>();
+                    List<LScript> rt = new List<LScript>();
                     ls.Add(item);
                     rt = Dest.GetCreateEntityScript(ls);
                     foreach (LScript sc in rt)
@@ -56,7 +57,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                     retval.AddRange(rt);
                     i += 1;
                 }
-               
+
                 //CreateForKeyRelationScripts(Dest, entities);
                 // CreateForKeyRelationScripts
 
@@ -86,7 +87,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                     EntityStructure t1 = t.Result;
 
                     t1.Created = false;
-                   
+
 
                 }
 
@@ -95,7 +96,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
 
                     var t = Task.Run<List<LScript>>(() => { return GetCreateEntityScript(ds, ds.Entities); });
                     t.Wait();
-                   
+
                     rt.AddRange(t.Result);
 
                 }
@@ -118,7 +119,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 string entname = "";
                 foreach (EntityStructure item in ls)
                 {
-                   
+
                     CopyEntityData(sourceds, destds, item.EntityName, item.EntityName, CreateMissingEntity);
 
                 }
@@ -164,7 +165,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         rDB.EnableFKConstraints(item);
                     }
                 }
-               
+
 
 
 
@@ -209,9 +210,10 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 {
                     if ((item.EntityName != item.DatasourceEntityName) && (!string.IsNullOrEmpty(item.DatasourceEntityName)))
                     {
-                        CopyEntityData(sourceds, destds, item.DatasourceEntityName, item.EntityName ,CreateMissingEntity);
-                    }else
-                        CopyEntityData(sourceds, destds,item.EntityName, item.EntityName ,CreateMissingEntity);
+                        CopyEntityData(sourceds, destds, item.DatasourceEntityName, item.EntityName, CreateMissingEntity);
+                    }
+                    else
+                        CopyEntityData(sourceds, destds, item.EntityName, item.EntityName, CreateMissingEntity);
 
                 }
 
@@ -232,7 +234,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
 
 
                 EntityStructure item = sourceds.GetEntityStructure(srcentity, true);
-               
+
                 if (item != null)
                 {
                     if (destds.Category == DatasourceCategory.RDBMS)
@@ -247,7 +249,6 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
                         src.Wait();
                         srcTb = src.Result;
-
                         var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(destentity, srcTb); });
                         dst.Wait();
                         DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data from {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Ok);
@@ -263,7 +264,8 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         IRDBSource rDB = (IRDBSource)destds;
                         rDB.EnableFKConstraints(item);
                     }
-                }else
+                }
+                else
                     DMEEditor.AddLogMessage("Copy Data", $"Error Could not Find Entity  {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Failed);
 
 
@@ -276,15 +278,15 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds,List<LScript> scripts, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, bool CreateMissingEntity = true)
         {
             try
             {
 
                 string srcentityname = "";
-                foreach (LScript s in scripts.Where(i=>i.scriptType==DDLScriptType.CopyData))
+                foreach (LScript s in scripts.Where(i => i.scriptType == DDLScriptType.CopyData))
                 {
-                    if ((s.sourceentityname != s.sourceDatasourceEntityName ) && (!string.IsNullOrEmpty(s.sourceDatasourceEntityName)))
+                    if ((s.sourceentityname != s.sourceDatasourceEntityName) && (!string.IsNullOrEmpty(s.sourceDatasourceEntityName)))
                     {
                         srcentityname = s.sourceDatasourceEntityName;
                     }
@@ -304,71 +306,159 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             return DMEEditor.ErrorObject;
         }
 
-         //-----------------------
-        public IErrorsInfo RunScript(  )
+        //-----------------------
+        private void UpdateEvents(LScript sc, int highestPercentageReached, int CurrentRecord, int numberToCompute, IDataSource destds)
         {
-            int CurrentRecord = 1;
+            LScriptTracker tr = new LScriptTracker();
+            sc.errorsInfo = DMEEditor.ErrorObject;
+            sc.errormessage = DMEEditor.ErrorObject.Message;
+            tr.currenrecordentity = sc.sourceentityname;
+            tr.currentrecorddatasourcename = sc.destinationdatasourcename;
+            //  tr.currenrecordindex = i;
+            tr.scriptType = sc.scriptType;
+            tr.errorsInfo = sc.errorsInfo;
+            DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
+            int percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
+            if (percentComplete > highestPercentageReached)
+            {
+                highestPercentageReached = percentComplete;
+                PassedArgs x = new PassedArgs();
+                x.CurrentEntity = tr.currenrecordentity;
+                x.DatasourceName = destds.DatasourceName;
+                x.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
+                x.ParameterInt1 = percentComplete;
+                DMEEditor.Passedarguments = x;
+                CurrentRecord += 1;
+
+               // PassEvent?.Invoke(this, x);
+            }
+           
+        }
+        public IErrorsInfo RunScript(IProgress<int> progress)
+        {
+            #region "Update Data code "
+
+            int CurrentRecord = 0;
             int highestPercentageReached = 0;
             int numberToCompute = 0;
-            var dDLScripts = script;
+            LScriptTracker tr;
+            IDataSource destds = null;
+        
+            IDataSource srcds = null;
             DMEEditor.ETL.trackingHeader = new LScriptTrackHeader();
-            DMEEditor.ETL.trackingHeader.parentscriptHeaderid = script.id;
+            DMEEditor.ETL.trackingHeader.parentscriptHeaderid = DMEEditor.ETL.script.id;
             DMEEditor.ETL.trackingHeader.rundate = DateTime.Now;
-            numberToCompute = script.Scripts.Count();
-
-            numberToCompute = dDLScripts.Scripts.Count();
-                // Run Scripts-----------------
-                for (int i = 0; i < dDLScripts.Scripts.Count(); i++)
+            numberToCompute = DMEEditor.ETL.script.Scripts.Count();
+            List<LScript> crls = DMEEditor.ETL.script.Scripts.Where(i => i.scriptType == DDLScriptType.CreateTable).ToList();
+            List<LScript> copudatals = DMEEditor.ETL.script.Scripts.Where(i => i.scriptType == DDLScriptType.CopyData).ToList();
+            List<LScript> AlterForls = DMEEditor.ETL.script.Scripts.Where(i => i.scriptType == DDLScriptType.AlterFor).ToList();
+            // Run Scripts-----------------
+            int o = 0;
+            numberToCompute = DMEEditor.ETL.script.Scripts.Count;
+            int p1 = DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CreateTable).Count();
+            foreach (LScript sc in DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CreateTable))
+            {
+                destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
+                srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
+                destds.PassEvent += (sender, e) => { PassEvent?.Invoke(sender, e); };
+                if (destds != null)
                 {
-
-                    IDataSource destds = DMEEditor.GetDataSource(script.Scripts[i].destinationdatasourcename);
-                    IDataSource srcds = DMEEditor.GetDataSource(script.Scripts[i].sourcedatasourcename);
-                    CurrentRecord = i;
-                    if (script.Scripts[i].scriptType != DDLScriptType.CopyData)
+                    DMEEditor.OpenDataSource(sc.destinationdatasourcename);
+                    //  srcds.Dataconnection.OpenConnection();
+                    if (destds.ConnectionStatus == System.Data.ConnectionState.Open)
                     {
-                        var t = Task.Run<IErrorsInfo>(() => { return destds.ExecuteSql(script.Scripts[i].ddl); });
-                        t.Wait();
-                        script.Scripts[i].errorsInfo = t.Result;
-                    }
-                    else
-                    {
-                        var t1 = Task.Run<IErrorsInfo>(() => { return CopyEntityData(srcds, destds, script.Scripts[i].sourceentityname, script.Scripts[i].destinationDatasourceEntityName, true); });
-                        t1.Wait();
-                        script.Scripts[i].errorsInfo = t1.Result;
-                    }
+                        if (sc.scriptType == DDLScriptType.CreateTable)
+                        {
+                            sc.errorsInfo = destds.ExecuteSql(sc.ddl); // t.Result;
 
-                  //  script.Scripts[i].errorsInfo = t.Result;  //destds.ExecuteSql(DMEEditor.DDLEditor.script[i].ddl);
-                    script.Scripts[i].errormessage = DMEEditor.ErrorObject.Message;
-                LScriptTracker tr = new LScriptTracker();
-                tr.currenrecordentity = script.Scripts[i].sourceentityname;
-                tr.currentrecorddatasourcename = script.Scripts[i].destinationdatasourcename;
-                tr.currenrecordindex = i;
-                tr.scriptType = script.Scripts[i].scriptType;
-                tr.errorsInfo = script.Scripts[i].errorsInfo;
-                DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
-
-                // Report progress as a percentage of the total task.
-                int percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
-                    if (percentComplete > highestPercentageReached)
-                    {
-                        highestPercentageReached = percentComplete;
-
+                        }
+                        else
+                        {
+                            DMEEditor.ErrorObject.Flag = Errors.Failed;
+                            DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
+                        }
+                        UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
+                        if (progress != null)
+                            progress.Report(CurrentRecord);
                     }
-                    PassedArgs x = new PassedArgs();
-                    x.CurrentEntity = script.Scripts[i].sourceentityname;
-                    x.DatasourceName = destds.DatasourceName;
-                    x.Objects.Add(new ObjectItem { obj = trackingHeader, Name = "TrackingHeader" });
-                    x.ParameterInt1 = percentComplete;
-                    //  ReportProgress?.Invoke(this, x);
 
                 }
-           
+            }
+            //------------Update Entity structure
+            int p2 = DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CopyData).Count();
+            foreach (LScript sc in DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CopyData))
+            {
+                destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
+                srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
+              
+                if (destds != null && srcds != null)
+                {
+                    DMEEditor.OpenDataSource(sc.destinationdatasourcename);
+                    DMEEditor.OpenDataSource(sc.sourcedatasourcename);
+                    if (destds.ConnectionStatus == System.Data.ConnectionState.Open)
+                    {
+                        if (sc.scriptType == DDLScriptType.CopyData)
+                        {
+                            sc.errorsInfo = DMEEditor.ETL.CopyEntityData(srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
+                        }
+                        else
+                        {
+                            DMEEditor.ErrorObject.Flag = Errors.Failed;
+                            DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
+                        }
+                        // Report progress as a percentage of the total task.
+                        UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
+                        if (progress != null)
+                            progress.Report(CurrentRecord);
+                    }
+                }
+            }
+            int p3 = DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.AlterFor).Count();
+            foreach (LScript sc in DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.AlterFor))
+            {
+
+                destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
+                srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
+                if (destds != null)
+                {
+                    destds.Dataconnection.OpenConnection();
+                    DMEEditor.OpenDataSource(sc.destinationdatasourcename);
+                    //      srcds.Dataconnection.OpenConnection();
+                    if (destds.ConnectionStatus == System.Data.ConnectionState.Open)
+                    {
+                        if (sc.scriptType == DDLScriptType.AlterFor)
+                        {
+                            sc.errorsInfo = destds.ExecuteSql(sc.ddl);
+                       
+                        }
+                        else
+                        {
+
+                            DMEEditor.ErrorObject.Flag = Errors.Failed;
+                            DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
+                            sc.errorsInfo = DMEEditor.ErrorObject;
+                            sc.errormessage = DMEEditor.ErrorObject.Message;
+                           
+                           
+
+                        }
+                        UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
+                        if (progress != null)
+                            progress.Report(CurrentRecord);
+
+                    }
+
+                }
+
+                #endregion
+
+                //-----------------------------
+
+               
+            }
+
             return DMEEditor.ErrorObject;
         }
-
-        #region "RDBMS"
-
-        #endregion
-
     }
+    
 }

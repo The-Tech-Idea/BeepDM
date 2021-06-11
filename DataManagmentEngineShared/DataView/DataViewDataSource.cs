@@ -211,9 +211,9 @@ namespace TheTechIdea.DataManagment_Engine.DataView
 
             catch (Exception ex)
             {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting entity Data ({ex.Message}) ");
+               
+                DMEEditor.AddLogMessage("Fail", $"Error in getting entity Data from ({ ex.Message})", DateTime.Now, -1, "", Errors.Failed);
+              
             }
             //if ((Records == null)||(Records.Count==0))
             //{
@@ -327,12 +327,9 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             catch (Exception ex)
             {
 
-                ErrorObject.Flag = Errors.Failed;
-                string errmsg = "Error getting entity structure";
-                ErrorObject.Message = $"{errmsg}:{ex.Message}";
-                errmsg = ErrorObject.Message;
-
-                Logger.WriteLog($" {errmsg} :{ex.Message}");
+                
+                DMEEditor.AddLogMessage("Fail", $"Error getting entity structure {EntityName} ({ ex.Message})", DateTime.Now, -1, "", Errors.Failed);
+                
             }
             return null;
             //      return GetDataSourceObject(EntityName).GetEntityStructure(EntityName, refresh);

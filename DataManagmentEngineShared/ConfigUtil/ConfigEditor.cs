@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.Addin;
 using TheTechIdea.DataManagment_Engine.AppBuilder;
 using TheTechIdea.DataManagment_Engine.CompositeLayer;
@@ -35,6 +36,7 @@ namespace TheTechIdea.Util
 			Init();
 
 		}
+		//public IDMEEditor DMEEditor { get; set; }
 		public IErrorsInfo ErrorObject { get; set; }
 		public IJsonLoader JsonLoader { get; set; }
 		public ConfigandSettings Config { get; set; }
@@ -146,6 +148,7 @@ namespace TheTechIdea.Util
 				ErrorObject.Ex = ex;
 				ErrorObject.Message = ex.Message;
 				Logger.WriteLog($"Error Initlization Lists ({ex.Message})");
+			//	DMEEditor.AddLogMessage("Fail", $"Error Initlization Lists ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
 			}
 			return ErrorObject;
 		}

@@ -80,7 +80,7 @@ namespace TheTechIdea.DataManagment_Engine.Workflow.Actions
                                         try
                                         {
                                            RunCopyDataBackWorker();
-                                            logger.WriteLog("Data Written Successfully");
+                                           DMEEditor.AddLogMessage("Success", $"Copied Data to {OutParameters[0].DatasourceName}", DateTime.Now, -1, "", Errors.Ok);
                                         }
                                         catch (Exception ex)
                                         {

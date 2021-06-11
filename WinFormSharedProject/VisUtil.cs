@@ -76,9 +76,8 @@ namespace TheTechIdea.Winforms.VIS
             catch (System.Exception ex)
             {
 
-                Erinfo.Flag = Errors.Failed;
-                Erinfo.Ex = ex;
-                Logger.WriteLog($"Error check main System entry variables ({ex.Message})");
+                DMEEditor.AddLogMessage("Fail", $"Error check main System entry variables ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+               
             }
             return Erinfo;
         }
@@ -100,15 +99,11 @@ namespace TheTechIdea.Winforms.VIS
 
                 }
 
-
-                // Console.ReadLine();
             }
             catch (System.Exception ex)
             {
-
-                Erinfo.Flag = Errors.Failed;
-                Erinfo.Ex = ex;
-                Logger.WriteLog($"Error Showing Main Application View ({ex.Message})");
+               DMEEditor.AddLogMessage("Fail", $"Error Showing Main Application View ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+              
             }
             return Erinfo;
         }
@@ -188,20 +183,17 @@ namespace TheTechIdea.Winforms.VIS
                     }
                     else
                     {
-                        Erinfo.Flag = Errors.Failed;
-                        Erinfo.Message = $"Error Could not Show UserControl { uc.Name}";
-                        Logger.WriteLog(Erinfo.Message);
-                    }
+                      
+                    DMEEditor.AddLogMessage("Fail", $"Error Could not Show UserControl { uc.Name}", DateTime.Now, 0, "", Errors.Failed);
+                }
 
 
                 }
                 catch (Exception ex)
                 {
-                    Erinfo.Flag = Errors.Failed;
-                    Erinfo.Message = $"Error While Loading Assembly " + ex.Message;
-                    Logger.WriteLog($"Error While Loading Assembly " + ex.Message);
-
-                }
+                   
+                  DMEEditor.AddLogMessage("Fail", $"Error While Loading Assembly ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+            }
            
             if (Erinfo.Flag == Errors.Ok)
             {
@@ -246,16 +238,14 @@ namespace TheTechIdea.Winforms.VIS
                     {
                         Erinfo.Flag = Errors.Failed;
                         Erinfo.Message = $"Error Could not Show Form { form.Name}";
-                  //      Logger.WriteLog(Erinfo.Message);
-                    };
+                        DMEEditor.AddLogMessage("Fail", $"Error Could not Show Form { form.Name}", DateTime.Now, 0, "", Errors.Failed);
+                     };
                 }
                 catch (Exception ex)
                 {
-                    Erinfo.Flag = Errors.Failed;
-                    Erinfo.Message = ex.Message;
-              //      Logger.WriteLog($"Error While Loading Assembly {path} : {ex.Message}");
+                DMEEditor.AddLogMessage("Fail", $"Error While Loading Assembly ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
 
-                }
+            }
            
            
                 form.ShowDialog();
@@ -304,18 +294,16 @@ namespace TheTechIdea.Winforms.VIS
                     }
                     else
                     {
-                        Erinfo.Flag = Errors.Failed;
-                        Erinfo.Message = $"Error Could not Show UserControl { uc.Name}";
-                        Logger.WriteLog(Erinfo.Message);
-                    }
+                        
+                        DMEEditor.AddLogMessage("Fail", $"Error Could not Show UserControl { uc.Name}", DateTime.Now, 0, "", Errors.Failed);
+                }
 
 
                 }
                 catch (Exception ex)
                 {
-                    Erinfo.Flag = Errors.Failed;
-                    Erinfo.Message = $"Error While Loading Assembly {path} :{ex.Message}";
-                    Logger.WriteLog($"Error While Loading Assembly {path} :{ex.Message}");
+                     DMEEditor.AddLogMessage("Fail", $"Error While Loading Assembly ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+               
 
                 }
             

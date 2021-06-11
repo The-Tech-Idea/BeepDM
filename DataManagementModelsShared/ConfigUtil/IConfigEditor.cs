@@ -8,6 +8,7 @@ using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.AppBuilder;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
+using TheTechIdea.DataManagment_Engine;
 
 namespace TheTechIdea.Util
 {
@@ -20,7 +21,7 @@ namespace TheTechIdea.Util
         string ExePath { get; set; }
         IDMLogger Logger { get; set; }
         List<string> Databasetypes { get; set; }
-     
+      //  IDMEEditor DMEEditor { get; set; }
         List<ConnectionProperties> DataConnections { get; set; }
         List<Mapping_rep> Mappings { get; set; }
         List<Map_Schema> MappingSchema { get; set; }

@@ -58,16 +58,16 @@ namespace TheTechIdea.DataManagment_Engine.Workflow.Actions
                     else
                     {
                         string errmsg = "Error No Target Table Data exist ";
-
-                        DMEEditor.Logger.WriteLog(errmsg);
+                        DMEEditor.AddLogMessage("Error", errmsg, DateTime.Now, -1, InParameters[0].DatasourceName, Errors.Failed);
+                       
                     }
 
                 }
                 else
                 {
                     string errmsg = "Error No Source Table Data exist ";
-
-                    DMEEditor.Logger.WriteLog(errmsg);
+                    DMEEditor.AddLogMessage("Error", errmsg, DateTime.Now, -1, InParameters[0].DatasourceName, Errors.Failed);
+                   
                 }
 
 
