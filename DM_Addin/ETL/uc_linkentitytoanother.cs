@@ -38,12 +38,12 @@ namespace TheTechIdea.ETL
     public DataSet Dset { get; set; }
     public IErrorsInfo ErrorObject { get; set; }
     private IDMDataView MyDataView;
-    public IVisUtil Visutil { get; set; }
+   
     public PassedArgs Passedarg { get; set; }
     public IUtil util { get; set; }
-    //  public IDataViewEditor ViewEditor { get; set; }
-
-    IBranch branch = null;
+        //  public IDataViewEditor ViewEditor { get; set; }
+        public IVisUtil Visutil { get; set; }
+        IBranch branch = null;
     IBranch Parentbranch = null;
     public EntityStructure ParentEntity { get; set; } = null;
     DataViewDataSource vds;

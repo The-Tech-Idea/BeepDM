@@ -18,9 +18,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         public IErrorsInfo ErrorObject { get; set; }
     
         public IConnectionProperties ConnectionProp { get; set; } = new ConnectionProperties();
-        public RDBDataConnection()
+        public RDBDataConnection(IDMEEditor pDMEEditor)
         {
-
+            DMEEditor = pDMEEditor;
 
         }
         public virtual ConnectionState OpenConnection(DataSourceType dbtype, string connectionstring) {

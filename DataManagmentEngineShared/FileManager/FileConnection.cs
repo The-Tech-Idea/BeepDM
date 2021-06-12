@@ -14,6 +14,10 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 {
     public class FileConnection : IDataConnection
     {
+        public FileConnection(IDMEEditor pDMEEditor)
+        {
+            DMEEditor = pDMEEditor;
+        }
         public IConnectionProperties ConnectionProp { get; set; } = new ConnectionProperties();
         public ConnectionDriversConfig DataSourceDriver { get ; set ; }
         public ConnectionState ConnectionStatus { get; set; } = ConnectionState.Closed;

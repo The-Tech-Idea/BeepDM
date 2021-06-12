@@ -96,7 +96,6 @@ namespace TheTechIdea.ETL
         private async Task RunScripts()
         {
             progressBar1.Step = 2;
-            
             var progress = new Progress<int>(percent =>
             {
                 progressBar1.Text = percent + "%";
@@ -107,8 +106,7 @@ namespace TheTechIdea.ETL
             await Task.Run(() =>
             {
                 DMEEditor.ETL.RunScript(progress);
-           //     progressBar1.Value = 100;
-               
+
             });
             MessageBox.Show("Done");
         }

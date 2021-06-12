@@ -25,6 +25,34 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         public LScriptTrackHeader trackingHeader { get; set; } = new LScriptTrackHeader();
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public List<string> EntitiesNames { get; set; } = new List<string>();
+        public void CreateScriptHeader(IProgress<int> progress,IDataSource Srcds)
+        {
+            int i = 0;
+            DMEEditor.ETL.script = new LScriptHeader();
+            DMEEditor.ETL.script.scriptSource = Srcds.DatasourceName;
+            List<EntityStructure> ls = new List<EntityStructure>();
+            Srcds.GetEntitesList();
+            foreach (string item in Srcds.EntitiesNames)
+            {
+                ls.Add(Srcds.GetEntityStructure(item, true));
+            }
+            DMEEditor.ETL.GetCreateEntityScript(Srcds, ls);
+            foreach (var item in ls)
+            {
+
+                LScript upscript = new LScript();
+                upscript.sourcedatasourcename = item.DataSourceID;
+                upscript.sourceentityname = item.EntityName;
+                upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
+
+                upscript.destinationDatasourceEntityName = item.EntityName;
+                upscript.destinationentityname = item.EntityName;
+                upscript.destinationdatasourcename = Srcds.DatasourceName;
+                upscript.scriptType = DDLScriptType.CopyData;
+                DMEEditor.ETL.script.Scripts.Add(upscript);
+                i += 1;
+            }
+        }
         public List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;

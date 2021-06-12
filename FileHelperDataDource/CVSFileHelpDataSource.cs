@@ -26,7 +26,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             ErrorObject = per;
             DMEEditor = pDMEEditor;
             DatasourceType = pDatasourceType;
-            Dataconnection = new FileConnection
+            Dataconnection = new FileConnection(DMEEditor)
             {
                 Logger = logger,
                 ErrorObject = ErrorObject,

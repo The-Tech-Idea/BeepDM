@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.DataBase;
@@ -694,6 +695,46 @@ namespace TheTechIdea.Winforms.VIS
                 DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {EntityStructure.EntityName} - {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
             }
             return DMEEditor.ErrorObject;
+        }
+        [BranchDelegate(Caption = "Copy DataSource")]
+        public async Task<IErrorsInfo> CopyDataSourceAsync()
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                if (Visutil.controlEditor.InputBoxYesNo("Beep DM", "Are you sure you ?") == DialogResult.Yes)
+                {
+
+                    await GetScriptAsync();
+
+                }
+             DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = DataSourceName, Entities = DataSource.Entities });
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
+                DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {EntityStructure.EntityName} - {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+        private void update()
+        {
+
+        }
+        private async Task GetScriptAsync()
+        {
+            IDataSource srcds = DMEEditor.GetDataSource(BranchText);
+            var progress = new Progress<int>(percent =>
+            {
+
+                update();
+            });
+            await Task.Run(() =>
+            {
+                DMEEditor.ETL.CreateScriptHeader(progress, srcds);
+
+            });
         }
     }
 }

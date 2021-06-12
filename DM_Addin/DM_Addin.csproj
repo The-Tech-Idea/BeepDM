@@ -128,6 +128,12 @@
     <Compile Include="Configuration\uc_QueryConfig.Designer.cs">
       <DependentUpon>uc_QueryConfig.cs</DependentUpon>
     </Compile>
+    <Compile Include="ETL\uc_copydatasource.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="ETL\uc_copydatasource.Designer.cs">
+      <DependentUpon>uc_copydatasource.cs</DependentUpon>
+    </Compile>
     <Compile Include="ETL\uc_DataEntityStructureViewer.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -376,6 +382,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Configuration\uc_QueryConfig.resx">
       <DependentUpon>uc_QueryConfig.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ETL\uc_copydatasource.resx">
+      <DependentUpon>uc_copydatasource.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ETL\uc_DataEntityStructureViewer.resx">
       <DependentUpon>uc_DataEntityStructureViewer.cs</DependentUpon>

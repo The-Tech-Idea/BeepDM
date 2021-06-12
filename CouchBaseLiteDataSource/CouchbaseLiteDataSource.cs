@@ -25,7 +25,7 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
         {
             if (Dataconnection == null)
             {
-                RDBDataConnection cn = new RDBDataConnection();
+                RDBDataConnection cn = new RDBDataConnection(DMEEditor);
                 Dataconnection = cn;
             }
             if (Dataconnection.ConnectionProp.ConnectionString != null)
