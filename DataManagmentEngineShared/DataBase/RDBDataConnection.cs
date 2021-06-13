@@ -44,6 +44,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             string rep="";
             if (string.IsNullOrWhiteSpace(DataSourceDriver.ConnectionString) == false )
             {
+
                 rep = DataSourceDriver.ConnectionString.Replace("{Host}", ConnectionProp.Host);
                 rep = rep.Replace("{UserID}", ConnectionProp.UserID);
                 rep = rep.Replace("{Password}", ConnectionProp.Password);
@@ -120,7 +121,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             {
                 if (DbConn != null)
                 {
-                    if (ConnectionProp.FilePath!=null || ConnectionProp.FileName!=null)
+                    if (ConnectionProp.FilePath!=null && ConnectionProp.FileName!=null && !string.IsNullOrEmpty(ConnectionProp.FilePath) && !string.IsNullOrEmpty(ConnectionProp.FileName))
                     {
 
                         if (System.IO.File.Exists(Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)))
