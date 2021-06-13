@@ -696,45 +696,45 @@ namespace TheTechIdea.Winforms.VIS
             }
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Copy DataSource")]
-        public async Task<IErrorsInfo> CopyDataSourceAsync()
-        {
-            DMEEditor.ErrorObject.Flag = Errors.Ok;
-            try
-            {
-                if (Visutil.controlEditor.InputBoxYesNo("Beep DM", "Are you sure you ?") == DialogResult.Yes)
-                {
+        //[BranchDelegate(Caption = "Copy DataSource")]
+        //public async Task<IErrorsInfo> CopyDataSourceAsync()
+        //{
+        //    DMEEditor.ErrorObject.Flag = Errors.Ok;
+        //    try
+        //    {
+        //        if (Visutil.controlEditor.InputBoxYesNo("Beep DM", "Are you sure you ?") == DialogResult.Yes)
+        //        {
 
-                    await GetScriptAsync();
+        //            await GetScriptAsync();
 
-                }
-             DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = DataSourceName, Entities = DataSource.Entities });
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {EntityStructure.EntityName} - {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
-            }
-            return DMEEditor.ErrorObject;
-        }
-        private void update()
-        {
+        //        }
+        //     DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = DataSourceName, Entities = DataSource.Entities });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        DMEEditor.ErrorObject.Flag = Errors.Failed;
+        //        DMEEditor.ErrorObject.Ex = ex;
+        //        DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {EntityStructure.EntityName} - {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+        //    }
+        //    return DMEEditor.ErrorObject;
+        //}
+        //private void update()
+        //{
 
-        }
-        private async Task GetScriptAsync()
-        {
-            IDataSource srcds = DMEEditor.GetDataSource(BranchText);
-            var progress = new Progress<int>(percent =>
-            {
+        //}
+        //private async Task GetScriptAsync()
+        //{
+        //    IDataSource srcds = DMEEditor.GetDataSource(BranchText);
+        //    var progress = new Progress<int>(percent =>
+        //    {
 
-                update();
-            });
-            await Task.Run(() =>
-            {
-                DMEEditor.ETL.CreateScriptHeader(progress, srcds);
+        //        update();
+        //    });
+        //    await Task.Run(() =>
+        //    {
+        //        DMEEditor.ETL.CreateScriptHeader(progress, srcds);
 
-            });
-        }
+        //    });
+        //}
     }
 }

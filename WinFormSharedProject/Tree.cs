@@ -1307,10 +1307,10 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
                 IBranch br = GetBranch(Convert.ToInt32(e.Node.Tag));
-
-                if(br.BranchType== EnumBranchType.Entity && br.BranchClass!="VIEW")
+                CheckNodes(e.Node, e.Node.Checked);
+                if (br.BranchType== EnumBranchType.Entity)
                 {
-                    CheckNodes(e.Node, e.Node.Checked);
+                  
                     if (e.Node.Checked)
                     {
                         SelectedBranchs.Add(br.BranchID);
