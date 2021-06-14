@@ -124,7 +124,7 @@ namespace TheTechIdea.DataManagment_Engine.Cloud
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<int> progress)
         {
             throw new NotImplementedException();
         }

@@ -51,16 +51,23 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 rep = rep.Replace("{Database}", ConnectionProp.Database);
                 rep = rep.Replace("{Port}", ConnectionProp.Port.ToString());
               
-                if (rep.Contains("{File}"))
-                {
-                    rep = rep.Replace("{File}", Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName));
-                }
+              
                 if (rep.Contains("{Url}"))
                 {
                     rep = rep.Replace("{Url}", ConnectionProp.Url);
                 }
-
-                   
+                if (!string.IsNullOrEmpty(ConnectionProp.FilePath))
+                {
+                    if (ConnectionProp.FilePath.StartsWith(".") || ConnectionProp.FilePath.Equals("./") || ConnectionProp.FilePath.Equals(".\\"))
+                    {
+                        ConnectionProp.FilePath = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
+                    }
+                }
+               
+                if (rep.Contains("{File}"))
+                {
+                    rep = rep.Replace("{File}", Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName));
+                }
             }
            
              return rep;             
@@ -127,9 +134,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         if (System.IO.File.Exists(Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)))
                         {
                             DbConn.Open();
-                            DMEEditor.AddLogMessage("Success", $"Open RDBMS Connection to {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Ok);
+                     //       DMEEditor.AddLogMessage("Success", $"Open RDBMS Connection to {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Ok);
                             ConnectionStatus = DbConn.State;
-
                         }
                         else
                         {
@@ -139,14 +145,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     else
                     {
                         DbConn.Open();
-                        DMEEditor.AddLogMessage("Success", $"Open RDBMS Connection to {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Ok);
+                       DMEEditor.AddLogMessage("Success", $"Open RDBMS Connection to {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Ok);
                         ConnectionStatus = DbConn.State;
                         if (ConnectionStatus== ConnectionState.Open)
                         {
                             // Check if need to change schema name
                             if (ConnectionProp.DatabaseType == DataSourceType.Oracle || ConnectionProp.DatabaseType == DataSourceType.SqlServer)
                             {
-
                                 if (ConnectionProp.SchemaName != null)
                                 {
                                     IDbCommand cmd = DbConn.CreateCommand();
@@ -180,33 +185,19 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         }
 
                     }
-                 
-                  
-
 
                 }else
                 {
                     DMEEditor.AddLogMessage("Fail", $"Could not get Drivers for RDBMS Connection to {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Failed);
-                   
-                    ConnectionStatus = ConnectionState.Closed;
-                  
+                    ConnectionStatus = ConnectionState.Closed; 
                 }
             }
-
             catch (Exception e)
             {
                 DMEEditor.AddLogMessage("Fail", $"Could not Open RDBMS Connection to {ConnectionProp.ConnectionName}- {e.Message}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Failed);
-               
                 ConnectionStatus = DbConn.State;
-                
-                //    throw;
             }
 
-
-
-
-            DMEEditor.AddLogMessage("Success", $"Successfully RDBMS Open  {ConnectionProp.ConnectionName}", DateTime.Now, -1, "", Errors.Ok);
-            
             return ConnectionStatus;
         }
         public virtual ConnectionState CloseConn()
@@ -234,13 +225,11 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     ConnectionStatus = ConnectionState.Closed;
                     return ConnectionStatus;
                 }
-
-
             }
             else
             {
                 ConnectionStatus = ConnectionState.Closed;
-                DMEEditor.AddLogMessage("Success", $"Closing RDBMS Connection  {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Ok);
+                DMEEditor.AddLogMessage("Fail", $"Closing RDBMS Connection  {ConnectionProp.ConnectionName}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Ok);
                 return ConnectionStatus;
             }
 

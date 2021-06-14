@@ -196,7 +196,44 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return command;
         }
-        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData)
+        private void UpdateEvents(string Entityname,string msg, int highestPercentageReached, int CurrentRecord, int numberToCompute, IDataSource destds)
+        {
+            PassedArgs args = new PassedArgs
+            {
+                CurrentEntity = Entityname,
+                DatasourceName = DatasourceName,
+                DataSource = this,
+                EventType = "UpdateEntity",
+
+
+            };
+            LScriptTracker tr = new LScriptTracker();
+            tr.currenrecordentity = Entityname;
+            tr.currentrecorddatasourcename = DatasourceName;
+            tr.currenrecordindex = CurrentRecord;
+            tr.scriptType = DDLScriptType.CopyData;
+            tr.errorsInfo = DMEEditor.ErrorObject;
+            tr.errormessage = msg;// $"Fail to insert/update/delete  Record {CurrentRecord} to {Entityname} : {er.Message} :  {errorstring} ";
+            DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
+            args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
+            int percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
+            if (percentComplete > highestPercentageReached)
+            {
+                highestPercentageReached = percentComplete;
+                PassedArgs x = new PassedArgs();
+                x.CurrentEntity = Entityname;
+                x.DatasourceName = destds.DatasourceName;
+                x.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
+                x.ParameterInt1 = percentComplete;
+                DMEEditor.Passedarguments = x;
+                CurrentRecord += 1;
+
+                // PassEvent?.Invoke(this, x);
+            }
+
+
+        }
+        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<int> progress)
         {
             if (UploadData != null)
             {
@@ -331,46 +368,19 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                                 }
                                 args.ParameterInt1 = percentComplete;
 
-                                LScriptTracker tr = new LScriptTracker();
-                                tr.currenrecordentity = EntityName;
-                                tr.currentrecorddatasourcename = DatasourceName;
-                                tr.currenrecordindex = i;
-                                tr.scriptType = DDLScriptType.CopyData;
-                                tr.errorsInfo = DMEEditor.ErrorObject;
-                                tr.errormessage = msg;
-                                DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
-
-                                args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
+                                UpdateEvents(EntityName, msg, highestPercentageReached, CurrentRecord, numberToCompute, this);
+                                if (progress != null)
+                                    progress.Report(CurrentRecord);
+                               
                                 PassEvent?.Invoke(this, args);
                                 DMEEditor.RaiseEvent(this, args);
-                                //DMEEditor.RaiseEvent(this, args);
-                                // DMEEditor.AddLogMessage("Success", msg, DateTime.Now, 0, null, Errors.Ok);
+                               
                             }
                             catch (Exception er)
                             {
-                                PassedArgs args = new PassedArgs
-                                {
-                                    CurrentEntity = EntityName,
-                                    DatasourceName = DatasourceName,
-                                    DataSource = this,
-                                    EventType = "UpdateEntity",
-
-
-                                };
-                                LScriptTracker tr = new LScriptTracker();
-                                tr.currenrecordentity = EntityName;
-                                tr.currentrecorddatasourcename = DatasourceName;
-                                tr.currenrecordindex = i;
-                                tr.scriptType = DDLScriptType.CopyData;
-                                tr.errorsInfo = DMEEditor.ErrorObject;
-                                tr.errormessage = $"Fail to insert/update/delete  Record {i} to {EntityName} : {er.Message} :  {errorstring} ";
-                                DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
-                                args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
-                                PassEvent?.Invoke(this, args);
-                                DMEEditor.RaiseEvent(this, args);
-                                // DMEEditor.RaiseEvent(this, args);
-                                //  DMEEditor.RaiseEvent(this, args);
-                                 DMEEditor.AddLogMessage("Fail", tr.errormessage, DateTime.Now,i, EntityName, Errors.Failed);
+                                string msg = $"Fail to I/U/D  Record {i} to {EntityName} : {updatestring}";
+                               
+                                 DMEEditor.AddLogMessage("Fail",msg, DateTime.Now,i, EntityName, Errors.Failed);
                             }
                         }
                         command.Dispose();

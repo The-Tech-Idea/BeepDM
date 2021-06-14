@@ -284,6 +284,10 @@ namespace TheTechIdea.Winforms.VIS
 
 
                         };
+                        if (f.FilePath.Contains(DMEEditor.ConfigEditor.ExePath))
+                        {
+                            f.FilePath.Replace(DMEEditor.ConfigEditor.ExePath, ".");
+                        }
                         string ext = Path.GetExtension(file).Replace(".", "").ToLower();
                         List<ConnectionDriversConfig> clss = DMEEditor.ConfigEditor.DataDriversClasses.Where(p => p.extensionstoHandle != null).ToList();
                         ConnectionDriversConfig c = clss.Where(o => o.extensionstoHandle.Contains(ext)).FirstOrDefault();

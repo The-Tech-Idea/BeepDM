@@ -264,7 +264,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AssemblyHandlerASPCore", ".
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BeepAvalonia", "..\BeepEnterprize\BeepAvaloniaSolution\BeepAvalonia\BeepAvalonia.csproj", "{6C91D72F-67AA-4DBE-8C85-A6F75E17B02F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LasFileLoader", "..\BeepEnterprize\LasFileLoader\LasFileLoader.csproj", "{10819A42-0EC8-429D-9474-405B5AACEC8A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LasFileLoader", "..\BeepEnterprize\LasFileLoader\LasFileLoader.csproj", "{10819A42-0EC8-429D-9474-405B5AACEC8A}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution

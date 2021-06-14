@@ -114,13 +114,21 @@ namespace TheTechIdea.CRUD
           
             this.SavetoolStripButton.Click += Savebutton_Click;
         }
+        private void update()
+        {
 
+        }
         private void Savebutton_Click(object sender, EventArgs e)
         {
             try
             {
                 bindingSource1.EndEdit();
-                rdb.UpdateEntities(EntityName, t.GetChanges());
+                var progress = new Progress<int>(percent =>
+                {
+                  
+                    update();
+                });
+                rdb.UpdateEntities(EntityName, t.GetChanges(), progress);
                 Logger.WriteLog($"Data Saved");
                 MessageBox.Show("Data Saved");
             }

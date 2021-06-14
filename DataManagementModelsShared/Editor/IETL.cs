@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.Util;
 
@@ -16,15 +17,15 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         LScriptHeader script { get; set; }
         LScriptTrackHeader trackingHeader { get; set; }
         void CreateScriptHeader(IProgress<int> progress, IDataSource Srcds);
-        IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities, bool CreateMissingEntity = true);
-        IErrorsInfo CopyEntityStructure(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, bool CreateMissingEntity = true);
-        IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, bool CreateMissingEntity = true);
-        IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, bool CreateMissingEntity = true);
-        IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string srcentity,string destentity, bool CreateMissingEntity = true);
-        IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, bool CreateMissingEntity = true);
-        List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities);
-        List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities);
-        IErrorsInfo RunScript(IProgress<int> progress);
+        IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<int> progress, bool CreateMissingEntity = true);
+        IErrorsInfo CopyEntityStructure(IDataSource sourceds, IDataSource destds, string srcentity,  string destentity, IProgress<int> progress, bool CreateMissingEntity = true);
+        IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, IProgress<int> progress, bool CreateMissingEntity = true);
+        IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<int> progress, bool CreateMissingEntity = true);
+        IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string srcentity,string destentity, IProgress<int> progress, bool CreateMissingEntity = true);
+        IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, IProgress<int> progress, bool CreateMissingEntity = true);
+        List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities, IProgress<int> progress);
+        List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<int> progress);
+        Task<IErrorsInfo> RunScriptAsync(IProgress<int> progress);
       
     }
 }

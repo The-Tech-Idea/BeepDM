@@ -483,9 +483,9 @@ namespace TheTechIdea.DataManagment_Engine.DataView
            // ds = DMEEditor.GetDataSource(DatasourceName);
            //return ds.RunQuery(qrystr);
         }
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData,IProgress<int> progress)
         {
-            return GetDataSourceObject(EntityName).UpdateEntities(EntityName, UploadData);
+            return GetDataSourceObject(EntityName).UpdateEntities(EntityName, UploadData,progress);
         }
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {

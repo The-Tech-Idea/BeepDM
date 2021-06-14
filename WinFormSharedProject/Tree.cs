@@ -1632,7 +1632,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion
         #region "Data Managemet Shared"
-        public LScriptHeader CreateScriptToCopyEntities(IDataSource dest,List<EntityStructure> entities,bool copydata=true)
+        public LScriptHeader CreateScriptToCopyEntities(IDataSource dest,List<EntityStructure> entities, IProgress<int> progress,bool copydata=true)
         {
             if (dest.Openconnection() == ConnectionState.Open)
             {
@@ -1645,7 +1645,7 @@ namespace TheTechIdea.Winforms.VIS
                 {
                     DMEEditor.ETL.script = new LScriptHeader();
                     DMEEditor.ETL.script.scriptSource = dest.DatasourceName;
-                    DMEEditor.ETL.GetCreateEntityScript(dest, ls);
+                    DMEEditor.ETL.GetCreateEntityScript(dest, ls,progress);
                     if (copydata)
                     {
                         foreach (var item in ls)

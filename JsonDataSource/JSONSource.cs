@@ -191,7 +191,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             return DMTypeBuilder.myType;
         }
 
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<int> progress)
         {
             throw new NotImplementedException();
         }

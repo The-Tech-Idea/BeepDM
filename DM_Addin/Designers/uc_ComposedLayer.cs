@@ -182,7 +182,10 @@ namespace TheTechIdea.ETL
                     cn.FilePath = DMEEditor.ConfigEditor.Config.Folders.Where(x => x.FolderFilesType == FolderFileTypes.DataFiles).FirstOrDefault().FolderPath ;
                     cn.FileName = layerNameTextBox.Text;
                 }
-               
+                if (cn.FilePath.Contains(DMEEditor.ConfigEditor.ExePath))
+                {
+                    cn.FilePath.Replace(DMEEditor.ConfigEditor.ExePath, ".");
+                }
                 cn.DriverName = package.PackageName;
                 cn.DriverVersion = package.version;
                 cn.ID = DMEEditor.ConfigEditor.DataConnections.Max(p => p.ID) + 1;

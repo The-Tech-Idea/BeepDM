@@ -255,7 +255,7 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<int> progress)
         {
             throw new NotImplementedException();
         }

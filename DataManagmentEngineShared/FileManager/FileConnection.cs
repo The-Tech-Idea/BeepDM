@@ -54,10 +54,15 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 // rep =ConnectionProp.Url;
 
             }
+            if (ConnectionProp.FilePath.StartsWith(".") || ConnectionProp.FilePath.Equals("/") || ConnectionProp.FilePath.Equals("\\"))
+            {
+                ConnectionProp.FilePath = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
+            }
             return rep;
         }
         private ConnectionState OpenConn()
         {
+            ReplaceValueFromConnectionString();
             if (Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName) != null)
             {
                 if (File.Exists(Path.Combine(ConnectionProp.FilePath,ConnectionProp.FileName)))

@@ -160,7 +160,6 @@ namespace TheTechIdea.Winforms.VIS
             {
                 e = new PassedArgs();
             }
-          
                 try
                 {
                     //Assembly assembly = Assembly.LoadFile(path);
@@ -185,15 +184,13 @@ namespace TheTechIdea.Winforms.VIS
                     {
                       
                     DMEEditor.AddLogMessage("Fail", $"Error Could not Show UserControl { uc.Name}", DateTime.Now, 0, "", Errors.Failed);
-                }
-
-
+                    }
                 }
                 catch (Exception ex)
                 {
                    
                   DMEEditor.AddLogMessage("Fail", $"Error While Loading Assembly ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
-            }
+                }
            
             if (Erinfo.Flag == Errors.Ok)
             {
@@ -214,8 +211,6 @@ namespace TheTechIdea.Winforms.VIS
             {
                 e = new PassedArgs();
             }
-          
-
                 try
                 {
                     // Assembly assembly = Assembly.LoadFile(path);
@@ -244,13 +239,8 @@ namespace TheTechIdea.Winforms.VIS
                 catch (Exception ex)
                 {
                 DMEEditor.AddLogMessage("Fail", $"Error While Loading Assembly ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
-
             }
-           
-           
-                form.ShowDialog();
-   
-
+            form.ShowDialog();
             return addin;
             //form.GetType().GetField("")
         }
@@ -264,7 +254,6 @@ namespace TheTechIdea.Winforms.VIS
             {
                 e = new PassedArgs();
             }
-          
                 try
                 {
                     // Assembly assembly = Assembly.LoadFile(path);
@@ -288,17 +277,11 @@ namespace TheTechIdea.Winforms.VIS
                         form.Height = uc.Height + 50;
                         uc.Dock = DockStyle.Fill;
                         form.ShowDialog();
-                      
-
-
                     }
                     else
                     {
-                        
                         DMEEditor.AddLogMessage("Fail", $"Error Could not Show UserControl { uc.Name}", DateTime.Now, 0, "", Errors.Failed);
-                }
-
-
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -306,29 +289,18 @@ namespace TheTechIdea.Winforms.VIS
                
 
                 }
-            
-           
-
-
-
-
             return addin;
             //form.GetType().GetField("")
         }
         #endregion
-      
-   
         //-----------------------------------------------------
-
         public VisUtil(IDMEEditor pDMEEditor, IDMLogger logger, IErrorsInfo per, IAssemblyHandler pLLoader)
         {
             DMEEditor = pDMEEditor;
             Logger = logger;
             LLoader = pLLoader;
             Erinfo = per;
-
         }
-
         public class DatasourceCategoryDataItem
         {
             public DatasourceCategory Value { get; set; }

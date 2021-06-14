@@ -82,6 +82,10 @@ namespace TheTechIdea.ETL
                 MessageBox.Show($"Error Cannot get Source  {branch.BranchText}");
             }
         }
+        private void update()
+        {
+
+        }
         private void CreateScriptHeader()
         {
             int i=0;
@@ -93,7 +97,12 @@ namespace TheTechIdea.ETL
             {
                 ls.Add(Srcds.GetEntityStructure(item, true));
             }
-            DMEEditor.ETL.GetCreateEntityScript(Srcds, ls);
+            var progress = new Progress<int>(percent =>
+            {
+               
+                update();
+            });
+            DMEEditor.ETL.GetCreateEntityScript(Srcds, ls,progress);
             foreach (var item in ls)
             {
                

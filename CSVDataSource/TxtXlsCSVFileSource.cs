@@ -230,7 +230,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             }
            // return Records;
         }
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<int> progress)
         {
             ErrorObject.Flag = Errors.Ok;
 
@@ -875,7 +875,19 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                     f.ValueRetrievedFromParent = false;
                     f.EntityName = sheetname;
                     f.FieldIndex = y;
+                    f.Checked = true;
+                    f.AllowDBNull = true;
+                    f.IsAutoIncrement = false;
+                    f.IsCheck = false;
+                    f.IsKey = false;
+                    f.IsUnique = false;
+
                     flds.Add(f);
+                    if (f.fieldname.ToLower().Contains("date") || f.fieldname.ToLower().Contains("_dt"))
+                    {
+                        f.fieldtype = "System.DateTime";
+                        f.Checked = true;
+                    }
                     y += 1;
                     if (f.Checked == false)
                     {
@@ -943,16 +955,9 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                                     f.fieldtype = "System.Short";
 
                                 }
-                                else
+                                else                                 
                                     f.fieldtype = "System.String";
-                               
-                                f.Checked = true;
-                                f.AllowDBNull = true;
-                                f.IsAutoIncrement = false;
-                                f.IsCheck = false;
-                                f.IsKey = false;
-                                f.IsUnique = false;
-                                
+                              
                                 foundval = false    ;
                             }
                             i += 1;
@@ -963,6 +968,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                         }
                     }
                    
+                    
                 }
                 return flds;
             }

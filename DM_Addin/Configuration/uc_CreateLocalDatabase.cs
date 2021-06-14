@@ -120,8 +120,11 @@ namespace TheTechIdea.Configuration
                 dataConnection.FilePath = InstallFoldercomboBox.Text;
                 dataConnection.FileName = databaseTextBox.Text;
                 dataConnection.ConnectionString =  package.ConnectionString; //Path.Combine(dataConnection.FilePath, dataConnection.FileName);
-                
-              //  dataConnection.Host = "localhost";
+                if (dataConnection.FilePath.Contains(DMEEditor.ConfigEditor.ExePath))
+                {
+                    dataConnection.FilePath.Replace(DMEEditor.ConfigEditor.ExePath, ".");
+                }
+                //  dataConnection.Host = "localhost";
                 dataConnection.UserID = "";
                 dataConnection.Password = passwordTextBox.Text;
              //   dataConnection.Database = Path.Combine(dataConnection.FilePath, dataConnection.FileName);

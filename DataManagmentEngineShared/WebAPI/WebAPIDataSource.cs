@@ -190,7 +190,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
             return DMTypeBuilder.myType;
         }
 
-        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData)
+        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<int> progress)
         {
             throw new NotImplementedException();
         }

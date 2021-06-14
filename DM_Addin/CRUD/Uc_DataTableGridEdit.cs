@@ -125,14 +125,23 @@ namespace TheTechIdea.CRUD
         {
             Logger.WriteLog($"Add Record to Grid  ");
         }
+        private void update()
+        {
 
+        }
         private void SaveData_Click(object sender, EventArgs e)
         {
             try
             {
+                var progress = new Progress<int>(percent =>
+                {
+                   
+                    update();
+                });
+
                 this.Validate();
                 bindingSource1.EndEdit();
-                rdb.UpdateEntities(EntityName, t.GetChanges());
+                rdb.UpdateEntities(EntityName, t.GetChanges(), progress);
                 Logger.WriteLog($"Saved  to Grid  ");
                 MessageBox.Show("Data Saved");
             }

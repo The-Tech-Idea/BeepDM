@@ -36,7 +36,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             {
                 ls.Add(Srcds.GetEntityStructure(item, true));
             }
-            DMEEditor.ETL.GetCreateEntityScript(Srcds, ls);
+            DMEEditor.ETL.GetCreateEntityScript(Srcds, ls,progress);
             foreach (var item in ls)
             {
 
@@ -53,7 +53,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 i += 1;
             }
         }
-        public List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities)
+        public List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities,IProgress<int> progress)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
 
@@ -101,7 +101,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             return retval;
 
         }
-        public List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities)
+        public List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<int> progress)
         {
             List<LScript> rt = new List<LScript>();
             try
@@ -122,7 +122,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 if (ds.Entities.Count > 0)
                 {
 
-                    var t = Task.Run<List<LScript>>(() => { return GetCreateEntityScript(ds, ds.Entities); });
+                    var t = Task.Run<List<LScript>>(() => { return GetCreateEntityScript(ds, ds.Entities,progress); });
                     t.Wait();
 
                     rt.AddRange(t.Result);
@@ -136,7 +136,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return rt;
         }
-        public IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities,IProgress<int> progress, bool CreateMissingEntity = true)
         {
             try
             {
@@ -148,7 +148,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 foreach (EntityStructure item in ls)
                 {
 
-                    CopyEntityData(sourceds, destds, item.EntityName, item.EntityName, CreateMissingEntity);
+                    CopyEntityData(sourceds, destds, item.EntityName, item.EntityName,progress, CreateMissingEntity);
 
                 }
 
@@ -161,7 +161,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntityStructure(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntityStructure(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<int> progress, bool CreateMissingEntity = true)
         {
             try
             {
@@ -206,14 +206,14 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, IProgress<int> progress, bool CreateMissingEntity = true)
         {
             try
             {
 
                 foreach (EntityStructure item in sourceds.Entities)
                 {
-                    CopyEntityData(sourceds, destds, item.EntityName, item.EntityName, CreateMissingEntity);
+                    CopyEntityData(sourceds, destds, item.EntityName, item.EntityName,progress, CreateMissingEntity);
                 }
 
             }
@@ -225,7 +225,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<int> progress, bool CreateMissingEntity = true)
         {
             try
             {
@@ -238,10 +238,10 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 {
                     if ((item.EntityName != item.DatasourceEntityName) && (!string.IsNullOrEmpty(item.DatasourceEntityName)))
                     {
-                        CopyEntityData(sourceds, destds, item.DatasourceEntityName, item.EntityName, CreateMissingEntity);
+                        CopyEntityData(sourceds, destds, item.DatasourceEntityName, item.EntityName,progress, CreateMissingEntity);
                     }
                     else
-                        CopyEntityData(sourceds, destds, item.EntityName, item.EntityName, CreateMissingEntity);
+                        CopyEntityData(sourceds, destds, item.EntityName, item.EntityName,progress ,CreateMissingEntity);
 
                 }
 
@@ -254,7 +254,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<int> progress, bool CreateMissingEntity = true)
         {
             try
             {
@@ -272,12 +272,13 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                     }
                     if (destds.CreateEntityAs(item))
                     {
+
                         object srcTb;
                         string entname;
                         var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
                         src.Wait();
                         srcTb = src.Result;
-                        var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(destentity, srcTb); });
+                        var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(destentity, srcTb,progress); });
                         dst.Wait();
                         DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data from {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Ok);
 
@@ -306,7 +307,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, IProgress<int> progress, bool CreateMissingEntity = true)
         {
             try
             {
@@ -320,7 +321,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                     }
                     else
                         srcentityname = s.sourceentityname;
-                    CopyEntityData(sourceds, destds, srcentityname, s.sourceentityname, CreateMissingEntity);
+                    CopyEntityData(sourceds, destds, srcentityname, s.sourceentityname,progress, CreateMissingEntity);
 
                 }
 
@@ -362,7 +363,8 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
            
         }
-        public IErrorsInfo RunScript(IProgress<int> progress)
+
+        public async Task<IErrorsInfo> RunScriptAsync(IProgress<int> progress)
         {
             #region "Update Data code "
 
@@ -398,7 +400,6 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         if (sc.scriptType == DDLScriptType.CreateTable)
                         {
                             sc.errorsInfo = destds.ExecuteSql(sc.ddl); // t.Result;
-
                         }
                         else
                         {
@@ -427,7 +428,13 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                     {
                         if (sc.scriptType == DDLScriptType.CopyData)
                         {
-                            sc.errorsInfo = DMEEditor.ETL.CopyEntityData(srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
+                            
+                            await Task.Run(() =>
+                            {
+                                sc.errorsInfo = DMEEditor.ETL.CopyEntityData(srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname,progress, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
+
+                            });
+                          
                         }
                         else
                         {

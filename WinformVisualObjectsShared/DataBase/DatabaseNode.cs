@@ -203,8 +203,6 @@ namespace TheTechIdea.Winforms.VIS
                         it.obj = defaults;
                         it.Name = "Defaults";
                         ob.Add(it);
-
-
                         PassedArgs Passedarguments = new PassedArgs
                         {
                             Addin = null,
@@ -280,8 +278,6 @@ namespace TheTechIdea.Winforms.VIS
                 it.obj = this;
                 it.Name = "Branch";
                 ob.Add(it);
-             
-              
                 PassedArgs Passedarguments = new PassedArgs
                 {
                     Addin = null,
@@ -302,9 +298,6 @@ namespace TheTechIdea.Winforms.VIS
                 };
                 // ActionNeeded?.Invoke(this, Passedarguments);
                 Visutil.ShowUserControlPopUp("uc_datasourceDefaults", DMEEditor, args, Passedarguments);
-
-
-
             }
             catch (Exception ex)
             {
@@ -333,8 +326,6 @@ namespace TheTechIdea.Winforms.VIS
                     if (DataSource != null)
                     {
                         DataSource.GetEntitesList();
-                       
-                      
                         IBranch pbr = TreeEditor.GetBranch(ParentBranchID);
                         List<ObjectItem> ob = new List<ObjectItem>(); ;
                         ObjectItem it = new ObjectItem();
@@ -362,10 +353,6 @@ namespace TheTechIdea.Winforms.VIS
                     {
                         DMEEditor.AddLogMessage("Fail", "Could not get DataSource", DateTime.Now, -1, null, Errors.Failed);
                     }
-                  
-
-                
-
             }
             catch (Exception ex)
             {
@@ -379,7 +366,6 @@ namespace TheTechIdea.Winforms.VIS
         [BranchDelegate(Caption = "Paste Entity(s)")]
         public IErrorsInfo PasteEntity()
         {
-
             try
             {
                 string iconimage = "";
@@ -477,14 +463,15 @@ namespace TheTechIdea.Winforms.VIS
                                     entity.DatabaseType = srcds.DatasourceType;
                                     entity.Viewtype = ViewType.Table;
                                     ls.Add(entity);
-                                   
-                                    
-                                    
-                                }
-                              
+                                  }
                             }
                         }
-                        LScriptHeader scriptHeader = TreeEditor.CreateScriptToCopyEntities(DataSource, ls, true);
+                        var progress = new Progress<int>(percent =>
+                        {
+                           
+                            update();
+                        });
+                        LScriptHeader scriptHeader = TreeEditor.CreateScriptToCopyEntities(DataSource, ls,progress, true);
                         if (scriptHeader != null)
                         {
                             TreeEditor.ShowRunScriptGUI(RootBranch,this, DataSource, scriptHeader);
@@ -695,6 +682,10 @@ namespace TheTechIdea.Winforms.VIS
                 DMEEditor.AddLogMessage("Fail", $"Error Drpping Entity {EntityStructure.EntityName} - {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
             }
             return DMEEditor.ErrorObject;
+        }
+        private void update()
+        {
+
         }
         //[BranchDelegate(Caption = "Copy DataSource")]
         //public async Task<IErrorsInfo> CopyDataSourceAsync()

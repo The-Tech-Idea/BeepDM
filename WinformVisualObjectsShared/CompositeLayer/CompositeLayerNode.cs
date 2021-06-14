@@ -666,11 +666,16 @@ namespace TheTechIdea.Winforms.VIS
                 TreeEditor.ChangeWaitingCaption($"Generating Scripts for  Entities Total:{compositeLayerDataSource.LayerInfo.Entities.Count}");
                 ls = compositeLayerDataSource.LayerInfo.Entities.Where(x => x.Created == false).ToList();
                 int i = 0;
+                var progress = new Progress<int>(percent =>
+                {
+                  
+                    update();
+                });
                 if (ls.Count > 0)
                 {
                     DMEEditor.ETL.script = new LScriptHeader();
                     DMEEditor.ETL.script.scriptSource = compositeLayerDataSource.DatasourceName;
-                    DMEEditor.ETL.GetCreateEntityScript(compositeLayerDataSource, ls);
+                    DMEEditor.ETL.GetCreateEntityScript(compositeLayerDataSource, ls, progress);
                     foreach (var item in ls)
                     {
                         TreeEditor.AddCommentsWaiting($"{i} - Creating script for Entity {item.EntityName} ");
@@ -694,6 +699,10 @@ namespace TheTechIdea.Winforms.VIS
                 return null;
            
             
+        }
+        private void update()
+        {
+
         }
         #endregion
     }

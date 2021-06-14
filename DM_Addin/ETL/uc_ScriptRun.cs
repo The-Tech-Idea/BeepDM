@@ -105,7 +105,7 @@ namespace TheTechIdea.ETL
            
             await Task.Run(() =>
             {
-                DMEEditor.ETL.RunScript(progress);
+                DMEEditor.ETL.RunScriptAsync(progress);
 
             });
             MessageBox.Show("Done");

@@ -107,6 +107,10 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             percentCompleted = e.ProgressPercentage;
             ReportProgress?.Invoke(sender, e);
         }
+        private void update()
+        {
+
+        }
         private IErrorsInfo RunScript(PassedArgs args, BackgroundWorker worker, DoWorkEventArgs e)
         {
             #region "Update Data code "
@@ -132,6 +136,11 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             int p1 = dMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CreateTable).Count();
             //for (int i = 0; i < dMEEditor.ETL.script.Scripts.Where(u=>u.scriptType == DDLScriptType.CreateTable).Count(); i++)
             //{
+            var progress = new Progress<int>(percent =>
+            {
+               
+                update();
+            });
             foreach (LScript  sc in dMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CreateTable))
             {
 
@@ -220,7 +229,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         if (sc.scriptType == DDLScriptType.CopyData)
                         {
                             
-                            sc.errorsInfo = DME.ETL.CopyEntityData(srcds, destds, sc.sourceDatasourceEntityName,sc.destinationentityname, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
+                            sc.errorsInfo = DME.ETL.CopyEntityData(srcds, destds, sc.sourceDatasourceEntityName,sc.destinationentityname, progress,true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
                             sc.errormessage = DME.ErrorObject.Message;
                             LScriptTracker tr = new LScriptTracker();
                             tr.currenrecordentity = sc.sourceentityname;
