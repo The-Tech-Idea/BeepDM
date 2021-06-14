@@ -483,7 +483,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
            // ds = DMEEditor.GetDataSource(DatasourceName);
            //return ds.RunQuery(qrystr);
         }
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData,IProgress<int> progress)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData,IProgress<PassedArgs> progress)
         {
             return GetDataSourceObject(EntityName).UpdateEntities(EntityName, UploadData,progress);
         }

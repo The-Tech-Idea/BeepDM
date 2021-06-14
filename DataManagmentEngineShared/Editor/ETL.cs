@@ -20,12 +20,13 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         public event EventHandler<PassedArgs> PassEvent;
         public IDMEEditor DMEEditor { get; set; }
         public PassedArgs Passedargs { get; set; }
-
+        public int ScriptCount { get; set; }
+        public int CurrentScriptRecord { get; set; }
         public LScriptHeader script { get; set; } = new LScriptHeader();
         public LScriptTrackHeader trackingHeader { get; set; } = new LScriptTrackHeader();
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public List<string> EntitiesNames { get; set; } = new List<string>();
-        public void CreateScriptHeader(IProgress<int> progress,IDataSource Srcds)
+        public void CreateScriptHeader(IProgress<PassedArgs> progress,IDataSource Srcds)
         {
             int i = 0;
             DMEEditor.ETL.script = new LScriptHeader();
@@ -53,7 +54,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 i += 1;
             }
         }
-        public List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities,IProgress<int> progress)
+        public List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities,IProgress<PassedArgs> progress)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
 
@@ -101,7 +102,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             return retval;
 
         }
-        public List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<int> progress)
+        public List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress)
         {
             List<LScript> rt = new List<LScript>();
             try
@@ -136,7 +137,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return rt;
         }
-        public IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities,IProgress<int> progress, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities,IProgress<PassedArgs> progress, bool CreateMissingEntity = true)
         {
             try
             {
@@ -161,7 +162,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntityStructure(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<int> progress, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntityStructure(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, bool CreateMissingEntity = true)
         {
             try
             {
@@ -206,7 +207,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, IProgress<int> progress, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, IProgress<PassedArgs> progress, bool CreateMissingEntity = true)
         {
             try
             {
@@ -225,7 +226,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<int> progress, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<PassedArgs> progress, bool CreateMissingEntity = true)
         {
             try
             {
@@ -254,7 +255,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<int> progress, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, bool CreateMissingEntity = true)
         {
             try
             {
@@ -278,6 +279,8 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
                         src.Wait();
                         srcTb = src.Result;
+                        
+                       
                         var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(destentity, srcTb,progress); });
                         dst.Wait();
                         DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data from {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Ok);
@@ -307,7 +310,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, IProgress<int> progress, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, IProgress<PassedArgs> progress, bool CreateMissingEntity = true)
         {
             try
             {
@@ -364,7 +367,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
            
         }
 
-        public async Task<IErrorsInfo> RunScriptAsync(IProgress<int> progress)
+        public async Task<IErrorsInfo> RunScriptAsync(IProgress<PassedArgs> progress)
         {
             #region "Update Data code "
 
@@ -386,11 +389,15 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             int o = 0;
             numberToCompute = DMEEditor.ETL.script.Scripts.Count;
             int p1 = DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CreateTable).Count();
+            ScriptCount = p1;
+            CurrentScriptRecord = 0;
             foreach (LScript sc in DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CreateTable))
             {
                 destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
                 srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
-                destds.PassEvent += (sender, e) => { PassEvent?.Invoke(sender, e); };
+                CurrentScriptRecord += 1;
+                CurrentRecord = CurrentScriptRecord;
+               // destds.PassEvent += (sender, e) => { PassEvent?.Invoke(sender, e); };
                 if (destds != null)
                 {
                     DMEEditor.OpenDataSource(sc.destinationdatasourcename);
@@ -406,9 +413,14 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                             DMEEditor.ErrorObject.Flag = Errors.Failed;
                             DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
                         }
-                        UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
+                      //  UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
                         if (progress != null)
-                            progress.Report(CurrentRecord);
+                        {
+                            PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentRecord, ParameterInt2 = ScriptCount};
+                            progress.Report(ps);
+
+                        }
+                            
                     }
 
                 }
@@ -417,6 +429,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             int p2 = DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CopyData).Count();
             foreach (LScript sc in DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CopyData))
             {
+                CurrentScriptRecord = p1;
                 destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
                 srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
               
@@ -442,16 +455,16 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                             DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
                         }
                         // Report progress as a percentage of the total task.
-                        UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
-                        if (progress != null)
-                            progress.Report(CurrentRecord);
+                    //    UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
+                       
                     }
                 }
             }
             int p3 = DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.AlterFor).Count();
             foreach (LScript sc in DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.AlterFor))
             {
-
+                CurrentRecord = 0;
+                numberToCompute =  p3;
                 destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
                 srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
                 if (destds != null)
@@ -479,7 +492,11 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         }
                         UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
                         if (progress != null)
-                            progress.Report(CurrentRecord);
+                        {
+                            PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentRecord  };
+                            progress.Report(ps);
+
+                        }
 
                     }
 

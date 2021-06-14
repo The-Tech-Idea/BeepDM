@@ -46,7 +46,7 @@ namespace TheTechIdea.DataManagment_Engine.Vis
         void ChangeWaitingCaption(string Caption);
         void AddCommentsWaiting(string comment);
 
-        LScriptHeader CreateScriptToCopyEntities(IDataSource dest, List<EntityStructure> entities, IProgress<int> progress, bool copydata = true);
+        LScriptHeader CreateScriptToCopyEntities(IDataSource dest, List<EntityStructure> entities, IProgress<PassedArgs> progress, bool copydata = true);
         IErrorsInfo ShowRunScriptGUI(IBranch RootBranch, IBranch Branch ,IDataSource ds, LScriptHeader script);
 
     }

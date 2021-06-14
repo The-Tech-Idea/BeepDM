@@ -1,4 +1,6 @@
 ﻿
+using WinFormSharedProject.Controls;
+
 namespace TheTechIdea.ETL
 {
     partial class uc_ScriptRun
@@ -47,11 +49,10 @@ namespace TheTechIdea.ETL
             this.scriptBindingNavigatorSaveItem = new System.Windows.Forms.ToolStripButton();
             this.label1 = new System.Windows.Forms.Label();
             this.StopButton = new System.Windows.Forms.Button();
-            this.progressBar1 = new System.Windows.Forms.ProgressBar();
+            this.progressBar1 = new TextProgressBar();
             this.RunScriptbutton = new System.Windows.Forms.Button();
             this.scriptDataGridView = new System.Windows.Forms.DataGridView();
             this.scriptTypeComboBox = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.entitynameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.sourcedatasourcename = new System.Windows.Forms.DataGridViewComboBoxColumn();
             this.dataConnectionsBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.destinationdatasourcename = new System.Windows.Forms.DataGridViewComboBoxColumn();
@@ -68,6 +69,7 @@ namespace TheTechIdea.ETL
             this.Messege = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.trackingscriptBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.dMEEditorBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.Log_panel = new System.Windows.Forms.RichTextBox();
             ((System.ComponentModel.ISupportInitialize)(this.scriptBindingNavigator)).BeginInit();
             this.scriptBindingNavigator.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.scriptBindingSource)).BeginInit();
@@ -254,7 +256,6 @@ namespace TheTechIdea.ETL
             this.scriptDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.scriptDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.scriptTypeComboBox,
-            this.entitynameDataGridViewTextBoxColumn,
             this.sourcedatasourcename,
             this.destinationdatasourcename,
             this.Active,
@@ -275,14 +276,6 @@ namespace TheTechIdea.ETL
             this.scriptTypeComboBox.Resizable = System.Windows.Forms.DataGridViewTriState.True;
             this.scriptTypeComboBox.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
             this.scriptTypeComboBox.Width = 62;
-            // 
-            // entitynameDataGridViewTextBoxColumn
-            // 
-            this.entitynameDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.entitynameDataGridViewTextBoxColumn.DataPropertyName = "entityname";
-            this.entitynameDataGridViewTextBoxColumn.HeaderText = "Entity";
-            this.entitynameDataGridViewTextBoxColumn.Name = "entitynameDataGridViewTextBoxColumn";
-            this.entitynameDataGridViewTextBoxColumn.Width = 58;
             // 
             // sourcedatasourcename
             // 
@@ -358,9 +351,9 @@ namespace TheTechIdea.ETL
             this.dataGridViewTextBoxColumn7,
             this.Messege});
             this.trackingscriptDataGridView.DataSource = this.trackingscriptBindingSource;
-            this.trackingscriptDataGridView.Location = new System.Drawing.Point(25, 340);
+            this.trackingscriptDataGridView.Location = new System.Drawing.Point(117, 248);
             this.trackingscriptDataGridView.Name = "trackingscriptDataGridView";
-            this.trackingscriptDataGridView.Size = new System.Drawing.Size(1245, 397);
+            this.trackingscriptDataGridView.Size = new System.Drawing.Size(142, 62);
             this.trackingscriptDataGridView.TabIndex = 17;
             // 
             // dataGridViewTextBoxColumn4
@@ -402,17 +395,34 @@ namespace TheTechIdea.ETL
             // 
             this.dMEEditorBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DMEEditor);
             // 
+            // Log_panel
+            // 
+            this.Log_panel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.Log_panel.BackColor = System.Drawing.Color.Black;
+            this.Log_panel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.Log_panel.ForeColor = System.Drawing.Color.Gold;
+            this.Log_panel.Location = new System.Drawing.Point(15, 327);
+            this.Log_panel.Margin = new System.Windows.Forms.Padding(2);
+            this.Log_panel.Name = "Log_panel";
+            this.Log_panel.ReadOnly = true;
+            this.Log_panel.Size = new System.Drawing.Size(1255, 401);
+            this.Log_panel.TabIndex = 18;
+            this.Log_panel.Text = "";
+            // 
             // uc_ScriptRun
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.trackingscriptDataGridView);
+            this.Controls.Add(this.Log_panel);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.StopButton);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.RunScriptbutton);
             this.Controls.Add(this.scriptDataGridView);
             this.Controls.Add(this.scriptBindingNavigator);
+            this.Controls.Add(this.trackingscriptDataGridView);
             this.DoubleBuffered = true;
             this.Name = "uc_ScriptRun";
             this.Size = new System.Drawing.Size(1295, 804);
@@ -448,7 +458,7 @@ namespace TheTechIdea.ETL
         private System.Windows.Forms.ToolStripButton scriptBindingNavigatorSaveItem;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button StopButton;
-        private System.Windows.Forms.ProgressBar progressBar1;
+        private TextProgressBar progressBar1;
         private System.Windows.Forms.Button RunScriptbutton;
         private System.Windows.Forms.DataGridView scriptDataGridView;
         private System.Windows.Forms.DataGridViewComboBoxColumn dataGridViewComboBoxColumn1;
@@ -469,5 +479,6 @@ namespace TheTechIdea.ETL
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn5;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn7;
         private System.Windows.Forms.DataGridViewTextBoxColumn Messege;
+        private System.Windows.Forms.RichTextBox Log_panel;
     }
 }

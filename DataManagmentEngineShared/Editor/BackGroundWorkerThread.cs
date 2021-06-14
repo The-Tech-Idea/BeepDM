@@ -136,7 +136,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             int p1 = dMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CreateTable).Count();
             //for (int i = 0; i < dMEEditor.ETL.script.Scripts.Where(u=>u.scriptType == DDLScriptType.CreateTable).Count(); i++)
             //{
-            var progress = new Progress<int>(percent =>
+            var progress = new Progress<PassedArgs>(percent =>
             {
                
                 update();

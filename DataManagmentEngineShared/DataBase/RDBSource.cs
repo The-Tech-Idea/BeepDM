@@ -233,7 +233,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
 
         }
-        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<int> progress)
+        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
             if (UploadData != null)
             {
@@ -256,8 +256,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 string str = "";
                 string errorstring = "";
                 int CurrentRecord = 0;
+                DMEEditor.ETL.CurrentScriptRecord = 0;
+                DMEEditor.ETL.ScriptCount += tb.Rows.Count;
                 int highestPercentageReached = 0;
-                int numberToCompute = 0;
+                int numberToCompute = DMEEditor.ETL.ScriptCount;
                 try
                 {
                     if (tb != null)
@@ -268,6 +270,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         // int i = 0;
                         string updatestring = null;
                         DataTable changes = tb;//.GetChanges();
+                      
+                       
                         for (int i = 0; i < tb.Rows.Count; i++)
                         {
                             try
@@ -368,21 +372,31 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                                 }
                                 args.ParameterInt1 = percentComplete;
 
-                                UpdateEvents(EntityName, msg, highestPercentageReached, CurrentRecord, numberToCompute, this);
+                       //         UpdateEvents(EntityName, msg, highestPercentageReached, CurrentRecord, numberToCompute, this);
                                 if (progress != null)
-                                    progress.Report(CurrentRecord);
-                               
-                                PassEvent?.Invoke(this, args);
-                                DMEEditor.RaiseEvent(this, args);
+                                {
+                                    PassedArgs ps = new PassedArgs {ParameterInt1=CurrentRecord, ParameterInt2 = DMEEditor.ETL.ScriptCount, ParameterString1 =null};
+                                    progress.Report(ps);
+
+                                }
+
+                             //   PassEvent?.Invoke(this, args);
+                             //   DMEEditor.RaiseEvent(this, args);
                                
                             }
                             catch (Exception er)
                             {
                                 string msg = $"Fail to I/U/D  Record {i} to {EntityName} : {updatestring}";
-                               
-                                 DMEEditor.AddLogMessage("Fail",msg, DateTime.Now,i, EntityName, Errors.Failed);
+                                if (progress != null)
+                                {
+                                    PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentRecord, ParameterInt2 = DMEEditor.ETL.ScriptCount,ParameterString1=msg };
+                                    progress.Report(ps);
+
+                                }
+                                DMEEditor.AddLogMessage("Fail",msg, DateTime.Now,i, EntityName, Errors.Failed);
                             }
                         }
+                        DMEEditor.ETL.CurrentScriptRecord = DMEEditor.ETL.ScriptCount;
                         command.Dispose();
                         DMEEditor.AddLogMessage("Success", $"Finished Uploading Data to {EntityName}", DateTime.Now, 0, null, Errors.Ok);
                     }

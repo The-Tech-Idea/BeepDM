@@ -52,7 +52,6 @@ namespace TheTechIdea.ETL
         {
             throw new NotImplementedException();
         }
-
         public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
         {
             Passedarg = e;
@@ -80,9 +79,6 @@ namespace TheTechIdea.ETL
             
            
         }
-
-      
-
         private void StopButton_Click(object sender, EventArgs e)
         {
             
@@ -95,33 +91,51 @@ namespace TheTechIdea.ETL
         }
         private async Task RunScripts()
         {
-            progressBar1.Step = 2;
-            var progress = new Progress<int>(percent =>
+            progressBar1.Step = 1;
+            progressBar1.Maximum = 3;
+            
+           var progress = new Progress<PassedArgs>(percent =>
             {
-                progressBar1.Text = percent + "%";
-                progressBar1.Value = percent;
-                update();
+                progressBar1.CustomText = percent.ParameterInt1 + " out of " + percent.ParameterInt2;
+
+                if (percent.ParameterInt2 > 0)
+                {
+                    progressBar1.Maximum = percent.ParameterInt2;
+
+                }
+                progressBar1.Value = percent.ParameterInt1;
+                //this.Log_panel.BeginInvoke(new Action(() =>
+                if (!string.IsNullOrEmpty(percent.ParameterString1))
+                {
+                    Log_panel.AppendText(percent.ParameterString1 + Environment.NewLine);
+                    Log_panel.SelectionStart = Log_panel.Text.Length;
+                    Log_panel.ScrollToCaret();
+                }
+  
             });
-           
+            Action action =
+           () =>
+               MessageBox.Show("Done");
             await Task.Run(() =>
             {
-                DMEEditor.ETL.RunScriptAsync(progress);
+               Task<IErrorsInfo> er= DMEEditor.ETL.RunScriptAsync(progress);
 
-            });
-            MessageBox.Show("Done");
+            }).ContinueWith(showcomplete => action); 
+           // MessageBox.Show("Done");
         }
         private void update()
         {
-            scriptBindingSource.DataSource = DMEEditor.ETL.script.Scripts;
-            trackingscriptBindingSource.DataSource = DMEEditor.ETL.trackingHeader.trackingscript;
-            this.trackingscriptBindingSource.ResetBindings(true);
-            this.scriptBindingSource. ResetBindings( true); 
-            this.scriptDataGridView.Update();
-            this.scriptDataGridView.Refresh();
-            this.trackingscriptDataGridView.Update();
-            this.trackingscriptDataGridView.Refresh();
-            
-           
+            //  scriptBindingSource.DataSource = DMEEditor.ETL.script.Scripts;
+            // trackingscriptBindingSource.DataSource = DMEEditor.ETL.trackingHeader.trackingscript;
+            //   this.trackingscriptBindingSource.ResetBindings(true);
+            //   this.scriptBindingSource. ResetBindings( true); 
+            //   this.scriptDataGridView.Update();
+            //   this.scriptDataGridView.Refresh();
+            // this.trackingscriptDataGridView.Update();
+            //    this.trackingscriptDataGridView.Refresh();
+          
+
+
         }
         #region" background worker"
         BackgroundWorker backgroundWorker1 = new BackgroundWorker();

@@ -12,6 +12,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)ControlEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Controls\EclipseControl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Controls\MyCheckBox.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\MyProgressBar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Controls\RoundButton.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Controls\RoundPanel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Controls\RoundPicture.cs" />

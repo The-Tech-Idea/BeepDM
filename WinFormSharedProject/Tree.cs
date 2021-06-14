@@ -1632,7 +1632,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion
         #region "Data Managemet Shared"
-        public LScriptHeader CreateScriptToCopyEntities(IDataSource dest,List<EntityStructure> entities, IProgress<int> progress,bool copydata=true)
+        public LScriptHeader CreateScriptToCopyEntities(IDataSource dest,List<EntityStructure> entities, IProgress<PassedArgs> progress,bool copydata=true)
         {
             if (dest.Openconnection() == ConnectionState.Open)
             {

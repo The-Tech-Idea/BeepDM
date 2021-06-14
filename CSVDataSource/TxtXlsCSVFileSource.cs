@@ -150,10 +150,8 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             }
             return null;
         }
-     
         public  object GetEntity(string EntityName, List<ReportFilter> filter)
         {
-
             ErrorObject.Flag = Errors.Ok;
             try
             {
@@ -164,6 +162,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 Dataconnection.ConnectionStatus = ConnectionStatus;
                 if (ConnectionStatus == ConnectionState.Open)
                 {
+
                     dt = ReadDataTable(EntityName, HeaderExist, 0, 0);
 
                     if (filter != null)
@@ -230,7 +229,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             }
            // return Records;
         }
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<int> progress)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
             ErrorObject.Flag = Errors.Ok;
 
@@ -249,34 +248,26 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
             return ErrorObject;
         }
-     
-    
-
         public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
             return null;
         }
-
         public DataSet GetChildTablesListFromCustomQuery(string tablename, string customquery)
         {
             throw new NotImplementedException();
         }
-
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             throw new NotImplementedException();
         }
-
         public IErrorsInfo ExecuteSql(string sql)
         {
             throw new NotImplementedException();
         }
-
         public bool CreateEntityAs(EntityStructure entity)
         {
             throw new NotImplementedException();
         }
-
         public bool CheckEntityExist(string EntityName)
         {
             bool retval=false;
@@ -293,7 +284,6 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
             return retval;
         }
-
         public EntityStructure GetEntityStructure(string EntityName,bool refresh=false )
         {
             if (ConnectionStatus == ConnectionState.Open)
@@ -313,8 +303,6 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             return retval;
 
         }
-
-
         public  object RunQuery( string qrystr)
         {
             throw new NotImplementedException();
@@ -329,23 +317,22 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         {
             throw new NotImplementedException();
         }
-
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
             ConnectionStatus = OpenConnection();
-           // Dataconnection.ConnectionStatus = ConnectionStatus;
-           
-
-                if (ConnectionStatus == ConnectionState.Open)
+            if (ConnectionStatus == ConnectionState.Open)
                 {
                     if (refresh || Entities.Count() == 0)
                     {
                         GetEntityStructures(refresh);
                     }
                 }
-               
-           
-            return Entities.Where(x => x.EntityName == fnd.EntityName).FirstOrDefault();
+            EntityStructure retval = null;
+            if (Entities!= null)
+            {
+                retval = Entities.Where(x => string.Equals(x.OriginalEntityName, fnd.EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            }
+            return retval;
         }
         public LScript RunScript(LScript dDLScripts)
         {
@@ -373,14 +360,14 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         public ConnectionState OpenConnection()
         {
             //Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == FileName).FirstOrDefault();
-            //if (DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName) == null)
-            //{
+            if (DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName) == null)
+            {
                 GetEntityStructures(true);
-            //}
-            //else
-           // {
+            }
+            else
+           {
                 Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
-            //};
+           };
 
             CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
             if (File.Exists(CombineFilePath))
@@ -446,7 +433,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
                 }
 
-                FileData = GetExcelDataSet();
+               
                 retval = Entities;
             }
             else

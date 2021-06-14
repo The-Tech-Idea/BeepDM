@@ -139,7 +139,7 @@ namespace WorkdBankWebApiDataSource
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<int> progress)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
             throw new NotImplementedException();
         }

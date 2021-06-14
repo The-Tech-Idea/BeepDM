@@ -666,7 +666,7 @@ namespace TheTechIdea.Winforms.VIS
                 TreeEditor.ChangeWaitingCaption($"Generating Scripts for  Entities Total:{compositeLayerDataSource.LayerInfo.Entities.Count}");
                 ls = compositeLayerDataSource.LayerInfo.Entities.Where(x => x.Created == false).ToList();
                 int i = 0;
-                var progress = new Progress<int>(percent =>
+                var progress = new Progress<PassedArgs>(percent =>
                 {
                   
                     update();

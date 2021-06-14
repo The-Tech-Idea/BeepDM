@@ -466,7 +466,7 @@ namespace TheTechIdea.Winforms.VIS
                                   }
                             }
                         }
-                        var progress = new Progress<int>(percent =>
+                        var progress = new Progress<PassedArgs>(percent =>
                         {
                            
                             update();
@@ -716,7 +716,7 @@ namespace TheTechIdea.Winforms.VIS
         //private async Task GetScriptAsync()
         //{
         //    IDataSource srcds = DMEEditor.GetDataSource(BranchText);
-        //    var progress = new Progress<int>(percent =>
+        //    var progress = new Progress<PassedArgs>(percent =>
         //    {
 
         //        update();

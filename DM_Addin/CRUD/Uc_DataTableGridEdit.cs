@@ -133,7 +133,7 @@ namespace TheTechIdea.CRUD
         {
             try
             {
-                var progress = new Progress<int>(percent =>
+                var progress = new Progress<PassedArgs>(percent =>
                 {
                    
                     update();

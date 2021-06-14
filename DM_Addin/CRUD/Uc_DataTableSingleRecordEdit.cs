@@ -123,7 +123,7 @@ namespace TheTechIdea.CRUD
             try
             {
                 bindingSource1.EndEdit();
-                var progress = new Progress<int>(percent =>
+                var progress = new Progress<PassedArgs>(percent =>
                 {
                   
                     update();

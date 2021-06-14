@@ -211,7 +211,7 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL.RavenDB
             return DMTypeBuilder.myType;
         }
 
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<int> progress)
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
             throw new NotImplementedException();
         }

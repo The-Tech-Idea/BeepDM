@@ -97,7 +97,7 @@ namespace TheTechIdea.ETL
             {
                 ls.Add(Srcds.GetEntityStructure(item, true));
             }
-            var progress = new Progress<int>(percent =>
+            var progress = new Progress<PassedArgs>(percent =>
             {
                
                 update();

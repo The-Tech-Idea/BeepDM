@@ -43,7 +43,7 @@ namespace TheTechIdea
         LScript RunScript( LScript dDLScripts);
         List<LScript> GetCreateEntityScript(List<EntityStructure> entities=null);
         IErrorsInfo CreateEntities(List<EntityStructure> entities);
-        IErrorsInfo UpdateEntities(string EntityName,object UploadData, IProgress<int> progress);
+        IErrorsInfo UpdateEntities(string EntityName,object UploadData, IProgress<PassedArgs> progress);
         IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow);
         IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow);
         IErrorsInfo InsertEntity(string EntityName, object InsertedData);
