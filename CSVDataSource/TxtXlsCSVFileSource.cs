@@ -84,12 +84,27 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         public ConnectionState Openconnection()
         {
             ConnectionStatus = Dataconnection.OpenConnection();
+
+            if (ConnectionStatus == ConnectionState.Open)
+            {
+                if (DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName) == null)
+                {
+                    GetEntityStructures(true);
+                }
+                else
+                {
+                    Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
+                };
+                CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+            }
+
             return ConnectionStatus;
+          
         }
 
         public ConnectionState Closeconnection()
         {
-            throw new NotImplementedException();
+           return ConnectionStatus = ConnectionState.Closed;
         }
 
 
@@ -99,9 +114,9 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
             try
             {
-                ConnectionStatus = OpenConnection();
-                Dataconnection.ConnectionStatus = ConnectionStatus;
-                if (ConnectionStatus == ConnectionState.Open)
+              
+               
+                if (GetFileState() == ConnectionState.Open)
                 {
                     EntitiesNames = new List<string>();
                     EntitiesNames = getWorksheetNames().ToList();
@@ -133,15 +148,15 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         }
         public EntityStructure GetEntityDataType(string EntityName)
         {
-            GetEntitesList();
 
+            GetEntitesList();
             return Entities.Where(x => x.EntityName == EntityName).FirstOrDefault();
         }
         public Type GetEntityType(string EntityName)
         {
-            ConnectionStatus = OpenConnection();
-            Dataconnection.ConnectionStatus = ConnectionStatus;
-            if (ConnectionStatus == ConnectionState.Open)
+           
+
+            if (GetFileState() == ConnectionState.Open)
             {
                 GetEntitesList();
                 string filenamenoext = EntityName;
@@ -157,14 +172,13 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             {
                 DataTable dt=null;
                 string qrystr="";
-                ConnectionStatus = OpenConnection();
-                
-                Dataconnection.ConnectionStatus = ConnectionStatus;
-                if (ConnectionStatus == ConnectionState.Open)
+             
+
+                if (GetFileState() == ConnectionState.Open)
                 {
 
                     dt = ReadDataTable(EntityName, HeaderExist, 0, 0);
-
+                    SyncFieldTypes(ref dt,EntityName);
                     if (filter != null)
                     {
                         if (filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
@@ -229,6 +243,103 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             }
            // return Records;
         }
+        public  TypeCode ToConvert( Type dest)
+        {
+            TypeCode retval = TypeCode.String;
+           switch (dest.ToString())
+            {
+                case "System.String":
+                    retval = TypeCode.String;
+                    break;
+                case "System.Decimal":
+                    retval = TypeCode.Decimal;
+                    break;
+                case "System.DateTime":
+                    retval = TypeCode.DateTime;
+                    break;
+                case "System.Char":
+                    retval = TypeCode.Char;
+                    break;
+                case "System.Boolean":
+                    retval = TypeCode.Boolean;
+                    break;
+                case "System.DBNull":
+                    retval = TypeCode.DBNull;
+                    break;
+                case "System.Byte":
+                    retval = TypeCode.Byte;
+                    break;
+                case "System.Int16":
+                    retval = TypeCode.Int16;
+                    break;
+                case "System.Double":
+                    retval = TypeCode.Double;
+                    break;
+                case "System.Int32":
+                    retval = TypeCode.Int32;
+                    break;
+                case "System.Int64":
+                    retval = TypeCode.Int64;
+                    break;
+                case "System.Single":
+                    retval = TypeCode.Single;
+                    break;
+                case "System.Object":
+                    retval = TypeCode.Object;
+                    break;
+                   
+
+            }
+            return retval;
+        }
+        private void SyncFieldTypes(ref DataTable dt, string EntityName)
+        {
+            EntityStructure ent = GetEntityStructure(EntityName);
+            DataTable newdt = new DataTable(EntityName);
+            if (ent != null)
+            {
+                foreach (var item in ent.Fields)
+                {
+                    DataColumn cl = new DataColumn(item.fieldname, Type.GetType(item.fieldtype));
+                    newdt.Columns.Add(cl);
+                    //dt.Columns[item.fieldname].DataType = Type.GetType(item.fieldtype);
+                }
+                foreach (DataRow dr in dt.Rows)
+                {
+                    try
+                    {
+                        DataRow r = newdt.NewRow();
+                        foreach (var item in ent.Fields)
+                        {
+                            if (dr[item.fieldname] != DBNull.Value)
+                            {
+                                r[item.fieldname] = Convert.ChangeType(dr[item.fieldname], ToConvert(Type.GetType(item.fieldtype)));
+                            }
+                         
+                       
+                        }
+                        try
+                        {
+                            newdt.Rows.Add(r);
+                        }
+                        catch (Exception aa)
+                        {
+
+                           
+                        }
+                      
+                    }
+                    catch (Exception ex)
+                    {
+
+                       // throw;
+                    }
+            
+                }
+            }
+            dt = newdt;
+        }
+
         public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -271,14 +382,18 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         public bool CheckEntityExist(string EntityName)
         {
             bool retval=false;
-            if (Entities != null)
+            if(GetFileState()== ConnectionState.Open)
             {
-                if (Entities.Where(x => string.Equals(x.EntityName, EntityName,StringComparison.OrdinalIgnoreCase)).Count() > 0)
+                if (Entities != null)
                 {
-                    retval = true;
+                    if (Entities.Where(x => string.Equals(x.EntityName, EntityName, StringComparison.OrdinalIgnoreCase)).Count() > 0)
+                    {
+                        retval = true;
+                    }
+                    else
+                        retval = false;
+
                 }
-                else
-                    retval = false;
 
             }
 
@@ -286,7 +401,9 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         }
         public EntityStructure GetEntityStructure(string EntityName,bool refresh=false )
         {
-            if (ConnectionStatus == ConnectionState.Open)
+           
+
+            if (GetFileState() == ConnectionState.Open)
             {
                 if (refresh || Entities.Count() == 0)
                 {
@@ -319,9 +436,10 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         }
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
-            ConnectionStatus = OpenConnection();
-            if (ConnectionStatus == ConnectionState.Open)
-                {
+           
+
+            if (GetFileState() == ConnectionState.Open)
+            {
                     if (refresh || Entities.Count() == 0)
                     {
                         GetEntityStructures(refresh);
@@ -357,87 +475,57 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             return (Task<object>)GetEntity(EntityName, Filter);
         }
         #region "Excel and CSV Reader"
-        public ConnectionState OpenConnection()
-        {
-            //Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == FileName).FirstOrDefault();
-            if (DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName) == null)
-            {
-                GetEntityStructures(true);
-            }
-            else
-           {
-                Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
-           };
-
-            CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
-            if (File.Exists(CombineFilePath))
-            {
-                ConnectionStatus = ConnectionState.Open;
-
-                Dataconnection.ConnectionStatus = ConnectionStatus;
-
-                return ConnectionState.Open;
-
-
-            }
-            else
-            {
-                Dataconnection.ConnectionStatus = ConnectionStatus;
-                ConnectionStatus = ConnectionState.Broken;
-                return ConnectionState.Broken;
-            }
-        }
+        
         public ConnectionState GetFileState()
         {
-            if (File.Exists(CombineFilePath))
+            if (ConnectionStatus == ConnectionState.Open)
             {
-                Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == FileName).FirstOrDefault();
-              //  Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
-                ConnectionStatus = ConnectionState.Open;
-                Dataconnection.ConnectionStatus = ConnectionStatus;
-                return ConnectionState.Open;
-            }
-            else
+                return ConnectionStatus;
+            }else
             {
-                ConnectionStatus = ConnectionState.Broken;
-                Dataconnection.ConnectionStatus = ConnectionStatus;
-                return ConnectionState.Broken;
+                return Openconnection();
             }
+
+           
         }
         public List<EntityStructure> GetEntityStructures(bool refresh = false)
         {
             List<EntityStructure> retval = new List<EntityStructure>();
             Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == FileName).FirstOrDefault();
+           // Openconnection();
 
-            CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
-            if (File.Exists(CombineFilePath))
+            if (GetFileState() == ConnectionState.Open)
             {
-                ConnectionStatus = ConnectionState.Open;
-                Dataconnection.ConnectionStatus = ConnectionStatus;
-                if ((Entities == null) || (Entities.Count == 0) || (refresh))
+                CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+                if (File.Exists(CombineFilePath))
                 {
-                    Entities = new List<EntityStructure>();
-                    Getfields();
-                    Dataconnection.ConnectionProp.Delimiter = Delimiter;
-                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = FileName, Entities = Entities });
-                    //  ConnProp.Entities = Entities;
-                    DMEEditor.ConfigEditor.SaveDataconnectionsValues();
 
+                    if ((Entities == null) || (Entities.Count == 0) || (refresh))
+                    {
+                        Entities = new List<EntityStructure>();
+                        Getfields();
+                        Dataconnection.ConnectionProp.Delimiter = Delimiter;
+                        DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = FileName, Entities = Entities });
+                        //  ConnProp.Entities = Entities;
+                        DMEEditor.ConfigEditor.SaveDataconnectionsValues();
+
+                    }
+                    else
+                    {
+
+                        Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
+                        Delimiter = Dataconnection.ConnectionProp.Delimiter;
+
+                    }
+
+
+                    retval = Entities;
                 }
                 else
-                {
-                    ConnectionStatus = ConnectionState.Broken;
-                    Dataconnection.ConnectionStatus = ConnectionStatus;
-                    Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
-                    Delimiter = Dataconnection.ConnectionProp.Delimiter;
+                    retval = Entities;
 
-                }
-
-               
-                retval = Entities;
             }
-            else
-                retval = Entities;
+          
 
             return retval;
 
@@ -571,22 +659,23 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         {
             DataSet ds;
             Entities = new List<EntityStructure>();
+            
 
-            if (File.Exists(Path.Combine(FilePath, FileName)) == true)
+            if (GetFileState() == ConnectionState.Open)
             {
                 try
                 {
 
 
                     ds = GetExcelDataSet();
-                  
+
                     int i = 0;
                     foreach (DataTable tb in ds.Tables)
                     {
                         EntityStructure entityData = new EntityStructure();
 
                         string sheetname;
-                      
+
                         sheetname = tb.TableName;
                         entityData.Viewtype = ViewType.File;
                         entityData.DatabaseType = DataSourceType.Text;
@@ -595,11 +684,11 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                         entityData.Caption = tb.TableName;
                         entityData.EntityName = sheetname;
                         List<EntityField> Fields = new List<EntityField>();
-                      
-                      
+
+
                         entityData.Fields = new List<EntityField>();
-                        entityData.Fields.AddRange(GetFieldTypes(tb.TableName, tb.Columns));
-                        entityData.Fields = GetStringSizeFromTable(entityData.Fields, tb);
+                        entityData.Fields.AddRange(GetFieldsbyTableScan(tb.TableName, tb.Columns));
+                       // entityData.Fields = GetStringSizeFromTable(entityData.Fields, tb);
                         Entities.Add(entityData);
                     }
 
@@ -608,17 +697,12 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 }
                 catch (Exception ex)
                 {
-                    ErrorObject.Flag = Errors.Failed;
-                    ErrorObject.Ex = ex;
-                    Logger.WriteLog($"Error in getting File format ({ex.Message}) ");
+                    DMEEditor.AddLogMessage("Fail", $"Error in getting File format {ex.Message}", DateTime.Now, 0, FileName, Errors.Failed);
+
                 }
             }
-            else
-            {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = null;
-                Logger.WriteLog($"File is not Found ");
-            }
+
+        
 
 
         }
@@ -770,7 +854,6 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         {
             return ExcelReaderFactory.CreateReader(System.IO.File.OpenRead(FilePath), ReaderConfig);
         }
-
         public IEnumerable<string> getWorksheetNames()
         {
             List<string> entlist = new List<string>();
@@ -797,7 +880,6 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             return entlist;
 
         }
-
         public IEnumerable<DataRow> getData(string sheet, bool firstRowIsColumnNames = false)
         {
             //var reader = this.getExcelReader();
@@ -818,7 +900,6 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             }
 
         }
-
         public IEnumerable<DataRow> GetFirstSheetData(bool firstRowIsColumnNames = false)
         {
             //var reader = this.getExcelReader();
@@ -862,7 +943,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                     f.ValueRetrievedFromParent = false;
                     f.EntityName = sheetname;
                     f.FieldIndex = y;
-                    f.Checked = true;
+                    f.Checked = false;
                     f.AllowDBNull = true;
                     f.IsAutoIncrement = false;
                     f.IsCheck = false;
@@ -965,8 +1046,163 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 return null;
             }
         }
+        private List<EntityField> GetFieldsbyTableScan(string sheetname, DataColumnCollection datac)
+        {
+            List<DataRow> tb = getData(sheetname).ToList();
+            List<EntityField> flds = new List<EntityField>();
+            int y = 0;
+            string valstring;
+            decimal dval;
+            double dblval;
+            long longval;
+            bool boolval;
+            int intval;
+            short shortval;
+            float floatval;
+            DateTime dateval = DateTime.Now;
+            foreach (DataColumn field in datac)
+            {
+                EntityField f = new EntityField();
+
+
+                //  f.tablename = sheetname;
+                f.fieldname = field.ColumnName;
+                f.fieldtype = field.DataType.ToString();
+                f.ValueRetrievedFromParent = false;
+                f.EntityName = sheetname;
+                f.FieldIndex = y;
+                f.Checked = false;
+                f.AllowDBNull = true;
+                f.IsAutoIncrement = false;
+                f.IsCheck = false;
+                f.IsKey = false;
+                f.IsUnique = false;
+                y++;
+                flds.Add(f);
+              
+
+
+            }
+            foreach (DataRow r in tb)
+            {
+
+
+                foreach (EntityField f in flds)
+                {
+                    if (f.fieldname.ToLower().Contains("date") || f.fieldname.ToLower().Contains("_dt"))
+                    {
+                        f.fieldtype = "System.DateTime";
+                        f.Checked = true;
+                    }else
+                        if (r[f.fieldname] != DBNull.Value)
+                        {
+                                 valstring = r[f.fieldname].ToString();
+                                
+                                 dateval = DateTime.Now;
+
+
+                                if (decimal.TryParse(valstring, out dval))
+                                {
+                                    f.fieldtype = "System.Decimal";
+
+                                }
+                                else
+                                if (double.TryParse(valstring, out dblval))
+                                {
+                                    f.fieldtype = "System.Double";
+                                }
+                                else
+                                if (DateTime.TryParse(valstring, out dateval))
+                                {
+                                    f.fieldtype = "System.DateTime";
+
+                                }
+                                else
+                                    if (long.TryParse(valstring, out longval))
+                                {
+                                    f.fieldtype = "System.Long";
+
+                                }
+                                else
+                                    if (bool.TryParse(valstring, out boolval))
+                                {
+                                    f.fieldtype = "System.Bool";
+
+                                }
+                                else
+                                    if (float.TryParse(valstring, out floatval))
+                                {
+                                    f.fieldtype = "System.Float";
+
+                                }
+                                else
+                                if (int.TryParse(valstring, out intval))
+                                {
+                                    f.fieldtype = "System.Int";
+
+                                }
+                                else
+                                    if (short.TryParse(valstring, out shortval))
+                                {
+                                    f.fieldtype = "System.Short";
+
+                                }
+                                else
+                                    f.fieldtype = "System.String";
+                        }
+                    if (f.fieldtype.Equals("System.string", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (r[f.fieldname] != DBNull.Value)
+                        {
+                            if (!string.IsNullOrEmpty(r[f.fieldname].ToString()))
+                            {
+                                if (r[f.fieldname].ToString().Length > f.Size1)
+                                {
+                                    f.Size1 = r[f.fieldname].ToString().Length;
+                                }
+
+                            }
+                        }
+
+                    }
+                    if (f.fieldtype.Equals("System.Decimal", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (r[f.fieldname] != DBNull.Value)
+                        {
+                            if (!string.IsNullOrEmpty(r[f.fieldname].ToString()))
+                            {
+                                valstring = r[f.fieldname].ToString();
+                                if (decimal.TryParse(valstring, out dval))
+                                {
+
+                                    f.fieldtype = "System.Decimal";
+                                    f.Size1 = GetDecimalPrecision(dval);
+                                    f.Size2 = GetDecimalScale(dval);
+                                }
+                            }
+                        }
+
+                    }
+
+
+                }
+            }
+            foreach (EntityField fld in flds)
+            {
+                if (fld.fieldtype.Equals("System.string", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (fld.Size1 == 0)
+                    {
+                        fld.Size1 = 150;
+                    }
+
+                }
+            }
+            return flds;
+        }
         private List<EntityField> GetStringSizeFromTable(List<EntityField> entityFields ,DataTable tb)
         {
+
             foreach (DataRow r in tb.Rows)
             {
                 foreach (EntityField fld in entityFields)
@@ -986,6 +1222,35 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                         }
                         
                     }
+                    decimal dval;
+               
+                    string valstring;
+                   
+                    if (fld.fieldtype.Equals("System.Decimal", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (r[fld.fieldname] != DBNull.Value)
+                        {
+                            if (!string.IsNullOrEmpty(r[fld.fieldname].ToString()))
+                            {
+                                valstring = r[fld.fieldname].ToString();
+                                if (decimal.TryParse(valstring, out dval))
+                                {
+                                    
+                                    fld.fieldtype = "System.Decimal";
+                                    fld.Size1 = GetDecimalPrecision(dval);
+                                    fld.Size2= GetDecimalScale(dval);
+
+                                }
+                               
+                                   
+                                
+
+                            }
+                        }
+
+                    }
+                   
+                  
                 }
             }
             foreach (EntityField fld in entityFields)
@@ -1001,7 +1266,25 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             }
             return entityFields;
         }
+        public static int GetDecimalScale( decimal value)
+        {
+            if (value == 0)
+                return 0;
+            int[] bits = decimal.GetBits(value);
+            return (int)((bits[3] >> 16) & 0x7F);
+        }
 
+        public static int GetDecimalPrecision( decimal value)
+        {
+            if (value == 0)
+                return 0;
+            int[] bits = decimal.GetBits(value);
+            //We will use false for the sign (false =  positive), because we don't care about it.
+            //We will use 0 for the last argument instead of bits[3] to eliminate the fraction point.
+            decimal d = new Decimal(bits[0], bits[1], bits[2], false, 0);
+            return (int)Math.Floor(Math.Log10((double)d)) + 1;
+        }
+       
         #endregion
 
     }

@@ -43,8 +43,8 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
             client = new HttpClient();
             Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName == datasourcename).FirstOrDefault();
             cn = (WebAPIDataConnection)Dataconnection;
-            cn.OpenConnection();
-            cn.ConnectionStatus = ConnectionStatus;
+            cn.DMEEditor = DMEEditor;
+         
 
         }
         public int GetEntityIdx(string entityName)
@@ -62,7 +62,8 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
         }
         public ConnectionState Openconnection()
         {
-            throw new NotImplementedException();
+             return   ConnectionStatus= cn.OpenConnection();
+         
         }
 
         public ConnectionState Closeconnection()
@@ -534,8 +535,12 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
                 {
                     var data = JObject.Parse(body);
                     var location = data.SelectToken("series");
-                //    var categories = location.SelectToken(ent.KeyToken);
-                    retval = location.ToString();
+                    //    var categories = location.SelectToken(ent.KeyToken);
+                    if (location != null)
+                    {
+                        retval = location.ToString();
+                    }
+             
                 }
                 var y = DMEEditor.ConfigEditor.JsonLoader.DeserializeObjectString<List<Series>>(retval);
                 return y;

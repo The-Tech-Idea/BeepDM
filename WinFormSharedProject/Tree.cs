@@ -197,7 +197,11 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
                 CategoryFolder f = DMEEditor.ConfigEditor.CategoryFolders.Where(x => x.RootName == root && x.FolderName == foldername).FirstOrDefault();
-                f.items.Remove(entityname);
+                if (f != null)
+                {
+                    f.items.Remove(entityname);
+                }
+                
                 return true;
             }
             catch (Exception ex)

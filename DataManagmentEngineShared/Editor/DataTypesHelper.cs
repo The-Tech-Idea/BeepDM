@@ -49,10 +49,12 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         public string GetDataType(string DSname, EntityField fld)
         {
             string retval = null;
+            IDataSource ds;
             try
             {
                 if (DSname != null)
                 {
+                     ds = DMEEditor.GetDataSource(DSname);
                     if (DMEEditor.ConfigEditor.DataTypesMap == null)
                     {
                         DMEEditor.ConfigEditor.ReadDataTypeFile();
@@ -67,7 +69,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         if (classhandler != null)
                         {
                             DatatypeMapping dt = null;
-                            if (fld.fieldtype == "System.String")  //-- Fist Check all Data field that Contain Length
+                            if (fld.fieldtype.Equals("System.String",StringComparison.OrdinalIgnoreCase))  //-- Fist Check all Data field that Contain Length
                             {
                                 if (fld.Size1 > 0) //-- String Type first
                                 {
@@ -85,42 +87,58 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                                 }
 
                             }
-                            else  //---- numeric
-                            {
-
-                                if (fld.NumericPrecision > 0)
+                            else 
+                            if(!fld.fieldtype.Equals("System.DateTime", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    if (fld.NumericScale > 0)
+                                    if (fld.fieldtype.Equals("System.Decimal", StringComparison.OrdinalIgnoreCase))
                                     {
-                                        dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className, StringComparison.OrdinalIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.OrdinalIgnoreCase) && x.DataType.Contains("N,S")).FirstOrDefault();
-                                        if (dt != null)
+                                        if (fld.NumericPrecision == 0)
                                         {
-                                            retval = dt.DataType.Replace("(N,S)", "(" + fld.NumericPrecision.ToString() + "," + fld.NumericScale.ToString() + ")");
+                                            fld.NumericPrecision = 28;
+                                        }
+                                        if (fld.NumericScale == 0)
+                                        {
+                                            fld.NumericScale = 8;
                                         }
 
-
                                     }
-                                    else
+                                    if (fld.NumericPrecision > 0)
                                     {
-                                        dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className, StringComparison.OrdinalIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.OrdinalIgnoreCase) && x.DataType.Contains("(N)")).FirstOrDefault();
-                                        if (dt != null)
+                                        if (fld.NumericScale > 0)
                                         {
-                                            retval = dt.DataType.Replace("(N)", "(" + fld.NumericPrecision.ToString() + ")");
+                                            dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className, StringComparison.OrdinalIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.OrdinalIgnoreCase) && x.DataType.Contains("P,S")).FirstOrDefault();
+                                            if (dt != null)
+                                            {
+                                                retval = dt.DataType.Replace("(P,S)", "(" + fld.NumericPrecision.ToString() + "," + fld.NumericScale.ToString() + ")");
+                                            }
+
 
                                         }
                                         else
                                         {
-                                            dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className, StringComparison.OrdinalIgnoreCase) && x.NetDataType.Equals(fld.fieldtype,StringComparison.OrdinalIgnoreCase) && x.DataType.Contains("(N,S)")).FirstOrDefault();
+                                            dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className, StringComparison.OrdinalIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.OrdinalIgnoreCase) && x.DataType.Contains("(N)")).FirstOrDefault();
+                                            if (dt != null)
+                                            {
+                                                retval = dt.DataType.Replace("(N)", "(" + fld.NumericPrecision.ToString() + ")");
+
+                                            }
+                                            else
+                                            {
+                                                dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className, StringComparison.OrdinalIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.OrdinalIgnoreCase) && x.DataType.Contains("(P,S)")).FirstOrDefault();
+
+                                            }
+                                            if (dt != null)
+                                            {
+                                                retval = dt.DataType.Replace("(P,S)", "(" + fld.NumericPrecision.ToString() + "," + fld.NumericScale.ToString() + ")");
+                                            }
 
                                         }
-                                        if (dt != null)
-                                        {
-                                            retval = dt.DataType.Replace("(N,S)", "(" + fld.NumericPrecision.ToString() + ",0)");
-                                        }
-
                                     }
+
+                                    
                                 }
-                            }
+
+
                             if (retval == null)
                             {
                                 dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className,StringComparison.OrdinalIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();

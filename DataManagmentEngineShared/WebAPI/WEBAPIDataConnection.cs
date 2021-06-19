@@ -76,7 +76,7 @@ namespace DataManagmentEngineShared.WebAPI
             {
                  string str = $" Found WebApi  : {ConnectionProp.Url}";
                     ErrorObject.Message = str;
-                     DMEEditor.AddLogMessage("Success", str, DateTime.Now, -1, "", Errors.Ok);
+                   //  DMEEditor.AddLogMessage("Success", str, DateTime.Now, -1, "", Errors.Ok);
                      ErrorObject.Flag = Errors.Ok;
                     ConnectionStatus = ConnectionState.Open;
 
@@ -89,7 +89,7 @@ namespace DataManagmentEngineShared.WebAPI
                 ConnectionStatus = ConnectionState.Broken;
                     //ErrorObject.Ex = e;
                 }
-            DMEEditor.AddLogMessage("Success", $"WebAPI {ConnectionProp.ConnectionName} Found", DateTime.Now, -1, "", Errors.Ok);
+         //   DMEEditor.AddLogMessage("Success", $"WebAPI {ConnectionProp.ConnectionName} Found", DateTime.Now, -1, "", Errors.Ok);
             return ConnectionStatus;
         }
         public ConnectionState OpenConnection(DataSourceType dbtype, string host, int port, string database, string userid, string password, string parameters)

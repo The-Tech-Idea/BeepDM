@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.Util;
@@ -259,7 +260,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         {
             try
             {
-
+                int errorcount = 0;
 
 
                 EntityStructure item = sourceds.GetEntityStructure(srcentity, true);
@@ -279,10 +280,43 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
                         src.Wait();
                         srcTb = src.Result;
+                        List<object> srcList=new List<object>();
+                        DMTypeBuilder.CreateNewObject(item.EntityName, item.EntityName, item.Fields);
+                        if (srcTb.GetType().FullName.Contains("DataTable"))
+                        {
+                            srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, item);
+                        }
+                        if (srcTb.GetType().FullName.Contains("List"))
+                        {
+                            srcList = (List<object>)srcTb;
+                        }
                         
+                        if (srcTb.GetType().FullName.Contains("IEnumerable"))
+                        {
+                            srcList= (List<object>)srcTb;
+                        }
+                        ScriptCount += srcList.Count();
+                        if (progress != null)
+                        {
+                            PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = "Stop" };
+                            progress.Report(ps);
+
+                        }
+                        foreach (var r in srcList)
+                        {
+                            CurrentScriptRecord += 1;
+                            destds.InsertEntity(item.EntityName, r);
+                           
+                            if (progress != null)
+                            {
+                                PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3="Stop" };
+                                progress.Report(ps);
+
+                            }
+                        }
                        
-                        var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(destentity, srcTb,progress); });
-                        dst.Wait();
+                        //var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(destentity, srcTb,progress); });
+                        //dst.Wait();
                         DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data from {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Ok);
 
                     }
@@ -367,7 +401,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
            
         }
 
-        public async Task<IErrorsInfo> RunScriptAsync(IProgress<PassedArgs> progress)
+        public async Task<IErrorsInfo> RunScriptAsync(IProgress<PassedArgs> progress, CancellationToken token)
         {
             #region "Update Data code "
 
@@ -503,6 +537,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 }
 
                 #endregion
+
 
                 //-----------------------------
 

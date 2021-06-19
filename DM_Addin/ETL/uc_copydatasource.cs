@@ -102,7 +102,7 @@ namespace TheTechIdea.ETL
                
                 update();
             });
-            DMEEditor.ETL.GetCreateEntityScript(Srcds, ls,progress);
+           // DMEEditor.ETL.GetCreateEntityScript(Srcds, ls,progress,token);
             foreach (var item in ls)
             {
                

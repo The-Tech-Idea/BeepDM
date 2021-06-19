@@ -46,8 +46,13 @@ namespace TheTechIdea.ETL
         public PassedArgs Passedarg { get; set; }
         IBranch RootAppBranch;
         public IVisUtil Visutil { get; set; }
-        IBranch branch;
+        IBranch branch; 
         BackgroundWorkerThread backgroundWorker;
+        CancellationTokenSource tokenSource;
+        CancellationToken token;
+        bool RequestCancle = false;
+        Task ScriptRun;
+        int errorcount = 0;
         public void Run(string param1)
         {
             throw new NotImplementedException();
@@ -81,8 +86,8 @@ namespace TheTechIdea.ETL
         }
         private void StopButton_Click(object sender, EventArgs e)
         {
-            
-            backgroundWorker.RequestCancel();
+            RequestCancle = true;
+            //backgroundWorker.RequestCancel();
         }
         private  void RunScriptbutton_Click(object sender, EventArgs e)
         {
@@ -91,10 +96,12 @@ namespace TheTechIdea.ETL
         }
         private async Task RunScripts()
         {
+            errorcount = 0;
             progressBar1.Step = 1;
             progressBar1.Maximum = 3;
-            
-           var progress = new Progress<PassedArgs>(percent =>
+            tokenSource = new CancellationTokenSource();
+            token = tokenSource.Token;
+            var progress = new Progress<PassedArgs>(percent =>
             {
                 progressBar1.CustomText = percent.ParameterInt1 + " out of " + percent.ParameterInt2;
 
@@ -107,21 +114,50 @@ namespace TheTechIdea.ETL
                 //this.Log_panel.BeginInvoke(new Action(() =>
                 if (!string.IsNullOrEmpty(percent.ParameterString1))
                 {
+                    
                     Log_panel.AppendText(percent.ParameterString1 + Environment.NewLine);
                     Log_panel.SelectionStart = Log_panel.Text.Length;
                     Log_panel.ScrollToCaret();
                 }
-  
+                if (DMEEditor.ErrorObject.Flag == Errors.Failed)
+                {
+                    if (string.IsNullOrEmpty(percent.ParameterString3))
+                    {
+                        if (percent.ParameterString3 == "Stop")
+                        {
+                            tokenSource.Cancel();
+                        }
+                    }
+                }
+                
+               
             });
             Action action =
            () =>
                MessageBox.Show("Done");
-            await Task.Run(() =>
+            ScriptRun = Task.Run(() =>
             {
-               Task<IErrorsInfo> er= DMEEditor.ETL.RunScriptAsync(progress);
+                CancellationTokenRegistration ctr = token.Register(() => StopTask());
+                Task<IErrorsInfo> er= DMEEditor.ETL.RunScriptAsync(progress,token);
 
             }).ContinueWith(showcomplete => action); 
-           // MessageBox.Show("Done");
+           
+        }
+        /// <summary>
+        ///     Stop running task
+        /// </summary>
+        void StopTask()
+        {
+            // Attempt to cancel the task politely
+            if (tokenSource != null)
+            {
+                if (tokenSource.IsCancellationRequested)
+                    return;
+                else
+                    tokenSource.Cancel();
+            }
+
+           
         }
         private void update()
         {

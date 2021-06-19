@@ -672,13 +672,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 int rowsUpdated = command.ExecuteNonQuery();
                 if (rowsUpdated > 0)
                 {
-                    msg = $"Successfully Inserted  Record  to {EntityName} : {updatestring}";
-                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
+                    msg = $"Successfully Inserted  Record  to {EntityName} ";
+                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
                 }
                 else
                 {
                     msg = $"Fail to Insert  Record  to {EntityName} : {updatestring}";
-                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
+                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
                 }
                 // DMEEditor.AddLogMessage("Success",$"Successfully Written Data to {EntityName}",DateTime.Now,0,null, Errors.Ok);
 

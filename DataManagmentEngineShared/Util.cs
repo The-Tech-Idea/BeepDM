@@ -613,6 +613,8 @@ namespace TheTechIdea.DataManagment_Engine
                             }
                             else
                             {
+
+                              //  TrySetProperty<enttype>(ti, dr[col.fieldname], null);
                                 PropAInfo.SetValue(ti, dr[col.fieldname], null);
                             }
                         }

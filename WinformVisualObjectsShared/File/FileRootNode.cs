@@ -219,7 +219,7 @@ namespace TheTechIdea.Winforms.VIS
              //   viewbr.DataSourceName = DataSourceName;
                 TreeEditor.AddBranch(this, viewbr);
                  ChildBranchs.Add(viewbr);
-                viewbr.CreateChildNodes();
+              //  viewbr.CreateChildNodes();
 
                 DMEEditor.AddLogMessage("Success", "Added Database Connection", DateTime.Now, 0, null, Errors.Ok);
             }

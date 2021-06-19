@@ -135,23 +135,24 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Show", Hidden = false)]
-        public IErrorsInfo Show()
+        [BranchDelegate(Caption = "Get Sheets", Hidden = false)]
+        public IErrorsInfo GetSheets()
         {
 
             try
             {
-
-
-                DMEEditor.AddLogMessage("Success", "Show File", DateTime.Now, 0, null, Errors.Ok);
+                TreeEditor.RemoveChildBranchs(this);
+                CreateChildNodes();
+               // DMEEditor.AddLogMessage("Success", "Show File", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-                string mes = "Could not Show File";
+                string mes = "Could not Get Sheets";
                 DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
             };
             return DMEEditor.ErrorObject;
         }
+       
         //[BranchDelegate(Caption = "Remove", Hidden = false)]
         //public IErrorsInfo Remove()
         //{

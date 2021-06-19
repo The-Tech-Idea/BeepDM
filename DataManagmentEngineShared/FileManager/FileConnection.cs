@@ -69,7 +69,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                 {
                     string str = $"Found File  ,{Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)}";
                    
-                    DMEEditor.AddLogMessage("Success", str, DateTime.Now, -1, "", Errors.Ok);
+                  //  DMEEditor.AddLogMessage("Success", str, DateTime.Now, -1, "", Errors.Ok);
                     ConnectionStatus = ConnectionState.Open;
                 }
                 else

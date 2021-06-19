@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.Util;
@@ -27,7 +28,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, IProgress<PassedArgs> progress, bool CreateMissingEntity = true);
         List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities, IProgress<PassedArgs> progress);
         List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress);
-        Task<IErrorsInfo> RunScriptAsync(IProgress<PassedArgs> progress);
+        Task<IErrorsInfo> RunScriptAsync(IProgress<PassedArgs> progress, CancellationToken token);
       
     }
 }
