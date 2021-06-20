@@ -9,6 +9,7 @@ using TheTechIdea.DataManagment_Engine.AppBuilder;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.DataManagment_Engine.Editor;
 
 namespace TheTechIdea.Util
 {
@@ -48,6 +49,7 @@ namespace TheTechIdea.Util
         List<EntityStructure> EntityCreateObjects { get; set; }
         List<DatatypeMapping> DataTypesMap { get; set; }
         List<DataSourceFieldProperties> AppfieldProperties { get; set; }
+        List<SyncDataSource> SyncedDataSources { get; set; }
         List<DatatypeMapping> ReadDataTypeFile(string filename = "DataTypeMapping");
         void WriteDataTypeFile(string filename = "DataTypeMapping");
         string GetSql(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType);
@@ -124,8 +126,10 @@ namespace TheTechIdea.Util
         List<ReportTemplate> LoadReportsDefinitionValues();
         void SaveAIScriptsValues();
         List<ReportsList> LoadAIScriptsValues();
-     
 
+        void WriteSyncDataSource(string filename = "SyncDataSource");
+        List<SyncDataSource> ReadSyncDataSource(string filename = "SyncDataSource");
+        
 
 
     }

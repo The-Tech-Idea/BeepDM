@@ -67,6 +67,8 @@ namespace TheTechIdea.Util
 		public List<DataSourceFieldProperties> AppfieldProperties { get; set; } = new List<DataSourceFieldProperties>();
 		public Dictionary<string, string> Entities { get; set; } = new Dictionary<string, string>();
 		public List<LScriptHeader> Scripts { get; set; } = new List<LScriptHeader>();
+		public List<SyncDataSource> SyncedDataSources { get; set; } = new List<SyncDataSource>();
+
 		public List<ConnectionDriversConfig> DataDriversClasses { get; set; } = new List<ConnectionDriversConfig>();
 		public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public string ExePath { get; set; } // System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location); //System.Reflection.Assembly.GetExecutingAssembly().Location
@@ -929,6 +931,21 @@ namespace TheTechIdea.Util
 			return DataTypesMap;
 		}
 		#endregion
+		#region "SyncDataSource L/S"
+		public void WriteSyncDataSource(string filename = "SyncDataSource")
+		{
+			string path = Path.Combine(ConfigPath, $"{filename}.json");
+			JsonLoader.Serialize(path, SyncedDataSources);
+
+
+		}
+		public List<SyncDataSource> ReadSyncDataSource(string filename = "SyncDataSource")
+		{
+			string path = Path.Combine(ConfigPath, $"{filename}.json");
+			SyncedDataSources = JsonLoader.DeserializeObject<SyncDataSource>(path);
+			return SyncedDataSources;
+		}
+		#endregion
 		#region "Init Values"
 		private IErrorsInfo InitConnectionConfigDrivers()
 		{
@@ -1284,6 +1301,7 @@ namespace TheTechIdea.Util
 				LoadObjectTypes();
 				LoadMappingSchema();
 				ReadDataTypeFile();
+				ReadSyncDataSource();
 				InitMapping();
 			}
 			catch (Exception ex)

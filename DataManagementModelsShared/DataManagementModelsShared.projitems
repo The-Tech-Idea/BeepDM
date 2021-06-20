@@ -69,6 +69,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Editor\IDataTypesHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\ILScript.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\IDMEEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\SyncDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileManager\ColumnDef.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileManager\ExcelSheetDefinition.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IDataSource.cs" />
