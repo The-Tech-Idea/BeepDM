@@ -28,13 +28,14 @@ namespace TheTechIdea.DataManagment_Engine.Workflow
     }
     public class Map_Schema : IMap_Schema
     {
-        public int Id { get; set; }
+
+        public string Id { get; set; }
         public string SchemaName { get; set; }
         public string Description { get; set; }
         public List<Mapping_rep> Maps { get; set; } = new List<Mapping_rep>();
         public Map_Schema()
         {
-
+            Id = Guid.NewGuid().ToString();
         }
     }
    

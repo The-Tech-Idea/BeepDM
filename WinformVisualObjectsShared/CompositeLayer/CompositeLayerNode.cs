@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using TheTechIdea.DataManagment_Engine;
 using TheTechIdea.DataManagment_Engine.CompositeLayer;
@@ -91,7 +92,8 @@ namespace TheTechIdea.Winforms.VIS
         public int MiscID { get; set; }
         public CompositeLayerDataSource compositeLayerDataSource { get; set; }
         CompositeLayer CLayer = new CompositeLayer();
-    
+        CancellationTokenSource tokenSource;
+        CancellationToken token;
         public IErrorsInfo CreateChildNodes()
         {
            return GetEntites();
@@ -673,9 +675,11 @@ namespace TheTechIdea.Winforms.VIS
                 });
                 if (ls.Count > 0)
                 {
+                    tokenSource = new CancellationTokenSource();
+                    token = tokenSource.Token;
                     DMEEditor.ETL.script = new LScriptHeader();
                     DMEEditor.ETL.script.scriptSource = compositeLayerDataSource.DatasourceName;
-                    DMEEditor.ETL.GetCreateEntityScript(compositeLayerDataSource, ls, progress);
+                    DMEEditor.ETL.GetCreateEntityScript(compositeLayerDataSource, ls, progress,token);
                     foreach (var item in ls)
                     {
                         TreeEditor.AddCommentsWaiting($"{i} - Creating script for Entity {item.EntityName} ");

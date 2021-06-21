@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Logger;
@@ -127,9 +128,26 @@ namespace TheTechIdea.ETL
                 this.dataHierarchyBindingSource.ResetBindings(true);
                 this.fieldsBindingSource.ResetBindings(true);
                 dataHierarchyBindingSource.DataSource = EntityStructure;
+                //ConnectionProperties connection = DMEEditor.ConfigEditor.DataConnections.Where(o => o.ConnectionName.Equals(this.SourceConnection.DatasourceName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                //ConnectionDriversConfig conf = DMEEditor.Utilfunction.LinkConnection2Drivers(connection);
+                //if (conf != null)
+                //    {
+                //        dataTypesMapBindingSource.DataSource = DMEEditor.ConfigEditor.DataTypesMap.Where(p => p.DataSourceName.Equals(conf.classHandler, StringComparison.OrdinalIgnoreCase)).Distinct();
+                //    }
+
+                DMEEditor.ConfigEditor.ReadDataTypeFile();
+                this.fieldtypeDataGridViewTextBoxColumn.DataSource = DMEEditor.typesHelper.GetNetDataTypes2();
+           //     fieldtypeDataGridViewTextBoxColumn.DataSource = dataTypesMapBindingSource;
             }
+            this.fieldsDataGridView.DataError += FieldsDataGridView_DataError;
           
         }
+
+        private void FieldsDataGridView_DataError(object sender, DataGridViewDataErrorEventArgs e)
+        {
+            e.ThrowException = false;
+        }
+
         private void ValidateFieldsbutton_Click(object sender, EventArgs e)
         {
 
@@ -184,16 +202,16 @@ namespace TheTechIdea.ETL
 
             {
                 EntityStructure.Drawn = true;
-                if (SourceConnection.Entities.Where(o => o.EntityName == EntityStructure.EntityName).Any())
+                if (SourceConnection.Entities.Where(o => o.EntityName.Equals(EntityStructure.EntityName,StringComparison.OrdinalIgnoreCase)).Any())
                 {
-                    SourceConnection.Entities[SourceConnection.Entities.FindIndex(i => i.EntityName == EntityStructure.EntityName)] = EntityStructure;
+                    SourceConnection.Entities[SourceConnection.Entities.FindIndex(i => i.EntityName.Equals(EntityStructure.EntityName, StringComparison.OrdinalIgnoreCase))] = EntityStructure;
                 }
                 else
                 {
                     SourceConnection.CreateEntityAs(EntityStructure);
                 }
 
-                DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = Passedarg.DatasourceName, Entities = SourceConnection.Entities });
+                DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = SourceConnection.DatasourceName, Entities = SourceConnection.Entities });
 
                 MessageBox.Show("Entity Saved successfully", "Beep");
 

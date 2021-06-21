@@ -27,7 +27,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         public LScriptTrackHeader trackingHeader { get; set; } = new LScriptTrackHeader();
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public List<string> EntitiesNames { get; set; } = new List<string>();
-        public void CreateScriptHeader(IProgress<PassedArgs> progress,IDataSource Srcds)
+        public void CreateScriptHeader(IDataSource Srcds, IProgress<PassedArgs> progress, CancellationToken token)
         {
             int i = 0;
             DMEEditor.ETL.script = new LScriptHeader();
@@ -38,7 +38,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             {
                 ls.Add(Srcds.GetEntityStructure(item, true));
             }
-            DMEEditor.ETL.GetCreateEntityScript(Srcds, ls,progress);
+            DMEEditor.ETL.GetCreateEntityScript(Srcds, ls,progress,token);
             foreach (var item in ls)
             {
 
@@ -55,7 +55,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 i += 1;
             }
         }
-        public List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities,IProgress<PassedArgs> progress)
+        public List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities,IProgress<PassedArgs> progress, CancellationToken token)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
 
@@ -103,7 +103,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             return retval;
 
         }
-        public List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress)
+        public List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token)
         {
             List<LScript> rt = new List<LScript>();
             try
@@ -124,7 +124,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 if (ds.Entities.Count > 0)
                 {
 
-                    var t = Task.Run<List<LScript>>(() => { return GetCreateEntityScript(ds, ds.Entities,progress); });
+                    var t = Task.Run<List<LScript>>(() => { return GetCreateEntityScript(ds, ds.Entities,progress,token); });
                     t.Wait();
 
                     rt.AddRange(t.Result);
@@ -138,7 +138,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return rt;
         }
-        public IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities,IProgress<PassedArgs> progress, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities,IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
         {
             try
             {
@@ -150,7 +150,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 foreach (EntityStructure item in ls)
                 {
 
-                    CopyEntityData(sourceds, destds, item.EntityName, item.EntityName,progress, CreateMissingEntity);
+                    CopyEntityData(sourceds, destds, item.EntityName, item.EntityName,progress, token, CreateMissingEntity);
 
                 }
 
@@ -163,7 +163,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntityStructure(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntityStructure(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
         {
             try
             {
@@ -208,14 +208,14 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, IProgress<PassedArgs> progress, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
         {
             try
             {
 
                 foreach (EntityStructure item in sourceds.Entities)
                 {
-                    CopyEntityData(sourceds, destds, item.EntityName, item.EntityName,progress, CreateMissingEntity);
+                    CopyEntityData(sourceds, destds, item.EntityName, item.EntityName,progress, token, CreateMissingEntity);
                 }
 
             }
@@ -227,7 +227,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<PassedArgs> progress, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
         {
             try
             {
@@ -240,10 +240,10 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 {
                     if ((item.EntityName != item.DatasourceEntityName) && (!string.IsNullOrEmpty(item.DatasourceEntityName)))
                     {
-                        CopyEntityData(sourceds, destds, item.DatasourceEntityName, item.EntityName,progress, CreateMissingEntity);
+                        CopyEntityData(sourceds, destds, item.DatasourceEntityName, item.EntityName,progress, token, CreateMissingEntity);
                     }
                     else
-                        CopyEntityData(sourceds, destds, item.EntityName, item.EntityName,progress ,CreateMissingEntity);
+                        CopyEntityData(sourceds, destds, item.EntityName, item.EntityName,progress, token,  CreateMissingEntity);
 
                 }
 
@@ -256,7 +256,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
         {
             try
             {
@@ -281,39 +281,43 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                         src.Wait();
                         srcTb = src.Result;
                         List<object> srcList=new List<object>();
-                        DMTypeBuilder.CreateNewObject(item.EntityName, item.EntityName, item.Fields);
-                        if (srcTb.GetType().FullName.Contains("DataTable"))
+                        if (src.Result != null)
                         {
-                            srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, item);
-                        }
-                        if (srcTb.GetType().FullName.Contains("List"))
-                        {
-                            srcList = (List<object>)srcTb;
-                        }
-                        
-                        if (srcTb.GetType().FullName.Contains("IEnumerable"))
-                        {
-                            srcList= (List<object>)srcTb;
-                        }
-                        ScriptCount += srcList.Count();
-                        if (progress != null)
-                        {
-                            PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = "Stop" };
-                            progress.Report(ps);
+                            DMTypeBuilder.CreateNewObject(item.EntityName, item.EntityName, item.Fields);
+                            if (srcTb.GetType().FullName.Contains("DataTable"))
+                            {
+                                srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, item);
+                            }
+                            if (srcTb.GetType().FullName.Contains("List"))
+                            {
+                                srcList = (List<object>)srcTb;
+                            }
 
-                        }
-                        foreach (var r in srcList)
-                        {
-                            CurrentScriptRecord += 1;
-                            destds.InsertEntity(item.EntityName, r);
-                           
+                            if (srcTb.GetType().FullName.Contains("IEnumerable"))
+                            {
+                                srcList = (List<object>)srcTb;
+                            }
+                            ScriptCount += srcList.Count();
                             if (progress != null)
                             {
-                                PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3="Stop" };
+                                PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
                                 progress.Report(ps);
 
                             }
+                            foreach (var r in srcList)
+                            {
+                                CurrentScriptRecord += 1;
+                                destds.InsertEntity(item.EntityName, r);
+                                token.ThrowIfCancellationRequested();
+                                if (progress != null)
+                                {
+                                    PassedArgs ps = new PassedArgs {  ParameterString1=DMEEditor.ErrorObject.Message, ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
+                                    progress.Report(ps);
+
+                                }
+                            }
                         }
+                      
                        
                         //var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(destentity, srcTb,progress); });
                         //dst.Wait();
@@ -344,7 +348,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, IProgress<PassedArgs> progress, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
         {
             try
             {
@@ -358,7 +362,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                     }
                     else
                         srcentityname = s.sourceentityname;
-                    CopyEntityData(sourceds, destds, srcentityname, s.sourceentityname,progress, CreateMissingEntity);
+                    CopyEntityData(sourceds, destds, srcentityname, s.sourceentityname,progress, token,CreateMissingEntity);
 
                 }
 
@@ -478,7 +482,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                             
                             await Task.Run(() =>
                             {
-                                sc.errorsInfo = DMEEditor.ETL.CopyEntityData(srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname,progress, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
+                                sc.errorsInfo = DMEEditor.ETL.CopyEntityData(srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname,progress, token, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
 
                             });
                           

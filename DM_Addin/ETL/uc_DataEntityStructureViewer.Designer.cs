@@ -52,7 +52,7 @@ namespace TheTechIdea.ETL
             this.fieldsDataGridView = new System.Windows.Forms.DataGridView();
             this.idDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.fieldnameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.fieldtypeDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.fieldtypeDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewComboBoxColumn();
             this.size1DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.size2DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.fieldCategoryDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -227,6 +227,15 @@ namespace TheTechIdea.ETL
             captionLabel.TabIndex = 41;
             captionLabel.Text = "Caption:";
             // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new System.Drawing.Point(69, 74);
+            label4.Name = "label4";
+            label4.Size = new System.Drawing.Size(76, 13);
+            label4.TabIndex = 43;
+            label4.Text = "Original Name:";
+            // 
             // primaryKeysBindingSource
             // 
             this.primaryKeysBindingSource.DataMember = "PrimaryKeys";
@@ -258,12 +267,14 @@ namespace TheTechIdea.ETL
             // 
             // panel3
             // 
+            this.panel3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.panel3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panel3.Controls.Add(this.fieldsDataGridView);
             this.panel3.Controls.Add(label2);
-            this.panel3.Location = new System.Drawing.Point(88, 257);
+            this.panel3.Location = new System.Drawing.Point(26, 289);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(519, 251);
+            this.panel3.Size = new System.Drawing.Size(1110, 251);
             this.panel3.TabIndex = 30;
             // 
             // fieldsDataGridView
@@ -293,7 +304,7 @@ namespace TheTechIdea.ETL
             this.fieldsDataGridView.Name = "fieldsDataGridView";
             this.fieldsDataGridView.RowHeadersWidth = 62;
             this.fieldsDataGridView.RowTemplate.Height = 28;
-            this.fieldsDataGridView.Size = new System.Drawing.Size(498, 211);
+            this.fieldsDataGridView.Size = new System.Drawing.Size(1089, 211);
             this.fieldsDataGridView.TabIndex = 9;
             // 
             // idDataGridViewTextBoxColumn
@@ -319,6 +330,8 @@ namespace TheTechIdea.ETL
             this.fieldtypeDataGridViewTextBoxColumn.HeaderText = "fieldtype";
             this.fieldtypeDataGridViewTextBoxColumn.MinimumWidth = 8;
             this.fieldtypeDataGridViewTextBoxColumn.Name = "fieldtypeDataGridViewTextBoxColumn";
+            this.fieldtypeDataGridViewTextBoxColumn.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.fieldtypeDataGridViewTextBoxColumn.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
             this.fieldtypeDataGridViewTextBoxColumn.Width = 150;
             // 
             // size1DataGridViewTextBoxColumn
@@ -411,7 +424,7 @@ namespace TheTechIdea.ETL
             this.panel2.Controls.Add(this.relationShipsDataGridView);
             this.panel2.Controls.Add(this.ValidateFKbutton);
             this.panel2.Controls.Add(label1);
-            this.panel2.Location = new System.Drawing.Point(88, 514);
+            this.panel2.Location = new System.Drawing.Point(27, 546);
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(518, 228);
             this.panel2.TabIndex = 32;
@@ -472,17 +485,14 @@ namespace TheTechIdea.ETL
             // 
             // panel1
             // 
-            this.panel1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panel1.Controls.Add(this.customBuildQueryTextBox);
             this.panel1.Controls.Add(this.CustomQueryDatadataGridView);
             this.panel1.Controls.Add(this.ValidateQuerybutton);
             this.panel1.Controls.Add(customBuildQueryLabel);
-            this.panel1.Location = new System.Drawing.Point(613, 66);
+            this.panel1.Location = new System.Drawing.Point(674, 13);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(462, 676);
+            this.panel1.Size = new System.Drawing.Size(462, 270);
             this.panel1.TabIndex = 31;
             // 
             // customBuildQueryTextBox
@@ -492,15 +502,15 @@ namespace TheTechIdea.ETL
             this.customBuildQueryTextBox.Margin = new System.Windows.Forms.Padding(2);
             this.customBuildQueryTextBox.Multiline = true;
             this.customBuildQueryTextBox.Name = "customBuildQueryTextBox";
-            this.customBuildQueryTextBox.Size = new System.Drawing.Size(455, 200);
+            this.customBuildQueryTextBox.Size = new System.Drawing.Size(455, 122);
             this.customBuildQueryTextBox.TabIndex = 7;
             // 
             // CustomQueryDatadataGridView
             // 
             this.CustomQueryDatadataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.CustomQueryDatadataGridView.Location = new System.Drawing.Point(3, 234);
+            this.CustomQueryDatadataGridView.Location = new System.Drawing.Point(3, 156);
             this.CustomQueryDatadataGridView.Name = "CustomQueryDatadataGridView";
-            this.CustomQueryDatadataGridView.Size = new System.Drawing.Size(455, 437);
+            this.CustomQueryDatadataGridView.Size = new System.Drawing.Size(455, 109);
             this.CustomQueryDatadataGridView.TabIndex = 17;
             // 
             // ValidateQuerybutton
@@ -617,15 +627,6 @@ namespace TheTechIdea.ETL
             this.captionTextBox1.Size = new System.Drawing.Size(396, 20);
             this.captionTextBox1.TabIndex = 42;
             // 
-            // label4
-            // 
-            label4.AutoSize = true;
-            label4.Location = new System.Drawing.Point(69, 74);
-            label4.Name = "label4";
-            label4.Size = new System.Drawing.Size(76, 13);
-            label4.TabIndex = 43;
-            label4.Text = "Original Name:";
-            // 
             // textBox1
             // 
             this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.dataHierarchyBindingSource, "OriginalEntityName", true));
@@ -693,19 +694,6 @@ namespace TheTechIdea.ETL
         private System.Windows.Forms.Button ValidateFieldsbutton;
         private System.Windows.Forms.Panel panel3;
         private System.Windows.Forms.DataGridView fieldsDataGridView;
-        private System.Windows.Forms.DataGridViewTextBoxColumn idDataGridViewTextBoxColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn fieldnameDataGridViewTextBoxColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn fieldtypeDataGridViewTextBoxColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn size1DataGridViewTextBoxColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn size2DataGridViewTextBoxColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn fieldCategoryDataGridViewTextBoxColumn;
-        private System.Windows.Forms.DataGridViewCheckBoxColumn isAutoIncrementDataGridViewCheckBoxColumn;
-        private System.Windows.Forms.DataGridViewCheckBoxColumn allowDBNullDataGridViewCheckBoxColumn;
-        private System.Windows.Forms.DataGridViewCheckBoxColumn isCheckDataGridViewCheckBoxColumn;
-        private System.Windows.Forms.DataGridViewCheckBoxColumn isUniqueDataGridViewCheckBoxColumn;
-        private System.Windows.Forms.DataGridViewCheckBoxColumn isKeyDataGridViewCheckBoxColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn fieldIndexDataGridViewTextBoxColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn entityNameDataGridViewTextBoxColumn;
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.DataGridView relationShipsDataGridView;
         private System.Windows.Forms.DataGridViewTextBoxColumn parentEntityIDDataGridViewTextBoxColumn;
@@ -727,5 +715,18 @@ namespace TheTechIdea.ETL
         private System.Windows.Forms.CheckBox checkBox1;
         private System.Windows.Forms.TextBox captionTextBox1;
         private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.DataGridViewTextBoxColumn idDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn fieldnameDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewComboBoxColumn fieldtypeDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn size1DataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn size2DataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn fieldCategoryDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn isAutoIncrementDataGridViewCheckBoxColumn;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn allowDBNullDataGridViewCheckBoxColumn;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn isCheckDataGridViewCheckBoxColumn;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn isUniqueDataGridViewCheckBoxColumn;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn isKeyDataGridViewCheckBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn fieldIndexDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn entityNameDataGridViewTextBoxColumn;
     }
 }

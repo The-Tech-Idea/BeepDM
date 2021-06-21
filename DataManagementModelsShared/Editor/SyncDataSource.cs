@@ -13,6 +13,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         public string id { get; set; }
         public string datasourcename { get; set; }
         public List<SyncEntity> syncedentities {get;set;}
+        public string mappingschemafile { get; set; }
     }
     public class SyncEntity
     {
@@ -44,5 +45,6 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         public string entityname { get; set; }
         public DateTime errorupdate { get; set; }
         public string script { get; set; }
+       
     }
 }

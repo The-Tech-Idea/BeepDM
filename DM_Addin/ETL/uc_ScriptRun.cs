@@ -47,11 +47,11 @@ namespace TheTechIdea.ETL
         IBranch RootAppBranch;
         public IVisUtil Visutil { get; set; }
         IBranch branch; 
-        BackgroundWorkerThread backgroundWorker;
+       // BackgroundWorkerThread backgroundWorker;
         CancellationTokenSource tokenSource;
         CancellationToken token;
         bool RequestCancle = false;
-        Task ScriptRun;
+      
         int errorcount = 0;
         public void Run(string param1)
         {
@@ -86,7 +86,7 @@ namespace TheTechIdea.ETL
         }
         private void StopButton_Click(object sender, EventArgs e)
         {
-            RequestCancle = true;
+            tokenSource.Cancel();
             //backgroundWorker.RequestCancel();
         }
         private  void RunScriptbutton_Click(object sender, EventArgs e)
@@ -112,9 +112,9 @@ namespace TheTechIdea.ETL
                 }
                 progressBar1.Value = percent.ParameterInt1;
                 //this.Log_panel.BeginInvoke(new Action(() =>
-                if (!string.IsNullOrEmpty(percent.ParameterString1))
+                if (DMEEditor.ErrorObject.Flag== Errors.Failed)
                 {
-                    
+                    errorcount++;
                     Log_panel.AppendText(percent.ParameterString1 + Environment.NewLine);
                     Log_panel.SelectionStart = Log_panel.Text.Length;
                     Log_panel.ScrollToCaret();
@@ -125,23 +125,25 @@ namespace TheTechIdea.ETL
                     {
                         if (percent.ParameterString3 == "Stop")
                         {
-                            tokenSource.Cancel();
+                            token.ThrowIfCancellationRequested();
                         }
                     }
                 }
-                
-               
+
+
             });
             Action action =
            () =>
                MessageBox.Show("Done");
-            ScriptRun = Task.Run(() =>
+            var ScriptRun = Task.Run(() =>
             {
                 CancellationTokenRegistration ctr = token.Register(() => StopTask());
-                Task<IErrorsInfo> er= DMEEditor.ETL.RunScriptAsync(progress,token);
+                Task<IErrorsInfo> er = DMEEditor.ETL.RunScriptAsync(progress, token);
 
-            }).ContinueWith(showcomplete => action); 
-           
+            });
+            ScriptRun.Wait();
+             MessageBox.Show("Done");
+
         }
         /// <summary>
         ///     Stop running task
@@ -149,15 +151,12 @@ namespace TheTechIdea.ETL
         void StopTask()
         {
             // Attempt to cancel the task politely
-            if (tokenSource != null)
-            {
-                if (tokenSource.IsCancellationRequested)
-                    return;
-                else
-                    tokenSource.Cancel();
-            }
-
            
+                    tokenSource.Cancel();
+            MessageBox.Show("Job Stopped");
+
+
+
         }
         private void update()
         {

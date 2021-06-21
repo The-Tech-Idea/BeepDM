@@ -1301,7 +1301,7 @@ namespace TheTechIdea.Util
 				LoadObjectTypes();
 				LoadMappingSchema();
 				ReadDataTypeFile();
-				ReadSyncDataSource();
+				//ReadSyncDataSource();
 				InitMapping();
 			}
 			catch (Exception ex)

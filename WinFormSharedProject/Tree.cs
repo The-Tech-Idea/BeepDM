@@ -64,7 +64,10 @@ namespace TheTechIdea.Winforms.VIS
         private bool busy = false;
         IDM_Addin sender;
         WaitWndFun waitForm = new WaitWndFun();
-        Thread loadthread;
+      //  Thread loadthread;
+
+        CancellationTokenSource tokenSource;
+        CancellationToken token;
         #region "Branch Handling"
         public string CheckifBranchExistinCategory(string BranchName, string pRootName)
         {
@@ -1647,9 +1650,11 @@ namespace TheTechIdea.Winforms.VIS
                 int i = 0;
                 if (ls.Count > 0)
                 {
+                    tokenSource = new CancellationTokenSource();
+                    token = tokenSource.Token;
                     DMEEditor.ETL.script = new LScriptHeader();
                     DMEEditor.ETL.script.scriptSource = dest.DatasourceName;
-                    DMEEditor.ETL.GetCreateEntityScript(dest, ls,progress);
+                    DMEEditor.ETL.GetCreateEntityScript(dest, ls,progress,token);
                     if (copydata)
                     {
                         foreach (var item in ls)

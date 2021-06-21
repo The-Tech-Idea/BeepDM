@@ -673,12 +673,18 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 if (rowsUpdated > 0)
                 {
                     msg = $"Successfully Inserted  Record  to {EntityName} ";
-                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
+                    DMEEditor.ErrorObject.Message = msg;
+                    DMEEditor.ErrorObject.Flag = Errors.Ok;
+                    // DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
                 }
                 else
                 {
                     msg = $"Fail to Insert  Record  to {EntityName} : {updatestring}";
-                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
+                    DMEEditor.ErrorObject.Message = msg;
+                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    
+
+                  //  DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
                 }
                 // DMEEditor.AddLogMessage("Success",$"Successfully Written Data to {EntityName}",DateTime.Now,0,null, Errors.Ok);
 
@@ -1238,7 +1244,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                             {
                                 int idx = Entities.FindIndex(p => p.EntityName.Equals(item, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(item, StringComparison.OrdinalIgnoreCase));
                                 Entities[idx].Created = false;
-                                EntitiesNames.Add(item.ToUpper());
+                              
                             }
                         }
                     }
