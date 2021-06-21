@@ -692,24 +692,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             catch (Exception ex)
             {
                 ErrorObject.Ex = ex;
-              
+                DMEEditor.ErrorObject.Message = msg;
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
                 command.Dispose();
-                try
-                {
-                    // Attempt to roll back the transaction.
-                    //     sqlTran.Rollback();
-                    msg = "Unsuccessfully no Data has been written to Data Source,Rollback Complete";
-                }
-                catch (Exception exRollback)
-                {
-                    // Throws an InvalidOperationException if the connection
-                    // is closed or the transaction has already been rolled
-                    // back on the server.
-                    // Console.WriteLine(exRollback.Message);
-                    msg = "Unsuccessfully no Data has been written to Data Source,Rollback InComplete";
-                    ErrorObject.Ex = exRollback;
-                }
-                msg = "Unsuccessfully no Data has been written to Data Source";
+               
                 DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
 
             }
@@ -1216,10 +1202,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             DataSet ds = new DataSet();
             try
             {
-
-              //  if (EntitiesNames.Count() == 0)
-             //   {
-                    string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getlistoftables, null, Dataconnection.ConnectionProp.SchemaName, null, DMEEditor.ConfigEditor.QueryList, DatasourceType);
+                     string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getlistoftables, null, Dataconnection.ConnectionProp.SchemaName, null, DMEEditor.ConfigEditor.QueryList, DatasourceType);
                     IDbDataAdapter adp = GetDataAdapter(sql, null);
                     adp.Fill(ds);
 
@@ -1237,14 +1220,15 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     if (Entities.Count > 0)
                     {
                         List<string> ename = Entities.Select(p => p.EntityName.ToUpper()).ToList();
-                        List<string> diffnames = ename.Except(EntitiesNames).ToList();
+                        List<string> diffnames = ename.Except(EntitiesNames.Select(o=>o.ToUpper())).ToList();
                         if (diffnames.Count > 0)
                         {
                             foreach (string item in diffnames)
                             {
+                                GetEntityStructure(item, false);
                                 int idx = Entities.FindIndex(p => p.EntityName.Equals(item, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(item, StringComparison.OrdinalIgnoreCase));
                                 Entities[idx].Created = false;
-                              
+                                 EntitiesNames.Add(item);
                             }
                         }
                     }

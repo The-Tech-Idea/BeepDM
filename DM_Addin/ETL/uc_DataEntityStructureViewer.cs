@@ -93,12 +93,12 @@ namespace TheTechIdea.ETL
             }
 
            
-            EntityStructure = SourceConnection.GetEntityStructure(EntityName, true);
+            EntityStructure = SourceConnection.GetEntityStructure(EntityName, false);
             if (EntityStructure == null)
             {
                 if (!string.IsNullOrEmpty(e.ParameterString1))
                 {
-                    EntityStructure = SourceConnection.GetEntityStructure(e.ParameterString1, true);
+                    EntityStructure = SourceConnection.GetEntityStructure(e.ParameterString1, false);
                 }
                 
             }
@@ -106,7 +106,7 @@ namespace TheTechIdea.ETL
             {
                 if (!string.IsNullOrEmpty(e.ParameterString2))
                 {
-                    EntityStructure = SourceConnection.GetEntityStructure(e.ParameterString2, true);
+                    EntityStructure = SourceConnection.GetEntityStructure(e.ParameterString2, false);
                 }
 
             }
@@ -114,7 +114,7 @@ namespace TheTechIdea.ETL
             {
                 if (!string.IsNullOrEmpty(e.ParameterString3))
                 {
-                    EntityStructure = SourceConnection.GetEntityStructure(e.ParameterString3, true);
+                    EntityStructure = SourceConnection.GetEntityStructure(e.ParameterString3, false);
                 }
 
             }
