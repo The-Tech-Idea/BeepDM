@@ -30,9 +30,19 @@ namespace TheTechIdea.DataManagment_Engine
         public List<string> Namespacelist { get; set; } = new List<string>();
         public List<string> Classlist { get; set; } = new List<string>();
         public List<ParentChildObject> FunctionHierarchy { get; set; }
-
         public IErrorsInfo ErrorObject { get; set; }
+        public IConfigEditor ConfigEditor { get; set; }
         public IDMEEditor DME { get; set; }
+
+        public Util(IDMLogger logger, IErrorsInfo per, IConfigEditor pConfigEditor)
+        {
+            Logger = logger;
+            ErrorObject = per;
+            ConfigEditor = pConfigEditor;
+
+        }
+
+
         public DataTable JsonToDataTable(string jsonString)
         {
 
@@ -132,12 +142,7 @@ namespace TheTechIdea.DataManagment_Engine
             else
                 return false;
         }
-        public Util(IDMLogger logger, IErrorsInfo per)
-        {
-            Logger = logger;
-            ErrorObject = per;
-
-        }
+       
         public DataTable CreateDataTableFromFile(string strFilePath)
         {
             DataTable dt = new DataTable();
@@ -515,7 +520,7 @@ namespace TheTechIdea.DataManagment_Engine
             }
             catch (Exception ex)
             {
-                DME.AddLogMessage("Error", "Could not Create Entity Structure" + ex.Message, DateTime.Now, -1, "", Errors.Failed);
+               // DME.AddLogMessage("Error", "Could not Create Entity Structure" + ex.Message, DateTime.Now, -1, "", Errors.Failed);
                 return null;
             }
 

@@ -9,7 +9,7 @@ namespace TheTechIdea.DataManagment_Engine.Workflow
     public interface IWorkFlowEditor
     {
         IDMEEditor DMEEditor { get; set; }
-        List<AssemblyClassDefinition> WorkFlowActions { get; set; }
+       
         List<DataWorkFlow> WorkFlows { get; set; }
 
         IErrorsInfo CopyEntity(IDataSource src, string SourceEntityName, IDataSource dest, string DestEntityName);

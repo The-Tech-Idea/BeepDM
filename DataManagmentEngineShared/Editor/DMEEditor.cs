@@ -23,9 +23,10 @@ using TheTechIdea.DataManagment_Engine.ConfigUtil;
 
 namespace TheTechIdea.DataManagment_Engine
 {
-    public class DMEEditor : IDMEEditor
+    public class DMEEditor : IDMEEditor,IDisposable
     {
-       
+        private bool disposedValue;
+
         public List<IDataSource> DataSources { get; set; } = new List<IDataSource>();
         public IETL ETL { get; set; }
         public IConfigEditor ConfigEditor { get; set; }
@@ -492,8 +493,11 @@ namespace TheTechIdea.DataManagment_Engine
         {
             PassEvent?.Invoke(sender, args);
         }
+
+      
+
         //----------------- ------------------------------ -----
-        public DMEEditor(IDMLogger logger, IUtil utilfunctions,IErrorsInfo per, IConfigEditor configEditor,IWorkFlowEditor pworkFlowEditor, IClassCreator pclasscreator, IETL pETL)
+        public DMEEditor(IDMLogger logger, IUtil utilfunctions,IErrorsInfo per, IConfigEditor configEditor,IWorkFlowEditor pworkFlowEditor, IClassCreator pclasscreator, IETL pETL, IAssemblyHandler passemblyHandler)
         {
           
             logger.WriteLog("init all variables");
@@ -507,11 +511,44 @@ namespace TheTechIdea.DataManagment_Engine
             WorkFlowEditor.DMEEditor = this;
             ETL = pETL;
             ETL.DMEEditor = this;
+            assemblyHandler = passemblyHandler;
+            
             typesHelper = new DataTypesHelper(Logger, this, ErrorObject);
             
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                }
 
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                foreach (var item in DataSources)
+                {
+                    item.Closeconnection();
+                    item.Dispose();
+                }
+                disposedValue = true;
+            }
+        }
 
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~DMEEditor()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 }

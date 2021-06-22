@@ -152,7 +152,41 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-       
+        [BranchDelegate(Caption = "Refresh Sheets", Hidden = false)]
+        public IErrorsInfo RefreshSheets()
+        {
+            try
+            {
+                TreeEditor.RemoveChildBranchs(this);
+                int i = 0;
+                DataSource = (IDataSource)DMEEditor.GetDataSource(BranchText);
+                if (DataSource != null)
+                {
+                    DataSource.GetEntitesList();
+                    if (DataSource.Entities.Count > 0)
+                    {
+                        DataSource.EntitiesNames = DataSource.Entities.Select(o => o.EntityName).ToList();
+                        if (DataSource.EntitiesNames.Count > 0)
+                        {
+                            foreach (string n in DataSource.EntitiesNames)
+                            {
+                                EntityStructure entity = DataSource.GetEntityStructure(n, true);
+                                CreateFileItemSheetsNode(i, n);
+                                i += 1;
+                            }
+
+                        }
+                    }
+                }
+                DMEEditor.AddLogMessage("Success", "Created child Nodes", DateTime.Now, 0, null, Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                string mes = "Could not Get Sheets";
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return DMEEditor.ErrorObject;
+        }
         //[BranchDelegate(Caption = "Remove", Hidden = false)]
         //public IErrorsInfo Remove()
         //{

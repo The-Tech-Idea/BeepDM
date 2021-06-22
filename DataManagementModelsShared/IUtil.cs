@@ -19,6 +19,7 @@ namespace TheTechIdea.DataManagment_Engine
         IErrorsInfo ErrorObject { get; set; }
         IDMEEditor DME { get; set; }
         IDMLogger Logger { get; set; }
+        IConfigEditor ConfigEditor { get; set; }
         List<string> Namespacelist { get; set; }
         List<ParentChildObject> FunctionHierarchy { get; set; }
         List<T> ConvertDataTable<T>(DataTable dt);

@@ -48,6 +48,7 @@ namespace TheTechIdea.Util
         List<App> Apps { get; set; }
         List<EntityStructure> EntityCreateObjects { get; set; }
         List<DatatypeMapping> DataTypesMap { get; set; }
+        List<AssemblyClassDefinition> WorkFlowActions { get; set; } 
         List<DataSourceFieldProperties> AppfieldProperties { get; set; }
         List<SyncDataSource> SyncedDataSources { get; set; }
         List<DatatypeMapping> ReadDataTypeFile(string filename = "DataTypeMapping");

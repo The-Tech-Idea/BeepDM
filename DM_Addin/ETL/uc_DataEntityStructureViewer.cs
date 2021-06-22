@@ -140,20 +140,15 @@ namespace TheTechIdea.ETL
            //     fieldtypeDataGridViewTextBoxColumn.DataSource = dataTypesMapBindingSource;
             }
             this.fieldsDataGridView.DataError += FieldsDataGridView_DataError;
-          
         }
-
         private void FieldsDataGridView_DataError(object sender, DataGridViewDataErrorEventArgs e)
         {
             e.ThrowException = false;
         }
-
         private void ValidateFieldsbutton_Click(object sender, EventArgs e)
         {
-
             if (EntityStructure.Drawn == true)
             {
-
                 SourceConnection = DMEEditor.GetDataSource(dataSourceIDComboBox.Text);
                 if (SourceConnection == null)
                 {
@@ -168,30 +163,21 @@ namespace TheTechIdea.ETL
                     this.fieldsBindingSource.ResetBindings(true);
                 }
             }
-
-
-
-
         }
 
         private void ValidateQuerybutton_Click(object sender, EventArgs e)
         {
-            // ds = (DataViewDataSource)DMEEditor.GetDataSource(dataSourceIDComboBox.Text);
-
             object dt;
             ds = DMEEditor.GetDataSource(dataSourceIDComboBox.Text);
             if (SourceConnection != null && EntityStructure.CustomBuildQuery != null)
             {
-
                 dt = SourceConnection.RunQuery(EntityStructure.CustomBuildQuery);
-
             }
             else
             {
                 dt = SourceConnection.GetEntity(EntityName, null);
 
             }
-
             CustomQueryDatadataGridView.DataSource = dt;
         }
 
@@ -199,7 +185,6 @@ namespace TheTechIdea.ETL
         {
             //  IConnectionProperties cn;
             try
-
             {
                 EntityStructure.Drawn = true;
                 if (SourceConnection.Entities.Where(o => o.EntityName.Equals(EntityStructure.EntityName,StringComparison.OrdinalIgnoreCase)).Any())
@@ -212,7 +197,6 @@ namespace TheTechIdea.ETL
                 }
 
                 DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = SourceConnection.DatasourceName, Entities = SourceConnection.Entities });
-
                 MessageBox.Show("Entity Saved successfully", "Beep");
 
             }
@@ -240,23 +224,15 @@ namespace TheTechIdea.ETL
                 EntityStructure.Relations = rdb.GetEntityforeignkeys(EntityName.ToUpper(), schemaname);
                 dataHierarchyBindingSource.ResetBindings(false);
             }
-
-
-
-
         }
 
         private void ComboBox1_SelectedIndexChanged(object sender, EventArgs e)
-
         {
             ds = (IDataSource)DMEEditor.DataSources.Where(f => f.DatasourceName == dataSourceIDComboBox.Items[dataSourceIDComboBox.SelectedIndex].ToString()).FirstOrDefault();
             ConnectionProperties cn = DMEEditor.ConfigEditor.DataConnections.Where(f => f.ConnectionName == dataSourceIDComboBox.Items[dataSourceIDComboBox.SelectedIndex].ToString()).FirstOrDefault();
             if (ds == null)
-
             {
                 ds = DMEEditor.GetDataSource(dataSourceIDComboBox.Items[dataSourceIDComboBox.SelectedIndex].ToString());
-
-
                 try
                 {
                     if (ds != null)
@@ -273,21 +249,13 @@ namespace TheTechIdea.ETL
                             Logger.WriteLog($"Error in  opening the Database ,{ErrorObject.Message}");
                         }
                     }
-
-
-
                 }
                 catch (Exception e1)
                 {
-
                     // Logger.WriteLog($"Error in  opening the Database ,{e1.Message}");
                     MessageBox.Show($"Error in  opening the Database ,{e1.Message}");
                 }
-
-
             }
-
-
         }
     }
 }

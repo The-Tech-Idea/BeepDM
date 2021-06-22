@@ -58,6 +58,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             {
                 ConnectionProp.FilePath = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
             }
+
             return rep;
         }
         private ConnectionState OpenConn()

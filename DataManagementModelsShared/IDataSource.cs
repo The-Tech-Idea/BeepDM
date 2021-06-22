@@ -15,7 +15,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea
 {
-    public interface IDataSource
+    public interface IDataSource:IDisposable
     {
         event EventHandler<PassedArgs> PassEvent;
         DataSourceType DatasourceType { get; set; }

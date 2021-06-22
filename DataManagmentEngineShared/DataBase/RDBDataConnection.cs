@@ -86,7 +86,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 {
                     
                     ConnectionStatus = DbConn.State;
-                    DMEEditor.AddLogMessage("Success", $"RDBMS already Open {ConnectionProp.ConnectionName}", DateTime.Now, -1, "", Errors.Ok);
+                 //   DMEEditor.AddLogMessage("Success", $"RDBMS already Open {ConnectionProp.ConnectionName}", DateTime.Now, -1, "", Errors.Ok);
                    
                     return DbConn.State;
                 }

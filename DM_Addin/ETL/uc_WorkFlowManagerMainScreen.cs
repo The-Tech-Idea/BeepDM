@@ -102,7 +102,7 @@ namespace TheTechIdea.ETL
           
             
             dataConnectionsBindingSource.DataSource = DMEEditor.ConfigEditor.DataConnections;
-            workFlowActionsBindingSource.DataSource = DMEEditor.WorkFlowEditor.WorkFlowActions;
+            workFlowActionsBindingSource.DataSource = DMEEditor.ConfigEditor.WorkFlowActions;
             inTableParametersBindingSource.DataSource = datastepsBindingSource;
             datastepsBindingSource.AddingNew += DatastepsBindingSource_AddingNew;
           

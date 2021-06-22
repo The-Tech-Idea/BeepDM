@@ -16,6 +16,7 @@ using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.DataManagment_Engine.Workflow;
+using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Tools.AssemblyHandling
@@ -27,6 +28,10 @@ namespace TheTechIdea.Tools.AssemblyHandling
         private string Name { get; set; }
         private string Descr { get; set; }
         public IDMEEditor DMEEditor { get; set; }
+        public IErrorsInfo ErrorObject { get; set; }
+        public IDMLogger Logger { get; set; }
+        public IUtil Utilfunction { get; set; }
+        public IConfigEditor ConfigEditor { get; set; }
         public List<assemblies_rep> Assemblies { get; set; } = new List<assemblies_rep>();
         public List<IDM_Addin> AddIns { get; set; } = new List<IDM_Addin>();
         public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
@@ -47,8 +52,13 @@ namespace TheTechIdea.Tools.AssemblyHandling
       
         #endregion
 
-        public AssemblyHandlerCore()
+        public AssemblyHandlerCore(IConfigEditor pConfigEditor, IErrorsInfo pErrorObject, IDMLogger pLogger, IUtil pUtilfunction)
         {
+
+            ConfigEditor = pConfigEditor;
+            ErrorObject = pErrorObject;
+            Logger = pLogger;
+            Utilfunction = pUtilfunction;
             PluginLoadContext = new PluginLoadContext();
             DataSourcesClasses = new List<AssemblyClassDefinition>();
         }

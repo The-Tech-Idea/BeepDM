@@ -68,20 +68,24 @@ namespace DataManagment_Engine
                 //---------------------------------------------------------------------------
                 lg = scope.Resolve<IDMLogger>();
                 lg.WriteLog("App started");
-
-                // a Utility Class for helping in Doing Different functions for  Data Managment
-
-                util = scope.Resolve<IUtil>();
-                //--------------------------------------------------------------------------------
-               
-
                 //-------------------------------------------------------------------------------
                 // a onfiguration class for assembly, addin's and  drivers loading into the 
                 // application
                 //---------------------------------------------------------------------------
                 Config_editor = scope.Resolve<IConfigEditor>();
-             
-              
+                // a Utility Class for helping in Doing Different functions for  Data Managment
+
+                util = scope.Resolve<IUtil>();
+                //--------------------------------------------------------------------------------
+
+                //-------------------------------------------------------------------------------
+                // this is the assembly loader for loading from Addin Folder and Projectdrivers Folder
+                //---------------------------------------------------------------------------
+                // LLoader = scope.Resolve<IAssemblyLoader>();
+                LLoader = scope.Resolve<IAssemblyHandler>();
+
+
+
                 // Setup the Database Connection Screen
                 // a "Work Flow" class will control all the workflow between different data source 
                 // and automation
@@ -90,15 +94,11 @@ namespace DataManagment_Engine
                 //-------------------------------------------------------------------------------
                 // The Main Class for Data Manager 
                 //---------------------------------------------------------------------------
-                DMEEditor = scope.Resolve<IDMEEditor>();
-                //-------------------------------------------------------------------------------
-                // this is the assembly loader for loading from Addin Folder and Projectdrivers Folder
-                //---------------------------------------------------------------------------
-                // LLoader = scope.Resolve<IAssemblyLoader>();
-                LLoader = scope.Resolve<IAssemblyHandler>();
-                LLoader.DMEEditor = DMEEditor;
-                DMEEditor.assemblyHandler = LLoader;
                
+              
+              
+                //DMEEditor.assemblyHandler = LLoader;
+                DMEEditor = scope.Resolve<IDMEEditor>();
                 //-------------------------------------------------------------------------------
                 // The Main Visualization Class tha control the visual aspect of the system
                 //---------------------------------------------------------------------------

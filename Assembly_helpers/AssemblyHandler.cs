@@ -30,16 +30,23 @@ namespace TheTechIdea.Tools
 
         private string Name { get; set; }
         private string Descr { get; set; }
-        public IDMEEditor DMEEditor { get; set; }
+        // public IDMEEditor DMEEditor { get; set; }
+        public IErrorsInfo ErrorObject { get; set; }
+        public IDMLogger Logger { get; set; }
+        public IUtil Utilfunction { get; set; }
+        public IConfigEditor ConfigEditor { get; set; }
         public List<assemblies_rep> Assemblies { get; set; } = new List<assemblies_rep>();
         public List<IDM_Addin> AddIns { get; set; } = new List<IDM_Addin>();
         public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
         private List<ConnectionDriversConfig> DataDriversConfig = new List<ConnectionDriversConfig>();
 
-        public AssemblyHandler(IDMEEditor pDMEEditor)
+        public AssemblyHandler(IConfigEditor pConfigEditor, IErrorsInfo pErrorObject, IDMLogger pLogger, IUtil pUtilfunction)
         {
 
-            DMEEditor = pDMEEditor;
+            ConfigEditor = pConfigEditor;
+            ErrorObject = pErrorObject;
+            Logger = pLogger;
+            Utilfunction = pUtilfunction;
             CurrentDomain = AppDomain.CurrentDomain;
             DataSourcesClasses = new List<AssemblyClassDefinition>();
             CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
@@ -48,7 +55,7 @@ namespace TheTechIdea.Tools
         #region "Loaders"
         public IErrorsInfo GetBuiltinClasses()
         {
-            DMEEditor.ErrorObject.Flag = Errors.Ok;
+          //  DMEEditor.ErrorObject.Flag = Errors.Ok;
            
             // look through assembly list
             Assembly currentAssem = Assembly.GetExecutingAssembly();
@@ -57,7 +64,7 @@ namespace TheTechIdea.Tools
             try
             {
                 ScanAssembly(currentAssem);
-                DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(currentAssem);
+                Utilfunction.FunctionHierarchy = GetAddinObjects(currentAssem);
             }
             catch (Exception ex)
             {
@@ -68,7 +75,7 @@ namespace TheTechIdea.Tools
             try
             {
                 ScanAssembly(rootassembly);
-                DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(rootassembly);
+                Utilfunction.FunctionHierarchy = GetAddinObjects(rootassembly);
 
             }
             catch (Exception ex)
@@ -82,7 +89,7 @@ namespace TheTechIdea.Tools
                 foreach (Assembly item in assemblies)
                 {
                     ScanAssembly(item);
-                    DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(item);
+                    Utilfunction.FunctionHierarchy = GetAddinObjects(item);
                 }
 
             }
@@ -92,7 +99,7 @@ namespace TheTechIdea.Tools
                 //DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
         
-            return DMEEditor.ErrorObject;
+            return ErrorObject;
 
         }
         /// <summary>
@@ -101,18 +108,18 @@ namespace TheTechIdea.Tools
         /// <returns></returns>
         public IErrorsInfo LoadAllAssembly()
         {
-            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            ErrorObject.Flag = Errors.Ok;
             string res;
-            DMEEditor.Utilfunction.FunctionHierarchy = new List<ParentChildObject>();
-            DMEEditor.Utilfunction.Namespacelist = new List<string>();
-            DMEEditor.Utilfunction.Classlist = new List<string>();
+            Utilfunction.FunctionHierarchy = new List<ParentChildObject>();
+            Utilfunction.Namespacelist = new List<string>();
+            Utilfunction.Classlist = new List<string>();
             DataDriversConfig = new List<ConnectionDriversConfig>();
            
             GetNonADODrivers();
             GetBuiltinClasses();
           
          
-                foreach (string p in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver).Select(x => x.FolderPath))
+                foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver).Select(x => x.FolderPath))
                 {
                     try
                     {
@@ -122,25 +129,25 @@ namespace TheTechIdea.Tools
                     }
                     catch (FileLoadException loadEx)
                     {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
+                        ErrorObject.Flag = Errors.Failed;
                         res = "The Assembly has already been loaded" + loadEx.Message;
                         // MessageBox.Show("The Assembly has already been loaded" + loadEx.Message, "Simple ODM", MessageBoxButtons.OK);
                     } // The Assembly has already been loaded.
                     catch (BadImageFormatException imgEx)
                     {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
+                        ErrorObject.Flag = Errors.Failed;
                         // MessageBox.Show(imgEx.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly.
                         res = imgEx.Message;
                     }
                     catch (Exception ex)
                     {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
+                        ErrorObject.Flag = Errors.Failed;
                         // MessageBox.Show(ex.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly
                         res = ex.Message;
                     }
 
                 }
-                foreach (string p in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath))
+                foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath))
                 {
                     try
                     {
@@ -148,25 +155,25 @@ namespace TheTechIdea.Tools
                     }
                     catch (FileLoadException loadEx)
                     {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
+                        ErrorObject.Flag = Errors.Failed;
                         res = "The Assembly has already been loaded" + loadEx.Message;
                         // MessageBox.Show("The Assembly has already been loaded" + loadEx.Message, "Simple ODM", MessageBoxButtons.OK);
                     } // The Assembly has already been loaded.
                     catch (BadImageFormatException imgEx)
                     {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
+                        ErrorObject.Flag = Errors.Failed;
                         // MessageBox.Show(imgEx.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly.
                         res = imgEx.Message;
                     }
                     catch (Exception ex)
                     {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
+                        ErrorObject.Flag = Errors.Failed;
                         // MessageBox.Show(ex.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly
                         res = ex.Message;
                     }
 
                 }
-                foreach (string p in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL).Select(x => x.FolderPath))
+                foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL).Select(x => x.FolderPath))
             {
                 try
                 {
@@ -174,19 +181,19 @@ namespace TheTechIdea.Tools
                 }
                 catch (FileLoadException loadEx)
                 {
-                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    ErrorObject.Flag = Errors.Failed;
                     res = "The Assembly has already been loaded" + loadEx.Message;
                     // MessageBox.Show("The Assembly has already been loaded" + loadEx.Message, "Simple ODM", MessageBoxButtons.OK);
                 } // The Assembly has already been loaded.
                 catch (BadImageFormatException imgEx)
                 {
-                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    ErrorObject.Flag = Errors.Failed;
                     // MessageBox.Show(imgEx.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly.
                     res = imgEx.Message;
                 }
                 catch (Exception ex)
                 {
-                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    ErrorObject.Flag = Errors.Failed;
                     // MessageBox.Show(ex.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly
                     res = ex.Message;
                 }
@@ -195,13 +202,13 @@ namespace TheTechIdea.Tools
             // Get Driver from Loaded Assembly
                 foreach (assemblies_rep item in Assemblies)
                 {
-                    DMEEditor.AddLogMessage("Start", $"Started Processing Drivers  {item.DllName}", DateTime.Now, -1, item.DllName, Errors.Ok);
+                   // AddLogMessage("Start", $"Started Processing Drivers  {item.DllName}", DateTime.Now, -1, item.DllName, Errors.Ok);
                     GetDrivers(item.DllLib);
-                    DMEEditor.AddLogMessage("End", $"Started Processing Drivers  {item.DllName}", DateTime.Now, -1, item.DllName, Errors.Ok);
+                   // AddLogMessage("End", $"Started Processing Drivers  {item.DllName}", DateTime.Now, -1, item.DllName, Errors.Ok);
                 }
            
 
-                foreach (string p in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.Addin).Select(x => x.FolderPath))
+                foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.Addin).Select(x => x.FolderPath))
                 {
                     try
                     {
@@ -210,19 +217,19 @@ namespace TheTechIdea.Tools
                     }
                     catch (FileLoadException loadEx)
                     {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
+                        ErrorObject.Flag = Errors.Failed;
                         res = "The Assembly has already been loaded" + loadEx.Message;
                         // MessageBox.Show("The Assembly has already been loaded" + loadEx.Message, "Simple ODM", MessageBoxButtons.OK);
                     } // The Assembly has already been loaded.
                     catch (BadImageFormatException imgEx)
                     {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
+                        ErrorObject.Flag = Errors.Failed;
                         // MessageBox.Show(imgEx.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly.
                         res = imgEx.Message;
                     }
                     catch (Exception ex)
                     {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
+                        ErrorObject.Flag = Errors.Failed;
                         // MessageBox.Show(ex.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly
                         res = ex.Message;
                     }
@@ -235,16 +242,16 @@ namespace TheTechIdea.Tools
                 {
                     try
                     {
-                        DMEEditor.AddLogMessage("Start", $"Started Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
+                        ////DMEEditor.AddLogMessage("Start", $"Started Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
                         ScanAssembly(s.DllLib);
-                        DMEEditor.Utilfunction.FunctionHierarchy = GetAddinObjects(s.DllLib);
-                        DMEEditor.AddLogMessage("End", $"Ended Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
+                        Utilfunction.FunctionHierarchy = GetAddinObjects(s.DllLib);
+                     //   //DMEEditor.AddLogMessage("End", $"Ended Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
 
                     }
                     catch (Exception ex)
                     {
-                        DMEEditor.ErrorObject.Flag = Errors.Failed;
-                        DMEEditor.AddLogMessage("Fail", $"Could not Process DLL {s.DllName}", DateTime.Now, -1,s.DllName, Errors.Failed);
+                        ErrorObject.Flag = Errors.Failed;
+                      //  //DMEEditor.AddLogMessage("Fail", $"Could not Process DLL {s.DllName}", DateTime.Now, -1,s.DllName, Errors.Failed);
                     }
 
                 }
@@ -253,7 +260,7 @@ namespace TheTechIdea.Tools
            
             AddEngineDefaultDrivers();
             CheckDriverAlreadyExistinList();
-            return DMEEditor.ErrorObject;
+            return ErrorObject;
         }
         /// <summary>
         ///     Method Will Load All Assembly found in the Passed Path
@@ -263,7 +270,7 @@ namespace TheTechIdea.Tools
         /// <returns></returns>
         public string LoadAssembly(string path, FolderFileTypes fileTypes)
         {
-            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            ErrorObject.Flag = Errors.Ok;
             string res = "";
 
             foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
@@ -277,23 +284,23 @@ namespace TheTechIdea.Tools
                 }
                 catch (FileLoadException loadEx)
                 {
-                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    ErrorObject.Flag = Errors.Failed;
                     res = "The Assembly has already been loaded" + loadEx.Message;
                 } // The Assembly has already been loaded.
                 catch (BadImageFormatException imgEx)
                 {
-                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    ErrorObject.Flag = Errors.Failed;
                     res = imgEx.Message;
                 }
                 catch (Exception ex)
                 {
-                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    ErrorObject.Flag = Errors.Failed;
                     res = ex.Message;
                 }
             }
 
 
-            DMEEditor.ErrorObject.Message = res;
+            ErrorObject.Message = res;
             return res;
         }
         #endregion "Loaders"
@@ -304,30 +311,30 @@ namespace TheTechIdea.Tools
             ParentChildObject a;
             if (parentid == null)
             {
-                if (DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ObjType == Objt).Count() == 0)
+                if (Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ObjType == Objt).Count() == 0)
                 {
                     a = new ParentChildObject() { id = p, ParentID = null, ObjType = Objt, AddinName = Name, Description = Descr };
-                    DMEEditor.Utilfunction.FunctionHierarchy.Add(a);
+                    Utilfunction.FunctionHierarchy.Add(a);
 
                 }
                 else
                 {
-                    a = DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == null && f.ObjType == Objt).FirstOrDefault();
+                    a = Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == null && f.ObjType == Objt).FirstOrDefault();
 
                 }
 
             }
             else
             {
-                if (DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == parentid && f.ObjType == Objt).Count() == 0)
+                if (Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == parentid && f.ObjType == Objt).Count() == 0)
                 {
                     a = new ParentChildObject() { id = p, ParentID = parentid, ObjType = Objt, AddinName = Name, Description = Descr };
-                    DMEEditor.Utilfunction.FunctionHierarchy.Add(a);
+                    Utilfunction.FunctionHierarchy.Add(a);
 
                 }
                 else
                 {
-                    a = DMEEditor.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == parentid && f.ObjType == Objt).FirstOrDefault();
+                    a = Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == parentid && f.ObjType == Objt).FirstOrDefault();
 
                 }
             }
@@ -385,7 +392,7 @@ namespace TheTechIdea.Tools
 
                                                 if (addin.DefaultCreate)
                                                 {
-                                                    if (DMEEditor.ConfigEditor.AddinTreeStructure.Where(x => x.className == type.Name).Any() == false)
+                                                    if ( ConfigEditor.AddinTreeStructure.Where(x => x.className == type.Name).Any() == false)
                                                     {
                                                         Show = true;
                                                         try
@@ -400,7 +407,7 @@ namespace TheTechIdea.Tools
                                                             xcls.RootName = cls.RootNodeName;
                                                             xcls.NodeName = cls.BranchText;
                                                             xcls.ObjectType = addin.ObjectType;
-                                                            DMEEditor.ConfigEditor.AddinTreeStructure.Add(xcls);
+                                                             ConfigEditor.AddinTreeStructure.Add(xcls);
 
                                                         }
                                                         catch (Exception)
@@ -417,12 +424,12 @@ namespace TheTechIdea.Tools
                                                 {
                                                     a = RearrangeAddin(p[i], p[i - 1], objtype);
                                                 }
-                                                DMEEditor.AddLogMessage("Success", $"Got Addin object {type.Name}", DateTime.Now, -1, type.Name, Errors.Ok);
+                                                //DMEEditor.AddLogMessage("Success", $"Got Addin object {type.Name}", DateTime.Now, -1, type.Name, Errors.Ok);
                                             }
                                             catch (Exception ex)
                                             {
                                                 
-                                                DMEEditor.AddLogMessage("Fail", $"Could get Addin information {type.Name}", DateTime.Now, -1, type.Name, Errors.Failed);
+                                                //DMEEditor.AddLogMessage("Fail", $"Could get Addin information {type.Name}", DateTime.Now, -1, type.Name, Errors.Failed);
                                             };
 
 
@@ -447,14 +454,14 @@ namespace TheTechIdea.Tools
                 
                     catch (Exception ex1)
                     {
-                        DMEEditor.AddLogMessage("Fail", $"Could get Addin object {type.Name} - {ex1.Message}", DateTime.Now, -1, type.Name, Errors.Failed);
+                        //DMEEditor.AddLogMessage("Fail", $"Could get Addin object {type.Name} - {ex1.Message}", DateTime.Now, -1, type.Name, Errors.Failed);
                     }
                 }
 
             }
           
-            DMEEditor.ConfigEditor.SaveAddinTreeStructure();
-            return DMEEditor.Utilfunction.FunctionHierarchy;
+             ConfigEditor.SaveAddinTreeStructure();
+            return Utilfunction.FunctionHierarchy;
         }
         #endregion
         #region "Class Extractors"
@@ -470,16 +477,16 @@ namespace TheTechIdea.Tools
                     }
                     catch (Exception ex2)
                     {
-                        DMEEditor.AddLogMessage("Failed", $"Could not get types for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
+                        //DMEEditor.AddLogMessage("Failed", $"Could not get types for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
                         try
                     {
-                        DMEEditor.AddLogMessage("Try", $"Trying to get exported types for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Ok);
+                        //DMEEditor.AddLogMessage("Try", $"Trying to get exported types for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Ok);
                         t = asm.GetExportedTypes();
                         }
                         catch (Exception ex3)
                         {
                             t = null;
-                            DMEEditor.AddLogMessage("Failed", $"Could not get types for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
+                            //DMEEditor.AddLogMessage("Failed", $"Could not get types for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
                         }
                        
                     }
@@ -504,7 +511,7 @@ namespace TheTechIdea.Tools
                                 xcls.componentType = "IDataSource";
                                 xcls.classProperties= (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
                                 DataSourcesClasses.Add(xcls);
-                                DMEEditor.ConfigEditor.DataSourcesClasses.Add(xcls);
+                                 ConfigEditor.DataSourcesClasses.Add(xcls);
                             }
                             //-------------------------------------------------------
                             // Get WorkFlow Definitions
@@ -517,7 +524,7 @@ namespace TheTechIdea.Tools
                                 xcls.type = type;
                                 xcls.componentType = "IWorkFlowAction";
                                 xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
-                                DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
+                                ConfigEditor.WorkFlowActions.Add(xcls);
                             }
                             //-------------------------------------------------------
                             // Get IAppBuilder  Definitions
@@ -530,7 +537,7 @@ namespace TheTechIdea.Tools
                                 xcls.type = type;
                                 xcls.componentType = "IAppBuilder";
                                 xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
-                                DMEEditor.ConfigEditor.AppWritersClasses.Add(xcls);
+                                 ConfigEditor.AppWritersClasses.Add(xcls);
                             }
                             if (type.ImplementedInterfaces.Contains(typeof(IAppComponent)))
                             {
@@ -541,7 +548,7 @@ namespace TheTechIdea.Tools
                                 xcls.type = type;
                                 xcls.componentType = "IAppComponent";
                                 xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
-                                DMEEditor.ConfigEditor.AppComponents.Add(xcls);
+                                 ConfigEditor.AppComponents.Add(xcls);
                             }
                             if (type.ImplementedInterfaces.Contains(typeof(IAppDesigner)))
                             {
@@ -552,7 +559,7 @@ namespace TheTechIdea.Tools
                                 xcls.type = type;
                                 xcls.componentType = "IAppDesigner";
                                 xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
-                                DMEEditor.ConfigEditor.AppComponents.Add(xcls);
+                                 ConfigEditor.AppComponents.Add(xcls);
                             }
                             if (type.ImplementedInterfaces.Contains(typeof(IAppScreen)))
                             {
@@ -563,7 +570,7 @@ namespace TheTechIdea.Tools
                                 xcls.type = type;
                                 xcls.componentType = "IAppScreen";
                                 xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
-                                DMEEditor.ConfigEditor.AppComponents.Add(xcls);
+                                 ConfigEditor.AppComponents.Add(xcls);
                             }
                             
                             //-------------------------------------------------------
@@ -576,7 +583,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.componentType = "IReportDMWriter";
                                 xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
-                                DMEEditor.ConfigEditor.ReportWritersClasses.Add(xcls);
+                                 ConfigEditor.ReportWritersClasses.Add(xcls);
                             }
                             //-------------------------------------------------------
                             // Get IBranch Definitions
@@ -629,7 +636,7 @@ namespace TheTechIdea.Tools
                                     }
 
                                 }
-                                DMEEditor.ConfigEditor.BranchesClasses.Add(xcls);
+                                 ConfigEditor.BranchesClasses.Add(xcls);
                             }
                             // --- Get all AI app Interfaces
                             //-----------------------------------------------------
@@ -733,7 +740,7 @@ namespace TheTechIdea.Tools
                                     }
 
                                 }
-                                DMEEditor.ConfigEditor.BranchesClasses.Add(xcls);
+                                 ConfigEditor.BranchesClasses.Add(xcls);
                             }
                         }
                     }
@@ -741,7 +748,7 @@ namespace TheTechIdea.Tools
                 }
                 catch (Exception ex)
                 {
-                   DMEEditor.AddLogMessage("Failed", $"Could not get Any types for {asm.GetName().ToString()}" , DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
+                   //DMEEditor.AddLogMessage("Failed", $"Could not get Any types for {asm.GetName().ToString()}" , DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
                 };
 
                 return true;
@@ -791,7 +798,7 @@ namespace TheTechIdea.Tools
             }
             if (assembly != null)
                 return assembly;
-            foreach (var moduleDir in DMEEditor.ConfigEditor.Config.Folders.Where(c =>  c.FolderFilesType == FolderFileTypes.OtherDLL))
+            foreach (var moduleDir in  ConfigEditor.Config.Folders.Where(c =>  c.FolderFilesType == FolderFileTypes.OtherDLL))
             {
                 var di = new DirectoryInfo(moduleDir.FolderPath);
                 var module = di.GetFiles().FirstOrDefault(i => i.Name == filename );
@@ -802,7 +809,7 @@ namespace TheTechIdea.Tools
             }
             if (assembly != null)
                 return assembly;
-            foreach (var moduleDir in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver))
+            foreach (var moduleDir in  ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver))
             {
                 var di = new DirectoryInfo(moduleDir.FolderPath);
                 var module = di.GetFiles().FirstOrDefault(i => i.Name == filename);
@@ -813,7 +820,7 @@ namespace TheTechIdea.Tools
             }
             if (assembly != null)
                 return assembly;
-            foreach (var moduleDir in DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass))
+            foreach (var moduleDir in  ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass))
             {
                 var di = new DirectoryInfo(moduleDir.FolderPath);
                 var module = di.GetFiles().FirstOrDefault(i => i.Name == filename);
@@ -863,13 +870,13 @@ namespace TheTechIdea.Tools
 
             try
             {
-                AssemblyClassDefinition cls = DMEEditor.ConfigEditor.BranchesClasses.Where(x => x.className == FullClassName).FirstOrDefault();
+                AssemblyClassDefinition cls =  ConfigEditor.BranchesClasses.Where(x => x.className == FullClassName).FirstOrDefault();
                 dynamic obj = GetInstance(cls.PackageName);
                 obj = ObjInstance;
                 MethodInfo method = cls.Methods.Where(x => x.Caption == MethodName).FirstOrDefault().Info;
                 method.Invoke(ObjInstance, null);
                 return true;
-                //    DMEEditor.AddLogMessage("Success", "Running method", DateTime.Now, 0, null, Errors.Ok);
+                //    //DMEEditor.AddLogMessage("Success", "Running method", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception )
             {
@@ -887,10 +894,10 @@ namespace TheTechIdea.Tools
 
             foreach (ConnectionDriversConfig dr in DataDriversConfig)
             {
-                ConnectionDriversConfig founddr = DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.PackageName == dr.PackageName && c.version == dr.version).FirstOrDefault();
+                ConnectionDriversConfig founddr =  ConfigEditor.DataDriversClasses.Where(c => c.PackageName == dr.PackageName && c.version == dr.version).FirstOrDefault();
                 if (founddr == null)
                 {
-                    DMEEditor.ConfigEditor.DataDriversClasses.Add(dr);
+                     ConfigEditor.DataDriversClasses.Add(dr);
                 }
             }
         }
@@ -1011,7 +1018,7 @@ namespace TheTechIdea.Tools
                     catch (Exception ex)
                     {
 
-                        DMEEditor.Logger.WriteLog($"error loading Database drivers {ex.Message} ");
+                      //  DMEEditor.Logger.WriteLog($"error loading Database drivers {ex.Message} ");
                         return false;
                     }
 
@@ -1058,13 +1065,13 @@ namespace TheTechIdea.Tools
                 }
                 else
                     retval = true;
-                DMEEditor.AddLogMessage("Success", $"Got ADO Type Drivers {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Ok);
+                //DMEEditor.AddLogMessage("Success", $"Got ADO Type Drivers {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Ok);
             }
             catch (Exception)
             {
                 t = null;
                 retval = false;
-                DMEEditor.AddLogMessage("Failed", $"Could not ADO Type Drivers for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
+                //DMEEditor.AddLogMessage("Failed", $"Could not ADO Type Drivers for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
             }
            
           
@@ -1076,7 +1083,7 @@ namespace TheTechIdea.Tools
             try
             {
               
-                foreach (ConnectionDriversConfig item in DMEEditor.ConfigEditor.DriverDefinitionsConfig)
+                foreach (ConnectionDriversConfig item in  ConfigEditor.DriverDefinitionsConfig)
                 {
 
                     driversConfig = DataDriversConfig.Where(c => c.PackageName == item.PackageName).FirstOrDefault();
@@ -1120,7 +1127,7 @@ namespace TheTechIdea.Tools
             }
             catch (ReflectionTypeLoadException ex1)
             {
-                DMEEditor.AddLogMessage("Failed", $"Showing Details for  {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
+                //DMEEditor.AddLogMessage("Failed", $"Showing Details for  {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
                 StringBuilder sb = new StringBuilder();
                 foreach (Exception exSub in ex1.LoaderExceptions)
                 {
@@ -1137,7 +1144,7 @@ namespace TheTechIdea.Tools
                     sb.AppendLine();
                 }
                 string errorMessage = sb.ToString();
-                DMEEditor.AddLogMessage("Failed", $"Could not get Any types for {asm.GetName().ToString()} \n {errorMessage}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
+                //DMEEditor.AddLogMessage("Failed", $"Could not get Any types for {asm.GetName().ToString()} \n {errorMessage}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
 
                 
             }
@@ -1204,7 +1211,7 @@ namespace TheTechIdea.Tools
             catch (Exception ex)
             {
                 string mes = "";
-                DMEEditor.AddLogMessage(ex.Message, "Could not Add Driver" + mes, DateTime.Now, -1, mes, Errors.Failed);
+              //  DMEEditor.AddLogMessage(ex.Message, "Could not Add Driver" + mes, DateTime.Now, -1, mes, Errors.Failed);
                 return false;
             };
         }

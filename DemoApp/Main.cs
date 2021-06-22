@@ -97,7 +97,7 @@ namespace DataManagment_Engine
                 //---------------------------------------------------------------------------
                 DMEEditor = scope.Resolve<IDMEEditor>();
                 //-------------------------------------------------------------------------------
-                LLoader.DMEEditor = DMEEditor;
+               // LLoader.DMEEditor = DMEEditor;
                // util.DME = DMEEditor;
                 //-------------------------------------------------------------------------------
                 // The Main Visualization Class tha control the visual aspect of the system

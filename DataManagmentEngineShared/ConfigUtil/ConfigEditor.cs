@@ -68,7 +68,7 @@ namespace TheTechIdea.Util
 		public Dictionary<string, string> Entities { get; set; } = new Dictionary<string, string>();
 		public List<LScriptHeader> Scripts { get; set; } = new List<LScriptHeader>();
 		public List<SyncDataSource> SyncedDataSources { get; set; } = new List<SyncDataSource>();
-
+		public List<AssemblyClassDefinition> WorkFlowActions { get; set; } = new List<AssemblyClassDefinition>();
 		public List<ConnectionDriversConfig> DataDriversClasses { get; set; } = new List<ConnectionDriversConfig>();
 		public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public string ExePath { get; set; } // System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location); //System.Reflection.Assembly.GetExecutingAssembly().Location

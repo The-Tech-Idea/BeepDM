@@ -31,7 +31,7 @@ namespace TheTechIdea.DataManagment_Engine.Workflow
 
         // public BindingList<Mapping_rep> Mappings { get; set; } = new BindingList<Mapping_rep>();
         public List<DataWorkFlow> WorkFlows { get; set; } = new List<DataWorkFlow>();
-        public List<AssemblyClassDefinition> WorkFlowActions { get; set; } = new List<AssemblyClassDefinition>();
+      
        
         public IErrorsInfo CopyEntity(IDataSource src, string SourceEntityName, IDataSource dest, string DestEntityName)
         {
@@ -155,7 +155,7 @@ namespace TheTechIdea.DataManagment_Engine.Workflow
                 for (int i = 0; i < CurrnetWorkFlow.Datasteps.Count; i++)
                 {
                     WorkFlowStep step = CurrnetWorkFlow.Datasteps[i];
-                    AssemblyClassDefinition action = DMEEditor.WorkFlowEditor.WorkFlowActions.Where(x => x.className == step.ActionName).FirstOrDefault();
+                    AssemblyClassDefinition action = DMEEditor.ConfigEditor.WorkFlowActions.Where(x => x.className == step.ActionName).FirstOrDefault();
                      flowAction = (IWorkFlowActionClassImplementation)DMEEditor.assemblyHandler.GetInstance(action.PackageName);
                     flowAction.InParameters = new List<IPassedArgs>();
                     flowAction.OutParameters = new List<IPassedArgs>();

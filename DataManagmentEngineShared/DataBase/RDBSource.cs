@@ -29,7 +29,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         public event EventHandler<PassedArgs> PassEvent;
 
         static Random r = new Random();
-
+      
 
         public string Id { get; set; }
         public string DatasourceName { get; set; }
@@ -1391,7 +1391,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("Fail", $"Error in getting  child entities for {tablename} ({ ex.Message})", DateTime.Now, 0, tablename, Errors.Failed);
+             //   DMEEditor.AddLogMessage("Fail", $"Error in getting  child entities for {tablename} ({ ex.Message})", DateTime.Now, 0, tablename, Errors.Failed);
                
                 return null;
             }
@@ -1432,7 +1432,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             {//-- Create Create string
                 int i = 1;
                 t1.EntityName = Regex.Replace(t1.EntityName, @"\s+", "_");
-                createtablestring += "["+t1.EntityName + "]\n(";
+                createtablestring += " " +t1.EntityName + "\n(";
                 if (t1.Fields.Count == 0)
                 {
                     // t1=ds.GetEntityStructure()
@@ -1440,7 +1440,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 foreach (EntityField dbf in t1.Fields)
                 {
 
-                    createtablestring += "\n [" + dbf.fieldname + "] " + DMEEditor.typesHelper.GetDataType(DatasourceName, dbf) + " ";
+                    createtablestring += "\n " + dbf.fieldname + " " + DMEEditor.typesHelper.GetDataType(DatasourceName, dbf) + " ";
                     if (dbf.IsAutoIncrement)
                     {
                       //  dbf.fieldname = Regex.Replace(dbf.fieldname, @"\s+", "_");
@@ -1711,7 +1711,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
                     forkeys = forkeys.Remove(forkeys.Length - 1, 1);
                     refkeys = refkeys.Remove(refkeys.Length - 1, 1);
-                    retval += @" ALTER TABLE [" + t1.EntityName + "] ADD CONSTRAINT " + t1.EntityName + i + r.Next(10, 1000) + "  FOREIGN KEY (" + forkeys + ")  REFERENCES " + item + "(" + refkeys + "); \n";
+                    retval += @" ALTER TABLE " + t1.EntityName + " ADD CONSTRAINT " + t1.EntityName + i + r.Next(10, 1000) + "  FOREIGN KEY (" + forkeys + ")  REFERENCES " + item + "(" + refkeys + "); \n";
                 }
 
 
@@ -2278,7 +2278,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             return tb;
         }
-      
         public virtual List<ChildRelation> GetTablesFKColumnList(string tablename, string SchemaName, string Filterparamters)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -2314,10 +2313,41 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         {
             throw new NotImplementedException();
         }
-
-
         #endregion
-    
+        #region "dispose"
+        private bool disposedValue;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                disposedValue = true;
+            }
+        }
+
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~RDBSource()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
+
+
+
 
 
 
