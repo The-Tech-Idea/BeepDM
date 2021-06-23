@@ -139,10 +139,11 @@ namespace TheTechIdea.ETL
             {
                 CancellationTokenRegistration ctr = token.Register(() => StopTask());
                 Task<IErrorsInfo> er = DMEEditor.ETL.RunScriptAsync(progress, token);
-
+                er.Wait();
+                MessageBox.Show("Done");
             });
-            ScriptRun.Wait();
-             MessageBox.Show("Done");
+           
+            
 
         }
         /// <summary>

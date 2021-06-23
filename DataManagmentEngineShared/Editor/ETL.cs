@@ -317,11 +317,17 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                                 }
                             }
                         }
-                      
-                       
+
+
                         //var dst = Task.Run<IErrorsInfo>(() => { return destds.UpdateEntities(destentity, srcTb,progress); });
                         //dst.Wait();
-                        DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data from {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Ok);
+                        if (progress != null)
+                        {
+                            PassedArgs ps = new PassedArgs { ParameterString1 = $"Ended Copying Data from {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
+                            progress.Report(ps);
+
+                        }
+                      //  DMEEditor.AddLogMessage("Copy Data", $"Ended Copying Data from {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Ok);
 
                     }
                     else
@@ -409,7 +415,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         {
             #region "Update Data code "
 
-            int CurrentRecord = 0;
+           
             int highestPercentageReached = 0;
             int numberToCompute = 0;
             LScriptTracker tr;
@@ -434,7 +440,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
                 srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
                 CurrentScriptRecord += 1;
-                CurrentRecord = CurrentScriptRecord;
+                
                // destds.PassEvent += (sender, e) => { PassEvent?.Invoke(sender, e); };
                 if (destds != null)
                 {
@@ -454,7 +460,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                       //  UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
                         if (progress != null)
                         {
-                            PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentRecord, ParameterInt2 = ScriptCount};
+                            PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount};
                             progress.Report(ps);
 
                         }
@@ -465,9 +471,10 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             //------------Update Entity structure
             int p2 = DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CopyData).Count();
+            CurrentScriptRecord = p1;
             foreach (LScript sc in DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.CopyData))
             {
-                CurrentScriptRecord = p1;
+               
                 destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
                 srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
               
@@ -499,54 +506,54 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 }
             }
             int p3 = DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.AlterFor).Count();
-            foreach (LScript sc in DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.AlterFor))
-            {
-                CurrentRecord = 0;
-                numberToCompute =  p3;
-                destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
-                srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
-                if (destds != null)
-                {
-                    destds.Dataconnection.OpenConnection();
-                    DMEEditor.OpenDataSource(sc.destinationdatasourcename);
-                    //      srcds.Dataconnection.OpenConnection();
-                    if (destds.ConnectionStatus == System.Data.ConnectionState.Open)
-                    {
-                        if (sc.scriptType == DDLScriptType.AlterFor)
-                        {
-                            sc.errorsInfo = destds.ExecuteSql(sc.ddl);
+            //foreach (LScript sc in DMEEditor.ETL.script.Scripts.Where(u => u.scriptType == DDLScriptType.AlterFor))
+            //{
+            //    CurrentRecord = 0;
+            //    numberToCompute =  p3;
+            //    destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
+            //    srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
+            //    if (destds != null)
+            //    {
+            //        destds.Dataconnection.OpenConnection();
+            //        DMEEditor.OpenDataSource(sc.destinationdatasourcename);
+            //        //      srcds.Dataconnection.OpenConnection();
+            //        if (destds.ConnectionStatus == System.Data.ConnectionState.Open)
+            //        {
+            //            if (sc.scriptType == DDLScriptType.AlterFor)
+            //            {
+            //                sc.errorsInfo = destds.ExecuteSql(sc.ddl);
                        
-                        }
-                        else
-                        {
+            //            }
+            //            else
+            //            {
 
-                            DMEEditor.ErrorObject.Flag = Errors.Failed;
-                            DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
-                            sc.errorsInfo = DMEEditor.ErrorObject;
-                            sc.errormessage = DMEEditor.ErrorObject.Message;
+            //                DMEEditor.ErrorObject.Flag = Errors.Failed;
+            //                DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
+            //                sc.errorsInfo = DMEEditor.ErrorObject;
+            //                sc.errormessage = DMEEditor.ErrorObject.Message;
                            
                            
 
-                        }
-                        UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
-                        if (progress != null)
-                        {
-                            PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentRecord  };
-                            progress.Report(ps);
+            //            }
+            //            UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
+            //            if (progress != null)
+            //            {
+            //                PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentRecord  };
+            //                progress.Report(ps);
 
-                        }
+            //            }
 
-                    }
+            //        }
 
-                }
+            //    }
 
-                #endregion
+               #endregion
 
 
-                //-----------------------------
+            //    //-----------------------------
 
                
-            }
+            //}
 
             return DMEEditor.ErrorObject;
         }
