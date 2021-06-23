@@ -443,7 +443,14 @@ namespace TheTechIdea.DataManagment_Engine
                 //  var v = (dynamic)null;
                 foreach (DataColumn item in dt.Columns)
                 {
-                    properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
+                    if (row[item.ColumnName] != DBNull.Value)
+                    {
+                        string st=row[item.ColumnName].ToString();
+                        if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st)){
+                            properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
+                        }
+                    }
+                   
                 }
                 //for (int i = 0; i <= enttype.Fields.Count - 1; i++)
                 //{

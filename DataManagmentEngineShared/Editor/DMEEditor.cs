@@ -225,7 +225,7 @@ namespace TheTechIdea.DataManagment_Engine
         public IDataSource CreateNewDataSourceConnection(string pdatasourcename)
         {
 
-            ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName == pdatasourcename).FirstOrDefault();
+            ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName.Equals(pdatasourcename,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds=null;
            if (cn != null)

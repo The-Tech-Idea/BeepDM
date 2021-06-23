@@ -852,7 +852,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 adp.Fill(dataSet);
                 DataTable dt = dataSet.Tables[0];
 
-                return DMEEditor.Utilfunction.ConvertTableToList(dt,GetEntityStructure(EntityName),GetEntityType(EntityName));
+                return dt;//DMEEditor.Utilfunction.ConvertTableToList(dt,GetEntityStructure(EntityName),GetEntityType(EntityName));
             }
 
             catch (Exception ex)
