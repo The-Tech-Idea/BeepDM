@@ -96,6 +96,7 @@ namespace DataManagment_Engine
                 // and automation
                 WorkFlowEditor = scope.Resolve<IWorkFlowEditor>();
                 eTL= scope.Resolve<IETL>();
+                LLoader = scope.Resolve<IAssemblyHandler>();
                 //-------------------------------------------------------------------------------
                 // The Main Class for Data Manager 
                 //---------------------------------------------------------------------------
@@ -104,9 +105,9 @@ namespace DataManagment_Engine
                 // this is the assembly loader for loading from Addin Folder and Projectdrivers Folder
                 //---------------------------------------------------------------------------
                 // LLoader = scope.Resolve<IAssemblyLoader>();
-                LLoader = scope.Resolve<IAssemblyHandler>();
-                LLoader.DMEEditor = DMEEditor;
-                DMEEditor.assemblyHandler = LLoader;
+              
+               // LLoader.DMEEditor = DMEEditor;
+               // DMEEditor.assemblyHandler = LLoader;
                 //-------------------------------------------------------------------------------
                 // The Main Visualization Class tha control the visual aspect of the system
                 //---------------------------------------------------------------------------

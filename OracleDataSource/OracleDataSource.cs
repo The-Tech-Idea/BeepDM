@@ -66,7 +66,21 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return DMEEditor.ErrorObject.Message;
         }
-   
+        private string PagedQuery(string originalquery, List<ReportFilter> Filter)
+        {
+
+            ReportFilter pagesizefilter = Filter.Where(o => o.FieldName.Equals("Pagesize", StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            ReportFilter pagenumberfilter = Filter.Where(o => o.FieldName.Equals("pagenumber", StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            int pagesize = Convert.ToInt32(pagesizefilter.FilterValue);
+            int pagenumber = Convert.ToInt32(pagenumberfilter.FilterValue);
+
+            string pagedquery = "SELECT * FROM " +
+                             "  (SELECT a.*, rownum rn" +
+                             "    FROM    (" +
+                             $"             {originalquery} ) a " +
+                             $"    WHERE rownum < (({pagenumber} * {pagesize}) + 1)) WHERE rn >= ((({pagenumber} - 1) * {pagesize}) + 1)";
+            return pagedquery;
+        }
         private string BuildQuery(string originalquery, List<ReportFilter> Filter)
         {
             string retval;
@@ -90,9 +104,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 queryStructure.Entities.AddRange(Tablesdsp);
                 qrystr += queryStructure.FieldsString + " " + " from " + queryStructure.EntitiesString;
                 qrystr += Environment.NewLine;
-                if (Filter != null)
+                List<ReportFilter> FilterwoPaging = Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator) && !p.FieldName.Equals("Pagesize", StringComparison.OrdinalIgnoreCase) && !p.FieldName.Equals("pagenumber", StringComparison.OrdinalIgnoreCase)).ToList();
+                if (FilterwoPaging != null)
                 {
-                    if (Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
+                    if (FilterwoPaging.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
                     {
                         qrystr += Environment.NewLine;
                         if (FoundWhere == false)
@@ -100,25 +115,34 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                             qrystr += " where " + Environment.NewLine;
                             FoundWhere = true;
                         }
-
-                        foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)))
+                       
+                       
+                        int i = 0;
+                       
+                        foreach (ReportFilter item in FilterwoPaging)
                         {
-                            if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
-                            {
-                                //  EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
-                                if (item.Operator.ToLower() == "between")
+                                //item.FieldName.Equals("Pagesize", StringComparison.OrdinalIgnoreCase) && item.FieldName.Equals("pagenumber", StringComparison.OrdinalIgnoreCase)
+                                if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
                                 {
-                                    qrystr += item.FieldName + " " + item.Operator + " :p_" + item.FieldName + " and  :p_" + item.FieldName + "1 " + Environment.NewLine;
+                                    //  EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
+                                    //>= (((pageNumber-1) * pageSize) + 1)
+
+                                    if (item.Operator.ToLower() == "between")
+                                    {
+                                        qrystr += item.FieldName + " " + item.Operator + " :p_" + item.FieldName + " and  :p_" + item.FieldName + "1 " + Environment.NewLine;
+                                    }
+                                    else
+                                    {
+                                        qrystr += item.FieldName + " " + item.Operator + " :p_" + item.FieldName + " " + Environment.NewLine;
+                                    }
+
                                 }
-                                else
+                                if (i < Filter.Count - 1)
                                 {
-                                    qrystr += item.FieldName + " " + item.Operator + " :p_" + item.FieldName + " " + Environment.NewLine;
+                                    qrystr += " and ";
                                 }
 
-                            }
-
-
-
+                                i++;
                         }
                     }
 
@@ -169,7 +193,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     qrystr += " order by " + orderbywhere[1];
 
                 }
-
+                if (Filter.Where(o => o.FieldName.Equals("Pagesize", StringComparison.OrdinalIgnoreCase)).Any() || Filter.Where(o => o.FieldName.Equals("pagenumber", StringComparison.OrdinalIgnoreCase)).Any() && Filter.Count >= 2)
+                {
+                    if (Filter.Where(o => o.FieldName.Equals("Pagesize", StringComparison.OrdinalIgnoreCase)).Any() || Filter.Where(o => o.FieldName.Equals("pagenumber", StringComparison.OrdinalIgnoreCase)).Any())
+                    {
+                        qrystr = PagedQuery(qrystr, Filter);
+                    }
+                }
 
             }
             catch (Exception ex)

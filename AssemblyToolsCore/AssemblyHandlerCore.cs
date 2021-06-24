@@ -526,7 +526,7 @@ namespace TheTechIdea.Tools.AssemblyHandling
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IWorkFlowAction";
-                                DMEEditor.WorkFlowEditor.WorkFlowActions.Add(xcls);
+                                DMEEditor.ConfigEditor.WorkFlowActions.Add(xcls);
                             }
                             //-------------------------------------------------------
                             // Get IAppBuilder  Definitions
