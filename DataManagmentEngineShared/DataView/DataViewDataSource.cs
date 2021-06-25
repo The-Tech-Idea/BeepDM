@@ -518,7 +518,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
            
         }
-        public LScript RunScript(LScript dDLScripts)
+        public IErrorsInfo RunScript(LScript dDLScripts)
         {
             if (ds.ConnectionStatus == ConnectionState.Open)
             {

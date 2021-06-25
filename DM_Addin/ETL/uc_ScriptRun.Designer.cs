@@ -35,7 +35,6 @@ namespace TheTechIdea.ETL
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(uc_ScriptRun));
             this.scriptBindingNavigator = new System.Windows.Forms.BindingNavigator(this.components);
             this.bindingNavigatorAddNewItem = new System.Windows.Forms.ToolStripButton();
-            this.scriptBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.bindingNavigatorCountItem = new System.Windows.Forms.ToolStripLabel();
             this.bindingNavigatorDeleteItem = new System.Windows.Forms.ToolStripButton();
             this.bindingNavigatorMoveFirstItem = new System.Windows.Forms.ToolStripButton();
@@ -49,34 +48,55 @@ namespace TheTechIdea.ETL
             this.scriptBindingNavigatorSaveItem = new System.Windows.Forms.ToolStripButton();
             this.label1 = new System.Windows.Forms.Label();
             this.StopButton = new System.Windows.Forms.Button();
-            this.progressBar1 = new TextProgressBar();
             this.RunScriptbutton = new System.Windows.Forms.Button();
             this.scriptDataGridView = new System.Windows.Forms.DataGridView();
-            this.scriptTypeComboBox = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.sourcedatasourcename = new System.Windows.Forms.DataGridViewComboBoxColumn();
-            this.dataConnectionsBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.destinationdatasourcename = new System.Windows.Forms.DataGridViewComboBoxColumn();
-            this.Active = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.ddlDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.errormessageDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dataGridViewComboBoxColumn1 = new System.Windows.Forms.DataGridViewComboBoxColumn();
             this.dataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.trackingscriptDataGridView = new System.Windows.Forms.DataGridView();
-            this.dataGridViewTextBoxColumn4 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dataGridViewTextBoxColumn3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dataGridViewTextBoxColumn5 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dataGridViewTextBoxColumn7 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Messege = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.trackingscriptBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.DataCopyScripts = new System.Windows.Forms.DataGridView();
+            this.childScriptsBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.TrackingdataGridView = new System.Windows.Forms.DataGridView();
+            this.trackingBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.label2 = new System.Windows.Forms.Label();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.label3 = new System.Windows.Forms.Label();
+            this.panel3 = new System.Windows.Forms.Panel();
+            this.label4 = new System.Windows.Forms.Label();
+            this.dataGridViewTextBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dataGridViewTextBoxColumn6 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dataGridViewTextBoxColumn8 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.rundateDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.currentrecorddatasourcenameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.currenrecordindexDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.currenrecordentityDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.errormessageDataGridViewTextBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.scriptBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.activeDataGridViewCheckBoxColumn = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.sourcedatasourcenameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.sourceentitynameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.destinationdatasourcenameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.destinationentitynameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.errormessageDataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dataConnectionsBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.dMEEditorBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.Log_panel = new System.Windows.Forms.RichTextBox();
+            this.progressBar1 = new WinFormSharedProject.Controls.TextProgressBar();
+            this.scriptTypeComboBox = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.sourcedatasourcename = new System.Windows.Forms.DataGridViewComboBoxColumn();
+            this.destinationdatasourcename = new System.Windows.Forms.DataGridViewComboBoxColumn();
+            this.errormessageDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.ddlDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.scriptBindingNavigator)).BeginInit();
             this.scriptBindingNavigator.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.scriptBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.scriptDataGridView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DataCopyScripts)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.childScriptsBindingSource)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.TrackingdataGridView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackingBindingSource)).BeginInit();
+            this.panel1.SuspendLayout();
+            this.panel2.SuspendLayout();
+            this.panel3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.scriptBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataConnectionsBindingSource)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.trackingscriptDataGridView)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.trackingscriptBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dMEEditorBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
@@ -118,10 +138,6 @@ namespace TheTechIdea.ETL
             this.bindingNavigatorAddNewItem.RightToLeftAutoMirrorImage = true;
             this.bindingNavigatorAddNewItem.Size = new System.Drawing.Size(23, 22);
             this.bindingNavigatorAddNewItem.Text = "Add new";
-            // 
-            // scriptBindingSource
-            // 
-            this.scriptBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Editor.LScript);
             // 
             // bindingNavigatorCountItem
             // 
@@ -213,11 +229,11 @@ namespace TheTechIdea.ETL
             this.label1.Anchor = System.Windows.Forms.AnchorStyles.Top;
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Myanmar Text", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(9, 37);
+            this.label1.Location = new System.Drawing.Point(587, 25);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(148, 34);
+            this.label1.Size = new System.Drawing.Size(138, 34);
             this.label1.TabIndex = 14;
-            this.label1.Text = " Script Runner ";
+            this.label1.Text = "ETL Data Run ";
             // 
             // StopButton
             // 
@@ -228,14 +244,6 @@ namespace TheTechIdea.ETL
             this.StopButton.TabIndex = 12;
             this.StopButton.Text = "Stop";
             this.StopButton.UseVisualStyleBackColor = true;
-            // 
-            // progressBar1
-            // 
-            this.progressBar1.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.progressBar1.Location = new System.Drawing.Point(275, 743);
-            this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(734, 23);
-            this.progressBar1.TabIndex = 11;
             // 
             // RunScriptbutton
             // 
@@ -249,6 +257,8 @@ namespace TheTechIdea.ETL
             // 
             // scriptDataGridView
             // 
+            this.scriptDataGridView.AllowUserToDeleteRows = false;
+            this.scriptDataGridView.AllowUserToOrderColumns = true;
             this.scriptDataGridView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
@@ -258,69 +268,15 @@ namespace TheTechIdea.ETL
             this.scriptTypeComboBox,
             this.sourcedatasourcename,
             this.destinationdatasourcename,
-            this.Active,
-            this.ddlDataGridViewTextBoxColumn,
-            this.errormessageDataGridViewTextBoxColumn});
+            this.errormessageDataGridViewTextBoxColumn,
+            this.ddlDataGridViewTextBoxColumn});
             this.scriptDataGridView.DataSource = this.scriptBindingSource;
-            this.scriptDataGridView.Location = new System.Drawing.Point(15, 103);
+            this.scriptDataGridView.Location = new System.Drawing.Point(3, 34);
             this.scriptDataGridView.Name = "scriptDataGridView";
-            this.scriptDataGridView.Size = new System.Drawing.Size(1255, 219);
+            this.scriptDataGridView.ReadOnly = true;
+            this.scriptDataGridView.ShowCellErrors = false;
+            this.scriptDataGridView.Size = new System.Drawing.Size(1260, 197);
             this.scriptDataGridView.TabIndex = 9;
-            // 
-            // scriptTypeComboBox
-            // 
-            this.scriptTypeComboBox.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.scriptTypeComboBox.DataPropertyName = "scriptType";
-            this.scriptTypeComboBox.HeaderText = "scriptType";
-            this.scriptTypeComboBox.Name = "scriptTypeComboBox";
-            this.scriptTypeComboBox.Resizable = System.Windows.Forms.DataGridViewTriState.True;
-            this.scriptTypeComboBox.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            this.scriptTypeComboBox.Width = 62;
-            // 
-            // sourcedatasourcename
-            // 
-            this.sourcedatasourcename.DataPropertyName = "sourcedatasourcename";
-            this.sourcedatasourcename.DataSource = this.dataConnectionsBindingSource;
-            this.sourcedatasourcename.DisplayMember = "ConnectionName";
-            this.sourcedatasourcename.HeaderText = "Source";
-            this.sourcedatasourcename.Name = "sourcedatasourcename";
-            this.sourcedatasourcename.Resizable = System.Windows.Forms.DataGridViewTriState.True;
-            this.sourcedatasourcename.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
-            this.sourcedatasourcename.ValueMember = "ConnectionName";
-            // 
-            // dataConnectionsBindingSource
-            // 
-            this.dataConnectionsBindingSource.DataSource = typeof(TheTechIdea.Util.ConnectionProperties);
-            // 
-            // destinationdatasourcename
-            // 
-            this.destinationdatasourcename.DataPropertyName = "destinationdatasourcename";
-            this.destinationdatasourcename.DataSource = this.dataConnectionsBindingSource;
-            this.destinationdatasourcename.DisplayMember = "ConnectionName";
-            this.destinationdatasourcename.HeaderText = "Destination";
-            this.destinationdatasourcename.Name = "destinationdatasourcename";
-            this.destinationdatasourcename.ValueMember = "ConnectionName";
-            // 
-            // Active
-            // 
-            this.Active.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
-            this.Active.DataPropertyName = "Active";
-            this.Active.HeaderText = "Active";
-            this.Active.Name = "Active";
-            this.Active.Width = 43;
-            // 
-            // ddlDataGridViewTextBoxColumn
-            // 
-            this.ddlDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.ddlDataGridViewTextBoxColumn.DataPropertyName = "ddl";
-            this.ddlDataGridViewTextBoxColumn.HeaderText = "Script";
-            this.ddlDataGridViewTextBoxColumn.Name = "ddlDataGridViewTextBoxColumn";
-            // 
-            // errormessageDataGridViewTextBoxColumn
-            // 
-            this.errormessageDataGridViewTextBoxColumn.DataPropertyName = "errormessage";
-            this.errormessageDataGridViewTextBoxColumn.HeaderText = "errormessage";
-            this.errormessageDataGridViewTextBoxColumn.Name = "errormessageDataGridViewTextBoxColumn";
             // 
             // dataGridViewComboBoxColumn1
             // 
@@ -338,102 +294,336 @@ namespace TheTechIdea.ETL
             this.dataGridViewTextBoxColumn1.Resizable = System.Windows.Forms.DataGridViewTriState.True;
             this.dataGridViewTextBoxColumn1.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
             // 
-            // trackingscriptDataGridView
+            // DataCopyScripts
             // 
-            this.trackingscriptDataGridView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            this.DataCopyScripts.AllowUserToDeleteRows = false;
+            this.DataCopyScripts.AllowUserToOrderColumns = true;
+            this.DataCopyScripts.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.trackingscriptDataGridView.AutoGenerateColumns = false;
-            this.trackingscriptDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.trackingscriptDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.dataGridViewTextBoxColumn4,
-            this.dataGridViewTextBoxColumn3,
-            this.dataGridViewTextBoxColumn5,
-            this.dataGridViewTextBoxColumn7,
-            this.Messege});
-            this.trackingscriptDataGridView.DataSource = this.trackingscriptBindingSource;
-            this.trackingscriptDataGridView.Location = new System.Drawing.Point(117, 248);
-            this.trackingscriptDataGridView.Name = "trackingscriptDataGridView";
-            this.trackingscriptDataGridView.Size = new System.Drawing.Size(142, 62);
-            this.trackingscriptDataGridView.TabIndex = 17;
+            this.DataCopyScripts.AutoGenerateColumns = false;
+            this.DataCopyScripts.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.DataCopyScripts.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.activeDataGridViewCheckBoxColumn,
+            this.sourcedatasourcenameDataGridViewTextBoxColumn,
+            this.sourceentitynameDataGridViewTextBoxColumn,
+            this.destinationdatasourcenameDataGridViewTextBoxColumn,
+            this.destinationentitynameDataGridViewTextBoxColumn,
+            this.errormessageDataGridViewTextBoxColumn1});
+            this.DataCopyScripts.DataSource = this.childScriptsBindingSource;
+            this.DataCopyScripts.Location = new System.Drawing.Point(3, 28);
+            this.DataCopyScripts.Name = "DataCopyScripts";
+            this.DataCopyScripts.ReadOnly = true;
+            this.DataCopyScripts.ShowCellErrors = false;
+            this.DataCopyScripts.Size = new System.Drawing.Size(1260, 141);
+            this.DataCopyScripts.TabIndex = 18;
             // 
-            // dataGridViewTextBoxColumn4
+            // childScriptsBindingSource
             // 
-            this.dataGridViewTextBoxColumn4.DataPropertyName = "currenrecordindex";
-            this.dataGridViewTextBoxColumn4.HeaderText = "Index";
-            this.dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
+            this.childScriptsBindingSource.DataMember = "CopyDataScripts";
+            this.childScriptsBindingSource.DataSource = this.scriptBindingSource;
             // 
-            // dataGridViewTextBoxColumn3
+            // TrackingdataGridView
             // 
-            this.dataGridViewTextBoxColumn3.DataPropertyName = "currentrecorddatasourcename";
-            this.dataGridViewTextBoxColumn3.HeaderText = "DataSource";
-            this.dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
+            this.TrackingdataGridView.AllowUserToDeleteRows = false;
+            this.TrackingdataGridView.AllowUserToOrderColumns = true;
+            this.TrackingdataGridView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.TrackingdataGridView.AutoGenerateColumns = false;
+            this.TrackingdataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.TrackingdataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.rundateDataGridViewTextBoxColumn,
+            this.currentrecorddatasourcenameDataGridViewTextBoxColumn,
+            this.currenrecordindexDataGridViewTextBoxColumn,
+            this.currenrecordentityDataGridViewTextBoxColumn,
+            this.errormessageDataGridViewTextBoxColumn2});
+            this.TrackingdataGridView.DataSource = this.trackingBindingSource;
+            this.TrackingdataGridView.Location = new System.Drawing.Point(8, 28);
+            this.TrackingdataGridView.Name = "TrackingdataGridView";
+            this.TrackingdataGridView.ReadOnly = true;
+            this.TrackingdataGridView.ShowCellErrors = false;
+            this.TrackingdataGridView.Size = new System.Drawing.Size(1251, 219);
+            this.TrackingdataGridView.TabIndex = 19;
             // 
-            // dataGridViewTextBoxColumn5
+            // trackingBindingSource
             // 
-            this.dataGridViewTextBoxColumn5.DataPropertyName = "currenrecordentity";
-            this.dataGridViewTextBoxColumn5.HeaderText = "Entity";
-            this.dataGridViewTextBoxColumn5.Name = "dataGridViewTextBoxColumn5";
+            this.trackingBindingSource.DataMember = "Tracking";
+            this.trackingBindingSource.DataSource = this.childScriptsBindingSource;
             // 
-            // dataGridViewTextBoxColumn7
+            // label2
             // 
-            this.dataGridViewTextBoxColumn7.DataPropertyName = "scriptType";
-            this.dataGridViewTextBoxColumn7.HeaderText = "Script Type";
-            this.dataGridViewTextBoxColumn7.Name = "dataGridViewTextBoxColumn7";
+            this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("Myanmar Text", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label2.Location = new System.Drawing.Point(3, 6);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(124, 25);
+            this.label2.TabIndex = 20;
+            this.label2.Text = "Main Commands";
             // 
-            // Messege
+            // panel1
             // 
-            this.Messege.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.Messege.DataPropertyName = "errormessage";
-            this.Messege.HeaderText = "Messege";
-            this.Messege.Name = "Messege";
+            this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel1.Controls.Add(this.label2);
+            this.panel1.Controls.Add(this.scriptDataGridView);
+            this.panel1.Location = new System.Drawing.Point(15, 62);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(1268, 236);
+            this.panel1.TabIndex = 21;
             // 
-            // trackingscriptBindingSource
+            // panel2
             // 
-            this.trackingscriptBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Editor.LScriptTracker);
+            this.panel2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel2.Controls.Add(this.label3);
+            this.panel2.Controls.Add(this.DataCopyScripts);
+            this.panel2.Location = new System.Drawing.Point(15, 304);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(1268, 174);
+            this.panel2.TabIndex = 22;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Font = new System.Drawing.Font("Myanmar Text", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label3.Location = new System.Drawing.Point(3, -1);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(98, 25);
+            this.label3.TabIndex = 21;
+            this.label3.Text = "Copy Entities";
+            // 
+            // panel3
+            // 
+            this.panel3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel3.Controls.Add(this.label4);
+            this.panel3.Controls.Add(this.TrackingdataGridView);
+            this.panel3.Location = new System.Drawing.Point(15, 485);
+            this.panel3.Name = "panel3";
+            this.panel3.Size = new System.Drawing.Size(1264, 252);
+            this.panel3.TabIndex = 23;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Font = new System.Drawing.Font("Myanmar Text", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label4.Location = new System.Drawing.Point(3, 0);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(76, 25);
+            this.label4.TabIndex = 22;
+            this.label4.Text = "Messsege";
+            // 
+            // dataGridViewTextBoxColumn2
+            // 
+            this.dataGridViewTextBoxColumn2.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.dataGridViewTextBoxColumn2.DataPropertyName = "scriptType";
+            this.dataGridViewTextBoxColumn2.HeaderText = "scriptType";
+            this.dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
+            this.dataGridViewTextBoxColumn2.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.dataGridViewTextBoxColumn2.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.dataGridViewTextBoxColumn2.Width = 62;
+            // 
+            // dataGridViewTextBoxColumn6
+            // 
+            this.dataGridViewTextBoxColumn6.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.dataGridViewTextBoxColumn6.DataPropertyName = "scriptType";
+            this.dataGridViewTextBoxColumn6.HeaderText = "scriptType";
+            this.dataGridViewTextBoxColumn6.Name = "dataGridViewTextBoxColumn6";
+            this.dataGridViewTextBoxColumn6.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.dataGridViewTextBoxColumn6.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.dataGridViewTextBoxColumn6.Width = 62;
+            // 
+            // dataGridViewTextBoxColumn8
+            // 
+            this.dataGridViewTextBoxColumn8.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.dataGridViewTextBoxColumn8.DataPropertyName = "scriptType";
+            this.dataGridViewTextBoxColumn8.HeaderText = "scriptType";
+            this.dataGridViewTextBoxColumn8.Name = "dataGridViewTextBoxColumn8";
+            this.dataGridViewTextBoxColumn8.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.dataGridViewTextBoxColumn8.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.dataGridViewTextBoxColumn8.Width = 62;
+            // 
+            // rundateDataGridViewTextBoxColumn
+            // 
+            this.rundateDataGridViewTextBoxColumn.DataPropertyName = "rundate";
+            this.rundateDataGridViewTextBoxColumn.HeaderText = "rundate";
+            this.rundateDataGridViewTextBoxColumn.Name = "rundateDataGridViewTextBoxColumn";
+            this.rundateDataGridViewTextBoxColumn.ReadOnly = true;
+            // 
+            // currentrecorddatasourcenameDataGridViewTextBoxColumn
+            // 
+            this.currentrecorddatasourcenameDataGridViewTextBoxColumn.DataPropertyName = "currentrecorddatasourcename";
+            this.currentrecorddatasourcenameDataGridViewTextBoxColumn.HeaderText = "Source";
+            this.currentrecorddatasourcenameDataGridViewTextBoxColumn.Name = "currentrecorddatasourcenameDataGridViewTextBoxColumn";
+            this.currentrecorddatasourcenameDataGridViewTextBoxColumn.ReadOnly = true;
+            // 
+            // currenrecordindexDataGridViewTextBoxColumn
+            // 
+            this.currenrecordindexDataGridViewTextBoxColumn.DataPropertyName = "currenrecordindex";
+            this.currenrecordindexDataGridViewTextBoxColumn.HeaderText = "Record #";
+            this.currenrecordindexDataGridViewTextBoxColumn.Name = "currenrecordindexDataGridViewTextBoxColumn";
+            this.currenrecordindexDataGridViewTextBoxColumn.ReadOnly = true;
+            // 
+            // currenrecordentityDataGridViewTextBoxColumn
+            // 
+            this.currenrecordentityDataGridViewTextBoxColumn.DataPropertyName = "currenrecordentity";
+            this.currenrecordentityDataGridViewTextBoxColumn.HeaderText = "Entity";
+            this.currenrecordentityDataGridViewTextBoxColumn.Name = "currenrecordentityDataGridViewTextBoxColumn";
+            this.currenrecordentityDataGridViewTextBoxColumn.ReadOnly = true;
+            // 
+            // errormessageDataGridViewTextBoxColumn2
+            // 
+            this.errormessageDataGridViewTextBoxColumn2.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.errormessageDataGridViewTextBoxColumn2.DataPropertyName = "errormessage";
+            this.errormessageDataGridViewTextBoxColumn2.HeaderText = "Messege";
+            this.errormessageDataGridViewTextBoxColumn2.Name = "errormessageDataGridViewTextBoxColumn2";
+            this.errormessageDataGridViewTextBoxColumn2.ReadOnly = true;
+            // 
+            // scriptBindingSource
+            // 
+            this.scriptBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Editor.LScript);
+            // 
+            // activeDataGridViewCheckBoxColumn
+            // 
+            this.activeDataGridViewCheckBoxColumn.DataPropertyName = "Active";
+            this.activeDataGridViewCheckBoxColumn.HeaderText = "Active";
+            this.activeDataGridViewCheckBoxColumn.Name = "activeDataGridViewCheckBoxColumn";
+            this.activeDataGridViewCheckBoxColumn.ReadOnly = true;
+            // 
+            // sourcedatasourcenameDataGridViewTextBoxColumn
+            // 
+            this.sourcedatasourcenameDataGridViewTextBoxColumn.DataPropertyName = "sourcedatasourcename";
+            this.sourcedatasourcenameDataGridViewTextBoxColumn.HeaderText = "Source";
+            this.sourcedatasourcenameDataGridViewTextBoxColumn.Name = "sourcedatasourcenameDataGridViewTextBoxColumn";
+            this.sourcedatasourcenameDataGridViewTextBoxColumn.ReadOnly = true;
+            // 
+            // sourceentitynameDataGridViewTextBoxColumn
+            // 
+            this.sourceentitynameDataGridViewTextBoxColumn.DataPropertyName = "sourceentityname";
+            this.sourceentitynameDataGridViewTextBoxColumn.HeaderText = "Entity";
+            this.sourceentitynameDataGridViewTextBoxColumn.Name = "sourceentitynameDataGridViewTextBoxColumn";
+            this.sourceentitynameDataGridViewTextBoxColumn.ReadOnly = true;
+            // 
+            // destinationdatasourcenameDataGridViewTextBoxColumn
+            // 
+            this.destinationdatasourcenameDataGridViewTextBoxColumn.DataPropertyName = "destinationdatasourcename";
+            this.destinationdatasourcenameDataGridViewTextBoxColumn.HeaderText = "Dest.";
+            this.destinationdatasourcenameDataGridViewTextBoxColumn.Name = "destinationdatasourcenameDataGridViewTextBoxColumn";
+            this.destinationdatasourcenameDataGridViewTextBoxColumn.ReadOnly = true;
+            // 
+            // destinationentitynameDataGridViewTextBoxColumn
+            // 
+            this.destinationentitynameDataGridViewTextBoxColumn.DataPropertyName = "destinationentityname";
+            this.destinationentitynameDataGridViewTextBoxColumn.HeaderText = "Entity";
+            this.destinationentitynameDataGridViewTextBoxColumn.Name = "destinationentitynameDataGridViewTextBoxColumn";
+            this.destinationentitynameDataGridViewTextBoxColumn.ReadOnly = true;
+            // 
+            // errormessageDataGridViewTextBoxColumn1
+            // 
+            this.errormessageDataGridViewTextBoxColumn1.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.errormessageDataGridViewTextBoxColumn1.DataPropertyName = "errormessage";
+            this.errormessageDataGridViewTextBoxColumn1.HeaderText = "Messege";
+            this.errormessageDataGridViewTextBoxColumn1.Name = "errormessageDataGridViewTextBoxColumn1";
+            this.errormessageDataGridViewTextBoxColumn1.ReadOnly = true;
+            // 
+            // dataConnectionsBindingSource
+            // 
+            this.dataConnectionsBindingSource.DataSource = typeof(TheTechIdea.Util.ConnectionProperties);
             // 
             // dMEEditorBindingSource
             // 
             this.dMEEditorBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DMEEditor);
             // 
-            // Log_panel
+            // progressBar1
             // 
-            this.Log_panel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.Log_panel.BackColor = System.Drawing.Color.Black;
-            this.Log_panel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.Log_panel.ForeColor = System.Drawing.Color.Gold;
-            this.Log_panel.Location = new System.Drawing.Point(15, 327);
-            this.Log_panel.Margin = new System.Windows.Forms.Padding(2);
-            this.Log_panel.Name = "Log_panel";
-            this.Log_panel.ReadOnly = true;
-            this.Log_panel.Size = new System.Drawing.Size(1255, 401);
-            this.Log_panel.TabIndex = 18;
-            this.Log_panel.Text = "";
+            this.progressBar1.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.progressBar1.CustomText = "";
+            this.progressBar1.Location = new System.Drawing.Point(275, 743);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.ProgressColor = System.Drawing.Color.LightGreen;
+            this.progressBar1.Size = new System.Drawing.Size(734, 23);
+            this.progressBar1.TabIndex = 11;
+            this.progressBar1.TextColor = System.Drawing.Color.Black;
+            this.progressBar1.TextFont = new System.Drawing.Font("Times New Roman", 11F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))));
+            this.progressBar1.VisualMode = WinFormSharedProject.Controls.ProgressBarDisplayMode.CurrProgress;
+            // 
+            // scriptTypeComboBox
+            // 
+            this.scriptTypeComboBox.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.scriptTypeComboBox.DataPropertyName = "scriptType";
+            this.scriptTypeComboBox.HeaderText = "scriptType";
+            this.scriptTypeComboBox.Name = "scriptTypeComboBox";
+            this.scriptTypeComboBox.ReadOnly = true;
+            this.scriptTypeComboBox.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.scriptTypeComboBox.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.scriptTypeComboBox.Width = 62;
+            // 
+            // sourcedatasourcename
+            // 
+            this.sourcedatasourcename.DataPropertyName = "sourcedatasourcename";
+            this.sourcedatasourcename.DataSource = this.dataConnectionsBindingSource;
+            this.sourcedatasourcename.DisplayMember = "ConnectionName";
+            this.sourcedatasourcename.HeaderText = "Source";
+            this.sourcedatasourcename.Name = "sourcedatasourcename";
+            this.sourcedatasourcename.ReadOnly = true;
+            this.sourcedatasourcename.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.sourcedatasourcename.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
+            this.sourcedatasourcename.ValueMember = "ConnectionName";
+            // 
+            // destinationdatasourcename
+            // 
+            this.destinationdatasourcename.DataPropertyName = "destinationdatasourcename";
+            this.destinationdatasourcename.DataSource = this.dataConnectionsBindingSource;
+            this.destinationdatasourcename.DisplayMember = "ConnectionName";
+            this.destinationdatasourcename.HeaderText = "Destination";
+            this.destinationdatasourcename.Name = "destinationdatasourcename";
+            this.destinationdatasourcename.ReadOnly = true;
+            this.destinationdatasourcename.ValueMember = "ConnectionName";
+            // 
+            // errormessageDataGridViewTextBoxColumn
+            // 
+            this.errormessageDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.errormessageDataGridViewTextBoxColumn.DataPropertyName = "errormessage";
+            this.errormessageDataGridViewTextBoxColumn.HeaderText = "Messege";
+            this.errormessageDataGridViewTextBoxColumn.Name = "errormessageDataGridViewTextBoxColumn";
+            this.errormessageDataGridViewTextBoxColumn.ReadOnly = true;
+            // 
+            // ddlDataGridViewTextBoxColumn
+            // 
+            this.ddlDataGridViewTextBoxColumn.DataPropertyName = "ddl";
+            this.ddlDataGridViewTextBoxColumn.HeaderText = "Script";
+            this.ddlDataGridViewTextBoxColumn.Name = "ddlDataGridViewTextBoxColumn";
+            this.ddlDataGridViewTextBoxColumn.ReadOnly = true;
             // 
             // uc_ScriptRun
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.Log_panel);
+            this.Controls.Add(this.panel3);
+            this.Controls.Add(this.panel2);
+            this.Controls.Add(this.panel1);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.StopButton);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.RunScriptbutton);
-            this.Controls.Add(this.scriptDataGridView);
             this.Controls.Add(this.scriptBindingNavigator);
-            this.Controls.Add(this.trackingscriptDataGridView);
             this.DoubleBuffered = true;
             this.Name = "uc_ScriptRun";
             this.Size = new System.Drawing.Size(1295, 804);
             ((System.ComponentModel.ISupportInitialize)(this.scriptBindingNavigator)).EndInit();
             this.scriptBindingNavigator.ResumeLayout(false);
             this.scriptBindingNavigator.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.scriptBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.scriptDataGridView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DataCopyScripts)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.childScriptsBindingSource)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.TrackingdataGridView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackingBindingSource)).EndInit();
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
+            this.panel2.ResumeLayout(false);
+            this.panel2.PerformLayout();
+            this.panel3.ResumeLayout(false);
+            this.panel3.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.scriptBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataConnectionsBindingSource)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.trackingscriptDataGridView)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.trackingscriptBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dMEEditorBindingSource)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -463,22 +653,42 @@ namespace TheTechIdea.ETL
         private System.Windows.Forms.DataGridView scriptDataGridView;
         private System.Windows.Forms.DataGridViewComboBoxColumn dataGridViewComboBoxColumn1;
         private System.Windows.Forms.BindingSource dataConnectionsBindingSource;
-        private System.Windows.Forms.DataGridViewTextBoxColumn scriptTypeComboBox;
-        private System.Windows.Forms.DataGridViewComboBoxColumn sourcedatasourcename;
-        private System.Windows.Forms.DataGridViewComboBoxColumn destinationdatasourcename;
-        private System.Windows.Forms.DataGridViewCheckBoxColumn Active;
         private System.Windows.Forms.DataGridViewTextBoxColumn entitynameDataGridViewTextBoxColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn ddlDataGridViewTextBoxColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn errormessageDataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private System.Windows.Forms.BindingSource dMEEditorBindingSource;
-        private System.Windows.Forms.BindingSource trackingscriptBindingSource;
-        private System.Windows.Forms.DataGridView trackingscriptDataGridView;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn4;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn5;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn7;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Messege;
-        private System.Windows.Forms.RichTextBox Log_panel;
+        private System.Windows.Forms.DataGridView DataCopyScripts;
+        private System.Windows.Forms.BindingSource childScriptsBindingSource;
+        private System.Windows.Forms.DataGridViewTextBoxColumn trackingDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridView TrackingdataGridView;
+        private System.Windows.Forms.BindingSource trackingBindingSource;
+        private System.Windows.Forms.DataGridViewTextBoxColumn rundateDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn currentrecorddatasourcenameDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn currenrecordindexDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn currenrecordentityDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn errormessageDataGridViewTextBoxColumn2;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn activeDataGridViewCheckBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn sourcedatasourcenameDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn sourceentitynameDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn destinationdatasourcenameDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn destinationentitynameDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn errormessageDataGridViewTextBoxColumn1;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Panel panel2;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Panel panel3;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn6;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn8;
+        private System.Windows.Forms.DataGridViewTextBoxColumn scriptTypeComboBox;
+        private System.Windows.Forms.DataGridViewComboBoxColumn sourcedatasourcename;
+        private System.Windows.Forms.DataGridViewComboBoxColumn destinationdatasourcename;
+        private System.Windows.Forms.DataGridViewTextBoxColumn errormessageDataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn ddlDataGridViewTextBoxColumn;
     }
 }

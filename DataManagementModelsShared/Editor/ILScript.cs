@@ -18,6 +18,8 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         bool Active { get; set; }
         IErrorsInfo errorsInfo { get; set; }
         DDLScriptType scriptType { get; set; }
+        List<LScriptTracking> Tracking { get; set; }
+        List<LScript> CopyDataScripts { get; set; } 
     }
     public enum DDLScriptType
     {

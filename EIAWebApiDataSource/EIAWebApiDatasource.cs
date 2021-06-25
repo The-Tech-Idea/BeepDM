@@ -591,7 +591,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.EIAWebApi
         {
             throw new NotImplementedException();
         }
-        public LScript RunScript(LScript dDLScripts)
+        public IErrorsInfo RunScript(LScript dDLScripts)
         {
             throw new NotImplementedException();
         }

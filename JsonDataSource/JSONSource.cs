@@ -233,7 +233,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         {
             throw new NotImplementedException();
         }
-        public LScript RunScript(LScript dDLScripts)
+        public IErrorsInfo RunScript(LScript dDLScripts)
         {
             throw new NotImplementedException();
         }

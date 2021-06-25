@@ -214,7 +214,7 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
             return DMEEditor.ErrorObject;
 
         }
-        public LScript RunScript(LScript dDLScripts)
+        public IErrorsInfo RunScript(LScript dDLScripts)
         {
             throw new NotImplementedException();
         }

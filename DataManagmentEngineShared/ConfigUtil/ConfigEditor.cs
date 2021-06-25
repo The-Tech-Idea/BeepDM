@@ -88,19 +88,19 @@ namespace TheTechIdea.Util
 			Scripts = JsonLoader.DeserializeObject<LScriptHeader>(path);
 			return Scripts;
 		}
-		public void SaveScriptTrackingValues(LScriptTrackHeader scriptid)
+		public void SaveScriptTrackingValues(LScriptTracking scriptid)
 		{
 			string dateformat = scriptid.rundate.ToString("ddmmyyyyHmmss");
-			string path = Path.Combine(Config.ScriptsLogsPath, $"{dateformat}_{scriptid.parentscriptHeaderid}.json");
+			string path = Path.Combine(Config.ScriptsLogsPath, $"{dateformat}_{scriptid.parentscriptid}.json");
 			JsonLoader.Serialize(path, Scripts);
 
 		}
-		public LScriptTrackHeader LoadScriptTrackingValues(LScriptTrackHeader scriptid)
+		public LScriptTracking LoadScriptTrackingValues(LScriptTracking scriptid)
 		{
 			string dateformat = scriptid.rundate.ToString("ddmmyyyyHmmss");
-			string path = Path.Combine(Config.ScriptsLogsPath, $"{dateformat}_{scriptid.parentscriptHeaderid}.json");
+			string path = Path.Combine(Config.ScriptsLogsPath, $"{dateformat}_{scriptid.parentscriptid}.json");
 			
-			return JsonLoader.DeserializeSingleObject<LScriptTrackHeader>(path); ;
+			return JsonLoader.DeserializeSingleObject<LScriptTracking>(path); ;
 		}
 		#endregion "Reports L/S"
 		#region "Reading and writing Query files"

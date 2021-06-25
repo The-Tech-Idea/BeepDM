@@ -27,9 +27,11 @@ namespace TheTechIdea.DataManagment_Engine
         DataTable CreateDataTableVer2(object[] arr);
         DataTable CreateDataTableFromFile(string strFilePath);
         string GetRelativePath(string fromPath, string toPath);
-      //  object GetInstance(string strFullyQualifiedName);
-       
-       // Type GetType(string strFullyQualifiedName);
+        //  object GetInstance(string strFullyQualifiedName);
+
+        // Type GetType(string strFullyQualifiedName);
+        TypeCode GetTypeCode(Type dest);
+        bool IsObjectNumeric( object o);
         List<object> GetListByDataTable(DataTable dt, Type type, EntityStructure enttype);
      //   List<ExpandoObject> GetExpandoObject(DataTable dt, Type type, EntityStructure enttype);
         ConnectionDriversConfig LinkConnection2Drivers(IConnectionProperties cn);

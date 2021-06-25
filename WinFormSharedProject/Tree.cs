@@ -1655,25 +1655,25 @@ namespace TheTechIdea.Winforms.VIS
                     DMEEditor.ETL.script = new LScriptHeader();
                     DMEEditor.ETL.script.scriptSource = dest.DatasourceName;
                     DMEEditor.ETL.GetCreateEntityScript(dest, ls,progress,token);
-                    if (copydata)
-                    {
-                        foreach (var item in ls)
-                        {
-                            AddCommentsWaiting($"{i} - Creating script for Copy Data for Entity {item.EntityName} ");
-                            LScript upscript = new LScript();
-                            upscript.sourcedatasourcename = item.DataSourceID;
-                            upscript.sourceentityname = item.EntityName;
-                            upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
+                    //if (copydata)
+                    //{
+                    //    foreach (var item in ls)
+                    //    {
+                    //        AddCommentsWaiting($"{i} - Creating script for Copy Data for Entity {item.EntityName} ");
+                    //        LScript upscript = new LScript();
+                    //        upscript.sourcedatasourcename = item.DataSourceID;
+                    //        upscript.sourceentityname = item.EntityName;
+                    //        upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
 
-                            upscript.destinationDatasourceEntityName = item.DatasourceEntityName;
-                            upscript.destinationentityname = item.EntityName;
+                    //        upscript.destinationDatasourceEntityName = item.DatasourceEntityName;
+                    //        upscript.destinationentityname = item.EntityName;
 
-                            upscript.destinationdatasourcename = dest.DatasourceName;
-                            upscript.scriptType = DDLScriptType.CopyData;
-                            DMEEditor.ETL.script.Scripts.Add(upscript);
-                            i += 1;
-                        }
-                    }
+                    //        upscript.destinationdatasourcename = dest.DatasourceName;
+                    //        upscript.scriptType = DDLScriptType.CopyData;
+                    //        DMEEditor.ETL.script.Scripts.Add(upscript);
+                    //        i += 1;
+                    //    }
+                    //}
                     
                 }
                 HideWaiting();

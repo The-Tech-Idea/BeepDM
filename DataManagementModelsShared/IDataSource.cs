@@ -40,7 +40,7 @@ namespace TheTechIdea
         List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName);
         EntityStructure GetEntityStructure(string EntityName, bool refresh );
         EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false);
-        LScript RunScript( LScript dDLScripts);
+        IErrorsInfo RunScript( LScript dDLScripts);
         List<LScript> GetCreateEntityScript(List<EntityStructure> entities=null);
         IErrorsInfo CreateEntities(List<EntityStructure> entities);
         IErrorsInfo UpdateEntities(string EntityName,object UploadData, IProgress<PassedArgs> progress);

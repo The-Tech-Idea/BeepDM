@@ -14,16 +14,17 @@ using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using ExcelDataReader;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace TheTechIdea.DataManagment_Engine.FileManager
 {
-    [ClassProperties(Category = DatasourceCategory.FILE, DatasourceType = DataSourceType.CSV|DataSourceType.Xls,FileType = "csv,xls,xlsx") ]
+    [ClassProperties(Category = DatasourceCategory.FILE, DatasourceType = DataSourceType.CSV|DataSourceType.Xls,FileType = "xls,xlsx") ]
     public class TxtXlsCSVFileSource : IDataSource
     {
         public event EventHandler<PassedArgs> PassEvent;
         public string Id { get; set; }
         public string DatasourceName { get; set; }
-        public DataSourceType DatasourceType { get; set; } = DataSourceType.CSV;
+        public DataSourceType DatasourceType { get; set; } = DataSourceType.Xls;
         public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;
         ConnectionState pConnectionStatus;
         public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; }  set { pConnectionStatus = value; }  }
@@ -64,9 +65,19 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         }
         public int GetEntityIdx(string entityName)
         {
+            int i = -1;
             if (Entities.Count > 0)
             {
-                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+                i = Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+                if (i < 0)
+                {
+                    i=Entities.FindIndex(p => p.DatasourceEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+                } else
+                    if (i < 0)
+                    {
+                    i = Entities.FindIndex(p => p.OriginalEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+                }
+                return i;
             }
             else
             {
@@ -424,7 +435,8 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                         }
                         else
                         {
-                            Entities[Entities.FindIndex(x => string.Equals(x.OriginalEntityName, EntityName, StringComparison.OrdinalIgnoreCase))] = fndval;
+                        ;
+                            Entities[GetEntityIdx(EntityName)] = fndval;
                         }
                     }
                     if (Entities.Count() == 0)
@@ -453,7 +465,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
                         }
                         else
                         {
-                            Entities[Entities.FindIndex(x => string.Equals(x.OriginalEntityName, fnd.EntityName, StringComparison.OrdinalIgnoreCase))] = fndval;
+                            Entities[GetEntityIdx(fnd.EntityName)] = fndval;
                         }
                     }
                     if (Entities.Count() == 0)
@@ -479,7 +491,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         {
             throw new NotImplementedException();
         }  
-        public LScript RunScript(LScript dDLScripts)
+        public IErrorsInfo RunScript(LScript dDLScripts)
         {
             throw new NotImplementedException();
         }
@@ -1137,7 +1149,9 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
             foreach (DataColumn field in datac)
             {
                 EntityField f = new EntityField();
+                string entspace = Regex.Replace(field.ColumnName, @"\s+", "_");
                 f.fieldname = field.ColumnName;
+                f.Originalfieldname = field.ColumnName;
                 f.fieldtype = field.DataType.ToString();
                 f.ValueRetrievedFromParent = false;
                 f.EntityName = sheetname;

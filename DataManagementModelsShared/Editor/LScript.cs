@@ -38,28 +38,25 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         public bool Active { get; set; } = false;
         public IErrorsInfo errorsInfo { get; set; }
         public DDLScriptType scriptType { get; set; }
+        public List<LScriptTracking> Tracking { get; set; } = new List<LScriptTracking>();
+        public List<LScript> CopyDataScripts { get; set; } = new List<LScript>();
     }
-    public class LScriptTrackHeader
+    public class LScriptTracking
     {
-        public LScriptTrackHeader()
+        public LScriptTracking()
         {
 
         }  
-        public string parentscriptHeaderid { get; set; }
-        public DateTime rundate { get; set; }
-        public List<LScriptTracker> trackingscript { get; set; } = new List<LScriptTracker>();
-    }
-    public class LScriptTracker
-    {
       
+        public DateTime rundate { get; set; }
         public string parentscriptid { get; set; }
         public string currentrecorddatasourcename { get; set; }
         public int currenrecordindex { get; set; }
         public string currenrecordentity { get; set; }
         public string errormessage { get; set; }
         public IErrorsInfo errorsInfo { get; set; }
-        public DDLScriptType scriptType { get; set; }
-
-
+      
+      
     }
+   
 }

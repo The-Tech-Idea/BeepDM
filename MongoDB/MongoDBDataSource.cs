@@ -200,7 +200,7 @@ namespace TheTechIdea.DataManagment_Engine.NOSQL
         {
             throw new NotImplementedException();
         }
-        public LScript RunScript(LScript dDLScripts)
+        public IErrorsInfo RunScript(LScript dDLScripts)
         {
             throw new NotImplementedException();
         }

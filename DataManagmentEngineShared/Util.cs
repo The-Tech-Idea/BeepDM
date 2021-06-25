@@ -41,8 +41,75 @@ namespace TheTechIdea.DataManagment_Engine
             ConfigEditor = pConfigEditor;
 
         }
+        public TypeCode GetTypeCode(Type dest)
+        {
+            TypeCode retval = TypeCode.String;
+            switch (dest.ToString())
+            {
+                case "System.String":
+                    retval = TypeCode.String;
+                    break;
+                case "System.Decimal":
+                    retval = TypeCode.Decimal;
+                    break;
+                case "System.DateTime":
+                    retval = TypeCode.DateTime;
+                    break;
+                case "System.Char":
+                    retval = TypeCode.Char;
+                    break;
+                case "System.Boolean":
+                    retval = TypeCode.Boolean;
+                    break;
+                case "System.DBNull":
+                    retval = TypeCode.DBNull;
+                    break;
+                case "System.Byte":
+                    retval = TypeCode.Byte;
+                    break;
+                case "System.Int16":
+                    retval = TypeCode.Int16;
+                    break;
+                case "System.Double":
+                    retval = TypeCode.Double;
+                    break;
+                case "System.Int32":
+                    retval = TypeCode.Int32;
+                    break;
+                case "System.Int64":
+                    retval = TypeCode.Int64;
+                    break;
+                case "System.Single":
+                    retval = TypeCode.Single;
+                    break;
+                case "System.Object":
+                    retval = TypeCode.Object;
+                    break;
 
 
+            }
+            return retval;
+        }
+        public bool IsObjectNumeric( object o)
+        {
+            switch (Type.GetTypeCode(o.GetType()))
+            {
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.Decimal:
+                case TypeCode.Double:
+                case TypeCode.Single:
+                    return true;
+                default:
+                    return false;
+            }
+        }
         public DataTable JsonToDataTable(string jsonString)
         {
 

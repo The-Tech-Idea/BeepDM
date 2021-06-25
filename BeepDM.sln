@@ -139,7 +139,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FileDataSources", "FileData
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelDataSource", "ExcelDataSource\ExcelDataSource.csproj", "{5994631D-2F06-4418-BA36-2081582B7CCD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSVDataSource", "CSVDataSource\CSVDataSource.csproj", "{98E2E483-7D30-495E-88F4-69B2797434AF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TxtXlsCSVFileSource", "CSVDataSource\TxtXlsCSVFileSource.csproj", "{98E2E483-7D30-495E-88F4-69B2797434AF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonDataSource", "JsonDataSource\JsonDataSource.csproj", "{A1A01CA5-24BF-4F9A-8F4A-68308E89A056}"
 EndProject

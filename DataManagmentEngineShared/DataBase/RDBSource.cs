@@ -43,7 +43,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public IDataConnection Dataconnection { get; set; }
         public RDBDataConnection RDBMSConnection { get { return (RDBDataConnection)Dataconnection; } }
-        public LScriptTracker trackingHeader { get; set; } = new LScriptTracker();
+       // public LScriptTracker trackingHeader { get; set; } = new LScriptTracker();
         public RDBSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
         {
             DatasourceName = datasourcename;
@@ -196,44 +196,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return command;
         }
-        private void UpdateEvents(string Entityname,string msg, int highestPercentageReached, int CurrentRecord, int numberToCompute, IDataSource destds)
-        {
-            PassedArgs args = new PassedArgs
-            {
-                CurrentEntity = Entityname,
-                DatasourceName = DatasourceName,
-                DataSource = this,
-                EventType = "UpdateEntity",
-
-
-            };
-            LScriptTracker tr = new LScriptTracker();
-            tr.currenrecordentity = Entityname;
-            tr.currentrecorddatasourcename = DatasourceName;
-            tr.currenrecordindex = CurrentRecord;
-            tr.scriptType = DDLScriptType.CopyData;
-            tr.errorsInfo = DMEEditor.ErrorObject;
-            tr.errormessage = msg;// $"Fail to insert/update/delete  Record {CurrentRecord} to {Entityname} : {er.Message} :  {errorstring} ";
-            DMEEditor.ETL.trackingHeader.trackingscript.Add(tr);
-            args.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
-            int percentComplete = (int)((float)CurrentRecord / (float)numberToCompute * 100);
-            if (percentComplete > highestPercentageReached)
-            {
-                highestPercentageReached = percentComplete;
-                PassedArgs x = new PassedArgs();
-                x.CurrentEntity = Entityname;
-                x.DatasourceName = destds.DatasourceName;
-                x.Objects.Add(new ObjectItem { obj = tr, Name = "TrackingHeader" });
-                x.ParameterInt1 = percentComplete;
-                DMEEditor.Passedarguments = x;
-                CurrentRecord += 1;
-
-                // PassEvent?.Invoke(this, x);
-            }
-
-
-        }
-        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
+       public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
             if (UploadData != null)
             {
@@ -470,7 +433,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 if (rowsUpdated > 0)
                 {
                     msg = $"Successfully Updated  Record  to {EntityName} : {updatestring}";
-                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
+                   // DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
                 }
                 else
                 {
@@ -576,7 +539,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 if (rowsUpdated > 0)
                 {
                     msg = $"Successfully Deleted  Record  to {EntityName} : {updatestring}";
-                    DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
+                  //  DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
                 }
                 else
                 {
@@ -691,6 +654,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             catch (Exception ex)
             {
+                msg = $"Fail to Insert  Record  to {EntityName} : {ex.Message}";
                 ErrorObject.Ex = ex;
                 DMEEditor.ErrorObject.Message = msg;
                 DMEEditor.ErrorObject.Flag = Errors.Failed;
@@ -1364,7 +1328,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("Fail", $"Error in getting  forgien key entities for {entityname} ({ ex.Message})", DateTime.Now, 0, entityname, Errors.Failed);
+             //   DMEEditor.AddLogMessage("Fail", $"Error in getting  forgien key entities for {entityname} ({ ex.Message})", DateTime.Now, 0, entityname, Errors.Failed);
 
             }
             return fk;
@@ -1400,24 +1364,15 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
 
         }
-        public LScript RunScript(LScript scripts)
+       public IErrorsInfo RunScript(LScript scripts)
         {
             var t = Task.Run<IErrorsInfo>(() => { return ExecuteSql(scripts.ddl); });
             t.Wait();
             scripts.errorsInfo = t.Result;
             scripts.errormessage = DMEEditor.ErrorObject.Message;
-            trackingHeader.currenrecordentity = scripts.sourceentityname;
-            trackingHeader.currentrecorddatasourcename = scripts.destinationdatasourcename;
+            DMEEditor.ErrorObject = scripts.errorsInfo;
 
-            trackingHeader.scriptType = scripts.scriptType;
-            trackingHeader.errorsInfo = scripts.errorsInfo;
-            PassedArgs x = new PassedArgs();
-            x.CurrentEntity = trackingHeader.currenrecordentity;
-            x.DatasourceName = DatasourceName;
-            x.CurrentEntity = scripts.sourceentityname;
-            x.Objects.Add(new ObjectItem { obj = trackingHeader, Name = "TrackingHeader" });
-
-            return scripts;
+            return DMEEditor.ErrorObject;
         }
         public List<LScript> GetCreateEntityScript(List<EntityStructure> entities)
         {
@@ -2298,7 +2253,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             catch (Exception ex)
             {
                 
-                DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+             //   DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
                 return null;
             }
 

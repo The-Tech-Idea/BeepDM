@@ -206,7 +206,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI
         }
 
         
-        public LScript RunScript(LScript dDLScripts)
+        public IErrorsInfo RunScript(LScript dDLScripts)
         {
             throw new NotImplementedException();
         }

@@ -79,7 +79,7 @@ namespace TheTechIdea.ETL
             this.RunScriptbutton.Click += RunScriptbutton_Click;
             this.StopButton.Click += StopButton_Click;
             // this.CreateScriptButton.Click += CreateScriptButton_Click;
-            this.trackingscriptBindingSource.DataSource = DMEEditor.ETL.trackingHeader.trackingscript;
+           // this.scriptBindingSource.DataSource = DMEEditor.ETL.trackingHeader;
            
             
            
@@ -112,13 +112,11 @@ namespace TheTechIdea.ETL
                 }
                 progressBar1.Value = percent.ParameterInt1;
                 //this.Log_panel.BeginInvoke(new Action(() =>
-                if (DMEEditor.ErrorObject.Flag== Errors.Failed)
+                if (percent.EventType == "Update")
                 {
-                    errorcount++;
-                    Log_panel.AppendText(percent.ParameterString1 + Environment.NewLine);
-                    Log_panel.SelectionStart = Log_panel.Text.Length;
-                    Log_panel.ScrollToCaret();
+                    update();
                 }
+               
                 if (DMEEditor.ErrorObject.Flag == Errors.Failed)
                 {
                     if (string.IsNullOrEmpty(percent.ParameterString3))
@@ -129,7 +127,7 @@ namespace TheTechIdea.ETL
                         }
                     }
                 }
-
+               
 
             });
             Action action =
@@ -138,39 +136,40 @@ namespace TheTechIdea.ETL
             var ScriptRun = Task.Run(() =>
             {
                 CancellationTokenRegistration ctr = token.Register(() => StopTask());
-                Task<IErrorsInfo> er = DMEEditor.ETL.RunScriptAsync(progress, token);
-                er.Wait();
+                 DMEEditor.ETL.RunScriptAsync(progress, token).Wait();
+                
                 MessageBox.Show("Done");
             });
            
-            
-
         }
-        /// <summary>
-        ///     Stop running task
-        /// </summary>
+     
         void StopTask()
         {
             // Attempt to cancel the task politely
-           
-                    tokenSource.Cancel();
+            tokenSource.Cancel();
             MessageBox.Show("Job Stopped");
-
-
 
         }
         private void update()
         {
-            //  scriptBindingSource.DataSource = DMEEditor.ETL.script.Scripts;
-            // trackingscriptBindingSource.DataSource = DMEEditor.ETL.trackingHeader.trackingscript;
-            //   this.trackingscriptBindingSource.ResetBindings(true);
-            //   this.scriptBindingSource. ResetBindings( true); 
-            //   this.scriptDataGridView.Update();
-            //   this.scriptDataGridView.Refresh();
-            // this.trackingscriptDataGridView.Update();
-            //    this.trackingscriptDataGridView.Refresh();
-          
+            scriptBindingSource.DataSource = DMEEditor.ETL.script.Scripts;
+            childScriptsBindingSource.DataSource = scriptBindingSource;
+            trackingBindingSource.DataSource = childScriptsBindingSource;
+           
+            scriptDataGridView.DataSource = scriptBindingSource;
+            DataCopyScripts.DataSource = childScriptsBindingSource;
+            TrackingdataGridView.DataSource = trackingBindingSource;
 
+            scriptBindingSource.ResetBindings(false);
+            childScriptsBindingSource.ResetBindings(false);
+            trackingBindingSource.ResetBindings(false);
+            //scriptDataGridView.Invoke(new MethodInvoker(() => { scriptDataGridView.Refresh(); }));
+            //DataCopyScripts.Invoke(new MethodInvoker(() => { DataCopyScripts.Refresh(); }));
+            //TrackingdataGridView.Invoke(new MethodInvoker(() => { TrackingdataGridView.Refresh(); }));
+
+            scriptDataGridView.Invoke(new MethodInvoker(() => { scriptDataGridView.Update(); }));
+            DataCopyScripts.Invoke(new MethodInvoker(() => { DataCopyScripts.Update(); }));
+            TrackingdataGridView.Invoke(new MethodInvoker(() => { TrackingdataGridView.Update(); }));
 
         }
         #region" background worker"

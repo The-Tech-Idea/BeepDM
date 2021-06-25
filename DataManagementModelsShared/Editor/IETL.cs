@@ -18,7 +18,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         LScriptHeader script { get; set; }
         int ScriptCount { get; set; }
         int CurrentScriptRecord { get; set; }
-        LScriptTrackHeader trackingHeader { get; set; }
+       // LScriptTracking Tracker { get; set; }
         void CreateScriptHeader( IDataSource Srcds, IProgress<PassedArgs> progress, CancellationToken token);
         IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken toke, bool CreateMissingEntity = true);
         IErrorsInfo CopyEntityStructure(IDataSource sourceds, IDataSource destds, string srcentity,  string destentity, IProgress<PassedArgs> progress, CancellationToken toke, bool CreateMissingEntity = true);
