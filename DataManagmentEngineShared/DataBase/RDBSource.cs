@@ -1271,6 +1271,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 }
                 else
                 {
+                    Entities.Add(entity);
                     retval = true;
                 }
             } else
@@ -1287,6 +1288,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         }
                         else
                         {
+                            Entities.Add(entity);
                             retval = true;
                         }
                     }
@@ -1837,7 +1839,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             string createtablestring = null;
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             
-            Entities.Add(t1);
+           // 
             try
             {
                

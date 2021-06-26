@@ -23,6 +23,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         public PassedArgs Passedargs { get; set; }
         public int ScriptCount { get; set; }
         public int CurrentScriptRecord { get; set; }
+        public decimal StopErrorCount { get; set; } = 10;
         public SyncDataSource script { get; set; } = new SyncDataSource();
       //  public LScriptTracking Tracker { get; set; } = new LScriptTracking();
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
@@ -449,7 +450,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                                 if (DMEEditor.ErrorObject.Flag== Errors.Failed)
                                 {
                                     SyncErrorsandTracking tr = new SyncErrorsandTracking();
-                                  
+                                    errorcount++;
                                     tr.errormessage = DMEEditor.ErrorObject.Message;
                                     tr.errorsInfo = DMEEditor.ErrorObject;
                                     tr.rundate = DateTime.Now;
@@ -463,6 +464,10 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                                         PassedArgs ps = new PassedArgs {EventType="Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
                                         progress.Report(ps);
 
+                                    }
+                                    if (errorcount >= StopErrorCount)
+                                    {
+                                        token.ThrowIfCancellationRequested();
                                     }
 
                                 }

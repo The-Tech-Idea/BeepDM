@@ -17,6 +17,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         PassedArgs Passedargs { get; set; }
         SyncDataSource script { get; set; }
         int ScriptCount { get; set; }
+        decimal StopErrorCount { get; set; }
         int CurrentScriptRecord { get; set; }
        // LScriptTracking Tracker { get; set; }
         void CreateScriptHeader( IDataSource Srcds, IProgress<PassedArgs> progress, CancellationToken token);

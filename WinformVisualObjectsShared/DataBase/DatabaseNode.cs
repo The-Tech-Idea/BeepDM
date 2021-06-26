@@ -476,12 +476,26 @@ namespace TheTechIdea.Winforms.VIS
                         {
                             TreeEditor.ShowRunScriptGUI(RootBranch,this, DataSource, scriptHeader);
                         }
+                        // RefreshDatabaseEntites();
                         foreach (var entity in ls)
                         {
                             if (DataSource.CheckEntityExist(entity.EntityName))
                             {
                                 entity.Created = true;
+                                if (entity.Created == false)
+                                {
+                                    iconimage = "entitynotcreated.ico";
+                                }
+                                else
+                                {
+                                    iconimage = "databaseentities.ico";
+                                }
 
+                                DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, entity.EntityName.ToUpper(), TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
+                                TreeEditor.AddBranch(this, dbent);
+                                dbent.DataSourceName = DataSource.DatasourceName;
+                                dbent.DataSource = DataSource;
+                                ChildBranchs.Add(dbent);
                                 DMEEditor.AddLogMessage("Success", $"Pasted Entity {entity.EntityName}", DateTime.Now, -1, null, Errors.Ok);
                             }
                             else
@@ -489,20 +503,7 @@ namespace TheTechIdea.Winforms.VIS
                                 entity.Created = false;
                                 DMEEditor.AddLogMessage("Fail", $"Error Copying Entity {entity.EntityName} - {DMEEditor.ErrorObject.Message}", DateTime.Now, -1, null, Errors.Failed);
                             }
-                            if (entity.Created == false)
-                            {
-                                iconimage = "entitynotcreated.ico";
-                            }
-                            else
-                            {
-                                iconimage = "databaseentities.ico";
-                            }
 
-                            DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
-                            TreeEditor.AddBranch(this, dbent);
-                            dbent.DataSourceName = DataSource.DatasourceName;
-                            dbent.DataSource = DataSource;
-                            ChildBranchs.Add(dbent);
                         }
                     }
                 }

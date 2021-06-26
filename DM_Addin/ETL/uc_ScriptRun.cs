@@ -78,11 +78,12 @@ namespace TheTechIdea.ETL
 
             this.RunScriptbutton.Click += RunScriptbutton_Click;
             this.StopButton.Click += StopButton_Click;
+            this.ErrorsAllowdnumericUpDown.Value = 10;
             // this.CreateScriptButton.Click += CreateScriptButton_Click;
-           // this.scriptBindingSource.DataSource = DMEEditor.ETL.trackingHeader;
-           
-            
-           
+            // this.scriptBindingSource.DataSource = DMEEditor.ETL.trackingHeader;
+
+
+
         }
         private void StopButton_Click(object sender, EventArgs e)
         {
@@ -96,6 +97,7 @@ namespace TheTechIdea.ETL
         }
         private async Task RunScripts()
         {
+            DMEEditor.ETL.StopErrorCount = this.ErrorsAllowdnumericUpDown.Value;
             errorcount = 0;
             progressBar1.Step = 1;
             progressBar1.Maximum = 3;
