@@ -15,7 +15,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         List<EntityStructure> Entities { get; set; }
         List<string> EntitiesNames { get; set; }
         PassedArgs Passedargs { get; set; }
-        LScriptHeader script { get; set; }
+        SyncDataSource script { get; set; }
         int ScriptCount { get; set; }
         int CurrentScriptRecord { get; set; }
        // LScriptTracking Tracker { get; set; }
@@ -25,9 +25,9 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, IProgress<PassedArgs> progress, CancellationToken toke, bool CreateMissingEntity = true);
         IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken toke, bool CreateMissingEntity = true);
         IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string srcentity,string destentity, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true);
-        IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<LScript> scripts, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true);
-        List<LScript> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities, IProgress<PassedArgs> progress, CancellationToken token);
-        List<LScript> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token);
+        IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<SyncEntity> scripts, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true);
+        List<SyncEntity> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities, IProgress<PassedArgs> progress, CancellationToken token);
+        List<SyncEntity> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token);
         Task<IErrorsInfo> RunScriptAsync(IProgress<PassedArgs> progress, CancellationToken token);
       
     }

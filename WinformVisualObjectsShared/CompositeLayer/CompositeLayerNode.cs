@@ -659,7 +659,7 @@ namespace TheTechIdea.Winforms.VIS
                 return ConnectionState.Broken;
            
         }
-        private LScriptHeader CreateScript()
+        private SyncDataSource CreateScript()
         {
             if (OpenCompositeDataSource() == ConnectionState.Open)
             {
@@ -677,13 +677,13 @@ namespace TheTechIdea.Winforms.VIS
                 {
                     tokenSource = new CancellationTokenSource();
                     token = tokenSource.Token;
-                    DMEEditor.ETL.script = new LScriptHeader();
+                    DMEEditor.ETL.script = new SyncDataSource();
                     DMEEditor.ETL.script.scriptSource = compositeLayerDataSource.DatasourceName;
                     DMEEditor.ETL.GetCreateEntityScript(compositeLayerDataSource, ls, progress,token);
                     foreach (var item in ls)
                     {
                         TreeEditor.AddCommentsWaiting($"{i} - Creating script for Entity {item.EntityName} ");
-                        LScript upscript = new LScript();
+                        SyncEntity upscript = new SyncEntity();
                         upscript.sourcedatasourcename = item.DataSourceID;
                         upscript.sourceentityname = item.EntityName;
                         upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
@@ -692,7 +692,7 @@ namespace TheTechIdea.Winforms.VIS
                         upscript.destinationentityname = item.EntityName;
                         upscript.destinationdatasourcename = compositeLayerDataSource.DatasourceName;
                         upscript.scriptType = DDLScriptType.CopyData;
-                        DMEEditor.ETL.script.Scripts.Add(upscript);
+                        DMEEditor.ETL.script.Entities.Add(upscript);
                         i += 1;
                     }
                 }

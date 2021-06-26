@@ -74,7 +74,7 @@ namespace TheTechIdea.ETL
             }
            
             this.dataConnectionsBindingSource.DataSource = DMEEditor.ConfigEditor.DataConnections;
-            scriptBindingSource.DataSource = DMEEditor.ETL.script.Scripts;
+            scriptBindingSource.DataSource = DMEEditor.ETL.script.Entities;
 
             this.RunScriptbutton.Click += RunScriptbutton_Click;
             this.StopButton.Click += StopButton_Click;
@@ -152,7 +152,7 @@ namespace TheTechIdea.ETL
         }
         private void update()
         {
-            scriptBindingSource.DataSource = DMEEditor.ETL.script.Scripts;
+            scriptBindingSource.DataSource = DMEEditor.ETL.script.Entities;
             childScriptsBindingSource.DataSource = scriptBindingSource;
             trackingBindingSource.DataSource = childScriptsBindingSource;
            

@@ -5,7 +5,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.Editor
 {
-    public interface ILScript
+    public interface ISyncEntity
     {
         string ddl { get; set; }
         string sourceentityname { get; set; }
@@ -18,11 +18,11 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         bool Active { get; set; }
         IErrorsInfo errorsInfo { get; set; }
         DDLScriptType scriptType { get; set; }
-        List<LScriptTracking> Tracking { get; set; }
-        List<LScript> CopyDataScripts { get; set; } 
+        List<SyncErrorsandTracking> Tracking { get; set; }
+        List<SyncEntity> CopyDataScripts { get; set; } 
     }
     public enum DDLScriptType
     {
-        CreateTable,AlterPrimaryKey,AlterFor,AlterUni,DropTable,EnableCons,DisableCons,CopyData
+        CopyEntities,SyncEntity,CompareEntity,CreateEntity,AlterPrimaryKey,AlterFor,AlterUni,DropTable,EnableCons,DisableCons,CopyData
     }
 }

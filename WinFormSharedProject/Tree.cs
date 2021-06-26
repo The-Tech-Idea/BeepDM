@@ -1639,7 +1639,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion
         #region "Data Managemet Shared"
-        public LScriptHeader CreateScriptToCopyEntities(IDataSource dest,List<EntityStructure> entities, IProgress<PassedArgs> progress,bool copydata=true)
+        public SyncDataSource CreateScriptToCopyEntities(IDataSource dest,List<EntityStructure> entities, IProgress<PassedArgs> progress,bool copydata=true)
         {
             if (dest.Openconnection() == ConnectionState.Open)
             {
@@ -1652,7 +1652,7 @@ namespace TheTechIdea.Winforms.VIS
                 {
                     tokenSource = new CancellationTokenSource();
                     token = tokenSource.Token;
-                    DMEEditor.ETL.script = new LScriptHeader();
+                    DMEEditor.ETL.script = new SyncDataSource();
                     DMEEditor.ETL.script.scriptSource = dest.DatasourceName;
                     DMEEditor.ETL.GetCreateEntityScript(dest, ls,progress,token);
                     //if (copydata)
@@ -1689,7 +1689,7 @@ namespace TheTechIdea.Winforms.VIS
 
 
         }
-        public IErrorsInfo ShowRunScriptGUI(IBranch RootBranch, IBranch Branch ,IDataSource ds, LScriptHeader script)
+        public IErrorsInfo ShowRunScriptGUI(IBranch RootBranch, IBranch Branch ,IDataSource ds, SyncDataSource script)
         {
             string[] args = { "New Query Entity", null, null };
             List<ObjectItem> ob = new List<ObjectItem>(); ;

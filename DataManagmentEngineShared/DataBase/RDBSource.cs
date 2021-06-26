@@ -1189,9 +1189,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         {
                             foreach (string item in diffnames)
                             {
-                                GetEntityStructure(item, false);
-                                int idx = Entities.FindIndex(p => p.EntityName.Equals(item, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(item, StringComparison.OrdinalIgnoreCase));
-                                Entities[idx].Created = false;
+                               // GetEntityStructure(item, false);
+                               // int idx = Entities.FindIndex(p => p.EntityName.Equals(item, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(item, StringComparison.OrdinalIgnoreCase));
+                               // Entities[idx].Created = false;
                                  EntitiesNames.Add(item);
                             }
                         }
@@ -1275,7 +1275,25 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 }
             } else
             {
-                retval = true;
+                if (Entities.Count > 0)
+                {
+                    if (Entities.Where(p => p.EntityName.Equals(entity.EntityName, StringComparison.OrdinalIgnoreCase) && p.Created == false).Any())
+                    {
+                        string createstring = CreateEntity(entity);
+                        DMEEditor.ErrorObject = ExecuteSql(createstring);
+                        if (DMEEditor.ErrorObject.Flag == Errors.Failed)
+                        {
+                            retval = false;
+                        }
+                        else
+                        {
+                            retval = true;
+                        }
+                    }
+                }
+                else
+                    return false;
+               
             }
 
             return retval;
@@ -1364,7 +1382,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
 
         }
-       public IErrorsInfo RunScript(LScript scripts)
+       public IErrorsInfo RunScript(SyncEntity scripts)
         {
             var t = Task.Run<IErrorsInfo>(() => { return ExecuteSql(scripts.ddl); });
             t.Wait();
@@ -1374,7 +1392,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             return DMEEditor.ErrorObject;
         }
-        public List<LScript> GetCreateEntityScript(List<EntityStructure> entities)
+        public List<SyncEntity> GetCreateEntityScript(List<EntityStructure> entities)
         {
             return GetDDLScriptfromDatabase(entities);
         }
@@ -1456,25 +1474,25 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return createtablestring;
         }
-        public List<LScript> GenerateCreatEntityScript(List<EntityStructure> entities)
+        public List<SyncEntity> GenerateCreatEntityScript(List<EntityStructure> entities)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
 
             int i = 0;
 
-            List<LScript> rt = new List<LScript>();
+            List<SyncEntity> rt = new List<SyncEntity>();
             try
             {
                 // Generate Create Table First
                 foreach (EntityStructure item in entities)
                 {
-                    LScript x = new LScript();
+                    SyncEntity x = new SyncEntity();
                     x.destinationdatasourcename = DatasourceName;
 
                     x.ddl = CreateEntity(item);
                     x.sourceentityname = item.EntityName;
                     x.sourceDatasourceEntityName = item.DatasourceEntityName;
-                    x.scriptType = DDLScriptType.CreateTable;
+                    x.scriptType = DDLScriptType.CreateEntity;
                     rt.Add(x);
                     rt.AddRange(CreateForKeyRelationScripts(item));
                     i += 1;
@@ -1493,23 +1511,23 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             return rt;
 
         }
-        public List<LScript> GenerateCreatEntityScript(EntityStructure entity)
+        public List<SyncEntity> GenerateCreatEntityScript(EntityStructure entity)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
 
             int i = 0;
 
-            List<LScript> rt = new List<LScript>();
+            List<SyncEntity> rt = new List<SyncEntity>();
             try
             {
                 // Generate Create Table First
 
-                LScript x = new LScript();
+                SyncEntity x = new SyncEntity();
                 x.destinationdatasourcename = DatasourceName;
                 x.ddl = CreateEntity(entity);
                 x.sourceDatasourceEntityName = entity.DatasourceEntityName;
                 x.sourceentityname = entity.EntityName;
-                x.scriptType = DDLScriptType.CreateTable;
+                x.scriptType = DDLScriptType.CreateEntity;
                 rt.Add(x);
                 rt.AddRange(CreateForKeyRelationScripts(entity));
 
@@ -1525,9 +1543,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             return rt;
 
         }
-        private List<LScript> GetDDLScriptfromDatabase(string entity)
+        private List<SyncEntity> GetDDLScriptfromDatabase(string entity)
         {
-            List<LScript> rt = new List<LScript>();
+            List<SyncEntity> rt = new List<SyncEntity>();
 
             try
             {
@@ -1554,10 +1572,10 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
 
 
-                var t2 = Task.Run<List<LScript>>(() => { return GenerateCreatEntityScript(entstructure); });
+                var t2 = Task.Run<List<SyncEntity>>(() => { return GenerateCreatEntityScript(entstructure); });
                 t2.Wait();
                 rt.AddRange(t2.Result);
-                t2 = Task.Run<List<LScript>>(() => { return CreateForKeyRelationScripts(entstructure); });
+                t2 = Task.Run<List<SyncEntity>>(() => { return CreateForKeyRelationScripts(entstructure); });
                 t2.Wait();
                 rt.AddRange(t2.Result);
 
@@ -1569,9 +1587,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return rt;
         }
-        private List<LScript> GetDDLScriptfromDatabase(List<EntityStructure> structureentities)
+        private List<SyncEntity> GetDDLScriptfromDatabase(List<EntityStructure> structureentities)
         {
-            List<LScript> rt = new List<LScript>();
+            List<SyncEntity> rt = new List<SyncEntity>();
             // List<EntityStructure> structureentities = new List<EntityStructure>();
             try
             {
@@ -1581,7 +1599,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 if (structureentities.Count > 0)
                 {
 
-                    var t = Task.Run<List<LScript>>(() => { return GenerateCreatEntityScript(structureentities); });
+                    var t = Task.Run<List<SyncEntity>>(() => { return GenerateCreatEntityScript(structureentities); });
                     t.Wait();
                     rt.AddRange(t.Result);
                     //t = Task.Run<List<LScript>>(() => { return CreateForKeyRelationScripts(structureentities); });
@@ -1690,9 +1708,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
 
         }
-        private List<LScript> CreateForKeyRelationScripts(EntityStructure entity)
+        private List<SyncEntity> CreateForKeyRelationScripts(EntityStructure entity)
         {
-            List<LScript> rt = new List<LScript>();
+            List<SyncEntity> rt = new List<SyncEntity>();
             try
             {
                 int i = 0;
@@ -1706,7 +1724,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         string[] rels = relations.Split(';');
                         foreach (string rl in rels)
                         {
-                            LScript x = new LScript();
+                            SyncEntity x = new SyncEntity();
                             x.destinationdatasourcename = DatasourceName;
                             ds = DMEEditor.GetDataSource(entity.DataSourceID);
                             x.sourceDatasourceEntityName = entity.DatasourceEntityName;
@@ -1725,9 +1743,9 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return rt;
         }
-        private List<LScript> CreateForKeyRelationScripts(List<EntityStructure> entities)
+        private List<SyncEntity> CreateForKeyRelationScripts(List<EntityStructure> entities)
         {
-            List<LScript> rt = new List<LScript>();
+            List<SyncEntity> rt = new List<SyncEntity>();
 
             try
             {
@@ -1741,7 +1759,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     {
                         if (item.Relations.Count > 0)
                         {
-                            LScript x = new LScript();
+                            SyncEntity x = new SyncEntity();
                             x.destinationdatasourcename = item.DataSourceID;
                             ds = DMEEditor.GetDataSource(item.DataSourceID);
                             x.sourceDatasourceEntityName = item.DatasourceEntityName;

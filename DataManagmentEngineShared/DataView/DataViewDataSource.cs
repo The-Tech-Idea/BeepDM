@@ -518,7 +518,7 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             }
            
         }
-        public IErrorsInfo RunScript(LScript dDLScripts)
+        public IErrorsInfo RunScript(SyncEntity dDLScripts)
         {
             if (ds.ConnectionStatus == ConnectionState.Open)
             {
@@ -539,9 +539,9 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             // return ds.CreateEntities(entities);
             return DMEEditor.ErrorObject;
         }
-        public List<LScript> GetCreateEntityScript(List<EntityStructure> entities = null)
+        public List<SyncEntity> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
-            List<LScript> ls = new List<LScript>();
+            List<SyncEntity> ls = new List<SyncEntity>();
             foreach (EntityStructure item in entities)
             {
                 ds = DMEEditor.GetDataSource(item.DataSourceID);

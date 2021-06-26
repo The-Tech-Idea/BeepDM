@@ -479,7 +479,7 @@ namespace TheTechIdea.ETL
             // 
             // scriptBindingSource
             // 
-            this.scriptBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Editor.LScript);
+            this.scriptBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Editor.SyncEntity);
             // 
             // activeDataGridViewCheckBoxColumn
             // 

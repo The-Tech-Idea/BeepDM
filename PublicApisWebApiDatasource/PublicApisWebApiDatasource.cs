@@ -201,7 +201,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.PublicApisWebApi
         {
             throw new NotImplementedException();
         }
-        public IErrorsInfo RunScript(LScript dDLScripts)
+        public IErrorsInfo RunScript(SyncEntity dDLScripts)
         {
             throw new NotImplementedException();
         }
@@ -210,7 +210,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.PublicApisWebApi
         {
             throw new NotImplementedException();
         }
-        public List<LScript> GetCreateEntityScript(List<EntityStructure> entities = null)
+        public List<SyncEntity> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
             throw new NotImplementedException();
         }

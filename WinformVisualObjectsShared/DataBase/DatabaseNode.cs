@@ -471,14 +471,14 @@ namespace TheTechIdea.Winforms.VIS
                            
                             update();
                         });
-                        LScriptHeader scriptHeader = TreeEditor.CreateScriptToCopyEntities(DataSource, ls,progress, true);
+                        SyncDataSource scriptHeader = TreeEditor.CreateScriptToCopyEntities(DataSource, ls,progress, true);
                         if (scriptHeader != null)
                         {
                             TreeEditor.ShowRunScriptGUI(RootBranch,this, DataSource, scriptHeader);
                         }
                         foreach (var entity in ls)
                         {
-                            if (DataSource.CreateEntityAs(entity))
+                            if (DataSource.CheckEntityExist(entity.EntityName))
                             {
                                 entity.Created = true;
 

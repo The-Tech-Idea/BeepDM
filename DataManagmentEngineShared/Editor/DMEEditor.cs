@@ -37,7 +37,7 @@ namespace TheTechIdea.DataManagment_Engine
         public IDMLogger Logger { get; set; }
         public IWorkFlowEditor WorkFlowEditor { get; set; }
         public IClassCreator classCreator { get; set; }
-        public LScriptHeader Script { get; set; } = new LScriptHeader();
+        public SyncDataSource Script { get; set; } = new SyncDataSource();
         public BindingList<ILogAndError> Loganderrors { get; set; } = new BindingList<ILogAndError>();
         public PassedArgs Passedarguments { get; set; }
         public event EventHandler<PassedArgs> PassEvent;

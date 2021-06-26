@@ -66,7 +66,7 @@ namespace TheTechIdea.Util
 		public List<DatatypeMapping> DataTypesMap { get; set; } = new List<DatatypeMapping>();
 		public List<DataSourceFieldProperties> AppfieldProperties { get; set; } = new List<DataSourceFieldProperties>();
 		public Dictionary<string, string> Entities { get; set; } = new Dictionary<string, string>();
-		public List<LScriptHeader> Scripts { get; set; } = new List<LScriptHeader>();
+		public List<SyncDataSource> Scripts { get; set; } = new List<SyncDataSource>();
 		public List<SyncDataSource> SyncedDataSources { get; set; } = new List<SyncDataSource>();
 		public List<AssemblyClassDefinition> WorkFlowActions { get; set; } = new List<AssemblyClassDefinition>();
 		public List<ConnectionDriversConfig> DataDriversClasses { get; set; } = new List<ConnectionDriversConfig>();
@@ -82,25 +82,25 @@ namespace TheTechIdea.Util
 			JsonLoader.Serialize(path, Scripts);
 
 		}
-		public List<LScriptHeader> LoadScriptsValues()
+		public List<SyncDataSource> LoadScriptsValues()
 		{
 			string path = Path.Combine(Config.ScriptsPath, "Scripts.json");
-			Scripts = JsonLoader.DeserializeObject<LScriptHeader>(path);
+			Scripts = JsonLoader.DeserializeObject<SyncDataSource>(path);
 			return Scripts;
 		}
-		public void SaveScriptTrackingValues(LScriptTracking scriptid)
+		public void SaveScriptTrackingValues(SyncErrorsandTracking scriptid)
 		{
 			string dateformat = scriptid.rundate.ToString("ddmmyyyyHmmss");
 			string path = Path.Combine(Config.ScriptsLogsPath, $"{dateformat}_{scriptid.parentscriptid}.json");
 			JsonLoader.Serialize(path, Scripts);
 
 		}
-		public LScriptTracking LoadScriptTrackingValues(LScriptTracking scriptid)
+		public SyncErrorsandTracking LoadScriptTrackingValues(SyncErrorsandTracking scriptid)
 		{
 			string dateformat = scriptid.rundate.ToString("ddmmyyyyHmmss");
 			string path = Path.Combine(Config.ScriptsLogsPath, $"{dateformat}_{scriptid.parentscriptid}.json");
 			
-			return JsonLoader.DeserializeSingleObject<LScriptTracking>(path); ;
+			return JsonLoader.DeserializeSingleObject<SyncErrorsandTracking>(path); ;
 		}
 		#endregion "Reports L/S"
 		#region "Reading and writing Query files"

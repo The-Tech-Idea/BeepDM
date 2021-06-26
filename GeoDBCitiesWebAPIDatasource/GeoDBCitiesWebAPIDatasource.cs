@@ -79,7 +79,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.GeoDBCitiesWebAPI
 
 
         }
-        public IErrorsInfo RunScript(LScript dDLScripts)
+        public IErrorsInfo RunScript(SyncEntity dDLScripts)
         {
             throw new NotImplementedException();
         }
@@ -88,7 +88,7 @@ namespace TheTechIdea.DataManagment_Engine.WebAPI.GeoDBCitiesWebAPI
         {
             throw new NotImplementedException();
         }
-        public List<LScript> CreateDataSourceScript(List<string> entities = null)
+        public List<SyncEntity> CreateDataSourceScript(List<string> entities = null)
         {
             throw new NotImplementedException();
         }

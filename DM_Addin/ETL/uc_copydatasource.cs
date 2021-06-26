@@ -44,7 +44,7 @@ namespace TheTechIdea.ETL
         IBranch Parentbranch = null;
         IDataSource Srcds;
         IDataSource destds;
-        LScriptHeader scripHeader;
+        SyncDataSource scripHeader;
         public void Run(string param1)
         {
             throw new NotImplementedException();
@@ -62,7 +62,7 @@ namespace TheTechIdea.ETL
             {
                 Parentbranch = (IBranch)e.Objects.Where(c => c.Name == "ParentBranch").FirstOrDefault().obj;
             }
-            scripHeader = new LScriptHeader();
+            scripHeader = new SyncDataSource();
             Srcds = DMEEditor.GetDataSource(branch.BranchText);
             if (Srcds != null)
             {
@@ -89,7 +89,7 @@ namespace TheTechIdea.ETL
         private void CreateScriptHeader()
         {
             int i=0;
-            DMEEditor.ETL.script = new LScriptHeader();
+            DMEEditor.ETL.script = new SyncDataSource();
             DMEEditor.ETL.script.scriptSource = Srcds.DatasourceName;
             List<EntityStructure> ls = new List<EntityStructure>();
             Srcds.GetEntitesList();
@@ -106,7 +106,7 @@ namespace TheTechIdea.ETL
             foreach (var item in ls)
             {
                
-                LScript upscript = new LScript();
+                SyncEntity upscript = new SyncEntity();
                 upscript.sourcedatasourcename = item.DataSourceID;
                 upscript.sourceentityname = item.EntityName;
                 upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
@@ -115,7 +115,7 @@ namespace TheTechIdea.ETL
                 upscript.destinationentityname = item.EntityName;
                 upscript.destinationdatasourcename = Srcds.DatasourceName;
                 upscript.scriptType = DDLScriptType.CopyData;
-                DMEEditor.ETL.script.Scripts.Add(upscript);
+                DMEEditor.ETL.script.Entities.Add(upscript);
                 i += 1;
             }
         }

@@ -28,7 +28,7 @@ namespace TheTechIdea.DataManagment_Engine
         IAssemblyHandler assemblyHandler { get; set; }
         BindingList<ILogAndError> Loganderrors { get; set; }
         PassedArgs Passedarguments { get; set; }
-        LScriptHeader Script { get; set; }
+        SyncDataSource Script { get; set; }
         IDataSource GetDataSource(string pdatasourcename);
         IDataSource CreateNewDataSourceConnection(ConnectionProperties cn, string pdatasourcename);
         IDataSource CreateLocalDataSourceConnection(ConnectionProperties dataConnection, string pdatasourcename, string ClassDBHandlerName);
