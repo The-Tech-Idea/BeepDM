@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.Editor;
@@ -241,6 +242,191 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
                 return null;
             }
+
+
+        }
+        public override bool CreateEntityAs(EntityStructure entity)
+        {
+            bool retval = false;
+
+            if (CheckEntityExist(entity.EntityName) == false)
+            {
+
+                string createstring = CreateEntity(entity);
+                DMEEditor.ErrorObject = ExecuteSql(createstring);
+                if (DMEEditor.ErrorObject.Flag == Errors.Failed)
+                {
+                    retval = false;
+                }
+                else
+                {
+                    Entities.Add(entity);
+                    retval = true;
+                }
+            }
+            else
+            {
+                if (Entities.Count > 0)
+                {
+                    if (Entities.Where(p => p.EntityName.Equals(entity.EntityName, StringComparison.OrdinalIgnoreCase) && p.Created == false).Any())
+                    {
+                        string createstring = CreateEntity(entity);
+                        DMEEditor.ErrorObject = ExecuteSql(createstring);
+                        if (DMEEditor.ErrorObject.Flag == Errors.Failed)
+                        {
+                            retval = false;
+                        }
+                        else
+                        {
+                            Entities.Add(entity);
+                            retval = true;
+                        }
+                    }
+                }
+                else
+                    return false;
+
+            }
+
+            return retval;
+        }
+        private string CreateEntity(EntityStructure t1)
+        {
+            string createtablestring = null;
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+
+            // 
+            try
+            {
+
+                createtablestring = GenerateCreateEntityScript(t1);
+
+            }
+            catch (System.Exception ex)
+            {
+
+                createtablestring = null;
+
+                DMEEditor.AddLogMessage("Fail", $"Error in  Creating Table " + t1.EntityName + "   ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+
+
+            }
+            return createtablestring;
+        }
+        private string GenerateCreateEntityScript(EntityStructure t1)
+        {
+            string createtablestring = "Create table ";
+            try
+            {//-- Create Create string
+                int i = 1;
+                t1.EntityName = Regex.Replace(t1.EntityName, @"\s+", "_");
+                createtablestring += " " + t1.EntityName + "\n(";
+                if (t1.Fields.Count == 0)
+                {
+                    // t1=ds.GetEntityStructure()
+                }
+                foreach (EntityField dbf in t1.Fields)
+                {
+
+                    createtablestring += "\n [" + dbf.fieldname + "] " + DMEEditor.typesHelper.GetDataType(DatasourceName, dbf) + " ";
+                    if (dbf.IsAutoIncrement)
+                    {
+                        //  dbf.fieldname = Regex.Replace(dbf.fieldname, @"\s+", "_");
+                        string autonumberstring = "";
+                        autonumberstring = CreateAutoNumber(dbf);
+                        if (DMEEditor.ErrorObject.Flag == Errors.Ok)
+                        {
+                            createtablestring += autonumberstring;
+                        }
+                        else
+                        {
+                            throw new Exception(ErrorObject.Message);
+
+                        }
+                    }
+
+                    if (dbf.AllowDBNull == false)
+                    {
+                        createtablestring += " NOT NULL ";
+                    }
+                    if (dbf.IsUnique == true)
+                    {
+                        createtablestring += " UNIQUE ";
+                    }
+                    i += 1;
+
+                    if (i <= t1.Fields.Count)
+                    {
+                        createtablestring += ",";
+                    }
+
+                }
+                if (t1.PrimaryKeys != null)
+                {
+                    if (t1.PrimaryKeys.Count > 0)
+                    {
+                        createtablestring += $",\n" + CreatePrimaryKeyString(t1);
+                    }
+                }
+
+
+
+                if (createtablestring[createtablestring.Length - 1].Equals(","))
+                {
+                    createtablestring = createtablestring.Remove(createtablestring.Length);
+                }
+
+                createtablestring += ")";
+
+            }
+            catch (System.Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Error Creating Entity {t1.EntityName}  ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+                createtablestring = "";
+
+
+
+            }
+            return createtablestring;
+        }
+        private string CreatePrimaryKeyString(EntityStructure t1)
+        {
+            string retval = null;
+            //  string tmp = null;
+            try
+            {
+                retval = @" PRIMARY KEY ( ";
+                ErrorObject.Flag = Errors.Ok;
+
+                int i = 0;
+
+                foreach (EntityField dbf in t1.PrimaryKeys)
+                {
+
+                    retval += "["+dbf.fieldname + "],";
+
+                    i += 1;
+
+
+                }
+                if (retval.EndsWith(","))
+                {
+                    retval = retval.Remove(retval.Length - 1, 1);
+
+                }
+
+                retval += ")\n";
+                return retval;
+            }
+
+            catch (Exception ex)
+            {
+                string mes = "";
+                DMEEditor.AddLogMessage(ex.Message, "Could not  Create Primery Key" + mes, DateTime.Now, -1, mes, Errors.Failed);
+                return null;
+            };
+
+
 
 
         }

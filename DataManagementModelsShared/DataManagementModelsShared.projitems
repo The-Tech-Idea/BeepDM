@@ -63,12 +63,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\QueryStructure.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBSourceADP.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\IETL.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\ISyncEntity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\SyncDataSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Editor\SyncEntity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\IDataSourceDataType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\IDataTypesHelper.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Editor\ISyncEntity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\IDMEEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Editor\SyncEntity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\SyncErrorsandTracking.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileManager\ColumnDef.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileManager\ExcelSheetDefinition.cs" />

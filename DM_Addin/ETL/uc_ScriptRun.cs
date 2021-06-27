@@ -119,16 +119,16 @@ namespace TheTechIdea.ETL
                     update();
                 }
                
-                if (DMEEditor.ErrorObject.Flag == Errors.Failed)
-                {
-                    if (string.IsNullOrEmpty(percent.ParameterString3))
-                    {
-                        if (percent.ParameterString3 == "Stop")
+                //if (DMEEditor.ErrorObject.Flag == Errors.Failed)
+                //{
+                   if (!string.IsNullOrEmpty(percent.EventType))
+                   {
+                        if (percent.EventType == "Stop")
                         {
-                            token.ThrowIfCancellationRequested();
+                            tokenSource.Cancel();
                         }
                     }
-                }
+              //  }
                
 
             });

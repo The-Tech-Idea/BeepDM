@@ -109,7 +109,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                    
                     cmd.Dispose();
                    
-                    DMEEditor.AddLogMessage("Fail", " Could not run Script" + ex.Message, DateTime.Now, -1, ex.Message, Errors.Failed);
+                  //  DMEEditor.AddLogMessage("Fail", " Could not run Script" + ex.Message, DateTime.Now, -1, ex.Message, Errors.Failed);
 
                 }
 
@@ -691,37 +691,39 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 qrystr += Environment.NewLine;
                 if (Filter != null)
                 {
-                    if (Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
+                    if (Filter.Count > 0)
                     {
-                        qrystr += Environment.NewLine;
-                        if (FoundWhere == false)
+                        if (Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
                         {
-                            qrystr += " where " + Environment.NewLine;
-                            FoundWhere = true;
-                        }
-
-                        foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)))
-                        {
-                            if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
+                            qrystr += Environment.NewLine;
+                            if (FoundWhere == false)
                             {
-                                //  EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
-                                if (item.Operator.ToLower() == "between")
-                                {
-                                    qrystr += item.FieldName + " " + item.Operator + " @p_" + item.FieldName + " and  @p_" + item.FieldName + "1 " + Environment.NewLine;
-                                }
-                                else
-                                {
-                                    qrystr += item.FieldName + " " + item.Operator + " @p_" + item.FieldName + " " + Environment.NewLine;
-                                }
-
+                                qrystr += " where " + Environment.NewLine;
+                                FoundWhere = true;
                             }
 
+                            foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)))
+                            {
+                                if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
+                                {
+                                    //  EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
+                                    if (item.Operator.ToLower() == "between")
+                                    {
+                                        qrystr += item.FieldName + " " + item.Operator + " @p_" + item.FieldName + " and  @p_" + item.FieldName + "1 " + Environment.NewLine;
+                                    }
+                                    else
+                                    {
+                                        qrystr += item.FieldName + " " + item.Operator + " @p_" + item.FieldName + " " + Environment.NewLine;
+                                    }
+
+                                }
 
 
+
+                            }
                         }
                     }
-
-                }
+                 }
                 if (originalquery.ToLower().Contains("where"))
                 {
                     qrystr += Environment.NewLine;
@@ -769,16 +771,11 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
                 }
 
-
             }
             catch (Exception ex)
             {
-
                 DMEEditor.AddLogMessage("Fail", $"Unable Build Query Object {originalquery}", DateTime.Now, 0, "Error", Errors.Failed);
             }
-          
-
-
             return qrystr;
         }
         public virtual object GetEntity(string EntityName, List<ReportFilter> Filter)
@@ -1256,7 +1253,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             
 
         }
-        public bool CreateEntityAs(EntityStructure entity)
+        public virtual bool CreateEntityAs(EntityStructure entity)
         {
             bool retval = false;
 

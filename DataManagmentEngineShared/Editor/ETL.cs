@@ -25,6 +25,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
         public int CurrentScriptRecord { get; set; }
         public decimal StopErrorCount { get; set; } = 10;
         public SyncDataSource script { get; set; } = new SyncDataSource();
+        private bool stoprun = false;
       //  public LScriptTracking Tracker { get; set; } = new LScriptTracking();
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public List<string> EntitiesNames { get; set; } = new List<string>();
@@ -467,7 +468,9 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                                     }
                                     if (errorcount >= StopErrorCount)
                                     {
-                                        token.ThrowIfCancellationRequested();
+                                        stoprun = true;
+                                        PassedArgs ps = new PassedArgs { EventType = "Stop", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                                        progress.Report(ps);
                                     }
 
                                 }
@@ -610,7 +613,7 @@ namespace TheTechIdea.DataManagment_Engine.Editor
 
             int highestPercentageReached = 0;
             int numberToCompute = 0;
-
+          
             IDataSource destds = null;
             IDataSource srcds = null;
             //DMEEditor.ETL.Tracker = new LScriptTracking();
@@ -635,59 +638,62 @@ namespace TheTechIdea.DataManagment_Engine.Editor
                 if (destds != null)
                 {
                     DMEEditor.OpenDataSource(sc.destinationdatasourcename);
-                    //  srcds.Dataconnection.OpenConnection();
-                    if (destds.ConnectionStatus == System.Data.ConnectionState.Open)
+                    if (stoprun == false)
                     {
-                        if (sc.scriptType == DDLScriptType.CreateEntity)
+                        if (destds.ConnectionStatus == System.Data.ConnectionState.Open)
                         {
-                            EntityStructure entitystr = (EntityStructure)srcds.GetEntityStructure(sc.sourceDatasourceEntityName, false).Clone();
-                            bool retval= destds.CreateEntityAs(entitystr); // t.Result;
-                            sc.errorsInfo = DMEEditor.ErrorObject;
-                            sc.errormessage = DMEEditor.ErrorObject.Message;
-                            if (sc.errorsInfo.Flag == Errors.Ok)
+                            if (sc.scriptType == DDLScriptType.CreateEntity)
                             {
-                                sc.Active = true;
-                                sc.errormessage = "Entity Creation is Successful";
-                                if (progress != null)
+                                EntityStructure entitystr = (EntityStructure)srcds.GetEntityStructure(sc.sourceDatasourceEntityName, false).Clone();
+                                bool retval = destds.CreateEntityAs(entitystr); // t.Result;
+                                sc.errorsInfo = DMEEditor.ErrorObject;
+                                sc.errormessage = DMEEditor.ErrorObject.Message;
+                                if (sc.errorsInfo.Flag == Errors.Ok)
                                 {
-                                    PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                    progress.Report(ps);
-                                   
+                                    sc.Active = true;
+                                    sc.errormessage = "Entity Creation is Successful";
+                                    if (progress != null)
+                                    {
+                                        PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                                        progress.Report(ps);
 
+
+                                    }
+                                    if (sc.CopyDataScripts.Count > 0)
+                                    {
+                                        await RunChildScriptAsync(sc, srcds, destds, progress, token);
+                                    }
                                 }
-                                if (sc.CopyDataScripts.Count > 0)
+                                else
                                 {
-                                   await RunChildScriptAsync(sc, srcds, destds, progress, token);
+                                    sc.errormessage = DMEEditor.ErrorObject.Message;
+                                    sc.errorsInfo = DMEEditor.ErrorObject;
+                                    sc.Active = false;
+                                    if (progress != null)
+                                    {
+                                        PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                                        progress.Report(ps);
+
+                                    }
                                 }
+
                             }
                             else
                             {
-                               sc.errormessage = DMEEditor.ErrorObject.Message;
-                               sc.errorsInfo = DMEEditor.ErrorObject;
-                               sc.Active = false;
-                                if (progress != null)
-                                {
-                                    PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                    progress.Report(ps);
+                                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                                DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
+                            }
+                            //  UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
+                            if (progress != null)
+                            {
+                                PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
+                                progress.Report(ps);
 
-                                }
                             }
 
                         }
-                        else
-                        {
-                            DMEEditor.ErrorObject.Flag = Errors.Failed;
-                            DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
-                        }
-                        //  UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
-                        if (progress != null)
-                        {
-                            PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
-                            progress.Report(ps);
-
-                        }
-
                     }
+                   
 
                 }
             }
