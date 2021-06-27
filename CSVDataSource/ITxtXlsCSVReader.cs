@@ -34,7 +34,7 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
         ConnectionState OpenConnection();
         DataTable ReadDataTable(int sheetno = 0, bool HeaderExist = true, int fromline = 0, int toline = 100);
         DataTable ReadDataTable(string sheetname, bool HeaderExist = true, int fromline = 0, int toline = 100);
-        List<object> ReadList(int sheetno = 0, bool HeaderExist = true, int fromline = 0, int toline = 100);
-        List<object> ReadList(string sheetname, bool HeaderExist = true, int fromline = 0, int toline = 100);
+        //List<object> ReadList(int sheetno = 0, bool HeaderExist = true, int fromline = 0, int toline = 100);
+        //List<object> ReadList(string sheetname, bool HeaderExist = true, int fromline = 0, int toline = 100);
     }
 }

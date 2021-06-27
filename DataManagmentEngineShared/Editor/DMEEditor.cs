@@ -5,21 +5,15 @@ using TheTechIdea.Util;
 using System.Linq;
 using System;
 using System.Reflection;
-
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.Logger;
-
 using TheTechIdea.DataManagment_Engine.Editor;
-
 using TheTechIdea.DataManagment_Engine.Workflow;
-using TheTechIdea.DataManagment_Engine.Report;
-
-using static TheTechIdea.DataManagment_Engine.Util;
 using System.ComponentModel;
 using TheTechIdea.DataManagment_Engine.Logger;
 using System.IO;
 using TheTechIdea.Tools;
-using TheTechIdea.DataManagment_Engine.ConfigUtil;
+using static TheTechIdea.DataManagment_Engine.Util;
 
 namespace TheTechIdea.DataManagment_Engine
 {
@@ -39,7 +33,7 @@ namespace TheTechIdea.DataManagment_Engine
         public IClassCreator classCreator { get; set; }
         public SyncDataSource Script { get; set; } = new SyncDataSource();
         public BindingList<ILogAndError> Loganderrors { get; set; } = new BindingList<ILogAndError>();
-        public PassedArgs Passedarguments { get; set; }
+        public IPassedArgs Passedarguments { get; set; }
         public event EventHandler<PassedArgs> PassEvent;
  
         public void AddLogMessage(string pLogType ,string pLogMessage ,DateTime pLogData , int pRecordID , string pMiscData,Errors pFlag)
@@ -494,7 +488,21 @@ namespace TheTechIdea.DataManagment_Engine
             PassEvent?.Invoke(sender, args);
         }
 
-      
+       public IErrorsInfo AskQuestion(IPassedArgs args)
+        {
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+            }
+            return ErrorObject;
+        }
 
         //----------------- ------------------------------ -----
         public DMEEditor(IDMLogger logger, IUtil utilfunctions,IErrorsInfo per, IConfigEditor configEditor,IWorkFlowEditor pworkFlowEditor, IClassCreator pclasscreator, IETL pETL, IAssemblyHandler passemblyHandler)

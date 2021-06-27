@@ -51,7 +51,7 @@ namespace TheTechIdea.Configuration
         public int ID { get; set; } = 3;
         public string BranchText { get; set; } = "Connection Drivers";
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Entity;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Entity;
         public int BranchID { get; set; } = 3;
         public string IconImageName { get; set; } = "connectiondrivers.ico";
         public string BranchStatus { get; set; }

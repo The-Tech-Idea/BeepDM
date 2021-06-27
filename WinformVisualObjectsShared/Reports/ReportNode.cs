@@ -12,7 +12,7 @@ namespace TheTechIdea.Winforms.VIS.Reports
 {
     public class ReportNode : IBranch, ITreeView
     {
-        public ReportNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public ReportNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
@@ -41,7 +41,7 @@ namespace TheTechIdea.Winforms.VIS.Reports
         public string Name { get ; set ; }
         public string BranchText { get ; set ; }
         public int Level { get ; set ; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.DataPoint;
+        public EnumPointType BranchType { get; set; } = EnumPointType.DataPoint;
         public int BranchID { get ; set ; }
         public string IconImageName { get; set; } = "reportnode.ico";
         public string BranchStatus { get ; set ; }
@@ -93,7 +93,7 @@ namespace TheTechIdea.Winforms.VIS.Reports
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -119,7 +119,7 @@ namespace TheTechIdea.Winforms.VIS.Reports
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Edit Report")]
+        [CommandAttribute(Caption = "Edit Report")]
         public IErrorsInfo EditReport()
         {
 
@@ -131,7 +131,7 @@ namespace TheTechIdea.Winforms.VIS.Reports
                 it.obj = this;
                 it.Name = "Branch";
                 ob.Add(it);
-                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "REPORT" && x.BranchType == EnumBranchType.Root)];
+                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "REPORT" && x.BranchType == EnumPointType.Root)];
                 it = new ObjectItem();
                 it.obj = RootBranch;
                 it.Name = "RootReportBranch";
@@ -164,7 +164,7 @@ namespace TheTechIdea.Winforms.VIS.Reports
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Create")]
+        [CommandAttribute(Caption = "Create")]
         public IErrorsInfo CreateReport()
         {
 
@@ -176,7 +176,7 @@ namespace TheTechIdea.Winforms.VIS.Reports
                 it.obj = this;
                 it.Name = "Branch";
                 ob.Add(it);
-                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "REPORT" && x.BranchType == EnumBranchType.Root)];
+                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "REPORT" && x.BranchType == EnumPointType.Root)];
                 it = new ObjectItem();
                 it.obj = RootBranch;
                 it.Name = "RootReportBranch";
@@ -209,7 +209,7 @@ namespace TheTechIdea.Winforms.VIS.Reports
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Generate")]
+        [CommandAttribute(Caption = "Generate")]
         public IErrorsInfo GenerateReport()
         {
 
@@ -221,7 +221,7 @@ namespace TheTechIdea.Winforms.VIS.Reports
                 it.obj = this;
                 it.Name = "Branch";
                 ob.Add(it);
-                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "REPORT" && x.BranchType == EnumBranchType.Root)];
+                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "REPORT" && x.BranchType == EnumPointType.Root)];
                 it = new ObjectItem();
                 it.obj = RootBranch;
                 it.Name = "RootReportBranch";

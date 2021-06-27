@@ -20,7 +20,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         {
 
         }
-        public AppRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public AppRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
@@ -48,7 +48,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         public string Name { get ; set ; }
         public string BranchText { get; set; } = "Apps";
         public int Level { get ; set ; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Root;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Root;
         public int BranchID { get ; set ; }
         public string IconImageName { get; set; } = "designer.ico";
         public string BranchStatus { get ; set ; }
@@ -112,7 +112,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         {
             throw new NotImplementedException();
         }
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -139,7 +139,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Add Category")]
+        [CommandAttribute(Caption = "Add Category")]
         public IErrorsInfo AddCategory()
         {
 
@@ -167,7 +167,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Create App")]
+        [CommandAttribute(Caption = "Create App")]
         public IErrorsInfo CreateApp()
         {
 
@@ -179,7 +179,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
                 it.obj = this;
                 it.Name = "Branch";
                 ob.Add(it);
-                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "APP" && x.BranchType == EnumBranchType.Root)];
+                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "APP" && x.BranchType == EnumPointType.Root)];
                 it = new ObjectItem();
                 it.obj = RootBranch;
                 it.Name = "RootAppBranch";
@@ -222,7 +222,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
             try
             {
 
-                viewbr = new AppNode(TreeEditor, DMEEditor, this, AppName, TreeEditor.SeqID, EnumBranchType.DataPoint, "app.ico", AppName);
+                viewbr = new AppNode(TreeEditor, DMEEditor, this, AppName, TreeEditor.SeqID, EnumPointType.DataPoint, "app.ico", AppName);
                 TreeEditor.AddBranch(this, viewbr);
                 viewbr.CreateChildNodes();
                 ChildBranchs.Add(viewbr);
@@ -244,7 +244,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
             {
                
                
-                AppCategoryNode categoryBranch = new AppCategoryNode(TreeEditor, DMEEditor, this, p.FolderName, TreeEditor.SeqID, EnumBranchType.Category, IconImageName);
+                AppCategoryNode categoryBranch = new AppCategoryNode(TreeEditor, DMEEditor, this, p.FolderName, TreeEditor.SeqID, EnumPointType.Category, IconImageName);
                 TreeEditor.AddBranch(this, categoryBranch);
                 ChildBranchs.Add(categoryBranch);
                 categoryBranch.CreateChildNodes();

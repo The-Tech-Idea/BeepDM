@@ -18,7 +18,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public DatabaseNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public DatabaseNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
@@ -33,7 +33,7 @@ namespace TheTechIdea.Winforms.VIS
                 BranchID = ID;
             }
         }
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
 
             try
@@ -65,7 +65,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.DataPoint;
+        public EnumPointType BranchType { get; set; } = EnumPointType.DataPoint;
         public int BranchID { get; set; }
         public string IconImageName { get; set; }
         public string BranchStatus { get; set; }
@@ -100,7 +100,7 @@ namespace TheTechIdea.Winforms.VIS
         {
             throw new NotImplementedException();
         }
-        [BranchDelegate(Caption = "Get Entities")]
+        [CommandAttribute(Caption = "Get Entities")]
         public IErrorsInfo CreateDatabaseEntites()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -139,7 +139,7 @@ namespace TheTechIdea.Winforms.VIS
                                 {
                                     iconimage = "databaseentities.ico";
                                 }
-                                DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
+                                DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumPointType.Entity, iconimage, DataSource);
                                 dbent.DataSourceName = DataSource.DatasourceName;
                                 dbent.DataSource = DataSource;
                                 ChildBranchs.Add(dbent);
@@ -163,7 +163,7 @@ namespace TheTechIdea.Winforms.VIS
                             {
                                 iconimage = "databaseentities.ico";
                             }
-                            DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
+                            DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumPointType.Entity, iconimage, DataSource);
                             dbent.DataSourceName = DataSource.DatasourceName;
                             dbent.DataSource = DataSource;
                             ChildBranchs.Add(dbent);
@@ -187,7 +187,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Copy Defaults")]
+        [CommandAttribute(Caption = "Copy Defaults")]
         public IErrorsInfo CopyDefaults()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -239,7 +239,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Paste Defaults")]
+        [CommandAttribute(Caption = "Paste Defaults")]
         public IErrorsInfo PasteDefaults()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -265,7 +265,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Defaults")]
+        [CommandAttribute(Caption = "Defaults")]
         public IErrorsInfo EditDefaults()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -308,7 +308,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Copy Entity(s)")]
+        [CommandAttribute(Caption = "Copy Entity(s)")]
         public IErrorsInfo CopyEntities()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -363,7 +363,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Paste Entity(s)")]
+        [CommandAttribute(Caption = "Paste Entity(s)")]
         public IErrorsInfo PasteEntity()
         {
             try
@@ -372,7 +372,7 @@ namespace TheTechIdea.Winforms.VIS
                 int cnt = 0;
                 List<EntityStructure> ls = new List<EntityStructure>();
                 DataSource = DMEEditor.GetDataSource(DataSourceName);
-                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "RDBMS" && x.BranchType == EnumBranchType.Root)];
+                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "RDBMS" && x.BranchType == EnumPointType.Root)];
                 if (DataSource.Entities != null)
                 {
                     if (DataSource.Entities.Count == 0)
@@ -428,7 +428,7 @@ namespace TheTechIdea.Winforms.VIS
                             {
                                 iconimage = "databaseentities.ico";
                             }
-                            DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
+                            DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumPointType.Entity, iconimage, DataSource);
                             TreeEditor.AddBranch(this, dbent);
                             dbent.DataSourceName = DataSource.DatasourceName;
                             dbent.DataSource = DataSource;
@@ -491,7 +491,7 @@ namespace TheTechIdea.Winforms.VIS
                                     iconimage = "databaseentities.ico";
                                 }
 
-                                DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, entity.EntityName.ToUpper(), TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
+                                DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, entity.EntityName.ToUpper(), TreeEditor.SeqID, EnumPointType.Entity, iconimage, DataSource);
                                 TreeEditor.AddBranch(this, dbent);
                                 dbent.DataSourceName = DataSource.DatasourceName;
                                 dbent.DataSource = DataSource;
@@ -515,7 +515,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Scan for New Entities")]
+        [CommandAttribute(Caption = "Scan for New Entities")]
         public IErrorsInfo ScanDatabaseEntites()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -553,7 +553,7 @@ namespace TheTechIdea.Winforms.VIS
                                 {
                                     iconimage = "databaseentities.ico";
                                 }
-                                DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
+                                DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumPointType.Entity, iconimage, DataSource);
                                 TreeEditor.AddBranch(this, dbent);
                                 dbent.DataSourceName = DataSource.DatasourceName;
                                 dbent.DataSource = DataSource;
@@ -581,7 +581,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Refresh Entities")]
+        [CommandAttribute(Caption = "Refresh Entities")]
         public IErrorsInfo RefreshDatabaseEntites()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -616,7 +616,7 @@ namespace TheTechIdea.Winforms.VIS
                                 {
                                     iconimage = "databaseentities.ico";
                                 }
-                                DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumBranchType.Entity, iconimage, DataSource);
+                                DatabaseEntitesNode dbent = new DatabaseEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumPointType.Entity, iconimage, DataSource);
                                 TreeEditor.AddBranch(this, dbent);
                                 dbent.DataSourceName = DataSource.DatasourceName;
                                 dbent.DataSource = DataSource;
@@ -642,7 +642,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Drop Entities")]
+        [CommandAttribute(Caption = "Drop Entities")]
         public IErrorsInfo DropEntities()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;

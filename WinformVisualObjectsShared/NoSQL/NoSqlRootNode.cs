@@ -17,7 +17,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public NoSqlRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename, string ConnectionName)
+        public NoSqlRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename, string ConnectionName)
         {
 
 
@@ -47,7 +47,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Root;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Root;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "nosql.ico";
         public string BranchStatus { get; set; }
@@ -104,7 +104,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -130,7 +130,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Add Category")]
+        [CommandAttribute(Caption = "Add Category")]
         public IErrorsInfo AddCategory()
         {
 
@@ -153,7 +153,7 @@ namespace TheTechIdea.Winforms.VIS
 
             try
             {
-                NoSqlSourceNode viewbr = new NoSqlSourceNode(TreeEditor, DMEEditor, this, ConnectionName, TreeEditor.SeqID, EnumBranchType.DataPoint,  ConnectionName);
+                NoSqlSourceNode viewbr = new NoSqlSourceNode(TreeEditor, DMEEditor, this, ConnectionName, TreeEditor.SeqID, EnumPointType.DataPoint,  ConnectionName);
                 viewbr.DataSource = DataSource;
                 TreeEditor.AddBranch(this, viewbr);
                 ChildBranchs.Add(viewbr);
@@ -176,7 +176,7 @@ namespace TheTechIdea.Winforms.VIS
         {
             try
             {
-                NoSqlCategoryNode Catitem = new NoSqlCategoryNode(TreeEditor, DMEEditor, this, p.FolderName, TreeEditor.SeqID, EnumBranchType.Category, TreeEditor.CategoryIcon);
+                NoSqlCategoryNode Catitem = new NoSqlCategoryNode(TreeEditor, DMEEditor, this, p.FolderName, TreeEditor.SeqID, EnumPointType.Category, TreeEditor.CategoryIcon);
                 TreeEditor.AddBranch(this, Catitem);
                 ChildBranchs.Add(Catitem);
                 

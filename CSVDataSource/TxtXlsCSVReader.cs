@@ -430,54 +430,54 @@ namespace TheTechIdea.DataManagment_Engine.FileManager
 
             return Entities[sheetno];
         }
-        public List<Object> ReadList(int sheetno = 0, bool HeaderExist = true, int fromline = 0, int toline = 100)
-        {
-            if (GetFileState() == ConnectionState.Open)
-            {
-                DataTable dataRows = new DataTable();
-                FileData = GetExcelDataSet();
-                dataRows = FileData.Tables[sheetno];
-                toline = dataRows.Rows.Count;
-                List<EntityField> flds = GetSheetColumns(FileData.Tables[sheetno].TableName);
-                string classpath = DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath).FirstOrDefault();
-                DMEEditor.classCreator.CreateClass(FileData.Tables[sheetno].TableName, flds, classpath);
-                //GetTypeForSheetsFile(dataRows.TableName);
-                Type a = Type.GetType("TheTechIdea.ProjectClasses." + FileData.Tables[sheetno].TableName);
-                List<Object> retval = new List<object>();
-                EntityStructure enttype = GetEntityDataType(sheetno);
-                retval = DMEEditor.Utilfunction.GetListByDataTable(dataRows, a, enttype);
-                return retval;
-            }
-            else
-            {
-                return null;
-            }
+        //public List<Object> ReadList(int sheetno = 0, bool HeaderExist = true, int fromline = 0, int toline = 100)
+        //{
+        //    if (GetFileState() == ConnectionState.Open)
+        //    {
+        //        DataTable dataRows = new DataTable();
+        //        FileData = GetExcelDataSet();
+        //        dataRows = FileData.Tables[sheetno];
+        //        toline = dataRows.Rows.Count;
+        //        List<EntityField> flds = GetSheetColumns(FileData.Tables[sheetno].TableName);
+        //        string classpath = DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath).FirstOrDefault();
+        //        DMEEditor.classCreator.CreateClass(FileData.Tables[sheetno].TableName, flds, classpath);
+        //        //GetTypeForSheetsFile(dataRows.TableName);
+        //        Type a = Type.GetType("TheTechIdea.ProjectClasses." + FileData.Tables[sheetno].TableName);
+        //        List<Object> retval = new List<object>();
+        //        EntityStructure enttype = GetEntityDataType(sheetno);
+        //        retval = DMEEditor.Utilfunction.GetListByDataTable(dataRows, a, enttype);
+        //        return retval;
+        //    }
+        //    else
+        //    {
+        //        return null;
+        //    }
 
-        }
-        public List<Object> ReadList(string sheetname, bool HeaderExist = true, int fromline = 0, int toline = 100)
-        {
-            if (GetFileState() == ConnectionState.Open)
-            {
-                DataTable dataRows = new DataTable();
-                FileData = GetExcelDataSet();
-                dataRows = FileData.Tables[sheetname];
-                toline = dataRows.Rows.Count;
-                List<EntityField> flds = GetSheetColumns(sheetname);
-                string classpath = DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath).FirstOrDefault();
-                DMEEditor.classCreator.CreateClass(FileData.Tables[sheetname].TableName, flds, classpath);
-                //GetTypeForSheetsFile(dataRows.TableName);
-                Type a = Type.GetType("TheTechIdea.ProjectClasses." + FileData.Tables[sheetname].TableName);
-                List<Object> retval = new List<object>();
-                EntityStructure enttype = GetEntityDataType(sheetname);
-                retval = DMEEditor.Utilfunction.GetListByDataTable(dataRows, a, enttype);
-                return retval;
-            }
-            else
-            {
-                return null;
-            }
+        //}
+        //public List<Object> ReadList(string sheetname, bool HeaderExist = true, int fromline = 0, int toline = 100)
+        //{
+        //    if (GetFileState() == ConnectionState.Open)
+        //    {
+        //        DataTable dataRows = new DataTable();
+        //        FileData = GetExcelDataSet();
+        //        dataRows = FileData.Tables[sheetname];
+        //        toline = dataRows.Rows.Count;
+        //        List<EntityField> flds = GetSheetColumns(sheetname);
+        //        string classpath = DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath).FirstOrDefault();
+        //        DMEEditor.classCreator.CreateClass(FileData.Tables[sheetname].TableName, flds, classpath);
+        //        //GetTypeForSheetsFile(dataRows.TableName);
+        //        Type a = Type.GetType("TheTechIdea.ProjectClasses." + FileData.Tables[sheetname].TableName);
+        //        List<Object> retval = new List<object>();
+        //        EntityStructure enttype = GetEntityDataType(sheetname);
+        //        retval = DMEEditor.Utilfunction.GetListByDataTable(dataRows, a, enttype);
+        //        return retval;
+        //    }
+        //    else
+        //    {
+        //        return null;
+        //    }
 
-        }
+        //}
         // Private Excel Data Reader Methods
         //-------------------------------------
         public IExcelDataReader getExcelReader()

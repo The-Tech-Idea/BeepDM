@@ -15,7 +15,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
     public class AppCategoryNode : IBranch, ITreeView
     {
        
-        public AppCategoryNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public AppCategoryNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
@@ -38,7 +38,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Category;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Category;
         public int BranchID { get; set; }
         public string IconImageName { get; set; }
         public string BranchStatus { get; set; }
@@ -105,7 +105,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -131,7 +131,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Remove")]
+        [CommandAttribute(Caption = "Remove")]
         public IErrorsInfo RemoveCategory()
         {
 
@@ -154,7 +154,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
             try
             {
 
-                viewbr = new AppNode(TreeEditor, DMEEditor, this, AppName, TreeEditor.SeqID, EnumBranchType.DataPoint, "app.ico", AppName);
+                viewbr = new AppNode(TreeEditor, DMEEditor, this, AppName, TreeEditor.SeqID, EnumPointType.DataPoint, "app.ico", AppName);
                 TreeEditor.AddBranch(this, viewbr);
                 viewbr.CreateChildNodes();
                 ChildBranchs.Add(viewbr);

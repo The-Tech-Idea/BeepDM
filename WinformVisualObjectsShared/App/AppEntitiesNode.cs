@@ -19,7 +19,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         {
 
         }
-        public AppEntitiesNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename,IAppVersion pappVersion)
+        public AppEntitiesNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename,IAppVersion pappVersion)
         {
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
@@ -71,7 +71,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Entity;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Entity;
         public int BranchID { get; set; }
         public string IconImageName { get; set; }
         public string BranchStatus { get; set; }
@@ -176,7 +176,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
             return DMEEditor.ErrorObject;
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -203,7 +203,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Edit", Hidden = false)]
+        [CommandAttribute(Caption = "Edit", Hidden = false)]
         public IErrorsInfo EditAPP()
         {
 
@@ -260,7 +260,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Generate", Hidden = false)]
+        [CommandAttribute(Caption = "Generate", Hidden = false)]
         public IErrorsInfo GenerateAPP()
         {
 
@@ -338,7 +338,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Remove", Hidden = false)]
+        [CommandAttribute(Caption = "Remove", Hidden = false)]
         public IErrorsInfo RemoveEntity()
         {
 

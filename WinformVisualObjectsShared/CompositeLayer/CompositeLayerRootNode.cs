@@ -17,7 +17,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public CompositeLayerRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public CompositeLayerRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
@@ -31,7 +31,7 @@ namespace TheTechIdea.Winforms.VIS
                 BranchID = ID;
             }
         }
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
 
             try
@@ -66,7 +66,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get ; set ; }
         public string DataSourceName { get; set; }
         public int Level { get; set; } = 1;
-        public  EnumBranchType BranchType { get; set; } = EnumBranchType.Root;
+        public  EnumPointType BranchType { get; set; } = EnumPointType.Root;
         public int BranchID { get ; set ; }
         public string IconImageName { get ; set ; }= "clayerroot.ico";
         public string BranchStatus { get ; set ; }
@@ -140,7 +140,7 @@ namespace TheTechIdea.Winforms.VIS
                 if (!ChildBranchs.Any(x => x.BranchText == ConnectionName))
                 {
                   
-                     CompositeLayerNode layer = new CompositeLayerNode(TreeEditor, DMEEditor, this, ConnectionName, TreeEditor.SeqID, EnumBranchType.DataPoint, clayer);
+                     CompositeLayerNode layer = new CompositeLayerNode(TreeEditor, DMEEditor, this, ConnectionName, TreeEditor.SeqID, EnumPointType.DataPoint, clayer);
                
                     TreeEditor.AddBranch(this, layer);
                     ChildBranchs.Add(layer);
@@ -164,7 +164,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                 if (!ChildBranchs.Any(x => x.BranchText == p.FolderName))
                 {
-                    CompositeLayerCategoryNode Category = new CompositeLayerCategoryNode(TreeEditor, DMEEditor, this, p.FolderName, TreeEditor.SeqID, EnumBranchType.Category, TreeEditor.CategoryIcon);
+                    CompositeLayerCategoryNode Category = new CompositeLayerCategoryNode(TreeEditor, DMEEditor, this, p.FolderName, TreeEditor.SeqID, EnumPointType.Category, TreeEditor.CategoryIcon);
                     TreeEditor.AddBranch(this, Category);
                     ChildBranchs.Add(Category);
                     Category.CreateChildNodes();
@@ -202,7 +202,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
         #region "Delegate for Database Root Node"
-        [BranchDelegate(Caption = "Create Composite Layer Database")]
+        [CommandAttribute(Caption = "Create Composite Layer Database")]
         public IErrorsInfo CreateNewLocalDatabase()
         {
 
@@ -214,7 +214,7 @@ namespace TheTechIdea.Winforms.VIS
                 it.obj = this;
                 it.Name = "Branch";
                 ob.Add(it);
-                IBranch RootCompositeLayerBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "CLAYER" && x.BranchType == EnumBranchType.Root)];
+                IBranch RootCompositeLayerBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "CLAYER" && x.BranchType == EnumPointType.Root)];
                 it = new ObjectItem();
                 it.obj = RootCompositeLayerBranch;
                 it.Name = "RootCompositeLayerBranch";
@@ -251,7 +251,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
         }
 
-        [BranchDelegate(Caption = "New/Edit Data Source")]
+        [CommandAttribute(Caption = "New/Edit Data Source")]
         public  IErrorsInfo AddDataBaseConnection()
         {
 
@@ -269,7 +269,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Add Category")]
+        [CommandAttribute(Caption = "Add Category")]
         public  IErrorsInfo AddCategory()
         {
 

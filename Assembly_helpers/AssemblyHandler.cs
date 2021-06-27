@@ -607,11 +607,11 @@ namespace TheTechIdea.Tools
                                 //   xcls.RootName = "AI";
                                 //   xcls.BranchType = brcls.BranchType;
                                 foreach (MethodInfo methods in type.GetMethods()
-                                             .Where(m => m.GetCustomAttributes(typeof(BranchDelegate), false).Length > 0)
+                                             .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
                                               .ToArray())
                                 {
 
-                                    BranchDelegate methodAttribute = methods.GetCustomAttribute<BranchDelegate>();
+                                    CommandAttribute methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
                                     MethodsClass x = new MethodsClass();
                                     x.Caption = methodAttribute.Caption;
                                     x.Info = methods;

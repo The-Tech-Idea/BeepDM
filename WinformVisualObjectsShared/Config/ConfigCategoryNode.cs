@@ -16,7 +16,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public ConfigCategoryNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public ConfigCategoryNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
 
 
@@ -45,7 +45,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Category;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Category;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "category.ico";
         public string BranchStatus { get; set; }
@@ -102,7 +102,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {

@@ -18,7 +18,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public ReportRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename, string ConnectionName)
+        public ReportRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename, string ConnectionName)
         {
 
 
@@ -48,7 +48,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Root;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Root;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "report.ico";
         public string BranchStatus { get; set; }
@@ -76,7 +76,7 @@ namespace TheTechIdea.Winforms.VIS
         {
             try
             {
-                ReportCategoryNode Category = new ReportCategoryNode(TreeEditor, DMEEditor, this, p.FolderName, TreeEditor.SeqID, EnumBranchType.Category, TreeEditor.CategoryIcon);
+                ReportCategoryNode Category = new ReportCategoryNode(TreeEditor, DMEEditor, this, p.FolderName, TreeEditor.SeqID, EnumPointType.Category, TreeEditor.CategoryIcon);
                 TreeEditor.AddBranch(this, Category);
                 this.ChildBranchs.Add(Category);
                 Category.CreateChildNodes();
@@ -125,7 +125,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -151,7 +151,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Create Report")]
+        [CommandAttribute(Caption = "Create Report")]
         public IErrorsInfo CreateReport()
         {
 
@@ -163,7 +163,7 @@ namespace TheTechIdea.Winforms.VIS
                 it.obj = this;
                 it.Name = "Branch";
                 ob.Add(it);
-                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "REPORT" && x.BranchType == EnumBranchType.Root)];
+                IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "REPORT" && x.BranchType == EnumPointType.Root)];
                 it = new ObjectItem();
                 it.obj = RootBranch;
                 it.Name = "RootReportBranch";
@@ -242,7 +242,7 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
 
-                viewbr = new ReportNode(TreeEditor, DMEEditor, this, ReportName, TreeEditor.SeqID, EnumBranchType.DataPoint, "report.ico");
+                viewbr = new ReportNode(TreeEditor, DMEEditor, this, ReportName, TreeEditor.SeqID, EnumPointType.DataPoint, "report.ico");
                 TreeEditor.AddBranch(this, viewbr);
                 viewbr.CreateChildNodes();
                 ChildBranchs.Add(viewbr);

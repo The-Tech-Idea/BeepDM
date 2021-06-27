@@ -48,7 +48,7 @@ namespace TheTechIdea.Configuration
         public int ID { get; set; } = 8;
         public string BranchText { get; set; } = "Function to Function Mapping";
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Entity;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Entity;
         public int BranchID { get; set; } = 1;
         public string IconImageName { get; set; } = "function2function.ico";
         public string BranchStatus { get; set; }

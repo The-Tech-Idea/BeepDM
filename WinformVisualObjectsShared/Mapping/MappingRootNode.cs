@@ -18,7 +18,7 @@ namespace TheTechIdea.Winforms.VIS.Mapping
         {
 
         }
-        public MappingRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename, string ConnectionName)
+        public MappingRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename, string ConnectionName)
         {
 
 
@@ -48,7 +48,7 @@ namespace TheTechIdea.Winforms.VIS.Mapping
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Root;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Root;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "mapping.ico";
         public string BranchStatus { get; set; }
@@ -110,7 +110,7 @@ namespace TheTechIdea.Winforms.VIS.Mapping
             {
                 if (!ChildBranchs.Any(x => x.BranchText == p.FolderName))
                 {
-                    MappingCategoryNode Category = new MappingCategoryNode(TreeEditor, DMEEditor, this, p.FolderName, TreeEditor.SeqID, EnumBranchType.Category, TreeEditor.CategoryIcon);
+                    MappingCategoryNode Category = new MappingCategoryNode(TreeEditor, DMEEditor, this, p.FolderName, TreeEditor.SeqID, EnumPointType.Category, TreeEditor.CategoryIcon);
                     TreeEditor.AddBranch(this, Category);
                     ChildBranchs.Add(Category);
                     Category.CreateChildNodes();
@@ -128,7 +128,7 @@ namespace TheTechIdea.Winforms.VIS.Mapping
             return DMEEditor.ErrorObject;
 
         }
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -154,7 +154,7 @@ namespace TheTechIdea.Winforms.VIS.Mapping
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Add Category")]
+        [CommandAttribute(Caption = "Add Category")]
         public IErrorsInfo AddCategory()
         {
 
@@ -169,7 +169,7 @@ namespace TheTechIdea.Winforms.VIS.Mapping
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Add Map")]
+        [CommandAttribute(Caption = "Add Map")]
         public IErrorsInfo AddMap()
         {
 
@@ -251,7 +251,7 @@ namespace TheTechIdea.Winforms.VIS.Mapping
             try
             {
 
-                viewbr = new MappinSchemaNode(TreeEditor, DMEEditor, this, mapName, TreeEditor.SeqID, EnumBranchType.DataPoint, "app.ico");
+                viewbr = new MappinSchemaNode(TreeEditor, DMEEditor, this, mapName, TreeEditor.SeqID, EnumPointType.DataPoint, "app.ico");
                 TreeEditor.AddBranch(this, viewbr);
                 ChildBranchs.Add(viewbr);
                 viewbr.CreateChildNodes();

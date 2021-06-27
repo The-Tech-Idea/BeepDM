@@ -17,7 +17,7 @@ namespace TheTechIdea.DataManagment_Engine.Vis
         EntityStructure EntityStructure { get; set; }
         int MiscID { get; set; }
         IErrorsInfo ExecuteBranchAction(string ActionName);
-        IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename);
+        IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename);
         IErrorsInfo CreateChildNodes();
         IErrorsInfo RemoveChildNodes();
         IErrorsInfo MenuItemClicked(string ActionNam);

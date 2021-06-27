@@ -54,7 +54,6 @@
     <None Remove="ConnectionDrivers\Microsoft.ReportViewer.WinForms.dll" />
     <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.Core.dll" />
     <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.WinForms.dll" />
-    <None Remove="ConnectionDrivers\Microsoft.Web.WebView2.Wpf.dll" />
     <None Remove="ConnectionDrivers\Microsoft.Win32.SystemEvents.dll" />
     <None Remove="ConnectionDrivers\MySql.Data.dll" />
     <None Remove="ConnectionDrivers\Oracle.ManagedDataAccess.dll" />
@@ -1547,8 +1546,8 @@
     <PackageReference Include="Autofac" Version="6.2.0" />
     <PackageReference Include="ExcelDataReader" Version="3.6.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.6.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="5.0.5" />
-    <PackageReference Include="MySql.Data" Version="8.0.24" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="5.0.7" />
+    <PackageReference Include="MySql.Data" Version="8.0.25" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="3.21.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />

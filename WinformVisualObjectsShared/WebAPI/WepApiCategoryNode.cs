@@ -14,7 +14,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
     public class WepApiCategoryNode : IBranch, ITreeView
 
     {
-        public WepApiCategoryNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public WepApiCategoryNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
@@ -42,7 +42,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
         public string Name { get ; set ; }
         public string BranchText { get ; set ; }
         public int Level { get ; set ; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Category;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Category;
         public int BranchID { get ; set ; }
         public string IconImageName { get ; set ; }
         public string BranchStatus { get ; set ; }
@@ -104,7 +104,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             throw new NotImplementedException();
         }
@@ -115,7 +115,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
             try
             {
 
-                viewbr = new WebApiNode(TreeEditor, DMEEditor, this, WebApiName, TreeEditor.SeqID, EnumBranchType.DataPoint, "app.ico");
+                viewbr = new WebApiNode(TreeEditor, DMEEditor, this, WebApiName, TreeEditor.SeqID, EnumPointType.DataPoint, "app.ico");
                 TreeEditor.AddBranch(this, viewbr);
                 ChildBranchs.Add(viewbr);
                 viewbr.CreateChildNodes();

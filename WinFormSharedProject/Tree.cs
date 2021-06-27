@@ -119,7 +119,7 @@ namespace TheTechIdea.Winforms.VIS
                 {
                     DMEEditor.ConfigEditor.objectTypes.Add(new DataManagment_Engine.Workflow.ObjectTypes { ObjectType = Branch.BranchClass, ObjectName = Branch.BranchType.ToString() + "_" + Branch.BranchClass });
                 }
-                if (Branch.BranchType == EnumBranchType.Entity)
+                if (Branch.BranchType == EnumPointType.Entity)
                 {
                     if (Branch.BranchClass == "VIEW")
                     {
@@ -345,7 +345,7 @@ namespace TheTechIdea.Winforms.VIS
                         NewFolder.items.Add(CurrentBranch.BranchText);
                     }
                 }
-                if ((ParentBranch.BranchType == EnumBranchType.Entity) && (ParentBranch.BranchClass == "VIEW" && CurrentBranch.BranchClass == "VIEW") && (ParentBranch.DataSourceName == CurrentBranch.DataSourceName))
+                if ((ParentBranch.BranchType == EnumPointType.Entity) && (ParentBranch.BranchClass == "VIEW" && CurrentBranch.BranchClass == "VIEW") && (ParentBranch.DataSourceName == CurrentBranch.DataSourceName))
                 {
                     DataViewDataSource vds = (DataViewDataSource)DMEEditor.GetDataSource(CurrentBranch.DataSourceName);
                     if (vds.Entities[vds.EntityListIndex(ParentBranch.MiscID)].Id == vds.Entities[vds.EntityListIndex(CurrentBranch.MiscID)].ParentId)
@@ -529,7 +529,7 @@ namespace TheTechIdea.Winforms.VIS
                     try
                     {
                         IBranch br = createdActivator();
-                        if (br.BranchType == EnumBranchType.Root)
+                        if (br.BranchType == EnumPointType.Root)
                         {
 
                             int id = SeqID;
@@ -1315,7 +1315,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                 IBranch br = GetBranch(Convert.ToInt32(e.Node.Tag));
                 CheckNodes(e.Node, e.Node.Checked);
-                if (br.BranchType== EnumBranchType.Entity)
+                if (br.BranchType== EnumPointType.Entity)
                 {
                   
                     if (e.Node.Checked)
@@ -1441,10 +1441,10 @@ namespace TheTechIdea.Winforms.VIS
                 {
                     switch (targetBranch.BranchType)
                     {
-                        case EnumBranchType.Root:
+                        case EnumPointType.Root:
                             if (CheckifBranchExistinCategory(dragedBranch.BranchText, dragedBranch.BranchClass) != null)
                             {
-                                if (dragedBranch.BranchType == EnumBranchType.DataPoint)
+                                if (dragedBranch.BranchType == EnumPointType.DataPoint)
                                 {
                                     MoveBranchToParent(targetBranch, dragedBranch);
                                 }
@@ -1453,12 +1453,12 @@ namespace TheTechIdea.Winforms.VIS
                             break;
                      
                             break;
-                        case EnumBranchType.Category:
-                        case EnumBranchType.DataPoint:
-                        case EnumBranchType.Entity:
+                        case EnumPointType.Category:
+                        case EnumPointType.DataPoint:
+                        case EnumPointType.Entity:
                             if (dragedBranch.BranchClass == "VIEW")
                             {
-                                if (dragedBranch.BranchType == EnumBranchType.Entity  && dragedBranch.DataSourceName==targetBranch.DataSourceName)
+                                if (dragedBranch.BranchType == EnumPointType.Entity  && dragedBranch.DataSourceName==targetBranch.DataSourceName)
                                 {
                                     MoveBranchToParent(targetBranch, dragedBranch);
                                 }
@@ -1475,7 +1475,7 @@ namespace TheTechIdea.Winforms.VIS
                 {
                     switch (targetBranch.BranchType)
                     {
-                        case EnumBranchType.Root:
+                        case EnumPointType.Root:
                             args = new PassedArgs
                             {
                                 ObjectName = "DATABASE",
@@ -1489,7 +1489,7 @@ namespace TheTechIdea.Winforms.VIS
 
                             SendActionFromBranchToBranch(targetBranch, dragedBranch, functionAction.ToMethod);
                             break;
-                        case EnumBranchType.DataPoint:
+                        case EnumPointType.DataPoint:
                             args = new PassedArgs
                             {
                                 ObjectName = "DATABASE",
@@ -1504,14 +1504,14 @@ namespace TheTechIdea.Winforms.VIS
                             };
                             SendActionFromBranchToBranch(targetBranch, dragedBranch, functionAction.ToMethod);
                             break;
-                        case EnumBranchType.Category:
-                            if (dragedBranch.BranchType == EnumBranchType.DataPoint)
+                        case EnumPointType.Category:
+                            if (dragedBranch.BranchType == EnumPointType.DataPoint)
                             {
                                 MoveBranchToParent(targetBranch, dragedBranch);
                             }
                              
                             break;
-                        case EnumBranchType.Entity:
+                        case EnumPointType.Entity:
                             IDataSource ds = DMEEditor.GetDataSource(dragedBranch.DataSourceName);
                             EntityStructure  ent= ds.GetEntityStructure(dragedBranch.BranchText, true);
                             args = new PassedArgs
@@ -1592,15 +1592,15 @@ namespace TheTechIdea.Winforms.VIS
                 x.SetData(branch);
                 switch (branch.BranchType)
                 {
-                    case EnumBranchType.Root:
+                    case EnumPointType.Root:
                         break;
-                    case EnumBranchType.DataPoint:
+                    case EnumPointType.DataPoint:
 
                         TreeV.DoDragDrop(x, DragDropEffects.Move);
                         break;
-                    case EnumBranchType.Category:
+                    case EnumPointType.Category:
                         break;
-                    case EnumBranchType.Entity:
+                    case EnumPointType.Entity:
 
 
 

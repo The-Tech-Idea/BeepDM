@@ -18,7 +18,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public FileCategoryNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public FileCategoryNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
 
 
@@ -47,7 +47,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Category;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Category;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "Category.ico";
         public string BranchStatus { get; set; }
@@ -104,7 +104,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -130,7 +130,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Add File(s)", Hidden = false)]
+        [CommandAttribute(Caption = "Add File(s)", Hidden = false)]
         public IErrorsInfo AddFile()
         {
 
@@ -163,7 +163,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Remove Category(files will not removed)", Hidden = false)]
+        [CommandAttribute(Caption = "Remove Category(files will not removed)", Hidden = false)]
         public IErrorsInfo Remove()
         {
 
@@ -198,7 +198,7 @@ namespace TheTechIdea.Winforms.VIS
             {
 
 
-                if (BranchType == EnumBranchType.Category)
+                if (BranchType == EnumPointType.Category)
                 {
                  
                     foreach (CategoryFolder i in DMEEditor.ConfigEditor.CategoryFolders.Where(x => x.RootName == "FILE" && x.FolderName == BranchText))
@@ -230,7 +230,7 @@ namespace TheTechIdea.Winforms.VIS
                 string ext = Path.GetExtension(FileName).Remove(0, 1);
                 IconImageName = ext + ".ico";
                
-                viewbr = new FileEntityNode(TreeEditor, DMEEditor, this, FileName, TreeEditor.SeqID, EnumBranchType.DataPoint, IconImageName, FileName);
+                viewbr = new FileEntityNode(TreeEditor, DMEEditor, this, FileName, TreeEditor.SeqID, EnumPointType.DataPoint, IconImageName, FileName);
                 viewbr.DataSource = DataSource;
                // viewbr.DataSourceName = DataSourceName;
                 TreeEditor.AddBranch(this, viewbr);

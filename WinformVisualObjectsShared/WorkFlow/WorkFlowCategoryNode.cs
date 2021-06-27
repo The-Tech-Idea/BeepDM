@@ -20,7 +20,7 @@ namespace TheTechIdea.Winforms.VIS
 
 
         }
-        public WorkFlowCategoryNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public WorkFlowCategoryNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
 
 
@@ -50,7 +50,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Category;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Category;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "category.ico";
         public string BranchStatus { get; set; }
@@ -107,7 +107,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -133,7 +133,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "New", Hidden = false)]
+        [CommandAttribute(Caption = "New", Hidden = false)]
         public IErrorsInfo NewWK()
         {
 
@@ -178,7 +178,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
         }
 
-        [BranchDelegate(Caption = "DoubleClick", Hidden = true, DoubleClick = true)]
+        [CommandAttribute(Caption = "DoubleClick", Hidden = true, DoubleClick = true)]
         public IErrorsInfo DoubleClick()
         {
 
@@ -221,7 +221,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                 foreach (DataWorkFlow item in DMEEditor.WorkFlowEditor.WorkFlows)
                 {
-                    WorkFlowEntityNode en = new WorkFlowEntityNode(TreeEditor, DMEEditor, this, item.DataWorkFlowName, TreeEditor.SeqID, EnumBranchType.DataPoint, "workflowentity.ico");
+                    WorkFlowEntityNode en = new WorkFlowEntityNode(TreeEditor, DMEEditor, this, item.DataWorkFlowName, TreeEditor.SeqID, EnumPointType.DataPoint, "workflowentity.ico");
                     en.DataSource = DataSource;
                     TreeEditor.AddBranch(this, en);
                     ChildBranchs.Add(en);

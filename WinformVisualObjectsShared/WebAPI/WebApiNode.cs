@@ -13,7 +13,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
 {
     public class WebApiNode : IBranch, ITreeView
     {
-        public WebApiNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public WebApiNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
@@ -40,7 +40,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
         public string Name { get; set; }
         public string BranchText { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.DataPoint;
+        public EnumPointType BranchType { get; set; } = EnumPointType.DataPoint;
         public int BranchID { get; set; }
         public string IconImageName { get; set; }
         public string BranchStatus { get; set; }
@@ -86,7 +86,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -114,7 +114,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
         #endregion "Interface Methods"
         #region "Exposed Interface"
 
-        [BranchDelegate(Caption = "Get Entities")]
+        [CommandAttribute(Caption = "Get Entities")]
         public  IErrorsInfo CreateViewEntitesAsync()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -149,7 +149,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
 
         }
       
-        [BranchDelegate(Caption = "Defaults")]
+        [CommandAttribute(Caption = "Defaults")]
         public IErrorsInfo EditDefaults()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -268,11 +268,11 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
             foreach (EntityStructure item in rootent)
             {
                 string iconimage = "webapi.ico";
-                EnumBranchType branchType = EnumBranchType.Entity;
+                EnumPointType branchType = EnumPointType.Entity;
                 if (item.Category == "Category")
                 {
                     iconimage = "webapicategory.ico";
-                    branchType = EnumBranchType.DataPoint;
+                    branchType = EnumPointType.DataPoint;
                 }
                 WebApiEntities webentmain = new WebApiEntities(TreeEditor, DMEEditor, this, item.EntityName, TreeEditor.SeqID, branchType, iconimage, DataSourceName);
                 webentmain.DataSource = DataSource;
@@ -296,11 +296,11 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
                 foreach (var item in ls)
                 {
                     string iconimage = "webapi.ico";
-                    EnumBranchType branchType = EnumBranchType.Entity;
+                    EnumPointType branchType = EnumPointType.Entity;
                     if (item.Category == "Category")
                     {
                         iconimage = "webapicategory.ico";
-                        branchType = EnumBranchType.DataPoint;
+                        branchType = EnumPointType.DataPoint;
                     }
                     webent = new WebApiEntities(TreeEditor, DMEEditor, br, item.EntityName, TreeEditor.SeqID, branchType, iconimage, BranchText);
                     webent.DataSource = DataSource;

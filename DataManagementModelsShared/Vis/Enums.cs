@@ -4,7 +4,8 @@ using System.Text;
 
 namespace TheTechIdea.DataManagment_Engine.Vis
 {
-    class Class1
+    public enum EnumPointType
     {
+        Root, DataPoint, Category, Entity, SubEntity, Function, Report
     }
 }

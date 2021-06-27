@@ -18,7 +18,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public CompositeLayerCategoryNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public CompositeLayerCategoryNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
@@ -33,7 +33,7 @@ namespace TheTechIdea.Winforms.VIS
                 BranchID = ID;
             }
         }
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
 
             try
@@ -69,7 +69,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Category;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Category;
         public int BranchID { get; set; }
         public string IconImageName { get; set; }
         public string BranchStatus { get; set; }
@@ -144,7 +144,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Remove")]
+        [CommandAttribute(Caption = "Remove")]
         public IErrorsInfo RemoveCategory()
         {
 
@@ -169,7 +169,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                 if (!ChildBranchs.Any(x => x.BranchText == ConnectionName))
                 {
-                    CompositeLayerNode layer = new CompositeLayerNode(TreeEditor, DMEEditor, this, ConnectionName, TreeEditor.SeqID, EnumBranchType.DataPoint, clayer);
+                    CompositeLayerNode layer = new CompositeLayerNode(TreeEditor, DMEEditor, this, ConnectionName, TreeEditor.SeqID, EnumPointType.DataPoint, clayer);
                     TreeEditor.AddBranch(this, layer);
                     ChildBranchs.Add(layer);
                 }

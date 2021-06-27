@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Addin\AddinTreeStructure.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Addin\IDM_Addin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Addin\IFunctionExtension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Addin\PassedArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AI\IAAPP.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\App.cs" />
@@ -41,7 +42,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ParentChildObject.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\QuerySqlRepo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\ChildRelation.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DataBase\DatabaseMethods.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\DatatypeMapping.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataView\DMDataView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\EntityStructure.cs" />
@@ -61,7 +61,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\IRelationShipKeys.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\QuerySqlRepo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\QueryStructure.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBSourceADP.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\IETL.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\ISyncEntity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\SyncDataSource.cs" />
@@ -90,7 +89,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Tools\AssemblyItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\IAssemblyHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\IClassCreator.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\Class1.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\Enums.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\CommandItemAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WEPAPI\IWebAPIDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\DataWorkFlow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IDataWorkFlow.cs" />

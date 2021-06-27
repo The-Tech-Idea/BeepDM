@@ -73,7 +73,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return ConnectionStatus;
         }
-
         public ConnectionState Closeconnection()
         {
             if (RDBMSConnection != null)
@@ -88,7 +87,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return ConnectionStatus;
         }
-
         #region "Repo Methods"
         public virtual IErrorsInfo ExecuteSql(string sql)
         {
@@ -1381,7 +1379,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
 
         }
-       public IErrorsInfo RunScript(SyncEntity scripts)
+        public IErrorsInfo RunScript(SyncEntity scripts)
         {
             var t = Task.Run<IErrorsInfo>(() => { return ExecuteSql(scripts.ddl); });
             t.Wait();

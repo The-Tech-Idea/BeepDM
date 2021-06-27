@@ -41,7 +41,7 @@ namespace TheTechIdea.Configuration
         public int ID { get; set; } = 5;
         public string BranchText { get; set; } = "Query Setup";
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Entity;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Entity;
         public int BranchID { get; set; } = 5;
         public string IconImageName { get; set; } = "query.ico";
         public string BranchStatus { get; set; }

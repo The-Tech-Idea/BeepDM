@@ -51,7 +51,7 @@ namespace TheTechIdea.DDL
         public int ID { get; set; } = 2;
         public string BranchText { get; set; } = "Entity Creator";
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Entity;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Entity;
         public int BranchID { get; set; } = 2;
         public string IconImageName { get; set; } = "createentity.ico";
         public string BranchStatus { get; set; }

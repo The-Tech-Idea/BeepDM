@@ -22,6 +22,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Frm_Waiting.designer.cs">
       <DependentUpon>Frm_Waiting.cs</DependentUpon>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)FunntionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MultiSelectTreeview.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tree.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\AddinVisSchema.cs" />
@@ -46,8 +47,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Vis\INode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IOrder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\ITree.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\MenuItemAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\VisEnums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WaitForm.cs">
       <SubType>Form</SubType>
     </Compile>

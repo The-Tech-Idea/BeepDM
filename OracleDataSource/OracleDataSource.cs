@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
@@ -12,6 +13,7 @@ using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
+using static TheTechIdea.DataManagment_Engine.Util;
 
 namespace TheTechIdea.DataManagment_Engine.DataBase
 {
@@ -262,6 +264,241 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
 
         }
+
+        #region "Command "
+        private int GetCtorForAdapter(List<ConstructorInfo> ls)
+        {
+
+            int i = 0;
+            foreach (ConstructorInfo c in ls)
+            {
+                ParameterInfo[] d = c.GetParameters();
+                if (d.Length == 2)
+                {
+                    if (d[0].ParameterType == System.Type.GetType("System.String"))
+                    {
+                        if (d[1].ParameterType != System.Type.GetType("System.String"))
+                        {
+                            return i;
+                        }
+                    }
+                }
+
+                i += 1;
+            }
+            return i;
+
+        }
+        private int GetCtorForCommandBuilder(List<ConstructorInfo> ls)
+        {
+
+            int i = 0;
+            foreach (ConstructorInfo c in ls)
+            {
+                ParameterInfo[] d = c.GetParameters();
+                if (d.Length == 1)
+                {
+                    return i;
+
+                }
+
+                i += 1;
+            }
+            return i;
+
+        }
+        public virtual IDbCommand GetDataCommand()
+        {
+            IDbCommand cmd = null;
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                if (Dataconnection.OpenConnection() == ConnectionState.Open)
+                {
+                    cmd = RDBMSConnection.DbConn.CreateCommand();
+                }
+                else
+                {
+                    cmd = null;
+
+                    DMEEditor.AddLogMessage("Fail", $"Error in Creating Data Command, Cannot get DataSource", DateTime.Now, -1, DatasourceName, Errors.Failed);
+                }
+
+
+
+            }
+            catch (Exception ex)
+            {
+
+                cmd = null;
+
+                DMEEditor.AddLogMessage("Fail", $"Error in Creating Data Command {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+
+            }
+            return cmd;
+        }
+        public virtual IDbDataAdapter GetDataAdapter(string Sql, List<ReportFilter> Filter = null)
+        {
+            OracleConnection conn = null;
+            OracleDataAdapter adp =null;
+            OracleCommandBuilder cmdb =null ;
+          
+            try
+            {
+                ConnectionDriversConfig driversConfig = DMEEditor.Utilfunction.LinkConnection2Drivers(Dataconnection.ConnectionProp);
+
+
+                //string adtype = Dataconnection.DataSourceDriver.AdapterType;
+                //string cmdtype = Dataconnection.DataSourceDriver.CommandBuilderType;
+                //string cmdbuildername = driversConfig.CommandBuilderType;
+                //Type adcbuilderType = Type.GetType("OracleCommandBuilder");
+                //List<ConstructorInfo> lsc = DMEEditor.assemblyHandler.GetInstance(adtype).GetType().GetConstructors().ToList(); ;
+                //List<ConstructorInfo> lsc2 = DMEEditor.assemblyHandler.GetInstance(cmdbuildername).GetType().GetConstructors().ToList(); ;
+
+                //ConstructorInfo ctor = lsc[GetCtorForAdapter(lsc)];
+                //ConstructorInfo BuilderConstructer = lsc2[GetCtorForCommandBuilder(adcbuilderType.GetConstructors().ToList())];
+                //ObjectActivator<Oracle.ManagedDataAccess.Client.OracleDataAdapter> adpActivator = GetActivator<Oracle.ManagedDataAccess.Client.OracleDataAdapter>(ctor);
+                //ObjectActivator<Oracle.ManagedDataAccess.Client.OracleCommandBuilder> cmdbuilderActivator = GetActivator<Oracle.ManagedDataAccess.Client.OracleCommandBuilder>(BuilderConstructer);
+                //create an instance:
+                // adp = OracleDataAdapter( RDBMSConnection.DbConn);
+                conn = (OracleConnection)RDBMSConnection.DbConn;
+                adp = new OracleDataAdapter(Sql, conn);
+                cmdb = new OracleCommandBuilder(adp);
+               
+                try
+                {
+                    //Oracle.ManagedDataAccess.Client.OracleCommand cmdBuilder = cmdbuilderActivator(adp);
+                    if (Filter != null)
+                    {
+                        if (Filter.Count > 0)
+                        {
+                            if (Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
+                            {
+
+                                foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue)))
+                                {
+
+                                    OracleParameter parameter = adp.SelectCommand.CreateParameter();
+                                    string dr = Filter.Where(i => i.FieldName == item.FieldName).FirstOrDefault().FilterValue;
+                                    parameter.ParameterName = "p_" + item.FieldName;
+                                    if (item.valueType == "System.DateTime")
+                                    {
+                                        parameter.DbType = DbType.DateTime;
+                                        parameter.Value = DateTime.Parse(dr).ToShortDateString();
+
+                                    }
+                                    else
+                                    { parameter.Value = dr; }
+
+                                    if (item.Operator.ToLower() == "between")
+                                    {
+                                        OracleParameter parameter1 = adp.SelectCommand.CreateParameter();
+                                        parameter1.ParameterName = "p_" + item.FieldName + "1";
+                                        parameter1.DbType = DbType.DateTime;
+                                        string dr1 = Filter.Where(i => i.FieldName == item.FieldName).FirstOrDefault().FilterValue1;
+                                        parameter1.Value = DateTime.Parse(dr1).ToShortDateString();
+                                        adp.SelectCommand.Parameters.Add(parameter1);
+                                    }
+
+                                    //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
+                                    adp.SelectCommand.Parameters.Add(parameter);
+
+                                }
+
+                            }
+                        }
+                   
+                    }
+                    
+                    adp.ReturnProviderSpecificTypes = true;
+                    adp.SuppressGetDecimalInvalidCastException = true;
+                    adp.InsertCommand = cmdb.GetInsertCommand(true);
+                    adp.UpdateCommand = cmdb.GetUpdateCommand(true);
+                    adp.DeleteCommand = cmdb.GetDeleteCommand(true);
+
+
+                }
+                catch (Exception ex)
+                {
+
+                    // DMEEditor.AddLogMessage("Fail", $"Error in Creating builder commands {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+                }
+
+                adp.MissingSchemaAction = MissingSchemaAction.AddWithKey;
+                adp.MissingMappingAction = MissingMappingAction.Passthrough;
+
+
+                ErrorObject.Flag = Errors.Ok;
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Fail", $"Error in Creating Adapter {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+                adp = null;
+            }
+
+            return adp;
+        }
+        public virtual DataTable GetTableSchema(string TableName)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            DataTable tb = new DataTable();
+            IDataReader reader;
+            IDbCommand cmd = GetDataCommand();
+            try
+            {
+
+                if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.SchemaName) && !string.IsNullOrWhiteSpace(Dataconnection.ConnectionProp.SchemaName))
+                {
+                    TableName = Dataconnection.ConnectionProp.SchemaName + "." + TableName;
+                }
+                cmd.CommandText = "Select * from " + TableName.ToLower();// + " where 1=2";
+                reader = cmd.ExecuteReader(CommandBehavior.KeyInfo);
+
+                tb = reader.GetSchemaTable();
+                reader.Close();
+                cmd.Dispose();
+
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"unsuccessfully Executed Sql ({ex.Message})", DateTime.Now, 0, TableName, Errors.Failed);
+
+            }
+
+            //}
+
+            return tb;
+        }
+        public virtual List<ChildRelation> GetTablesFKColumnList(string tablename, string SchemaName, string Filterparamters)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            DataSet ds = new DataSet();
+            try
+            {
+                string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getFKforTable, tablename, SchemaName, Filterparamters, DMEEditor.ConfigEditor.QueryList, DatasourceType);
+                if (!string.IsNullOrEmpty(sql) && !string.IsNullOrWhiteSpace(sql))
+                {
+                    return GetData<ChildRelation>(sql);
+                }
+                else
+                    return null;
+
+
+
+            }
+            catch (Exception ex)
+            {
+
+                //   DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+                return null;
+            }
+
+
+
+        }
+        #endregion
 
     }
 }

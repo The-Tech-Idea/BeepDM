@@ -20,7 +20,7 @@ namespace TheTechIdea.Winforms.VIS
 
 
         }
-        public FileEntityNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename, string ConnectionName)
+        public FileEntityNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename, string ConnectionName)
         {
 
 
@@ -52,7 +52,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.DataPoint;
+        public EnumPointType BranchType { get; set; } = EnumPointType.DataPoint;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "file.ico";
         public string BranchStatus { get; set; }
@@ -109,7 +109,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -135,7 +135,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Get Sheets", Hidden = false)]
+        [CommandAttribute(Caption = "Get Sheets", Hidden = false)]
         public IErrorsInfo GetSheets()
         {
 
@@ -152,7 +152,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Refresh Sheets", Hidden = false)]
+        [CommandAttribute(Caption = "Refresh Sheets", Hidden = false)]
         public IErrorsInfo RefreshSheets()
         {
             try
@@ -204,7 +204,7 @@ namespace TheTechIdea.Winforms.VIS
         //    };
         //    return DMEEditor.ErrorObject;
         //}
-        [BranchDelegate(Caption = "Remove")]
+        [CommandAttribute(Caption = "Remove")]
         public IErrorsInfo Remove()
         {
 
@@ -243,7 +243,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Copy Entities")]
+        [CommandAttribute(Caption = "Copy Entities")]
         public IErrorsInfo CopyEntities()
         {
 
@@ -350,7 +350,7 @@ namespace TheTechIdea.Winforms.VIS
 
             try
             {
-                FileEntitySheetNode fileitemsheet = new FileEntitySheetNode(TreeEditor, DMEEditor, this, Sheetname, TreeEditor.SeqID, EnumBranchType.Entity, IconImageName, BranchText);
+                FileEntitySheetNode fileitemsheet = new FileEntitySheetNode(TreeEditor, DMEEditor, this, Sheetname, TreeEditor.SeqID, EnumPointType.Entity, IconImageName, BranchText);
                 fileitemsheet.DataSource = DataSource;
               //  fileitemsheet.DataSourceName = DataSourceName;
                 ChildBranchs.Add(fileitemsheet);

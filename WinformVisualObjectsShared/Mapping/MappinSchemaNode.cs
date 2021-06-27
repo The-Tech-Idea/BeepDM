@@ -12,7 +12,7 @@ namespace TheTechIdea.Winforms.VIS.Mapping
 {
     public class MappinSchemaNode : IBranch, ITreeView, IOrder
     {
-        public MappinSchemaNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public MappinSchemaNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
 
 
@@ -42,7 +42,7 @@ namespace TheTechIdea.Winforms.VIS.Mapping
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.DataPoint;
+        public EnumPointType BranchType { get; set; } = EnumPointType.DataPoint;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "mapping.ico";
         public string BranchStatus { get; set; }
@@ -100,7 +100,7 @@ namespace TheTechIdea.Winforms.VIS.Mapping
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -126,7 +126,7 @@ namespace TheTechIdea.Winforms.VIS.Mapping
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Edit")]
+        [CommandAttribute(Caption = "Edit")]
         public IErrorsInfo AddMap()
         {
 

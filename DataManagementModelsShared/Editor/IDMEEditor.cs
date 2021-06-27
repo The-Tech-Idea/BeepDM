@@ -15,6 +15,9 @@ namespace TheTechIdea.DataManagment_Engine
 {
     public interface IDMEEditor
     {
+
+       
+
         List<IDataSource> DataSources { get; set; }
      //   IRDBMSHelper RDBMSHelper { get; set; }
         IETL ETL { get; set; }
@@ -27,7 +30,7 @@ namespace TheTechIdea.DataManagment_Engine
         IClassCreator classCreator { get; set; }
         IAssemblyHandler assemblyHandler { get; set; }
         BindingList<ILogAndError> Loganderrors { get; set; }
-        PassedArgs Passedarguments { get; set; }
+        IPassedArgs Passedarguments { get; set; }
         SyncDataSource Script { get; set; }
         IDataSource GetDataSource(string pdatasourcename);
         IDataSource CreateNewDataSourceConnection(ConnectionProperties cn, string pdatasourcename);
@@ -39,8 +42,10 @@ namespace TheTechIdea.DataManagment_Engine
         AssemblyClassDefinition GetDataSourceClass(string DatasourceName);
         void AddLogMessage(string pLogType, string pLogMessage, DateTime pLogData, int pRecordID, string pMiscData, Errors pFlag);
         void AddLogMessage(string pLogMessage);
-        event EventHandler<PassedArgs> PassEvent;
+       
         void RaiseEvent(object sender,PassedArgs args);
+
+        IErrorsInfo AskQuestion(IPassedArgs args);
 
 
     }

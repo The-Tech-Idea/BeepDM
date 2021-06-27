@@ -19,7 +19,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }  
-        public WorkFlowRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename, string ConnectionName)
+        public WorkFlowRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename, string ConnectionName)
         {
 
 
@@ -49,7 +49,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Root;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Root;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "workflow.ico";
         public string BranchStatus { get; set; }
@@ -114,7 +114,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -140,7 +140,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Add Category")]
+        [CommandAttribute(Caption = "Add Category")]
         public IErrorsInfo AddCategory()
         {
 
@@ -155,7 +155,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "New", Hidden = false)]
+        [CommandAttribute(Caption = "New", Hidden = false)]
         public IErrorsInfo NewWK()
         {
 
@@ -200,7 +200,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
         }
        
-        [BranchDelegate(Caption = "DoubleClick", Hidden = true, DoubleClick = true)]
+        [CommandAttribute(Caption = "DoubleClick", Hidden = true, DoubleClick = true)]
         public IErrorsInfo DoubleClick()
         {
 
@@ -244,7 +244,7 @@ namespace TheTechIdea.Winforms.VIS
                 TreeEditor.RemoveChildBranchs(this);
                 foreach (DataWorkFlow item in DMEEditor.ConfigEditor.WorkFlows)
                 {
-                    WorkFlowEntityNode  en = new WorkFlowEntityNode(TreeEditor, DMEEditor, this,item.DataWorkFlowName, TreeEditor.SeqID, EnumBranchType.DataPoint, "workflowentity.ico");
+                    WorkFlowEntityNode  en = new WorkFlowEntityNode(TreeEditor, DMEEditor, this,item.DataWorkFlowName, TreeEditor.SeqID, EnumPointType.DataPoint, "workflowentity.ico");
                     en.DataSource = DataSource;
                     TreeEditor.AddBranch(this, en);
                     ChildBranchs.Add(en);
@@ -265,7 +265,7 @@ namespace TheTechIdea.Winforms.VIS
         {
             try
             {
-                WorkFlowCategoryNode categoryBranch = new WorkFlowCategoryNode(TreeEditor, DMEEditor, this, p.FolderName, TreeEditor.SeqID, EnumBranchType.Category, "category.ico");
+                WorkFlowCategoryNode categoryBranch = new WorkFlowCategoryNode(TreeEditor, DMEEditor, this, p.FolderName, TreeEditor.SeqID, EnumPointType.Category, "category.ico");
                 TreeEditor.AddBranch(this, categoryBranch);
                 ChildBranchs.Add(categoryBranch);
                 categoryBranch.CreateChildNodes();

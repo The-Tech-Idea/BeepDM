@@ -47,7 +47,7 @@ namespace TheTechIdea.Configuration
         public int ID { get; set; } = 6;
         public string BranchText { get; set; } = "Non ADO Drivers Definitions";
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Entity;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Entity;
         public int BranchID { get; set; } = 3;
         public string IconImageName { get; set; } = "driversdefinition.ico";
         public string BranchStatus { get; set; }

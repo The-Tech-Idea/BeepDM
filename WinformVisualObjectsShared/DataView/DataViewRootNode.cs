@@ -19,7 +19,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public DataViewRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public DataViewRootNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
@@ -44,7 +44,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; }= EnumBranchType.Root;
+        public EnumPointType BranchType { get; set; }= EnumPointType.Root;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "dataview.ico";
         public string BranchStatus { get; set; }
@@ -122,7 +122,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -148,7 +148,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Add Category")]
+        [CommandAttribute(Caption = "Add Category")]
         public IErrorsInfo AddCategory()
         {
 
@@ -163,7 +163,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Create View")]
+        [CommandAttribute(Caption = "Create View")]
         public IErrorsInfo CreateView()
         {
 
@@ -221,7 +221,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Add View File")]
+        [CommandAttribute(Caption = "Add View File")]
         public IErrorsInfo AddViewFile()
         {
 
@@ -286,7 +286,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Create View using Table",Hidden =true)]
+        [CommandAttribute(Caption = "Create View using Table",Hidden =true)]
         public IErrorsInfo CreateView(IBranch EntitySource)
         {
 
@@ -365,7 +365,7 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
 
-                viewbr = new DataViewNode(TreeEditor, DMEEditor, this, ViewName, TreeEditor.SeqID, EnumBranchType.DataPoint, "dataview.ico", Connectionname);
+                viewbr = new DataViewNode(TreeEditor, DMEEditor, this, ViewName, TreeEditor.SeqID, EnumPointType.DataPoint, "dataview.ico", Connectionname);
             
                // viewbr.DataSource = DataSource;
                 viewbr.DataSourceName = Connectionname;
@@ -390,7 +390,7 @@ namespace TheTechIdea.Winforms.VIS
     {
         try
         {
-                DataViewCategoryNode categoryBranch = new DataViewCategoryNode(TreeEditor, DMEEditor,this, p.FolderName, TreeEditor.SeqID, EnumBranchType.Category, "category.ico");
+                DataViewCategoryNode categoryBranch = new DataViewCategoryNode(TreeEditor, DMEEditor,this, p.FolderName, TreeEditor.SeqID, EnumPointType.Category, "category.ico");
                 TreeEditor.AddBranch(this, categoryBranch);
                 ChildBranchs.Add(categoryBranch);
                 categoryBranch.CreateChildNodes();

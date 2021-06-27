@@ -219,18 +219,7 @@ namespace TheTechIdea.Tools
                     targetUnit, sourceWriter, options);
             }
         }
-        //private void AddInterface()
-        //{
-        //    helloWorldTypeBuilder.AddInterfaceImplementation(typeof(IGenericDataClass));
-
-        //    // Generate IL for 'SayHello' method.
-        //    ILGenerator myMethodIL = myMethodBuilder.GetILGenerator();
-        //    myMethodIL.EmitWriteLine(myGreetingField);
-        //    myMethodIL.Emit(OpCodes.Ret);
-        //    MethodInfo sayHelloMethod = typeof(IHello).GetMethod("SayHello");
-        //    helloWorldTypeBuilder.DefineMethodOverride(myMethodBuilder, sayHelloMethod);
-        //}
-       
+        
        
     }
 }

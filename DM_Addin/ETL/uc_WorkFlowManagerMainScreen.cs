@@ -52,7 +52,7 @@ namespace TheTechIdea.ETL
         public int ID { get; set; } = 2;
         public string BranchText { get; set; } = "Folders";
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Entity;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Entity;
         public int BranchID { get; set; } = 2;
         public string IconImageName { get; set; } = "workflowentity.ico";
         public string BranchStatus { get; set; }

@@ -13,7 +13,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
 {
     public class WebApiEntities : IBranch, ITreeView
     {
-        public WebApiEntities(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename,string pDatasourcename)
+        public WebApiEntities(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename,string pDatasourcename)
         {
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
@@ -40,7 +40,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
         public string Name { get; set; }
         public string BranchText { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } 
+        public EnumPointType BranchType { get; set; } 
         public int BranchID { get; set; }
         public string IconImageName { get; set; }
         public string BranchStatus { get; set; }
@@ -90,7 +90,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -118,13 +118,13 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Get Series(s)/Data")]
+        [CommandAttribute(Caption = "Get Series(s)/Data")]
         public IErrorsInfo GetDataAsync()
         {
 
             try
             {
-                if (BranchType== EnumBranchType.Entity)
+                if (BranchType== EnumPointType.Entity)
                 {
                     string[] args = { "New Query Entity", null, null };
                     List<ObjectItem> ob = new List<ObjectItem>(); ;
@@ -137,7 +137,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
                     it.obj = DataSourceBr;
                     it.Name = "ParentBranch";
                     ob.Add(it);
-                    IBranch RootWEBAPIBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "WEBAPI" && x.BranchType == EnumBranchType.Root)];
+                    IBranch RootWEBAPIBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "WEBAPI" && x.BranchType == EnumPointType.Root)];
                     it = new ObjectItem();
                     it.obj = RootWEBAPIBranch;
                     it.Name = "RootWebApiBranch";
@@ -204,7 +204,7 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Edit", Hidden = false)]
+        [CommandAttribute(Caption = "Edit", Hidden = false)]
         public IErrorsInfo EditEntity()
         {
 
@@ -246,13 +246,13 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Copy Entities")]
+        [CommandAttribute(Caption = "Copy Entities")]
         public IErrorsInfo CopyEntities()
         {
 
             try
             {
-                if (BranchType == EnumBranchType.Entity)
+                if (BranchType == EnumPointType.Entity)
                 {
                     List<string> ents = new List<string>();
                     if (TreeEditor.SelectedBranchs.Count > 0)
@@ -377,11 +377,11 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
             foreach (EntityStructure item in rootent)
             {
                 string iconimage = "webapi.ico";
-                EnumBranchType branchType = EnumBranchType.Entity;
+                EnumPointType branchType = EnumPointType.Entity;
                 if (item.Category == "Category")
                 {
                     iconimage = "webapicategory.ico";
-                    branchType = EnumBranchType.DataPoint;
+                    branchType = EnumPointType.DataPoint;
                 }
                 WebApiEntities webentmain = new WebApiEntities(TreeEditor, DMEEditor, this, item.EntityName, TreeEditor.SeqID, branchType, iconimage, DataSourceName);
                 webentmain.DataSource = DataSource;
@@ -405,11 +405,11 @@ namespace TheTechIdea.Winforms.VIS.WebAPI
                 foreach (var item in ls)
                 {
                     string iconimage = "webapi.ico";
-                    EnumBranchType branchType = EnumBranchType.Entity;
+                    EnumPointType branchType = EnumPointType.Entity;
                     if (item.Category == "Category")
                     {
                         iconimage = "webapicategory.ico";
-                        branchType = EnumBranchType.DataPoint;
+                        branchType = EnumPointType.DataPoint;
                     }
                     webent = new WebApiEntities(TreeEditor, DMEEditor, br, item.EntityName, TreeEditor.SeqID, branchType, iconimage, BranchText);
                     webent.DataSource = DataSource;

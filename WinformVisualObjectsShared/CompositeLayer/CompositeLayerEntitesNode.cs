@@ -19,14 +19,14 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public CompositeLayerEntitesNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, EntityStructure entity, int pID, EnumBranchType pBranchType, string pimagename,IDataSource ds)
+        public CompositeLayerEntitesNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, EntityStructure entity, int pID, EnumPointType pBranchType, string pimagename,IDataSource ds)
         {
             DataSource = ds;
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
             ParentBranchID = pParentNode.ID;
             BranchText = entity.EntityName;
-            BranchType =  EnumBranchType.Entity;
+            BranchType =  EnumPointType.Entity;
             IconImageName = "databaseentities.ico";
             DataSource = ds;
             compositeLayerDataSource = (CompositeLayerDataSource)ds;
@@ -48,7 +48,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get ; set ; }
         public string DataSourceName { get; set; }
         public int Level { get ; set ; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Entity;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Entity;
         public int BranchID { get ; set ; }
         public string IconImageName { get ; set ; }
         public string BranchStatus { get ; set ; }
@@ -90,7 +90,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
 
             try
@@ -161,7 +161,7 @@ namespace TheTechIdea.Winforms.VIS
         //    };
         //    return DMEEditor.ErrorObject;
         //}
-        [BranchDelegate(Caption = "Data Edit")]
+        [CommandAttribute(Caption = "Data Edit")]
         public IErrorsInfo CRUDGrid()
         {
 
@@ -208,7 +208,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Create View")]
+        [CommandAttribute(Caption = "Create View")]
         public IErrorsInfo CreateView()
         {
            
@@ -223,7 +223,7 @@ namespace TheTechIdea.Winforms.VIS
                     Objects = new List<ObjectItem> { new ObjectItem { Name = "Branch", obj = this } }
                 };
                 TreeEditor.args = args;
-                IBranch pbr = TreeEditor.Branches.Where(x => x.BranchType == EnumBranchType.Root && x.BranchClass == "VIEW").FirstOrDefault();
+                IBranch pbr = TreeEditor.Branches.Where(x => x.BranchType == EnumPointType.Root && x.BranchClass == "VIEW").FirstOrDefault();
                 TreeEditor.SendActionFromBranchToBranch(pbr,this, "Create View using Table");
 
             }
@@ -234,7 +234,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "View Structure", Hidden = false)]
+        [CommandAttribute(Caption = "View Structure", Hidden = false)]
         public IErrorsInfo ViewStructure()
         {
 
@@ -278,7 +278,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Field Properties")]
+        [CommandAttribute(Caption = "Field Properties")]
         public IErrorsInfo FieldProperties()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -321,7 +321,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Remove Entity")]
+        [CommandAttribute(Caption = "Remove Entity")]
         public IErrorsInfo RemoveEntity()
         {
 
@@ -357,7 +357,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Copy Entities")]
+        [CommandAttribute(Caption = "Copy Entities")]
         public IErrorsInfo CopyEntities()
         {
 
@@ -418,7 +418,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Drop")]
+        [CommandAttribute(Caption = "Drop")]
         public IErrorsInfo DropEntity()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;

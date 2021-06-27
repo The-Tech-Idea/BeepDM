@@ -17,7 +17,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public NoSqlSourceNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public NoSqlSourceNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
 
 
@@ -47,7 +47,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.DataPoint;
+        public EnumPointType BranchType { get; set; } = EnumPointType.DataPoint;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "nosql.ico";
         public string BranchStatus { get; set; }
@@ -104,7 +104,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -130,7 +130,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Get Entities")]
+        [CommandAttribute(Caption = "Get Entities")]
         public IErrorsInfo CreateDatabaseEntites()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -150,7 +150,7 @@ namespace TheTechIdea.Winforms.VIS
                         foreach (string tb in DataSource.EntitiesNames)
                         {
 
-                            NoSqlEntityNode dbent = new NoSqlEntityNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumBranchType.Entity, "entity.ico");
+                            NoSqlEntityNode dbent = new NoSqlEntityNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumPointType.Entity, "entity.ico");
                             dbent.DataSource = DataSource;
                             TreeEditor.AddBranch(this, dbent);
                             //  dbent.CreateChildNodes();
@@ -175,7 +175,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Defaults")]
+        [CommandAttribute(Caption = "Defaults")]
         public IErrorsInfo EditDefaults()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;

@@ -20,7 +20,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public DataViewNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename,string ConnectionName)
+        public DataViewNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename,string ConnectionName)
         {
 
            
@@ -58,7 +58,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.DataPoint;
+        public EnumPointType BranchType { get; set; } = EnumPointType.DataPoint;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "dataviewnode.ico";
         public string BranchStatus { get; set; }
@@ -125,7 +125,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
        
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -152,7 +152,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "Edit")]
+        [CommandAttribute(Caption = "Edit")]
         public IErrorsInfo Edit()
         {
 
@@ -175,7 +175,7 @@ namespace TheTechIdea.Winforms.VIS
                         it.obj = this;
                         it.Name = "Branch";
                         ob.Add(it);
-                        IBranch RootCompositeLayerBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "APP" && x.BranchType == EnumBranchType.Root)];
+                        IBranch RootCompositeLayerBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "APP" && x.BranchType == EnumPointType.Root)];
                         it = new ObjectItem();
                         it.obj = RootCompositeLayerBranch;
                         it.Name = "RootAppBranch";
@@ -224,7 +224,7 @@ namespace TheTechIdea.Winforms.VIS
             
            
         }
-        [BranchDelegate(Caption = "Get Entities")]
+        [CommandAttribute(Caption = "Get Entities")]
         public IErrorsInfo CreateViewEntites()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -274,7 +274,7 @@ namespace TheTechIdea.Winforms.VIS
                                     foreach (EntityStructure tb in cr)
                                     {
 
-                                        DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, tb.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(tb.Viewtype), DataView.DataViewDataSourceID, tb);
+                                        DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, tb.EntityName, TreeEditor.SeqID, EnumPointType.Entity, ds.GeticonForViewType(tb.Viewtype), DataView.DataViewDataSourceID, tb);
                                         if (string.IsNullOrEmpty(tb.DatasourceEntityName))
                                         {
                                             DataView.Entities[ds.EntityListIndex(tb.EntityName)].DatasourceEntityName = tb.EntityName;
@@ -320,7 +320,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Save")]
+        [CommandAttribute(Caption = "Save")]
         public IErrorsInfo SaveView()
         {
 
@@ -340,7 +340,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Remove")]
+        [CommandAttribute(Caption = "Remove")]
         public IErrorsInfo RemoveView()
         {
 
@@ -396,7 +396,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Create Entity")]
+        [CommandAttribute(Caption = "Create Entity")]
         public IErrorsInfo CreateEntity()
         {
 
@@ -439,7 +439,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Create Composed Layer")]
+        [CommandAttribute(Caption = "Create Composed Layer")]
         public IErrorsInfo CreateComposedLayer()
         {
 
@@ -451,7 +451,7 @@ namespace TheTechIdea.Winforms.VIS
                 it.obj = this;
                 it.Name = "Branch";
                 ob.Add(it);
-                IBranch RootCompositeLayerBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "CLAYER" && x.BranchType == EnumBranchType.Root)];
+                IBranch RootCompositeLayerBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "CLAYER" && x.BranchType == EnumPointType.Root)];
                 it = new ObjectItem();
                 it.obj = RootCompositeLayerBranch;
                 it.Name = "RootCompositeLayerBranch";
@@ -486,7 +486,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Create App")]
+        [CommandAttribute(Caption = "Create App")]
         public IErrorsInfo CreateApp()
         {
 
@@ -498,7 +498,7 @@ namespace TheTechIdea.Winforms.VIS
                 it.obj = this;
                 it.Name = "Branch";
                 ob.Add(it);
-                IBranch RootCompositeLayerBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "APP" && x.BranchType == EnumBranchType.Root)];
+                IBranch RootCompositeLayerBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "APP" && x.BranchType == EnumPointType.Root)];
                 it = new ObjectItem();
                 it.obj = RootCompositeLayerBranch;
                 it.Name = "RootAppBranch";
@@ -588,7 +588,7 @@ namespace TheTechIdea.Winforms.VIS
         //    };
         //    return DMEEditor.ErrorObject;
         //}
-        [BranchDelegate(Caption = "Paste Entity(s)")]
+        [CommandAttribute(Caption = "Paste Entity(s)")]
         public IErrorsInfo PasteEntity()
         {
 
@@ -634,7 +634,7 @@ namespace TheTechIdea.Winforms.VIS
                                         entity.Viewtype = ViewType.Url;
                                     }
                                     ds.CreateEntityAs(entity);
-                                    DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
+                                    DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumPointType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
                                     TreeEditor.AddBranch(this, dbent);
                                     ChildBranchs.Add(dbent);
                                     dbent.CreateChildNodes();
@@ -675,7 +675,7 @@ namespace TheTechIdea.Winforms.VIS
                                                 entity.Viewtype = ViewType.Url;
                                             }
                                             ds.CreateEntityAs(entity);
-                                            DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumBranchType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
+                                            DataViewEntitiesNode dbent = new DataViewEntitiesNode(TreeEditor, DMEEditor, this, entity.EntityName, TreeEditor.SeqID, EnumPointType.Entity, ds.GeticonForViewType(entity.Viewtype), DataSourceName, entity);
                                             TreeEditor.AddBranch(this, dbent);
                                             ChildBranchs.Add(dbent);
                                             dbent.CreateChildNodes();
@@ -704,7 +704,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Clear View")]
+        [CommandAttribute(Caption = "Clear View")]
         public IErrorsInfo ClearView()
         {
 

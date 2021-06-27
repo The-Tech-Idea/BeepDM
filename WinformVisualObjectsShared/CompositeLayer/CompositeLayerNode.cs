@@ -22,7 +22,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public CompositeLayerNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, CompositeLayer pClayer)
+        public CompositeLayerNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, CompositeLayer pClayer)
         {
             TreeEditor = pTreeEditor;
             DMEEditor = pDMEEditor;
@@ -40,7 +40,7 @@ namespace TheTechIdea.Winforms.VIS
            
           
         }
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
 
             try
@@ -75,7 +75,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.DataPoint;
+        public EnumPointType BranchType { get; set; } = EnumPointType.DataPoint;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "clayer.ico";
         public string BranchStatus { get; set; }
@@ -132,7 +132,7 @@ namespace TheTechIdea.Winforms.VIS
             DMEEditor.ConfigEditor.SaveCompositeLayersValues();
         }
         #region "Exposed Methods"
-        [BranchDelegate(Caption = "Get Entities")]
+        [CommandAttribute(Caption = "Get Entities")]
         public IErrorsInfo GetEntites()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -160,7 +160,7 @@ namespace TheTechIdea.Winforms.VIS
                             {
                                 iconimage = "databaseentities.ico";
                             }
-                            CompositeLayerEntitesNode dbent = new CompositeLayerEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumBranchType.Entity, iconimage, compositeLayerDataSource);
+                            CompositeLayerEntitesNode dbent = new CompositeLayerEntitesNode(TreeEditor, DMEEditor, this, tb, TreeEditor.SeqID, EnumPointType.Entity, iconimage, compositeLayerDataSource);
                             TreeEditor.AddBranch(this, dbent);
                             dbent.DataSourceName = compositeLayerDataSource.DatasourceName;
                             dbent.compositeLayerDataSource = compositeLayerDataSource;
@@ -186,7 +186,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Sync. Layer w. View")]
+        [CommandAttribute(Caption = "Sync. Layer w. View")]
         public IErrorsInfo SyncMissingEntites()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -218,7 +218,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Create Entites")]
+        [CommandAttribute(Caption = "Create Entites")]
         public IErrorsInfo CreateMissingEntites()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -239,7 +239,7 @@ namespace TheTechIdea.Winforms.VIS
                             it.obj = this;
                             it.Name = "Branch";
                             ob.Add(it);
-                            IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "CLAYER" && x.BranchType == EnumBranchType.Root)];
+                            IBranch RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == "CLAYER" && x.BranchType == EnumPointType.Root)];
                             it = new ObjectItem();
                             it.obj = RootBranch;
                             it.Name = "RootBranch";
@@ -293,7 +293,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Paste Entities")]
+        [CommandAttribute(Caption = "Paste Entities")]
         public IErrorsInfo PasteEntities()
         {
 
@@ -394,7 +394,7 @@ namespace TheTechIdea.Winforms.VIS
         //    return DMEEditor.ErrorObject;
         //}
         
-        [BranchDelegate(Caption = "Remove Layer")]
+        [CommandAttribute(Caption = "Remove Layer")]
         public IErrorsInfo RemoveLayer()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -481,7 +481,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Defaults")]
+        [CommandAttribute(Caption = "Defaults")]
         public IErrorsInfo EditDefaults()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -529,7 +529,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Copy Defaults")]
+        [CommandAttribute(Caption = "Copy Defaults")]
         public IErrorsInfo CopyDefaults()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -583,7 +583,7 @@ namespace TheTechIdea.Winforms.VIS
             return DMEEditor.ErrorObject;
 
         }
-        [BranchDelegate(Caption = "Paste Defaults")]
+        [CommandAttribute(Caption = "Paste Defaults")]
         public IErrorsInfo PasteDefaults()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;

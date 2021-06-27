@@ -16,7 +16,7 @@ namespace TheTechIdea.Winforms.VIS
         {
 
         }
-        public FileEntitySheetNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename, string ConnectionName)
+        public FileEntitySheetNode(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename, string ConnectionName)
         {
 
 
@@ -45,7 +45,7 @@ namespace TheTechIdea.Winforms.VIS
         public IDataSource DataSource { get; set; }
         public string DataSourceName { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; } = EnumBranchType.Entity;
+        public EnumPointType BranchType { get; set; } = EnumPointType.Entity;
         public int BranchID { get; set; }
         public string IconImageName { get; set; } = "sheet.ico";
         public string BranchStatus { get; set; }
@@ -102,7 +102,7 @@ namespace TheTechIdea.Winforms.VIS
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumBranchType pBranchType, string pimagename)
+        public IErrorsInfo SetConfig(ITree pTreeEditor, IDMEEditor pDMEEditor, IBranch pParentNode, string pBranchText, int pID, EnumPointType pBranchType, string pimagename)
         {
             try
             {
@@ -128,7 +128,7 @@ namespace TheTechIdea.Winforms.VIS
         }
         #endregion "Interface Methods"
         #region "Exposed Interface"
-        [BranchDelegate(Caption = "View Structure", Hidden = false, DoubleClick = true)]
+        [CommandAttribute(Caption = "View Structure", Hidden = false, DoubleClick = true)]
         public IErrorsInfo ViewStructure()
         {
 
@@ -170,7 +170,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Show", Hidden = false,  DoubleClick =true)]
+        [CommandAttribute(Caption = "Show", Hidden = false,  DoubleClick =true)]
         public IErrorsInfo Show()
         {
 
@@ -208,7 +208,7 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        [BranchDelegate(Caption = "Copy Entities")]
+        [CommandAttribute(Caption = "Copy Entities")]
         public IErrorsInfo CopyEntities()
         {
 

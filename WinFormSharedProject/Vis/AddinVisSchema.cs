@@ -20,7 +20,7 @@ namespace TheTechIdea.DataManagment_Engine.Addin
         public string Name { get; set; }
         public string BranchText { get; set; }
         public int Level { get; set; }
-        public EnumBranchType BranchType { get; set; }
+        public EnumPointType BranchType { get; set; }
         public int BranchID { get; set; }
         public string IconImageName { get; set; }
         public string BranchStatus { get; set; }
