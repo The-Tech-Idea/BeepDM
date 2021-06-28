@@ -357,7 +357,6 @@
     <Compile Include="ETL\uc_txtfileManager.Designer.cs">
       <DependentUpon>uc_txtfileManager.cs</DependentUpon>
     </Compile>
-    <Compile Include="SqlServerTypes\Loader.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Configuration\uc_CreateLocalDatabase.resx">
@@ -547,19 +546,6 @@
     <Content Include="RDLCReport\DynamicReport.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>DynamicReport1.cs</LastGenOutput>
-    </Content>
-    <Content Include="SqlServerTypes\readme.htm" />
-    <Content Include="SqlServerTypes\x64\msvcr120.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SqlServerTypes\x64\SqlServerSpatial140.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SqlServerTypes\x86\msvcr120.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SqlServerTypes\x86\SqlServerSpatial140.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <None Include="Resources\exit_32.png" />
     <None Include="Resources\shutdown_32.png" />

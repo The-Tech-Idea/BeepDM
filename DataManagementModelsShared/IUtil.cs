@@ -32,8 +32,10 @@ namespace TheTechIdea.DataManagment_Engine
         // Type GetType(string strFullyQualifiedName);
         TypeCode GetTypeCode(Type dest);
         bool IsObjectNumeric( object o);
+        List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype);
         List<object> GetListByDataTable(DataTable dt, Type type, EntityStructure enttype);
-     //   List<ExpandoObject> GetExpandoObject(DataTable dt, Type type, EntityStructure enttype);
+        List<object> GetListByDataTable(DataTable dt, string Namespace, string EntityName);
+        //   List<ExpandoObject> GetExpandoObject(DataTable dt, Type type, EntityStructure enttype);
         ConnectionDriversConfig LinkConnection2Drivers(IConnectionProperties cn);
        // dynamic GetTypeFromString(string strFullyQualifiedName);
         EntityStructure GetEntityStructure(DataTable tb);
@@ -41,7 +43,8 @@ namespace TheTechIdea.DataManagment_Engine
         Type GetTypeFromStringValue(string str);
         Type MakeGenericType(string typestring);
         Type MakeGenericListofType(string typestring);
-        List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype);
+       
+        
         DataRow ConvertItemClassToDataRow(EntityStructure ent);
         List<EntityField> GetFieldFromGeneratedObject(object dt, Type tp = null);
          DataTable JsonToDataTable(string jsonString);

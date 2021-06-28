@@ -496,7 +496,7 @@ namespace TheTechIdea.DataManagment_Engine
             Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
             foreach (DataColumn item in dt.Columns)
             {
-                properties.Add(item.ColumnName, type.GetProperty(item.ColumnName));
+                properties.Add(item.ColumnName.ToLower(), type.GetProperty(item.ColumnName));
                 //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
             }
             //for (int i = 0; i <= enttype.Fields.Count - 1; i++)
@@ -508,17 +508,30 @@ namespace TheTechIdea.DataManagment_Engine
                 // dynamic x = TypeHelpers.GetInstance(type);
                 dynamic x = Activator.CreateInstance(type);
                 //  var v = (dynamic)null;
-                foreach (DataColumn item in dt.Columns)
+                for (int i = 0; i <= enttype.Fields.Count - 1; i++)
                 {
-                    if (row[item.ColumnName] != DBNull.Value)
+                    if (row[enttype.Fields[i].fieldname.ToLower()] != DBNull.Value)
                     {
-                        string st=row[item.ColumnName].ToString();
-                        if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st)){
-                            properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
+                        string st = row[enttype.Fields[i].fieldname.ToLower()].ToString();
+                       // var v = Convert.ChangeType(row[enttype.Fields[i].fieldname], Type.GetType(enttype.Fields[i].fieldtype)); //Type.GetType(enttype.Fields[i].fieldtype)
+                        if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st))
+                        {
+                            properties[enttype.Fields[i].fieldname.ToLower()].SetValue(x, row[enttype.Fields[i].fieldname.ToLower()], null);
                         }
                     }
-                   
                 }
+                //foreach (DataColumn item in dt.Columns)
+                //{
+                //    if (row[item.ColumnName] != DBNull.Value)
+                //    {
+                //        string st=row[item.ColumnName].ToString();
+                //        var v = Convert.ChangeType(row[item.ColumnName], Type.GetType(enttype.Fields[i].fieldtype));
+                //        if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st)){
+                //            properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
+                //        }
+                //    }
+                   
+                //}
                 //for (int i = 0; i <= enttype.Fields.Count - 1; i++)
                 //{
                 //    try
@@ -553,6 +566,58 @@ namespace TheTechIdea.DataManagment_Engine
 
                 //}
 
+                Records.Add(x);
+            }
+            return Records;
+        }
+        public List<object> GetListByDataTable(DataTable dt,string NameSpace,string Entityname)
+        {
+            List<EntityField> flds=new List<EntityField>();
+            //  Create type from Table 
+            foreach (DataColumn item in dt.Columns)
+            {
+                EntityField field = new EntityField();
+                field.EntityName = dt.TableName;
+                field.fieldname=item.ColumnName;
+                field.fieldtype = item.DataType.ToString();
+                flds.Add(field);
+
+                //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
+            }
+            DMTypeBuilder.CreateNewObject(Entityname,NameSpace, Entityname, flds);
+            Type type = DMTypeBuilder.myType;
+            //  string f = "";
+            List<object> Records = new List<object>();
+            Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
+            foreach (DataColumn item in dt.Columns)
+            {
+                properties.Add(item.ColumnName, type.GetProperty(item.ColumnName));
+                //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
+            }
+            //for (int i = 0; i <= enttype.Fields.Count - 1; i++)
+            //{
+            //    properties.Add(enttype.Fields[i].fieldname, type.GetProperty(enttype.Fields[i].fieldname));
+            //}
+            //for (int i = 0; i <= enttype.Fields.Count - 1; i++)
+            //{}
+            foreach (DataRow row in dt.Rows)
+            {
+                // dynamic x = TypeHelpers.GetInstance(type);
+                dynamic x = Activator.CreateInstance(type);
+                //  var v = (dynamic)null;
+                foreach (DataColumn item in dt.Columns)
+                {
+                    if (row[item.ColumnName] != DBNull.Value)
+                    {
+                        string st = row[item.ColumnName].ToString();
+                        if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st))
+                        {
+                            properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
+                        }
+                    }
+
+                }
+               
                 Records.Add(x);
             }
             return Records;

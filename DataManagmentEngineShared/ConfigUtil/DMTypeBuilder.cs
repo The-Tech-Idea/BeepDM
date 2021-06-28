@@ -15,14 +15,23 @@ namespace TheTechIdea.Util
         public static  AssemblyBuilder ab { get; set; }
         public static object CreateNewObject(string libname, string typename, List<EntityField> MyFields)
         {
-            myType = CompileResultType(libname, typename, MyFields);
+            string typenamespace = "TheTechIdea.Classes";
+            myType = CompileResultType(libname, typenamespace,typename, MyFields);
             myObject = Activator.CreateInstance(myType);
             return myObject;
 
         }
-        public static Type CompileResultType(string libname, string typename, List<EntityField> MyFields)
+        public static object CreateNewObject(string libname,string typenamespace, string typename, List<EntityField> MyFields)
         {
-            tb = GetTypeBuilder(libname, typename);
+            
+            myType = CompileResultType(libname, typenamespace,typename, MyFields);
+            myObject = Activator.CreateInstance(myType);
+            return myObject;
+
+        }
+        private static Type CompileResultType(string libname, string typenamespace, string typename, List<EntityField> MyFields)
+        {
+            tb = GetTypeBuilder(libname, typenamespace, typename);
             ConstructorBuilder constructor = tb.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
             // NOTE: assuming your list contains Field objects with fields FieldName(string) and FieldType(Type)
@@ -32,13 +41,16 @@ namespace TheTechIdea.Util
             Type objectType = tb.CreateTypeInfo();
             return objectType;
         }
-        private static TypeBuilder GetTypeBuilder(string libname, string typename)
+        private static TypeBuilder GetTypeBuilder(string libname, string typenamespace, string typename)
         {
 
             ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(libname), AssemblyBuilderAccess.RunAndCollect);
             // For a single-module assembly, the module name is usually
             // the assembly name plus an extension.
             ModuleBuilder mb = ab.DefineDynamicModule(libname);
+            mb.DefineType(typenamespace,
+               TypeAttributes.Public | TypeAttributes.Interface,
+                typeof(object));
             TypeBuilder tb = mb.DefineType(typename, TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.AutoClass |
                     TypeAttributes.AnsiClass |
                     TypeAttributes.BeforeFieldInit |

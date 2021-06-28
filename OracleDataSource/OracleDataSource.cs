@@ -410,7 +410,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                    
                     }
                     
-                    adp.ReturnProviderSpecificTypes = true;
+                  //  adp.ReturnProviderSpecificTypes = true;
                     adp.SuppressGetDecimalInvalidCastException = true;
                     adp.InsertCommand = cmdb.GetInsertCommand(true);
                     adp.UpdateCommand = cmdb.GetUpdateCommand(true);

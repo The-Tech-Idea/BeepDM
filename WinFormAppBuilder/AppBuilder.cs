@@ -38,7 +38,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
                 Visutil =(IVisUtil) passedArgs.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;
                 if (Winform)
                 {
-                    Visutil.ShowUserControlPopUp("uc_WinformApp",  DMEEditor, new string[] { "" }, DMEEditor.Passedarguments);
+                    Visutil.ShowUserControlPopUp("uc_WinformApp",  DMEEditor, new string[] { "" }, (PassedArgs)DMEEditor.Passedarguments);
                 }
 
 

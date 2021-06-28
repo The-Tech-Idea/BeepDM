@@ -684,6 +684,56 @@ namespace TheTechIdea.Winforms.VIS
             }
             return DMEEditor.ErrorObject;
         }
+        [CommandAttribute(Caption = "Create POCO Classes")]
+        public IErrorsInfo CreatePOCOlasses()
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            //     DMEEditor.Logger.WriteLog($"Filling Database Entites ) ");
+            try
+            {
+                string iconimage;
+                DataSource = (IRDBSource)DMEEditor.GetDataSource(BranchText);
+                if (DataSource != null)
+                {
+                    DMEEditor.OpenDataSource(BranchText);
+                    //  DataSource.Dataconnection.OpenConnection();
+                    if (DataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+                    {
+                        if (Visutil.controlEditor.InputBoxYesNo("Beep DM", "Are you sure, this might take some time?") == System.Windows.Forms.DialogResult.Yes)
+                        {
+                           // DataSource.Entities.Clear();
+                          //  DataSource.GetEntitesList();
+                            //TreeEditor.RemoveChildBranchs(this);
+                            int i = 0;
+                            TreeEditor.ShowWaiting();
+                            TreeEditor.ChangeWaitingCaption($"Creating POCO Entities for total:{DataSource.EntitiesNames.Count}");
+                            foreach (string tb in DataSource.EntitiesNames)
+                            {
+                                TreeEditor.AddCommentsWaiting($"{i} - Added {tb} to {DataSourceName}");
+                                EntityStructure ent = DataSource.GetEntityStructure(tb, true);
+                              
+                                DMEEditor.classCreator.CreateClass(ent.EntityName, ent.Fields, DMEEditor.ConfigEditor.ExePath);
+                                i += 1;
+                            }
+                            TreeEditor.HideWaiting();
+                        }
+
+                    }
+
+                }
+
+
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.Logger.WriteLog($"Error in Filling Database Entites ({ex.Message}) ");
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
+            }
+            return DMEEditor.ErrorObject;
+
+        }
         private void update()
         {
 

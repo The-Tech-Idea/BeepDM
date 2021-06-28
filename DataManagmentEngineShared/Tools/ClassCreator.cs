@@ -40,21 +40,35 @@ namespace TheTechIdea.Tools
             CompilerResults results = codeProvider.CompileAssemblyFromSource(parameters, SourceString);
 
         }
-        public string CreateClass(string classname, List<EntityField> flds, string outpath,string NameSpacestring= "TheTechIdea.ProjectClasses")
+        public string CreateClass(string classname, List<EntityField> flds, string poutputpath,string NameSpacestring= "TheTechIdea.ProjectClasses")
         {
-            outputpath = outpath;
+            outputpath = poutputpath;
             outputFileName = classname.ToLower();
             CreateClass(classname, NameSpacestring);
            
             outputFileName = classname;
             AddConstructor();
+           
+                foreach (var f in flds)
+                {
+                    try
+                    {
+                        AddProperties(f.fieldname.ToLower(), MemberAttributes.Public, Type.GetType(f.fieldtype), "");
+                    }
+                    catch (Exception ex)
+                    {
 
-            foreach (var f in flds)
-                AddProperties(f.fieldname.ToLower(), MemberAttributes.Public | MemberAttributes.Final, Type.GetType(f.fieldtype), "");
-                AddProperties("Name", MemberAttributes.Public | MemberAttributes.Final, Type.GetType("System.String"), "");
+                        throw;
+                    }
+                   
+                }
+                 
+          
+            AddProperties("Name", MemberAttributes.Public , Type.GetType("System.String"), "");
+            AddProperties("RN", MemberAttributes.Public , Type.GetType("System.Int64"), "");
             if (outputpath == null)
             {
-                outputpath = Environment.CurrentDirectory;
+                outputpath =Assembly.GetEntryAssembly().Location+"\\";
             }
             GenerateCSharpCode(Path.Combine(outputpath, outputFileName + ".cs"));
             return NameSpacestring+"." + classname;
@@ -151,7 +165,7 @@ namespace TheTechIdea.Tools
             widthProperty.Name = propertyname;
             widthProperty.HasGet = true;
             widthProperty.HasSet = true;
-            widthProperty.Type = new CodeTypeReference(typeof(Nullable<>).MakeGenericType(type));
+            widthProperty.Type = new CodeTypeReference(type);
             widthProperty.Comments.Add(new CodeCommentStatement(
                 comments));
             widthProperty.GetStatements.Add(new CodeMethodReturnStatement(
