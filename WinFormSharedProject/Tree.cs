@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.DataManagment_Engine.Addin;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.DataView;
 using TheTechIdea.DataManagment_Engine.Editor;
@@ -60,6 +61,7 @@ namespace TheTechIdea.Winforms.VIS
         PassedArgs Passedarguments { get; set; } = new PassedArgs();
         string TreeEvent { get; set; }
         string TreeOP { get; set; }
+       
         public Font tagFont { get; set; } = new Font("Helvetica", 8, FontStyle.Bold);
         private bool busy = false;
         IDM_Addin sender;
@@ -516,6 +518,15 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
+      
+        //private System.Windows.Forms.ToolStripButton toolStripButton1;
+        //private System.Windows.Forms.ToolStripLabel toolStripButton2;
+        //private System.Windows.Forms.ToolStripDropDownButton toolStripButton3;
+        //private System.Windows.Forms.ToolStripMenuItem pToolStripMenuItem;
+        //private System.Windows.Forms.ToolStripSeparator toolStripButton4;
+        //private System.Windows.Forms.ToolStripComboBox toolStripButton5;
+        //private System.Windows.Forms.ToolStripTextBox toolStripButton6;
+        //private System.Windows.Forms.ToolStripProgressBar toolStripButton7;
         public IErrorsInfo CreateRootTree()
         {
             Branches = new List<IBranch>();
@@ -580,6 +591,155 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
+        public System.Windows.Forms.ToolStrip TreetoolStrip { get; set; }
+        public IErrorsInfo CreateGlobalMenu()
+        {
+            try
+            {
+                TreetoolStrip = new ToolStrip();
+                this.TreetoolStrip.Dock = System.Windows.Forms.DockStyle.Right;
+                this.TreetoolStrip.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.VerticalStackWithOverflow;
+                this.TreetoolStrip.Location = new System.Drawing.Point(342, 0);
+                this.TreetoolStrip.Name = "TreetoolStrip";
+                this.TreetoolStrip.Size = new System.Drawing.Size(78, 580);
+                this.TreetoolStrip.Text = "toolStrip1";
+                TreeV.Parent.Controls.Add(TreetoolStrip);
+                TreetoolStrip.ImageList = images;
+                foreach (AssemblyClassDefinition cls in DMEEditor.ConfigEditor.GlobalFunctions.Where(x => x.componentType== "IFunctionExtension"))
+                {
+                    foreach (var item in cls.Methods)
+                    {
+                        System.Windows.Forms.ToolStripButton toolStripButton1 = new ToolStripButton();
+                        if (item.iconimage != null)
+                        {
+                            toolStripButton1.ImageIndex = GetImageIndex(item.iconimage);
+                        }
+                        toolStripButton1.DisplayStyle = ToolStripItemDisplayStyle.Image;
+                        toolStripButton1.Name = item.Name;
+                        toolStripButton1.Size = new System.Drawing.Size(75, 20);
+                        toolStripButton1.Text = item.Caption;
+                        toolStripButton1.ToolTipText = item.Caption;
+                        toolStripButton1.Click += RunGlobalFunctionsandExtensions;
+                        toolStripButton1.Tag = cls.type.ToString() ;
+                        TreetoolStrip.Items.Add(toolStripButton1);
+
+
+                    }
+
+                }
+                ////-------------------------------------------------------------------------------------------
+                //// 
+                //// toolStripButton1
+                //// 
+                //this.toolStripButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+                //this.toolStripButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton1.Image")));
+                //this.toolStripButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
+                //this.toolStripButton1.Name = "toolStripButton1";
+                //this.toolStripButton1.Size = new System.Drawing.Size(75, 20);
+                //this.toolStripButton1.Text = "toolStripButton1";
+                //// 
+                //// toolStripButton2
+                //// 
+                //this.toolStripButton2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+                //this.toolStripButton2.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton2.Image")));
+                //this.toolStripButton2.ImageTransparentColor = System.Drawing.Color.Magenta;
+                //this.toolStripButton2.Name = "toolStripButton2";
+                //this.toolStripButton2.Size = new System.Drawing.Size(75, 16);
+                //this.toolStripButton2.Text = "toolStripButton2";
+                //// 
+                //// toolStripButton3
+                //// 
+                //this.toolStripButton3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+                //this.toolStripButton3.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.pToolStripMenuItem});
+                //this.toolStripButton3.Image = 
+                //this.toolStripButton3.ImageTransparentColor = System.Drawing.Color.Magenta;
+                //this.toolStripButton3.Name = "toolStripButton3";
+                //this.toolStripButton3.Size = new System.Drawing.Size(75, 20);
+                //this.toolStripButton3.Text = "toolStripButton3";
+                //// 
+                //// pToolStripMenuItem
+                //// 
+                //this.pToolStripMenuItem.Name = "pToolStripMenuItem";
+                //this.pToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+                //this.pToolStripMenuItem.Text = "p";
+                //// 
+                //// toolStripButton4
+                //// 
+                //this.toolStripButton4.Name = "toolStripButton4";
+                //this.toolStripButton4.Size = new System.Drawing.Size(75, 6);
+                //// 
+                //// toolStripButton5
+                //// 
+                //this.toolStripButton5.Name = "toolStripButton5";
+                //this.toolStripButton5.Size = new System.Drawing.Size(73, 23);
+                //this.toolStripButton5.Text = "toolStripButton5";
+                //// 
+                //// toolStripButton6
+                //// 
+                //this.toolStripButton6.Font = new System.Drawing.Font("Segoe UI", 9F);
+                //this.toolStripButton6.Name = "toolStripButton6";
+                //this.toolStripButton6.Size = new System.Drawing.Size(73, 23);
+                //this.toolStripButton6.Text = "toolStripButton6";
+
+                //-------------------------------------------------------------------------------
+
+                return DMEEditor.ErrorObject;
+            }
+            catch (Exception ex)
+            {
+
+                return DMEEditor.ErrorObject;
+            }
+        }
+
+        private void RunGlobalFunctionsandExtensions(object sender, EventArgs e)
+        {
+            IBranch br=null;
+            ToolStripItem item = (ToolStripItem)sender;
+            if (TreeV.SelectedNode != null)
+            {
+                TreeNode n = TreeV.SelectedNode;
+                br=GetBranch(Convert.ToInt32(n.Tag));
+            }
+            if (br != null )
+            {
+                DMEEditor.Passedarguments = new PassedArgs();
+                DMEEditor.Passedarguments.ObjectName = br.BranchText;
+                DMEEditor.Passedarguments.DatasourceName = br.BranchText;
+                DMEEditor.Passedarguments.Id = br.BranchID;
+                DMEEditor.Passedarguments.ParameterInt1 = br.BranchID;
+                
+               
+                
+                dynamic fc = DMEEditor.assemblyHandler.CreateInstanceFromString(item.Tag.ToString(), new object[] { DMEEditor, Visutil,this });
+                Type t = ((IFunctionExtension)fc).GetType();
+                //     dynamic fc = Activator.CreateInstance(t,new object[] { DMEEditor, Visutil });
+                AssemblyClassDefinition cls = DMEEditor.ConfigEditor.GlobalFunctions.Where(x => x.className == t.Name).FirstOrDefault();
+                MethodInfo method = null;
+                MethodsClass methodsClass;
+                try
+                {
+                    methodsClass = cls.Methods.Where(x => x.Caption == item.Text && x.PointType==br.BranchType).FirstOrDefault();
+                }
+                catch (Exception)
+                {
+
+                    methodsClass = null;
+                }
+                if (methodsClass != null)
+                {
+                    method = methodsClass.Info;
+                    if (method.GetParameters().Length > 0)
+                    {
+                        method.Invoke(fc, new object[] { DMEEditor.Passedarguments });
+                    }
+                    else
+                        method.Invoke(fc, null);
+                }
+            }
+          
+        }
+
         public ContextMenuStrip CreateMenuMethods(IBranch branch)
         {
 

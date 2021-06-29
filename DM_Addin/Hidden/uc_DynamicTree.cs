@@ -72,6 +72,7 @@ namespace TheTechIdea.Hidden
             Checkbutton.Click += Checkbutton_Click;
             DataConnectionbutton.Click += DataConnectionbutton_Click;
             TreeEditor.CreateRootTree();
+            TreeEditor.CreateGlobalMenu();
         }
 
         private void DataConnectionbutton_Click(object sender, EventArgs e)

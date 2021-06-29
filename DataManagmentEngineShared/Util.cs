@@ -41,6 +41,10 @@ namespace TheTechIdea.DataManagment_Engine
             ConfigEditor = pConfigEditor;
 
         }
+        public T CreateInstance<T>(params object[] paramArray)
+        {
+            return (T)Activator.CreateInstance(typeof(T), args: paramArray);
+        }
         public TypeCode GetTypeCode(Type dest)
         {
             TypeCode retval = TypeCode.String;

@@ -1,6 +1,4 @@
-﻿//using Microsoft.CodeAnalysis;
-//using Microsoft.CodeAnalysis.CSharp;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -742,8 +740,63 @@ namespace TheTechIdea.Tools
                                 }
                                  ConfigEditor.BranchesClasses.Add(xcls);
                             }
+                            // Get IFunctionExtension Definitions
+                            if (type.ImplementedInterfaces.Contains(typeof(IFunctionExtension)))
+                            {
+
+                            AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                            xcls.Methods = new List<MethodsClass>();
+                            xcls.className = type.Name;
+                            xcls.dllname = type.Module.Name;
+                            xcls.PackageName = type.FullName;
+                            xcls.componentType = "IFunctionExtension";
+                            xcls.type = type;
+
+                            xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                            if (xcls.classProperties != null)
+                            {
+                                xcls.RootName = "IFunctionExtension";
+                            }
+
+                            //   xcls.RootName = "AI";
+                            //   xcls.BranchType = brcls.BranchType;
+                            foreach (MethodInfo methods in type.GetMethods()
+                                         .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
+                                          .ToArray())
+                            {
+
+                                CommandAttribute methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
+                                MethodsClass x = new MethodsClass();
+                                x.Caption = methodAttribute.Caption;
+                                x.Name = methodAttribute.Name;
+                                x.Info = methods;
+                                x.Hidden = methodAttribute.Hidden;
+                                x.Click = methodAttribute.Click;
+                                x.DoubleClick = methodAttribute.DoubleClick;
+                                x.iconimage = methodAttribute.iconimage;
+                                x.PointType = methodAttribute.PointType;
+                                xcls.Methods.Add(x);
+                            }
+                            if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
+                            {
+                                try
+                                {
+                                    IOrder cls = (IOrder)Activator.CreateInstance(type);
+                                    xcls.Order = cls.Order;
+                                    cls = null;
+                                }
+                                catch (Exception)
+                                {
+
+
+                                }
+
+                            }
+                            ConfigEditor.GlobalFunctions.Add(xcls);
                         }
+
                     }
+                }
 
                 }
                 catch (Exception ex)

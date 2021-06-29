@@ -50,6 +50,7 @@ namespace TheTechIdea.Util
 		public List<DataWorkFlow> WorkFlows { get; set; } = new List<DataWorkFlow>();
 		public List<CategoryFolder> CategoryFolders { get; set; } = new List<CategoryFolder>();
 		public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
+		public List<AssemblyClassDefinition> GlobalFunctions { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> AppWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<App> Apps { get; set; } = new List<App>();
 		public List<AssemblyClassDefinition> AppComponents { get; set; } = new List<AssemblyClassDefinition>();

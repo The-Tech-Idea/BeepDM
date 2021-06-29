@@ -196,9 +196,12 @@
     <None Remove="GFX\com.ico" />
     <None Remove="GFX\connectiondrivers.ico" />
     <None Remove="GFX\connections.ico" />
+    <None Remove="GFX\copydefaults.ico" />
+    <None Remove="GFX\copyentities.ico" />
     <None Remove="GFX\couchbase.ico" />
     <None Remove="GFX\couchdb.ico" />
     <None Remove="GFX\createentity.ico" />
+    <None Remove="GFX\createpoco.ico" />
     <None Remove="GFX\css.ico" />
     <None Remove="GFX\csv.ico" />
     <None Remove="GFX\cursor.ico" />
@@ -214,6 +217,7 @@
     <None Remove="GFX\dll.ico" />
     <None Remove="GFX\doc.ico" />
     <None Remove="GFX\driversdefinition.ico" />
+    <None Remove="GFX\dropentites.ico" />
     <None Remove="GFX\dwg.ico" />
     <None Remove="GFX\elasticsearch.ico" />
     <None Remove="GFX\eml.ico" />
@@ -257,6 +261,8 @@
     <None Remove="GFX\obj.ico" />
     <None Remove="GFX\oracle.ico" />
     <None Remove="GFX\otf.ico" />
+    <None Remove="GFX\pastedefaults.ico" />
+    <None Remove="GFX\pasteentities.ico" />
     <None Remove="GFX\pdf.ico" />
     <None Remove="GFX\pkg.ico" />
     <None Remove="GFX\png.ico" />
@@ -265,6 +271,7 @@
     <None Remove="GFX\psd.ico" />
     <None Remove="GFX\query.ico" />
     <None Remove="GFX\ravendb.ico" />
+    <None Remove="GFX\refresh.ico" />
     <None Remove="GFX\report.ico" />
     <None Remove="GFX\reportnode.ico" />
     <None Remove="GFX\rtf.ico" />
@@ -954,6 +961,12 @@
     <Content Include="GFX\connections.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="GFX\copydefaults.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\copyentities.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="GFX\couchbase.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -961,6 +974,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\createentity.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\createpoco.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\css.ico">
@@ -1004,6 +1020,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\driversdefinition.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\dropentites.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\dwg.ico">
@@ -1133,6 +1152,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\otf.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\pastedefaults.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\pasteentities.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\pdf.ico">
@@ -1562,6 +1587,12 @@
 
   <ItemGroup>
     <Folder Include="ConnectionDrivers\win-x64\native\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="GFX\refresh.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

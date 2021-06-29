@@ -40,6 +40,7 @@ namespace TheTechIdea.DataManagment_Engine.Vis
         int GetImageIndex(string imagename);
         IErrorsInfo RunMethod(object branch, string MethodName);
         IErrorsInfo CreateRootTree();
+        IErrorsInfo CreateGlobalMenu();
         IErrorsInfo CopySelectedEntities();
         void ShowWaiting();
         void HideWaiting();

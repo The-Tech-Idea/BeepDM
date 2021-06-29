@@ -6,6 +6,7 @@ namespace TheTechIdea.DataManagment_Engine.Vis
 {
     public sealed class CommandAttribute : Attribute
     {
+        public string Name { get; set; }
         public  string Caption { get; set; }
         public bool Hidden { get; set; } = false;
         public bool Click { get; set; } = false;

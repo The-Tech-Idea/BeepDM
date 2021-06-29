@@ -22,7 +22,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Frm_Waiting.designer.cs">
       <DependentUpon>Frm_Waiting.cs</DependentUpon>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)FunntionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MultiSelectTreeview.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tree.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\AddinVisSchema.cs" />

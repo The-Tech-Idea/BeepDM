@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
+using TheTechIdea.DataManagment_Engine.Vis;
 //using TheTechIdea.DataManagment_Engine.Vis;
 
 namespace TheTechIdea.Util
@@ -82,12 +83,14 @@ namespace TheTechIdea.Util
 
         }
         public MethodInfo Info { get; set; }
+        public string Name { get; set; }
         public string Caption { get; set; }
         public bool Hidden { get; set; }
         public bool Click { get; set; } = false;
         public Type type { get; set; }
         public bool DoubleClick { get; set; } = false;
         public string iconimage { get; set; } = null;
+        public EnumPointType PointType { get; set; }
     }
     public class ConnectionDriversConfig
     {

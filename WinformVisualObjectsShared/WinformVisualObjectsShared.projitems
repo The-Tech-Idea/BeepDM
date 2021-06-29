@@ -36,6 +36,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)File\FileEntityNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)File\FileEntitySheetNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)File\FileRootNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FunntionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Mapping\MappingCategoryNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Mapping\MappingRootNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Mapping\MappinSchemaNode.cs" />

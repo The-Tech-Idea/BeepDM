@@ -31,6 +31,7 @@ namespace TheTechIdea.DataManagment_Engine
 
         // Type GetType(string strFullyQualifiedName);
         TypeCode GetTypeCode(Type dest);
+        T CreateInstance<T>(params object[] paramArray);
         bool IsObjectNumeric( object o);
         List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype);
         List<object> GetListByDataTable(DataTable dt, Type type, EntityStructure enttype);
