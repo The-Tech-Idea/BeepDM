@@ -112,7 +112,7 @@ namespace TheTechIdea.Winforms.VIS
                 DataSource = (IRDBSource)DMEEditor.GetDataSource(BranchText);
                 if (DataSource != null)
                 {
-                    DMEEditor.OpenDataSource(BranchText);
+                    DataSource.Openconnection();
                    // DataSource.Dataconnection.OpenConnection();
                     if (DataSource.ConnectionStatus == System.Data.ConnectionState.Open)
                     {

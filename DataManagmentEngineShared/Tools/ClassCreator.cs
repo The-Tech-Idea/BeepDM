@@ -53,7 +53,7 @@ namespace TheTechIdea.Tools
                 {
                     try
                     {
-                        AddProperties(f.fieldname.ToLower(), MemberAttributes.Public, Type.GetType(f.fieldtype), "");
+                        AddProperties(f.fieldname, MemberAttributes.Public, Type.GetType(f.fieldtype), "");
                     }
                     catch (Exception ex)
                     {

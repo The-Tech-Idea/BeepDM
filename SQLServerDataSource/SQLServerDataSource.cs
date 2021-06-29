@@ -37,7 +37,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return DMEEditor.ErrorObject.Message;
         }
-
         public override string EnableFKConstraints(EntityStructure t1)
         {
             try

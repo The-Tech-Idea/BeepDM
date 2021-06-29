@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
+
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.Editor;
@@ -107,23 +109,25 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                 queryStructure.Entities.AddRange(Tablesdsp);
                 qrystr += queryStructure.FieldsString + " " + " from " + queryStructure.EntitiesString;
                 qrystr += Environment.NewLine;
-                List<ReportFilter> FilterwoPaging = Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator) && !p.FieldName.Equals("Pagesize", StringComparison.OrdinalIgnoreCase) && !p.FieldName.Equals("pagenumber", StringComparison.OrdinalIgnoreCase)).ToList();
-                if (FilterwoPaging != null)
+                if (Filter != null)
                 {
-                    if (FilterwoPaging.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
+                    List<ReportFilter> FilterwoPaging = Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator) && !p.FieldName.Equals("Pagesize", StringComparison.OrdinalIgnoreCase) && !p.FieldName.Equals("pagenumber", StringComparison.OrdinalIgnoreCase)).ToList();
+                    if (FilterwoPaging != null)
                     {
-                        qrystr += Environment.NewLine;
-                        if (FoundWhere == false)
+                        if (FilterwoPaging.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
                         {
-                            qrystr += " where " + Environment.NewLine;
-                            FoundWhere = true;
-                        }
-                       
-                       
-                        int i = 0;
-                       
-                        foreach (ReportFilter item in FilterwoPaging)
-                        {
+                            qrystr += Environment.NewLine;
+                            if (FoundWhere == false)
+                            {
+                                qrystr += " where " + Environment.NewLine;
+                                FoundWhere = true;
+                            }
+
+
+                            int i = 0;
+
+                            foreach (ReportFilter item in FilterwoPaging)
+                            {
                                 //item.FieldName.Equals("Pagesize", StringComparison.OrdinalIgnoreCase) && item.FieldName.Equals("pagenumber", StringComparison.OrdinalIgnoreCase)
                                 if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
                                 {
@@ -146,10 +150,12 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                                 }
 
                                 i++;
+                            }
                         }
-                    }
 
+                    }
                 }
+               
                 if (originalquery.ToLower().Contains("where"))
                 {
                     qrystr += Environment.NewLine;
@@ -196,13 +202,17 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     qrystr += " order by " + orderbywhere[1];
 
                 }
-                if (Filter.Where(o => o.FieldName.Equals("Pagesize", StringComparison.OrdinalIgnoreCase)).Any() || Filter.Where(o => o.FieldName.Equals("pagenumber", StringComparison.OrdinalIgnoreCase)).Any() && Filter.Count >= 2)
+                if (Filter != null)
                 {
-                    if (Filter.Where(o => o.FieldName.Equals("Pagesize", StringComparison.OrdinalIgnoreCase)).Any() || Filter.Where(o => o.FieldName.Equals("pagenumber", StringComparison.OrdinalIgnoreCase)).Any())
+                    if (Filter.Where(o => o.FieldName.Equals("Pagesize", StringComparison.OrdinalIgnoreCase)).Any() || Filter.Where(o => o.FieldName.Equals("pagenumber", StringComparison.OrdinalIgnoreCase)).Any() && Filter.Count >= 2)
                     {
-                        qrystr = PagedQuery(qrystr, Filter);
+                        if (Filter.Where(o => o.FieldName.Equals("Pagesize", StringComparison.OrdinalIgnoreCase)).Any() || Filter.Where(o => o.FieldName.Equals("pagenumber", StringComparison.OrdinalIgnoreCase)).Any())
+                        {
+                            qrystr = PagedQuery(qrystr, Filter);
+                        }
                     }
                 }
+                  
 
             }
             catch (Exception ex)
@@ -215,7 +225,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             return qrystr;
         }
-        public override object GetEntity(string EntityName, List<ReportFilter> Filter)
+        public override  object GetEntity(string EntityName, List<ReportFilter> Filter)
         {
             ErrorObject.Flag = Errors.Ok;
             //  int LoadedRecord;
@@ -246,12 +256,12 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             try
             {
-                IDataAdapter adp = GetDataAdapter(qrystr, Filter);
-                DataSet dataSet = new DataSet();
-                adp.Fill(dataSet);
-                DataTable dt = dataSet.Tables[0];
+                //OracleDataAdapter adp =GetDataAdapterForOracle(qrystr, Filter);
+                //DataSet dataSet = new DataSet();
+                //adp.Fill(dataSet);
+                //DataTable dt = dataSet.Tables[0];
 
-                return dt;
+                return GetDataTableUsingReaderAsync(qrystr,Filter);
             }
 
             catch (Exception ex)
@@ -264,7 +274,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
 
         }
-
         #region "Command "
         private int GetCtorForAdapter(List<ConstructorInfo> ls)
         {
@@ -307,15 +316,16 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             return i;
 
         }
-        public virtual IDbCommand GetDataCommand()
+        public  OracleCommand GetDataCommandForOracle()
         {
-            IDbCommand cmd = null;
+            OracleCommand cmd = null;
             ErrorObject.Flag = Errors.Ok;
+            OracleConnection conn =(OracleConnection) RDBMSConnection.DbConn;
             try
             {
                 if (Dataconnection.OpenConnection() == ConnectionState.Open)
                 {
-                    cmd = RDBMSConnection.DbConn.CreateCommand();
+                    cmd =conn.CreateCommand();
                 }
                 else
                 {
@@ -337,7 +347,75 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return cmd;
         }
-        public virtual IDbDataAdapter GetDataAdapter(string Sql, List<ReportFilter> Filter = null)
+       
+
+        private async Task<DataTable> GetDataTableUsingReaderAsync(string Sql, List<ReportFilter> Filter = null)
+        {
+            DataTable retval = new DataTable();
+            OracleDataReader reader;
+            OracleCommand cmd = (OracleCommand)GetDataCommandForOracle();
+            try
+            {
+                // Get Filterd Query with parameters
+                if (Filter != null)
+                {
+                    if (Filter.Count > 0)
+                    {
+                        if (Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
+                        {
+                            foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue)))
+                            {
+                                OracleParameter parameter = cmd.CreateParameter();
+                                string dr = Filter.Where(i => i.FieldName == item.FieldName).FirstOrDefault().FilterValue;
+                                parameter.ParameterName = "p_" + item.FieldName;
+                                if (item.valueType == "System.DateTime")
+                                {
+                                    parameter.DbType = DbType.DateTime;
+                                    parameter.Value = DateTime.Parse(dr).ToShortDateString();
+
+                                }
+                                else
+                                { parameter.Value = dr; }
+
+                                if (item.Operator.ToLower() == "between")
+                                {
+                                    OracleParameter parameter1 = cmd.CreateParameter();
+                                    parameter1.ParameterName = "p_" + item.FieldName + "1";
+                                    parameter1.DbType = DbType.DateTime;
+                                    string dr1 = Filter.Where(i => i.FieldName == item.FieldName).FirstOrDefault().FilterValue1;
+                                    parameter1.Value = DateTime.Parse(dr1).ToShortDateString();
+                                    cmd.Parameters.Add(parameter1);
+                                }
+
+                                //  parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
+                                cmd.Parameters.Add(parameter);
+
+                            }
+
+                        }
+                    }
+
+                }
+                // Get Table from Reader
+                CancellationToken cancellationToken = new CancellationToken();
+                cmd.CommandText = Sql;
+
+                reader = (OracleDataReader)await cmd.ExecuteReaderAsync(CommandBehavior.Default, cancellationToken);
+                reader.SuppressGetDecimalInvalidCastException = true;
+
+                retval = new DataTable();
+                retval.Load(reader);
+                reader.Close();
+                cmd.Dispose();
+                return retval;
+            }
+            catch (Exception ex)
+            {
+
+                return null;
+            }
+        }
+        public   OracleDataAdapter GetDataAdapterForOracle(string Sql, List<ReportFilter> Filter = null)
         {
             OracleConnection conn = null;
             OracleDataAdapter adp =null;
@@ -409,8 +487,8 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         }
                    
                     }
-                    
-                  //  adp.ReturnProviderSpecificTypes = true;
+                
+                    //  adp.ReturnProviderSpecificTypes = true;
                     adp.SuppressGetDecimalInvalidCastException = true;
                     adp.InsertCommand = cmdb.GetInsertCommand(true);
                     adp.UpdateCommand = cmdb.GetUpdateCommand(true);
@@ -439,12 +517,12 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             return adp;
         }
-        public virtual DataTable GetTableSchema(string TableName)
+        public override  DataTable GetTableSchema(string TableName)
         {
             ErrorObject.Flag = Errors.Ok;
             DataTable tb = new DataTable();
-            IDataReader reader;
-            IDbCommand cmd = GetDataCommand();
+            OracleDataReader reader;
+            OracleCommand cmd =(OracleCommand) GetDataCommandForOracle();
             try
             {
 
@@ -471,7 +549,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
             return tb;
         }
-        public virtual List<ChildRelation> GetTablesFKColumnList(string tablename, string SchemaName, string Filterparamters)
+        public override  List<ChildRelation> GetTablesFKColumnList(string tablename, string SchemaName, string Filterparamters)
         {
             ErrorObject.Flag = Errors.Ok;
             DataSet ds = new DataSet();

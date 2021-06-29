@@ -494,15 +494,15 @@ namespace TheTechIdea.DataManagment_Engine
             //  string f = "";
             List<object> Records = new List<object>();
             Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
-            foreach (DataColumn item in dt.Columns)
-            {
-                properties.Add(item.ColumnName.ToLower(), type.GetProperty(item.ColumnName));
-                //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
-            }
-            //for (int i = 0; i <= enttype.Fields.Count - 1; i++)
+            //foreach (DataColumn item in dt.Columns)
             //{
-            //    properties.Add(enttype.Fields[i].fieldname, type.GetProperty(enttype.Fields[i].fieldname));
+            //    properties.Add(item.ColumnName.ToLower(), type.GetProperty(item.ColumnName));
+            //    //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
             //}
+            for (int i = 0; i <= enttype.Fields.Count - 1; i++)
+            {
+                properties.Add(enttype.Fields[i].fieldname, type.GetProperty(enttype.Fields[i].fieldname));
+            }
             foreach (DataRow row in dt.Rows)
             {
                 // dynamic x = TypeHelpers.GetInstance(type);
@@ -510,13 +510,13 @@ namespace TheTechIdea.DataManagment_Engine
                 //  var v = (dynamic)null;
                 for (int i = 0; i <= enttype.Fields.Count - 1; i++)
                 {
-                    if (row[enttype.Fields[i].fieldname.ToLower()] != DBNull.Value)
+                    if (row[enttype.Fields[i].fieldname] != DBNull.Value)
                     {
-                        string st = row[enttype.Fields[i].fieldname.ToLower()].ToString();
-                       // var v = Convert.ChangeType(row[enttype.Fields[i].fieldname], Type.GetType(enttype.Fields[i].fieldtype)); //Type.GetType(enttype.Fields[i].fieldtype)
+                        string st = row[enttype.Fields[i].fieldname].ToString();
+                        var v = Convert.ChangeType(row[enttype.Fields[i].fieldname], Type.GetType(enttype.Fields[i].fieldtype)); //Type.GetType(enttype.Fields[i].fieldtype)
                         if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st))
                         {
-                            properties[enttype.Fields[i].fieldname.ToLower()].SetValue(x, row[enttype.Fields[i].fieldname.ToLower()], null);
+                            properties[enttype.Fields[i].fieldname].SetValue(x, v, null);
                         }
                     }
                 }
