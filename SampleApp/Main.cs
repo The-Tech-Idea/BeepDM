@@ -10,6 +10,7 @@ using TheTechIdea.Tools;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.DataManagment_Engine.Tools;
 
 namespace DataManagment_Engine
 
@@ -47,7 +48,7 @@ namespace DataManagment_Engine
             Builder.RegisterType<VisUtil>().As<IVisUtil>().SingleInstance();
             Builder.RegisterType<JsonLoader>().As<IJsonLoader>().SingleInstance();
             Builder.RegisterType<AssemblyHandler>().As<IAssemblyHandler>().SingleInstance();
-            Builder.RegisterType<ClassCreator>().As<IClassCreator>().SingleInstance();
+            Builder.RegisterType<ClassCreatorv2>().As<IClassCreator>().SingleInstance();
             Builder.RegisterType<ETL>().As<IETL>().SingleInstance();
             Builder.RegisterType<Tree>().As<ITree>().SingleInstance();
             return Builder.Build();

@@ -157,10 +157,13 @@ namespace TheTechIdea.Tools
         }
         private void AddProperties(string propertyname, MemberAttributes attributes, System.Type type, string comments)
         {
+
+            
+
             // Declare the read-only Width property.
             AddFields(propertyname + "Value", attributes, type, comments);
             CodeMemberProperty widthProperty = new CodeMemberProperty();
-           var thisReference = new CodeThisReferenceExpression();
+            var thisReference = new CodeThisReferenceExpression();
             widthProperty.Attributes = attributes; //                MemberAttributes.Public | MemberAttributes.Final;
             widthProperty.Name = propertyname;
             widthProperty.HasGet = true;

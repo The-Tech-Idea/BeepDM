@@ -36,6 +36,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\ProxyGen.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\ProxyGenerationException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\TypeFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tools\ClassCreatorv2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\WebApiGenerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WEBAPIDataConnection.cs" />

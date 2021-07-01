@@ -18,6 +18,7 @@ namespace TheTechIdea.Util
             string typenamespace = "TheTechIdea.Classes";
             myType = CompileResultType(libname, typenamespace,typename, MyFields);
             myObject = Activator.CreateInstance(myType);
+           
             return myObject;
 
         }

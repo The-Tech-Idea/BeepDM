@@ -91,13 +91,11 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                     return DbConn.State;
                 }
 
-
             }
             else
             {
                 try
                 {
-
                     DbConn = (IDbConnection) DMEEditor.assemblyHandler.GetInstance(DataSourceDriver.DbConnectionType);
                     if (DbConn != null)
                     {
@@ -109,19 +107,13 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
                         DMEEditor.AddLogMessage("Fail", $"Could Find DataSource Drivers {DataSourceDriver.classHandler}", DateTime.Now, 0, null, Errors.Failed);
                         return ConnectionState.Broken;
                     }
-                        
 
-                    
-                
                 }
                 catch (Exception e)
                 {
                     DMEEditor.AddLogMessage("Fail", $"Could not get instance Driver for {ConnectionProp.ConnectionName}- {e.Message}", DateTime.Now, 0, ConnectionProp.ConnectionName, Errors.Failed);
                   
                 }
-
-
-
 
             }
                 try
