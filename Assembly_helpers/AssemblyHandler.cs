@@ -12,6 +12,7 @@ using TheTechIdea.DataManagment_Engine.Addin;
 using TheTechIdea.DataManagment_Engine.AI;
 using TheTechIdea.DataManagment_Engine.AppBuilder;
 using TheTechIdea.DataManagment_Engine.ConfigUtil;
+using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.DataManagment_Engine.Report;
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.DataManagment_Engine.Workflow;
@@ -961,14 +962,25 @@ namespace TheTechIdea.Tools
             bool retval;
             string[] p;
             Type[] t;
+            List<Type> t1;
             try
             {
-                if (asm.GetType() == null)
+                if (asm.ExportedTypes != null)
                 {
-                    t = asm.GetExportedTypes();
+                    t = asm.ExportedTypes.ToArray();
                 }
                 else
-                    t = asm.GetTypes().Where(typeof(IDbDataAdapter).IsAssignableFrom).ToArray();
+                {
+                    
+                    t1 = asm.GetTypes().Where(typeof(IDbDataAdapter).IsAssignableFrom).ToList() ;
+                    t1.AddRange(asm.GetTypes().Where(typeof(IDataConnection).IsAssignableFrom).ToList());
+                    t1.AddRange(asm.GetTypes().Where(typeof(DbCommandBuilder).IsAssignableFrom).ToList());
+                    t1.AddRange(asm.GetTypes().Where(typeof(IDbTransaction).IsAssignableFrom).ToList());
+
+                    t = t1.ToArray();
+                }
+                    
+                    
                 foreach (var mytype in t)
                 {
                     try
@@ -1017,7 +1029,7 @@ namespace TheTechIdea.Tools
 
 
                         }
-                        if (type.IsSubclassOf(typeof(DbCommandBuilder)))
+                        if (type.ImplementedInterfaces.Contains(typeof(DbCommandBuilder)))
                         {
 
                             driversConfig.CommandBuilderType = type.FullName;
@@ -1032,7 +1044,7 @@ namespace TheTechIdea.Tools
 
                             //  }
                         }
-                        if (type.IsSubclassOf(typeof(DbConnection)))
+                        if (type.ImplementedInterfaces.Contains(typeof(IDbConnection)))
                         {
 
                             driversConfig.DbConnectionType = type.FullName;
@@ -1046,8 +1058,8 @@ namespace TheTechIdea.Tools
                             }
 
                             //}
-                        }
-                        if (type.IsSubclassOf(typeof(DbTransaction)))
+                        }   
+                        if (type.ImplementedInterfaces.Contains(typeof(IDbTransaction)))
                         {
 
 
@@ -1063,18 +1075,12 @@ namespace TheTechIdea.Tools
 
                             // }
                         }
-
-
-
                         //-----------------------------------------------------------
                     }
                     catch (Exception ex)
                     {
-
-                      //  DMEEditor.Logger.WriteLog($"error loading Database drivers {ex.Message} ");
                         return false;
                     }
-
                 }
                 if (driversConfig.dllname == null)
                 {
@@ -1126,8 +1132,6 @@ namespace TheTechIdea.Tools
                 retval = false;
                 //DMEEditor.AddLogMessage("Failed", $"Could not ADO Type Drivers for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
             }
-           
-          
             return retval;
         }
         private void GetNonADODrivers()

@@ -25,8 +25,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
         public OracleDataSource(string datasourcename, IDMLogger logger, IDMEEditor DMEEditor, DataSourceType databasetype, IErrorsInfo per) : base(datasourcename, logger, DMEEditor, databasetype, per)
         {
             
-
-            
         }
         public override string DisableFKConstraints(EntityStructure t1)
         {
@@ -347,8 +345,6 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
             }
             return cmd;
         }
-       
-
         private async Task<DataTable> GetDataTableUsingReaderAsync(string Sql, List<ReportFilter> Filter = null)
         {
             DataTable retval = new DataTable();
