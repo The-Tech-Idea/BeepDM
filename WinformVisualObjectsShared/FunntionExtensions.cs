@@ -415,14 +415,30 @@ namespace TheTechIdea.DataManagment_Engine.Vis
                                 {
                                     Directory.CreateDirectory(Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, Passedarguments.DatasourceName));
                                 };
-                                foreach (string tb in DataSource.EntitiesNames)
+
+                                foreach (int item in TreeEditor.SelectedBranchs)
                                 {
-                                    TreeEditor.AddCommentsWaiting($"{i} - Added {tb} to {Passedarguments.DatasourceName}");
-                                    EntityStructure ent = DataSource.GetEntityStructure(tb, true);
-                                    ls.Add(ent);
-                               
-                                    i += 1;
+                                    IBranch br = TreeEditor.GetBranch(item);
+                                    IDataSource srcds = DMEEditor.GetDataSource(br.DataSourceName);
+                                   
+                                    if (srcds != null)
+                                    {
+                                        if (srcds.DatasourceName == Passedarguments.DatasourceName)
+                                        {
+                                            EntityStructure entity = (EntityStructure)srcds.GetEntityStructure(br.BranchText, true).Clone();
+                                            ls.Add(entity);
+                                        }
+                                       
+                                    }
                                 }
+                                //foreach (string tb in DataSource.EntitiesNames)
+                                //{
+                                //    TreeEditor.AddCommentsWaiting($"{i} - Added {tb} to {Passedarguments.DatasourceName}");
+                                //    EntityStructure ent = DataSource.GetEntityStructure(tb, true);
+                                //    ls.Add(ent);
+                               
+                                //    i += 1;
+                                //}
                                 if (ls.Count > 0)
                                 {
                                     DMEEditor.classCreator.CreateDLL(Regex.Replace(Passedarguments.DatasourceName, @"\s+", "_") ,ls, Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, Passedarguments.DatasourceName),"TheTechIdea."+ Regex.Replace(Passedarguments.DatasourceName, @"\s+", "_"));
