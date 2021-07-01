@@ -7,6 +7,9 @@ using System.Reflection;
 using System.Text;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using TheTechIdea.Tools;
+using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.Util;
+using Microsoft.CSharp;
 
 namespace TheTechIdea.DataManagment_Engine.Tools
 {
@@ -15,9 +18,14 @@ namespace TheTechIdea.DataManagment_Engine.Tools
         public string outputFileName { get ; set; }
         public string outputpath { get; set ; }
 
-
+        public IDMEEditor DMEEditor { get; set; }
         private CodeCompileUnit targetUnit;
         private CodeTypeDeclaration targetClass;
+
+        private CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
+        private CodeGeneratorOptions options = new CodeGeneratorOptions();
+
+      
        
         public ClassCreatorv2()
         {
@@ -27,12 +35,81 @@ namespace TheTechIdea.DataManagment_Engine.Tools
         {
             throw new NotImplementedException();
         }
-
-        public string CreateClass(string classname, List<EntityField> flds, string poutputpath, string NameSpacestring = "TheTechIdea.ProjectClasses")
+        public string CreateDLL(string dllname, List<EntityStructure> entities, string outputpath, string NameSpacestring = "TheTechIdea.ProjectClasses")
         {
+           
+
+            options.BracingStyle = "C";
             targetUnit = new CodeCompileUnit();
             CodeNamespace namespaces = new CodeNamespace(NameSpacestring);
-            namespaces.Imports.Add(new CodeNamespaceImport("System"));
+            try
+            {
+                foreach (EntityStructure item in entities)
+                {
+                    string classname = item.EntityName;
+                    targetClass = new CodeTypeDeclaration(classname);
+                    targetClass.IsClass = true;
+                    targetClass.TypeAttributes =
+                        TypeAttributes.Public;
+                    namespaces.Types.Add(targetClass);
+                    targetUnit.Namespaces.Add(namespaces);
+                    
+               
+                    AddConstructor();
+
+                    foreach (var f in item.Fields)
+                    {
+                        try
+                        {
+                            AddProperties(f);
+                        }
+                        catch (Exception ex)
+                        {
+
+                            throw;
+                        }
+
+                    }
+
+                    EntityField entity = new EntityField();
+                    entity.fieldname = "Name";
+                    entity.fieldtype = "System.String";
+                    AddProperties(entity);
+                    entity = new EntityField();
+                    entity.fieldname = "RN";
+                    entity.fieldtype = "System.Int64";
+                    AddProperties(entity);
+
+
+
+                }
+                outputFileName = dllname+".dll";
+                if (outputpath == null)
+                {
+                    outputpath = Assembly.GetEntryAssembly().Location + "\\";
+                }
+                GenerateCSharpCode(Path.Combine(outputpath, dllname + ".cs"));
+                CSharpCodeProvider codeProvider = new CSharpCodeProvider();
+                System.CodeDom.Compiler.CompilerParameters parameters = new CompilerParameters();
+                //parameters.GenerateExecutable = true;
+                //parameters.OutputAssembly = dllname+".dll";
+                CompileCode(provider, Path.Combine(outputpath, dllname + ".cs"), Path.Combine(outputpath, dllname + ".dll"));
+                //  CompilerResults results = codeProvider.CompileAssemblyFromFile(parameters,);
+                return "ok";
+            }
+            catch (Exception ex)
+            {
+
+                return ex.Message;
+            }
+          
+        }
+        public string CreateClass(string classname, List<EntityField> flds, string poutputpath, string NameSpacestring = "TheTechIdea.ProjectClasses")
+        {
+            options.BracingStyle = "C";
+            targetUnit = new CodeCompileUnit();
+            CodeNamespace namespaces = new CodeNamespace(NameSpacestring);
+           // namespaces.Imports.Add(new CodeNamespaceImport("System"));
             targetClass = new CodeTypeDeclaration(classname);
             targetClass.IsClass = true;
             targetClass.TypeAttributes =
@@ -58,9 +135,9 @@ namespace TheTechIdea.DataManagment_Engine.Tools
             }
 
             EntityField entity = new EntityField();
-            entity.fieldname = "Name";
-            entity.fieldtype= "System.String";
-            AddProperties(entity);
+            //entity.fieldname = "Name";
+            //entity.fieldtype= "System.String";
+            //AddProperties(entity);
             entity = new EntityField();
             entity.fieldname = "RN";
             entity.fieldtype = "System.Int64";
@@ -78,13 +155,12 @@ namespace TheTechIdea.DataManagment_Engine.Tools
 
         public void GenerateCSharpCode(string fileName)
         {
-            CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
-            CodeGeneratorOptions options = new CodeGeneratorOptions();
-            options.BracingStyle = "C";
+         
             using (StreamWriter sourceWriter = new StreamWriter(fileName))
             {
                 provider.GenerateCodeFromCompileUnit(
                     targetUnit, sourceWriter, options);
+                
             }
         }
 
@@ -165,7 +241,100 @@ namespace TheTechIdea.DataManagment_Engine.Tools
             //    new CodeArgumentReferenceExpression("height")));
             targetClass.Members.Add(constructor);
         }
-       
+        public static bool CompileCode(CodeDomProvider provider,
+             String sourceFile,
+             String exeFile)
+        {
+
+            CompilerParameters cp = new CompilerParameters();
+
+            // Generate an executable instead of
+            // a class library.
+            cp.GenerateExecutable = false;
+
+            // Set the assembly file name to generate.
+            cp.OutputAssembly = exeFile;
+
+            // Generate debug information.
+            cp.IncludeDebugInformation = true;
+
+            // Add an assembly reference.
+            cp.ReferencedAssemblies.Add("System.dll");
+
+            // Save the assembly as a physical file.
+            cp.GenerateInMemory = false;
+
+            // Set the level at which the compiler
+            // should start displaying warnings.
+            cp.WarningLevel = 3;
+
+            // Set whether to treat all warnings as errors.
+            cp.TreatWarningsAsErrors = false;
+
+            // Set compiler argument to optimize output.
+            cp.CompilerOptions = "/optimize";
+
+            // Set a temporary files collection.
+            // The TempFileCollection stores the temporary files
+            // generated during a build in the current directory,
+            // and does not delete them after compilation.
+            cp.TempFiles = new TempFileCollection(".", true);
+
+            //if (provider.Supports(GeneratorSupport.EntryPointMethod))
+            //{
+            //    // Specify the class that contains
+            //    // the main method of the executable.
+            //    cp.MainClass = "Samples.Class1";
+            //}
+
+            if (Directory.Exists("Resources"))
+            {
+                if (provider.Supports(GeneratorSupport.Resources))
+                {
+                    // Set the embedded resource file of the assembly.
+                    // This is useful for culture-neutral resources,
+                    // or default (fallback) resources.
+                    cp.EmbeddedResources.Add("Resources\\Default.resources");
+
+                    // Set the linked resource reference files of the assembly.
+                    // These resources are included in separate assembly files,
+                    // typically localized for a specific language and culture.
+                    cp.LinkedResources.Add("Resources\\nb-no.resources");
+                }
+            }
+
+            // Invoke compilation.
+            CompilerResults cr = provider.CompileAssemblyFromFile(cp, sourceFile);
+
+            if (cr.Errors.Count > 0)
+            {
+                // Display compilation errors.
+                Console.WriteLine("Errors building {0} into {1}",
+                    sourceFile, cr.PathToAssembly);
+                foreach (CompilerError ce in cr.Errors)
+                {
+                    Console.WriteLine("  {0}", ce.ToString());
+                    Console.WriteLine();
+                }
+            }
+            else
+            {
+                Console.WriteLine("Source {0} built into {1} successfully.",
+                    sourceFile, cr.PathToAssembly);
+                Console.WriteLine("{0} temporary files created during the compilation.",
+                    cp.TempFiles.Count.ToString());
+            }
+
+            // Return the results of compilation.
+            if (cr.Errors.Count > 0)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
         #endregion
     }
 }

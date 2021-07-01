@@ -37,11 +37,11 @@ namespace TheTechIdea.DataManagment_Engine.Editor
             }
             return p;
         }
-        public DataTypesHelper(IDMLogger plogger, IDMEEditor pDMEEditor, IErrorsInfo per)
+        public DataTypesHelper(IDMLogger plogger,  IErrorsInfo per)
         {
             //  DMEEditor = pbs;
             Logger = Logger;
-            DMEEditor = pDMEEditor;
+          
             ErrorObject = per;
 
 

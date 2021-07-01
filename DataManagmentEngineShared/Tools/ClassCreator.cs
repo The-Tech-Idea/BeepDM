@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using TheTechIdea.DataManagment_Engine.DataBase;
 using Microsoft.CSharp;
 using System.ComponentModel;
-
+using TheTechIdea.DataManagment_Engine;
 
 namespace TheTechIdea.Tools
 {
@@ -17,6 +17,7 @@ namespace TheTechIdea.Tools
     {
         CodeCompileUnit targetUnit;
         CodeTypeDeclaration targetClass;
+        public IDMEEditor DMEEditor { get; set; }
         public string outputFileName { get; set; }
         public string outputpath { get; set; }
         private CodeMemberMethod notify = new CodeMemberMethod();

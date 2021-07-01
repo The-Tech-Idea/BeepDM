@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using TheTechIdea.DataManagment_Engine.Addin;
 using TheTechIdea.DataManagment_Engine.DataBase;
@@ -27,6 +29,7 @@ namespace TheTechIdea.DataManagment_Engine.Vis
         private void GetValues(IPassedArgs Passedarguments)
         {
             DataSource = DMEEditor.GetDataSource(Passedarguments.DatasourceName);
+
             DMEEditor.OpenDataSource(Passedarguments.DatasourceName);
             pbr = TreeEditor.GetBranch(Passedarguments.Id);
             RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == pbr.BranchClass && x.BranchType == EnumPointType.Root)];
@@ -151,14 +154,78 @@ namespace TheTechIdea.DataManagment_Engine.Vis
          
         }
         [CommandAttribute(Name = "CopyDefaults", Caption = "Copy Default", Click = true, iconimage = "copydefaults.ico", PointType = EnumPointType.DataPoint)]
-        public void CopyDefault(IPassedArgs Passedarguments)
+        public IErrorsInfo CopyDefault(IPassedArgs Passedarguments)
         {
             GetValues(Passedarguments);
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            //  DMEEditor.Logger.WriteLog($"Filling Database Entites ) ");
+            try
+            {
+                List<DefaultValue> defaults = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == Passedarguments.DatasourceName)].DatasourceDefaults;
+                if (defaults != null)
+                {
+                    string[] args = { "CopyDefaults", null, null };
+                    List<ObjectItem> ob = new List<ObjectItem>(); ;
+                    ObjectItem it = new ObjectItem();
+                    it.obj = defaults;
+                    it.Name = "Defaults";
+                    ob.Add(it);
+                    Passedarguments.CurrentEntity = Passedarguments.DatasourceName;
+                    Passedarguments.Id = 0;
+                    Passedarguments.ObjectType = "COPYDEFAULTS";
+                    Passedarguments.ObjectName = Passedarguments.DatasourceName;
+                    Passedarguments.Objects = ob;
+                    Passedarguments.DatasourceName = Passedarguments.DatasourceName;
+                    Passedarguments.EventType = "COPYDEFAULTS";
+                  
+                    TreeEditor.args = (PassedArgs)Passedarguments;
+                    DMEEditor.Passedarguments = Passedarguments;
+                }
+                else
+                {
+                    string mes = "Could not get Defaults";
+                    DMEEditor.AddLogMessage("Failed", mes, DateTime.Now, -1, mes, Errors.Failed);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.Logger.WriteLog($"Error getting defaults ({ex.Message}) ");
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
+            }
+            return DMEEditor.ErrorObject;
         }
         [CommandAttribute(Name = "PasteDefaults", Caption = "Paste Default", Click = true, iconimage = "pastedefaults.ico", PointType = EnumPointType.DataPoint)]
-        public void PasteDefault(IPassedArgs Passedarguments)
+        public IErrorsInfo PasteDefault(IPassedArgs Passedarguments)
         {
             GetValues(Passedarguments);
+
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            //  DMEEditor.Logger.WriteLog($"Filling Database Entites ) ");
+            try
+            {
+                if (TreeEditor.args != null)
+                {
+                    if (TreeEditor.args.ObjectType == "COPYDEFAULTS")
+                    {
+                        if (Passedarguments.Objects.Where(o => o.Name == "Defaults").Any())
+                        {
+                            List<DefaultValue> defaults = (List<DefaultValue>)Passedarguments.Objects.Where(o => o.Name == "Defaults").FirstOrDefault().obj;
+                            DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == DataSource.DatasourceName)].DatasourceDefaults = defaults;
+                            DMEEditor.ConfigEditor.SaveDataconnectionsValues();
+                        }
+                       
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.Logger.WriteLog($"Error in  pasting Defaults ({ex.Message}) ");
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
+            }
+            return DMEEditor.ErrorObject;
 
         }
         [CommandAttribute(Name = "Refresh", Caption = "Refresh", Click = true, iconimage = "refresh.ico", PointType = EnumPointType.DataPoint)]
@@ -283,13 +350,28 @@ namespace TheTechIdea.DataManagment_Engine.Vis
                             int i = 0;
                             TreeEditor.ShowWaiting();
                             TreeEditor.ChangeWaitingCaption($"Creating POCO Entities for total:{DataSource.EntitiesNames.Count}");
-                            foreach (string tb in DataSource.EntitiesNames)
+                            try
                             {
-                                TreeEditor.AddCommentsWaiting($"{i} - Added {tb} to {Passedarguments.DatasourceName}");
-                                EntityStructure ent = DataSource.GetEntityStructure(tb, true);
-                                DMEEditor.classCreator.CreateClass(ent.EntityName, ent.Fields, DMEEditor.ConfigEditor.ExePath);
-                                i += 1;
+                                if (!Directory.Exists(Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, Passedarguments.DatasourceName)))
+                                {
+                                    Directory.CreateDirectory(Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, Passedarguments.DatasourceName));
+                                };
+                                foreach (string tb in DataSource.EntitiesNames)
+                                {
+                                    TreeEditor.AddCommentsWaiting($"{i} - Added {tb} to {Passedarguments.DatasourceName}");
+                                    EntityStructure ent = DataSource.GetEntityStructure(tb, true);
+
+                                    DMEEditor.classCreator.CreateClass(ent.EntityName, ent.Fields, Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, Passedarguments.DatasourceName));
+                                    i += 1;
+                                }
+
                             }
+                            catch (Exception ex1)
+                            {
+
+                                DMEEditor.AddLogMessage("Fail", $"Could not Create Directory or error in Generating Class {ex1.Message}", DateTime.Now, 0, Passedarguments.DatasourceName, Errors.Failed);
+                            }
+                           
                             TreeEditor.HideWaiting();
                         }
 
@@ -302,12 +384,122 @@ namespace TheTechIdea.DataManagment_Engine.Vis
             }
             catch (Exception ex)
             {
-                DMEEditor.Logger.WriteLog($"Error in Filling Database Entites ({ex.Message}) ");
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Ex = ex;
+                DMEEditor.AddLogMessage("Fail", $" error in Generating Class {ex.Message}", DateTime.Now, 0, Passedarguments.DatasourceName, Errors.Failed);
             }
             return DMEEditor.ErrorObject;
 
         }
+        [CommandAttribute(Caption = "Create DLL Classes", Name = "createdll", Click = true, iconimage = "dllgen.ico", PointType = EnumPointType.DataPoint)]
+        public IErrorsInfo CreateDLLclasses(IPassedArgs Passedarguments)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                string iconimage;
+                GetValues(Passedarguments);
+                List<EntityStructure> ls = new List<EntityStructure>();
+                if (DataSource != null)
+                {
+
+                    if (DataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+                    {
+                        if (Visutil.controlEditor.InputBoxYesNo("Beep DM", "Are you sure, this might take some time?") == System.Windows.Forms.DialogResult.Yes)
+                        {
+
+                            int i = 0;
+                            TreeEditor.ShowWaiting();
+                            TreeEditor.ChangeWaitingCaption($"Creating POCO Entities for total:{DataSource.EntitiesNames.Count}");
+                            try
+                            {
+                                if (!Directory.Exists(Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, Passedarguments.DatasourceName)))
+                                {
+                                    Directory.CreateDirectory(Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, Passedarguments.DatasourceName));
+                                };
+                                foreach (string tb in DataSource.EntitiesNames)
+                                {
+                                    TreeEditor.AddCommentsWaiting($"{i} - Added {tb} to {Passedarguments.DatasourceName}");
+                                    EntityStructure ent = DataSource.GetEntityStructure(tb, true);
+                                    ls.Add(ent);
+                               
+                                    i += 1;
+                                }
+                                if (ls.Count > 0)
+                                {
+                                    DMEEditor.classCreator.CreateDLL(Regex.Replace(Passedarguments.DatasourceName, @"\s+", "_") ,ls, Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, Passedarguments.DatasourceName),"TheTechIdea."+ Regex.Replace(Passedarguments.DatasourceName, @"\s+", "_"));
+                                }
+
+                            }
+                            catch (Exception ex1)
+                            {
+
+                                DMEEditor.AddLogMessage("Fail", $"Could not Create Directory or error in Generating DLL {ex1.Message}", DateTime.Now, 0, Passedarguments.DatasourceName, Errors.Failed);
+                            }
+
+                            TreeEditor.HideWaiting();
+                        }
+
+                    }
+
+                }
+
+
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $" error in Generating DLL {ex.Message}", DateTime.Now, 0, Passedarguments.DatasourceName, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+
+        }
+        [CommandAttribute(Caption = "Turnon/Off CheckBox's", Name = "Turnon/Off CheckBox", Click = true, iconimage = "checkbox.ico", PointType = EnumPointType.DataPoint)]
+        public IErrorsInfo TurnonOffCheckBox(IPassedArgs Passedarguments)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                string iconimage;
+                GetValues(Passedarguments);
+                if (DataSource != null)
+                {
+
+                    if (DataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+                    {
+                        TreeView trv = (TreeView)TreeEditor.TreeStrucure;
+                        trv.CheckBoxes = !trv.CheckBoxes;
+                        TreeEditor.SelectedBranchs.Clear();
+                    }
+
+                }
+
+
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Could not select entities {ex.Message}", DateTime.Now, 0, Passedarguments.DatasourceName, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+
+        }
+        [CommandAttribute(Caption = "Data Connection", Name = "dataconnection", Click = true, iconimage = "dataconnection.ico", PointType = EnumPointType.Global)]
+        public IErrorsInfo dataconnection(IPassedArgs Passedarguments)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                string iconimage;
+                //GetValues(Passedarguments);
+                Visutil.ShowUserControlInContainer("uc_DataConnection", Visutil.DisplayPanel, DMEEditor, null, null);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Could not show data connection {ex.Message}", DateTime.Now, 0, Passedarguments.DatasourceName, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+
+        }
+
+        //
     }
 }

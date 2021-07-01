@@ -32,15 +32,17 @@ namespace DataManagment_Engine
         public IControlEditor Controleditor { get; set; }
         public ITree tree { get; set; }
         public IClassCreator classCreator { get; set; }
+        public IDataTypesHelper typesHelper { get; set; }
         public IETL eTL { get; set; }
         #endregion
         public static IContainer Configure() //ContainerBuilder builder
         {
-          
+
             Builder = new ContainerBuilder();
             Builder.RegisterType<ErrorsInfo>().As<IErrorsInfo>().SingleInstance();
             Builder.RegisterType<DMLogger>().As<IDMLogger>().SingleInstance();
-            Builder.RegisterType<ConfigEditor>().As<IConfigEditor>().SingleInstance(); 
+            Builder.RegisterType<ConfigEditor>().As<IConfigEditor>().SingleInstance();
+            Builder.RegisterType<DataTypesHelper>().As<IDataTypesHelper>().SingleInstance();
             Builder.RegisterType<DMEEditor>().As<IDMEEditor>().SingleInstance();
             Builder.RegisterType<WorkFlowEditor>().As<IWorkFlowEditor>().SingleInstance();
             Builder.RegisterType<Util>().As<IUtil>().SingleInstance();
@@ -59,16 +61,16 @@ namespace DataManagment_Engine
             Container = Configure();
             using (var scope = Container.BeginLifetimeScope())
             {
-                jsonLoader= scope.Resolve<IJsonLoader>();
+              //  jsonLoader= scope.Resolve<IJsonLoader>();
                 //--------------------------------------------------------------------------------
                 // a Error Class that will have all error message tracking 
                 //---------------------------------------------------------------------------
-                Erinfo = scope.Resolve<IErrorsInfo>();
+                //Erinfo = scope.Resolve<IErrorsInfo>();
                 //--------------------------------------------------------------------------------
                 // a Log Manager 
                 //---------------------------------------------------------------------------
-                lg = scope.Resolve<IDMLogger>();
-                lg.WriteLog("App started");
+                //lg = scope.Resolve<IDMLogger>();
+                //lg.WriteLog("App started");
                 //-------------------------------------------------------------------------------
                 // a onfiguration class for assembly, addin's and  drivers loading into the 
                 // application
@@ -76,34 +78,29 @@ namespace DataManagment_Engine
                 Config_editor = scope.Resolve<IConfigEditor>();
                 // a Utility Class for helping in Doing Different functions for  Data Managment
 
-                util = scope.Resolve<IUtil>();
+                //util = scope.Resolve<IUtil>();
                 //--------------------------------------------------------------------------------
 
                 //-------------------------------------------------------------------------------
                 // this is the assembly loader for loading from Addin Folder and Projectdrivers Folder
                 //---------------------------------------------------------------------------
-                // LLoader = scope.Resolve<IAssemblyLoader>();
+               
                 LLoader = scope.Resolve<IAssemblyHandler>();
-
-
 
                 // Setup the Database Connection Screen
                 // a "Work Flow" class will control all the workflow between different data source 
                 // and automation
-                WorkFlowEditor = scope.Resolve<IWorkFlowEditor>();
-                eTL= scope.Resolve<IETL>();
+               // WorkFlowEditor = scope.Resolve<IWorkFlowEditor>();
+                //eTL= scope.Resolve<IETL>();
                 //-------------------------------------------------------------------------------
                 // The Main Class for Data Manager 
                 //---------------------------------------------------------------------------
                
-              
-              
                 //DMEEditor.assemblyHandler = LLoader;
                 DMEEditor = scope.Resolve<IDMEEditor>();
                 //-------------------------------------------------------------------------------
                 // The Main Visualization Class tha control the visual aspect of the system
                 //---------------------------------------------------------------------------
-                vis = scope.Resolve<IVisUtil>();
                 vis = scope.Resolve<IVisUtil>();
                 tree = scope.Resolve<ITree>();
                 vis.treeEditor = tree;
@@ -132,18 +129,10 @@ namespace DataManagment_Engine
                 // Setup the Entry Screen 
                 // the screen has to be in one the Addin DLL's loaded by the Assembly loader
               
-
-
-
-                //}
                 Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
                 
                 vis.ShowMainDisplayForm();
-                //if (DMEEditor.ErrorObject.Flag== Errors.Failed)
-                //{
-                //    Controleditor.MsgBox("Beep", $"Could not Startup Screen {DMEEditor.ErrorObject.Ex.Message}");
-
-                //}
+              
             }
         }
     }

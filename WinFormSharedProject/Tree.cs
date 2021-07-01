@@ -26,7 +26,7 @@ namespace TheTechIdea.Winforms.VIS
         public string SelectIcon { get; set; } = "cursor.ico";
         public IBranch CurrentBranch { get; set; }
         public IDMEEditor DMEEditor { get; set; }
-        public PassedArgs args { get; set; } = new PassedArgs();
+        public IPassedArgs args { get; set; } = new PassedArgs();
         static int pSeqID=0;
         public int SeqID
         {
@@ -719,7 +719,15 @@ namespace TheTechIdea.Winforms.VIS
                 MethodsClass methodsClass;
                 try
                 {
-                    methodsClass = cls.Methods.Where(x => x.Caption == item.Text && x.PointType==br.BranchType).FirstOrDefault();
+                    if (br.BranchType!= EnumPointType.Global) 
+                    {
+                        methodsClass = cls.Methods.Where(x => x.Caption == item.Text ).FirstOrDefault();
+                    } 
+                    else
+                    {
+                        methodsClass = cls.Methods.Where(x => x.Caption == item.Text && x.PointType == br.BranchType).FirstOrDefault();
+                    }
+                    
                 }
                 catch (Exception)
                 {

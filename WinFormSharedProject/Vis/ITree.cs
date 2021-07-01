@@ -19,7 +19,7 @@ namespace TheTechIdea.DataManagment_Engine.Vis
         object TreeStrucure { get; set; }
          int SelectedBranchID { get; set; } 
          List<int> SelectedBranchs { get; set; } 
-        PassedArgs args { get; set; }
+        IPassedArgs args { get; set; }
 
         IErrorsInfo CreateBranch(IBranch Branch);
         IErrorsInfo AddBranch(IBranch ParentBranch, IBranch Branch);

@@ -505,7 +505,7 @@ namespace TheTechIdea.DataManagment_Engine
         }
 
         //----------------- ------------------------------ -----
-        public DMEEditor(IDMLogger logger, IUtil utilfunctions,IErrorsInfo per, IConfigEditor configEditor,IWorkFlowEditor pworkFlowEditor, IClassCreator pclasscreator, IETL pETL, IAssemblyHandler passemblyHandler)
+        public DMEEditor(IDMLogger logger, IUtil utilfunctions,IErrorsInfo per, IConfigEditor configEditor,IWorkFlowEditor pworkFlowEditor, IClassCreator pclasscreator, IETL pETL, IAssemblyHandler passemblyHandler, IDataTypesHelper dataTypesHelper)
         {
           
             logger.WriteLog("init all variables");
@@ -520,9 +520,10 @@ namespace TheTechIdea.DataManagment_Engine
             ETL = pETL;
             ETL.DMEEditor = this;
             assemblyHandler = passemblyHandler;
-            
-            typesHelper = new DataTypesHelper(Logger, this, ErrorObject);
-            
+            typesHelper = dataTypesHelper;
+            typesHelper.DMEEditor = this;
+
+
         }
 
         protected virtual void Dispose(bool disposing)
