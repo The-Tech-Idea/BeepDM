@@ -56,7 +56,20 @@ namespace TheTechIdea.Winforms.VIS
         public void AddComment(String comment)
         {
             Thread.Sleep(100);
-            loadingForm.AddComment(comment);
+            try
+            {
+                if (loadingForm != null)
+                {
+                    loadingForm.AddComment(comment);
+                }
+              
+            }
+            catch (Exception)
+            {
+
+                //throw;
+            }
+            
         }
     }
 }
