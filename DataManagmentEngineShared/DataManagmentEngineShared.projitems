@@ -12,12 +12,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ConfigEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\DMTypeBuilder.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)FileManager\CSVDataSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MVVM\DataListViewModel.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DataBase\LocalDBSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBDataConnection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileManager\CSVDataSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MVVM\DataListViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewConnection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\DataTypesHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\ETL.cs" />

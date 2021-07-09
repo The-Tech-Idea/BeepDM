@@ -69,8 +69,7 @@ namespace TheTechIdea.Hidden
             {
                 DMEEditor.AddLogMessage("Failed", $"{ex.Message}", DateTime.Now, 0, "", Errors.Failed);
             }
-            Checkbutton.Click += Checkbutton_Click;
-            DataConnectionbutton.Click += DataConnectionbutton_Click;
+           
             TreeEditor.CreateRootTree();
             TreeEditor.CreateGlobalMenu();
         }
@@ -80,10 +79,6 @@ namespace TheTechIdea.Hidden
             Visutil.ShowUserControlInContainer("uc_DataConnection", Visutil.DisplayPanel, DMEEditor, null, null);
         }
 
-        private void Checkbutton_Click(object sender, EventArgs e)
-        {
-            treeView1.CheckBoxes = !treeView1.CheckBoxes;
-            TreeEditor.SelectedBranchs.Clear();
-        }
+       
     }
 }

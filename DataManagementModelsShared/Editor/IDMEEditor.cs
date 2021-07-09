@@ -19,7 +19,9 @@ namespace TheTechIdea.DataManagment_Engine
        
 
         List<IDataSource> DataSources { get; set; }
-     //   IRDBMSHelper RDBMSHelper { get; set; }
+  
+        bool ContainerMode { get; set; }
+        string ContainerName { get; set; }
         IETL ETL { get; set; }
         IErrorsInfo ErrorObject { get; set; }
         IDMLogger Logger { get; set; }

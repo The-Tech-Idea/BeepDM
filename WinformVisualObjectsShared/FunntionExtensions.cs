@@ -38,6 +38,23 @@ namespace TheTechIdea.DataManagment_Engine.Vis
             pbr = TreeEditor.GetBranch(Passedarguments.Id);
             RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == pbr.BranchClass && x.BranchType == EnumPointType.Root)];
         }
+        [CommandAttribute(Caption = "Data Connection", Name = "dataconnection", Click = true, iconimage = "dataconnection.ico", PointType = EnumPointType.Global)]
+        public IErrorsInfo dataconnection(IPassedArgs Passedarguments)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                string iconimage;
+                //GetValues(Passedarguments);
+                Visutil.ShowUserControlInContainer("uc_DataConnection", Visutil.DisplayPanel, DMEEditor, null, null);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Could not show data connection {ex.Message}", DateTime.Now, 0, Passedarguments.DatasourceName, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+
+        }
         public  IDMEEditor DMEEditor { get; set; }
         [CommandAttribute(Name="CopyEntities",Caption = "Copy Entities", Click =true,iconimage ="copyentities.ico",PointType= EnumPointType.DataPoint)]
         public IErrorsInfo CopyEntities(IPassedArgs Passedarguments)
@@ -558,7 +575,7 @@ namespace TheTechIdea.DataManagment_Engine.Vis
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
             {
-                string iconimage;
+                //string iconimage;
 
                // GetValues(Passedarguments);
                 //if (DataSource != null)
@@ -583,23 +600,7 @@ namespace TheTechIdea.DataManagment_Engine.Vis
             return DMEEditor.ErrorObject;
 
         }
-        [CommandAttribute(Caption = "Data Connection", Name = "dataconnection", Click = true, iconimage = "dataconnection.ico", PointType = EnumPointType.Global)]
-        public IErrorsInfo dataconnection(IPassedArgs Passedarguments)
-        {
-            DMEEditor.ErrorObject.Flag = Errors.Ok;
-            try
-            {
-                string iconimage;
-                //GetValues(Passedarguments);
-                Visutil.ShowUserControlInContainer("uc_DataConnection", Visutil.DisplayPanel, DMEEditor, null, null);
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Fail", $"Could not show data connection {ex.Message}", DateTime.Now, 0, Passedarguments.DatasourceName, Errors.Failed);
-            }
-            return DMEEditor.ErrorObject;
-
-        }
+       
 
         //
     }

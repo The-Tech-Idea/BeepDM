@@ -20,7 +20,8 @@ namespace TheTechIdea.DataManagment_Engine
     public class DMEEditor : IDMEEditor,IDisposable
     {
         private bool disposedValue;
-
+        public bool ContainerMode { get; set; } = false;
+        public string ContainerName { get; set; } = null;
         public List<IDataSource> DataSources { get; set; } = new List<IDataSource>();
         public IETL ETL { get; set; }
         public IConfigEditor ConfigEditor { get; set; }

@@ -597,11 +597,14 @@ namespace TheTechIdea.Winforms.VIS
             try
             {
                 TreetoolStrip = new ToolStrip();
-                this.TreetoolStrip.Dock = System.Windows.Forms.DockStyle.Right;
+                TreetoolStrip.AutoSize = false;
+
+                TreetoolStrip.ImageScalingSize = new Size(32, 32);
+                this.TreetoolStrip.Dock = System.Windows.Forms.DockStyle.Left;
                 this.TreetoolStrip.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.VerticalStackWithOverflow;
                 this.TreetoolStrip.Location = new System.Drawing.Point(342, 0);
                 this.TreetoolStrip.Name = "TreetoolStrip";
-                this.TreetoolStrip.Size = new System.Drawing.Size(78, 580);
+                this.TreetoolStrip.Size = new System.Drawing.Size(32, 580);
                 this.TreetoolStrip.Text = "toolStrip1";
                 TreeV.Parent.Controls.Add(TreetoolStrip);
                 TreetoolStrip.ImageList = images;
@@ -616,11 +619,13 @@ namespace TheTechIdea.Winforms.VIS
                         }
                         toolStripButton1.DisplayStyle = ToolStripItemDisplayStyle.Image;
                         toolStripButton1.Name = item.Name;
-                        toolStripButton1.Size = new System.Drawing.Size(75, 20);
+                        toolStripButton1.Size = new System.Drawing.Size(32, 32);
                         toolStripButton1.Text = item.Caption;
                         toolStripButton1.ToolTipText = item.Caption;
                         toolStripButton1.Click += RunGlobalFunctionsandExtensions;
                         toolStripButton1.Tag = cls.type.ToString() ;
+                        toolStripButton1.AutoSize = false; 
+                        toolStripButton1.Width = 32;
                         TreetoolStrip.Items.Add(toolStripButton1);
 
 
