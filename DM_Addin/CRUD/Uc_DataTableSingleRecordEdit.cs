@@ -43,7 +43,7 @@ namespace TheTechIdea.CRUD
         private IDMDataView MyDataView { get; set; } = null;
         public IVisUtil Visutil { get; set; }
         public IErrorsInfo ErrorObject  { get; set; }
-        public PassedArgs Passedarg { get; set; }
+        public IPassedArgs Passedarg { get; set; }
        // public event EventHandler<PassedArgs> OnObjectSelected;
         public System.Windows.Forms.BindingSource bindingSource1 = new BindingSource();
         public System.Windows.Forms.PropertyGrid propertyGrid1 = new PropertyGrid();
@@ -56,7 +56,7 @@ namespace TheTechIdea.CRUD
 
         }
 
-        public void   SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, PassedArgs obj, IErrorsInfo per)
+        public void   SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, IPassedArgs obj, IErrorsInfo per)
         {
             Passedarg=  obj;
           

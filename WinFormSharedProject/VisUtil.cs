@@ -108,7 +108,7 @@ namespace TheTechIdea.Winforms.VIS
             return Erinfo;
         }
      
-        public IDM_Addin ShowUserControlInContainer(string usercontrolname, Control Container, IDMEEditor pDMEEditor, string[] args, PassedArgs e)
+        public IDM_Addin ShowUserControlInContainer(string usercontrolname, Control Container, IDMEEditor pDMEEditor, string[] args, IPassedArgs e)
         {
            // string path = System.IO.Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath) + @"\Addin\";
             if (LLoader.AddIns.Where(x => x.ObjectName.Equals(usercontrolname,StringComparison.OrdinalIgnoreCase)).Any())
@@ -121,7 +121,7 @@ namespace TheTechIdea.Winforms.VIS
             }
                 
         }
-        public IDM_Addin ShowUserControlPopUp(string usercontrolname, IDMEEditor pDMEEditor, string[] args, PassedArgs e)
+        public IDM_Addin ShowUserControlPopUp(string usercontrolname, IDMEEditor pDMEEditor, string[] args, IPassedArgs e)
         {
             if (LLoader.AddIns.Where(x => x.ObjectName.Equals(usercontrolname,StringComparison.OrdinalIgnoreCase)).Any())
             {
@@ -134,7 +134,7 @@ namespace TheTechIdea.Winforms.VIS
             }
           
         }
-        public IDM_Addin ShowFormFromAddin( string formname, IDMEEditor pDMEEditor, string[] args, PassedArgs e)
+        public IDM_Addin ShowFormFromAddin( string formname, IDMEEditor pDMEEditor, string[] args, IPassedArgs e)
         {
 
             if (LLoader.AddIns.Where(x => x.ObjectName.Equals(formname,StringComparison.OrdinalIgnoreCase)).Any())
@@ -148,7 +148,7 @@ namespace TheTechIdea.Winforms.VIS
            
 
         }
-        private IDM_Addin ShowUserControlDialogOnControl( string dllname, string formname, Control control, IDMEEditor pDMEEditor, string[] args, PassedArgs e)
+        private IDM_Addin ShowUserControlDialogOnControl( string dllname, string formname, Control control, IDMEEditor pDMEEditor, string[] args, IPassedArgs e)
         {
             control.Controls.Clear();
             Erinfo.Flag = Errors.Ok;
@@ -201,7 +201,7 @@ namespace TheTechIdea.Winforms.VIS
             return addin;
             //form.GetType().GetField("")
         }
-        private IDM_Addin ShowFormDialog( string dllname, string formname, IDMEEditor pDMEEditor, string[] args, PassedArgs e)
+        private IDM_Addin ShowFormDialog( string dllname, string formname, IDMEEditor pDMEEditor, string[] args, IPassedArgs e)
         {
             Form form = null;
             IDM_Addin addin = null;
@@ -244,7 +244,7 @@ namespace TheTechIdea.Winforms.VIS
             return addin;
             //form.GetType().GetField("")
         }
-        private IDM_Addin ShowUserControlDialog(string dllpath, string dllname, string formname, IDMEEditor pDMEEditor, string[] args, PassedArgs e)
+        private IDM_Addin ShowUserControlDialog(string dllpath, string dllname, string formname, IDMEEditor pDMEEditor, string[] args, IPassedArgs e)
         {
             Erinfo.Flag = Errors.Ok;
             Form form = new Form();

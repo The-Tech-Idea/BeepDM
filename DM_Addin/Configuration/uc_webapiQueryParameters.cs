@@ -38,7 +38,7 @@ namespace TheTechIdea.Configuration
         public IDMEEditor DMEEditor { get ; set ; }
         public EntityStructure EntityStructure { get ; set ; }
         public string EntityName { get ; set ; }
-        public PassedArgs Passedarg { get ; set ; }
+        public IPassedArgs Passedarg { get ; set ; }
         IDataSource ds;
        // public event EventHandler<PassedArgs> OnObjectSelected;
         public IVisUtil Visutil { get; set; }
@@ -52,7 +52,7 @@ namespace TheTechIdea.Configuration
             throw new NotImplementedException();
         }
 
-        public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
+        public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, IPassedArgs e, IErrorsInfo per)
         {
             Passedarg = e;
             Logger = plogger;

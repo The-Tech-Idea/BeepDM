@@ -40,7 +40,7 @@ namespace TheTechIdea.Configuration
         public IRDBSource SourceConnection { get; set; }
         public EntityStructure EntityStructure { get; set; }
         public string EntityName { get; set; }
-        public PassedArgs Passedarg { get; set; }
+        public IPassedArgs Passedarg { get; set; }
         public IUtil util { get; set; }
         public IVisUtil Visutil { get; set; }
         public IDMEEditor DMEEditor { get; set; }
@@ -75,7 +75,7 @@ namespace TheTechIdea.Configuration
 
         }
 
-        public void SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, PassedArgs obj, IErrorsInfo per)
+        public void SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, IPassedArgs obj, IErrorsInfo per)
         {
             Passedarg = obj;
             Visutil = (IVisUtil)obj.Objects.Where(c => c.Name == "VISUTIL").FirstOrDefault().obj;

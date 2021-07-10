@@ -30,10 +30,10 @@ namespace TheTechIdea.DataManagment_Engine.Vis
 
         Control DisplayPanel { get; set; }
         Form    ParentForm { get; set; }
-        IDM_Addin ShowFormFromAddin( string formname, IDMEEditor pDMEEditor, string[] args, PassedArgs e);
+        IDM_Addin ShowFormFromAddin( string formname, IDMEEditor pDMEEditor, string[] args, IPassedArgs e);
         IErrorsInfo ShowMainDisplayForm();
-        IDM_Addin ShowUserControlPopUp(string usercontrolname, IDMEEditor pDMEEditor, string[] args, PassedArgs e);
-        IDM_Addin ShowUserControlInContainer(string usercontrolname,  Control Container, IDMEEditor pDMEEditor, string[] args, PassedArgs e);
+        IDM_Addin ShowUserControlPopUp(string usercontrolname, IDMEEditor pDMEEditor, string[] args, IPassedArgs e);
+        IDM_Addin ShowUserControlInContainer(string usercontrolname,  Control Container, IDMEEditor pDMEEditor, string[] args, IPassedArgs e);
       
        
 

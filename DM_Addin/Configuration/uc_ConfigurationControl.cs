@@ -38,7 +38,7 @@ namespace TheTechIdea.Configuration
         public IDMEEditor DMEEditor { get  ; set  ; }
         public EntityStructure EntityStructure { get  ; set  ; }
         public string EntityName { get  ; set  ; }
-        public PassedArgs Passedarg { get  ; set  ; }
+        public IPassedArgs Passedarg { get  ; set  ; }
         #region "IAddinVisSchema"
         public string RootNodeName { get; set; } = "Configuration";
         public string CatgoryName { get; set; }
@@ -61,7 +61,7 @@ namespace TheTechIdea.Configuration
            
         }
 
-        public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
+        public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, IPassedArgs e, IErrorsInfo per)
         {
             Passedarg=  e;
             Logger = plogger;

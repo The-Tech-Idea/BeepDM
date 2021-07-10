@@ -41,10 +41,10 @@ namespace TheTechIdea.CRUD
         public IVisUtil Visutil { get; set; }
         public IUtil util { get; set; }
         public IErrorsInfo ErrorObject  { get; set; }
-        public PassedArgs Passedarg { get; set; }
+        public IPassedArgs Passedarg { get; set; }
         DataTable t;
         RDBSource rdb;
-        public void SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, PassedArgs obj, IErrorsInfo per)
+        public void SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, IPassedArgs obj, IErrorsInfo per)
         {
             Passedarg = obj;
             // SourceConnection = pdataSource;

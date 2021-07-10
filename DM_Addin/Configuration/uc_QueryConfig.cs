@@ -54,7 +54,7 @@ namespace TheTechIdea.Configuration
         public DataSet Dset { get; set; }
         public IDMEEditor DMEEditor { get; set; }
         public IErrorsInfo ErrorObject { get; set; }
-        public PassedArgs Passedarg { get; set; }
+        public IPassedArgs Passedarg { get; set; }
        // public event EventHandler<PassedArgs> OnObjectSelected;
 
         public void RaiseObjectSelected()
@@ -67,7 +67,7 @@ namespace TheTechIdea.Configuration
             throw new NotImplementedException();
         }
 
-        public void SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
+        public void SetConfig(IDMEEditor pDMEEditor, IDMLogger plogger, IUtil putil, string[] args, IPassedArgs e, IErrorsInfo per)
         {
             Passedarg = e;
             //SourceConnection = pdataSource;

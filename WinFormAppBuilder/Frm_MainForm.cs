@@ -36,7 +36,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
         public IDMEEditor DMEEditor { get ; set ; }
         public EntityStructure EntityStructure { get ; set ; }
         public string EntityName { get ; set ; }
-        public PassedArgs Passedarg { get ; set ; }
+        public IPassedArgs Passedarg { get ; set ; }
         AutoCompleteStringCollection data { get; set; } = new AutoCompleteStringCollection();
         public IVisUtil Visutil { get; set; }
         public string ComponentName { get ; set ; } = "Beep Applications";
@@ -55,7 +55,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder
             throw new NotImplementedException();
         }
 
-        public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
+        public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, IPassedArgs e, IErrorsInfo per)
         {
             Passedarg = e;
             Logger = plogger;

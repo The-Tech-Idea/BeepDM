@@ -25,7 +25,7 @@ namespace TheTechIdea.DataManagment_Engine.Report
         public string Description { get; set; } = "Generic Report";
         public string ObjectName { get; set; }
         public string ObjectType { get; set; } = "UserControl";
-        public Boolean DefaultCreate { get; set; } = true;
+        public bool DefaultCreate { get; set; } = true;
         public string DllPath { get ; set ; }
         public string DllName { get ; set ; }
         public string NameSpace { get ; set ; }
@@ -35,7 +35,7 @@ namespace TheTechIdea.DataManagment_Engine.Report
         public IDMEEditor DMEEditor { get ; set ; }
         public EntityStructure EntityStructure { get ; set ; }
         public string EntityName { get ; set ; }
-        public PassedArgs Passedarg { get ; set ; }
+        public IPassedArgs Passedarg { get ; set ; }
 
        // public event EventHandler<PassedArgs> OnObjectSelected;
       //  string Url;
@@ -51,7 +51,7 @@ namespace TheTechIdea.DataManagment_Engine.Report
             throw new NotImplementedException();
         }
 
-        public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
+        public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, IPassedArgs e, IErrorsInfo per)
         {
             Passedarg = e;
             Logger = plogger;

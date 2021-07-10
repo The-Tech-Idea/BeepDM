@@ -185,6 +185,56 @@ namespace TheTechIdea.DataManagment_Engine.Vis
             };
          
         }
+        [CommandAttribute(Name = "EditDefaults", Caption = "Edit Default", Click = true, iconimage = "editdefaults.ico", PointType = EnumPointType.DataPoint)]
+        public IErrorsInfo EditDefault(IPassedArgs Passedarguments)
+        {
+
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            //  DMEEditor.Logger.WriteLog($"Filling Database Entites ) ");
+            try
+            {
+                pbr = TreeEditor.GetBranch(Passedarguments.Id);
+                if (pbr.BranchType == EnumPointType.DataPoint)
+                {
+                    GetValues(Passedarguments);
+                    List<DefaultValue> defaults = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == Passedarguments.DatasourceName)].DatasourceDefaults;
+                    if (defaults != null)
+                    {
+                        string[] args = { "CopyDefaults", null, null };
+                        List<ObjectItem> ob = new List<ObjectItem>(); ;
+                        ObjectItem it = new ObjectItem();
+                        it.obj = defaults;
+                        it.Name = "Defaults";
+                        ob.Add(it);
+                        Passedarguments.CurrentEntity = Passedarguments.DatasourceName;
+                        Passedarguments.Id = 0;
+                        Passedarguments.ObjectType = "COPYDEFAULTS";
+                        Passedarguments.ObjectName = Passedarguments.DatasourceName;
+                        Passedarguments.Objects = ob;
+                        Passedarguments.DatasourceName = Passedarguments.DatasourceName;
+                        Passedarguments.EventType = "COPYDEFAULTS";
+
+                        TreeEditor.args = (PassedArgs)Passedarguments;
+                        DMEEditor.Passedarguments = Passedarguments;
+                        Visutil.ShowUserControlPopUp("uc_datasourceDefaults", DMEEditor, args, (PassedArgs)Passedarguments);
+                    }
+                    else
+                    {
+                        string mes = "Could not get Defaults";
+                        DMEEditor.AddLogMessage("Failed", mes, DateTime.Now, -1, mes, Errors.Failed);
+                    }
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.Logger.WriteLog($"Error getting defaults ({ex.Message}) ");
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
+            }
+            return DMEEditor.ErrorObject;
+        }
         [CommandAttribute(Name = "CopyDefaults", Caption = "Copy Default", Click = true, iconimage = "copydefaults.ico", PointType = EnumPointType.DataPoint)]
         public IErrorsInfo CopyDefault(IPassedArgs Passedarguments)
         {

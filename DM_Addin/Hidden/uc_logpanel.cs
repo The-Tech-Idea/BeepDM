@@ -39,7 +39,7 @@ namespace TheTechIdea.Hidden
         public IDMEEditor DMEEditor { get ; set ; }
         public EntityStructure EntityStructure { get ; set ; }
         public string EntityName { get ; set ; }
-        public PassedArgs Passedarg { get ; set ; }
+        public IPassedArgs Passedarg { get ; set ; }
         public delegate void InvokeDelegate(object sender, string e);
        // public event EventHandler<PassedArgs> OnObjectSelected;
         public bool startLoggin = false;
@@ -50,7 +50,7 @@ namespace TheTechIdea.Hidden
         public void Run(string param1)
         {
         }
-        public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
+        public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, IPassedArgs e, IErrorsInfo per)
         {
            DMEEditor = pbl;
            ErrorObject  = pbl.ErrorObject;

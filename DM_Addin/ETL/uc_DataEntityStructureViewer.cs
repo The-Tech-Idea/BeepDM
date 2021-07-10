@@ -38,7 +38,7 @@ namespace TheTechIdea.ETL
         public IDMEEditor DMEEditor { get ; set ; }
         public EntityStructure EntityStructure { get ; set ; }
         public string EntityName { get ; set ; }
-        public PassedArgs Passedarg { get ; set ; }
+        public IPassedArgs Passedarg { get ; set ; }
         IBranch branch = null;
         IBranch Parentbranch = null;
         public IVisUtil Visutil { get; set; }
@@ -49,7 +49,7 @@ namespace TheTechIdea.ETL
             throw new NotImplementedException();
         }
 
-        public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, PassedArgs e, IErrorsInfo per)
+        public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, IPassedArgs e, IErrorsInfo per)
         {
             Passedarg = e;
 
