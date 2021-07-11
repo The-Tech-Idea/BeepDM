@@ -511,64 +511,22 @@ namespace TheTechIdea.DataManagment_Engine
             {
                 // dynamic x = TypeHelpers.GetInstance(type);
                 dynamic x = Activator.CreateInstance(type);
-                //  var v = (dynamic)null;
-                for (int i = 0; i <= enttype.Fields.Count - 1; i++)
+
+                foreach (DataColumn item in dt.Columns)
                 {
-                    if (row[enttype.Fields[i].fieldname] != DBNull.Value)
+                    if (row[item.ColumnName] != DBNull.Value)
                     {
-                        string st = row[enttype.Fields[i].fieldname].ToString();
-                        var v = Convert.ChangeType(row[enttype.Fields[i].fieldname], Type.GetType(enttype.Fields[i].fieldtype)); //Type.GetType(enttype.Fields[i].fieldtype)
+                        string st = row[item.ColumnName].ToString();
+                        Type tp = Type.GetType(enttype.Fields.Where(p => p.fieldname.Equals(item.ColumnName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault().fieldtype);
+                        var v = Convert.ChangeType(row[item.ColumnName],tp);
                         if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st))
                         {
-                            properties[enttype.Fields[i].fieldname].SetValue(x, v, null);
+                            properties[item.ColumnName].SetValue(x,v, null);
                         }
                     }
+
                 }
-                //foreach (DataColumn item in dt.Columns)
-                //{
-                //    if (row[item.ColumnName] != DBNull.Value)
-                //    {
-                //        string st=row[item.ColumnName].ToString();
-                //        var v = Convert.ChangeType(row[item.ColumnName], Type.GetType(enttype.Fields[i].fieldtype));
-                //        if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st)){
-                //            properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
-                //        }
-                //    }
-                   
-                //}
-                //for (int i = 0; i <= enttype.Fields.Count - 1; i++)
-                //{
-                //    try
-                //    {
-                //        f = enttype.Fields[i].fieldname + "-" + enttype.Fields[i].fieldtype + "-" + row[enttype.Fields[i].fieldname];
-                //        try
-                //        {
-                //            v = Convert.ChangeType(row[enttype.Fields[i].fieldname], Type.GetType(enttype.Fields[i].fieldtype));
-                //            if ((row[enttype.Fields[i].fieldname] == null || row[enttype.Fields[i].fieldname] == "")) //&& (v.GetType().ToString()!="System.String")
-                //            {
-                //                v = null;
-                //            }
-
-                //        }
-                //        catch (Exception)
-                //        {
-
-                //            v = null;
-                //        }
-
-
-                //        //  type.GetProperty(enttype.Fields[i].fieldname).SetValue(x, v, null);
-                //        // Logger.WriteLog($"Creating Field and Value." + f);
-                //    }
-                //    catch (Exception ex)
-                //    {
-
-                //        Logger.WriteLog($"Error in Creating Record or Setting Value." + f + ":" + ex.Message);
-                //    }
-
-
-
-                //}
+              
 
                 Records.Add(x);
             }
