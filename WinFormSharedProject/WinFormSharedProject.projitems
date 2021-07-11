@@ -38,14 +38,7 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)SelectedNodes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VisUtil.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\IAddinVisSchema.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranch.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranchID.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranchRootCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IDisplayPanel.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\INode.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\IOrder.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\ITree.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WaitForm.cs">
       <SubType>Form</SubType>
     </Compile>
