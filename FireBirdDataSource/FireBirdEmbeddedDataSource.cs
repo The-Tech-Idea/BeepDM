@@ -44,14 +44,21 @@ namespace DataManagmentEngineShared.DataBase
             };
 
         }
-        static void CreateFBDatabase(string host, string fileName, string user, string password, int pageSize, bool forcedWrites, bool overwrite)
+        public void CreateFBDatabase(string host, string fileName, string user, string password, int pageSize, bool forcedWrites, bool overwrite)
         {
             FbConnectionStringBuilder csb = new FbConnectionStringBuilder();
             csb.Database = fileName;
-            csb.DataSource = "127.0.0.1";
+            csb.DataSource = "localhost";
             csb.UserID = "SYSDBA";
             csb.Password = "masterkey";
             csb.ServerType = FbServerType.Embedded;
+            base.Dataconnection.ConnectionProp.Database = fileName;
+            base.Dataconnection.ConnectionProp.Host = "localhost";
+            base.Dataconnection.ConnectionProp.Port = 3050;
+            base.Dataconnection.ConnectionProp.Password="masterkey";
+            base.Dataconnection.ConnectionProp.UserID = "SYSDBA";
+
+
             FbConnection.CreateDatabase(csb.ConnectionString, pageSize, forcedWrites, overwrite);
         }
         public  bool CreateDB()

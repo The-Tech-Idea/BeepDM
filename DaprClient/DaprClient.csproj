@@ -13,19 +13,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="RedisComponent.yaml">
+    <Content Include="YamlEmptyFiles\RedisComponent.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="MongoDBComponent.yaml">
+    <Content Include="YamlEmptyFiles\MongoDBComponent.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="LocalStorageComponent.yaml">
+    <Content Include="YamlEmptyFiles\LocalStorageComponent.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="HTTPComponent.yaml">
+    <Content Include="YamlEmptyFiles\HTTPComponent.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="daprcomponent.yaml">
+    <Content Include="YamlEmptyFiles\daprcomponent.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

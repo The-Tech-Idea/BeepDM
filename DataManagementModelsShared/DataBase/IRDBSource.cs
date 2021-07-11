@@ -21,8 +21,7 @@ namespace TheTechIdea.DataManagment_Engine.DataBase
 
         string DisableFKConstraints(EntityStructure t1);
         string EnableFKConstraints( EntityStructure t1);
-        List<T> GetData<T>(string sql);
-        Task SaveData<T>(string sql, T parameters);
+      
         string GetSchemaName();
        
 

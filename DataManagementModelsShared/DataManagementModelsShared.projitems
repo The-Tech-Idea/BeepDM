@@ -89,6 +89,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Tools\AssemblyItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\IAssemblyHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\IClassCreator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\DisplayPanel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\Enums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\CommandItemAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IAddinVisSchema.cs" />
