@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -17,10 +18,10 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.EventStream
 {
-    [ClassProperties(Category = DatasourceCategory.STREAM, DatasourceType =  DataSourceType.Kafka)]
+    [ClassProperties(Category = DatasourceCategory.STREAM, DatasourceType = DataSourceType.Kafka)]
     public class KafkaDataSource : IDataSource
     {
-        
+
         public KafkaDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
         {
             DatasourceName = datasourcename;
@@ -36,7 +37,7 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
                 DMEEditor = pDMEEditor
 
             };
-            
+
 
             if (DMEEditor.DataSources.Where(o => o.DatasourceName == datasourcename).Any())
             {
@@ -69,23 +70,27 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
         }
 
         public event EventHandler<PassedArgs> PassEvent;
-        public DataSourceType DatasourceType { get ; set ; }
-        public DatasourceCategory Category { get ; set ; }
-        public IDataConnection Dataconnection { get ; set ; }
-        public string DatasourceName { get ; set ; }
-        public IErrorsInfo ErrorObject { get ; set ; }
-        public string Id { get ; set ; }
-        public IDMLogger Logger { get ; set ; }
-        public List<string> EntitiesNames { get ; set ; }
+        public DataSourceType DatasourceType { get; set; }
+        public DatasourceCategory Category { get; set; }
+        public IDataConnection Dataconnection { get; set; }
+        public string DatasourceName { get; set; }
+        public IErrorsInfo ErrorObject { get; set; }
+        public string Id { get; set; }
+        public IDMLogger Logger { get; set; }
+        public List<string> EntitiesNames { get; set; }
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
-        public IDMEEditor DMEEditor { get ; set ; }
+        public IDMEEditor DMEEditor { get; set; }
         public KafkaDataConnection Kafkadataconnection { get; set; }
+       // public ConsumerBuilder<Ignore, string> Consumer { get; set; } = new ConsumerBuilder<Ignore, string>(new ConsumerConfig());
         public bool StopConsume { get; set; } = true;
         #region "Kafka Methods"
+        public Pipe pipe { get; set; }=new Pipe();
+        public PipeReader reader { get; set; } 
+        public PipeWriter writer { get; set; } 
         CancellationTokenSource cts = new CancellationTokenSource();
         public  void handler(DeliveryReport<Null, string> deliveryReport)
         {
-            DMEEditor.AddLogMessage("Kafka Produccer", $"{ deliveryReport.Status} {deliveryReport.Message}", deliveryReport.Timestamp.UtcDateTime,0, deliveryReport.Value,Errors.Ok);
+            DMEEditor.AddLogMessage("Kafka Producer", $"{ deliveryReport.Status} {deliveryReport.Message}", deliveryReport.Timestamp.UtcDateTime,0, deliveryReport.Value,Errors.Ok);
         }
         private void ProduceTopic(string topic,List<string> Values)
         {
@@ -109,7 +114,7 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
             using (var c = new ConsumerBuilder<Ignore, string>(Kafkadataconnection.ConsConfig).Build())
             {
                 c.Subscribe(topic);
-
+                
                 CancellationTokenSource cts = new CancellationTokenSource();
              
                 Console.CancelKeyPress += (_, e) => {
@@ -200,7 +205,7 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
 
         public IErrorsInfo ExecuteSql(string sql)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("Not Implemented");
         }
 
         public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
@@ -210,17 +215,36 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
 
         public List<string> GetEntitesList()
         {
-            throw new NotImplementedException();
-        }
+            if (Entities.Count == 0)
 
-        public Task<object> GetEntityDataAsync(string entityname, string filterstr)
-        {
-            throw new NotImplementedException();
+            {
+                DatasourceEntities f = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(DatasourceName);
+                if (f != null)
+                {
+                    Entities = f.Entities;
+                    EntitiesNames = Entities.Select(o => o.EntityName).ToList();
+                }
+
+
+            }
+            return EntitiesNames;
         }
 
         public object GetEntity(string EntityName, List<ReportFilter> filter)
         {
-            throw new NotImplementedException();
+            try
+            {
+                Task r=ConsumeTopic(EntityName);
+                r.Wait();
+                
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Fail", $"Could not Send Topic {EntityName} messeges", DateTime.Now, 0, ex.Message, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+           
         }
 
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
@@ -230,18 +254,22 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
 
         public EntityStructure GetEntityStructure(string EntityName, bool refresh)
         {
-            throw new NotImplementedException();
+            GetEntitesList();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         }
 
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
-            throw new NotImplementedException();
+            GetEntitesList();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         }
 
 
         public Type GetEntityType(string EntityName)
         {
-            return "string".GetType();
+            EntityStructure x = GetEntityStructure(EntityName, false);
+            DMTypeBuilder.CreateNewObject(EntityName, EntityName, x.Fields);
+            return DMTypeBuilder.myType;
         }
 
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
@@ -280,11 +308,20 @@ namespace TheTechIdea.DataManagment_Engine.EventStream
 
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
-            throw new NotImplementedException();
+            try
+            {
+                ProduceTopic(EntityName, (List<string>)InsertedData);
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Fail",$"Could not Send Topic {EntityName} messeges", DateTime.Now, 0, ex.Message, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
         }
         public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
-            throw new NotImplementedException();
+            return (Task<object>)GetEntity(EntityName, Filter);
         }
         #region "dispose"
         private bool disposedValue;
