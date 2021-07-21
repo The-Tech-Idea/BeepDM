@@ -57,9 +57,18 @@ namespace DataManagmentEngineShared.DataBase
             base.Dataconnection.ConnectionProp.Port = 3050;
             base.Dataconnection.ConnectionProp.Password="masterkey";
             base.Dataconnection.ConnectionProp.UserID = "SYSDBA";
+            try
+            {
+                FbConnection.CreateDatabase(csb.ConnectionString, pageSize, forcedWrites, overwrite);
+            }
+            catch (Exception ex)
+            {
 
+                string mes = $"Could not Create Embedded Firebird Database {fileName}- {ex.Message}";
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            }
 
-            FbConnection.CreateDatabase(csb.ConnectionString, pageSize, forcedWrites, overwrite);
+            
         }
         public  bool CreateDB()
         {

@@ -188,11 +188,13 @@
     <None Remove="GFX\box.ico" />
     <None Remove="GFX\Cassandra.ico" />
     <None Remove="GFX\category.ico" />
+    <None Remove="GFX\checkbox.ico" />
     <None Remove="GFX\clayer.ico" />
     <None Remove="GFX\clayerroot.ico" />
     <None Remove="GFX\cloud.ico" />
     <None Remove="GFX\cloudant.ico" />
     <None Remove="GFX\cockroachdb.ico" />
+    <None Remove="GFX\codeicon.ico" />
     <None Remove="GFX\com.ico" />
     <None Remove="GFX\connectiondrivers.ico" />
     <None Remove="GFX\connections.ico" />
@@ -208,34 +210,44 @@
     <None Remove="GFX\cursor2.ico" />
     <None Remove="GFX\database.ico" />
     <None Remove="GFX\databaseentities.ico" />
+    <None Remove="GFX\dataconnection.ico" />
     <None Remove="GFX\datapoint.ico" />
     <None Remove="GFX\dataview.ico" />
     <None Remove="GFX\dataviewnode.ico" />
+    <None Remove="GFX\data_edit.ico" />
     <None Remove="GFX\dbf.ico" />
     <None Remove="GFX\ddl.ico" />
     <None Remove="GFX\designer.ico" />
     <None Remove="GFX\dll.ico" />
+    <None Remove="GFX\dllgen.ico" />
     <None Remove="GFX\doc.ico" />
     <None Remove="GFX\driversdefinition.ico" />
     <None Remove="GFX\dropentites.ico" />
+    <None Remove="GFX\dropentities.ico" />
     <None Remove="GFX\dwg.ico" />
+    <None Remove="GFX\editdefaults.ico" />
+    <None Remove="GFX\edit_entity.ico" />
     <None Remove="GFX\elasticsearch.ico" />
     <None Remove="GFX\eml.ico" />
     <None Remove="GFX\entity.ico" />
+    <None Remove="GFX\entitynotcreated.ico" />
     <None Remove="GFX\eps.ico" />
     <None Remove="GFX\events.ico" />
     <None Remove="GFX\exe.ico" />
     <None Remove="GFX\fieldtype.ico" />
     <None Remove="GFX\file.ico" />
+    <None Remove="GFX\fileicon.ico" />
     <None Remove="GFX\firebase.ico" />
     <None Remove="GFX\Firebird.ico" />
     <None Remove="GFX\fla.ico" />
     <None Remove="GFX\folder.ico" />
     <None Remove="GFX\function2function.ico" />
+    <None Remove="GFX\get_childs.ico" />
     <None Remove="GFX\gif.ico" />
     <None Remove="GFX\google-cloud.ico" />
     <None Remove="GFX\google-drive.ico" />
     <None Remove="GFX\hbase.ico" />
+    <None Remove="GFX\HereweAddAllgfx.txt" />
     <None Remove="GFX\htm.ico" />
     <None Remove="GFX\ico.ico" />
     <None Remove="GFX\info.ico" />
@@ -247,6 +259,7 @@
     <None Remove="GFX\jpg.ico" />
     <None Remove="GFX\js.ico" />
     <None Remove="GFX\json.ico" />
+    <None Remove="GFX\linkicon.ico" />
     <None Remove="GFX\linux.ico" />
     <None Remove="GFX\mapping.ico" />
     <None Remove="GFX\mariadb.ico" />
@@ -261,25 +274,35 @@
     <None Remove="GFX\obj.ico" />
     <None Remove="GFX\oracle.ico" />
     <None Remove="GFX\otf.ico" />
+    <None Remove="GFX\paste.ico" />
     <None Remove="GFX\pastedefaults.ico" />
     <None Remove="GFX\pasteentities.ico" />
     <None Remove="GFX\pdf.ico" />
     <None Remove="GFX\pkg.ico" />
     <None Remove="GFX\png.ico" />
     <None Remove="GFX\ppt.ico" />
+    <None Remove="GFX\print.ico" />
     <None Remove="GFX\prisma.ico" />
     <None Remove="GFX\psd.ico" />
+    <None Remove="GFX\python.ico" />
     <None Remove="GFX\query.ico" />
     <None Remove="GFX\ravendb.ico" />
     <None Remove="GFX\refresh.ico" />
+    <None Remove="GFX\remove.ico" />
+    <None Remove="GFX\remove_childs.ico" />
     <None Remove="GFX\report.ico" />
+    <None Remove="GFX\reportdefinition.ico" />
+    <None Remove="GFX\reportdesigner.ico" />
     <None Remove="GFX\reportnode.ico" />
+    <None Remove="GFX\reports.ico" />
     <None Remove="GFX\rtf.ico" />
     <None Remove="GFX\salesforce.ico" />
     <None Remove="GFX\select.ico" />
     <None Remove="GFX\settings.ico" />
     <None Remove="GFX\sheet.ico" />
+    <None Remove="GFX\snapdesigner.ico" />
     <None Remove="GFX\spreadsheet.ico" />
+    <None Remove="GFX\sqlicon.ico" />
     <None Remove="GFX\Sqlite.ico" />
     <None Remove="GFX\sqlserver.ico" />
     <None Remove="GFX\sqlserverCompact.ico" />
@@ -291,6 +314,7 @@
     <None Remove="GFX\wav.ico" />
     <None Remove="GFX\web.ico" />
     <None Remove="GFX\webapi.ico" />
+    <None Remove="GFX\webapicategory.ico" />
     <None Remove="GFX\webphp.ico" />
     <None Remove="GFX\windows_client.ico" />
     <None Remove="GFX\wmv.ico" />
@@ -937,6 +961,9 @@
     <Content Include="GFX\category.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="GFX\checkbox.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="GFX\clayer.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -950,6 +977,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\cockroachdb.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\codeicon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\com.ico">
@@ -995,6 +1025,9 @@
     <Content Include="GFX\databaseentities.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="GFX\dataconnection.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="GFX\datapoint.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -1002,6 +1035,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\dataviewnode.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\data_edit.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\dbf.ico">
@@ -1016,6 +1052,9 @@
     <Content Include="GFX\dll.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="GFX\dllgen.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="GFX\doc.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -1025,7 +1064,16 @@
     <Content Include="GFX\dropentites.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="GFX\dropentities.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="GFX\dwg.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\editdefaults.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\edit_entity.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\elasticsearch.ico">
@@ -1035,6 +1083,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\entity.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\entitynotcreated.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\eps.ico">
@@ -1052,6 +1103,9 @@
     <Content Include="GFX\file.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="GFX\fileicon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="GFX\firebase.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -1067,6 +1121,9 @@
     <Content Include="GFX\function2function.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="GFX\get_childs.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="GFX\gif.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -1077,6 +1134,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\hbase.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\HereweAddAllgfx.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\htm.ico">
@@ -1110,6 +1170,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\json.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\linkicon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\linux.ico">
@@ -1154,6 +1217,9 @@
     <Content Include="GFX\otf.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="GFX\paste.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="GFX\pastedefaults.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -1172,10 +1238,16 @@
     <Content Include="GFX\ppt.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="GFX\print.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="GFX\prisma.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\psd.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\python.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\query.ico">
@@ -1184,10 +1256,25 @@
     <Content Include="GFX\ravendb.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="GFX\remove.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\remove_childs.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="GFX\report.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="GFX\reportdefinition.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\reportdesigner.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="GFX\reportnode.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\reports.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\rtf.ico">
@@ -1205,7 +1292,13 @@
     <Content Include="GFX\sheet.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="GFX\snapdesigner.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="GFX\spreadsheet.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\sqlicon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\Sqlite.ico">
@@ -1239,6 +1332,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\webapi.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="GFX\webapicategory.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GFX\webphp.ico">

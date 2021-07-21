@@ -456,8 +456,12 @@ namespace TheTechIdea.DataManagment_Engine.DataView
             {
                 retval= DMEEditor.GetDataSource(dh.DataSourceID);
             }
-            retval.Dataconnection.OpenConnection();
-            retval.ConnectionStatus = Dataconnection.ConnectionStatus;
+            if (retval != null)
+            {
+                retval.Dataconnection.OpenConnection();
+                retval.ConnectionStatus = Dataconnection.ConnectionStatus;
+            }
+          
             return retval;
 
 

@@ -11,6 +11,7 @@ using TheTechIdea.DataManagment_Engine.ConfigUtil;
 using TheTechIdea.DataManagment_Engine.Editor;
 using TheTechIdea.Tools.AssemblyHandling;
 using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.DataManagment_Engine.Tools;
 
 namespace DataManagment_Engine
 
@@ -40,7 +41,8 @@ namespace DataManagment_Engine
             Builder = new ContainerBuilder();
             Builder.RegisterType<ErrorsInfo>().As<IErrorsInfo>().SingleInstance();
             Builder.RegisterType<DMLogger>().As<IDMLogger>().SingleInstance();
-            Builder.RegisterType<ConfigEditor>().As<IConfigEditor>().SingleInstance(); 
+            Builder.RegisterType<ConfigEditor>().As<IConfigEditor>().SingleInstance();
+            Builder.RegisterType<DataTypesHelper>().As<IDataTypesHelper>().SingleInstance();
             Builder.RegisterType<DMEEditor>().As<IDMEEditor>().SingleInstance();
             Builder.RegisterType<WorkFlowEditor>().As<IWorkFlowEditor>().SingleInstance();
             Builder.RegisterType<Util>().As<IUtil>().SingleInstance();
@@ -48,7 +50,7 @@ namespace DataManagment_Engine
             Builder.RegisterType<VisUtil>().As<IVisUtil>().SingleInstance();
             Builder.RegisterType<JsonLoader>().As<IJsonLoader>().SingleInstance();
             Builder.RegisterType<AssemblyHandlerCore>().As<IAssemblyHandler>().SingleInstance();
-            Builder.RegisterType<ClassCreator>().As<IClassCreator>().SingleInstance();
+            Builder.RegisterType<ClassCreatorv2>().As<IClassCreator>().SingleInstance();
             Builder.RegisterType<ETL>().As<IETL>().SingleInstance();
             Builder.RegisterType<TreeCore>().As<ITree>().SingleInstance();
 
@@ -60,54 +62,43 @@ namespace DataManagment_Engine
             Container = Configure();
             using (var scope = Container.BeginLifetimeScope())
             {
-                jsonLoader= scope.Resolve<IJsonLoader>();
+                //  jsonLoader= scope.Resolve<IJsonLoader>();
                 //--------------------------------------------------------------------------------
                 // a Error Class that will have all error message tracking 
                 //---------------------------------------------------------------------------
-                Erinfo = scope.Resolve<IErrorsInfo>();
+                //Erinfo = scope.Resolve<IErrorsInfo>();
                 //--------------------------------------------------------------------------------
                 // a Log Manager 
                 //---------------------------------------------------------------------------
-                lg = scope.Resolve<IDMLogger>();
-                lg.WriteLog("App started");
-
-                // a Utility Class for helping in Doing Different functions for  Data Managment
-
-                util = scope.Resolve<IUtil>();
-                //--------------------------------------------------------------------------------
-               
-
+                //lg = scope.Resolve<IDMLogger>();
+                //lg.WriteLog("App started");
                 //-------------------------------------------------------------------------------
                 // a onfiguration class for assembly, addin's and  drivers loading into the 
                 // application
                 //---------------------------------------------------------------------------
                 Config_editor = scope.Resolve<IConfigEditor>();
-             
-                // Setup the Entry Screen 
-                // the screen has to be in one the Addin DLL's loaded by the Assembly loader
+                // a Utility Class for helping in Doing Different functions for  Data Managment
 
-                if (Config_editor.Config.SystemEntryFormName == null)
-                {
-                    Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
+                //util = scope.Resolve<IUtil>();
+                //--------------------------------------------------------------------------------
 
-                }
-                // Setup the Database Connection Screen
-                // a "Work Flow" class will control all the workflow between different data source 
-                // and automation
-                WorkFlowEditor = scope.Resolve<IWorkFlowEditor>();
-                eTL= scope.Resolve<IETL>();
-                LLoader = scope.Resolve<IAssemblyHandler>();
-                //-------------------------------------------------------------------------------
-                // The Main Class for Data Manager 
-                //---------------------------------------------------------------------------
-                DMEEditor = scope.Resolve<IDMEEditor>();
                 //-------------------------------------------------------------------------------
                 // this is the assembly loader for loading from Addin Folder and Projectdrivers Folder
                 //---------------------------------------------------------------------------
-                // LLoader = scope.Resolve<IAssemblyLoader>();
-              
-               // LLoader.DMEEditor = DMEEditor;
-               // DMEEditor.assemblyHandler = LLoader;
+
+                LLoader = scope.Resolve<IAssemblyHandler>();
+
+                // Setup the Database Connection Screen
+                // a "Work Flow" class will control all the workflow between different data source 
+                // and automation
+                // WorkFlowEditor = scope.Resolve<IWorkFlowEditor>();
+                //eTL= scope.Resolve<IETL>();
+                //-------------------------------------------------------------------------------
+                // The Main Class for Data Manager 
+                //---------------------------------------------------------------------------
+
+                //DMEEditor.assemblyHandler = LLoader;
+                DMEEditor = scope.Resolve<IDMEEditor>();
                 //-------------------------------------------------------------------------------
                 // The Main Visualization Class tha control the visual aspect of the system
                 //---------------------------------------------------------------------------
@@ -117,32 +108,28 @@ namespace DataManagment_Engine
                 ITreeView treeView = (ITreeView)tree;
                 treeView.Visutil = vis;
                 tree.DMEEditor = DMEEditor;
-               
                 //-------------------------------------------------------------------------------
                 // this Editor will help Generate user controls for visulization
                 Controleditor = scope.Resolve<IControlEditor>();
                 //-------------------------------------------------------------------------------
                 // a tree class will be main visualization control for the system
-              
+
                 vis.controlEditor = Controleditor;
-              
+
                 //---------------------------------------------------------------------------
                 // This has to be last step so that all Configuration is ready for Addin's 
                 // to be able to use
                 //---------------------------------------------------------------------------
-                //AppDomainSetup pluginsDomainSetup = new AppDomainSetup
-                //{
-                //    ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
-                //    PrivateBinPath = @"ConnectionDrivers;ProjectClasses"
-                //};
+                
                 LLoader.LoadAllAssembly();
                 Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
-                vis.ShowMainDisplayForm();
-                //if (DMEEditor.ErrorObject.Flag== Errors.Failed)
-                //{
-                //    Controleditor.MsgBox("Beep", $"Could not Startup Screen {DMEEditor.ErrorObject.Ex.Message}");
+                // Setup the Entry Screen 
+                // the screen has to be in one the Addin DLL's loaded by the Assembly loader
 
-                //}
+                Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
+
+                vis.ShowMainDisplayForm();
+
             }
         }
     }

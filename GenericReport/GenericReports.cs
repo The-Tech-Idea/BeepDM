@@ -66,52 +66,60 @@ namespace TheTechIdea.DataManagment_Engine.Report
                 {
                     //streamToPrint = new StreamReader(outputFile);
                     //streamToPrint.Close();
-                    switch (reportType)
+                    if (reportOutput.Tables != null)
                     {
-                        case ReportType.html:
-                            OutputFile = outputFile;
-                            CreateHtmlReport();
-                            break;
-                        case ReportType.xls:
-                            OutputFile = outputFile;
-                            break;
-                        case ReportType.csv:
-                            OutputFile = outputFile;
-                            break;
-                        case ReportType.pdf:
-                            OutputFile = outputFile;
-                            break;
-                        case ReportType.txt:
-                            try
+                        if (reportOutput.Tables[0] != null)
+                        {
+                            switch (reportType)
                             {
-                                reportView = new uc_GenericReportView();
-                                reportView.DMEEditor = DMEEditor;
-                                printDocument1 = new PrintDocument();
-                                printDocument1 = reportView.printDocument1;
-                                printDocument1.PrinterSettings = printerSetting1;
-                                reportView.printDocument1 = printDocument1;
-                                reportView.Printbutton.Click += Printbutton_Click;
-                                reportView.PageSetUpbutton.Click += PageSetUpbutton_Click;
-                                printDocument1.PrintPage += new PrintPageEventHandler(this.pd_PrintPage);
-                                printDocument1.BeginPrint += PrintDocument1_BeginPrint;
-                                printDocument1.EndPrint += PrintDocument1_EndPrint;
-                                Form form = new Form();
-                                form.Controls.Add(reportView);
-                                reportView.Dock = DockStyle.Fill;
-                                OutputFile = null;
-                                DMEEditor.AddLogMessage("Success", $"Creating Report", DateTime.Now, 0, null, Errors.Ok);
-                                form.ShowDialog();
-                            }
-                            finally
-                            {
-                               
+                                case ReportType.html:
+                                    OutputFile = outputFile;
+                                    CreateHtmlReport();
+                                    break;
+                                case ReportType.xls:
+                                    OutputFile = outputFile;
+                                    break;
+                                case ReportType.csv:
+                                    OutputFile = outputFile;
+                                    break;
+                                case ReportType.pdf:
+                                    OutputFile = outputFile;
+                                    break;
+                                case ReportType.txt:
+                                    try
+                                    {
+                                        reportView = new uc_GenericReportView();
+                                        reportView.DMEEditor = DMEEditor;
+                                        printDocument1 = new PrintDocument();
+                                        printDocument1 = reportView.printDocument1;
+                                        printDocument1.PrinterSettings = printerSetting1;
+                                        reportView.printDocument1 = printDocument1;
+                                        reportView.Printbutton.Click += Printbutton_Click;
+                                        reportView.PageSetUpbutton.Click += PageSetUpbutton_Click;
+                                        printDocument1.PrintPage += new PrintPageEventHandler(this.pd_PrintPage);
+                                        printDocument1.BeginPrint += PrintDocument1_BeginPrint;
+                                        printDocument1.EndPrint += PrintDocument1_EndPrint;
+                                        Form form = new Form();
+                                        form.Controls.Add(reportView);
+                                        reportView.Dock = DockStyle.Fill;
+                                        OutputFile = null;
+                                        DMEEditor.AddLogMessage("Success", $"Creating Report", DateTime.Now, 0, null, Errors.Ok);
+                                        form.ShowDialog();
+                                    }
+                                    finally
+                                    {
 
-                            }
 
-                            break;
-                        default:
-                            break;
+                                    }
+
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                     
                     }
+                   
                 
                 }
                             
@@ -244,8 +252,8 @@ namespace TheTechIdea.DataManagment_Engine.Report
                 bodystring += createTableHeader(i);
                 
                 bodystring += createTableFooter(i);
-              
-                bodystring += CreateTableBody(i);
+                if (reportOutput.Tables[i]!=null) { bodystring += CreateTableBody(i); }
+                
              
 
 
