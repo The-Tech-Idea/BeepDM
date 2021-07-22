@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Editor
+namespace TheTechIdea.Beep.Editor
 {
     public interface IDataTypesHelper
     {

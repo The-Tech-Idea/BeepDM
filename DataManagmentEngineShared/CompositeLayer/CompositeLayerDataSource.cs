@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.DataView;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.DataView;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.CompositeLayer
+namespace TheTechIdea.Beep.CompositeLayer
 {
     public class CompositeLayerDataSource : RDBSource
     {

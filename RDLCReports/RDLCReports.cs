@@ -4,10 +4,10 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TheTechIdea.DataManagment_Engine.Report.RDLC.ReportBuilderEntities;
+using TheTechIdea.Beep.Report.RDLC.ReportBuilderEntities;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Report
+namespace TheTechIdea.Beep.Report
 {
     public class RDLCReports : IReportDMWriter
     {

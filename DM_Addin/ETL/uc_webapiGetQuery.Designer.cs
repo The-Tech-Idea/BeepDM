@@ -66,7 +66,7 @@ namespace TheTechIdea.ETL
             // 
             // filtersBindingSource
             // 
-            this.filtersBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Report.ReportFilter);
+            this.filtersBindingSource.DataSource = typeof(TheTechIdea.Beep.Report.ReportFilter);
             // 
             // dataGridView1
             // 

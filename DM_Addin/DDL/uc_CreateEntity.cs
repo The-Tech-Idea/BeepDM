@@ -1,5 +1,5 @@
-﻿using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.DataBase;
+﻿using TheTechIdea.Beep;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
 using System;
 using System.Collections.Generic;
@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using TheTechIdea.Util;
 using TheTechIdea;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep.Vis;
 
 namespace TheTechIdea.DDL
 {

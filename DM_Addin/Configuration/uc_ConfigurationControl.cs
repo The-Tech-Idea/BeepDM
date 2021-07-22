@@ -10,9 +10,9 @@ using System.Windows.Forms;
 using TheTechIdea;
 using TheTechIdea.Util;
 using TheTechIdea.Logger;
-using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Vis;
 
 namespace TheTechIdea.Configuration
 {

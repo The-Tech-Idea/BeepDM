@@ -1,5 +1,5 @@
 ﻿
-namespace TheTechIdea.DataManagment_Engine.AppBuilder
+namespace TheTechIdea.Beep.AppBuilder
 {
     partial class uc_MainScreen
     {

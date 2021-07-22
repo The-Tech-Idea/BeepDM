@@ -208,7 +208,7 @@ namespace TheTechIdea.ETL
             // 
             // reportsBindingSource
             // 
-            this.reportsBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Report.ReportTemplate);
+            this.reportsBindingSource.DataSource = typeof(TheTechIdea.Beep.Report.ReportTemplate);
             // 
             // titleTextBox
             // 

@@ -6,7 +6,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Text;
 
-namespace TheTechIdea.DataManagment_Engine.MVVM
+namespace TheTechIdea.Beep.MVVM
 {
     public class EventList<T> : ObservableCollection<T>  where T : INotifyPropertyChanged
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TheTechIdea.DataManagment_Engine.DataBase
+namespace TheTechIdea.Beep.DataBase
 {
     public interface IInsertTransaction
     {

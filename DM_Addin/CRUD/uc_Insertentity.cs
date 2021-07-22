@@ -7,12 +7,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep.Vis;
 
-namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
+namespace TheTechIdea.Beep.AppBuilder.UserControls
 {
     public partial class uc_Insertentity : UserControl, IDM_Addin
     {

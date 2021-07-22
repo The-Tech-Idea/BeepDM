@@ -1,5 +1,5 @@
 ﻿
-namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
+namespace TheTechIdea.Beep.AppBuilder.UserControls
 {
     partial class uc_getentities
     {
@@ -32,7 +32,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
             this.components = new System.ComponentModel.Container();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.Filterpanel = new System.Windows.Forms.Panel();
-            this.uc_filtercontrol1 = new TheTechIdea.DataManagment_Engine.AppBuilder.UserControls.uc_filtercontrol();
+            this.uc_filtercontrol1 = new TheTechIdea.Beep.AppBuilder.UserControls.uc_filtercontrol();
             this.filterTitlepanel = new System.Windows.Forms.Panel();
             this.Filtercaptionlabel = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();

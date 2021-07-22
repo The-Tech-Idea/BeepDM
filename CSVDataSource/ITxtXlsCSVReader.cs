@@ -1,11 +1,11 @@
 ﻿
 using System.Collections.Generic;
 using System.Data;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.FileManager
+namespace TheTechIdea.Beep.FileManager
 {
     public interface ITxtXlsCSVReader
     {

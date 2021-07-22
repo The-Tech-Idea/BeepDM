@@ -160,7 +160,7 @@ namespace TheTechIdea.ETL
             // 
             // compositeQueryLayersBindingSource
             // 
-            this.compositeQueryLayersBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.CompositeLayer.CompositeLayer);
+            this.compositeQueryLayersBindingSource.DataSource = typeof(TheTechIdea.Beep.CompositeLayer.CompositeLayer);
             // 
             // layerNameTextBox
             // 

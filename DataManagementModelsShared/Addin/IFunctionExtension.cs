@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TheTechIdea.DataManagment_Engine.Addin
+namespace TheTechIdea.Beep.Addin
 {
    public  interface IFunctionExtension
     {

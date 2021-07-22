@@ -7,13 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
-using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.Beep;
 using TheTechIdea.Winforms.VIS;
 using TheTechIdea.Util;
 using TheTechIdea;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep.Vis;
 
 namespace TheTechIdea.CRUD
 {

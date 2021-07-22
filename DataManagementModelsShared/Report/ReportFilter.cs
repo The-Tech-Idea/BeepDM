@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TheTechIdea.DataManagment_Engine.Report
+namespace TheTechIdea.Beep.Report
 {
     public interface IReportFilter
     {

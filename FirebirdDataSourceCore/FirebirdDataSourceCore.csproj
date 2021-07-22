@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net5.0</TargetFramework>
-    <RootNamespace>TheTechIdea.DataManagment_Engine.Database</RootNamespace>
+    <RootNamespace>TheTechIdea.Beep.Database</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>

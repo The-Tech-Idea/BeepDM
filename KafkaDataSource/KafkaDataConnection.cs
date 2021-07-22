@@ -2,13 +2,13 @@
 
 using System.Data;
 
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using Confluent.Kafka;
 using System.Net;
 
-namespace TheTechIdea.DataManagment_Engine.EventStream.Kafka
+namespace TheTechIdea.Beep.EventStream.Kafka
 {
     public class KafkaDataConnection : IDataConnection
     {

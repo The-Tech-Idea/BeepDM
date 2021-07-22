@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace TheTechIdea.DataManagment_Engine.FileManager
+namespace TheTechIdea.Beep.FileManager
 {
     public class CsvTextFieldParser : IDisposable
     {

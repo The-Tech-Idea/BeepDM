@@ -5,11 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.ConfigUtil;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.DataView;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.DataView;
+using TheTechIdea.Beep.Vis;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Winforms.VIS

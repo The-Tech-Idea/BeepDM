@@ -4,10 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.Addin;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Vis;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Winforms.VIS

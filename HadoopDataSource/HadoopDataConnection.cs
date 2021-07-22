@@ -4,11 +4,11 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Hadoop
+namespace TheTechIdea.Beep.Hadoop
 {
     public class HadoopDataConnection : IDataConnection
     {

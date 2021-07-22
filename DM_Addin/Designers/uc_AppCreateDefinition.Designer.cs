@@ -166,7 +166,7 @@ namespace TheTechIdea.ETL
             // 
             // appsBindingSource
             // 
-            this.appsBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.AppBuilder.App);
+            this.appsBindingSource.DataSource = typeof(TheTechIdea.Beep.AppBuilder.App);
             // 
             // createDateDateTimePicker
             // 

@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace TheTechIdea.DataManagment_Engine.Report
+namespace TheTechIdea.Beep.Report
 {
     public partial class uc_webview : UserControl
     {

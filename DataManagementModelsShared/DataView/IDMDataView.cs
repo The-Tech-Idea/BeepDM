@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.Beep;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.DataBase
+namespace TheTechIdea.Beep.DataBase
 {
     public interface IDMDataView
     {

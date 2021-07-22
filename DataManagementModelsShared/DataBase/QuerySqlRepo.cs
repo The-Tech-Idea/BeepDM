@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.DataBase
+namespace TheTechIdea.Beep.DataBase
 {
     public class QuerySqlRepo
     {

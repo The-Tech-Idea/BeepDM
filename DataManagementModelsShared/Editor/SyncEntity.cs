@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Editor
+namespace TheTechIdea.Beep.Editor
 {
    
     public class SyncEntity : ISyncEntity

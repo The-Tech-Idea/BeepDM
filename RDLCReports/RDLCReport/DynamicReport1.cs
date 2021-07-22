@@ -7,19 +7,19 @@
 //     the code is regenerated.
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
+namespace TheTechIdea.DataManagment_Engine.Report.RDLCReport
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using TheTechIdea.DataManagment_Engine.AppBuilder.DynamicRdlcReport;
+    using TheTechIdea.Beep.AppBuilder.DynamicRdlcReport;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+    #line 1 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "16.0.0.0")]
     public partial class DynamicReport : DynamicReportBase
     {
@@ -45,35 +45,35 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
       <Fields>
 ");
             
-            #line 22 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 22 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
     foreach(ReportColumn column in Model){
             
             #line default
             #line hidden
             this.Write("        <Field Name=\"");
             
-            #line 23 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 23 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Name));
             
             #line default
             #line hidden
             this.Write("\">\r\n          <DataField>");
             
-            #line 24 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 24 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Name));
             
             #line default
             #line hidden
             this.Write("</DataField>\r\n          <rd:TypeName>");
             
-            #line 25 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 25 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Type.Name));
             
             #line default
             #line hidden
             this.Write("</rd:TypeName>\r\n        </Field>\r\n");
             
-            #line 27 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 27 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
     }
             
             #line default
@@ -97,21 +97,21 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
           <TablixColumns>
 ");
             
-            #line 45 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 45 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
     foreach(ReportColumn column in Model){
             
             #line default
             #line hidden
             this.Write("            <TablixColumn>\r\n              <Width>");
             
-            #line 47 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 47 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.WidthInInch));
             
             #line default
             #line hidden
             this.Write("in</Width>\r\n            </TablixColumn>\r\n");
             
-            #line 49 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 49 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
     }
             
             #line default
@@ -119,7 +119,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
             this.Write("          </TablixColumns>\r\n          <TablixRows>\r\n            <TablixRow>\r\n    " +
                     "          <Height>0.25in</Height>\r\n              <TablixCells>\r\n");
             
-            #line 55 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 55 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
     foreach(ReportColumn column in Model){
             
             #line default
@@ -127,7 +127,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
             this.Write("                <TablixCell>\r\n                  <CellContents>\r\n                 " +
                     "   <Textbox Name=\"");
             
-            #line 58 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 58 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Name));
             
             #line default
@@ -141,7 +141,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
                             <TextRun>
                               <Value>");
             
-            #line 65 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 65 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Title));
             
             #line default
@@ -155,7 +155,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
                       </Paragraphs>
                       <rd:DefaultName>");
             
-            #line 72 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 72 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Name));
             
             #line default
@@ -168,7 +168,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
                         </Border>
                         <BackgroundColor>");
             
-            #line 78 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 78 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.HeaderBackColorInHtml));
             
             #line default
@@ -184,7 +184,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
                 </TablixCell>
 ");
             
-            #line 87 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 87 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
     }
             
             #line default
@@ -192,7 +192,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
             this.Write("              </TablixCells>\r\n            </TablixRow>\r\n            <TablixRow>\r\n" +
                     "              <Height>0.25in</Height>\r\n              <TablixCells>\r\n");
             
-            #line 93 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 93 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
     foreach(ReportColumn column in Model){
             
             #line default
@@ -200,7 +200,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
             this.Write("                <TablixCell>\r\n                  <CellContents>\r\n                 " +
                     "   <Textbox Name=\"");
             
-            #line 96 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 96 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Name));
             
             #line default
@@ -214,7 +214,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
                             <TextRun>
                               <Value>");
             
-            #line 103 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 103 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Expression));
             
             #line default
@@ -228,7 +228,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
                       </Paragraphs>
                       <rd:DefaultName>");
             
-            #line 110 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 110 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Name));
             
             #line default
@@ -249,7 +249,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
                 </TablixCell>
 ");
             
-            #line 124 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 124 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
     }
             
             #line default
@@ -258,14 +258,14 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
                     "        </TablixBody>\r\n        <TablixColumnHierarchy>\r\n          <TablixMembers" +
                     ">\r\n");
             
-            #line 131 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 131 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
     foreach(ReportColumn column in Model){
             
             #line default
             #line hidden
             this.Write("            <TablixMember />\r\n");
             
-            #line 133 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+            #line 133 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
     }
             
             #line default
@@ -311,7 +311,7 @@ namespace TheTechIdea.DataManagment_Engine.AppBuilder.RDLCReport
             return this.GenerationEnvironment.ToString();
         }
         
-        #line 1 "C:\Users\f_ald\source\repos\BeepDM\WinFormAppBuilder\RDLCReport\DynamicReport.tt"
+        #line 1 "C:\Users\f_ald\source\repos\BeepDM\RDLCReports\RDLCReport\DynamicReport.tt"
 
 private global::System.Collections.Generic.List<ReportColumn> _ModelField;
 

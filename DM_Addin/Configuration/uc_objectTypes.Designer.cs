@@ -194,7 +194,7 @@ namespace TheTechIdea.Configuration
             // 
             // objectTypesBindingSource
             // 
-            this.objectTypesBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Workflow.ObjectTypes);
+            this.objectTypesBindingSource.DataSource = typeof(TheTechIdea.Beep.Workflow.ObjectTypes);
             // 
             // dataGridViewTextBoxColumn1
             // 

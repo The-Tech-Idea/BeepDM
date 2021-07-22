@@ -12,7 +12,7 @@ namespace TheTechIdea.RDLCReport
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using TheTechIdea.DataManagment_Engine.DynamicRdlcReport;
+    using TheTechIdea.Beep.DynamicRdlcReport;
     using System;
     
     /// <summary>

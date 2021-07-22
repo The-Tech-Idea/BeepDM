@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Report;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Report;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 

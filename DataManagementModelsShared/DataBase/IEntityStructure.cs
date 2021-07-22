@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using TheTechIdea.DataManagment_Engine.Report;
+using TheTechIdea.Beep.Report;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.DataBase
+namespace TheTechIdea.Beep.DataBase
 {
     public interface IEntityStructure
     {

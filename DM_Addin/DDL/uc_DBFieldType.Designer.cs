@@ -97,7 +97,7 @@ namespace TheTechIdea.DDL
             // 
             // mappingBindingSource
             // 
-            this.mappingBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DataBase.DatatypeMapping);
+            this.mappingBindingSource.DataSource = typeof(TheTechIdea.Beep.DataBase.DatatypeMapping);
             // 
             // bindingNavigatorCountItem
             // 

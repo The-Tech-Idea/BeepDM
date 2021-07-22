@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.AppBuilder
+namespace TheTechIdea.Beep.AppBuilder
 {
     public interface IAppBuilder
     {

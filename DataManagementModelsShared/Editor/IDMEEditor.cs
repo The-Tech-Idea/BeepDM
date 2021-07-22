@@ -2,16 +2,16 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Editor;
-using TheTechIdea.DataManagment_Engine.Logger;
-using TheTechIdea.DataManagment_Engine.Report;
-using TheTechIdea.DataManagment_Engine.Workflow;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.Report;
+using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Tools;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine
+namespace TheTechIdea.Beep
 {
     public interface IDMEEditor
     {

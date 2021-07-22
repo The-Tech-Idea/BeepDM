@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace TheTechIdea.DataManagment_Engine.Logger
+namespace TheTechIdea.Beep.Logger
 {
     public class LogAndError : ILogAndError
     {

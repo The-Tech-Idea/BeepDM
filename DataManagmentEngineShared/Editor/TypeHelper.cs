@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-namespace TheTechIdea.DataManagment_Engine.Editor
+namespace TheTechIdea.Beep.Editor
 {
     public static class TypeHelper
     {

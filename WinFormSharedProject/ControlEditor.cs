@@ -7,9 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Report;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Report;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using TheTechIdea.Winforms.VIS.ReportGenrerator;
@@ -282,7 +282,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                 var starth = 25;
                
-                TableCurrentEntity.Filters = new List<DataManagment_Engine.Report.ReportFilter>();
+                TableCurrentEntity.Filters = new List<Beep.Report.ReportFilter>();
                 foreach (DataColumn col in table.Columns)
                 {
                     DefaultValue coldefaults = defaults.Where(o => o.propertyName == col.ColumnName).FirstOrDefault();
@@ -568,7 +568,7 @@ namespace TheTechIdea.Winforms.VIS
             {
                 var starth = 25;
 
-                TableCurrentEntity.Filters = new List<DataManagment_Engine.Report.ReportFilter>();
+                TableCurrentEntity.Filters = new List<Beep.Report.ReportFilter>();
                 foreach (EntityField col in TableCurrentEntity.Fields)
                 {
                     DefaultValue coldefaults = defaults.Where(o => o.propertyName == col.fieldname).FirstOrDefault();
@@ -806,7 +806,7 @@ namespace TheTechIdea.Winforms.VIS
                 var starth = 0;
                 ViewCurrentEntity = datahset;
 
-                ViewCurrentEntity.Filters = new List<DataManagment_Engine.Report.ReportFilter>();
+                ViewCurrentEntity.Filters = new List<Beep.Report.ReportFilter>();
                 foreach (DataColumn col in table.Columns)
                 {
                     string coltype = col.DataType.Name.ToString();

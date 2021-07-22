@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.ConfigUtil
+namespace TheTechIdea.Beep.ConfigUtil
 {
     public class ClassProperties : Attribute
     {

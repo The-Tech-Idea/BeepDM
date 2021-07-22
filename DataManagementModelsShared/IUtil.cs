@@ -5,12 +5,12 @@ using System.ComponentModel;
 using System.Data;
 using System.Dynamic;
 using System.Reflection;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Workflow;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine
+namespace TheTechIdea.Beep
 {
     public interface IUtil
     {

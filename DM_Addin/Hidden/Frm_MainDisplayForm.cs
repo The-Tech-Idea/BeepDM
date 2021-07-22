@@ -1,8 +1,8 @@
-﻿using TheTechIdea.DataManagment_Engine.DataBase;
+﻿using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
 
-using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.Vis;
 using System;
 
 using System.Data;

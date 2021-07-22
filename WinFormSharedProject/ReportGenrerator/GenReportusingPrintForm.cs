@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine.Report;
+using TheTechIdea.Beep.Report;
 
 namespace TheTechIdea.Winforms.VIS.ReportGenrerator
 {

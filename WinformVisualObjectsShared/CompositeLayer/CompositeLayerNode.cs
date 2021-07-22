@@ -7,11 +7,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.CompositeLayer;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Editor;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.CompositeLayer;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Vis;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Winforms.VIS

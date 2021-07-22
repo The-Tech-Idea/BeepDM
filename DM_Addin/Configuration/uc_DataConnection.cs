@@ -1,7 +1,7 @@
-﻿using TheTechIdea.DataManagment_Engine.DataBase;
+﻿using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
 
-using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.Beep;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,7 +14,7 @@ using System.Windows.Forms;
 using TheTechIdea.Util;
 using TheTechIdea;
 using TheTechIdea.Winforms.VIS;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep.Vis;
 
 namespace TheTechIdea.Configuration
 {

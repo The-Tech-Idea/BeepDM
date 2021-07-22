@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TheTechIdea.DataManagment_Engine.AppBuilder
+namespace TheTechIdea.Beep.AppBuilder
 {
     public interface IBreadCrumb
     {

@@ -1,5 +1,5 @@
 ﻿
-namespace TheTechIdea.DataManagment_Engine.AppBuilder.UserControls
+namespace TheTechIdea.Beep.AppBuilder.UserControls
 {
     partial class uc_Insertentity
     {

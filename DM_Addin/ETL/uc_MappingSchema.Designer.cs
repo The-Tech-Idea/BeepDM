@@ -253,7 +253,7 @@ namespace TheTechIdea.ETL
             // 
             // mappingSchemaBindingSource
             // 
-            this.mappingSchemaBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Workflow.Map_Schema);
+            this.mappingSchemaBindingSource.DataSource = typeof(TheTechIdea.Beep.Workflow.Map_Schema);
             // 
             // mappingSchemaBindingNavigator
             // 

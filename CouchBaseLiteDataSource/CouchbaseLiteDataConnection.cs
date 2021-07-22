@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Text;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.NOSQL
+namespace TheTechIdea.Beep.NOSQL
 {
     public class CouchbaseLiteDataConnection : IDataConnection
     {

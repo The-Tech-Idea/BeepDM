@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace TheTechIdea.DataManagment_Engine.Report.Properties {
+namespace TheTechIdea.Beep.Report.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace TheTechIdea.DataManagment_Engine.Report.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("TheTechIdea.DataManagment_Engine.Report.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("TheTechIdea.Beep.Report.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

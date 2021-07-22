@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep.Vis;
 
-namespace TheTechIdea.DataManagment_Engine.Addin
+namespace TheTechIdea.Beep.Addin
 {
    public  class AddinVisSchema: IAddinVisSchema
     {

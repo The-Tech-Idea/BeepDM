@@ -1,7 +1,7 @@
-﻿using TheTechIdea.DataManagment_Engine;
+﻿using TheTechIdea.Beep;
 
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
 using TheTechIdea.Logger;
 using System;
 using System.Collections.Generic;
@@ -16,7 +16,7 @@ using System.Windows.Forms;
 using TheTechIdea.Util;
 using TheTechIdea;
 using TheTechIdea.Winforms.VIS;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep.Vis;
 
 namespace TheTechIdea.DDL
 {

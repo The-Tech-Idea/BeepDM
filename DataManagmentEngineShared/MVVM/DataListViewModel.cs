@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Text;
 
-namespace TheTechIdea.DataManagment_Engine.MVVM
+namespace TheTechIdea.Beep.MVVM
 {
    public class DataListViewModel 
     {

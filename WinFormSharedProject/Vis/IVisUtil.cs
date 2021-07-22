@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Vis;
 using TheTechIdea.Logger;
 using TheTechIdea.Tools;
 using TheTechIdea.Util;
 using TheTechIdea.Winforms.VIS;
 
-namespace TheTechIdea.DataManagment_Engine.Vis
+namespace TheTechIdea.Beep.Vis
 {
     public interface IVisUtil
     {

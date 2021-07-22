@@ -5,12 +5,12 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TheTechIdea.DataManagment_Engine.ConfigUtil;
-using TheTechIdea.DataManagment_Engine.Report;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Report;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.DataBase
+namespace TheTechIdea.Beep.DataBase
 {
     [ClassProperties(Category = DatasourceCategory.RDBMS, DatasourceType = DataSourceType.Mysql)]
     public class MySQLDataSource : RDBSource

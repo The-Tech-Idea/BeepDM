@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using TheTechIdea.DataManagment_Engine.Workflow;
+using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine
+namespace TheTechIdea.Beep
 {
     public interface IDataWorkFlow
     {

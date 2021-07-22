@@ -1,4 +1,4 @@
-﻿namespace TheTechIdea.DataManagment_Engine
+﻿namespace TheTechIdea.Beep
 {
     public interface IWorkFlowStepRules
     {

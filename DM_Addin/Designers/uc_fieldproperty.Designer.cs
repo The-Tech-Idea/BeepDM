@@ -280,7 +280,7 @@ namespace TheTechIdea.Configuration
             // 
             // appfieldPropertiesBindingSource
             // 
-            this.appfieldPropertiesBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.AppBuilder.DataSourceFieldProperties);
+            this.appfieldPropertiesBindingSource.DataSource = typeof(TheTechIdea.Beep.AppBuilder.DataSourceFieldProperties);
             // 
             // enititiesBindingSource
             // 

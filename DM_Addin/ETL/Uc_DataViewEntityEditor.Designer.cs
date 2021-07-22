@@ -199,7 +199,7 @@
             // 
             // dataHierarchyBindingSource
             // 
-            this.dataHierarchyBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DataBase.EntityStructure);
+            this.dataHierarchyBindingSource.DataSource = typeof(TheTechIdea.Beep.DataBase.EntityStructure);
             // 
             // viewtypeComboBox
             // 

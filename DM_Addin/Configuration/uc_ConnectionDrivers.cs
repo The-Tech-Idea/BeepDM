@@ -10,11 +10,11 @@ using System.Windows.Forms;
 using TheTechIdea;
 using TheTechIdea.Util;
 using TheTechIdea.Logger;
-using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.DataBase;
 using System.IO;
 
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep.Vis;
 using TheTechIdea.Winforms.VIS;
 
 namespace TheTechIdea.Configuration

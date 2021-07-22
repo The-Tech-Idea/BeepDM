@@ -5,15 +5,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.Addin;
-using TheTechIdea.DataManagment_Engine.AppBuilder;
-using TheTechIdea.DataManagment_Engine.CompositeLayer;
-using TheTechIdea.DataManagment_Engine.ConfigUtil;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Editor;
-using TheTechIdea.DataManagment_Engine.Report;
-using TheTechIdea.DataManagment_Engine.Workflow;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.AppBuilder;
+using TheTechIdea.Beep.CompositeLayer;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Report;
+using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
 
 namespace TheTechIdea.Util
@@ -30,7 +30,7 @@ namespace TheTechIdea.Util
 				ExePath = execpath;
 			}else
 			{
-				ExePath = AppDomain.CurrentDomain.BaseDirectory;
+				ExePath =  System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
 			}
 			
 			Init();

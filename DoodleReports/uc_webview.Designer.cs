@@ -1,5 +1,5 @@
 ﻿
-namespace TheTechIdea.DataManagment_Engine.Report
+namespace TheTechIdea.Beep.Report
 {
     partial class uc_webview
     {

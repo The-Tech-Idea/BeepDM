@@ -8,15 +8,15 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-using TheTechIdea.DataManagment_Engine.ConfigUtil;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Editor;
-using TheTechIdea.DataManagment_Engine.Report;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Report;
 
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.WebAPI.GeoDBCitiesWebAPI
+namespace TheTechIdea.Beep.WebAPI.GeoDBCitiesWebAPI
 {
     [ClassProperties(Category = DatasourceCategory.WEBAPI, DatasourceType = DataSourceType.WebService)]
     public class GeoDBCitiesWebAPIDatasource : WebAPIDataSource

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Workflow
+namespace TheTechIdea.Beep.Workflow
 {
     public interface IMapping_Rule
     {

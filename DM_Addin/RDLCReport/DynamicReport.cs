@@ -7,7 +7,7 @@
 //     the code is regenerated.
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace TheTechIdea.DataManagment_Engine.DynamicRdlcReport
+namespace TheTechIdea.Beep.DynamicRdlcReport
 {
     using System.Linq;
     using System.Collections.Generic;

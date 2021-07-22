@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TheTechIdea.DataManagment_Engine.Report
+namespace TheTechIdea.Beep.Report
 {
     public class ReportTemplate : IReportDefinition
     {

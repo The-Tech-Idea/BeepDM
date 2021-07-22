@@ -313,7 +313,7 @@
             // 
             // workFlowsBindingSource
             // 
-            this.workFlowsBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.IDataWorkFlow);
+            this.workFlowsBindingSource.DataSource = typeof(TheTechIdea.Beep.IDataWorkFlow);
             // 
             // workSpaceFolderTextBox
             // 
@@ -392,7 +392,7 @@
             // 
             // workFlowActionsBindingSource
             // 
-            this.workFlowActionsBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Workflow.IWorkFlowAction);
+            this.workFlowActionsBindingSource.DataSource = typeof(TheTechIdea.Beep.Workflow.IWorkFlowAction);
             // 
             // Mapping
             // 
@@ -824,7 +824,7 @@
             // 
             // objectTypesBindingSource
             // 
-            this.objectTypesBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Workflow.ObjectTypes);
+            this.objectTypesBindingSource.DataSource = typeof(TheTechIdea.Beep.Workflow.ObjectTypes);
             // 
             // objectNameDataGridViewTextBoxColumn1
             // 

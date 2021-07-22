@@ -1,6 +1,6 @@
 ﻿using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.DataBase
+namespace TheTechIdea.Beep.DataBase
 {
     public interface IEntityField
     {

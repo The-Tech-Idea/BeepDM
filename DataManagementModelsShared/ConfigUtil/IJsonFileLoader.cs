@@ -4,7 +4,7 @@ using System.Data;
 using System.IO;
 using System.Text;
 
-namespace TheTechIdea.DataManagment_Engine.ConfigUtil
+namespace TheTechIdea.Beep.ConfigUtil
 {
     public interface IJsonLoader
     {

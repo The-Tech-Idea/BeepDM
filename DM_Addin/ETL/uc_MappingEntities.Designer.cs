@@ -127,7 +127,7 @@
             // mappingsBindingSource
             // 
             this.mappingsBindingSource.AllowNew = true;
-            this.mappingsBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Workflow.IMapping_rep);
+            this.mappingsBindingSource.DataSource = typeof(TheTechIdea.Beep.Workflow.IMapping_rep);
             // 
             // fldMappingDataGridView
             // 

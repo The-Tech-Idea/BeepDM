@@ -68,7 +68,7 @@ namespace TheTechIdea.ETL
             // 
             // entitiesBindingSource
             // 
-            this.entitiesBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DataBase.EntityStructure);
+            this.entitiesBindingSource.DataSource = typeof(TheTechIdea.Beep.DataBase.EntityStructure);
             // 
             // idLabel
             // 

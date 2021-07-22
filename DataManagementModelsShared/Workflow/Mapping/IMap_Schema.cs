@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace TheTechIdea.DataManagment_Engine.Workflow
+namespace TheTechIdea.Beep.Workflow
 {
     public interface IMap_Schema
     {

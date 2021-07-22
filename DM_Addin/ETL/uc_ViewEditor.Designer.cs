@@ -1,5 +1,5 @@
 ﻿
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 
 namespace TheTechIdea.ETL
 {
@@ -135,7 +135,7 @@ namespace TheTechIdea.ETL
             // dataViewDataSourceBindingSource
             // 
             this.dataViewDataSourceBindingSource.AllowNew = true;
-            this.dataViewDataSourceBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DataBase.DMDataView);
+            this.dataViewDataSourceBindingSource.DataSource = typeof(TheTechIdea.Beep.DataBase.DMDataView);
             // 
             // bindingNavigatorCountItem
             // 

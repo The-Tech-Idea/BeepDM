@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using System.Data;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using DataManagmentEngineShared.WebAPI;
 using System.Net.Http;
-using TheTechIdea.DataManagment_Engine.Editor;
-using TheTechIdea.DataManagment_Engine.Report;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Report;
 
-namespace TheTechIdea.DataManagment_Engine.WebAPI
+namespace TheTechIdea.Beep.WebAPI
 {
     public class WebAPIDataSource : IDataSource
     {

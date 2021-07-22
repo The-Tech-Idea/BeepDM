@@ -5,17 +5,17 @@ using TheTechIdea.Util;
 using System.Linq;
 using System;
 using System.Reflection;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
-using TheTechIdea.DataManagment_Engine.Editor;
-using TheTechIdea.DataManagment_Engine.Workflow;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Workflow;
 using System.ComponentModel;
-using TheTechIdea.DataManagment_Engine.Logger;
+using TheTechIdea.Beep.Logger;
 using System.IO;
 using TheTechIdea.Tools;
-using static TheTechIdea.DataManagment_Engine.Util;
+using static TheTechIdea.Beep.Util;
 
-namespace TheTechIdea.DataManagment_Engine
+namespace TheTechIdea.Beep
 {
     public class DMEEditor : IDMEEditor,IDisposable
     {

@@ -11,12 +11,12 @@ using System.Reflection;
 using System.Windows.Forms;
 
 using TheTechIdea.Logger;
-using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.Beep;
 using System.Drawing;
 using TheTechIdea.Util;
 
 using TheTechIdea.Tools;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep.Vis;
 
 
 namespace TheTechIdea.Winforms.VIS

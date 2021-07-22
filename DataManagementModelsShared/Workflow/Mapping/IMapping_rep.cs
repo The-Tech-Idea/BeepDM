@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Workflow
+namespace TheTechIdea.Beep.Workflow
 {
     public interface IMapping_rep
     {

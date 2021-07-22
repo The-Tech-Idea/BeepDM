@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using TheTechIdea.DataManagment_Engine.AppBuilder;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.AppBuilder;
+using TheTechIdea.Beep.DataBase;
 
-namespace TheTechIdea.DataManagment_Engine.ConfigUtil
+namespace TheTechIdea.Beep.ConfigUtil
 {
    public interface IDatasourceEntities
     {

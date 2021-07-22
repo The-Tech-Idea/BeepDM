@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
-using TheTechIdea.DataManagment_Engine.Report.RDLC.ReportBuilderEntities;
+using TheTechIdea.Beep.Report.RDLC.ReportBuilderEntities;
 
-namespace TheTechIdea.DataManagment_Engine.Report
+namespace TheTechIdea.Beep.Report
 {
     public static class RDLCEngine
     {

@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using System.IO;
 using System.Data;
 
-namespace TheTechIdea.DataManagment_Engine.FileManager
+namespace TheTechIdea.Beep.FileManager
 {
     public class FileConnection : IDataConnection
     {

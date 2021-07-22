@@ -4,7 +4,7 @@ using System.Data;
 using System.Text;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Report
+namespace TheTechIdea.Beep.Report
 {
   public  interface IReportDMWriter
     {

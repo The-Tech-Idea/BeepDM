@@ -11,7 +11,7 @@ namespace TheTechIdea.Util
 
     public class ErrorsInfo : INotifyPropertyChanged, IErrorsInfo
     {
-        public IDMLogger logger { get; set; }
+     //   public IDMLogger logger { get; set; }
       
         public event PropertyChangedEventHandler PropertyChanged;
         private Errors er;
@@ -27,15 +27,17 @@ namespace TheTechIdea.Util
             get { return pMessage; }
             set { pMessage = value; OnPropertyChanged("Message");  }
         }
-        public ErrorsInfo(IDMLogger plogger)
+        public ErrorsInfo()
         {
-            logger = plogger;
+            //logger = plogger;
         }
         protected void OnPropertyChanged(string propertyName)
         {
             if (PropertyChanged != null) // if there is any subscribers 
                 PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
         }
+        public string Module { get; set; }
+        public string Fucntion { get; set; }
     }
     public enum Errors
     {

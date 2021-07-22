@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TheTechIdea.DataManagment_Engine.MachineLearning
+namespace TheTechIdea.Beep.MachineLearning
 {
     public interface IMachineLearningContext
     {

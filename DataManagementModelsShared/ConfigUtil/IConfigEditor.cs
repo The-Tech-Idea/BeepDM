@@ -1,15 +1,15 @@
 ﻿using System.Collections.Generic;
-using TheTechIdea.DataManagment_Engine.CompositeLayer;
+using TheTechIdea.Beep.CompositeLayer;
 using System.Reflection;
-using TheTechIdea.DataManagment_Engine.Workflow;
+using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
-using TheTechIdea.DataManagment_Engine.Addin;
-using TheTechIdea.DataManagment_Engine.Report;
-using TheTechIdea.DataManagment_Engine.AppBuilder;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.ConfigUtil;
-using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Report;
+using TheTechIdea.Beep.AppBuilder;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Util
 {

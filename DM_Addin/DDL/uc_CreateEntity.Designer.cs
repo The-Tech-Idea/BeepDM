@@ -126,7 +126,7 @@ namespace TheTechIdea.DDL
             // 
             // entitiesBindingSource
             // 
-            this.entitiesBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DataBase.EntityStructure);
+            this.entitiesBindingSource.DataSource = typeof(TheTechIdea.Beep.DataBase.EntityStructure);
             // 
             // entitiesBindingNavigator
             // 
@@ -331,7 +331,7 @@ namespace TheTechIdea.DDL
             // 
             // dataTypesMapBindingSource
             // 
-            this.dataTypesMapBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DataBase.DatatypeMapping);
+            this.dataTypesMapBindingSource.DataSource = typeof(TheTechIdea.Beep.DataBase.DatatypeMapping);
             // 
             // statusdescriptionTextBox
             // 

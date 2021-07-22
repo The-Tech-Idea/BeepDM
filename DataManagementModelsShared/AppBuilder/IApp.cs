@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Report;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Report;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.AppBuilder
+namespace TheTechIdea.Beep.AppBuilder
 {
     public interface IApp
     {

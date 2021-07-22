@@ -5,14 +5,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Tools;
-using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.Beep;
 using TheTechIdea.Util;
 using Microsoft.CSharp;
 using System.Threading;
 
-namespace TheTechIdea.DataManagment_Engine.Tools
+namespace TheTechIdea.Beep.Tools
 {
     public  class ClassCreatorv2 : IClassCreator
     {

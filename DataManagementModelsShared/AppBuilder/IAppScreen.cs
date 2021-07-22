@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using TheTechIdea.DataManagment_Engine.Report;
+using TheTechIdea.Beep.Report;
 
-namespace TheTechIdea.DataManagment_Engine.AppBuilder
+namespace TheTechIdea.Beep.AppBuilder
 {
     public interface IAppScreen
     {

@@ -14,14 +14,14 @@ using System.Net;
 
 using System.Reflection;
 using System.Xml.Serialization;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Editor;
-using TheTechIdea.DataManagment_Engine.Workflow;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
-using static TheTechIdea.DataManagment_Engine.Util;
+using static TheTechIdea.Beep.Util;
 
-namespace TheTechIdea.DataManagment_Engine
+namespace TheTechIdea.Beep
 {
     public class Util : IUtil
     {

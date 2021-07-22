@@ -6,7 +6,7 @@ using System.Data;
 using System.Collections;
 
 
-namespace TheTechIdea.DataManagment_Engine.Report
+namespace TheTechIdea.Beep.Report
 {
 	public class DataGridPrinter
 	{

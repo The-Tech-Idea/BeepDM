@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 
-namespace TheTechIdea.DataManagment_Engine.MVVM
+namespace TheTechIdea.Beep.MVVM
 {
     public class ViewModelBase : INotifyPropertyChanged
     {

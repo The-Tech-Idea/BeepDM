@@ -3,7 +3,7 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
-<#@ import namespace="TheTechIdea.DataManagment_Engine.DynamicRdlcReport" #>
+<#@ import namespace="TheTechIdea.Beep.DynamicRdlcReport" #>
 <#@ parameter name="Model" type="System.Collections.Generic.List<ReportColumn>"#>
 <?xml version="1.0" encoding="utf-8"?>
 <Report xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2008/01/reportdefinition">

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Vis
+namespace TheTechIdea.Beep.Vis
 {
     public interface IBranch: IBranchID
     {

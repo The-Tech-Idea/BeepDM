@@ -9,15 +9,15 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TheTechIdea.DataManagment_Engine.ConfigUtil;
-using TheTechIdea.DataManagment_Engine.Editor;
-using TheTechIdea.DataManagment_Engine.Report;
-using TheTechIdea.DataManagment_Engine.Workflow;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Report;
+using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
-using static TheTechIdea.DataManagment_Engine.Util;
+using static TheTechIdea.Beep.Util;
 
-namespace TheTechIdea.DataManagment_Engine.DataBase
+namespace TheTechIdea.Beep.DataBase
 {
     [ClassProperties(Category = DatasourceCategory.RDBMS, DatasourceType =  DataSourceType.Oracle)]
     class OracleDataSource : RDBSource

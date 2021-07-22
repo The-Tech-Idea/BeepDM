@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace TheTechIdea.DataManagment_Engine.AI
+namespace TheTechIdea.Beep.AI
 {
     public interface IAAPP
     {

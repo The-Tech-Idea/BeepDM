@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TheTechIdea.DataManagment_Engine.Report.RDLC.ReportBuilderEntities
+namespace TheTechIdea.Beep.Report.RDLC.ReportBuilderEntities
 {
         public static class ReportGlobalParameters
         {

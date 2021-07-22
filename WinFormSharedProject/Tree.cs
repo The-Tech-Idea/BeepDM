@@ -8,12 +8,12 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine;
-using TheTechIdea.DataManagment_Engine.Addin;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.DataView;
-using TheTechIdea.DataManagment_Engine.Editor;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.DataView;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Vis;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Winforms.VIS
@@ -119,7 +119,7 @@ namespace TheTechIdea.Winforms.VIS
                 Branches.Add(Branch);
                 if (!DMEEditor.ConfigEditor.objectTypes.Any(i => i.ObjectType == Branch.BranchClass && i.ObjectName == Branch.BranchType.ToString() + "_" + Branch.BranchClass))
                 {
-                    DMEEditor.ConfigEditor.objectTypes.Add(new DataManagment_Engine.Workflow.ObjectTypes { ObjectType = Branch.BranchClass, ObjectName = Branch.BranchType.ToString() + "_" + Branch.BranchClass });
+                    DMEEditor.ConfigEditor.objectTypes.Add(new Beep.Workflow.ObjectTypes { ObjectType = Branch.BranchClass, ObjectName = Branch.BranchType.ToString() + "_" + Branch.BranchClass });
                 }
                 if (Branch.BranchType == EnumPointType.Entity)
                 {
@@ -569,7 +569,7 @@ namespace TheTechIdea.Winforms.VIS
                             br.DMEEditor = DMEEditor;
                             if (!DMEEditor.ConfigEditor.objectTypes.Any(i => i.ObjectType == br.BranchClass && i.ObjectName == br.BranchType.ToString() + "_" + br.BranchClass))
                             {
-                                DMEEditor.ConfigEditor.objectTypes.Add(new DataManagment_Engine.Workflow.ObjectTypes { ObjectType = br.BranchClass, ObjectName = br.BranchType.ToString() +"_"+ br.BranchClass });
+                                DMEEditor.ConfigEditor.objectTypes.Add(new Beep.Workflow.ObjectTypes { ObjectType = br.BranchClass, ObjectName = br.BranchType.ToString() +"_"+ br.BranchClass });
                             }
                             Branches.Add(br);
                             br.CreateChildNodes();

@@ -45,7 +45,7 @@ namespace TheTechIdea.ETL
             // 
             // dMEEditorBindingSource
             // 
-            this.dMEEditorBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DMEEditor);
+            this.dMEEditorBindingSource.DataSource = typeof(TheTechIdea.Beep.DMEEditor);
             // 
             // idLabel
             // 

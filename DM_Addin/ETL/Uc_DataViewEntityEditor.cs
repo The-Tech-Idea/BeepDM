@@ -2,14 +2,14 @@
 using System.Data;
 using System.Linq;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
-using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.Beep;
 using TheTechIdea.Winforms.VIS;
 using TheTechIdea.Util;
-using TheTechIdea.DataManagment_Engine.Vis;
-using TheTechIdea.DataManagment_Engine.DataView;
-using TheTechIdea.DataManagment_Engine.CompositeLayer;
+using TheTechIdea.Beep.Vis;
+using TheTechIdea.Beep.DataView;
+using TheTechIdea.Beep.CompositeLayer;
 
 namespace TheTechIdea.ETL
 {
@@ -232,7 +232,7 @@ namespace TheTechIdea.ETL
                         vds.CreateEntityAs(EntityStructure);
                     }
 
-                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = Passedarg.DatasourceName, Entities = vds.Entities });
+                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new Beep.ConfigUtil.DatasourceEntities { datasourcename = Passedarg.DatasourceName, Entities = vds.Entities });
                     vds.WriteDataViewFile(vds.DatasourceName);
                     MessageBox.Show("Entity Saved successfully", "Beep");
                 }

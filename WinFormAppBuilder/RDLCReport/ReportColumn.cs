@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Drawing;
 
-namespace TheTechIdea.DataManagment_Engine.AppBuilder.DynamicRdlcReport
+namespace TheTechIdea.Beep.AppBuilder.DynamicRdlcReport
 {
 
     public class ReportColumn

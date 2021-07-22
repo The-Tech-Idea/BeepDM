@@ -1,4 +1,4 @@
-﻿using TheTechIdea.DataManagment_Engine.DataBase;
+﻿using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
 
 using System;
@@ -9,7 +9,7 @@ using TheTechIdea.Util;
 using System.ComponentModel;
 using System.Linq;
 
-namespace TheTechIdea.DataManagment_Engine.Editor
+namespace TheTechIdea.Beep.Editor
 {
     public class DataTypesHelper : IDataTypesHelper
     {

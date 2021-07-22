@@ -6,13 +6,13 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine.Addin;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.Editor;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
 using TheTechIdea.Util;
 using TheTechIdea.Winforms.VIS;
 
-namespace TheTechIdea.DataManagment_Engine.Vis
+namespace TheTechIdea.Beep.Vis
 {
     public  class FunntionExtensions : IFunctionExtension
     {
@@ -415,7 +415,7 @@ namespace TheTechIdea.DataManagment_Engine.Vis
                                     }
                                 }
                             }
-                            DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DataManagment_Engine.ConfigUtil.DatasourceEntities { datasourcename = Passedarguments.DatasourceName, Entities = DataSource.Entities });
+                            DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new ConfigUtil.DatasourceEntities { datasourcename = Passedarguments.DatasourceName, Entities = DataSource.Entities });
                         }
                     }
                 }

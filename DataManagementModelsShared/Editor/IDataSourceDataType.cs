@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TheTechIdea.DataManagment_Engine.Editor
+namespace TheTechIdea.Beep.Editor
 {
     public interface IDataSourceDataType
     {

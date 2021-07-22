@@ -7,13 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.DataView;
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.DataView;
+using TheTechIdea.Beep.Vis;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.AppBuilder
+namespace TheTechIdea.Beep.AppBuilder
 {
     public partial class Frm_MainForm : Form, IDM_Addin, IAppComponent
     {

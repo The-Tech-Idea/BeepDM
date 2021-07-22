@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
-using TheTechIdea.DataManagment_Engine;
+using TheTechIdea.Beep;
 
-namespace TheTechIdea.DataManagment_Engine.Report
+namespace TheTechIdea.Beep.Report
 {
     public class ReportEditor
     {

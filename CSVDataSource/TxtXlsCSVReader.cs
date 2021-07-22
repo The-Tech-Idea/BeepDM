@@ -11,10 +11,10 @@ using TheTechIdea.Tools;
 using TheTechIdea.Util;
 
 
-using TheTechIdea.DataManagment_Engine.DataBase;
-using TheTechIdea.DataManagment_Engine.ConfigUtil;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.ConfigUtil;
 
-namespace TheTechIdea.DataManagment_Engine.FileManager
+namespace TheTechIdea.Beep.FileManager
 {
     public class TxtXlsCSVReader : ITxtXlsCSVReader
     {

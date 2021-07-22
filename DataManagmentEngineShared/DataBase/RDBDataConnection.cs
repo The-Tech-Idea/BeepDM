@@ -5,7 +5,7 @@ using System.Data;
 using System.Data.Common;
 using System.IO;
 
-namespace TheTechIdea.DataManagment_Engine.DataBase
+namespace TheTechIdea.Beep.DataBase
 {
     public class RDBDataConnection : IDataConnection
     {

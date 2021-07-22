@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using TheTechIdea.DataManagment_Engine.DynamicRdlcReport;
+using TheTechIdea.Beep.DynamicRdlcReport;
 
 namespace DynamicRdlcReport
 {

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.CompositeLayer
+namespace TheTechIdea.Beep.CompositeLayer
 {
     public interface ILayer
     {

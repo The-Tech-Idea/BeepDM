@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Report
+namespace TheTechIdea.Beep.Report
 {
     public class PDFSharpReport : IReportDMWriter
     {

@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 using TheTechIdea.Util;
-using TheTechIdea.DataManagment_Engine.Report;
+using TheTechIdea.Beep.Report;
 
-namespace TheTechIdea.DataManagment_Engine.DataBase
+namespace TheTechIdea.Beep.DataBase
 {
     public class EntityStructure : IEntityStructure,ICloneable
     {

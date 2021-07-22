@@ -8,7 +8,7 @@
 <GenericObjectDataSource DisplayName="DataViewDataSource" Version="1.0" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
    <Children>
       <GenericObjectDataSource DisplayName="Dataview" Version="1.0">
-         <TypeInfo>TheTechIdea.DataManagment_Engine.DataBase.IDMDataView, DataManagerNetModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
+         <TypeInfo>TheTechIdea.Beep.DataBase.IDMDataView, DataManagerNetModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
          <TypeUISetting>
             <PropertyUISettings>
                <PropertyUISetting Name="Viewtype">
@@ -36,5 +36,5 @@
          </TypeUISetting>
       </GenericObjectDataSource>
    </Children>
-   <TypeInfo>TheTechIdea.DataManagment_Engine.DataView.DataViewDataSource, DataManagerEditors, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
+   <TypeInfo>TheTechIdea.Beep.DataView.DataViewDataSource, DataManagerEditors, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
 </GenericObjectDataSource>

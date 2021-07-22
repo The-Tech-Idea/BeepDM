@@ -8,7 +8,7 @@
 <GenericObjectDataSource DisplayName="DMEEditor" Version="1.0" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
    <Children>
       <GenericObjectDataSource DisplayName="Mappings" Version="1.0">
-         <TypeInfo>TheTechIdea.DataManagment_Engine.Workflow.Mapping_rep, DataManagerNetModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
+         <TypeInfo>TheTechIdea.Beep.Workflow.Mapping_rep, DataManagerNetModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
          <TypeUISetting>
             <PropertyUISettings>
                <PropertyUISetting Name="Entity1DataSource">
@@ -42,7 +42,7 @@
          </TypeUISetting>
       </GenericObjectDataSource>
       <GenericObjectDataSource DisplayName="Reports" Version="1.0">
-         <TypeInfo>TheTechIdea.DataManagment_Engine.Report.ReportTemplate, DataManagerNetModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
+         <TypeInfo>TheTechIdea.Beep.Report.ReportTemplate, DataManagerNetModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
          <TypeUISetting>
             <PropertyUISettings>
                <PropertyUISetting Name="CSS">
@@ -54,7 +54,7 @@
          </TypeUISetting>
       </GenericObjectDataSource>
       <GenericObjectDataSource DisplayName="CompositeQueryLayers" Version="1.0">
-         <TypeInfo>TheTechIdea.DataManagment_Engine.CompositeLayer.CompositeLayer, DataManagerNetModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
+         <TypeInfo>TheTechIdea.Beep.CompositeLayer.CompositeLayer, DataManagerNetModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
          <TypeUISetting>
             <PropertyUISettings>
                <PropertyUISetting Name="DataViewDataSourceName">
@@ -76,7 +76,7 @@
          </TypeUISetting>
       </GenericObjectDataSource>
       <GenericObjectDataSource DisplayName="Apps" Version="1.0">
-         <TypeInfo>TheTechIdea.DataManagment_Engine.AppBuilder.App, DataManagerNetModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
+         <TypeInfo>TheTechIdea.Beep.AppBuilder.App, DataManagerNetModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
          <TypeUISetting>
             <PropertyUISettings>
                <PropertyUISetting Name="Apptype">
@@ -98,7 +98,7 @@
          </TypeUISetting>
       </GenericObjectDataSource>
       <GenericObjectDataSource DisplayName="EntityCreateObjects" Version="1.0">
-         <TypeInfo>TheTechIdea.DataManagment_Engine.DataBase.EntityStructure, DataManagerNetModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
+         <TypeInfo>TheTechIdea.Beep.DataBase.EntityStructure, DataManagerNetModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
          <TypeUISetting>
             <PropertyUISettings>
                <PropertyUISetting Name="DatabaseType">
@@ -154,5 +154,5 @@
          </TypeUISetting>
       </GenericObjectDataSource>
    </Children>
-   <TypeInfo>TheTechIdea.DataManagment_Engine.DMEEditor, DataManagerEditors, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
+   <TypeInfo>TheTechIdea.Beep.DMEEditor, DataManagerEditors, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</TypeInfo>
 </GenericObjectDataSource>

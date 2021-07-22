@@ -142,7 +142,7 @@ namespace TheTechIdea.ETL
             // 
             // scriptBindingSource
             // 
-            this.scriptBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.Editor.SyncEntity);
+            this.scriptBindingSource.DataSource = typeof(TheTechIdea.Beep.Editor.SyncEntity);
             // 
             // bindingNavigatorCountItem
             // 
@@ -562,7 +562,7 @@ namespace TheTechIdea.ETL
             // 
             // dMEEditorBindingSource
             // 
-            this.dMEEditorBindingSource.DataSource = typeof(TheTechIdea.DataManagment_Engine.DMEEditor);
+            this.dMEEditorBindingSource.DataSource = typeof(TheTechIdea.Beep.DMEEditor);
             // 
             // progressBar1
             // 

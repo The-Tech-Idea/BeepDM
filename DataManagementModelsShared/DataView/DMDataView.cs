@@ -1,4 +1,4 @@
-﻿using TheTechIdea.DataManagment_Engine;
+﻿using TheTechIdea.Beep;
 
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.DataBase
+namespace TheTechIdea.Beep.DataBase
 {
     public class DMDataView : IDMDataView
     {
