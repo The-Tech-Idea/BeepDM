@@ -132,36 +132,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\windows_client_64.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\search_more_16.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\exit_sign_32.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\search_more_32.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\exit_32.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\exit_321.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\shutdown_32.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\save_32.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\add_white_space_24px.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\expand_arrows_24px.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <ItemGroup>
@@ -169,10 +139,6 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>DynamicReport1.cs</LastGenOutput>
     </Content>
-    <None Include="Resources\icons8_close_window_32.png" />
-    <None Include="Resources\icons8_maximize_window_32.png" />
-    <None Include="Resources\icons8_minimize_window_32.png" />
-    <None Include="Resources\icons8_menu_32.png" />
     <Content Include="SqlServerTypes\readme.htm" />
     <Content Include="SqlServerTypes\x64\msvcr120.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -188,6 +154,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Resources\" />
     <Folder Include="UserControls\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

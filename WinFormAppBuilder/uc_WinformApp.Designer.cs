@@ -112,7 +112,7 @@ namespace TheTechIdea.ETL
             this.Searchbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.Searchbutton.Font = new System.Drawing.Font("Nirmala UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Searchbutton.ForeColor = System.Drawing.SystemColors.ActiveCaption;
-            this.Searchbutton.Image = global::TheTechIdea.Beep.AppBuilder.Properties.Resources.search_more_32;
+           // this.Searchbutton.Image = global::TheTechIdea.Beep.AppBuilder.Properties.Resources.search_more_32;
             this.Searchbutton.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.Searchbutton.Location = new System.Drawing.Point(196, -1);
             this.Searchbutton.Name = "Searchbutton";
@@ -187,7 +187,7 @@ namespace TheTechIdea.ETL
             // 
             // pictureBox1
             // 
-            this.pictureBox1.Image = global::TheTechIdea.Beep.AppBuilder.Properties.Resources.windows_client_64;
+            //this.pictureBox1.Image = global::TheTechIdea.Beep.AppBuilder.Properties.Resources.windows_client_64;
             this.pictureBox1.Location = new System.Drawing.Point(3, 3);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(233, 74);
@@ -241,7 +241,7 @@ namespace TheTechIdea.ETL
             // 
             // MenuBoxbutton
             // 
-            this.MenuBoxbutton.Image = global::TheTechIdea.Beep.AppBuilder.Properties.Resources.icons8_menu_32;
+         //   this.MenuBoxbutton.Image = global::TheTechIdea.Beep.AppBuilder.Properties.Resources.icons8_menu_32;
             this.MenuBoxbutton.Location = new System.Drawing.Point(3, 3);
             this.MenuBoxbutton.Name = "MenuBoxbutton";
             this.MenuBoxbutton.Size = new System.Drawing.Size(32, 32);
@@ -251,7 +251,7 @@ namespace TheTechIdea.ETL
             // 
             // MinimizeBoxButton
             // 
-            this.MinimizeBoxButton.Image = global::TheTechIdea.Beep.AppBuilder.Properties.Resources.icons8_minimize_window_32;
+          //  this.MinimizeBoxButton.Image = global::TheTechIdea.Beep.AppBuilder.Properties.Resources.icons8_minimize_window_32;
             this.MinimizeBoxButton.Location = new System.Drawing.Point(662, 8);
             this.MinimizeBoxButton.Name = "MinimizeBoxButton";
             this.MinimizeBoxButton.Size = new System.Drawing.Size(33, 32);
@@ -260,7 +260,7 @@ namespace TheTechIdea.ETL
             // 
             // MaximizeBoxButton
             // 
-            this.MaximizeBoxButton.Image = global::TheTechIdea.Beep.AppBuilder.Properties.Resources.icons8_maximize_window_32;
+       //     this.MaximizeBoxButton.Image = global::TheTechIdea.Beep.AppBuilder.Properties.Resources.icons8_maximize_window_32;
             this.MaximizeBoxButton.Location = new System.Drawing.Point(701, 8);
             this.MaximizeBoxButton.Name = "MaximizeBoxButton";
             this.MaximizeBoxButton.Size = new System.Drawing.Size(33, 32);
@@ -269,7 +269,7 @@ namespace TheTechIdea.ETL
             // 
             // CloseBoxButton
             // 
-            this.CloseBoxButton.Image = global::TheTechIdea.Beep.AppBuilder.Properties.Resources.icons8_close_window_32;
+          //  this.CloseBoxButton.Image = global::TheTechIdea.Beep.AppBuilder.Properties.Resources.icons8_close_window_32;
             this.CloseBoxButton.Location = new System.Drawing.Point(740, 8);
             this.CloseBoxButton.Name = "CloseBoxButton";
             this.CloseBoxButton.Size = new System.Drawing.Size(33, 32);

@@ -56,7 +56,7 @@ namespace TheTechIdea.Beep.Report
             // 
             // Printbutton
             // 
-            this.Printbutton.Image = global::TheTechIdea.Beep.Report.Properties.Resources.page_setup_32;
+        //    this.Printbutton.Image = global::TheTechIdea.Beep.Report.Properties.Resources.page_setup_32;
             this.Printbutton.Location = new System.Drawing.Point(3, 50);
             this.Printbutton.Name = "Printbutton";
             this.Printbutton.Size = new System.Drawing.Size(53, 41);
@@ -65,7 +65,7 @@ namespace TheTechIdea.Beep.Report
             // 
             // PageSetUpbutton
             // 
-            this.PageSetUpbutton.Image = global::TheTechIdea.Beep.Report.Properties.Resources.settings_32;
+         //   this.PageSetUpbutton.Image = global::TheTechIdea.Beep.Report.Properties.Resources.settings_32;
             this.PageSetUpbutton.Location = new System.Drawing.Point(3, 3);
             this.PageSetUpbutton.Name = "PageSetUpbutton";
             this.PageSetUpbutton.Size = new System.Drawing.Size(53, 41);

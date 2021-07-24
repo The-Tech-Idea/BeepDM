@@ -38,6 +38,8 @@ namespace TheTechIdea.Util
         }
         public string Module { get; set; }
         public string Fucntion { get; set; }
+
+       
     }
     public enum Errors
     {
