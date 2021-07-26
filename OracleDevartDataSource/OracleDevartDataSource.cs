@@ -398,7 +398,7 @@ namespace OracleDevartDataSource
                 cmd.CommandText = Sql;
 
                 reader = (OracleDataReader)await cmd.ExecuteReaderAsync(CommandBehavior.Default, cancellationToken);
-               
+                
                 retval = new DataTable();
                 retval.Load(reader);
                 reader.Close();

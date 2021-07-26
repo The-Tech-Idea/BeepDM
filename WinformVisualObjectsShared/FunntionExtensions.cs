@@ -38,6 +38,25 @@ namespace TheTechIdea.Beep.Vis
             pbr = TreeEditor.GetBranch(Passedarguments.Id);
             RootBranch = TreeEditor.Branches[TreeEditor.Branches.FindIndex(x => x.BranchClass == pbr.BranchClass && x.BranchType == EnumPointType.Root)];
         }
+        [CommandAttribute(Caption = "Turnon/Off CheckBox's", Name = "Turnon/Off CheckBox", Click = true, iconimage = "checkbox.ico", PointType = EnumPointType.DataPoint)]
+        public IErrorsInfo TurnonOffCheckBox(IPassedArgs Passedarguments)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                
+                TreeView trv = (TreeView)TreeEditor.TreeStrucure;
+                trv.CheckBoxes = !trv.CheckBoxes;
+                TreeEditor.SelectedBranchs.Clear();
+               
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Could not select entities {ex.Message}", DateTime.Now, 0, Passedarguments.DatasourceName, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+
+        }
         [CommandAttribute(Caption = "Data Connection", Name = "dataconnection", Click = true, iconimage = "dataconnection.ico", PointType = EnumPointType.Global)]
         public IErrorsInfo dataconnection(IPassedArgs Passedarguments)
         {
@@ -458,15 +477,26 @@ namespace TheTechIdea.Beep.Vis
                                     {
                                         Directory.CreateDirectory(Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, Passedarguments.DatasourceName));
                                     };
-                                    foreach (string tb in DataSource.EntitiesNames)
                                     {
-                                        TreeEditor.AddCommentsWaiting($"{i} - Added {tb} to {Passedarguments.DatasourceName}");
-                                        EntityStructure ent = DataSource.GetEntityStructure(tb, true);
+                                        if (TreeEditor.SelectedBranchs.Count > 0)
+                                        {
+                                            foreach (int item in TreeEditor.SelectedBranchs)
+                                            {
+                                                IBranch br = TreeEditor.GetBranch(item);
 
-                                        DMEEditor.classCreator.CreateClass(ent.EntityName, ent.Fields, Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, Passedarguments.DatasourceName));
-                                        i += 1;
+                                                TreeEditor.AddCommentsWaiting($"{i} - Added {br.BranchText} to {Passedarguments.DatasourceName}");
+                                                EntityStructure ent = DataSource.GetEntityStructure(br.BranchText, true);
+
+                                                DMEEditor.classCreator.CreateClass(ent.EntityName, ent.Fields, Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, Passedarguments.DatasourceName));
+                                                i += 1;
+                                            }
+                                        }
+                                        foreach (string tb in DataSource.EntitiesNames)
+                                        {
+                                           
+                                        }
+
                                     }
-
                                 }
                                 catch (Exception ex1)
                                 {
@@ -619,37 +649,7 @@ namespace TheTechIdea.Beep.Vis
             return DMEEditor.ErrorObject;
 
         }
-        [CommandAttribute(Caption = "Turnon/Off CheckBox's", Name = "Turnon/Off CheckBox", Click = true, iconimage = "checkbox.ico", PointType = EnumPointType.DataPoint)]
-        public IErrorsInfo TurnonOffCheckBox(IPassedArgs Passedarguments)
-        {
-            DMEEditor.ErrorObject.Flag = Errors.Ok;
-            try
-            {
-                //string iconimage;
-
-               // GetValues(Passedarguments);
-                //if (DataSource != null)
-                //{
-
-                //    if (DataSource.ConnectionStatus == System.Data.ConnectionState.Open)
-                //    {
-                        TreeView trv = (TreeView)TreeEditor.TreeStrucure;
-                        trv.CheckBoxes = !trv.CheckBoxes;
-                        TreeEditor.SelectedBranchs.Clear();
-                    //}
-
-                //}
-
-
-
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Fail", $"Could not select entities {ex.Message}", DateTime.Now, 0, Passedarguments.DatasourceName, Errors.Failed);
-            }
-            return DMEEditor.ErrorObject;
-
-        }
+      
        
 
         //
