@@ -37,7 +37,6 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)SelectedNodes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VisUtil.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\IDisplayPanel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WaitForm.cs">
       <SubType>Form</SubType>
     </Compile>
