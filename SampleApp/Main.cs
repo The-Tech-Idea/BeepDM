@@ -61,42 +61,12 @@ namespace DataManagment_Engine
             Container = Configure();
             using (var scope = Container.BeginLifetimeScope())
             {
-              //  jsonLoader= scope.Resolve<IJsonLoader>();
-                //--------------------------------------------------------------------------------
-                // a Error Class that will have all error message tracking 
-                //---------------------------------------------------------------------------
-                //Erinfo = scope.Resolve<IErrorsInfo>();
-                //--------------------------------------------------------------------------------
-                // a Log Manager 
-                //---------------------------------------------------------------------------
-                //lg = scope.Resolve<IDMLogger>();
-                //lg.WriteLog("App started");
-                //-------------------------------------------------------------------------------
-                // a onfiguration class for assembly, addin's and  drivers loading into the 
-                // application
-                //---------------------------------------------------------------------------
+            
                 Config_editor = scope.Resolve<IConfigEditor>();
-                // a Utility Class for helping in Doing Different functions for  Data Managment
-
-                //util = scope.Resolve<IUtil>();
-                //--------------------------------------------------------------------------------
-
-                //-------------------------------------------------------------------------------
-                // this is the assembly loader for loading from Addin Folder and Projectdrivers Folder
-                //---------------------------------------------------------------------------
+              
                
                 LLoader = scope.Resolve<IAssemblyHandler>();
 
-                // Setup the Database Connection Screen
-                // a "Work Flow" class will control all the workflow between different data source 
-                // and automation
-               // WorkFlowEditor = scope.Resolve<IWorkFlowEditor>();
-                //eTL= scope.Resolve<IETL>();
-                //-------------------------------------------------------------------------------
-                // The Main Class for Data Manager 
-                //---------------------------------------------------------------------------
-               
-                //DMEEditor.assemblyHandler = LLoader;
                 DMEEditor = scope.Resolve<IDMEEditor>();
                 //-------------------------------------------------------------------------------
                 // The Main Visualization Class tha control the visual aspect of the system
