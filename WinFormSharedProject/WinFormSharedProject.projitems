@@ -24,7 +24,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)MultiSelectTreeview.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tree.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\AddinVisSchema.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IAddinVisSchema.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranch.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranchID.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranchRootCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IControlEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IDisplayPanel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\INode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\ITree.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\ITreeView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IVisUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IWinFormAddin.cs" />

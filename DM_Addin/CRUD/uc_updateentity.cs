@@ -44,7 +44,7 @@ namespace TheTechIdea.Beep.AppBuilder.UserControls
         object ti;
         EntityStructure TableCurrentEntity;
         string DisplayField;
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
             throw new NotImplementedException();
         }

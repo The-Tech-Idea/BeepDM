@@ -49,7 +49,7 @@ namespace TheTechIdea.Hidden
         public PassedArgs PassedArgsFromDataTree { get; set; }
         public IDMDataView MyDataView { get; set; } 
        // public event EventHandler<PassedArgs> OnObjectSelected;
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
            
         }

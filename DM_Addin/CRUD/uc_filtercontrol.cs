@@ -46,7 +46,7 @@ namespace TheTechIdea.Beep.AppBuilder.UserControls
        // List<FilterType> lsop;
         BindingSource[] BindingData;
         List<DefaultValue> defaults;
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
             throw new NotImplementedException();
         }

@@ -34,7 +34,10 @@ namespace TheTechIdea.Tools
         public IDMLogger Logger { get; set; }
         public IUtil Utilfunction { get; set; }
         public IConfigEditor ConfigEditor { get; set; }
+        private List<Type> LoaderExtensions { get; set; } = new List<Type>();
+        public List<AssemblyClassDefinition> LoaderExtensionClasses { get; set; } = new List<AssemblyClassDefinition>();
         public List<assemblies_rep> Assemblies { get; set; } = new List<assemblies_rep>();
+        
         public List<IDM_Addin> AddIns { get; set; } = new List<IDM_Addin>();
         public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
         private List<ConnectionDriversConfig> DataDriversConfig = new List<ConnectionDriversConfig>();
@@ -52,6 +55,69 @@ namespace TheTechIdea.Tools
         }
         
         #region "Loaders"
+        public void GetExtensionScanners()
+        {
+           
+                try
+                {
+                   
+                    LoadAssembly(Path.Combine(ConfigEditor.ExePath,"LoadingExtensions"), FolderFileTypes.LoaderExtensions);
+                   
+                   
+                  
+                }
+                catch (FileLoadException loadEx)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                   // res = "The Assembly has already been loaded" + loadEx.Message;
+                    // MessageBox.Show("The Assembly has already been loaded" + loadEx.Message, "Simple ODM", MessageBoxButtons.OK);
+                } // The Assembly has already been loaded.
+                catch (BadImageFormatException imgEx)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    // MessageBox.Show(imgEx.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly.
+                   // res = imgEx.Message;
+                }
+                catch (Exception ex)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    // MessageBox.Show(ex.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly
+                  //  res = ex.Message;
+                }
+                foreach (assemblies_rep s in Assemblies.Where(x => x.FileTypes == FolderFileTypes.LoaderExtensions ))
+                {
+                    try
+                    {
+                        ////DMEEditor.AddLogMessage("Start", $"Started Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
+                        ScanAssembly(s.DllLib);
+                       
+                        //   //DMEEditor.AddLogMessage("End", $"Ended Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
+
+                    }
+                    catch (Exception ex)
+                    {
+                        ErrorObject.Flag = Errors.Failed;
+                        //  //DMEEditor.AddLogMessage("Fail", $"Could not Process DLL {s.DllName}", DateTime.Now, -1,s.DllName, Errors.Failed);
+                    }
+
+                }
+                foreach (Type item in LoaderExtensions)
+                {
+                    try
+                    {
+                        ILoaderExtention cls = (ILoaderExtention)Activator.CreateInstance(item, new object[] { this } );
+                        cls.Scan();
+                       
+                    }
+                    catch (Exception)
+                    {
+
+
+                    }
+                }
+
+            
+        }
         public IErrorsInfo GetBuiltinClasses()
         {
           //  DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -82,7 +148,7 @@ namespace TheTechIdea.Tools
 
                // DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine"));
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine") || x.FullName.Contains("Beep"));
             try
             {
                 foreach (Assembly item in assemblies)
@@ -173,10 +239,11 @@ namespace TheTechIdea.Tools
 
                 }
                 foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL).Select(x => x.FolderPath))
-            {
+                {
                 try
                 {
                     LoadAssembly(p, FolderFileTypes.OtherDLL);
+                    
                 }
                 catch (FileLoadException loadEx)
                 {
@@ -259,6 +326,7 @@ namespace TheTechIdea.Tools
            
             AddEngineDefaultDrivers();
             CheckDriverAlreadyExistinList();
+            GetExtensionScanners();
             return ErrorObject;
         }
         /// <summary>
@@ -389,34 +457,34 @@ namespace TheTechIdea.Tools
                                                 Name = addin.AddinName;
                                                 Descr = addin.Description;
 
-                                                if (addin.DefaultCreate)
-                                                {
-                                                    if ( ConfigEditor.AddinTreeStructure.Where(x => x.className == type.Name).Any() == false)
-                                                    {
-                                                        Show = true;
-                                                        try
-                                                        {
-                                                            IAddinVisSchema cls = (IAddinVisSchema)addin;
-                                                            AddinTreeStructure xcls = new AddinTreeStructure();
-                                                            xcls.className = type.Name;
-                                                            xcls.dllname = type.Module.Name;
-                                                            xcls.PackageName = type.FullName;
-                                                            xcls.Order = cls.Order;
-                                                            xcls.Imagename = cls.IconImageName;
-                                                            xcls.RootName = cls.RootNodeName;
-                                                            xcls.NodeName = cls.BranchText;
-                                                            xcls.ObjectType = addin.ObjectType;
-                                                             ConfigEditor.AddinTreeStructure.Add(xcls);
+                                                //if (addin.DefaultCreate)
+                                                //{
+                                                //    if ( ConfigEditor.AddinTreeStructure.Where(x => x.className == type.Name).Any() == false)
+                                                //    {
+                                                //        Show = true;
+                                                //        try
+                                                //        {
+                                                //            IAddinVisSchema cls = (IAddinVisSchema)addin;
+                                                //            AddinTreeStructure xcls = new AddinTreeStructure();
+                                                //            xcls.className = type.Name;
+                                                //            xcls.dllname = type.Module.Name;
+                                                //            xcls.PackageName = type.FullName;
+                                                //            xcls.Order = cls.Order;
+                                                //            xcls.Imagename = cls.IconImageName;
+                                                //            xcls.RootName = cls.RootNodeName;
+                                                //            xcls.NodeName = cls.BranchText;
+                                                //            xcls.ObjectType = addin.ObjectType;
+                                                //             ConfigEditor.AddinTreeStructure.Add(xcls);
 
-                                                        }
-                                                        catch (Exception)
-                                                        {
+                                                //        }
+                                                //        catch (Exception)
+                                                //        {
 
-                                                        }
-                                                    }
+                                                //        }
+                                                //    }
 
-                                                }
-                                                else Show = false;
+                                                //}
+                                                //else Show = false;
                                                 // objtype = "UserControl";
 
                                                 if (Show)
@@ -498,9 +566,23 @@ namespace TheTechIdea.Tools
                             TypeInfo type = mytype.GetTypeInfo();
                             string[] p = asm.FullName.Split(new char[] { ',' });
                             p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
-                            //-------------------------------------------------------
-                            // Get DataBase Drivers
-                            if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
+                        //-------------------------------------------------------
+                        // Get WorkFlow Definitions
+                        if (type.ImplementedInterfaces.Contains(typeof(ILoaderExtention)))
+                        {
+                            AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                            xcls.className = type.Name;
+                            xcls.dllname = type.Module.Name;
+                            xcls.PackageName = type.FullName;
+                            xcls.type = type;
+                            xcls.componentType = "ILoaderExtention";
+                            LoaderExtensions.Add(type);
+                            xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                            LoaderExtensionClasses.Add(xcls);
+                        }
+                        //-------------------------------------------------------
+                        // Get DataBase Drivers
+                        if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
                             {
                                 AssemblyClassDefinition xcls = new AssemblyClassDefinition();
                                 xcls.className = type.Name;
@@ -586,57 +668,57 @@ namespace TheTechIdea.Tools
                             }
                             //-------------------------------------------------------
                             // Get IBranch Definitions
-                            if (type.ImplementedInterfaces.Contains(typeof(IBranch)))
-                            {
+                            //if (type.ImplementedInterfaces.Contains(typeof(IBranch)))
+                            //{
                                
-                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                                xcls.Methods = new List<MethodsClass>();
-                                xcls.className = type.Name;
-                                xcls.dllname = type.Module.Name;
-                                xcls.PackageName = type.FullName;
-                                xcls.componentType = "IBranch";
-                                xcls.type = type;
+                            //    AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                            //    xcls.Methods = new List<MethodsClass>();
+                            //    xcls.className = type.Name;
+                            //    xcls.dllname = type.Module.Name;
+                            //    xcls.PackageName = type.FullName;
+                            //    xcls.componentType = "IBranch";
+                            //    xcls.type = type;
                                 
-                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
-                                if (xcls.classProperties != null)
-                                {
-                                    xcls.RootName = xcls.classProperties.FileType;
-                                }
+                            //    xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                            //    if (xcls.classProperties != null)
+                            //    {
+                            //        xcls.RootName = xcls.classProperties.FileType;
+                            //    }
                                 
-                                //   xcls.RootName = "AI";
-                                //   xcls.BranchType = brcls.BranchType;
-                                foreach (MethodInfo methods in type.GetMethods()
-                                             .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
-                                              .ToArray())
-                                {
+                            //    //   xcls.RootName = "AI";
+                            //    //   xcls.BranchType = brcls.BranchType;
+                            //    foreach (MethodInfo methods in type.GetMethods()
+                            //                 .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
+                            //                  .ToArray())
+                            //    {
 
-                                    CommandAttribute methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
-                                    MethodsClass x = new MethodsClass();
-                                    x.Caption = methodAttribute.Caption;
-                                    x.Info = methods;
-                                    x.Hidden = methodAttribute.Hidden;
-                                    x.Click = methodAttribute.Click;
-                                    x.DoubleClick = methodAttribute.DoubleClick;
-                                    x.iconimage = methodAttribute.iconimage;
-                                    xcls.Methods.Add(x);
-                                }
-                                if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
-                                {
-                                    try
-                                    {
-                                        IOrder cls = (IOrder)Activator.CreateInstance(type);
-                                        xcls.Order = cls.Order;
-                                        cls = null;
-                                    }
-                                    catch (Exception )
-                                    {
+                            //        CommandAttribute methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
+                            //        MethodsClass x = new MethodsClass();
+                            //        x.Caption = methodAttribute.Caption;
+                            //        x.Info = methods;
+                            //        x.Hidden = methodAttribute.Hidden;
+                            //        x.Click = methodAttribute.Click;
+                            //        x.DoubleClick = methodAttribute.DoubleClick;
+                            //        x.iconimage = methodAttribute.iconimage;
+                            //        xcls.Methods.Add(x);
+                            //    }
+                            //    if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
+                            //    {
+                            //        try
+                            //        {
+                            //            IOrder cls = (IOrder)Activator.CreateInstance(type);
+                            //            xcls.Order = cls.Order;
+                            //            cls = null;
+                            //        }
+                            //        catch (Exception )
+                            //        {
                                        
 
-                                    }
+                            //        }
 
-                                }
-                                 ConfigEditor.BranchesClasses.Add(xcls);
-                            }
+                            //    }
+                            //     ConfigEditor.BranchesClasses.Add(xcls);
+                            //}
                             // --- Get all AI app Interfaces
                             //-----------------------------------------------------
                             if (type.ImplementedInterfaces.Contains(typeof(IAAPP)))

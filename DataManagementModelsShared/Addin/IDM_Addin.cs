@@ -26,7 +26,7 @@ namespace TheTechIdea
         string EntityName { get; set; }
         IPassedArgs Passedarg { get; set; }
        
-        void Run(string param1);
+        void Run(IPassedArgs pPassedarg);
         void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil,string[] args, IPassedArgs e, IErrorsInfo per );
     }
 }

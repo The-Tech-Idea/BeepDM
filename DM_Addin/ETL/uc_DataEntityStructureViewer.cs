@@ -44,7 +44,7 @@ namespace TheTechIdea.ETL
         public IVisUtil Visutil { get; set; }
         public IDataSource SourceConnection { get; set; }
         public IDataSource ds { get; set; }
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
             throw new NotImplementedException();
         }

@@ -1069,6 +1069,7 @@ namespace TheTechIdea.Winforms.VIS
 
             return Erinfo;
         }
+    
         public DialogResult InputBoxYesNo(string title, string promptText)
         {
             Form form = new Form();

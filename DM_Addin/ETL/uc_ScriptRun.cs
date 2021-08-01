@@ -53,7 +53,7 @@ namespace TheTechIdea.ETL
         bool RequestCancle = false;
       
         int errorcount = 0;
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
             throw new NotImplementedException();
         }

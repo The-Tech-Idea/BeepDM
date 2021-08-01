@@ -48,7 +48,7 @@ namespace TheTechIdea.Beep.AppBuilder.UserControls
        
 
         List<object> DataList = new List<object>();
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
             throw new NotImplementedException();
         }

@@ -55,7 +55,7 @@ namespace TheTechIdea.Configuration
         public string BranchClass { get; set; } = "ADDIN";
         public IVisUtil Visutil { get; set; }
         #endregion "IAddinVisSchema"
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
             throw new NotImplementedException();
         }

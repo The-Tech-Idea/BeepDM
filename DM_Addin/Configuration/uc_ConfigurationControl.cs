@@ -56,7 +56,7 @@ namespace TheTechIdea.Configuration
         #endregion "IAddinVisSchema"
        // public event EventHandler<PassedArgs> OnObjectSelected;
 
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
            
         }

@@ -12,6 +12,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Addin\AddinTreeStructure.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Addin\IDM_Addin.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Addin\IFunctionExtension.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tools\ILoaderExtention.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Addin\PassedArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AI\IAAPP.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\App.cs" />
@@ -90,17 +91,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Tools\IAssemblyHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\IClassCreator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\AddinAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\DisplayPanel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\Enums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\CommandItemAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\IAddinVisSchema.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranch.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranchID.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranchRootCategory.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\IDisplayPanel.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\INode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IOrder.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\ITree.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WEPAPI\IWebAPIDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\DataWorkFlow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IDataWorkFlow.cs" />

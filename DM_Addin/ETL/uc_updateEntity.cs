@@ -41,7 +41,7 @@ namespace TheTechIdea.ETL
         public IVisUtil Visutil { get; set; }
         IBranch branch;
         IDataSource ds;
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
             throw new NotImplementedException();
         }

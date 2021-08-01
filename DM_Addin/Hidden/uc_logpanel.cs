@@ -47,7 +47,7 @@ namespace TheTechIdea.Hidden
         {
            
         }
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
         }
         public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, IPassedArgs e, IErrorsInfo per)

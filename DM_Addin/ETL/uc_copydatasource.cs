@@ -45,7 +45,7 @@ namespace TheTechIdea.ETL
         IDataSource Srcds;
         IDataSource destds;
         SyncDataSource scripHeader;
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
             throw new NotImplementedException();
         }

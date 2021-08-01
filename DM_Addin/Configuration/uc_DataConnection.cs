@@ -70,7 +70,7 @@ namespace TheTechIdea.Configuration
 
         }
 
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
 
         }

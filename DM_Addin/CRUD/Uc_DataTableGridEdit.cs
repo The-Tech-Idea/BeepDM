@@ -75,7 +75,7 @@ namespace TheTechIdea.CRUD
 
             LoadTable(EntityName);
         }
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
            // LoadView(param1.ToUpper());
 

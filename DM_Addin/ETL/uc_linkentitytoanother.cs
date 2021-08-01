@@ -48,7 +48,7 @@ namespace TheTechIdea.ETL
     public EntityStructure ParentEntity { get; set; } = null;
     DataViewDataSource vds;
     CompositeLayerDataSource cds;
-    public void Run(string param1)
+    public void Run(IPassedArgs pPassedarg)
     {
 
     }

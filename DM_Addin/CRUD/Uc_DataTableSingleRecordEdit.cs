@@ -50,7 +50,7 @@ namespace TheTechIdea.CRUD
         public System.Windows.Forms.Panel panel1 = new Panel();
         DataTable t;
         RDBSource rdb;
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
             // LoadView(param1.ToUpper());
 

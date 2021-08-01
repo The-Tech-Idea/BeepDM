@@ -48,20 +48,22 @@ namespace TheTechIdea.Winforms.VIS
                 
                 SetupTreeView();
             } }
+        public object TreetoolStrip { get; set; }
         private TreeView TreeV;
-        public TreeNode SelectedNode { get; set; }
-        public TreeNode LastSelectedNode { get; set; }
+     
         public int SelectedBranchID { get; set; } = 0;
         public List<int> SelectedBranchs { get; set; } = new List<int>();
-        public Color SelectBackColor { get; set; } = Color.Red;
-      
-        public int StartselectBranchID { get; set; } = 0;
-        public string CurrentNode { get; set; }
+     
         public IVisUtil Visutil { get; set; }
         PassedArgs Passedarguments { get; set; } = new PassedArgs();
         string TreeEvent { get; set; }
         string TreeOP { get; set; }
-       
+        public TreeNode SelectedNode { get; set; }
+        public TreeNode LastSelectedNode { get; set; }
+        public Color SelectBackColor { get; set; } = Color.Red;
+
+        public int StartselectBranchID { get; set; } = 0;
+        public string CurrentNode { get; set; }
         public Font tagFont { get; set; } = new Font("Helvetica", 8, FontStyle.Bold);
         private bool busy = false;
         IDM_Addin sender;
@@ -591,23 +593,24 @@ namespace TheTechIdea.Winforms.VIS
             };
             return DMEEditor.ErrorObject;
         }
-        public System.Windows.Forms.ToolStrip TreetoolStrip { get; set; }
+       
         public IErrorsInfo CreateGlobalMenu()
         {
             try
             {
-                TreetoolStrip = new ToolStrip();
-                TreetoolStrip.AutoSize = false;
+                System.Windows.Forms.ToolStrip toolStrip = (ToolStrip)TreetoolStrip;
+                toolStrip = new ToolStrip();
+                toolStrip.AutoSize = false;
 
-                TreetoolStrip.ImageScalingSize = new Size(32, 32);
-                this.TreetoolStrip.Dock = System.Windows.Forms.DockStyle.Left;
-                this.TreetoolStrip.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.VerticalStackWithOverflow;
-                this.TreetoolStrip.Location = new System.Drawing.Point(342, 0);
-                this.TreetoolStrip.Name = "TreetoolStrip";
-                this.TreetoolStrip.Size = new System.Drawing.Size(32, 580);
-                this.TreetoolStrip.Text = "toolStrip1";
-                TreeV.Parent.Controls.Add(TreetoolStrip);
-                TreetoolStrip.ImageList = images;
+                toolStrip.ImageScalingSize = new Size(32, 32);
+                toolStrip.Dock = System.Windows.Forms.DockStyle.Left;
+                toolStrip.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.VerticalStackWithOverflow;
+                toolStrip.Location = new System.Drawing.Point(342, 0);
+                toolStrip.Name = "TreetoolStrip";
+                toolStrip.Size = new System.Drawing.Size(32, 580);
+                toolStrip.Text = "toolStrip1";
+               
+                toolStrip.ImageList = images;
                 foreach (AssemblyClassDefinition cls in DMEEditor.ConfigEditor.GlobalFunctions.Where(x => x.componentType== "IFunctionExtension"))
                 {
                     foreach (var item in cls.Methods)
@@ -626,68 +629,14 @@ namespace TheTechIdea.Winforms.VIS
                         toolStripButton1.Tag = cls.type.ToString() ;
                         toolStripButton1.AutoSize = false; 
                         toolStripButton1.Width = 32;
-                        TreetoolStrip.Items.Add(toolStripButton1);
+                        toolStrip.Items.Add(toolStripButton1);
 
 
                     }
 
                 }
                 ////-------------------------------------------------------------------------------------------
-                //// 
-                //// toolStripButton1
-                //// 
-                //this.toolStripButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-                //this.toolStripButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton1.Image")));
-                //this.toolStripButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-                //this.toolStripButton1.Name = "toolStripButton1";
-                //this.toolStripButton1.Size = new System.Drawing.Size(75, 20);
-                //this.toolStripButton1.Text = "toolStripButton1";
-                //// 
-                //// toolStripButton2
-                //// 
-                //this.toolStripButton2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-                //this.toolStripButton2.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton2.Image")));
-                //this.toolStripButton2.ImageTransparentColor = System.Drawing.Color.Magenta;
-                //this.toolStripButton2.Name = "toolStripButton2";
-                //this.toolStripButton2.Size = new System.Drawing.Size(75, 16);
-                //this.toolStripButton2.Text = "toolStripButton2";
-                //// 
-                //// toolStripButton3
-                //// 
-                //this.toolStripButton3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-                //this.toolStripButton3.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {this.pToolStripMenuItem});
-                //this.toolStripButton3.Image = 
-                //this.toolStripButton3.ImageTransparentColor = System.Drawing.Color.Magenta;
-                //this.toolStripButton3.Name = "toolStripButton3";
-                //this.toolStripButton3.Size = new System.Drawing.Size(75, 20);
-                //this.toolStripButton3.Text = "toolStripButton3";
-                //// 
-                //// pToolStripMenuItem
-                //// 
-                //this.pToolStripMenuItem.Name = "pToolStripMenuItem";
-                //this.pToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-                //this.pToolStripMenuItem.Text = "p";
-                //// 
-                //// toolStripButton4
-                //// 
-                //this.toolStripButton4.Name = "toolStripButton4";
-                //this.toolStripButton4.Size = new System.Drawing.Size(75, 6);
-                //// 
-                //// toolStripButton5
-                //// 
-                //this.toolStripButton5.Name = "toolStripButton5";
-                //this.toolStripButton5.Size = new System.Drawing.Size(73, 23);
-                //this.toolStripButton5.Text = "toolStripButton5";
-                //// 
-                //// toolStripButton6
-                //// 
-                //this.toolStripButton6.Font = new System.Drawing.Font("Segoe UI", 9F);
-                //this.toolStripButton6.Name = "toolStripButton6";
-                //this.toolStripButton6.Size = new System.Drawing.Size(73, 23);
-                //this.toolStripButton6.Text = "toolStripButton6";
-
-                //-------------------------------------------------------------------------------
-
+   
                 return DMEEditor.ErrorObject;
             }
             catch (Exception ex)

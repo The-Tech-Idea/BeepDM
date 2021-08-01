@@ -46,7 +46,7 @@ namespace TheTechIdea.ETL
       
         public IVisUtil Vis { get; set; }
       
-        public void Run(string param1)
+        public void Run(IPassedArgs pPassedarg)
         {
             throw new NotImplementedException();
         }

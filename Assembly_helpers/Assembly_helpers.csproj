@@ -89,11 +89,6 @@
       <Project>{45983087-5e0e-4bfb-86c1-a5bc54d2a86f}</Project>
       <Name>DataManagmentEngine</Name>
     </ProjectReference>
-    <ProjectReference Include="..\DM_VIS\Winform.csproj">
-      <Project>{0246f046-95c7-4713-b6d7-4ae829600c39}</Project>
-      <Name>Winform</Name>
-      <Private>False</Private>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Analyzer Include="..\..\BeepEnterprize\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
