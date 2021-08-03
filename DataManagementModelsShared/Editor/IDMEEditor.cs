@@ -48,6 +48,7 @@ namespace TheTechIdea.Beep
         void RaiseEvent(object sender,PassedArgs args);
 
         IErrorsInfo AskQuestion(IPassedArgs args);
+        object GetData(IDataSource ds, EntityStructure entity);
 
 
     }

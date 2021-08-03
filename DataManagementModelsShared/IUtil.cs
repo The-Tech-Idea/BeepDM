@@ -51,7 +51,9 @@ namespace TheTechIdea.Beep
          DataTable JsonToDataTable(string jsonString);
         DataTable ToDataTable(IList list,Type tp);
         Type GetEntityType(string EntityName, List<EntityField> Fields);
+        object GetEntityObject(string EntityName, List<EntityField> Fields);
         Type GetListType(object someList);
         DataTable CreateDataTableFromListofStrings(List<string> strings);
+        void GetEntityStructureFromListorTable(ref EntityStructure entity, dynamic retval);
     }
 }

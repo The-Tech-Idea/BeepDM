@@ -59,4 +59,7 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy $(TargetName).dll  $(SolutionDir)SampleApp\bin\Debug\LoadingExtensions\$(TargetName).dll</PostBuildEvent>
+  </PropertyGroup>
 </Project>

@@ -691,6 +691,72 @@ namespace TheTechIdea.Beep
 
             // return listType.MakeGenericType(types);
         }
+        public void GetEntityStructureFromListorTable(ref EntityStructure entity, dynamic retval)
+        {
+            Type tp = retval.GetType();
+            DataTable dt;
+            if (entity.Fields.Count == 0)
+            {
+                if (tp.GetTypeInfo().ImplementedInterfaces.Contains(typeof(IList)))
+                {
+                    dt = ToDataTable((IList)retval, GetListType(tp));
+                }
+                else
+                {
+                    dt = (DataTable)retval;
+
+                }
+                foreach (DataColumn item in dt.Columns)
+                {
+                    EntityField x = new EntityField();
+                    try
+                    {
+                        x.fieldname = item.ColumnName;
+                        x.fieldtype = item.DataType.ToString(); //"ColumnSize"
+                        x.Size1 = item.MaxLength;
+                        try
+                        {
+                            x.IsAutoIncrement = item.AutoIncrement;
+                        }
+                        catch (Exception)
+                        {
+
+                        }
+                        try
+                        {
+                            x.AllowDBNull = item.AllowDBNull;
+                        }
+                        catch (Exception)
+                        {
+                        }
+                        try
+                        {
+                            x.IsUnique = item.Unique;
+                        }
+                        catch (Exception)
+                        {
+
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.WriteLog("Error in Creating Field Type");
+                        ErrorObject.Flag = Errors.Failed;
+                        ErrorObject.Ex = ex;
+                    }
+
+                    if (x.IsKey)
+                    {
+                        entity.PrimaryKeys.Add(x);
+                    }
+
+
+                    entity.Fields.Add(x);
+                }
+
+            }
+         
+        }
         public List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype)
         {
             List<object> retval = new List<object>();
@@ -908,7 +974,13 @@ namespace TheTechIdea.Beep
             DMTypeBuilder.CreateNewObject(EntityName, EntityName, Fields);
             return DMTypeBuilder.myType;
         }
+        public object GetEntityObject(string EntityName, List<EntityField> Fields)
+        {
+            DMTypeBuilder.CreateNewObject(EntityName, EntityName, Fields);
+            return DMTypeBuilder.myObject;
+        }
 
+       
     }
 }
 

@@ -14,6 +14,9 @@ using TheTechIdea.Beep.Logger;
 using System.IO;
 using TheTechIdea.Tools;
 using static TheTechIdea.Beep.Util;
+using TheTechIdea.Beep.Report;
+using System.Threading.Tasks;
+using System.Collections;
 
 namespace TheTechIdea.Beep
 {
@@ -488,8 +491,84 @@ namespace TheTechIdea.Beep
         {
             PassEvent?.Invoke(sender, args);
         }
+        private async Task<dynamic> GetOutputAsync(IDataSource ds,string CurrentEntity, List<ReportFilter> filter)
+        {
+            return await ds.GetEntityAsync(CurrentEntity, filter).ConfigureAwait(false);
+        }
 
-       public IErrorsInfo AskQuestion(IPassedArgs args)
+        public object GetData(IDataSource ds,EntityStructure entity)
+        {
+            object retval = null;
+
+            if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
+            {
+                if (ds.Category == DatasourceCategory.WEBAPI)
+                {
+                    try
+                    {
+                        Task<dynamic> output = GetOutputAsync(ds,entity.EntityName, entity.Filters);
+                        output.Wait();
+                        dynamic t = output.Result;
+                        Type tp = t.GetType();
+                        if (!tp.GetTypeInfo().ImplementedInterfaces.Contains(typeof(IList)))
+
+                        {
+                            retval = ConfigEditor.JsonLoader.JsonToDataTable(t.ToString());
+                        }
+                        else
+                        {
+                            retval = t;
+                        }
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        AddLogMessage($"{ex.Message}");
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        retval = ds.GetEntity(entity.EntityName, entity.Filters);
+
+                    }
+                    catch (Exception ex)
+                    {
+
+                        AddLogMessage($"{ex.Message}");
+                    }
+
+                }
+                if (retval != null)
+                {
+                    try
+                    {
+                        Utilfunction.GetEntityStructureFromListorTable(ref entity,retval);
+                    }
+                    catch (Exception ex)
+                    {
+
+                        throw;
+                    }
+
+                    //if (retval.GetType().FullName == "System.Data.DataTable")
+                    //{
+                    //    retval = DMEEditor.Utilfunction.ConvertTableToList((DataTable)retval, EntityStructure, DMEEditor.Utilfunction.GetEntityType(EntityStructure.EntityName,EntityStructure.Fields));
+                    //}
+
+                }
+                else
+                {
+                    retval = null;
+                }
+               
+           //     RefreshData(retval);
+            }
+            return retval;
+        }
+        public IErrorsInfo AskQuestion(IPassedArgs args)
         {
             try
             {
