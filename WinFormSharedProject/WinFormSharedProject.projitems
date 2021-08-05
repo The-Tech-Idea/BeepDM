@@ -23,8 +23,6 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)MultiSelectTreeview.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tree.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\AddinVisSchema.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Vis\IAddinVisSchema.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranch.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranchID.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IBranchRootCategory.cs" />

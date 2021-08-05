@@ -16,6 +16,7 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.Workflow;
+using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using TypeInfo = System.Reflection.TypeInfo;
@@ -444,50 +445,65 @@ namespace TheTechIdea.Tools
 
                                             try
                                             {
-                                                IDM_Addin uc = (IDM_Addin)Activator.CreateInstance(type);
-                                                if (uc != null)
-                                                {
-                                                    addin = (IDM_Addin)uc;
-                                                    addin.DllPath = Path.GetDirectoryName(asm.Location);
-                                                    addin.ObjectName = type.Name;
-                                                    addin.DllName = Path.GetFileName(asm.Location);
-                                                    Show = addin.DefaultCreate;
-                                                    AddIns.Add(addin);
-                                                }
-                                                Name = addin.AddinName;
-                                                Descr = addin.Description;
-
-                                                //if (addin.DefaultCreate)
+                                                //AddinAttribute attrib=(AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
+                                                //if (attrib != null)
                                                 //{
-                                                //    if ( ConfigEditor.AddinTreeStructure.Where(x => x.className == type.Name).Any() == false)
-                                                //    {
-                                                //        Show = true;
-                                                //        try
-                                                //        {
-                                                //            IAddinVisSchema cls = (IAddinVisSchema)addin;
-                                                //            AddinTreeStructure xcls = new AddinTreeStructure();
-                                                //            xcls.className = type.Name;
-                                                //            xcls.dllname = type.Module.Name;
-                                                //            xcls.PackageName = type.FullName;
-                                                //            xcls.Order = cls.Order;
-                                                //            xcls.Imagename = cls.IconImageName;
-                                                //            xcls.RootName = cls.RootNodeName;
-                                                //            xcls.NodeName = cls.BranchText;
-                                                //            xcls.ObjectType = addin.ObjectType;
-                                                //             ConfigEditor.AddinTreeStructure.Add(xcls);
+                                                    IDM_Addin uc = (IDM_Addin)Activator.CreateInstance(type);
+                                                    //if (attrib.addinType != AddinType.Class)
+                                                    //{
+                                                       
+                                                        if (uc != null)
+                                                        {
+                                                            addin = (IDM_Addin)uc;
+                                                            addin.DllPath = Path.GetDirectoryName(asm.Location);
+                                                            addin.ObjectName = type.Name;
+                                                            addin.DllName = Path.GetFileName(asm.Location);
+                                                            Show = addin.DefaultCreate;
+                                                           
+                                                        }
+                                                        Name = addin.AddinName;
+                                                        Descr = addin.Description;
+                                                        //}
+                                                    //else
+                                                    //{
 
-                                                //        }
-                                                //        catch (Exception)
-                                                //        {
+                                                    //}
+                                              //  }
+                                                AddIns.Add(addin);
 
-                                                //        }
-                                                //    }
 
-                                                //}
-                                                //else Show = false;
-                                                // objtype = "UserControl";
+                                                if (addin.DefaultCreate)
+                                                {
+                                                    if (ConfigEditor.AddinTreeStructure.Where(x => x.className == type.Name).Any() == false)
+                                                    {
+                                                        Show = true;
+                                                        try
+                                                        {
+                                                            IAddinVisSchema cls = (IAddinVisSchema)addin;
+                                                            AddinTreeStructure xcls = new AddinTreeStructure();
+                                                            xcls.className = type.Name;
+                                                            xcls.dllname = type.Module.Name;
+                                                            xcls.PackageName = type.FullName;
+                                                            xcls.Order = cls.Order;
+                                                            xcls.Imagename = cls.IconImageName;
+                                                            xcls.RootName = cls.RootNodeName;
+                                                            xcls.NodeName = cls.BranchText;
+                                                            xcls.ObjectType = addin.ObjectType;
+                                                            ConfigEditor.AddinTreeStructure.Add(xcls);
 
-                                                if (Show)
+                                                        }
+                                                        catch (Exception)
+                                                        {
+
+                                                        }
+                                                    }
+                                                }
+
+                                                    //}
+                                                    //else Show = false;
+                                                    // objtype = "UserControl";
+
+                                                    if (Show)
                                                 {
                                                     a = RearrangeAddin(p[i], p[i - 1], objtype);
                                                 }

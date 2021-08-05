@@ -91,8 +91,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Tools\IAssemblyHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\IClassCreator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\AddinAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\AddinVisSchema.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\Enums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\CommandItemAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vis\IAddinVisSchema.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IOrder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WEPAPI\IWebAPIDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\DataWorkFlow.cs" />

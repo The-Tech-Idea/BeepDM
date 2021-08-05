@@ -45,4 +45,13 @@ namespace TheTechIdea.Util
     {
         DisplayLookup,ReplaceValue
     }
+    public enum AddinType
+    {
+        Form,Control,Class
+    }
+    public enum TransActionType
+    {
+        Insert,Update,Delete,Select
+    }
+
 }

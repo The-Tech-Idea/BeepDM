@@ -27,5 +27,7 @@ namespace TheTechIdea.Beep.Addin
         public int ParentBranchID { get; set; }
         public string BranchDescription { get; set; }
         public string BranchClass { get; set; } = "ADDIN";
+    
+
     }
 }

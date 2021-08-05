@@ -8,10 +8,10 @@ namespace TheTechIdea.Tools
 {
     public interface ILoaderExtention
     {
-        List<IDM_Addin> AddIns { get; set; }
-        List<assemblies_rep> Assemblies { get; set; }
-        // AppDomain CurrentDomain { get; set; }
-        List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
+    //    List<IDM_Addin> AddIns { get; set; }
+    //    List<assemblies_rep> Assemblies { get; set; }
+    //    // AppDomain CurrentDomain { get; set; }
+    //    List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
        // IDMEEditor DMEEditor { get; set; }
         IErrorsInfo LoadAllAssembly();
         IErrorsInfo Scan();

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using TheTechIdea.Util;
 
 namespace TheTechIdea.DataManagment_Engine.Vis
 {
@@ -13,7 +14,9 @@ namespace TheTechIdea.DataManagment_Engine.Vis
         public string ObjectType { get; set; }
         public int key { get; set; } = -1;
         public string misc {get;set;}
+        public AddinType addinType { get; set; } = AddinType.Form;
 
-      
+
     }
+    
 }

@@ -7,8 +7,10 @@ using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea;
 using TheTechIdea.Beep;
+using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Vis;
+using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Tools;
 using TheTechIdea.Util;
 
@@ -16,16 +18,19 @@ namespace AssemblyLoaderExtension
 {
     public class AssemblyLoaderExtension : ILoaderExtention
     {
+        ParentChildObject a;
+        private string Name { get; set; }
+        private string Descr { get; set; }
         public AppDomain CurrentDomain { get; set; }
-        public List<IDM_Addin> AddIns { get; set; }
-        public List<assemblies_rep> Assemblies { get; set; }
-        public List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
+        //public List<IDM_Addin> AddIns { get; set; }
+        //public List<assemblies_rep> Assemblies { get; set; }
+        //public List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
         public IAssemblyHandler Loader { get; set; }
         public AssemblyLoaderExtension(IAssemblyHandler ploader)
         {
             Loader = ploader;
             CurrentDomain = AppDomain.CurrentDomain;
-            DataSourcesClasses = new List<AssemblyClassDefinition>();
+            //DataSourcesClasses = new List<AssemblyClassDefinition>();
             CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
         }
 
@@ -38,6 +43,7 @@ namespace AssemblyLoaderExtension
                 foreach (var item in Loader.Assemblies)
                 {
                     ScanAssembly(item.DllLib);
+                    GetAddinObjects(item.DllLib);
                 }
                 er.Flag = Errors.Ok;
             }
@@ -161,6 +167,170 @@ namespace AssemblyLoaderExtension
 
         }
         #endregion "Class Extractors"
+        #region "Class ordering"
+        public ParentChildObject RearrangeAddin(string p, string parentid, string Objt)
+        {
+
+            ParentChildObject a;
+            if (parentid == null)
+            {
+                if (Loader.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ObjType == Objt).Count() == 0)
+                {
+                    a = new ParentChildObject() { id = p, ParentID = null, ObjType = Objt, AddinName = Name, Description = Descr };
+                    Loader.Utilfunction.FunctionHierarchy.Add(a);
+
+                }
+                else
+                {
+                    a = Loader.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == null && f.ObjType == Objt).FirstOrDefault();
+
+                }
+
+            }
+            else
+            {
+                if (Loader.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == parentid && f.ObjType == Objt).Count() == 0)
+                {
+                    a = new ParentChildObject() { id = p, ParentID = parentid, ObjType = Objt, AddinName = Name, Description = Descr };
+                    Loader.Utilfunction.FunctionHierarchy.Add(a);
+
+                }
+                else
+                {
+                    a = Loader.Utilfunction.FunctionHierarchy.Where(f => f.id == p && f.ParentID == parentid && f.ObjType == Objt).FirstOrDefault();
+
+                }
+            }
+
+            return a;
+        }
+        public List<ParentChildObject> GetAddinObjects(Assembly asm)
+        {
+            IDM_Addin addin = null;
+            string objtype = "";
+            Boolean Show = true;
+            int cnt = 0;
+            foreach (Type type in asm.DefinedTypes)
+            {
+                if (typeof(IDM_Addin).IsAssignableFrom(type))
+                {
+                    try
+                    {
+                        if (type.FullName.Contains("Properties") == false)
+                        {
+
+                            string[] p = type.FullName.Split(new char[] { '.' });
+
+                            if (p.Length >= 0)
+                            {
+                                for (int i = 0; i < p.Length; i++)
+                                {
+                                    cnt += 1;
+                                    if (i == 0)
+                                    {
+                                        Name = p[i];
+                                        Descr = p[i];
+                                        a = RearrangeAddin(p[i], null, "namespace");
+                                    }
+                                    else
+                                    {
+                                        if (i == p.Length - 1)
+                                        {
+
+
+                                            try
+                                            {
+                                                AddinAttribute attrib = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
+                                                
+                                                    IDM_Addin uc = (IDM_Addin)Activator.CreateInstance(type);
+                                                    if (uc != null)
+                                                    {
+                                                        addin = (IDM_Addin)uc;
+                                                        addin.DllPath = Path.GetDirectoryName(asm.Location);
+                                                        addin.ObjectName = type.Name;
+                                                        addin.DllName = Path.GetFileName(asm.Location);
+                                                        Show = addin.DefaultCreate;
+                                                       
+                                                    }
+                                                    Name = addin.AddinName;
+                                                    Descr = addin.Description;
+                                                
+                                                Loader.AddIns.Add(addin);
+
+                                                if (addin.DefaultCreate)
+                                                {
+                                                    if (Loader.ConfigEditor.AddinTreeStructure.Where(x => x.className == type.Name).Any() == false)
+                                                    {
+                                                        Show = true;
+                                                        try
+                                                        {
+                                                            IAddinVisSchema cls = (IAddinVisSchema)addin;
+                                                            AddinTreeStructure xcls = new AddinTreeStructure();
+                                                            xcls.className = type.Name;
+                                                            xcls.dllname = type.Module.Name;
+                                                            xcls.PackageName = type.FullName;
+                                                            xcls.Order = cls.Order;
+                                                            xcls.Imagename = cls.IconImageName;
+                                                            xcls.RootName = cls.RootNodeName;
+                                                            xcls.NodeName = cls.BranchText;
+                                                            xcls.ObjectType = addin.ObjectType;
+                                                            Loader.ConfigEditor.AddinTreeStructure.Add(xcls);
+
+                                                        }
+                                                        catch (Exception)
+                                                        {
+
+                                                        }
+                                                    }
+
+                                                }
+                                                //else Show = false;
+                                                // objtype = "UserControl";
+
+                                                if (Show)
+                                                {
+                                                    a = RearrangeAddin(p[i], p[i - 1], objtype);
+                                                }
+                                                //DMEEditor.AddLogMessage("Success", $"Got Addin object {type.Name}", DateTime.Now, -1, type.Name, Errors.Ok);
+                                            }
+                                            catch (Exception ex)
+                                            {
+
+                                                //DMEEditor.AddLogMessage("Fail", $"Could get Addin information {type.Name}", DateTime.Now, -1, type.Name, Errors.Failed);
+                                            };
+
+
+                                        }
+                                        else
+                                        {
+                                            Name = p[i];
+                                            Descr = p[i];
+                                            a = RearrangeAddin(p[i], p[i - 1], "namespace");
+
+                                        }
+
+                                    }
+
+
+                                }
+
+                            }
+
+                        }
+                    }
+
+                    catch (Exception ex1)
+                    {
+                        //DMEEditor.AddLogMessage("Fail", $"Could get Addin object {type.Name} - {ex1.Message}", DateTime.Now, -1, type.Name, Errors.Failed);
+                    }
+                }
+
+            }
+
+            Loader.ConfigEditor.SaveAddinTreeStructure();
+            return Loader.Utilfunction.FunctionHierarchy;
+        }
+        #endregion
         private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
             // Ignore missing resources
@@ -173,7 +343,7 @@ namespace AssemblyLoaderExtension
             Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName.StartsWith(filenamewo));
             if (assembly == null)
             {
-                assemblies_rep s = Assemblies.FirstOrDefault(a => a.DllLib.FullName.StartsWith(filenamewo));
+                assemblies_rep s = Loader.Assemblies.FirstOrDefault(a => a.DllLib.FullName.StartsWith(filenamewo));
                 if (s != null)
                 {
                     assembly = s.DllLib;
