@@ -900,17 +900,9 @@
       <Project>{eb5417ea-362a-40b6-8b2a-e48bc45c9c05}</Project>
       <Name>DMLogger</Name>
     </ProjectReference>
-    <ProjectReference Include="..\DM_VIS\Winform.csproj">
-      <Project>{0246f046-95c7-4713-b6d7-4ae829600c39}</Project>
-      <Name>Winform</Name>
-    </ProjectReference>
     <ProjectReference Include="..\JsonFileLoader\JsonFileLoader.csproj">
       <Project>{654608e6-4bb3-4d7f-8f39-144c1318aa7b}</Project>
       <Name>JsonFileLoader</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MenuTreeObjects\WinformVisualObjects.csproj">
-      <Project>{b766292b-356a-4e5d-802f-cb04a7bf084d}</Project>
-      <Name>WinformVisualObjects</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -6,8 +6,9 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Beep.Vis;
+using TheTechIdea.DataManagment_Engine.Vis;
 //using TheTechIdea.Beep.Vis;
 
 namespace TheTechIdea.Util
@@ -73,7 +74,7 @@ namespace TheTechIdea.Util
         //public EnumBranchType BranchType { get; set; }
         public Type type { get; set; }
         public string componentType { get; set; }
-        public ClassProperties classProperties { get; set; } = new ClassProperties();
+        public AddinAttribute classProperties { get; set; } = new AddinAttribute();
         public List<MethodsClass> Methods { get; set; } = new List<MethodsClass>();
     }
     public class MethodsClass

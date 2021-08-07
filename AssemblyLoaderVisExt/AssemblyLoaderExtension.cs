@@ -109,7 +109,7 @@ namespace AssemblyLoaderExtension
                             xcls.componentType = "IBranch";
                             xcls.type = type;
 
-                            xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                            xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(ClassProperties), false);
                             if (xcls.classProperties != null)
                             {
                                 xcls.RootName = xcls.classProperties.FileType;
@@ -391,7 +391,10 @@ namespace AssemblyLoaderExtension
 
         public IErrorsInfo Scan()
         {
-            throw new NotImplementedException();
+            
+             return   LoadAllAssembly();
+           
+          
         }
     }
 }

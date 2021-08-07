@@ -45,7 +45,7 @@ namespace DemoApp
 
         // Added Property for Visualization
         public IVisUtil Visutil { get; set; }
-        public void Run(string param1)
+        public void Run(IPassedArgs Passedarg)
         {
             throw new NotImplementedException();
         }

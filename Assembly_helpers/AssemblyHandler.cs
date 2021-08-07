@@ -11,7 +11,7 @@ using TheTechIdea.Beep;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.AI;
 using TheTechIdea.Beep.AppBuilder;
-using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Vis;
@@ -551,7 +551,7 @@ namespace TheTechIdea.Tools
         private bool ScanAssembly(Assembly asm)
         {
             Type[] t;
-          
+            Console.WriteLine(asm.FullName);
                 try
                 {
                     try
@@ -593,7 +593,7 @@ namespace TheTechIdea.Tools
                             xcls.type = type;
                             xcls.componentType = "ILoaderExtention";
                             LoaderExtensions.Add(type);
-                            xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                            xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
                             LoaderExtensionClasses.Add(xcls);
                         }
                         //-------------------------------------------------------
@@ -606,7 +606,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IDataSource";
-                                xcls.classProperties= (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                                xcls.classProperties= (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
                                 DataSourcesClasses.Add(xcls);
                                  ConfigEditor.DataSourcesClasses.Add(xcls);
                             }
@@ -620,7 +620,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IWorkFlowAction";
-                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                                xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
                                 ConfigEditor.WorkFlowActions.Add(xcls);
                             }
                             //-------------------------------------------------------
@@ -633,7 +633,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IAppBuilder";
-                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                                xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
                                  ConfigEditor.AppWritersClasses.Add(xcls);
                             }
                             if (type.ImplementedInterfaces.Contains(typeof(IAppComponent)))
@@ -644,7 +644,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IAppComponent";
-                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                                xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
                                  ConfigEditor.AppComponents.Add(xcls);
                             }
                             if (type.ImplementedInterfaces.Contains(typeof(IAppDesigner)))
@@ -655,7 +655,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IAppDesigner";
-                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                                xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
                                  ConfigEditor.AppComponents.Add(xcls);
                             }
                             if (type.ImplementedInterfaces.Contains(typeof(IAppScreen)))
@@ -666,7 +666,7 @@ namespace TheTechIdea.Tools
                                 xcls.PackageName = type.FullName;
                                 xcls.type = type;
                                 xcls.componentType = "IAppScreen";
-                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                                xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
                                  ConfigEditor.AppComponents.Add(xcls);
                             }
                             
@@ -679,7 +679,7 @@ namespace TheTechIdea.Tools
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
                                 xcls.componentType = "IReportDMWriter";
-                                xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                                xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
                                  ConfigEditor.ReportWritersClasses.Add(xcls);
                             }
                             //-------------------------------------------------------
@@ -851,7 +851,7 @@ namespace TheTechIdea.Tools
                             xcls.componentType = "IFunctionExtension";
                             xcls.type = type;
 
-                            xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
+                            xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
                             if (xcls.classProperties != null)
                             {
                                 xcls.RootName = "IFunctionExtension";

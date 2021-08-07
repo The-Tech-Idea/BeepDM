@@ -47,11 +47,12 @@ namespace TheTechIdea.Util
     }
     public enum AddinType
     {
-        Form,Control,Class
+        Form,Control,Class,Page,Link
     }
     public enum TransActionType
     {
         Insert,Update,Delete,Select
     }
+   
 
 }

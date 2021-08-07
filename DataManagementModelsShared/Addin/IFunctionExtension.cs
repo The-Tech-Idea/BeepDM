@@ -7,5 +7,6 @@ namespace TheTechIdea.Beep.Addin
    public  interface IFunctionExtension
     {
         IDMEEditor DMEEditor { get; set; }
+        IPassedArgs Passedargs { get; set; }
     }
 }
