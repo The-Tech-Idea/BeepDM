@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using TheTechIdea.Beep;
 using TheTechIdea.Logger;
-using TheTechIdea.Winforms.VIS;
+
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Util;
 using TheTechIdea.Tools;
@@ -25,11 +25,11 @@ namespace DataManagment_Engine
         public IWorkFlowEditor WorkFlowEditor { get; set; }
         public IDMLogger lg { get; set; }
         public IUtil util { get; set; }
-        public IVisUtil vis { get; set; }
+     
         public IErrorsInfo Erinfo { get; set; }
         public IJsonLoader jsonLoader { get; set; }
         public IAssemblyHandler LLoader { get; set; }
-        public IControlEditor Controleditor { get; set; }
+     
      
         public IClassCreator classCreator { get; set; }
         public IETL eTL { get; set; }
@@ -45,8 +45,7 @@ namespace DataManagment_Engine
             Builder.RegisterType<DMEEditor>().As<IDMEEditor>().SingleInstance();
             Builder.RegisterType<WorkFlowEditor>().As<IWorkFlowEditor>().SingleInstance();
             Builder.RegisterType<Util>().As<IUtil>().SingleInstance();
-            Builder.RegisterType<ControlEditor>().As<IControlEditor>().SingleInstance();
-            Builder.RegisterType<VisUtil>().As<IVisUtil>().SingleInstance();
+         
             Builder.RegisterType<JsonLoader>().As<IJsonLoader>().SingleInstance();
             Builder.RegisterType<AssemblyHandler>().As<IAssemblyHandler>().SingleInstance();
             Builder.RegisterType<ClassCreatorv2>().As<IClassCreator>().SingleInstance();
@@ -60,31 +59,31 @@ namespace DataManagment_Engine
             Container = Configure();
             using (var scope = Container.BeginLifetimeScope())
             {
-               // jsonLoader= scope.Resolve<IJsonLoader>();
+               jsonLoader= scope.Resolve<IJsonLoader>();
                 //--------------------------------------------------------------------------------
                 // a Error Class that will have all error message tracking 
                 //---------------------------------------------------------------------------
-              //  Erinfo = scope.Resolve<IErrorsInfo>();
+               Erinfo = scope.Resolve<IErrorsInfo>();
                 //--------------------------------------------------------------------------------
                 // a Log Manager 
                 //---------------------------------------------------------------------------
-              //  lg = scope.Resolve<IDMLogger>();
+              lg = scope.Resolve<IDMLogger>();
               //  lg.WriteLog("App started");
 
                 // a Utility Class for helping in Doing Different functions for  Data Managment
 
-              //  util = scope.Resolve<IUtil>();
+              util = scope.Resolve<IUtil>();
                 //--------------------------------------------------------------------------------
                 // this is the assembly loader for loading from Addin Folder and Projectdrivers Folder
                 //---------------------------------------------------------------------------
-                // LLoader = scope.Resolve<IAssemblyLoader>();
+                
                 LLoader = scope.Resolve<IAssemblyHandler>();
 
                 //-------------------------------------------------------------------------------
                 // a onfiguration class for assembly, addin's and  drivers loading into the 
                 // application
                 //---------------------------------------------------------------------------
-               // Config_editor = scope.Resolve<IConfigEditor>();
+               Config_editor = scope.Resolve<IConfigEditor>();
              
                 // Setup the Entry Screen 
                 // the screen has to be in one the Addin DLL's loaded by the Assembly loader
@@ -105,14 +104,11 @@ namespace DataManagment_Engine
                 //-------------------------------------------------------------------------------
                 // The Main Visualization Class tha control the visual aspect of the system
                 //---------------------------------------------------------------------------
-                vis = scope.Resolve<IVisUtil>();
-                //-------------------------------------------------------------------------------
-                // this Editor will help Generate user controls for visulization
-                Controleditor = scope.Resolve<IControlEditor>();
+             
                 //-------------------------------------------------------------------------------
                 // a tree class will be main visualization control for the system
               
-                vis.controlEditor = Controleditor;
+            
               
                 //---------------------------------------------------------------------------
                 // This has to be last step so that all Configuration is ready for Addin's 
@@ -127,17 +123,8 @@ namespace DataManagment_Engine
                 LLoader.LoadAllAssembly();
                 Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
 
-                // you start you application from an Calling an Addin
-                    Config_editor.Config.SystemEntryFormName = @"Form1";
-              //  Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
-                if (Config_editor.Config.SystemEntryFormName != null)
-                {
-                   // Config_editor.Config.SystemEntryFormName = @"Frm_MainDisplayForm";
-                    vis.ShowMainDisplayForm();
-                }else
-                {
-                    Controleditor.MsgBox("Beep", "Could not Find any Startup Screen");
-                }
+                
+               
                 
 
                 
