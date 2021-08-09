@@ -225,58 +225,58 @@ namespace TheTechIdea.Beep
 
             ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName.Equals(pdatasourcename,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             ErrorObject.Flag = Errors.Ok;
-            IDataSource ds=null;
+           // IDataSource ds=null;
            if (cn != null)
             {
-                ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
-                if (ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).Any())
-                {
-                    string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
-                    //  Type adc = Type.GetType(packagename);
-                    Type adc = assemblyHandler.GetType(packagename);
-                    ConstructorInfo ctor = adc.GetConstructors().First();
-                    ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
-                    //create an instance:
-                    ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
-                }
-                
-                try
-                {
-                    if (ds != null)
-                    {
-                        ds.Dataconnection.ConnectionProp = cn;
-                        ds.Dataconnection.DataSourceDriver = driversConfig;
-                        //  ds.ConnectionStatus = ds.Dataconnection.OpenConnection();
-                        DataSources.Add(ds);
-                        return ds;
-                    }
-                    else
-                    {
-                        AddLogMessage("Fail", "Could Find DataSource Drivers", DateTime.Now, 0, pdatasourcename, Errors.Failed);
-                        return null;
-                    }
+               return CreateNewDataSourceConnection(cn, pdatasourcename);
+                //ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
+                //if (ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).Any())
+                //{
+                //    string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
+                //    if (packagename != null)
+                //    {
+                //        Type adc = assemblyHandler.GetType(packagename);
+                //        if (adc != null)
+                //        {
+                //            ConstructorInfo ctor = adc.GetConstructors().Where(o => o.GetParameters().Count() == 5).FirstOrDefault();
+                //            if (ctor == null)
+                //            {
+                //                ctor = adc.GetConstructors().FirstOrDefault();
+                //            }
+                //            ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
+                //            //create an instance:
+                //            ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
+                //        }
+                     
+                //    }
                    
-                    //if (ds.ConnectionStatus == ConnectionState.Open)
-                    //{
+                //}
+                
+                //try
+                //{
+                //    if (ds != null)
+                //    {
+                //        ds.Dataconnection.ConnectionProp = cn;
+                //        ds.Dataconnection.DataSourceDriver = driversConfig;
+                //        //  ds.ConnectionStatus = ds.Dataconnection.OpenConnection();
+                //        DataSources.Add(ds);
+                //        return ds;
+                //    }
+                //    else
+                //    {
+                //        AddLogMessage("Fail", "Could Find DataSource Drivers", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                //        return null;
+                //    }
+               
+                //}
+                //catch (Exception ex)
+                //{
 
-                    //    AddLogMessage("Success", "Create DataSource Success" + pdatasourcename, DateTime.Now, 0, null, Errors.Ok);
-                    //    return ds;
-                    //}
-                    //else
-                    //{
-                    //    AddLogMessage("Failure", "Error occured in  DataSource Creation " + pdatasourcename, DateTime.Now, 0, null, Errors.Ok);
-                    //    return null;
 
-                    //}
-                }
-                catch (Exception ex)
-                {
+                //    AddLogMessage("Fail", $"Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
+                //    return null;
 
-
-                    AddLogMessage("Fail", $"Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
-                    return null;
-
-                }
+                //}
 
             }
             else
@@ -299,19 +299,24 @@ namespace TheTechIdea.Beep
             if (ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).Any())
             {
                 string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
-                //  Type adc = Type.GetType(packagename);
-                Type adc = assemblyHandler.GetType(packagename);
-                ConstructorInfo ctor = adc.GetConstructors().First();
-                ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
-                //create an instance:
-                ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
+                if (packagename != null)
+                {
+                   Type adc = assemblyHandler.GetType(packagename);
+                   if (adc != null)
+                   {
+                        ConstructorInfo ctor = adc.GetConstructors().Where(o => o.GetParameters().Count() == 5).FirstOrDefault();
+                        if (ctor == null)
+                        {
+                            ctor = adc.GetConstructors().FirstOrDefault();
+                        }
+                        ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
+                        //create an instance:
+                        ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
+                   }
+                }
             }
-
-
             try
             {
-
-               
                 if (ds == null)
                 {
                     AddLogMessage("Fail", "Could Find DataSource Drivers", DateTime.Now, 0, pdatasourcename, Errors.Failed);
@@ -328,16 +333,9 @@ namespace TheTechIdea.Beep
             catch (Exception ex)
             {
 
-
-              
                 AddLogMessage("Fail", "Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})", DateTime.Now, 0, pdatasourcename, Errors.Failed);
                 return null;
-
             }
-
-
-
-
         }
         public IDataSource CreateLocalDataSourceConnection(ConnectionProperties dataConnection, string pdatasourcename,string ClassDBHandlerName)
         {
@@ -349,13 +347,20 @@ namespace TheTechIdea.Beep
             {
                  package = ConfigEditor.DataDriversClasses.Where(x => x.classHandler == ClassDBHandlerName).FirstOrDefault();
                 string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className == package.classHandler).FirstOrDefault().PackageName;
+                if (packagename != null)
+                {
+                    Type adc = assemblyHandler.GetType(packagename);
+                    ConstructorInfo ctor = adc.GetConstructors().Where(o => o.GetParameters().Count() == 5).FirstOrDefault();
+                    if (ctor == null)
+                    {
+                        ctor = adc.GetConstructors().FirstOrDefault();
+                    }
+                    ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
 
-                Type adc = assemblyHandler.GetType(packagename);
-                ConstructorInfo ctor = adc.GetConstructors().First();
-                ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
-
-                //create an instance:
-                ds = createdActivator(dataConnection.ConnectionName, Logger, this, dataConnection.DatabaseType, ErrorObject);
+                    //create an instance:
+                    ds = createdActivator(dataConnection.ConnectionName, Logger, this, dataConnection.DatabaseType, ErrorObject);
+                }
+                
             }
        
 
@@ -376,24 +381,7 @@ namespace TheTechIdea.Beep
                     AddLogMessage("Fail", "Could Find DataSource Drivers", DateTime.Now, 0, pdatasourcename, Errors.Failed);
                     return null;
                 }
-              
-           //     bool ok= dB.CreateDB();
-          //      if (ok)
-          //      {
-                  //  ds.ConnectionStatus = ds.Dataconnection.OpenConnection();
-                //if (ds.ConnectionStatus == ConnectionState.Open)
-                //{
-                    // ConfigEditor.DataConnections.Add(dataConnection);
-                    
-                   
-                //}else
-                //{
-                //    return null;
-                //}
-                
-          
-               
-            }
+             }
             catch (Exception ex)
             {
 
@@ -403,10 +391,6 @@ namespace TheTechIdea.Beep
                 return null;
 
             }
-
-
-
-
         }
         public bool RemoveDataDource(string pdatasourcename)
         {
@@ -418,17 +402,11 @@ namespace TheTechIdea.Beep
                 
                 if (ds != null)
                 {
-                    //if (ds.Dataconnection.DbConn != null)
-                    //{
-                    //    ds.Dataconnection.DbConn.Close();
-                    //    ds.Dataconnection.DbConn.Dispose();
-                    //}
                     if (ds.Dataconnection.DataSourceDriver.CreateLocal)
                     {
                         ConfigEditor.RemoveDataSourceEntitiesValues(ds.DatasourceName);
                     }
-                        DataSources.Remove(ds);
-                   
+                    DataSources.Remove(ds);
                 }
                 else
                 {
@@ -552,19 +530,12 @@ namespace TheTechIdea.Beep
 
                         throw;
                     }
-
-                    //if (retval.GetType().FullName == "System.Data.DataTable")
-                    //{
-                    //    retval = DMEEditor.Utilfunction.ConvertTableToList((DataTable)retval, EntityStructure, DMEEditor.Utilfunction.GetEntityType(EntityStructure.EntityName,EntityStructure.Fields));
-                    //}
-
                 }
                 else
                 {
                     retval = null;
                 }
-               
-           //     RefreshData(retval);
+
             }
             return retval;
         }

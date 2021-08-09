@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.Addin;
-using TheTechIdea.Beep.AppBuilder;
+
 using TheTechIdea.Beep.CompositeLayer;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
@@ -52,7 +52,7 @@ namespace TheTechIdea.Util
 		public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> GlobalFunctions { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> AppWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
-		public List<App> Apps { get; set; } = new List<App>();
+	//	public List<App> Apps { get; set; } = new List<App>();
 		public List<AssemblyClassDefinition> AppComponents { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> ReportWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AddinTreeStructure> AddinTreeStructure { get; set; } = new List<AddinTreeStructure>();
@@ -65,7 +65,7 @@ namespace TheTechIdea.Util
 		public List<CompositeLayer> CompositeQueryLayers { get; set; } = new List<CompositeLayer>();
 		public List<EntityStructure> EntityCreateObjects { get; set; } = new List<EntityStructure>();
 		public List<DatatypeMapping> DataTypesMap { get; set; } = new List<DatatypeMapping>();
-		public List<DataSourceFieldProperties> AppfieldProperties { get; set; } = new List<DataSourceFieldProperties>();
+	//	public List<DataSourceFieldProperties> AppfieldProperties { get; set; } = new List<DataSourceFieldProperties>();
 		public Dictionary<string, string> Entities { get; set; } = new Dictionary<string, string>();
 		public List<SyncDataSource> Scripts { get; set; } = new List<SyncDataSource>();
 		public List<SyncDataSource> SyncedDataSources { get; set; } = new List<SyncDataSource>();
@@ -740,51 +740,51 @@ namespace TheTechIdea.Util
 			return ReportsDefinition;
 		}
 		#endregion "Reports L/S"
-		#region "AppFieldProperties L/S"
+		//#region "AppFieldProperties L/S"
 
-		public void SaveAppFieldPropertiesValues()
-		{
-			foreach (var item in AppfieldProperties)
-			{
-				if (item != null)
-				{
-					string path = Path.Combine(ExePath + @"\Entities\", item.DatasourceName + "_properties.json");
-					JsonLoader.Serialize(path, AppfieldProperties);
-				}
+		//public void SaveAppFieldPropertiesValues()
+		//{
+		//	foreach (var item in AppfieldProperties)
+		//	{
+		//		if (item != null)
+		//		{
+		//			string path = Path.Combine(ExePath + @"\Entities\", item.DatasourceName + "_properties.json");
+		//			JsonLoader.Serialize(path, AppfieldProperties);
+		//		}
 			
-			}
+		//	}
 		
 
-		}
-		public DataSourceFieldProperties LoadAppFieldPropertiesValues(string dsname)
-		{
-			DataSourceFieldProperties retval = null ;
-			if (AppfieldProperties != null)
-			{
-				if (AppfieldProperties.Any(i => i.DatasourceName.Equals(dsname,StringComparison.OrdinalIgnoreCase)))
-				{
-					retval = AppfieldProperties.Where(i => i.DatasourceName.Equals(dsname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-					return retval;
-				}
-				else
-				{
-					string path = Path.Combine(ExePath + @"\Entities\", dsname + "_properties.json");
-					retval = JsonLoader.DeserializeSingleObject<DataSourceFieldProperties>(path);
-					if (retval != null)
-					{
-						AppfieldProperties.Add(retval);
-						return retval;
-					}else
-					{
-						retval= null;
-					}
+		//}
+		//public DataSourceFieldProperties LoadAppFieldPropertiesValues(string dsname)
+		//{
+		//	DataSourceFieldProperties retval = null ;
+		//	if (AppfieldProperties != null)
+		//	{
+		//		if (AppfieldProperties.Any(i => i.DatasourceName.Equals(dsname,StringComparison.OrdinalIgnoreCase)))
+		//		{
+		//			retval = AppfieldProperties.Where(i => i.DatasourceName.Equals(dsname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+		//			return retval;
+		//		}
+		//		else
+		//		{
+		//			string path = Path.Combine(ExePath + @"\Entities\", dsname + "_properties.json");
+		//			retval = JsonLoader.DeserializeSingleObject<DataSourceFieldProperties>(path);
+		//			if (retval != null)
+		//			{
+		//				AppfieldProperties.Add(retval);
+		//				return retval;
+		//			}else
+		//			{
+		//				retval= null;
+		//			}
 				
-				}
-			}
-			return retval;
+		//		}
+		//	}
+		//	return retval;
 
-		}
-		#endregion "Reports L/S"
+		//}
+		//#endregion "Reports L/S"
 		#region "CompositeLayers L/S"\
 		public bool RemoveLayerByName(string LayerName)
 		{
@@ -825,33 +825,33 @@ namespace TheTechIdea.Util
 			return CompositeQueryLayers;
 		}
 		#endregion "CompositeLayers L/S"
-		#region "Apps L/S"\
-		public bool RemoveAppByName(string AppName)
-		{
+		//#region "Apps L/S"\
+		//public bool RemoveAppByName(string AppName)
+		//{
 
-			int i = Apps.FindIndex(x => x.AppName.Equals(AppName,StringComparison.OrdinalIgnoreCase));
+		//	int i = Apps.FindIndex(x => x.AppName.Equals(AppName,StringComparison.OrdinalIgnoreCase));
 
-			return Apps.Remove(Apps[i]);
-		}
-		public bool RemoveAppByID(string ID)
-		{
+		//	return Apps.Remove(Apps[i]);
+		//}
+		//public bool RemoveAppByID(string ID)
+		//{
 
-			int i = Apps.FindIndex(x => x.ID.Equals(ID,StringComparison.OrdinalIgnoreCase));
+		//	int i = Apps.FindIndex(x => x.ID.Equals(ID,StringComparison.OrdinalIgnoreCase));
 
-			return Apps.Remove(Apps[i]);
-		}
-		public void SaveAppValues()
-		{
-			string path = Path.Combine(ConfigPath, "Apps.json");
-			JsonLoader.Serialize(path, Apps);
-		}
-		public List<App> LoadAppValues()
-		{
-			string path = Path.Combine(ConfigPath, "Apps.json");
-			Apps = JsonLoader.DeserializeObject<App>(path);
-			return Apps;
-		}
-		#endregion "Apps L/S"
+		//	return Apps.Remove(Apps[i]);
+		//}
+		//public void SaveAppValues()
+		//{
+		//	string path = Path.Combine(ConfigPath, "Apps.json");
+		//	JsonLoader.Serialize(path, Apps);
+		//}
+		//public List<App> LoadAppValues()
+		//{
+		//	string path = Path.Combine(ConfigPath, "Apps.json");
+		//	Apps = JsonLoader.DeserializeObject<App>(path);
+		//	return Apps;
+		//}
+		//#endregion "Apps L/S"
 		#region"Defaults Values"
 		//public void SaveDefaultsFile()
 		//{
@@ -1308,7 +1308,7 @@ namespace TheTechIdea.Util
 				LoadFucntion2Function();
 				LoadEvents();
 				LoadCompositeLayersValues();
-				LoadAppValues();
+				//LoadAppValues();
 				LoadReportsValues();
 				LoadReportsDefinitionValues();
 				ReadWork();

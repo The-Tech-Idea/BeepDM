@@ -5,7 +5,7 @@ using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Report;
-using TheTechIdea.Beep.AppBuilder;
+
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Beep;
@@ -47,11 +47,11 @@ namespace TheTechIdea.Util
         List<ReportsList> Reportslist { get; set; }
         List<ReportsList> AIScriptslist { get; set; }
         List<CompositeLayer> CompositeQueryLayers { get; set; }
-        List<App> Apps { get; set; }
+    //    List<App> Apps { get; set; }
         List<EntityStructure> EntityCreateObjects { get; set; }
         List<DatatypeMapping> DataTypesMap { get; set; }
         List<AssemblyClassDefinition> WorkFlowActions { get; set; } 
-        List<DataSourceFieldProperties> AppfieldProperties { get; set; }
+     //   List<DataSourceFieldProperties> AppfieldProperties { get; set; }
         List<SyncDataSource> SyncedDataSources { get; set; }
         List<DatatypeMapping> ReadDataTypeFile(string filename = "DataTypeMapping");
         void WriteDataTypeFile(string filename = "DataTypeMapping");
@@ -105,10 +105,10 @@ namespace TheTechIdea.Util
         bool RemoveLayerByName(string LayerName);
         bool RemoveLayerByID(string ID);
         List<CompositeLayer> LoadCompositeLayersValues();
-        void SaveAppValues();
-        bool RemoveAppByName(string LayerName);
-        bool RemoveAppByID(string ID);
-        List<App> LoadAppValues();
+      //  void SaveAppValues();
+     //   bool RemoveAppByName(string LayerName);
+      //  bool RemoveAppByID(string ID);
+     //   List<App> LoadAppValues();
         List<EntityStructure> LoadTablesEntities();
 
         void SaveTablesEntities();
@@ -121,8 +121,8 @@ namespace TheTechIdea.Util
          void SaveWork();
          void SaveObjectTypes();  
          List<ObjectTypes> LoadObjectTypes();
-        void SaveAppFieldPropertiesValues();
-        DataSourceFieldProperties LoadAppFieldPropertiesValues(string dsname);
+     //   void SaveAppFieldPropertiesValues();
+    //    DataSourceFieldProperties LoadAppFieldPropertiesValues(string dsname);
 
         string CreateFileExtensionString();
         void SaveReportDefinitionsValues();

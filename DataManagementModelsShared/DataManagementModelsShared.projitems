@@ -14,20 +14,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Addin\IFunctionExtension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\ILoaderExtention.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Addin\PassedArgs.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AI\IAAPP.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\App.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\AppField.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\AppScreen.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\AppVersion.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\BreadCrumb.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\DataSourceFieldProperties.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IApp.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppBuilder.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppComponent.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppDesigner.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppField.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppScreen.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AppBuilder\IAppVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\ILayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ClassProperties.cs" />
@@ -76,8 +62,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)IUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger\IDMLogger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger\ILogAndError.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MachineLearning\ITestData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MachineLearning\ITrainedModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NOSQL\DatabaseCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Report\IReportDMWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Report\ReportBlock.cs" />
@@ -100,7 +84,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\DataWorkFlow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IDataWorkFlow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IDataWorkFlowStep.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MachineLearning\IMachineLearningContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMapping_rep.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMapping_rep_fields.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMapping_Rule.cs" />

@@ -9,14 +9,13 @@ using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.Addin;
-using TheTechIdea.Beep.AI;
-using TheTechIdea.Beep.AppBuilder;
+
 using TheTechIdea.DataManagment_Engine.Vis;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.Workflow;
-using TheTechIdea.DataManagment_Engine.Vis;
+
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using TypeInfo = System.Reflection.TypeInfo;
@@ -623,222 +622,7 @@ namespace TheTechIdea.Tools
                                 xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
                                 ConfigEditor.WorkFlowActions.Add(xcls);
                             }
-                            //-------------------------------------------------------
-                            // Get IAppBuilder  Definitions
-                            if (type.ImplementedInterfaces.Contains(typeof(IAppBuilder)))
-                            {
-                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                                xcls.className = type.Name;
-                                xcls.dllname = type.Module.Name;
-                                xcls.PackageName = type.FullName;
-                                xcls.type = type;
-                                xcls.componentType = "IAppBuilder";
-                                xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                                 ConfigEditor.AppWritersClasses.Add(xcls);
-                            }
-                            if (type.ImplementedInterfaces.Contains(typeof(IAppComponent)))
-                            {
-                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                                xcls.className = type.Name;
-                                xcls.dllname = type.Module.Name;
-                                xcls.PackageName = type.FullName;
-                                xcls.type = type;
-                                xcls.componentType = "IAppComponent";
-                                xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                                 ConfigEditor.AppComponents.Add(xcls);
-                            }
-                            if (type.ImplementedInterfaces.Contains(typeof(IAppDesigner)))
-                            {
-                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                                xcls.className = type.Name;
-                                xcls.dllname = type.Module.Name;
-                                xcls.PackageName = type.FullName;
-                                xcls.type = type;
-                                xcls.componentType = "IAppDesigner";
-                                xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                                 ConfigEditor.AppComponents.Add(xcls);
-                            }
-                            if (type.ImplementedInterfaces.Contains(typeof(IAppScreen)))
-                            {
-                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                                xcls.className = type.Name;
-                                xcls.dllname = type.Module.Name;
-                                xcls.PackageName = type.FullName;
-                                xcls.type = type;
-                                xcls.componentType = "IAppScreen";
-                                xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                                 ConfigEditor.AppComponents.Add(xcls);
-                            }
-                            
-                            //-------------------------------------------------------
-                            // Get Reports Implementations Definitions
-                            if (type.ImplementedInterfaces.Contains(typeof(IReportDMWriter)))
-                            {
-                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                                xcls.className = type.Name;
-                                xcls.dllname = type.Module.Name;
-                                xcls.PackageName = type.FullName;
-                                xcls.componentType = "IReportDMWriter";
-                                xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                                 ConfigEditor.ReportWritersClasses.Add(xcls);
-                            }
-                            //-------------------------------------------------------
-                            // Get IBranch Definitions
-                            //if (type.ImplementedInterfaces.Contains(typeof(IBranch)))
-                            //{
-                               
-                            //    AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                            //    xcls.Methods = new List<MethodsClass>();
-                            //    xcls.className = type.Name;
-                            //    xcls.dllname = type.Module.Name;
-                            //    xcls.PackageName = type.FullName;
-                            //    xcls.componentType = "IBranch";
-                            //    xcls.type = type;
-                                
-                            //    xcls.classProperties = (ClassProperties)type.GetCustomAttribute(typeof(ClassProperties), false);
-                            //    if (xcls.classProperties != null)
-                            //    {
-                            //        xcls.RootName = xcls.classProperties.FileType;
-                            //    }
-                                
-                            //    //   xcls.RootName = "AI";
-                            //    //   xcls.BranchType = brcls.BranchType;
-                            //    foreach (MethodInfo methods in type.GetMethods()
-                            //                 .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
-                            //                  .ToArray())
-                            //    {
-
-                            //        CommandAttribute methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
-                            //        MethodsClass x = new MethodsClass();
-                            //        x.Caption = methodAttribute.Caption;
-                            //        x.Info = methods;
-                            //        x.Hidden = methodAttribute.Hidden;
-                            //        x.Click = methodAttribute.Click;
-                            //        x.DoubleClick = methodAttribute.DoubleClick;
-                            //        x.iconimage = methodAttribute.iconimage;
-                            //        xcls.Methods.Add(x);
-                            //    }
-                            //    if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
-                            //    {
-                            //        try
-                            //        {
-                            //            IOrder cls = (IOrder)Activator.CreateInstance(type);
-                            //            xcls.Order = cls.Order;
-                            //            cls = null;
-                            //        }
-                            //        catch (Exception )
-                            //        {
-                                       
-
-                            //        }
-
-                            //    }
-                            //     ConfigEditor.BranchesClasses.Add(xcls);
-                            //}
-                            // --- Get all AI app Interfaces
-                            //-----------------------------------------------------
-                            if (type.ImplementedInterfaces.Contains(typeof(IAAPP)))
-                            {
-                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                                xcls.Methods = new List<MethodsClass>();
-                                xcls.className = type.Name;
-                                xcls.dllname = type.Module.Name;
-                                xcls.PackageName = type.FullName;
-                                xcls.componentType = "IAAPP";
-                                foreach (MethodInfo methods in type.GetMethods()
-                                             .Where(m => m.GetCustomAttributes(typeof(MLMethod), false).Length > 0)
-                                              .ToArray())
-                                {
-
-                                    MLMethod methodAttribute = methods.GetCustomAttribute<MLMethod>();
-                                    MethodsClass x = new MethodsClass();
-                                    x.Caption = methodAttribute.Caption;
-                                    x.Info = methods;
-                                    x.Hidden = methodAttribute.Hidden;
-                                    x.Click = methodAttribute.Click;
-                                    x.type = typeof(MLMethod);
-                                    x.DoubleClick = methodAttribute.DoubleClick;
-                                   
-                                    xcls.Methods.Add(x);
-                                }
-                                foreach (MethodInfo methods in type.GetMethods()
-                                            .Where(m => m.GetCustomAttributes(typeof(MLPredict), false).Length > 0)
-                                             .ToArray())
-                                {
-
-                                    MLPredict methodAttribute = methods.GetCustomAttribute<MLPredict>();
-                                    MethodsClass x = new MethodsClass();
-                                    x.Caption = methodAttribute.Caption;
-                                    x.Info = methods;
-                                    x.Hidden = methodAttribute.Hidden;
-                                    x.Click = methodAttribute.Click;
-                                    x.type = typeof(MLPredict);
-                                    x.DoubleClick = methodAttribute.DoubleClick;
-                               
-                                    xcls.Methods.Add(x);
-                                }
-                                foreach (MethodInfo methods in type.GetMethods()
-                                         .Where(m => m.GetCustomAttributes(typeof(MLLoadModule), false).Length > 0)
-                                          .ToArray())
-                                {
-
-                                    MLLoadModule methodAttribute = methods.GetCustomAttribute<MLLoadModule>();
-                                    MethodsClass x = new MethodsClass();
-                                    x.Caption = methodAttribute.Caption;
-                                    x.Info = methods;
-                                    x.Hidden = methodAttribute.Hidden;
-                                    x.Click = methodAttribute.Click;
-                                    x.type = typeof(MLLoadModule);
-                                    x.DoubleClick = methodAttribute.DoubleClick;
-                                    xcls.Methods.Add(x);
-                                }
-                                foreach (MethodInfo methods in type.GetMethods()
-                                      .Where(m => m.GetCustomAttributes(typeof(MLEval), false).Length > 0)
-                                       .ToArray())
-                                {
-
-                                    MLEval methodAttribute = methods.GetCustomAttribute<MLEval>();
-                                    MethodsClass x = new MethodsClass();
-                                    x.Caption = methodAttribute.Caption;
-                                    x.Info = methods;
-                                    x.Hidden = methodAttribute.Hidden;
-                                    x.Click = methodAttribute.Click;
-                                    x.type = typeof(MLEval);
-                                    x.DoubleClick = methodAttribute.DoubleClick;
-                                    xcls.Methods.Add(x);
-                                }
-                                foreach (MethodInfo methods in type.GetMethods()
-                                     .Where(m => m.GetCustomAttributes(typeof(MLLoadData), false).Length > 0)
-                                      .ToArray())
-                                {
-
-                                    MLLoadData methodAttribute = methods.GetCustomAttribute<MLLoadData>();
-                                    MethodsClass x = new MethodsClass();
-                                    x.Caption = methodAttribute.Caption;
-                                    x.Info = methods;
-                                    x.Hidden = methodAttribute.Hidden;
-                                    x.Click = methodAttribute.Click;
-                                    x.type = typeof(MLLoadData);
-                                    x.DoubleClick = methodAttribute.DoubleClick;
-                                    xcls.Methods.Add(x);
-                                }
-                                if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
-                                {
-                                    try
-                                    {
-                                        IOrder cls = (IOrder)Activator.CreateInstance(type);
-                                        xcls.Order = cls.Order;
-                                        cls = null;
-                                    }
-                                    catch (Exception)
-                                    {
-
-
-                                    }
-
-                                }
-                                 ConfigEditor.BranchesClasses.Add(xcls);
-                            }
+                 
                             // Get IFunctionExtension Definitions
                             if (type.ImplementedInterfaces.Contains(typeof(IFunctionExtension)))
                             {
@@ -850,10 +634,12 @@ namespace TheTechIdea.Tools
                             xcls.PackageName = type.FullName;
                             xcls.componentType = "IFunctionExtension";
                             xcls.type = type;
-
+                           
                             xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
                             if (xcls.classProperties != null)
                             {
+                                xcls.Order = xcls.classProperties.order;
+                              
                                 xcls.RootName = "IFunctionExtension";
                             }
 
@@ -996,25 +782,72 @@ namespace TheTechIdea.Tools
         }
         public Type GetType(string strFullyQualifiedName)
         {
+            string[] assemblynamespace = strFullyQualifiedName.Split('.');
+
             Type type = Type.GetType(strFullyQualifiedName);
             if (type != null)
                 return type;
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            try
             {
-                type = asm.GetType(strFullyQualifiedName);
-                if (type != null)
-                    return type;
+                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies().Where(o=>o.FullName.StartsWith(assemblynamespace[0])))
+                {
+                    try
+                    {
+                        type = asm.GetType(strFullyQualifiedName);
+                    }
+                    catch (MissingMethodException exin)
+                    {
+
+                        
+                    }
+                  
+                    if (type != null)
+                        return type;
+                }
             }
-            Assembly rootassembly = Assembly.GetEntryAssembly();
-            var assemblies = rootassembly.GetReferencedAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine"));
-            foreach (AssemblyName item in assemblies)
+            catch (Exception ex)
             {
-                var assembly = Assembly.Load(item);
-                type = assembly.GetType(strFullyQualifiedName);
+
+               
+            }
+            try
+            {
+                Assembly rootassembly = Assembly.GetEntryAssembly();
+                var assemblies = rootassembly.GetReferencedAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine"));
+                foreach (AssemblyName item in assemblies)
+                {
+                    var assembly = Assembly.Load(item);
+                    type = assembly.GetType(strFullyQualifiedName);
+                    // type = asm.GetType(strFullyQualifiedName);
+                    if (type != null)
+                        return type;
+                }
+
+            }
+            catch (Exception ex1)
+            {
+
+               
+            }
+            foreach (var item in Assemblies)
+            {
+                var assembly = item.DllLib;
+                try
+                {
+                    type = assembly.GetType(strFullyQualifiedName);
+                }
+                catch (Exception ex2)
+                {
+
+                    throw;
+                }
+              
                 // type = asm.GetType(strFullyQualifiedName);
                 if (type != null)
                     return type;
+
             }
+
             return null;
         }
         public bool RunMethod(object ObjInstance, string FullClassName, string MethodName)
