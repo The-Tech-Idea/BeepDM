@@ -26,7 +26,8 @@ namespace TheTechIdea.Beep.Editor
         public decimal StopErrorCount { get; set; } = 10;
         public SyncDataSource script { get; set; } = new SyncDataSource();
         private bool stoprun = false;
-      //  public LScriptTracking Tracker { get; set; } = new LScriptTracking();
+        private  int errorcnt = 0;
+        //  public LScriptTracking Tracker { get; set; } = new LScriptTracking();
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public List<string> EntitiesNames { get; set; } = new List<string>();
         private List<SyncEntity> GenerateCopyScripts(List<SyncEntity> rt, EntityStructure item,string destSource)
@@ -54,7 +55,7 @@ namespace TheTechIdea.Beep.Editor
             
                 SyncEntity upscript = new SyncEntity();
                 upscript.sourcedatasourcename = item.DataSourceID;
-                upscript.sourceentityname = item.EntityName;
+                upscript.sourceentityname = item.OriginalEntityName;
                 upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
 
                 upscript.destinationDatasourceEntityName = item.EntityName;
@@ -72,7 +73,7 @@ namespace TheTechIdea.Beep.Editor
             int i = 0;
 
             List<SyncEntity> retval = new List<SyncEntity>();
-
+            script = new SyncDataSource();
             try
             {
                 // Generate Create Table First
@@ -395,131 +396,7 @@ namespace TheTechIdea.Beep.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        private IErrorsInfo RunCopyEntityScript(ref SyncEntity sc,IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
-        {
-            try
-            {
-                int errorcount = 0;
-
-
-                EntityStructure item = sourceds.GetEntityStructure(srcentity, true);
-
-                if (item != null)
-                {
-                    if (destds.Category == DatasourceCategory.RDBMS)
-                    {
-                        IRDBSource rDB = (IRDBSource)destds;
-                        rDB.DisableFKConstraints(item);
-                    }
-                    if (destds.CheckEntityExist(item.EntityName))
-                    {
-
-                        object srcTb;
-                        string entname;
-                        var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
-                        src.Wait();
-                        srcTb = src.Result;
-                        List<object> srcList = new List<object>();
-                        if (src.Result != null)
-                        {
-                            DMTypeBuilder.CreateNewObject(item.EntityName, item.EntityName, item.Fields);
-                            if (srcTb.GetType().FullName.Contains("DataTable"))
-                            {
-                                srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, item);
-                            }
-                            if (srcTb.GetType().FullName.Contains("List"))
-                            {
-                                srcList = (List<object>)srcTb;
-                            }
-
-                            if (srcTb.GetType().FullName.Contains("IEnumerable"))
-                            {
-                                srcList = (List<object>)srcTb;
-                            }
-                            ScriptCount += srcList.Count();
-                            //if (progress != null)
-                            //{
-                            //    PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
-                            //    progress.Report(ps);
-
-                            //}
-                            foreach (var r in srcList)
-                            {
-                                CurrentScriptRecord += 1;
-                                DMEEditor.ErrorObject = destds.InsertEntity(item.EntityName, r);
-                                token.ThrowIfCancellationRequested();
-                                if (DMEEditor.ErrorObject.Flag== Errors.Failed)
-                                {
-                                    SyncErrorsandTracking tr = new SyncErrorsandTracking();
-                                    errorcount++;
-                                    tr.errormessage = DMEEditor.ErrorObject.Message;
-                                    tr.errorsInfo = DMEEditor.ErrorObject;
-                                    tr.rundate = DateTime.Now;
-                                    tr.sourceEntityName = item.EntityName;
-                                    tr.currenrecordindex = CurrentScriptRecord;
-                                    tr.sourceDataSourceName = item.DataSourceID;
-                                    tr.parentscriptid = sc.id;
-                                    sc.Tracking.Add(tr);
-                                    if (progress != null)
-                                    {
-                                        PassedArgs ps = new PassedArgs {EventType="Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                        progress.Report(ps);
-
-                                    }
-                                    if (errorcount >= StopErrorCount)
-                                    {
-                                        stoprun = true;
-                                        PassedArgs ps = new PassedArgs { EventType = "Stop", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                        progress.Report(ps);
-                                    }
-
-                                }
-                                else
-                                {
-                                    if (progress != null)
-                                    {
-                                        PassedArgs ps = new PassedArgs {EventType="NA", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                        progress.Report(ps);
-
-                                    }
-                                }
-                              
-                               
-
-                            }
-                        }
-                        if (progress != null)
-                        {
-                            PassedArgs ps = new PassedArgs { ParameterString1 = $"Ended Copying Data from {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
-                            progress.Report(ps);
-
-                       }
-         
-                    }
-                    else
-                    {
-                        DMEEditor.AddLogMessage("Copy Data", $"Error Could not Copy Entity Date {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Failed);
-                    }
-                    if (destds.Category == DatasourceCategory.RDBMS)
-                    {
-
-                        IRDBSource rDB = (IRDBSource)destds;
-                        rDB.EnableFKConstraints(item);
-                    }
-                }
-                else
-                    DMEEditor.AddLogMessage("Copy Data", $"Error Could not Find Entity  {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Failed);
-
-
-            }
-            catch (Exception ex)
-            {
-
-                DMEEditor.AddLogMessage("Fail", $"Error copying Data {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
-
-            }
-            return DMEEditor.ErrorObject;
-        }
+    
         public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<SyncEntity> scripts, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
         {
             try
@@ -577,7 +454,7 @@ namespace TheTechIdea.Beep.Editor
                                 });
                                 if (DMEEditor.ErrorObject.Flag == Errors.Failed)
                                 {
-                                  
+                                    errorcnt += 1;
 
                                     sc.errormessage = DMEEditor.ErrorObject.Message;
                                     sc.errorsInfo = DMEEditor.ErrorObject;
@@ -589,17 +466,21 @@ namespace TheTechIdea.Beep.Editor
                                         progress.Report(ps);
 
                                     }
-
+                                  
                                 }
                             }
                             else
                             {
+                                errorcnt += 1;
                                 DMEEditor.ErrorObject.Flag = Errors.Failed;
                                 DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
                             }
                             // Report progress as a percentage of the total task.
                             //    UpdateEvents(sc, highestPercentageReached, CurrentRecord, numberToCompute, destds);
-
+                            if (errorcnt == StopErrorCount)
+                            {
+                                return DMEEditor.ErrorObject;
+                            }
                         }
                     }
                 }
@@ -633,7 +514,10 @@ namespace TheTechIdea.Beep.Editor
                 destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
                 srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
                 CurrentScriptRecord += 1;
-
+                if (errorcnt == StopErrorCount)
+                {
+                    return DMEEditor.ErrorObject;
+                }
                 // destds.PassEvent += (sender, e) => { PassEvent?.Invoke(sender, e); };
                 if (destds != null)
                 {
@@ -645,6 +529,13 @@ namespace TheTechIdea.Beep.Editor
                             if (sc.scriptType == DDLScriptType.CreateEntity)
                             {
                                 EntityStructure entitystr = (EntityStructure)srcds.GetEntityStructure(sc.sourceDatasourceEntityName, false).Clone();
+                                if (sc.sourceDatasourceEntityName!=sc.destinationentityname)
+                                {
+                                    entitystr.EntityName = sc.destinationentityname;
+                                    entitystr.DatasourceEntityName = sc.destinationentityname;
+                                    entitystr.OriginalEntityName = sc.destinationentityname;
+                                }
+                                
                                 bool retval = destds.CreateEntityAs(entitystr); // t.Result;
                                 sc.errorsInfo = DMEEditor.ErrorObject;
                                 sc.errormessage = DMEEditor.ErrorObject.Message;
@@ -673,7 +564,11 @@ namespace TheTechIdea.Beep.Editor
                                     {
                                         PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
                                         progress.Report(ps);
-
+                                        
+                                    }
+                                    if (errorcnt == StopErrorCount)
+                                    {
+                                        return DMEEditor.ErrorObject;
                                     }
                                 }
 
@@ -706,6 +601,132 @@ namespace TheTechIdea.Beep.Editor
 
             //}
 
+            return DMEEditor.ErrorObject;
+        }
+        private IErrorsInfo RunCopyEntityScript(ref SyncEntity sc, IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
+        {
+            try
+            {
+                int errorcount = 0;
+
+
+                EntityStructure item = sourceds.GetEntityStructure(srcentity, true);
+
+                if (item != null)
+                {
+                    if (destds.Category == DatasourceCategory.RDBMS)
+                    {
+                        IRDBSource rDB = (IRDBSource)destds;
+                        rDB.DisableFKConstraints(item);
+                    }
+                    if (destds.CheckEntityExist(item.EntityName))
+                    {
+
+                        object srcTb;
+                        string entname;
+                        var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
+                        src.Wait();
+                        srcTb = src.Result;
+                        List<object> srcList = new List<object>();
+                        if (src.Result != null)
+                        {
+                            DMTypeBuilder.CreateNewObject(item.EntityName, item.EntityName, item.Fields);
+                            if (srcTb.GetType().FullName.Contains("DataTable"))
+                            {
+                                srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, item);
+                            }
+                            if (srcTb.GetType().FullName.Contains("List"))
+                            {
+                                srcList = (List<object>)srcTb;
+                            }
+
+                            if (srcTb.GetType().FullName.Contains("IEnumerable"))
+                            {
+                                srcList = (List<object>)srcTb;
+                            }
+                            ScriptCount += srcList.Count();
+                            //if (progress != null)
+                            //{
+                            //    PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
+                            //    progress.Report(ps);
+
+                            //}
+                            foreach (var r in srcList)
+                            {
+                                CurrentScriptRecord += 1;
+                                DMEEditor.ErrorObject = destds.InsertEntity(sc.destinationentityname, r);
+                                token.ThrowIfCancellationRequested();
+                                if (DMEEditor.ErrorObject.Flag == Errors.Failed)
+                                {
+                                    SyncErrorsandTracking tr = new SyncErrorsandTracking();
+                                    errorcount++;
+                                    tr.errormessage = DMEEditor.ErrorObject.Message;
+                                    tr.errorsInfo = DMEEditor.ErrorObject;
+                                    tr.rundate = DateTime.Now;
+                                    tr.sourceEntityName = item.EntityName;
+                                    tr.currenrecordindex = CurrentScriptRecord;
+                                    tr.sourceDataSourceName = item.DataSourceID;
+                                    tr.parentscriptid = sc.id;
+                                    sc.Tracking.Add(tr);
+                                    if (progress != null)
+                                    {
+                                        PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                                        progress.Report(ps);
+
+                                    }
+                                    if (errorcount > StopErrorCount)
+                                    {
+                                        stoprun = true;
+                                        PassedArgs ps = new PassedArgs { EventType = "Stop", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                                        progress.Report(ps);
+                                        return DMEEditor.ErrorObject;
+                                    }
+
+                                }
+                                else
+                                {
+                                    if (progress != null)
+                                    {
+                                        PassedArgs ps = new PassedArgs { EventType = "NA", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                                        progress.Report(ps);
+
+                                    }
+                                }
+
+
+
+                            }
+                        }
+                        if (progress != null)
+                        {
+                            PassedArgs ps = new PassedArgs { ParameterString1 = $"Ended Copying Data from {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
+                            progress.Report(ps);
+
+                        }
+
+                    }
+                    else
+                    {
+                        DMEEditor.AddLogMessage("Copy Data", $"Error Could not Copy Entity Date {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Failed);
+                    }
+                    if (destds.Category == DatasourceCategory.RDBMS)
+                    {
+
+                        IRDBSource rDB = (IRDBSource)destds;
+                        rDB.EnableFKConstraints(item);
+                    }
+                }
+                else
+                    DMEEditor.AddLogMessage("Copy Data", $"Error Could not Find Entity  {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Failed);
+
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Fail", $"Error copying Data {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
+
+            }
             return DMEEditor.ErrorObject;
         }
     }

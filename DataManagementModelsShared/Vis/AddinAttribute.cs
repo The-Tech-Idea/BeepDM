@@ -4,7 +4,7 @@ using System.Text;
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Vis
+namespace TheTechIdea.Beep.Vis
 {
     public sealed class AddinAttribute : Attribute
     {

@@ -10,9 +10,9 @@ namespace TheTechIdea.Beep.Editor
     {
         public SyncEntity()
         {
-            id = Guid.NewGuid().ToString();
+            id = 1;
         }
-        public string id { get; set; }
+        public  int id { get; set; }
         public string ddl { get ; set ; }
 
         public string sourcedatasourcename { get; set; }

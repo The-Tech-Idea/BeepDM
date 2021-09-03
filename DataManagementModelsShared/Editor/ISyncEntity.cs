@@ -7,6 +7,7 @@ namespace TheTechIdea.Beep.Editor
 {
     public interface ISyncEntity
     {
+        int id { get; set; }
         string ddl { get; set; }
         string sourceentityname { get; set; }
         string sourceDatasourceEntityName { get; set; }

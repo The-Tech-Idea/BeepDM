@@ -7,10 +7,12 @@ using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Report;
 
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.DataManagment_Engine.Vis;
+
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.ConfigUtil;
+
+using TheTechIdea.Beep.Workflow.Mapping;
 
 namespace TheTechIdea.Util
 {
@@ -25,8 +27,8 @@ namespace TheTechIdea.Util
         List<string> Databasetypes { get; set; }
         string ContainerName { get; set; }
         List<ConnectionProperties> DataConnections { get; set; }
-        List<Mapping_rep> Mappings { get; set; }
-        List<Map_Schema> MappingSchema { get; set; }
+     //  List<Mapping_rep> Mappings { get; set; }
+     //   List<Map_Schema> MappingSchema { get; set; }
         List<DataWorkFlow> WorkFlows { get; set; }
         List<QuerySqlRepo> QueryList { get; set; }
         List<ObjectTypes> objectTypes { get; set; }
@@ -80,15 +82,15 @@ namespace TheTechIdea.Util
         List<ReportsList> LoadReportsValues();
         List<QuerySqlRepo> LoadQueryFile();
         void SaveQueryFile();
-        void SaveMappingValues();
-        List<Mapping_rep> LoadMappingValues();
-        void SaveMappingSchemaValue(string mapname);
-        Map_Schema LoadMappingSchema(string mapname);
-         void SaveMappingSchemaValue();
-     
-        void LoadMappingSchema();
-        void SaveMapsValues();
-         void LoadMapsValues();
+        void SaveMappingValues(string Entityname, string datasource, EntityDataMap mapping_Rep);
+        EntityDataMap LoadMappingValues(string Entityname, string datasource);
+
+        void SaveMappingSchemaValue(string schemaname,  Map_Schema mapping_Rep);
+        Map_Schema LoadMappingSchema(string schemaname );
+       // void SaveMappingSchemaValue();
+       // void LoadMappingSchema();
+        //void SaveMapsValues();
+        // void LoadMapsValues();
          List<ConnectionDriversConfig> LoadConnectionDriversDefinition();
          void SaveConnectionDriversDefinitions();
         CategoryFolder AddFolderCategory(string pfoldername, string prootname, string pparentname);

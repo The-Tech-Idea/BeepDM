@@ -14,6 +14,7 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
+using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Logger;
 
 namespace TheTechIdea.Util
@@ -45,8 +46,8 @@ namespace TheTechIdea.Util
 		public List<QuerySqlRepo> QueryList { get; set; } = new List<QuerySqlRepo>();
 		public List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; } = new List<ConnectionDriversConfig>();
 		public List<ConnectionProperties> DataConnections { get; set; } = new List<ConnectionProperties>(); //DataSourceConnectionConfig
-		public List<Mapping_rep> Mappings { get; set; } = new List<Mapping_rep>();
-		public List<Map_Schema> MappingSchema { get; set; } = new List<Map_Schema>();
+	//	public List<Mapping_rep> Mappings { get; set; } = new List<Mapping_rep>();
+	//	public List<Map_Schema> MappingSchema { get; set; } = new List<Map_Schema>();
 		public List<DataWorkFlow> WorkFlows { get; set; } = new List<DataWorkFlow>();
 		public List<CategoryFolder> CategoryFolders { get; set; } = new List<CategoryFolder>();
 		public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
@@ -350,83 +351,87 @@ namespace TheTechIdea.Util
 		}
 		#endregion
 		#region"Mapping Save and Load Methods"
-		public void SaveMappingSchemaValue(string mapname)
+		//public void SaveMappingSchemaValue(string mapname)
+		//{
+		//	Map_Schema retval = MappingSchema.Where(x => x.SchemaName.Equals(mapname,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+		//	if (retval != null)
+		//	{
+		//		string path = Path.Combine(ConfigPath, mapname + ".json");
+		//		JsonLoader.Serialize(path, retval);
+		//	}
+			
+		//}
+		//public Map_Schema LoadMappingSchema(string mapname)
+		//{
+		//	Map_Schema Existingretval = MappingSchema.Where(x => x.SchemaName .Equals(mapname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+		//	Map_Schema retval = null;
+		//	string path = Path.Combine(ConfigPath, mapname + ".json");
+		//	//File.WriteAllText(path, JsonConvert.SerializeObject(ts));
+		//	// serialize JSON directly to a file
+		//	if (File.Exists(path))
+		//	{
+			
+		//		retval = JsonLoader.DeserializeSingleObject<Map_Schema>(path);  //JsonConvert.DeserializeObject<Map_Schema>(JSONtxt);
+		//	}
+		//	if (retval != null)
+		//	{
+		//		if (Existingretval != null)
+		//		{
+		//			Existingretval = retval;
+
+		//		}
+		//		else
+		//		{
+		//			MappingSchema.Add(retval);
+		//		}
+		//	}
+
+
+		//	return retval;
+
+
+		//}
+		public void SaveMappingSchemaValue(string schemaname,  Map_Schema mapping_Rep)
 		{
-			Map_Schema retval = MappingSchema.Where(x => x.SchemaName.Equals(mapname,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-			if (retval != null)
-			{
-				string path = Path.Combine(ConfigPath, mapname + ".json");
-				JsonLoader.Serialize(path, retval);
-			}
+			
+			string path = Path.Combine(Config.MappingPath, $"{schemaname}_Mapping.json");
+			JsonLoader.Serialize(path, mapping_Rep);
+
 			
 		}
-		public Map_Schema LoadMappingSchema(string mapname)
+		public Map_Schema LoadMappingSchema(string schemaname)
 		{
-			Map_Schema Existingretval = MappingSchema.Where(x => x.SchemaName .Equals(mapname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-			Map_Schema retval = null;
-			string path = Path.Combine(ConfigPath, mapname + ".json");
-			//File.WriteAllText(path, JsonConvert.SerializeObject(ts));
-			// serialize JSON directly to a file
-			if (File.Exists(path))
-			{
-			
-				retval = JsonLoader.DeserializeSingleObject<Map_Schema>(path);  //JsonConvert.DeserializeObject<Map_Schema>(JSONtxt);
-			}
-			if (retval != null)
-			{
-				if (Existingretval != null)
-				{
-					Existingretval = retval;
 
-				}
-				else
-				{
-					MappingSchema.Add(retval);
-				}
-			}
+			string path = Path.Combine(Config.MappingPath, $"{schemaname}_Mapping.json");
+			Map_Schema MappingSchema = JsonLoader.DeserializeSingleObject<Map_Schema>(path);
+			return MappingSchema;
 
-
-			return retval;
 
 
 		}
-		public void SaveMappingSchemaValue()
-		{
-				string path = Path.Combine(ConfigPath, "MappingList.json");
-				JsonLoader.Serialize(path, MappingSchema);
-		}
-		public void LoadMappingSchema()
-		{
-			string path = Path.Combine(ConfigPath, "MappingList.json");
-			//File.WriteAllText(path, JsonConvert.SerializeObject(ts));
-			// serialize JSON directly to a file
-			if (File.Exists(path))
-			{
-
-				MappingSchema = JsonLoader.DeserializeObject<Map_Schema>(path);  //JsonConvert.DeserializeObject<Map_Schema>(JSONtxt);
-			}
-
-		}
-		public void SaveMapsValues()
-		{
-			string path = Path.Combine(ConfigPath, "Maps.json");
-			JsonLoader.Serialize(path, MappingSchema);
+		//public void SaveMapsValues()
+		//{
+		//	string path = Path.Combine(ConfigPath, "Maps.json");
+		//	JsonLoader.Serialize(path, MappingSchema);
 	
-		}
-		public void LoadMapsValues()
+		//}
+		//public void LoadMapsValues()
+		//{
+		//	string path = Path.Combine(ConfigPath, "Maps.json");
+		//	MappingSchema = JsonLoader.DeserializeObject<Map_Schema>(path);
+		//}
+		public void SaveMappingValues(string Entityname, string datasource, EntityDataMap mapping_Rep)
 		{
-			string path = Path.Combine(ConfigPath, "Maps.json");
-			MappingSchema = JsonLoader.DeserializeObject<Map_Schema>(path);
+			CreateDir(Path.Combine(Config.MappingPath, datasource));
+			string path = Path.Combine(Path.Combine(Config.MappingPath, datasource), $"{Entityname}_Mapping.json");
+			JsonLoader.Serialize(path, mapping_Rep);
 		}
-		public void SaveMappingValues()
+		public EntityDataMap LoadMappingValues(string Entityname,string datasource)
 		{
-			string path = Path.Combine(ConfigPath, "Mapping.json");
-			JsonLoader.Serialize(path, Mappings);
-		}
-		public List<Mapping_rep> LoadMappingValues()
-		{
-			string path = Path.Combine(ConfigPath, "Mapping.json");
-			Mappings = JsonLoader.DeserializeObject<Mapping_rep>(path);
+          
+			string path = Path.Combine(Path.Combine(Config.MappingPath, datasource), $"{Entityname}_Mapping.json");
+
+			EntityDataMap Mappings = JsonLoader.DeserializeSingleObject<EntityDataMap>(path);
 			return Mappings;
 		
 		}
@@ -1053,17 +1058,17 @@ namespace TheTechIdea.Util
 			ErrorObject.Flag = Errors.Ok;
 			try
 			{
-				string path = Path.Combine(ConfigPath, "Mapping.json");
-				if (File.Exists(path))
-				{
-					LoadMappingValues();
-				}
-				path = Path.Combine(ConfigPath, "Map.json");
-				if (File.Exists(path))
-				{
-					LoadMapsValues();
-				}
-				path = Path.Combine(ConfigPath, "CategoryFolders.json");
+				//string path = Path.Combine(ConfigPath, "Mapping.json");
+				//if (File.Exists(path))
+				//{
+				//	LoadMappingValues();
+				//}
+				//path = Path.Combine(ConfigPath, "Map.json");
+				//if (File.Exists(path))
+				//{
+				//	LoadMapsValues();
+				//}
+				string path = Path.Combine(ConfigPath, "CategoryFolders.json");
 				if (File.Exists(path))
 				{
 					LoadCategoryFoldersValues();
@@ -1163,6 +1168,7 @@ namespace TheTechIdea.Util
 				CreateDirConfig(Path.Combine(containerpath, "Scripts\\Logs"), FolderFileTypes.ScriptsLogs);
 				CreateDirConfig(Path.Combine(containerpath, "AI"), FolderFileTypes.Scripts);
 				CreateDirConfig(Path.Combine(containerpath, "Reports"), FolderFileTypes.Reports);
+				
 				Config.ExePath = exedir;
 				if (Config.ConfigPath == null)
 				{
@@ -1252,14 +1258,20 @@ namespace TheTechIdea.Util
 			}
 			return ErrorObject;
 		}
-		public void CreateDirConfig(string path, FolderFileTypes foldertype)
-		{
+		public void CreateDir(string path)
+        {
 			if (!Directory.Exists(path))
 			{
 				Directory.CreateDirectory(path);
 
 			}
-			
+
+		}
+		public void CreateDirConfig(string path, FolderFileTypes foldertype)
+		{
+			CreateDir(path);
+
+
 			if (!Config.Folders.Any(item => item.FolderPath.Equals(@path,StringComparison.OrdinalIgnoreCase)))
 			{
 				Config.Folders.Add(new StorageFolders(path, foldertype));
@@ -1313,7 +1325,7 @@ namespace TheTechIdea.Util
 				LoadReportsDefinitionValues();
 				ReadWork();
 				LoadObjectTypes();
-				LoadMappingSchema();
+			//	LoadMappingSchema();
 				ReadDataTypeFile();
 				//ReadSyncDataSource();
 				InitMapping();

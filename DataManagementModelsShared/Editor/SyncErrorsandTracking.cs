@@ -13,14 +13,14 @@ namespace TheTechIdea.Beep.Editor
         }
         public SyncErrorsandTracking(string pentityname, DateTime dateTime, string pscript)
         {
-            id = Guid.NewGuid().ToString();
+            id += 1;
             sourceEntityName = pentityname;
             rundate = dateTime;
             script = pscript;
         }
-        public string id { get; set; }
+        public static int id { get; set; }
         public DateTime rundate { get; set; }
-        public string parentscriptid { get; set; }
+        public int parentscriptid { get; set; }
         public string sourceDataSourceName { get; set; }
         public int currenrecordindex { get; set; }
         public string sourceEntityName { get; set; }

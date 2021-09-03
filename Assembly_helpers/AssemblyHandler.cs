@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.Addin;
 
-using TheTechIdea.DataManagment_Engine.Vis;
+using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Vis;

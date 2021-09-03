@@ -84,6 +84,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\DataWorkFlow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IDataWorkFlow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IDataWorkFlowStep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\EntityDataMap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMapping_rep.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMapping_rep_fields.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMapping_Rule.cs" />
@@ -101,6 +102,5 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Workflow\Mapping\" />
   </ItemGroup>
 </Project>
