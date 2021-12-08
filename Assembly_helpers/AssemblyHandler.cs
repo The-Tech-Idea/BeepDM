@@ -13,7 +13,7 @@ using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
-using TheTechIdea.Beep.Vis;
+
 using TheTechIdea.Beep.Workflow;
 
 using TheTechIdea.Logger;

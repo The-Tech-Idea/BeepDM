@@ -72,7 +72,7 @@ namespace DemoApp
         private void Datasourcesbutton_Click(object sender, EventArgs e)
         {
             string[] args = new string[] {""};
-          
+            CreateView();
         }
         private IDMDataView CreateView()
         {
@@ -81,7 +81,7 @@ namespace DemoApp
             {
                 string viewname = null;
                 string fullname = null;
-                if (MessageBox.Show("Create View", "Please Enter Name of View (Name Should not exist already in Views)") == System.Windows.Forms.DialogResult.OK)
+                if (InputBox("Create View", "Please Enter Name of View (Name Should not exist already in Views)",ref viewname) == System.Windows.Forms.DialogResult.OK)
                 {
                     if ((viewname != null) && DMEEditor.ConfigEditor.DataConnectionExist(viewname + ".json") == false)
                     {
@@ -308,5 +308,7 @@ namespace DemoApp
             value = textBox.Text;
             return dialogResult;
         }
+
+      
     }
 }

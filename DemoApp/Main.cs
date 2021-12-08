@@ -11,6 +11,9 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.Tools;
+using DemoApp;
+using TheTechIdea;
+using System.Collections.Generic;
 
 namespace DataManagment_Engine
 
@@ -25,12 +28,9 @@ namespace DataManagment_Engine
         public IWorkFlowEditor WorkFlowEditor { get; set; }
         public IDMLogger lg { get; set; }
         public IUtil util { get; set; }
-     
         public IErrorsInfo Erinfo { get; set; }
         public IJsonLoader jsonLoader { get; set; }
         public IAssemblyHandler LLoader { get; set; }
-     
-     
         public IClassCreator classCreator { get; set; }
         public IETL eTL { get; set; }
         #endregion
@@ -59,57 +59,9 @@ namespace DataManagment_Engine
             Container = Configure();
             using (var scope = Container.BeginLifetimeScope())
             {
-               jsonLoader= scope.Resolve<IJsonLoader>();
-                //--------------------------------------------------------------------------------
-                // a Error Class that will have all error message tracking 
-                //---------------------------------------------------------------------------
-               Erinfo = scope.Resolve<IErrorsInfo>();
-                //--------------------------------------------------------------------------------
-                // a Log Manager 
-                //---------------------------------------------------------------------------
-              lg = scope.Resolve<IDMLogger>();
-              //  lg.WriteLog("App started");
-
-                // a Utility Class for helping in Doing Different functions for  Data Managment
-
-              util = scope.Resolve<IUtil>();
-                //--------------------------------------------------------------------------------
-                // this is the assembly loader for loading from Addin Folder and Projectdrivers Folder
-                //---------------------------------------------------------------------------
-                
+                Config_editor = scope.Resolve<IConfigEditor>();
                 LLoader = scope.Resolve<IAssemblyHandler>();
-
-                //-------------------------------------------------------------------------------
-                // a onfiguration class for assembly, addin's and  drivers loading into the 
-                // application
-                //---------------------------------------------------------------------------
-               Config_editor = scope.Resolve<IConfigEditor>();
-             
-                // Setup the Entry Screen 
-                // the screen has to be in one the Addin DLL's loaded by the Assembly loader
-
-              
-                // Setup the Database Connection Screen
-                // a "Work Flow" class will control all the workflow between different data source 
-                // and automation
-               //   WorkFlowEditor = scope.Resolve<IWorkFlowEditor>();
-               //  eTL= scope.Resolve<IETL>();
-                //-------------------------------------------------------------------------------
-                // The Main Class for Data Manager 
-                //---------------------------------------------------------------------------
                 DMEEditor = scope.Resolve<IDMEEditor>();
-                //-------------------------------------------------------------------------------
-               // LLoader.DMEEditor = DMEEditor;
-               // util.DME = DMEEditor;
-                //-------------------------------------------------------------------------------
-                // The Main Visualization Class tha control the visual aspect of the system
-                //---------------------------------------------------------------------------
-             
-                //-------------------------------------------------------------------------------
-                // a tree class will be main visualization control for the system
-              
-            
-              
                 //---------------------------------------------------------------------------
                 // This has to be last step so that all Configuration is ready for Addin's 
                 // to be able to use
@@ -119,10 +71,19 @@ namespace DataManagment_Engine
                     ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
                     PrivateBinPath = @"ConnectionDrivers;ProjectClasses"
                 };
-           
                 LLoader.LoadAllAssembly();
                 Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
-
+                string[] args=null;
+                IPassedArgs e = new PassedArgs() ;
+                ErrorsInfo ErrorsandMesseges= new ErrorsInfo() ;
+                if (e.Objects == null)
+                {
+                    e.Objects = new List<ObjectItem>();
+                }
+                Form1 frm = new Form1();
+                frm.SetConfig(DMEEditor, DMEEditor.Logger, DMEEditor.Utilfunction, args, e, ErrorsandMesseges);
+               
+                frm.ShowDialog();   
                 
                
                 

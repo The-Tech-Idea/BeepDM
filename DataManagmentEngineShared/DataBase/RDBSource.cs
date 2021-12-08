@@ -769,7 +769,7 @@ namespace TheTechIdea.Beep.DataBase
                 }
 
             }
-            catch (Exception ex)
+            catch (Exception )
             {
                 DMEEditor.AddLogMessage("Fail", $"Unable Build Query Object {originalquery}", DateTime.Now, 0, "Error", Errors.Failed);
             }
