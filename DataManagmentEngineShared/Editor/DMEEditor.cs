@@ -39,7 +39,7 @@ namespace TheTechIdea.Beep
         public BindingList<ILogAndError> Loganderrors { get; set; } = new BindingList<ILogAndError>();
         public IPassedArgs Passedarguments { get; set; }
         public event EventHandler<PassedArgs> PassEvent;
- 
+        IDataSource ds1;
         public void AddLogMessage(string pLogType ,string pLogMessage ,DateTime pLogData , int pRecordID , string pMiscData,Errors pFlag)
         {
             if (Logger != null)
@@ -72,7 +72,7 @@ namespace TheTechIdea.Beep
         {
             try
             {
-                IDataSource ds1 = null;
+               
                 ds1 = DataSources.Where(f => f.DatasourceName.Equals(pdatasourcename, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                 if (ds1 == null)
                 {
@@ -126,7 +126,7 @@ namespace TheTechIdea.Beep
         }
         public IDataSource GetDataSource(string pdatasourcename)
         {
-            IDataSource ds1=null;
+          
             if (pdatasourcename == null)
             {
                 return null;
