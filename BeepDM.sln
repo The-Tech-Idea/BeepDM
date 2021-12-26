@@ -38,11 +38,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Net6", "Net6", "{86BA5FBA-6
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ToolsHelpers", "ToolsHelpers", "{21144467-DAE3-4045-AD5F-26EB56B167F3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly_helpersNet6", "Assembly_helpersNet6\Assembly_helpersNet6.csproj", "{740D7158-C094-477D-96A8-A223F83F24B2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Assembly_helpersNet6", "Assembly_helpersNet6\Assembly_helpersNet6.csproj", "{740D7158-C094-477D-96A8-A223F83F24B2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DMLoggerNet6", "DMLoggerNet6\DMLoggerNet6.csproj", "{E39B086D-CF65-4DAF-BFE2-5EA07EA05446}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DMLoggerNet6", "DMLoggerNet6\DMLoggerNet6.csproj", "{E39B086D-CF65-4DAF-BFE2-5EA07EA05446}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonFileLoaderNet6", "JsonFileLoaderNet6\JsonFileLoaderNet6.csproj", "{625236F8-43E8-4F70-85D1-CF9610C75818}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonFileLoaderNet6", "JsonFileLoaderNet6\JsonFileLoaderNet6.csproj", "{625236F8-43E8-4F70-85D1-CF9610C75818}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -50,6 +50,7 @@ Global
 		DataManagmentEngineShared\DataManagmentEngineShared.projitems*{45983087-5e0e-4bfb-86c1-a5bc54d2a86f}*SharedItemsImports = 4
 		DataManagmentEngineShared\DataManagmentEngineShared.projitems*{66db2cbd-27b5-4347-9c79-f34b801c8229}*SharedItemsImports = 5
 		DataManagementModelsShared\DataManagementModelsShared.projitems*{7697ebdc-a4f2-49b1-af91-79031516e679}*SharedItemsImports = 4
+		DataManagementModelsShared\DataManagementModelsShared.projitems*{b5d91583-1eb4-4b3c-8288-88fd13e35556}*SharedItemsImports = 13
 		DataManagmentEngineShared\DataManagmentEngineShared.projitems*{b5d91583-1eb4-4b3c-8288-88fd13e35556}*SharedItemsImports = 13
 		DataManagementModelsShared\DataManagementModelsShared.projitems*{f9cbc585-aba8-4afe-9d43-1c7272c0b334}*SharedItemsImports = 5
 	EndGlobalSection
