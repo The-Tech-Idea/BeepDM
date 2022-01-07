@@ -48,6 +48,7 @@ Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		DataManagementModelsShared\DataManagementModelsShared.projitems*{2f745b0a-b2f4-4eb8-9a8e-5a87b2988f99}*SharedItemsImports = 13
 		DataManagmentEngineShared\DataManagmentEngineShared.projitems*{45983087-5e0e-4bfb-86c1-a5bc54d2a86f}*SharedItemsImports = 4
+		DataManagmentEngineShared\DataManagmentEngineShared.projitems*{66db2cbd-27b5-4347-9c79-f34b801c8229}*SharedItemsImports = 5
 		DataManagementModelsShared\DataManagementModelsShared.projitems*{7697ebdc-a4f2-49b1-af91-79031516e679}*SharedItemsImports = 4
 		DataManagmentEngineShared\DataManagmentEngineShared.projitems*{b5d91583-1eb4-4b3c-8288-88fd13e35556}*SharedItemsImports = 13
 		DataManagementModelsShared\DataManagementModelsShared.projitems*{f9cbc585-aba8-4afe-9d43-1c7272c0b334}*SharedItemsImports = 5
