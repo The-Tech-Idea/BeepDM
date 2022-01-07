@@ -38,7 +38,9 @@ namespace TheTechIdea.Beep
         public SyncDataSource Script { get; set; } = new SyncDataSource();
         public BindingList<ILogAndError> Loganderrors { get; set; } = new BindingList<ILogAndError>();
         public IPassedArgs Passedarguments { get; set; }
+
         public event EventHandler<PassedArgs> PassEvent;
+      
         IDataSource ds1;
         public void AddLogMessage(string pLogType ,string pLogMessage ,DateTime pLogData , int pRecordID , string pMiscData,Errors pFlag)
         {
@@ -51,8 +53,6 @@ namespace TheTechIdea.Beep
                 ErrorObject.Message = errmsg;
                 Logger.WriteLog(errmsg);
             }
-           
-
         }
         public void AddLogMessage( string pLogMessage)
         {
@@ -65,14 +65,11 @@ namespace TheTechIdea.Beep
                 ErrorObject.Message = errmsg;
                 Logger.WriteLog(errmsg);
             }
-
-
         }
         public ConnectionState OpenDataSource(string pdatasourcename)
         {
             try
             {
-               
                 ds1 = DataSources.Where(f => f.DatasourceName.Equals(pdatasourcename, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                 if (ds1 == null)
                 {
@@ -85,7 +82,6 @@ namespace TheTechIdea.Beep
                 }
                 else
                     return ConnectionState.Broken; 
-
             }
             catch (Exception ex)
             {
@@ -126,28 +122,21 @@ namespace TheTechIdea.Beep
         }
         public IDataSource GetDataSource(string pdatasourcename)
         {
-          
             if (pdatasourcename == null)
             {
                 return null;
             }
             else {
-
                 try
                 {
                     ds1 = DataSources.Where(f => f.DatasourceName.Equals(pdatasourcename, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                 }
                 catch (Exception ex)
                 {
-              
                     AddLogMessage(ex.Message, "Could not Open Datasource " , DateTime.Now, -1, "", Errors.Failed);
                 };
-            
-
                 if (ds1 == null) //|| ds1.ConnectionStatus==ConnectionState.Closed
-
                 {
-
                     try
                     {
                         ds1 = CreateNewDataSourceConnection(pdatasourcename);
@@ -160,38 +149,19 @@ namespace TheTechIdea.Beep
                                 {
                                     ds1.Entities = ConfigEditor.LoadDataSourceEntitiesValues(ds1.DatasourceName).Entities;
                                 }
-
-                                //if (ds1.Entities.Count == 0)
-                                //{
-                                //    ds1.Entities = ds1.Dataconnection.ConnectionProp.Entities;
-
-                                //    ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = pdatasourcename, Entities = ds1.Entities });
-                                //}
                             }
-                            
                         }else
                         {
-                           
                             AddLogMessage("Fail", $"Error in Opening Connection ({ErrorObject.Message})", DateTime.Now, -1, "", Errors.Failed);
                         }
-                       
-                      
                     }
                     catch (Exception ex)
                     {
-
                         AddLogMessage("Fail", $"Error in Opening Connection ({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
-
                         return null;
                     }
-         
-
                 }
-
             }
-
-
-
             return ds1 ;
         }
         public AssemblyClassDefinition GetDataSourceClass(string DatasourceName)
@@ -208,9 +178,6 @@ namespace TheTechIdea.Beep
                 {
                     retval = ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).FirstOrDefault();
                 }
-               
-               
-
             }
             catch (Exception ex)
             {
@@ -222,77 +189,20 @@ namespace TheTechIdea.Beep
         }
         public IDataSource CreateNewDataSourceConnection(string pdatasourcename)
         {
-
             ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName.Equals(pdatasourcename,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             ErrorObject.Flag = Errors.Ok;
-           // IDataSource ds=null;
-           if (cn != null)
+            if (cn != null)
             {
                return CreateNewDataSourceConnection(cn, pdatasourcename);
-                //ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
-                //if (ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).Any())
-                //{
-                //    string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
-                //    if (packagename != null)
-                //    {
-                //        Type adc = assemblyHandler.GetType(packagename);
-                //        if (adc != null)
-                //        {
-                //            ConstructorInfo ctor = adc.GetConstructors().Where(o => o.GetParameters().Count() == 5).FirstOrDefault();
-                //            if (ctor == null)
-                //            {
-                //                ctor = adc.GetConstructors().FirstOrDefault();
-                //            }
-                //            ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
-                //            //create an instance:
-                //            ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
-                //        }
-                     
-                //    }
-                   
-                //}
-                
-                //try
-                //{
-                //    if (ds != null)
-                //    {
-                //        ds.Dataconnection.ConnectionProp = cn;
-                //        ds.Dataconnection.DataSourceDriver = driversConfig;
-                //        //  ds.ConnectionStatus = ds.Dataconnection.OpenConnection();
-                //        DataSources.Add(ds);
-                //        return ds;
-                //    }
-                //    else
-                //    {
-                //        AddLogMessage("Fail", "Could Find DataSource Drivers", DateTime.Now, 0, pdatasourcename, Errors.Failed);
-                //        return null;
-                //    }
-               
-                //}
-                //catch (Exception ex)
-                //{
-
-
-                //    AddLogMessage("Fail", $"Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
-                //    return null;
-
-                //}
-
             }
             else
             {
                 AddLogMessage("Failure", "Error occured in  DataSource Creation " + pdatasourcename, DateTime.Now, 0, null, Errors.Ok);
                 return null;
             }
-
-
-
-
         }
         public IDataSource CreateNewDataSourceConnection(ConnectionProperties cn, string pdatasourcename)
         {
-
-            //ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName == pdatasourcename).FirstOrDefault();
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
             ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
@@ -332,20 +242,18 @@ namespace TheTechIdea.Beep
             }
             catch (Exception ex)
             {
-
                 AddLogMessage("Fail", "Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})", DateTime.Now, 0, pdatasourcename, Errors.Failed);
                 return null;
             }
         }
         public IDataSource CreateLocalDataSourceConnection(ConnectionProperties dataConnection, string pdatasourcename,string ClassDBHandlerName)
         {
-
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
             ConnectionDriversConfig package=null;
             if (ConfigEditor.DataDriversClasses.Where(x => x.classHandler == ClassDBHandlerName).Any())
             {
-                 package = ConfigEditor.DataDriversClasses.Where(x => x.classHandler == ClassDBHandlerName).FirstOrDefault();
+                package = ConfigEditor.DataDriversClasses.Where(x => x.classHandler == ClassDBHandlerName).FirstOrDefault();
                 string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className == package.classHandler).FirstOrDefault().PackageName;
                 if (packagename != null)
                 {
@@ -360,10 +268,7 @@ namespace TheTechIdea.Beep
                     //create an instance:
                     ds = createdActivator(dataConnection.ConnectionName, Logger, this, dataConnection.DatabaseType, ErrorObject);
                 }
-                
             }
-       
-
             try
             {
                 if (ds != null)
@@ -384,22 +289,15 @@ namespace TheTechIdea.Beep
              }
             catch (Exception ex)
             {
-
-
-                
                 AddLogMessage("Fail", $"Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
                 return null;
-
             }
         }
         public bool RemoveDataDource(string pdatasourcename)
         {
-
             try
             {
                 IDataSource ds = DataSources.Where(x => x.DatasourceName.ToLower() == pdatasourcename.ToLower()).FirstOrDefault();
-             
-                
                 if (ds != null)
                 {
                     if (ds.Dataconnection.DataSourceDriver.CreateLocal)
@@ -443,7 +341,6 @@ namespace TheTechIdea.Beep
         }
         public bool CheckDataSourceExist(string pdatasourcename)
         {
-
             try
             {
                 if (DataSources.Count > 0)
@@ -473,11 +370,9 @@ namespace TheTechIdea.Beep
         {
             return await ds.GetEntityAsync(CurrentEntity, filter).ConfigureAwait(false);
         }
-
         public object GetData(IDataSource ds,EntityStructure entity)
         {
             object retval = null;
-
             if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
             {
                 if (ds.Category == DatasourceCategory.WEBAPI)
@@ -497,8 +392,6 @@ namespace TheTechIdea.Beep
                         {
                             retval = t;
                         }
-
-
                     }
                     catch (Exception ex)
                     {

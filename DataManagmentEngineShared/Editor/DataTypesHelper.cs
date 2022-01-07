@@ -13,21 +13,16 @@ namespace TheTechIdea.Beep.Editor
 {
     public class DataTypesHelper : IDataTypesHelper
     {
-
         public DataTypesHelper()
         {
-           // mapping = new List<DatatypeMapping>();
+           
         }
         public IErrorsInfo ErrorObject { get; set; }
         public IDMLogger Logger { get; set; }
-
         public IDMEEditor DMEEditor { get; set; }
         public List<DatatypeMapping> mapping { get; set; }
-     
         private string NetDataTypeDef1 = "byte,sbyte,int,uint,short,ushort,long,ulong,float,double,char,bool,object,string,decimal,DateTime";
         private string NetDataTypeDef2 = ",System.Byte[],System.SByte[],System.Byte,System.SByte,System.Int32,System.UInt32,System.Int16,System.UInt16,System.Int64,System.UInt64,System.Single,System.Double,System.Char,System.Boolean,System.Object,System.String,System.Decimal,System.DateTime,System.TimeSpan,System.DateTimeOffset,System.Guid,System.Xml";
-
-
         public List<string> GetDataClasses()
         {
             List<string> p = new List<string>();
@@ -39,12 +34,8 @@ namespace TheTechIdea.Beep.Editor
         }
         public DataTypesHelper(IDMLogger plogger,  IErrorsInfo per)
         {
-            //  DMEEditor = pbs;
             Logger = Logger;
-          
             ErrorObject = per;
-
-
         }
         public string GetDataType(string DSname, EntityField fld)
         {
@@ -75,10 +66,7 @@ namespace TheTechIdea.Beep.Editor
                                 {
                                     dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className, StringComparison.OrdinalIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.OrdinalIgnoreCase) && x.DataType.Contains("N")).FirstOrDefault();
                                     if (dt != null)
-
-                                        retval = dt.DataType.Replace("(N)", "(" + fld.Size1.ToString() + ")");
-
-
+                                       retval = dt.DataType.Replace("(N)", "(" + fld.Size1.ToString() + ")");
                                 }
                                 else
                                 {
@@ -137,30 +125,22 @@ namespace TheTechIdea.Beep.Editor
 
                                     
                                 }
-
-
                             if (retval == null)
                             {
                                 dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className,StringComparison.OrdinalIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                                 retval = dt.DataType;
                             }
-
                         }
                         else
                         {
                             DMEEditor.AddLogMessage("Fail", "Could not Find Class Handler " + fld.EntityName + "_" + fld.fieldname, DateTime.Now, -1, null, Errors.Failed);
                         }
                     }
-                  
-                 
                 }
                 else
                 {
                     DMEEditor.AddLogMessage("Fail", "Could not Convert Field Type to Provider Type " + fld.EntityName + "_"+fld.fieldname, DateTime.Now, -1, null, Errors.Failed);
                 }
-              
-
-
             }
             catch (Exception ex)
             {

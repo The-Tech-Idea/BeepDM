@@ -1,205 +1,231 @@
 ﻿using System;
-using System.Reflection;
-using System.IO;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using TheTechIdea.DataManagment_Engine.DataBase;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Tools;
 using Microsoft.CSharp;
-using System.ComponentModel;
-using TheTechIdea.DataManagment_Engine;
+using System.Threading;
 
-namespace TheTechIdea.Tools
+namespace TheTechIdea.Beep.Tools
 {
-   
-
-    public class ClassCreator : IClassCreator
+    public  class ClassCreator : IClassCreator
     {
-        CodeCompileUnit targetUnit;
-        CodeTypeDeclaration targetClass;
+        public string outputFileName { get ; set; }
+        public string outputpath { get; set ; }
+
         public IDMEEditor DMEEditor { get; set; }
-        public string outputFileName { get; set; }
-        public string outputpath { get; set; }
-        private CodeMemberMethod notify = new CodeMemberMethod();
-        internal const string PropertyChangedFunctionName = "OnPropertyChanged";
-        internal const string PropertyChangedEventName = "PropertyChanged";
-        private const string PropertyNameParameterName = "propertyName";
-        private const string EventHandlerName = "handler";
-        CodeThisReferenceExpression thisReference;
-        CodeBaseReferenceExpression baseReference; 
+        private CodeCompileUnit targetUnit;
+        private CodeTypeDeclaration targetClass;
+
+        private CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
+        private CodeGeneratorOptions options = new CodeGeneratorOptions();
+
+      
+       
         public ClassCreator()
         {
-
-        }
-        public void CompileClassFromText(string SourceString,string output)
-        {
-            CSharpCodeProvider codeProvider = new CSharpCodeProvider();
-          //  ICodeCompiler icc = codeProvider.CreateCompiler();
-            System.CodeDom.Compiler.CompilerParameters parameters = new CompilerParameters();
-            parameters.GenerateExecutable = true;
-            parameters.OutputAssembly = output;
-            CompilerResults results = codeProvider.CompileAssemblyFromSource(parameters, SourceString);
-
-        }
-        public string CreateClass(string classname, List<EntityField> flds, string poutputpath,string NameSpacestring= "TheTechIdea.ProjectClasses")
-        {
-            outputpath = poutputpath;
-            outputFileName = classname.ToLower();
-            CreateClass(classname, NameSpacestring);
            
-            outputFileName = classname;
-            AddConstructor();
-           
-                foreach (var f in flds)
+        }
+        public void CompileClassFromText(string SourceString, string output)
+        {
+            throw new NotImplementedException();
+        }
+        public string CreateDLL(string dllname, List<EntityStructure> entities, string outputpath, IProgress<PassedArgs> progress, CancellationToken token, string NameSpacestring = "TheTechIdea.ProjectClasses")
+        {
+
+            List<string> listofpaths = new List<string>();
+            options.BracingStyle = "C";
+            int i = 1;
+            int total = entities.Count;
+            try
+            {
+                foreach (EntityStructure item in entities)
                 {
+                  
                     try
                     {
-                        AddProperties(f.fieldname, MemberAttributes.Public, Type.GetType(f.fieldtype), "");
+                        listofpaths.Add(Path.Combine(outputpath, item.EntityName + ".cs"));
+                        CreateClass(item.EntityName, item.Fields, outputpath, NameSpacestring);
+                        if (progress != null)
+                        {
+                            PassedArgs ps = new PassedArgs { ParameterString1 = $"Created class {item.EntityName}", EventType = "Update", ParameterInt1 = i, ParameterInt2 = total };
+                            progress.Report(ps);
+
+                        }
                     }
                     catch (Exception ex)
                     {
 
-                        throw;
+                        if (progress != null)
+                        {
+                            PassedArgs ps = new PassedArgs { ParameterString1 = $"Error in Creating class for {item.EntityName}", EventType = "Error", ParameterInt1 = i, ParameterInt2 = total, ParameterString3 = ex.Message };
+                            progress.Report(ps);
+
+                        }
                     }
-                   
+                  
+                    i++;
                 }
-                 
-          
-            AddProperties("Name", MemberAttributes.Public , Type.GetType("System.String"), "");
-            AddProperties("RN", MemberAttributes.Public , Type.GetType("System.Int64"), "");
-            if (outputpath == null)
-            {
-                outputpath =Assembly.GetEntryAssembly().Location+"\\";
+                outputFileName = dllname+".dll";
+                if (outputpath == null)
+                {
+                    outputpath = Assembly.GetEntryAssembly().Location + "\\";
+                }
+               
+                CSharpCodeProvider codeProvider = new CSharpCodeProvider();
+                System.CodeDom.Compiler.CompilerParameters parameters = new CompilerParameters();
+                if (progress != null)
+                {
+                    PassedArgs ps = new PassedArgs { ParameterString1 = "Creating DLL", EventType = "Update", ParameterInt1 = i, ParameterInt2 = total };
+                    progress.Report(ps);
+
+                }
+                string ret = "ok";
+               List<string> retval= CompileCode(provider, listofpaths,Path.Combine(outputpath, dllname + ".dll"));
+                if (progress != null)
+                {
+                    if (retval.Count > 0)
+                    {
+                        if (retval[0]=="ok")
+                        {
+                            PassedArgs ps = new PassedArgs {  ParameterString1 = "Finished Creating DLL", EventType = "Finish", ParameterInt1 = i, ParameterInt2 = total };
+                            progress.Report(ps);
+                        }
+                        else
+                        {
+                            ret = $"Error in Creating DLL {outputFileName}";
+                            PassedArgs ps = new PassedArgs { Objects= new List<ObjectItem> { new ObjectItem { Name = "Errors", obj = retval } }, ParameterString1 = "Error in Creating DLL", EventType = "Fail", ParameterInt1 = i, ParameterInt2 = total };
+                            progress.Report(ps);
+                        }
+                    }
+                    
+
+                }
+                return ret;
             }
-            GenerateCSharpCode(Path.Combine(outputpath, outputFileName + ".cs"));
-            return NameSpacestring+"." + classname;
+            catch (Exception ex)
+            {
 
-
+                return ex.Message;
+            }
+          
         }
-        private void CreateClass(string classname, string NameSpacestring )
+        public string CreateClass(string classname, List<EntityField> flds, string poutputpath, string NameSpacestring = "TheTechIdea.ProjectClasses")
         {
+            options.BracingStyle = "C";
             targetUnit = new CodeCompileUnit();
-            CodeNamespace samples = new CodeNamespace(NameSpacestring );
-            samples.Imports.Add(new CodeNamespaceImport("System"));
+            CodeNamespace namespaces = new CodeNamespace(NameSpacestring);
+           // namespaces.Imports.Add(new CodeNamespaceImport("System"));
             targetClass = new CodeTypeDeclaration(classname);
             targetClass.IsClass = true;
-            targetClass.TypeAttributes = TypeAttributes.Public | TypeAttributes.Serializable;
-            thisReference = new CodeThisReferenceExpression();
-            baseReference = new CodeBaseReferenceExpression();
-          
-            ImplementINotifyPropertyChanged(targetClass);
-            samples.Types.Add(targetClass);
-            targetUnit.Namespaces.Add(samples);
-        }
-        private static void ImplementINotifyPropertyChanged(CodeTypeDeclaration decl)
-        {
-            decl.BaseTypes.Add(typeof(INotifyPropertyChanged));
-            decl.Members.Add(new CodeMemberEvent()
+            targetClass.TypeAttributes =
+                TypeAttributes.Public ;
+            namespaces.Types.Add(targetClass);
+            targetUnit.Namespaces.Add(namespaces);
+            outputpath = poutputpath;
+            outputFileName = classname;
+            AddConstructor();
+
+            foreach (var f in flds)
             {
-                Name = PropertyChangedEventName
-                             ,
-                Attributes = MemberAttributes.Public
-                             ,
-                Type = new CodeTypeReference(typeof(PropertyChangedEventHandler))
-            });
-            var notify = new CodeMemberMethod()
-            {
-                Name = PropertyChangedFunctionName
-                                ,
-                Attributes = MemberAttributes.Family
-
-            };
-            decl.Members.Add(notify);
-
-
-
-            notify.Parameters.Add(new CodeParameterDeclarationExpression() { Name = PropertyNameParameterName, Type = new CodeTypeReference(typeof(string)) });
-
-            notify.Statements.Add(new CodeVariableDeclarationStatement(new CodeTypeReference(typeof(PropertyChangedEventHandler)), EventHandlerName));
-            notify.Statements.Add(new CodeAssignStatement() { Left = new CodeVariableReferenceExpression(EventHandlerName), Right = new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), PropertyChangedEventName) });
-
-            var condition = new CodeConditionStatement()
-            {
-                Condition = new CodeBinaryOperatorExpression()
+                try
                 {
-                    Left = new CodePrimitiveExpression(null)
-                  ,
-                    Right = new CodeVariableReferenceExpression(EventHandlerName)
-                  ,
-                    Operator = CodeBinaryOperatorType.IdentityInequality
+                    AddProperties(f);
                 }
-            };
-            var eventArgs = new CodeObjectCreateExpression() { CreateType = new CodeTypeReference(typeof(PropertyChangedEventArgs)) };
-            eventArgs.Parameters.Add(new CodeVariableReferenceExpression(PropertyNameParameterName));
+                catch (Exception ex)
+                {
 
-            var invoke = new CodeMethodInvokeExpression(null, EventHandlerName);
-            invoke.Parameters.Add(new CodeThisReferenceExpression());
-            invoke.Parameters.Add(eventArgs);
-            condition.TrueStatements.Add(
-                    invoke
-                );
+                    throw;
+                }
 
-            notify.Statements.Add(condition);
+            }
+
+            EntityField entity = new EntityField();
+            //entity.fieldname = "Name";
+            //entity.fieldtype= "System.String";
+            //AddProperties(entity);
+            entity = new EntityField();
+            entity.fieldname = "RN";
+            entity.fieldtype = "System.Int64";
+            AddProperties(entity);
+         
+            if (outputpath == null)
+            {
+                outputpath = Assembly.GetEntryAssembly().Location + "\\";
+            }
+            GenerateCSharpCode(Path.Combine(outputpath, outputFileName + ".cs"));
+            return NameSpacestring + "." + classname;
+            return "ok";
+            
         }
-        private void AddFields(string fieldname, MemberAttributes attributes, System.Type type, string comments)
+
+        public void GenerateCSharpCode(string fileName)
         {
-            // Declare the widthValue field.
+         
+            using (StreamWriter sourceWriter = new StreamWriter(fileName))
+            {
+                provider.GenerateCodeFromCompileUnit(
+                    targetUnit, sourceWriter, options);
+                
+            }
+        }
+
+        #region "CodeDom Code"
+       
+        public void AddFields(EntityField fld)
+        {
             CodeMemberField widthValueField = new CodeMemberField();
             widthValueField.Attributes = MemberAttributes.Private;
-          
-            widthValueField.Name = fieldname;
-
-            widthValueField.Type = new CodeTypeReference(type);
-            widthValueField.Comments.Add(new CodeCommentStatement(
-                comments));
+            widthValueField.Name = fld.fieldname+"Value";
+            widthValueField.Type = new CodeTypeReference(Type.GetType(fld.fieldtype));
+            //widthValueField.Comments.Add(new CodeCommentStatement(
+            //    "The width of the object."));
             targetClass.Members.Add(widthValueField);
-
-
         }
-        private void AddProperties(string propertyname, MemberAttributes attributes, System.Type type, string comments)
+        public void AddProperties(EntityField fld)
         {
-
-            
-
             // Declare the read-only Width property.
-            AddFields(propertyname + "Value", attributes, type, comments);
-            CodeMemberProperty widthProperty = new CodeMemberProperty();
-            var thisReference = new CodeThisReferenceExpression();
-            widthProperty.Attributes = attributes; //                MemberAttributes.Public | MemberAttributes.Final;
-            widthProperty.Name = propertyname;
-            widthProperty.HasGet = true;
-            widthProperty.HasSet = true;
-            widthProperty.Type = new CodeTypeReference(type);
-            widthProperty.Comments.Add(new CodeCommentStatement(
-                comments));
-            widthProperty.GetStatements.Add(new CodeMethodReturnStatement(
-                new CodeFieldReferenceExpression(
-                new CodeThisReferenceExpression(), propertyname + "Value")));
-            widthProperty.SetStatements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(thisReference, propertyname + "Value"), new CodePropertySetValueReferenceExpression()));
+            CodeTypeDeclaration newType = new CodeTypeDeclaration(fld.fieldtype);
+            CodeSnippetTypeMember snippet = new CodeSnippetTypeMember();
+           // snippet.Comments.Add(new CodeCommentStatement(" Generated by DeepDM property", true));
+            string fldtype= Type.GetType(fld.fieldtype).ToString();
+            if (fld.fieldtype.ToLower().Contains("decimal") || fld.fieldtype.ToLower().Contains("datetime"))
+            {
+                fldtype =fldtype + "?";
+            }
+            snippet.Text = "public " + fldtype + " "+ fld.fieldname + "  { get; set; }";
+            targetClass.Members.Add(snippet);
+
+            ////var thisReference = new CodeThisReferenceExpression();
+            //CodeMemberProperty widthProperty = new CodeMemberProperty();
+            //widthProperty.Attributes =
+            //    MemberAttributes.Public | MemberAttributes.Final;
+            //widthProperty.Name = fld.fieldname;
+            //widthProperty.HasGet = true;
+            //widthProperty.HasSet = true;
+          
+            ////widthProperty.Comments.Add(new CodeCommentStatement(
+            ////    "The Width property for the object."));
+            //widthProperty.Type = new CodeTypeReference(Type.GetType(fld.fieldtype));
            
+
+            //widthProperty.Type = new CodeTypeReference(Type.GetType(fld.fieldtype));
+
             
-            
-            widthProperty.SetStatements.Add(
-                    new CodeMethodInvokeExpression(
-                        new CodeMethodReferenceExpression(thisReference, "OnPropertyChanged"),
-                        new CodePrimitiveExpression(propertyname)
-                    )
-                );
 
+            //widthProperty.GetStatements.Add(new CodeMethodReturnStatement(
+            // new CodeFieldReferenceExpression(
+            // new CodeThisReferenceExpression(), fld.fieldname + "Value")));
+            //widthProperty.SetStatements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(widthProperty, fld.fieldname + "Value"), new CodePropertySetValueReferenceExpression()));
 
-
-            //foreach (var additional in additionals)
-            //{
-            //    invokeMethod = new CodeMethodInvokeExpression() { Method = new CodeMethodReferenceExpression(new CodeThisReferenceExpression(), PropertyChangedFunctionName) };
-            //    invokeMethod.Parameters.Add(new CodePrimitiveExpression(additional));
-            //    setCondition.TrueStatements.Add(invokeMethod);
-            //}
-
-           
-            targetClass.Members.Add(widthProperty);
+            ///targetClass.Members.Add(widthProperty);
 
         }
-        private void AddConstructor()
+        public void AddConstructor()
         {
             // Declare the constructor
             CodeConstructor constructor = new CodeConstructor();
@@ -225,19 +251,198 @@ namespace TheTechIdea.Tools
             //    new CodeArgumentReferenceExpression("height")));
             targetClass.Members.Add(constructor);
         }
-        public void GenerateCSharpCode(string fileName)
+        public  bool CompileCode(CodeDomProvider provider,
+             String sourceFile,
+             String exeFile)
         {
-            outputFileName = fileName;
-            CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
-            CodeGeneratorOptions options = new CodeGeneratorOptions();
-            options.BracingStyle = "C";
-            using (StreamWriter sourceWriter = new StreamWriter(fileName))
+
+            CompilerParameters cp = new CompilerParameters();
+
+            // Generate an executable instead of
+            // a class library.
+            cp.GenerateExecutable = false;
+
+            // Set the assembly file name to generate.
+            cp.OutputAssembly = exeFile;
+
+            // Generate debug information.
+            cp.IncludeDebugInformation = false;
+
+            // Add an assembly reference.
+            cp.ReferencedAssemblies.Add("System.dll");
+
+            // Save the assembly as a physical file.
+            cp.GenerateInMemory = false;
+
+            // Set the level at which the compiler
+            // should start displaying warnings.
+            cp.WarningLevel = 3;
+
+            // Set whether to treat all warnings as errors.
+            cp.TreatWarningsAsErrors = false;
+
+            // Set compiler argument to optimize output.
+            cp.CompilerOptions = "/optimize";
+
+            // Set a temporary files collection.
+            // The TempFileCollection stores the temporary files
+            // generated during a build in the current directory,
+            // and does not delete them after compilation.
+            cp.TempFiles = new TempFileCollection(".", true);
+
+            //if (provider.Supports(GeneratorSupport.EntryPointMethod))
+            //{
+            //    // Specify the class that contains
+            //    // the main method of the executable.
+            //    cp.MainClass = "Samples.Class1";
+            //}
+
+            if (Directory.Exists("Resources"))
             {
-                provider.GenerateCodeFromCompileUnit(
-                    targetUnit, sourceWriter, options);
+                if (provider.Supports(GeneratorSupport.Resources))
+                {
+                    // Set the embedded resource file of the assembly.
+                    // This is useful for culture-neutral resources,
+                    // or default (fallback) resources.
+                    cp.EmbeddedResources.Add("Resources\\Default.resources");
+
+                    // Set the linked resource reference files of the assembly.
+                    // These resources are included in separate assembly files,
+                    // typically localized for a specific language and culture.
+                    cp.LinkedResources.Add("Resources\\nb-no.resources");
+                }
+            }
+
+            // Invoke compilation.
+            CompilerResults cr = provider.CompileAssemblyFromFile(cp, sourceFile);
+
+            if (cr.Errors.Count > 0)
+            {
+                // Display compilation errors.
+                Console.WriteLine("Errors building {0} into {1}",
+                    sourceFile, cr.PathToAssembly);
+                foreach (CompilerError ce in cr.Errors)
+                {
+                    Console.WriteLine("  {0}", ce.ToString());
+                    Console.WriteLine();
+                }
+            }
+            else
+            {
+                Console.WriteLine("Source {0} built into {1} successfully.",
+                    sourceFile, cr.PathToAssembly);
+                Console.WriteLine("{0} temporary files created during the compilation.",
+                    cp.TempFiles.Count.ToString());
+            }
+
+            // Return the results of compilation.
+            if (cr.Errors.Count > 0)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
             }
         }
-        
-       
+        public  List<string> CompileCode(CodeDomProvider provider,
+           List<string> sourceFiles,
+           String exeFile)
+        {
+            List<string> retval = new List<string>();
+            CompilerParameters cp = new CompilerParameters();
+
+            // Generate an executable instead of
+            // a class library.
+            cp.GenerateExecutable = false;
+
+            // Set the assembly file name to generate.
+            cp.OutputAssembly = exeFile;
+
+            // Generate debug information.
+            cp.IncludeDebugInformation = false;
+
+            // Add an assembly reference.
+          //  cp.ReferencedAssemblies.Add("System.dll");
+
+            // Save the assembly as a physical file.
+            cp.GenerateInMemory = false;
+
+            // Set the level at which the compiler
+            // should start displaying warnings.
+            cp.WarningLevel = 3;
+
+            // Set whether to treat all warnings as errors.
+            cp.TreatWarningsAsErrors = false;
+
+            // Set compiler argument to optimize output.
+            cp.CompilerOptions = "/optimize";
+
+            // Set a temporary files collection.
+            // The TempFileCollection stores the temporary files
+            // generated during a build in the current directory,
+            // and does not delete them after compilation.
+            cp.TempFiles = new TempFileCollection(".", true);
+
+            //if (provider.Supports(GeneratorSupport.EntryPointMethod))
+            //{
+            //    // Specify the class that contains
+            //    // the main method of the executable.
+            //    cp.MainClass = "Samples.Class1";
+            //}
+
+            if (Directory.Exists("Resources"))
+            {
+                if (provider.Supports(GeneratorSupport.Resources))
+                {
+                    // Set the embedded resource file of the assembly.
+                    // This is useful for culture-neutral resources,
+                    // or default (fallback) resources.
+                    cp.EmbeddedResources.Add("Resources\\Default.resources");
+
+                    // Set the linked resource reference files of the assembly.
+                    // These resources are included in separate assembly files,
+                    // typically localized for a specific language and culture.
+                    cp.LinkedResources.Add("Resources\\nb-no.resources");
+                }
+            }
+
+            // Invoke compilation.
+            CompilerResults cr = provider.CompileAssemblyFromFile(cp, sourceFiles.ToArray());
+
+            if (cr.Errors.Count > 0)
+            {
+                // Display compilation errors.
+                Console.WriteLine("Errors building {0} into {1}",
+                    exeFile, cr.PathToAssembly);
+                retval.Add($"Errors building {exeFile} into {cr.PathToAssembly}");
+                foreach (CompilerError ce in cr.Errors)
+                {
+                    Console.WriteLine("  {0}", ce.ToString());
+                    retval.Add(ce.ToString());
+                    Console.WriteLine();
+                }
+            }
+            else
+            {
+                retval.Add("ok");
+                Console.WriteLine("Source {0} built into {1} successfully.",
+                    exeFile, cr.PathToAssembly);
+                Console.WriteLine("{0} temporary files created during the compilation.",
+                    cp.TempFiles.Count.ToString());
+            }
+
+            //// Return the results of compilation.
+            //if (cr.Errors.Count > 0)
+            //{
+            //    return false;
+            //}
+            //else
+            //{
+            //    return true;
+            //}
+            return retval;
+        }
+        #endregion
     }
 }

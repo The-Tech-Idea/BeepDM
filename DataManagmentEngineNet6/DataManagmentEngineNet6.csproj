@@ -15,4 +15,6 @@
     <ProjectReference Include="..\DataManagmentModelsNet6\DataManagmentModelsNet6.csproj" />
   </ItemGroup>
 
+  <Import Project="..\DataManagmentEngineShared\DataManagmentEngineShared.projitems" Label="Shared" />
+
 </Project>

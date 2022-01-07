@@ -26,10 +26,7 @@ namespace TheTechIdea.Beep.DataBase
     public class RDBSource : IRDBSource
     {
         public event EventHandler<PassedArgs> PassEvent;
-
         static Random r = new Random();
-      
-
         public string Id { get; set; }
         public string DatasourceName { get; set; }
         public DataSourceType DatasourceType { get; set; }
@@ -42,7 +39,7 @@ namespace TheTechIdea.Beep.DataBase
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public IDataConnection Dataconnection { get; set; }
         public RDBDataConnection RDBMSConnection { get { return (RDBDataConnection)Dataconnection; } }
-       // public LScriptTracker trackingHeader { get; set; } = new LScriptTracker();
+      
         public RDBSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
         {
             DatasourceName = datasourcename;
@@ -55,11 +52,7 @@ namespace TheTechIdea.Beep.DataBase
             {
                 Logger = logger,
                 ErrorObject = ErrorObject,
-              
-                
             };
-
-
         }
         #region "IDataSource Interface Methods"
         public ConnectionState Openconnection()
@@ -67,8 +60,6 @@ namespace TheTechIdea.Beep.DataBase
            if (RDBMSConnection != null)
             {
                 ConnectionStatus= RDBMSConnection.OpenConnection();
-           //     Dataconnection = RDBMSConnection;
-               
             }
             return ConnectionStatus;
         }
@@ -841,8 +832,7 @@ namespace TheTechIdea.Beep.DataBase
                 List<EntityStructure> ls = Entities.Where(d => !string.IsNullOrEmpty(d.OriginalEntityName)).ToList();
                 fnd = ls.Where(d => d.OriginalEntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             }
-            //  DataTable tb = new DataTable();
-
+          
             if (fnd == null)
             {
                 refresh = true;
@@ -861,7 +851,7 @@ namespace TheTechIdea.Beep.DataBase
                     retval.Viewtype = ViewType.Table;
                     retval.CustomBuildQuery = null;
                 }
-              //  return null;
+            
             } else
             {
                 retval = fnd;
@@ -872,8 +862,6 @@ namespace TheTechIdea.Beep.DataBase
         }
         public virtual EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
-            //    EntityStructure retval = new EntityStructure();
-            // 
             DataTable tb = new DataTable();
             string entname = fnd.EntityName;
             if (string.IsNullOrEmpty(fnd.DatasourceEntityName))
@@ -908,17 +896,13 @@ namespace TheTechIdea.Beep.DataBase
                     //  fnd.EntityName = EntityName;
                     if (fnd.Viewtype == ViewType.Query)
                     {
-
                         tb = GetTableSchema(fnd.CustomBuildQuery);
                     }
                     else
                     {
                        
-                            tb = GetTableSchema(entname);
-                        
-                       
+                        tb = GetTableSchema(entname);
                     }
-
                     if (tb.Rows.Count > 0)
                     {
                         fnd.Fields = new List<EntityField>();
@@ -950,8 +934,6 @@ namespace TheTechIdea.Beep.DataBase
                                 }
                                 catch (Exception)
                                 {
-
-
                                 }
                                 try
                                 {
@@ -960,14 +942,10 @@ namespace TheTechIdea.Beep.DataBase
                                 catch (Exception)
                                 {
 
-
                                 }
                                 try
                                 {
-                                    
-                                        x.IsKey = r.Field<bool>("IsKey");
-                                  
-                                  
+                                    x.IsKey = r.Field<bool>("IsKey");
                                 }
                                 catch (Exception)
                                 {
@@ -985,11 +963,6 @@ namespace TheTechIdea.Beep.DataBase
                                             x.NumericScale = (short)NumericScale;
                                         }
                                     }
-
-                                    
-                                 
-                                 
-
                                 }
                                 catch (Exception)
                                 {
@@ -997,10 +970,7 @@ namespace TheTechIdea.Beep.DataBase
                                 }
                                 try
                                 {
-                                    
-                                        x.IsUnique = r.Field<bool>("IsUnique");
-                                   
-                               
+                                    x.IsUnique = r.Field<bool>("IsUnique");
                                 }
                                 catch (Exception)
                                 {
@@ -1009,16 +979,12 @@ namespace TheTechIdea.Beep.DataBase
                             }
                             catch (Exception ex)
                             {
-                            
                                 DMEEditor.AddLogMessage("Fail", $"Error in Creating Field Type({ ex.Message})", DateTime.Now, 0, entname, Errors.Failed);
                             }
-
                             if (x.IsKey)
                             {
                                 fnd.PrimaryKeys.Add(x);
                             }
-
-
                             fnd.Fields.Add(x);
                         }
                         if (fnd.Viewtype == ViewType.Table)
@@ -1045,80 +1011,11 @@ namespace TheTechIdea.Beep.DataBase
     
                         }
                     }
-                  
                 }
-              
             }
-           
-
-         //  DMEEditor.classCreator.CreateClass(fnd.EntityName, fnd.Fields, DMEEditor.ConfigEditor.Config.EntitiesPath, "TheTechIdea");
-            return fnd;
+          return fnd;
         }
-        public static DbType TypeToDbType(Type T)
-
-        {
-
-            switch (T.FullName)
-
-            {
-
-                case "System.Int64":
-
-                    return DbType.Int64;
-
-                    break;
-
-                case "System.Int32":
-
-                    return DbType.Int32;
-
-                    break;
-
-                case "System.Int16":
-
-                    return DbType.Int16;
-
-                    break;
-
-                case "System.Decimal":
-
-                    return DbType.Decimal;
-
-                    break;
-
-                case "System.Double":
-
-                    return DbType.Double;
-
-                    break;
-
-                case "System.Boolean":
-
-                    return DbType.Boolean;
-
-                    break;
-
-                case "System.String":
-
-                    return DbType.String;
-
-                    break;
-
-                case "System.DateTime":
-
-                    return DbType.DateTime;
-
-              
-
-                default:
-                    
-                    return DbType.Object;
-
-                    break;
-
-            }
-
-        }
+    
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
             try
@@ -1131,7 +1028,6 @@ namespace TheTechIdea.Beep.DataBase
                     }
                     catch (Exception ex)
                     {
-
                         ErrorObject.Flag = Errors.Failed;
                         ErrorObject.Message = ex.Message;
                         DMEEditor.AddLogMessage("Fail", $"Could not Create Entity {item.EntityName}" + ex.Message, DateTime.Now, -1, ex.Message, Errors.Failed);
@@ -1141,7 +1037,6 @@ namespace TheTechIdea.Beep.DataBase
             }
             catch (Exception ex1)
             {
-
                 ErrorObject.Flag = Errors.Failed;
                 ErrorObject.Message = ex1.Message;
                 DMEEditor.AddLogMessage("Fail", " Could not Complete Create Entities" + ex1.Message, DateTime.Now, -1, ex1.Message, Errors.Failed);
@@ -1225,17 +1120,9 @@ namespace TheTechIdea.Beep.DataBase
         public bool CheckEntityExist(string EntityName)
         {
             bool retval = false;
-         
-                GetEntitesList();
-           
+            GetEntitesList();
             string entspace = Regex.Replace(EntityName, @"\s+", "_");
-           // int idx = Entities.FindIndex(p => p.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase));
             retval = EntitiesNames.ConvertAll(d => d.ToUpper()).Contains(entspace.ToUpper()) ;
-
-            ///-------------
-            ///check if its created
-            ///
-           
             return retval;
         }
         public int GetEntityIdx(string entityName)
@@ -1247,16 +1134,12 @@ namespace TheTechIdea.Beep.DataBase
             {
                 return -1;
             }
-            
-
         }
         public virtual bool CreateEntityAs(EntityStructure entity)
         {
             bool retval = false;
-
             if (CheckEntityExist(entity.EntityName) == false)
             {
-
                 string createstring=CreateEntity(entity);
                 DMEEditor.ErrorObject=ExecuteSql(createstring);
                 if (DMEEditor.ErrorObject.Flag == Errors.Failed)
@@ -1289,7 +1172,6 @@ namespace TheTechIdea.Beep.DataBase
                 }
                 else
                     return false;
-               
             }
 
             return retval;
@@ -1301,8 +1183,6 @@ namespace TheTechIdea.Beep.DataBase
             try
             {
                 List<ChildRelation> ds = GetTablesFKColumnList(entityname, SchemaName, null);
-                //  var tbl = ds.Tables[0];
-
                 //-------------------------------
                 // Create Parent Record First
                 //-------------------------------
@@ -1317,11 +1197,6 @@ namespace TheTechIdea.Beep.DataBase
                                 ParentEntityID = r.parent_table,
                                 ParentEntityColumnID = r.parent_column,
                                 EntityColumnID = r.child_column,
-
-
-
-
-
                             };
                             try
                             {
@@ -1336,47 +1211,31 @@ namespace TheTechIdea.Beep.DataBase
                         }
                     }
                 }
-
-
             }
-
             catch (Exception ex)
             {
-             //   DMEEditor.AddLogMessage("Fail", $"Error in getting  forgien key entities for {entityname} ({ ex.Message})", DateTime.Now, 0, entityname, Errors.Failed);
-
+               DMEEditor.AddLogMessage("Fail", $"Could not get forgien key  for {entityname} ({ ex.Message})", DateTime.Now, 0, entityname, Errors.Failed);
             }
             return fk;
         }
         public virtual List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
             ErrorObject.Flag = Errors.Ok;
-            //  DataSet ds = new DataSet();
             try
             {
                 string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getChildTable, tablename, SchemaName, Filterparamters, DMEEditor.ConfigEditor.QueryList, DatasourceType);
-                //IDbDataAdapter adp = GetDataAdapter(sql, false);
-                //adp.Fill(ds);
-                //return ds;
                 if (!string.IsNullOrEmpty(sql) && !string.IsNullOrWhiteSpace(sql))
                 {
                     return GetData<ChildRelation>(sql);
                 }
                 else
                     return null;
-                 
-            
-
             }
             catch (Exception ex)
             {
-             //   DMEEditor.AddLogMessage("Fail", $"Error in getting  child entities for {tablename} ({ ex.Message})", DateTime.Now, 0, tablename, Errors.Failed);
-               
+             DMEEditor.AddLogMessage("Fail", $"Error in getting  child entities for {tablename} ({ ex.Message})", DateTime.Now, 0, tablename, Errors.Failed);
                 return null;
             }
-
-
-
-
         }
         public IErrorsInfo RunScript(SyncEntity scripts)
         {
@@ -1385,7 +1244,6 @@ namespace TheTechIdea.Beep.DataBase
             scripts.errorsInfo = t.Result;
             scripts.errormessage = DMEEditor.ErrorObject.Message;
             DMEEditor.ErrorObject = scripts.errorsInfo;
-
             return DMEEditor.ErrorObject;
         }
         public List<SyncEntity> GetCreateEntityScript(List<EntityStructure> entities)
@@ -1449,9 +1307,6 @@ namespace TheTechIdea.Beep.DataBase
                         createtablestring += $",\n" + CreatePrimaryKeyString(t1);
                     }
                 }
-
-
-
                 if (createtablestring[createtablestring.Length - 1].Equals(","))
                 {
                     createtablestring = createtablestring.Remove(createtablestring.Length);
@@ -1464,18 +1319,13 @@ namespace TheTechIdea.Beep.DataBase
             {
                 DMEEditor.AddLogMessage("Fail", $"Error Creating Entity {t1.EntityName}  ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
                 createtablestring = "";
-               
-
-
             }
             return createtablestring;
         }
         public List<SyncEntity> GenerateCreatEntityScript(List<EntityStructure> entities)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-
             int i = 0;
-
             List<SyncEntity> rt = new List<SyncEntity>();
             try
             {
@@ -1493,10 +1343,6 @@ namespace TheTechIdea.Beep.DataBase
                     rt.AddRange(CreateForKeyRelationScripts(item));
                     i += 1;
                 }
-
-
-            //    DMEEditor.AddLogMessage("Success", $"Generated Script", DateTime.Now, 0, null, Errors.Ok);
-
             }
             catch (Exception ex)
             {
@@ -1526,9 +1372,6 @@ namespace TheTechIdea.Beep.DataBase
                 x.scriptType = DDLScriptType.CreateEntity;
                 rt.Add(x);
                 rt.AddRange(CreateForKeyRelationScripts(entity));
-
-           //     DMEEditor.AddLogMessage("Success", $"Generated Script", DateTime.Now, 0, null, Errors.Ok);
-
             }
             catch (Exception ex)
             {
@@ -1545,17 +1388,12 @@ namespace TheTechIdea.Beep.DataBase
 
             try
             {
-
-
-
                 var t = Task.Run<EntityStructure>(() => { return GetEntityStructure(entity, true); });
                 t.Wait();
                 EntityStructure entstructure = t.Result;
-
                 entstructure.Created = false;
                 if (DMEEditor.ErrorObject.Flag == Errors.Ok)
                 {
-
                     Entities[Entities.FindIndex(x => x.EntityName == entity)] = entstructure;
 
                 }
@@ -1563,93 +1401,64 @@ namespace TheTechIdea.Beep.DataBase
                 {
                     DMEEditor.AddLogMessage("Fail", $"Error getting entity structure for {entity}", DateTime.Now, entstructure.Id, entstructure.DataSourceID, Errors.Failed);
                 }
-
-
-
-
-
                 var t2 = Task.Run<List<SyncEntity>>(() => { return GenerateCreatEntityScript(entstructure); });
                 t2.Wait();
                 rt.AddRange(t2.Result);
                 t2 = Task.Run<List<SyncEntity>>(() => { return CreateForKeyRelationScripts(entstructure); });
                 t2.Wait();
                 rt.AddRange(t2.Result);
-
             }
             catch (System.Exception ex)
             {
                 DMEEditor.AddLogMessage("Fail", $"Error in getting entities from Database ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
-
             }
             return rt;
         }
         private List<SyncEntity> GetDDLScriptfromDatabase(List<EntityStructure> structureentities)
         {
             List<SyncEntity> rt = new List<SyncEntity>();
-            // List<EntityStructure> structureentities = new List<EntityStructure>();
             try
             {
-
-
-
                 if (structureentities.Count > 0)
                 {
-
                     var t = Task.Run<List<SyncEntity>>(() => { return GenerateCreatEntityScript(structureentities); });
                     t.Wait();
                     rt.AddRange(t.Result);
-                    //t = Task.Run<List<LScript>>(() => { return CreateForKeyRelationScripts(structureentities); });
-                    //t.Wait();
-                    //rt.AddRange(t.Result);
                 }
             }
             catch (System.Exception ex)
             {
                 DMEEditor.AddLogMessage("Fail", $"Error in getting entities from Database ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
-
             }
             return rt;
         }
         private string CreatePrimaryKeyString(EntityStructure t1)
         {
             string retval = null;
-            //  string tmp = null;
             try
             {
                 retval = @" PRIMARY KEY ( ";
                 ErrorObject.Flag = Errors.Ok;
-
                 int i = 0;
-
                 foreach (EntityField dbf in t1.PrimaryKeys)
                 {
-
                     retval += dbf.fieldname + ",";
 
                     i += 1;
-
-
                 }
                 if (retval.EndsWith(","))
                 {
                     retval = retval.Remove(retval.Length - 1, 1);
-
                 }
-
                 retval += ")\n";
                 return retval;
             }
-
             catch (Exception ex)
             {
                 string mes = "";
                 DMEEditor.AddLogMessage(ex.Message, "Could not  Create Primery Key" + mes, DateTime.Now, -1, mes, Errors.Failed);
                 return null;
             };
-
-
-
-
         }
         private string CreateAlterRalationString(EntityStructure t1)
         {
@@ -1657,39 +1466,25 @@ namespace TheTechIdea.Beep.DataBase
             ErrorObject.Flag = Errors.Ok;
             try
             {
-
-
                 int i = 0;
-                //string keyname="";
-                //      retval = "FOREIGN KEY (" + fk.EntityColumnSequenceID + ")  REFERENCES " + fk.ParentEntityID + "(" + fk.ParentColumnSequenceID + "), \n";
                 foreach (string item in t1.Relations.Select(o => o.ParentEntityID).Distinct())
                 {
                     string forkeys = "";
                     string refkeys = "";
                     foreach (RelationShipKeys fk in t1.Relations.Where(p => p.ParentEntityID == item))
                     {
-
                         forkeys += fk.EntityColumnID + ",";
                         refkeys += fk.ParentEntityColumnID + ",";
-                        // keyname = fk.EntityColumnID.Substring(1, 3) + fk.ParentEntityColumnID.Substring(1, 3);
-
-
                     }
                     i += 1;
-
-
                     forkeys = forkeys.Remove(forkeys.Length - 1, 1);
                     refkeys = refkeys.Remove(refkeys.Length - 1, 1);
                     retval += @" ALTER TABLE " + t1.EntityName + " ADD CONSTRAINT " + t1.EntityName + i + r.Next(10, 1000) + "  FOREIGN KEY (" + forkeys + ")  REFERENCES " + item + "(" + refkeys + "); \n";
                 }
-
-
                 if (i ==0)
-                
                 {
                     retval = "";
                 }
-
                 return retval;
             }
 
@@ -1699,10 +1494,6 @@ namespace TheTechIdea.Beep.DataBase
                 DMEEditor.AddLogMessage(ex.Message, "Could not Create Relation" + mes, DateTime.Now, -1, mes, Errors.Failed);
                 return null;
             };
-
-
-
-
         }
         private List<SyncEntity> CreateForKeyRelationScripts(EntityStructure entity)
         {
@@ -1748,7 +1539,6 @@ namespace TheTechIdea.Beep.DataBase
                 int i = 0;
                 IDataSource ds;
                 // Generate Forign Keys
-                //alteraddForignKey = new List<DDLScript>();
                 foreach (EntityStructure item in entities)
                 {
                     if (item.Relations != null)
@@ -1765,7 +1555,6 @@ namespace TheTechIdea.Beep.DataBase
                             rt.Add(x);
                             //alteraddForignKey.Add(x);
                             i += 1;
-                            //          script += CreateRalationString(ds, item);
                         }
                     }
 
@@ -1773,7 +1562,6 @@ namespace TheTechIdea.Beep.DataBase
             }
             catch (Exception ex)
             {
-
                 DMEEditor.AddLogMessage("Fail", $"Error in getting For. Keys from Database ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
 
             }
@@ -1783,7 +1571,6 @@ namespace TheTechIdea.Beep.DataBase
         {
             ErrorObject.Flag = Errors.Ok;
             string AutnumberString = "";
-            
             try
             {
                 if (f.IsAutoIncrement)
@@ -1796,9 +1583,6 @@ namespace TheTechIdea.Beep.DataBase
                             AutnumberString = "NULL AUTO_INCREMENT";
                             break;
                         case DataSourceType.Oracle:
-                            //select substr(banner,instr(banner,'Release')+7,instr(banner,'-')-instr(banner,'.')) from v$version
-                            //where instr(banner,'Oracle')> 0
-
                             AutnumberString = " GENERATED BY DEFAULT ON NULL AS IDENTITY";// "CREATE SEQUENCE " + f.fieldname + "_seq MINVALUE 1 START WITH 1 INCREMENT BY 1 CACHE 1 ";
                             break;
                         case DataSourceType.SqlCompact:
@@ -1810,44 +1594,31 @@ namespace TheTechIdea.Beep.DataBase
                         case DataSourceType.SqlServer:
                             AutnumberString = "IDENTITY(1,1)";
                             break;
-                        //case DataSourceType.Text:
-                        //    break;
                         default:
                             AutnumberString = "";
                             break;
                     }
                 }
-
             }
             catch (System.Exception ex)
             {
-               
                 DMEEditor.AddLogMessage("Fail", $"Error Creating Auto number Field {f.EntityName} and {f.fieldname} ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
               
             }
-
             return AutnumberString;
         }
         private string CreateEntity(EntityStructure t1)
         {
             string createtablestring = null;
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-            
-           // 
             try
             {
-               
                 createtablestring= GenerateCreateEntityScript(t1);
-
             }
             catch (System.Exception ex)
             {
-               
                 createtablestring = null;
-               
                 DMEEditor.AddLogMessage("Fail", $"Error in  Creating Table " + t1.EntityName + "   ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
-
-
             }
             return createtablestring;
         }
@@ -1909,14 +1680,8 @@ namespace TheTechIdea.Beep.DataBase
                     //    Insertstr += Valuestr + @",\n";
                     //}
                // }
-
-
                 t += 1;
-
             }
-
-
-
             Insertstr = Insertstr.Remove(Insertstr.Length - 1);
             Valuestr = Valuestr.Remove(Valuestr.Length - 1);
             Valuestr += ")";
@@ -1977,24 +1742,15 @@ namespace TheTechIdea.Beep.DataBase
 
             List<EntityField> SourceEntityFields = new List<EntityField>();
             List<EntityField> DestEntityFields = new List<EntityField>();
-            // List<Mapping_rep_fields> map = new List < Mapping_rep_fields >()  ; 
-            //   map= Mapping.FldMapping;
-            // EntityName = Regex.Replace(EntityName, @"\s+", "");
             string Updatestr = @"Delete from " + EntityName + "  ";
-            string Valuestr = "";
-            // var insertfieldname = "";
-            //string datafieldname = "";
-            //string typefield = "";
             int i = DataStruct.Fields.Count();
             int t = 0;
-
             Updatestr += @" where ";
             i = DataStruct.PrimaryKeys.Count();
             t = 1;
             foreach (EntityField item in DataStruct.PrimaryKeys)
             {
                 
-               
                     if (t == 1)
                     {
                         Updatestr += "["+item.fieldname + "]=";
@@ -2004,13 +1760,8 @@ namespace TheTechIdea.Beep.DataBase
                         Updatestr += " and [" + item.fieldname + "]=";
                     }
                     Updatestr += "@p_" + item.fieldname + "";
-                
-
-
-
                 t += 1;
             }
-            //   Updatestr= Updatestr.Remove(Updatestr.Length - 1);
             return Updatestr;
         }
         public virtual IDataReader GetDataReader(string querystring)
@@ -2123,13 +1874,10 @@ namespace TheTechIdea.Beep.DataBase
         public virtual IDbDataAdapter GetDataAdapter(string Sql, List<ReportFilter> Filter = null)
         {
             IDbDataAdapter adp = null;
-            //  DbCommandBuilder cmdb = null;
-            //  IDbCommand cmd=null;
+          
             try
             {
                 ConnectionDriversConfig driversConfig = DMEEditor.Utilfunction.LinkConnection2Drivers(Dataconnection.ConnectionProp);
-
-
                 string adtype = Dataconnection.DataSourceDriver.AdapterType;
                 string cmdtype = Dataconnection.DataSourceDriver.CommandBuilderType;
                 string cmdbuildername = driversConfig.CommandBuilderType;
@@ -2144,8 +1892,6 @@ namespace TheTechIdea.Beep.DataBase
                
                 //create an instance:
                 adp = (IDbDataAdapter)adpActivator(Sql, RDBMSConnection.DbConn);
-
-
                 try
                 {
                     DbCommandBuilder cmdBuilder = cmdbuilderActivator(adp);
@@ -2186,13 +1932,9 @@ namespace TheTechIdea.Beep.DataBase
 
                         }
                     }
-                   
-                    
                     adp.InsertCommand = cmdBuilder.GetInsertCommand(true);
                     adp.UpdateCommand = cmdBuilder.GetUpdateCommand(true);
                     adp.DeleteCommand = cmdBuilder.GetDeleteCommand(true);
-                    
-
                 }
                 catch (Exception ex)
                 {
@@ -2223,7 +1965,6 @@ namespace TheTechIdea.Beep.DataBase
             IDbCommand cmd = GetDataCommand();
             try
             {
-
                 if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.SchemaName) && !string.IsNullOrWhiteSpace(Dataconnection.ConnectionProp.SchemaName))
                 {
                     TableName = Dataconnection.ConnectionProp.SchemaName + "." + TableName;
@@ -2234,18 +1975,13 @@ namespace TheTechIdea.Beep.DataBase
                 tb = reader.GetSchemaTable();
                 reader.Close();
                 cmd.Dispose();
-            
-
             }
             catch (Exception ex)
             {
                 DMEEditor.AddLogMessage("Fail", $"unsuccessfully Executed Sql ({ex.Message})", DateTime.Now, 0, TableName, Errors.Failed);
-                
             }
 
-            //}
-
-            return tb;
+           return tb;
         }
         public virtual List<ChildRelation> GetTablesFKColumnList(string tablename, string SchemaName, string Filterparamters)
         {
@@ -2260,19 +1996,12 @@ namespace TheTechIdea.Beep.DataBase
                 }
                 else
                     return null;
-              
-              
-
             }
             catch (Exception ex)
             {
-                
              //   DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
                 return null;
             }
-
-
-
         }
         public virtual string DisableFKConstraints(EntityStructure t1)
         {

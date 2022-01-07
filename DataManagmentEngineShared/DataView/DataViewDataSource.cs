@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Report;
-using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
@@ -162,18 +160,7 @@ namespace TheTechIdea.Beep.DataView
 
             }
             DataViewFile = Path.Combine(filepath, filename);
-         //   DMEEditor.OpenDataSource(filename);
-          //  Dataconnection.OpenConnection();
-            //if (Dataconnection.ConnectionStatus== ConnectionState.Open)
-            //{
-            //    LoadView();
-            //}
-            //else
-            //{
-            //    DataView = GenerateView(filename, filepath);
-            //    WriteDataViewFile(DataViewFile);
-            //}
-
+        
         }
         public List<string> GetEntitesList()
         {
@@ -181,7 +168,6 @@ namespace TheTechIdea.Beep.DataView
             List<string> retval = new List<string>();
             try
             {
-               
                 if (DataView.Entities.Count <= 2)
                 {
                     LoadView();
@@ -201,24 +187,13 @@ namespace TheTechIdea.Beep.DataView
                         retval.Add(i.EntityName);
                     }
                     else
-                        retval.Add(i.DatasourceEntityName);
-                    
+                        retval.Add(i.DatasourceEntityName); 
                 }
-
-
-
             }
-
             catch (Exception ex)
             {
-               
                 DMEEditor.AddLogMessage("Fail", $"Error in getting entity Data from ({ ex.Message})", DateTime.Now, -1, "", Errors.Failed);
-              
             }
-            //if ((Records == null)||(Records.Count==0))
-            //{
-            //    Records.Add(x);
-            //}
             EntitiesNames = retval;
             return retval;
         }
@@ -231,41 +206,30 @@ namespace TheTechIdea.Beep.DataView
                 if(ds.ConnectionStatus== ConnectionState.Open)
                 {
                     EntityStructure ent = GetEntityStructure(EntityName);
-                 
-                   
                     if (ent != null)
                     {
-                       
-                      
                         switch (ent.Viewtype)
                         {
                             case ViewType.File:
                             case ViewType.Url:
                             case ViewType.Table:
                             case ViewType.Query:
-                             
                                 retval = GetDataSourceObject(EntityName).GetEntity(EntityName, filter);
-                                //retval = GetDataSourceObject(EntityName).RunQuery(querystr);
                                 break;
                             case ViewType.Code:
                                 retval = null;
                                 break;
-
                             default:
                                 retval = null;
                                 break;
                         }
                     }
-
-
-                   
                 }
             }
             return retval;
         }
         public int EntityListIndex(int entityid)
         {
-
             return DataView.Entities.FindIndex(a => a.Id == entityid);
         }
         public int EntityListIndex( string entityname)
@@ -286,11 +250,9 @@ namespace TheTechIdea.Beep.DataView
         public EntityStructure GetEntityStructure(string EntityName, bool refresh = false)
         {
             try
-
             {
                 EntityStructure r = new EntityStructure();
                 EntityStructure dh = (EntityStructure)Entities[EntityListIndex(EntityName)].Clone();
-                
                 if (refresh)
                     {
                        
@@ -305,34 +267,22 @@ namespace TheTechIdea.Beep.DataView
                                     dh.Relations = r.Relations;
                                     dh.PrimaryKeys = r.PrimaryKeys;
                                     break;
-
-
                                 case ViewType.Code:
                                 default:
                                     break;
-
                             }
-
-                        
                     }
                     else
                     {
                         return dh;
-                    }
-                   
-               
-
+                    }   
                 return dh;
             }
             catch (Exception ex)
             {
-
-                
                 DMEEditor.AddLogMessage("Fail", $"Error getting entity structure {EntityName} ({ ex.Message})", DateTime.Now, -1, "", Errors.Failed);
-                
             }
             return null;
-            //      return GetDataSourceObject(EntityName).GetEntityStructure(EntityName, refresh);
         }
         public Type GetEntityType(string entityname)
         {
@@ -357,7 +307,6 @@ namespace TheTechIdea.Beep.DataView
                     DMTypeBuilder.CreateNewObject(entityname, entityname,dh.Fields);
                     retval= DMTypeBuilder.myType;
                     break;
-
             }
             return retval;
         }
@@ -368,21 +317,13 @@ namespace TheTechIdea.Beep.DataView
             switch (dh.Viewtype)
             {
                 case ViewType.Table:
-                    return GetDataSourceObject(tablename).GetChildTablesList(tablename, SchemaName, Filterparamters);
-                    ;
+                    return GetDataSourceObject(tablename).GetChildTablesList(tablename, SchemaName, Filterparamters);                  
                 case ViewType.Query:
-
                 case ViewType.Code:
-
                 case ViewType.File:
-
                 case ViewType.Url:
-
-
                 default:
-
-                    return null;
-                   
+                    return null;   
             }
             
         }
@@ -406,8 +347,7 @@ namespace TheTechIdea.Beep.DataView
                 DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
                 return null;
             }
-          
-            
+ 
         }
         public IErrorsInfo ExecuteSql(string sql)
         {
@@ -417,10 +357,8 @@ namespace TheTechIdea.Beep.DataView
         public bool CreateEntityAs(EntityStructure entity)
         {
             try
-
             {
                 AddEntitytoDataView(entity);
-               // Dataview.Entities.Add(entity);
                 DMEEditor.AddLogMessage("Success", $"Creating Entity", DateTime.Now, 0, null, Errors.Ok);
                 return true;
             }
@@ -441,7 +379,6 @@ namespace TheTechIdea.Beep.DataView
             {
                 return false;
             }
-      
         }
         private IDataSource GetDataSourceObject(string entityname)
         {
@@ -461,10 +398,7 @@ namespace TheTechIdea.Beep.DataView
                 retval.Dataconnection.OpenConnection();
                 retval.ConnectionStatus = Dataconnection.ConnectionStatus;
             }
-          
             return retval;
-
-
         }
         public ConnectionState Openconnection()
         {
@@ -477,14 +411,13 @@ namespace TheTechIdea.Beep.DataView
         }
         public ConnectionState Closeconnection()
         {
-            throw new NotImplementedException();
+            return ConnectionStatus;
         }
 
         public object RunQuery( string qrystr)
         {
             throw new NotImplementedException();
-           // ds = DMEEditor.GetDataSource(DatasourceName);
-           //return ds.RunQuery(qrystr);
+          
         }
         public IErrorsInfo UpdateEntities(string EntityName, object UploadData,IProgress<PassedArgs> progress)
         {
@@ -492,8 +425,6 @@ namespace TheTechIdea.Beep.DataView
         }
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
-
-
             return GetDataSourceObject(EntityName).UpdateEntity(EntityName, UploadDataRow);
         }
         public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
@@ -506,21 +437,13 @@ namespace TheTechIdea.Beep.DataView
             {
                 case ViewType.Table:
                     return GetDataSourceObject(fnd.EntityName).GetEntityStructure(fnd, refresh);
-                   
                 case ViewType.Query:
-                  
                 case ViewType.Code:
-                   
-                case ViewType.File:
-                    
-                case ViewType.Url:
-                   
-                   
+                case ViewType.File:                  
+                case ViewType.Url:  
                 default:
-                    return Entities[EntityListIndex(fnd.EntityName)];
-                   
+                    return Entities[EntityListIndex(fnd.EntityName)];    
             }
-           
         }
         public IErrorsInfo RunScript(SyncEntity dDLScripts)
         {
@@ -538,9 +461,7 @@ namespace TheTechIdea.Beep.DataView
         }
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
-          //  ds = DMEEditor.GetDataSource(DatasourceName);
             Entities.AddRange(entities);
-            // return ds.CreateEntities(entities);
             return DMEEditor.ErrorObject;
         }
         public List<SyncEntity> GetCreateEntityScript(List<EntityStructure> entities = null)
@@ -559,7 +480,6 @@ namespace TheTechIdea.Beep.DataView
                 {
                     DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {item.DataSourceID}", DateTime.Now, 0, item.DataSourceID, Errors.Failed);
                 }
-               
             }
             return ls;
         }

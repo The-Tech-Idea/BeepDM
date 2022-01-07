@@ -12,7 +12,6 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
-using TheTechIdea.Beep.Vis;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
@@ -45,9 +44,6 @@ namespace TheTechIdea.Beep.FileManager
             FilePath = Dataconnection.ConnectionProp.FilePath;
 
         }
-      
-
-      
         public DataSourceType DatasourceType { get; set; } = DataSourceType.CSV;
         public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;
         public IDataConnection Dataconnection { get ; set ; }
