@@ -14,7 +14,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\DMTypeBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBDataConnection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DataMoving\DataMoverEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileManager\CSVDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\DataListViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewDataSource.cs" />
