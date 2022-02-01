@@ -11,6 +11,7 @@ namespace TheTechIdea.Beep.Report
     {
         string Title { get; set; }
         List<ReportBlockColumns> BlockColumns { get; set; }
+        List<ReportFilter> filters { get; set; }
         string EntityID { get; set; }
         string ViewID { get; set; }
        
@@ -42,6 +43,7 @@ namespace TheTechIdea.Beep.Report
         public Color AlternatingBackColor { get; set; }
         public Color GridLineColor { get; set; }
         public  DataGridLineStyle GridLineStyle { get; set; }
+        public List<ReportFilter> filters { get; set; } = new List<ReportFilter>();
         public List<ReportBlockColumns> BlockColumns { get; set; } = new List<ReportBlockColumns>();
         public Color HeaderForeColor { get; set; }
         public Color HeaderBackColor { get; set; }

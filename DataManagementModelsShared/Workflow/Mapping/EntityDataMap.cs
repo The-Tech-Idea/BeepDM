@@ -17,7 +17,7 @@ namespace TheTechIdea.Beep.Workflow.Mapping
         public string EntityDataSource { get; set; }
         public List<EntityField> EntityFields { get; set; } = new List<EntityField>();
         public BindingList<EntityDataMap_DTL> MappedEntities { get; set; } = new BindingList<EntityDataMap_DTL>();
-        public List<ReportFilter> Filter { get; set; } = new List<ReportFilter>();
+     
         public EntityDataMap()
         {
 
@@ -30,6 +30,7 @@ namespace TheTechIdea.Beep.Workflow.Mapping
 
         }
         public string EntityDataSource { get; set; }
+        public List<ReportFilter> Filter { get; set; } = new List<ReportFilter>();
         public string EntityName { get; set; }
         public List<EntityField> EntityFields { get; set; } = new List<EntityField>();
         public List<EntityField> SelectedDestFields { get; set; } = new List<EntityField>();

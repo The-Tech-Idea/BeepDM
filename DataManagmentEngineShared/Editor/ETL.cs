@@ -30,25 +30,25 @@ namespace TheTechIdea.Beep.Editor
         //  public LScriptTracking Tracker { get; set; } = new LScriptTracking();
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public List<string> EntitiesNames { get; set; } = new List<string>();
-        private List<SyncEntity> GenerateCopyScripts(List<SyncEntity> rt, EntityStructure item,string destSource)
-        {
-            List<SyncEntity> retval = new List<SyncEntity>();
-            foreach (SyncEntity sc in rt)
-            {
-                SyncEntity upscript = new SyncEntity();
-                upscript.sourcedatasourcename = item.DataSourceID;
-                upscript.sourceentityname = item.EntityName;
-                upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
+        //private List<SyncEntity> GenerateCopyScripts(List<SyncEntity> rt, EntityStructure item,string destSource)
+        //{
+        //    List<SyncEntity> retval = new List<SyncEntity>();
+        //    foreach (SyncEntity sc in rt)
+        //    {
+        //        SyncEntity upscript = new SyncEntity();
+        //        upscript.sourcedatasourcename = item.DataSourceID;
+        //        upscript.sourceentityname = item.EntityName;
+        //        upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
 
-                upscript.destinationDatasourceEntityName = item.EntityName;
-                upscript.destinationentityname = item.EntityName;
-                upscript.destinationdatasourcename = destSource;
-                upscript.scriptType = DDLScriptType.CopyData;
-                retval.Add(upscript);
-            }
+        //        upscript.destinationDatasourceEntityName = item.EntityName;
+        //        upscript.destinationentityname = item.EntityName;
+        //        upscript.destinationdatasourcename = destSource;
+        //        upscript.scriptType = DDLScriptType.CopyData;
+        //        retval.Add(upscript);
+        //    }
            
-            return retval;
-        }
+        //    return retval;
+        //}
         private SyncEntity GenerateCopyScript(SyncEntity rt, EntityStructure item, string destSource)
         {
                
@@ -275,7 +275,7 @@ namespace TheTechIdea.Beep.Editor
         {
             try
             {
-                int errorcount = 0;
+                errorcnt = 0;
                 EntityStructure item = sourceds.GetEntityStructure(srcentity, true);
                 if (item != null)
                 {
@@ -381,6 +381,7 @@ namespace TheTechIdea.Beep.Editor
         //-----------------------
          public async Task<IErrorsInfo> RunChildScriptAsync(SyncEntity ParentScript,IDataSource srcds,IDataSource destds, IProgress<PassedArgs> progress, CancellationToken token)
         {
+           
             if (ParentScript.CopyDataScripts.Count > 0)
             {
                 for (int i = 0; i < ParentScript.CopyDataScripts.Count; i++)
@@ -445,11 +446,12 @@ namespace TheTechIdea.Beep.Editor
             List<SyncEntity> copudatals = DMEEditor.ETL.script.Entities.Where(i => i.scriptType == DDLScriptType.CopyData).ToList();
             List<SyncEntity> AlterForls = DMEEditor.ETL.script.Entities.Where(i => i.scriptType == DDLScriptType.AlterFor).ToList();
             // Run Scripts-----------------
-            int o = 0;
+        
             numberToCompute = DMEEditor.ETL.script.Entities.Count;
             int p1 = DMEEditor.ETL.script.Entities.Where(u => u.scriptType == DDLScriptType.CreateEntity).Count();
             ScriptCount = p1;
             CurrentScriptRecord = 0;
+            errorcnt = 0;
             foreach (SyncEntity sc in DMEEditor.ETL.script.Entities.Where(u => u.scriptType == DDLScriptType.CreateEntity))
             {
                 destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);

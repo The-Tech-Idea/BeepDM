@@ -48,7 +48,7 @@ namespace DataManagment_Engine
          
             Builder.RegisterType<JsonLoader>().As<IJsonLoader>().SingleInstance();
             Builder.RegisterType<AssemblyHandler>().As<IAssemblyHandler>().SingleInstance();
-            Builder.RegisterType<ClassCreatorv2>().As<IClassCreator>().SingleInstance();
+            Builder.RegisterType<ClassCreator>().As<IClassCreator>().SingleInstance();
             Builder.RegisterType<ETL>().As<IETL>().SingleInstance();
         
             return Builder.Build();

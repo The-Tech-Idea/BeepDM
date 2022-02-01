@@ -157,7 +157,7 @@ namespace TheTechIdea.Beep.DataBase
                         if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
                         {
 
-                            parameter.Value = SqlDateTime.Null;
+                            parameter.Value = DBNull.Value;
                             parameter.DbType = DbType.DateTime;
                         }
                         else
@@ -608,7 +608,18 @@ namespace TheTechIdea.Beep.DataBase
                         result = System.DBNull.Value;
                     }
 
-
+                    if (result != null)
+                    {
+                        if (col.fieldtype.Contains("Date"))
+                        { 
+                            DateTime dt = (DateTime)result;
+                            if (dt == DateTime.MinValue || dt == DateTime.MaxValue)
+                            {
+                                result = DBNull.Value;
+                            }
+                           
+                        }
+                    }
                     dr[col.fieldname] = result;
                 }
             }

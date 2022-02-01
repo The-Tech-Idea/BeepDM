@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -33,5 +34,6 @@ namespace TheTechIdea.Tools
         string LoadAssembly(string path, FolderFileTypes fileTypes);
         IErrorsInfo LoadAllAssembly();
         bool RunMethod(object ObjInstance, string FullClassName, string MethodName);
+      
     }
 }

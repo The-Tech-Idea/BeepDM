@@ -10,7 +10,7 @@ namespace TheTechIdea.Beep.Report
         public List<ReportBlock> Blocks { get; set; } = new List<ReportBlock>();
         public string DataSourceName { get; set; }
         public TextBlock Description { get; set; } = new TextBlock();
-        public List<ReportFilter> filters { get; set; } = new List<ReportFilter>();
+     
         public string Name { get; set; }
         public string ReportEndText { get; set; }
         public TextBlock SubTitle { get; set; } = new TextBlock();

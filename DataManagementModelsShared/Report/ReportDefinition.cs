@@ -13,7 +13,7 @@ namespace TheTechIdea.Beep.Report
         List<ReportBlock> Blocks { get; set; }
         string DataSourceName { get; set; }
         TextBlock Description { get; set; }
-        List<ReportFilter> filters { get; set; }
+     
      
         string Name { get; set; }
         string ReportEndText { get; set; }

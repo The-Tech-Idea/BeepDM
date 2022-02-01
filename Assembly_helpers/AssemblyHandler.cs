@@ -19,6 +19,8 @@ using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using TypeInfo = System.Reflection.TypeInfo;
+using System.Drawing;
+using System.Collections;
 
 namespace TheTechIdea.Tools
 {
@@ -1204,48 +1206,6 @@ namespace TheTechIdea.Tools
             };
         }
         #endregion
-        //public void CreateAssembly(Dictionary<string, string> propertiesToEmit)
-        //{
-        //    Assembly ourAssembly= null;
-        //    if (ourAssembly == null)
-        //    {
-        //        StringBuilder sb = new StringBuilder();
-        //        sb.AppendLine("using System;");
-        //        sb.AppendLine("public class MyClass");
-        //        sb.AppendLine("{");
-        //        sb.AppendLine("  public static void Main()");
-        //        sb.AppendLine("  {");
-        //        sb.AppendLine("  }");
-        //        foreach (var kvp in propertiesToEmit)
-        //        {
-        //            sb.AppendLine($"  public {kvp.Value} {kvp.Key}" + " { get; set; }");
-        //        }
-        //        sb.AppendLine("  public  MyClass CreateFromDynamic(Dictionary<string, object> sourceItem)");
-        //        sb.AppendLine("  {");
-        //        sb.AppendLine("     MyClass newOne = new MyClass();");
-        //        foreach (var kvp in propertiesToEmit)
-        //        {
-        //            sb.AppendLine($@"  newOne.{kvp.Key} = sourceItem[""{kvp.Key}""];");
-        //        }
-        //        sb.AppendLine("  return newOne;");
-        //        sb.AppendLine("  }");
-        //        sb.AppendLine("}");
-
-        //        var tree = CSharpSyntaxTree.ParseText(sb.ToString());
-        //        var mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
-        //        var dictsLib = MetadataReference.CreateFromFile(typeof(Dictionary<,>).Assembly.Location);
-
-        //        var compilation = CSharpCompilation.Create("MyCompilation",
-        //            syntaxTrees: new[] { tree }, references: new[] { mscorlib, dictsLib });
-
-        //        //Emit to stream
-        //        var ms = new MemoryStream();
-        //        var emitResult = compilation.Emit(ms);
-
-        //        //Load into currently running assembly. Normally we'd probably
-        //        //want to do this in an AppDomain
-        //        ourAssembly = Assembly.Load(ms.ToArray());
-        //    }
-        //}
+      
     }
 }
