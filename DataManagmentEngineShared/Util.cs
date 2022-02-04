@@ -17,6 +17,7 @@ using System.Xml.Serialization;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Workflow;
+using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using static TheTechIdea.Beep.Util;
@@ -915,7 +916,99 @@ namespace TheTechIdea.Beep
             }
             return retval;
         }
-        private  Type GetCollectionElementType(Type type)
+       
+        public  Type GetEntityType(string EntityName,List<EntityField> Fields)
+        {
+            
+            DMTypeBuilder.CreateNewObject(EntityName, EntityName, Fields);
+            return DMTypeBuilder.myType;
+        }
+        public object GetEntityObject(string EntityName, List<EntityField> Fields)
+        {
+            DMTypeBuilder.CreateNewObject(EntityName, EntityName, Fields);
+            return DMTypeBuilder.myObject;
+        }
+        public DataRow GetDataRowFromobject(string EntityName, Type enttype,object UploadDataRow, EntityStructure DataStruct)
+        {
+            DataRow dr=null ;
+              var ti = Activator.CreateInstance(enttype);
+            // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
+            if (UploadDataRow.GetType().FullName == "System.Data.DataRowView")
+            {
+                DataRowView dv = (DataRowView)UploadDataRow;
+                dr = dv.Row;
+
+            }
+            else
+            if (UploadDataRow.GetType().FullName == "System.Data.DataRow")
+            {
+                dr = (DataRow)UploadDataRow;
+            }
+            else
+            {
+                dr = ConvertItemClassToDataRow(DataStruct);
+                foreach (EntityField col in DataStruct.Fields)
+                {
+                    System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname);
+
+                    //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
+                    //{
+                    System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                    dynamic result = GetPropAInfo.GetValue(UploadDataRow);
+
+                    if (result == null)
+                    {
+                        result = System.DBNull.Value;
+                    }
+                    if (result != null)
+                    {
+                        if (col.fieldtype.Contains("Date"))
+                        {
+                            DateTime dt = (DateTime)result;
+                            if (dt == DateTime.MinValue || dt == DateTime.MaxValue)
+                            {
+                                result = DBNull.Value;
+                            }
+
+                        }
+                    }
+
+                    dr[col.fieldname] = result;
+                }
+            }
+            return dr;
+        }
+        public object  MapObjectToAnother(string destentityname, EntityDataMap_DTL SelectedMapping ,object sourceobj)
+        {
+            object destobj = GetEntityObject(destentityname, SelectedMapping.SelectedDestFields);
+            foreach (Mapping_rep_fields col in SelectedMapping.FieldMapping)
+            {
+                try
+                {
+                    PropertyInfo SrcPropAInfo = sourceobj.GetType().GetProperty(col.FromFieldName);
+                    PropertyInfo DestPropAInfo = destobj.GetType().GetProperty(col.ToFieldName);
+                    var val= SrcPropAInfo.GetValue(sourceobj, null);
+                    DestPropAInfo.SetValue(destobj, val, null);
+                   
+                }
+                catch (Exception ex)
+                {
+
+
+                }
+              
+            }
+            return destobj;
+
+
+        }
+        public object GetFieldValueFromObject(string fieldname, object sourceobj)
+        {
+            PropertyInfo SrcPropAInfo = sourceobj.GetType().GetProperty(fieldname);
+            return SrcPropAInfo.GetValue(sourceobj, null);
+
+        }
+        public Type GetCollectionElementType(Type type)
         {
             if (null == type)
                 throw new ArgumentNullException("type");
@@ -968,19 +1061,6 @@ namespace TheTechIdea.Beep
                 return typeof(object);
             return null;
         }
-        public  Type GetEntityType(string EntityName,List<EntityField> Fields)
-        {
-            
-            DMTypeBuilder.CreateNewObject(EntityName, EntityName, Fields);
-            return DMTypeBuilder.myType;
-        }
-        public object GetEntityObject(string EntityName, List<EntityField> Fields)
-        {
-            DMTypeBuilder.CreateNewObject(EntityName, EntityName, Fields);
-            return DMTypeBuilder.myObject;
-        }
-
-       
     }
 }
 

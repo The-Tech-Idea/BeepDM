@@ -194,6 +194,7 @@ namespace TheTechIdea.Util
         }
         public string propertyName { get; set; }
         public string propoertValue { get; set; }
+        public string Rule { get; set; }
         public DefaultValueType propertyType { get; set; }
         public string propertyCategory { get; set; }
        

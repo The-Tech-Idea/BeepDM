@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
+using TheTechIdea.Beep.Workflow.Mapping;
 
 namespace TheTechIdea.Beep.Workflow
 {
@@ -7,7 +8,7 @@ namespace TheTechIdea.Beep.Workflow
     {
         string Description { get; set; }
         string Id { get; set; }
-        List<Mapping_rep> Maps { get; set; }
+        List<EntityDataMap> Maps { get; set; }
         string SchemaName { get; set; }
     }
 }

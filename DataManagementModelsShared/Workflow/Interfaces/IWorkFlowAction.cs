@@ -8,10 +8,22 @@ namespace TheTechIdea.Beep.Workflow
 {
     public interface IWorkFlowAction
     {
-        string Id { get; set; }
+        IDMEEditor DMEEditor { get; set; }
+        IWorkFlowAction PrevAction { get; set; }
+        List<IWorkFlowAction> NextAction { get; set; }
+        List<IPassedArgs> InParameters { get; set; }
+        List<IPassedArgs> OutParameters { get; set; }
+        List<IWorkFlowRule> Rules { get; set; } 
+        bool Finish { get; set; }
         string ClassName { get; set; }
         string FullName { get; set; }
-        string Description { get; set; }
+        event EventHandler<IWorkFlowEventArgs> WorkFlowStepStarted;
+        event EventHandler<IWorkFlowEventArgs> WorkFlowStepEnded;
+        event EventHandler<IWorkFlowEventArgs> WorkFlowStepRunning;
+        PassedArgs PerformAction();
+        PassedArgs StopAction();
+
+       
 
     }
 }

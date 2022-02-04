@@ -19,7 +19,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ClassProperties.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ConnectionProperties.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ConfigandSettings.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\Enums.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Enums\Enums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ErrorsInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\IConfigEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\IConnectionProperties.cs" />
@@ -82,19 +82,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IAddinVisSchema.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IOrder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WEPAPI\IWebAPIDataSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\DataWorkFlow.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IDataWorkFlow.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IDataWorkFlowStep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlow.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IWorkFlow.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IWorkFlowStep.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\LoadDataLogResult.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\EntityDataMap.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMapping_rep.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMapping_rep_fields.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMapping_Rule.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\IMap_Schema.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IMapping_rep_fields.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IWorkFlowRule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IMap_Schema.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IWorkFlowAction.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IWorkFlowActionClassImplementation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IWorkFlowEditor.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IWorkFlowStepRules.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\Mapping_rep.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Mapping\Mapping_rep_fields.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\ObjectTypes.cs" />
@@ -103,6 +100,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlow_Run_Result.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Enums\" />
     <Folder Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\" />
   </ItemGroup>
 </Project>

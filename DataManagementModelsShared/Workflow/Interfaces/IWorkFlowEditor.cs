@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
@@ -10,12 +11,9 @@ namespace TheTechIdea.Beep.Workflow
     {
         IDMEEditor DMEEditor { get; set; }
        
-        List<DataWorkFlow> WorkFlows { get; set; }
-
-        IErrorsInfo CopyEntity(IDataSource src, string SourceEntityName, IDataSource dest, string DestEntityName);
-    
-        IMapping_rep CreateMapping(IMapping_rep x);
-        IMapping_rep CreateMapping(string src1, string entity1, string src2, string entity2);
+        List<IWorkFlow> WorkFlows { get; set; }
+        List<IWorkFlowAction> Actions { get; set; }
+        List<IWorkFlowRule> Rules { get; set; }
         IErrorsInfo RunWorkFlow(string WorkFlowName);
         IErrorsInfo StopWorkFlow();
         IErrorsInfo SyncDatabase(IDataSource src, IRDBSource dest);

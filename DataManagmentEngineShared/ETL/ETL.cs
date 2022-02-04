@@ -7,6 +7,9 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Report;
+using TheTechIdea.Beep.Workflow;
+using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
@@ -16,7 +19,7 @@ namespace TheTechIdea.Beep.Editor
     {
         public ETL()
         {
-
+           
         }
         public event EventHandler<PassedArgs> PassEvent;
         public IDMEEditor DMEEditor { get; set; }
@@ -24,10 +27,10 @@ namespace TheTechIdea.Beep.Editor
         public int ScriptCount { get; set; }
         public int CurrentScriptRecord { get; set; }
         public decimal StopErrorCount { get; set; } = 10;
-        public SyncDataSource script { get; set; } = new SyncDataSource();
+        public ETLScriptHDR script { get; set; } = new ETLScriptHDR();
         private bool stoprun = false;
         private  int errorcnt = 0;
-        //  public LScriptTracking Tracker { get; set; } = new LScriptTracking();
+        private List<DefaultValue> CurrrentDBDefaults = new List<DefaultValue>();
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public List<string> EntitiesNames { get; set; } = new List<string>();
         //private List<SyncEntity> GenerateCopyScripts(List<SyncEntity> rt, EntityStructure item,string destSource)
@@ -49,11 +52,11 @@ namespace TheTechIdea.Beep.Editor
            
         //    return retval;
         //}
-        private SyncEntity GenerateCopyScript(SyncEntity rt, EntityStructure item, string destSource)
+        private ETLScriptDet GenerateCopyScript(ETLScriptDet rt, EntityStructure item, string destSource)
         {
                
             
-                SyncEntity upscript = new SyncEntity();
+                ETLScriptDet upscript = new ETLScriptDet();
                 upscript.sourcedatasourcename = item.DataSourceID;
                 upscript.sourceentityname = item.OriginalEntityName;
                 upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
@@ -66,14 +69,14 @@ namespace TheTechIdea.Beep.Editor
 
             return upscript;
         }
-        public List<SyncEntity> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities,IProgress<PassedArgs> progress, CancellationToken token)
+        public List<ETLScriptDet> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities,IProgress<PassedArgs> progress, CancellationToken token)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
 
             int i = 0;
 
-            List<SyncEntity> retval = new List<SyncEntity>();
-            script = new SyncDataSource();
+            List<ETLScriptDet> retval = new List<ETLScriptDet>();
+            script = new ETLScriptHDR();
             try
             {
                 // Generate Create Table First
@@ -81,10 +84,10 @@ namespace TheTechIdea.Beep.Editor
                 {
                     // ds = DMEEditor.GetDataSource(item.DataSourceID);
                     List<EntityStructure> ls = new List<EntityStructure>();
-                    List<SyncEntity> rt = new List<SyncEntity>();
+                    List<ETLScriptDet> rt = new List<ETLScriptDet>();
                     ls.Add(item);
                     rt = Dest.GetCreateEntityScript(ls);
-                    foreach (SyncEntity sc in rt)
+                    foreach (ETLScriptDet sc in rt)
                     {
                         sc.sourcedatasourcename = item.DataSourceID;
                         sc.sourceDatasourceEntityName = item.DatasourceEntityName;
@@ -118,7 +121,7 @@ namespace TheTechIdea.Beep.Editor
         public void CreateScriptHeader(IDataSource Srcds, IProgress<PassedArgs> progress, CancellationToken token)
         {
             int i = 0;
-            script = new SyncDataSource();
+            script = new ETLScriptHDR();
             script.scriptSource = Srcds.DatasourceName;
             List<EntityStructure> ls = new List<EntityStructure>();
             Srcds.GetEntitesList();
@@ -130,7 +133,7 @@ namespace TheTechIdea.Beep.Editor
             foreach (var item in ls)
             {
 
-                SyncEntity upscript = new SyncEntity();
+                ETLScriptDet upscript = new ETLScriptDet();
                 upscript.sourcedatasourcename = item.DataSourceID;
                 upscript.sourceentityname = item.EntityName;
                 upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
@@ -142,9 +145,9 @@ namespace TheTechIdea.Beep.Editor
                 i += 1;
             }
         }
-        public List<SyncEntity> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token)
+        public List<ETLScriptDet> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token)
         {
-            List<SyncEntity> rt = new List<SyncEntity>();
+            List<ETLScriptDet> rt = new List<ETLScriptDet>();
             try
             {
                 foreach (string item in entities)
@@ -157,7 +160,7 @@ namespace TheTechIdea.Beep.Editor
 
                 if (ds.Entities.Count > 0)
                 {
-                    var t = Task.Run<List<SyncEntity>>(() => { return GetCreateEntityScript(ds, ds.Entities,progress,token); });
+                    var t = Task.Run<List<ETLScriptDet>>(() => { return GetCreateEntityScript(ds, ds.Entities,progress,token); });
                     t.Wait();
                     rt.AddRange(t.Result);
                 }
@@ -226,7 +229,7 @@ namespace TheTechIdea.Beep.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true, EntityDataMap_DTL map_DTL=null)
         {
             try
             {
@@ -244,7 +247,7 @@ namespace TheTechIdea.Beep.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true, EntityDataMap_DTL map_DTL = null)
         {
             try
             {
@@ -271,7 +274,7 @@ namespace TheTechIdea.Beep.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntityData(IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true, EntityDataMap_DTL map_DTL = null)
         {
             try
             {
@@ -284,9 +287,8 @@ namespace TheTechIdea.Beep.Editor
                         IRDBSource rDB = (IRDBSource)destds;
                         rDB.DisableFKConstraints(item);
                     }
-                    if (destds.CreateEntityAs(item))
+                    if (destds.CheckEntityExist(destentity))
                     {
-
                         object srcTb;
                         string entname;
                         var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
@@ -355,12 +357,12 @@ namespace TheTechIdea.Beep.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<SyncEntity> scripts, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
+        public IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<ETLScriptDet> scripts, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true, EntityDataMap_DTL map_DTL = null)
         {
             try
             {
                 string srcentityname = "";
-                foreach (SyncEntity s in scripts.Where(i => i.scriptType == DDLScriptType.CopyData))
+                foreach (ETLScriptDet s in scripts.Where(i => i.scriptType == DDLScriptType.CopyData))
                 {
                     if ((s.sourceentityname != s.sourceDatasourceEntityName) && (!string.IsNullOrEmpty(s.sourceDatasourceEntityName)))
                     {
@@ -379,14 +381,14 @@ namespace TheTechIdea.Beep.Editor
             return DMEEditor.ErrorObject;
         }
         //-----------------------
-         public async Task<IErrorsInfo> RunChildScriptAsync(SyncEntity ParentScript,IDataSource srcds,IDataSource destds, IProgress<PassedArgs> progress, CancellationToken token)
+        public async Task<IErrorsInfo> RunChildScriptAsync(ETLScriptDet ParentScript,IDataSource srcds,IDataSource destds, IProgress<PassedArgs> progress, CancellationToken token)
         {
            
             if (ParentScript.CopyDataScripts.Count > 0)
             {
                 for (int i = 0; i < ParentScript.CopyDataScripts.Count; i++)
                 {
-                    SyncEntity sc = ParentScript.CopyDataScripts[i];
+                    ETLScriptDet sc = ParentScript.CopyDataScripts[i];
                     destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
                     srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
                     if (destds != null && srcds != null)
@@ -430,7 +432,7 @@ namespace TheTechIdea.Beep.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public async Task<IErrorsInfo> RunScriptAsync(IProgress<PassedArgs> progress, CancellationToken token)
+        public async Task<IErrorsInfo> RunCreateScript(IProgress<PassedArgs> progress, CancellationToken token)
         {
             #region "Update Data code "
 
@@ -442,9 +444,9 @@ namespace TheTechIdea.Beep.Editor
             IDataSource srcds = null;
           
             numberToCompute = DMEEditor.ETL.script.Entities.Count();
-            List<SyncEntity> crls = DMEEditor.ETL.script.Entities.Where(i => i.scriptType == DDLScriptType.CreateEntity).ToList();
-            List<SyncEntity> copudatals = DMEEditor.ETL.script.Entities.Where(i => i.scriptType == DDLScriptType.CopyData).ToList();
-            List<SyncEntity> AlterForls = DMEEditor.ETL.script.Entities.Where(i => i.scriptType == DDLScriptType.AlterFor).ToList();
+            List<ETLScriptDet> crls = DMEEditor.ETL.script.Entities.Where(i => i.scriptType == DDLScriptType.CreateEntity).ToList();
+            List<ETLScriptDet> copudatals = DMEEditor.ETL.script.Entities.Where(i => i.scriptType == DDLScriptType.CopyData).ToList();
+            List<ETLScriptDet> AlterForls = DMEEditor.ETL.script.Entities.Where(i => i.scriptType == DDLScriptType.AlterFor).ToList();
             // Run Scripts-----------------
         
             numberToCompute = DMEEditor.ETL.script.Entities.Count;
@@ -452,7 +454,7 @@ namespace TheTechIdea.Beep.Editor
             ScriptCount = p1;
             CurrentScriptRecord = 0;
             errorcnt = 0;
-            foreach (SyncEntity sc in DMEEditor.ETL.script.Entities.Where(u => u.scriptType == DDLScriptType.CreateEntity))
+            foreach (ETLScriptDet sc in DMEEditor.ETL.script.Entities.Where(u => u.scriptType == DDLScriptType.CreateEntity))
             {
                 destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
                 srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
@@ -527,10 +529,76 @@ namespace TheTechIdea.Beep.Editor
                     }
                 }
             }
+
             #endregion
             return DMEEditor.ErrorObject;
         }
-        private IErrorsInfo RunCopyEntityScript(ref SyncEntity sc, IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
+        public async Task<IErrorsInfo> RunImportScript(IProgress<PassedArgs> progress, CancellationToken token)
+        {
+            IDataSource destds = null;
+            IDataSource srcds = null;
+            ScriptCount = 1;
+            CurrentScriptRecord = 0;
+            errorcnt = 0;
+         
+            CurrentScriptRecord += 1;
+            ETLScriptDet sc = DMEEditor.ETL.script.Entities.First();
+            if (sc != null)
+            {
+                destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
+                srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
+                if (errorcnt == StopErrorCount)
+                {
+                    return DMEEditor.ErrorObject;
+                }
+                if (destds != null)
+                {
+                    DMEEditor.OpenDataSource(sc.destinationdatasourcename);
+                    if (stoprun == false)
+                    {
+                        if (destds.ConnectionStatus == System.Data.ConnectionState.Open)
+                        {
+                            if (sc.scriptType == DDLScriptType.CopyData)
+                            {
+                                CurrrentDBDefaults = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == destds.DatasourceName)].DatasourceDefaults;
+                               
+                                EntityStructure entitystr = (EntityStructure)srcds.GetEntityStructure(sc.sourceDatasourceEntityName, false).Clone();
+
+                                sc.errormessage = DMEEditor.ErrorObject.Message;
+                                sc.errorsInfo = DMEEditor.ErrorObject;
+                                sc.Active = false;
+                                if (progress != null)
+                                {
+                                    PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                                    progress.Report(ps);
+                                }
+                                if (errorcnt == StopErrorCount)
+                                {
+                                    return DMEEditor.ErrorObject;
+                                }
+                                var src = await Task.Run(() => { return RunCopyEntityScript(ref sc, srcds, destds, sc.sourceentityname, sc.destinationentityname, progress, token, false, sc.Mapping); });
+                            }
+                            else
+                            {
+                                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                                DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
+                            }
+
+                            if (progress != null)
+                            {
+                                PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
+                                progress.Report(ps);
+
+                            }
+
+                        }
+                    }
+                }
+            }
+            return DMEEditor.ErrorObject;
+
+        }
+        private IErrorsInfo RunCopyEntityScript(ref ETLScriptDet sc, IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true, EntityDataMap_DTL map_DTL=null)
         {
             try
             {
@@ -543,16 +611,40 @@ namespace TheTechIdea.Beep.Editor
                         IRDBSource rDB = (IRDBSource)destds;
                         rDB.DisableFKConstraints(item);
                     }
-                    if (destds.CheckEntityExist(item.EntityName))
+                    if (destds.CheckEntityExist(destentity))
                     {
                         object srcTb;
-                        var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
+                        string querystring = null;
+                        List<ReportFilter> filters = null;
+                        List<EntityField> SelectedFields=null;
+                        List<EntityField> SourceFields = null;
+                        if (map_DTL != null)
+                        {
+                            SelectedFields = map_DTL.SelectedDestFields;
+                            SourceFields = map_DTL.EntityFields;
+                            //querystring = "Select ";
+                            //foreach (Mapping_rep_fields mp in map_DTL.FieldMapping)
+                            //{
+                            //    querystring += mp.FromFieldName + " ,";
+                            //}
+                            //querystring = querystring.Remove(querystring.Length - 1);
+                            //querystring += $" from {map_DTL.EntityName} ";
+                            querystring = item.EntityName;
+                        }
+                        else
+                        {
+                            querystring = item.EntityName;
+                            filters = null;
+                            SelectedFields = item.Fields;
+                            SourceFields = item.Fields;
+                        }
+                        var src = Task.Run(() => { return sourceds.GetEntity(querystring, filters); });
                         src.Wait();
                         srcTb = src.Result;
                         List<object> srcList = new List<object>();
                         if (src.Result != null)
                         {
-                            DMTypeBuilder.CreateNewObject(item.EntityName, item.EntityName, item.Fields);
+                            DMTypeBuilder.CreateNewObject(item.EntityName, item.EntityName, SourceFields);
                             if (srcTb.GetType().FullName.Contains("DataTable"))
                             {
                                 srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, item);
@@ -569,8 +661,13 @@ namespace TheTechIdea.Beep.Editor
                             ScriptCount += srcList.Count();
                             foreach (var r in srcList)
                             {
+                                object retval = r;
+                                if (map_DTL != null)
+                                {
+                                    retval = DMEEditor.Utilfunction.MapObjectToAnother(destentity, map_DTL, r);
+                                }
                                 CurrentScriptRecord += 1;
-                                DMEEditor.ErrorObject = destds.InsertEntity(sc.destinationentityname, r);
+                                DMEEditor.ErrorObject = destds.InsertEntity(sc.destinationentityname, retval);
                                 token.ThrowIfCancellationRequested();
                                 if (DMEEditor.ErrorObject.Flag == Errors.Failed)
                                 {
@@ -633,6 +730,26 @@ namespace TheTechIdea.Beep.Editor
             }
             return DMEEditor.ErrorObject;
         }
+        #region "Import Methods"
+        public IErrorsInfo CreateImportScript(EntityDataMap mapping, EntityDataMap_DTL SelectedMapping)
+        {
+            try
+            {
+                script = new ETLScriptHDR();
+                script.scriptSource = SelectedMapping.EntityDataSource;
+                
+                script.Entities.Add(new ETLScriptDet() { Active = true, destinationdatasourcename = mapping.EntityDataSource, destinationDatasourceEntityName = mapping.EntityName, destinationentityname = mapping.EntityName, scriptType = DDLScriptType.CopyData, Mapping = SelectedMapping, sourcedatasourcename = SelectedMapping.EntityDataSource,sourceDatasourceEntityName= SelectedMapping.EntityName, sourceentityname = SelectedMapping.EntityName });
+                DMEEditor.AddLogMessage("OK", $"Generated Copy Data script", DateTime.Now, -1, "CopyDatabase", Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Error Generating Copy Data script ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+       
+        #endregion
+
     }
     
 }

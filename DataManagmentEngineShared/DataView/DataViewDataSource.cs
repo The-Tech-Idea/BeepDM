@@ -445,7 +445,7 @@ namespace TheTechIdea.Beep.DataView
                     return Entities[EntityListIndex(fnd.EntityName)];    
             }
         }
-        public IErrorsInfo RunScript(SyncEntity dDLScripts)
+        public IErrorsInfo RunScript(ETLScriptDet dDLScripts)
         {
             if (ds.ConnectionStatus == ConnectionState.Open)
             {
@@ -464,9 +464,9 @@ namespace TheTechIdea.Beep.DataView
             Entities.AddRange(entities);
             return DMEEditor.ErrorObject;
         }
-        public List<SyncEntity> GetCreateEntityScript(List<EntityStructure> entities = null)
+        public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
-            List<SyncEntity> ls = new List<SyncEntity>();
+            List<ETLScriptDet> ls = new List<ETLScriptDet>();
             foreach (EntityStructure item in entities)
             {
                 ds = DMEEditor.GetDataSource(item.DataSourceID);

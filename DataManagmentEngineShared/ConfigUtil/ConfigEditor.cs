@@ -48,7 +48,7 @@ namespace TheTechIdea.Util
 		public List<ConnectionProperties> DataConnections { get; set; } = new List<ConnectionProperties>(); //DataSourceConnectionConfig
 	//	public List<Mapping_rep> Mappings { get; set; } = new List<Mapping_rep>();
 	//	public List<Map_Schema> MappingSchema { get; set; } = new List<Map_Schema>();
-		public List<DataWorkFlow> WorkFlows { get; set; } = new List<DataWorkFlow>();
+		public List<WorkFlow> WorkFlows { get; set; } = new List<WorkFlow>();
 		public List<CategoryFolder> CategoryFolders { get; set; } = new List<CategoryFolder>();
 		public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> GlobalFunctions { get; set; } = new List<AssemblyClassDefinition>();
@@ -56,6 +56,10 @@ namespace TheTechIdea.Util
 	//	public List<App> Apps { get; set; } = new List<App>();
 		public List<AssemblyClassDefinition> AppComponents { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> ReportWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
+		public List<AssemblyClassDefinition> PrintManagers { get; set; }=new List<AssemblyClassDefinition>();
+		public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
+		public List<AssemblyClassDefinition> WorkFlowActions { get; set; } = new List<AssemblyClassDefinition>();
+		public List<AssemblyClassDefinition> Rules { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AddinTreeStructure> AddinTreeStructure { get; set; } = new List<AddinTreeStructure>();
 		public List<Function2FunctionAction> Function2Functions { get; set; } = new List<Function2FunctionAction>();
 		public List<ObjectTypes> objectTypes { get; set; } = new List<ObjectTypes>();
@@ -68,11 +72,10 @@ namespace TheTechIdea.Util
 		public List<DatatypeMapping> DataTypesMap { get; set; } = new List<DatatypeMapping>();
 	//	public List<DataSourceFieldProperties> AppfieldProperties { get; set; } = new List<DataSourceFieldProperties>();
 		public Dictionary<string, string> Entities { get; set; } = new Dictionary<string, string>();
-		public List<SyncDataSource> Scripts { get; set; } = new List<SyncDataSource>();
-		public List<SyncDataSource> SyncedDataSources { get; set; } = new List<SyncDataSource>();
-		public List<AssemblyClassDefinition> WorkFlowActions { get; set; } = new List<AssemblyClassDefinition>();
+		public List<ETLScriptHDR> Scripts { get; set; } = new List<ETLScriptHDR>();
+		public List<ETLScriptHDR> SyncedDataSources { get; set; } = new List<ETLScriptHDR>();
 		public List<ConnectionDriversConfig> DataDriversClasses { get; set; } = new List<ConnectionDriversConfig>();
-		public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
+		
 		public string ExePath { get; set; } // System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location); //System.Reflection.Assembly.GetExecutingAssembly().Location
 		public string ConfigPath { get; set; } 
 		
@@ -84,10 +87,10 @@ namespace TheTechIdea.Util
 			JsonLoader.Serialize(path, Scripts);
 
 		}
-		public List<SyncDataSource> LoadScriptsValues()
+		public List<ETLScriptHDR> LoadScriptsValues()
 		{
 			string path = Path.Combine(Config.ScriptsPath, "Scripts.json");
-			Scripts = JsonLoader.DeserializeObject<SyncDataSource>(path);
+			Scripts = JsonLoader.DeserializeObject<ETLScriptHDR>(path);
 			return Scripts;
 		}
 		public void SaveScriptTrackingValues(SyncErrorsandTracking scriptid)
@@ -889,7 +892,7 @@ namespace TheTechIdea.Util
 			try
 			{
 				string path = Path.Combine(ExePath + @"\WorkFlow\", "DataWorkFlow.json");
-				WorkFlows = JsonLoader.DeserializeObject<DataWorkFlow>(path);
+				WorkFlows = JsonLoader.DeserializeObject<WorkFlow>(path);
 		
 			}
 			catch (System.Exception )
@@ -945,10 +948,10 @@ namespace TheTechIdea.Util
 
 
 		}
-		public List<SyncDataSource> ReadSyncDataSource(string filename = "SyncDataSource")
+		public List<ETLScriptHDR> ReadSyncDataSource(string filename = "SyncDataSource")
 		{
 			string path = Path.Combine(ConfigPath, $"{filename}.json");
-			SyncedDataSources = JsonLoader.DeserializeObject<SyncDataSource>(path);
+			SyncedDataSources = JsonLoader.DeserializeObject<ETLScriptHDR>(path);
 			return SyncedDataSources;
 		}
 		#endregion

@@ -9,14 +9,14 @@ namespace TheTechIdea.Beep.Workflow
 {
     public class Mapping_rep_fields : IMapping_rep_fields
     {
-        public string EntityName1 { get; set; }
-        public string FieldName1 { get; set; }
-        public string FieldType1 { get; set; }
-        public int FieldIndex1 { get; set; }
-        public string EntityName2 { get; set; }
-        public string FieldName2 { get; set; }
-        public string FieldType2 { get; set; }
-        public int FieldIndex2 { get; set; }
+        public string ToEntityName { get; set; }
+        public string ToFieldName { get; set; }
+        public string ToFieldType { get; set; }
+        public int ToFieldIndex { get; set; }
+        public string FromEntityName { get; set; }
+        public string FromFieldName { get; set; }
+        public string FromFieldType { get; set; }
+        public int FromFieldIndex { get; set; }
         public string Rules { get; set; }
         public Mapping_rep_fields()
         {

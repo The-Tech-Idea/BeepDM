@@ -1,19 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using TheTechIdea.Beep.Workflow.Mapping;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class SyncDataSource
+    public class ETLScriptHDR
     {
-        public SyncDataSource()
+        public ETLScriptHDR()
         {;
             id = 1;
         }
-        public List<SyncEntity> Entities { get; set; } = new List<SyncEntity>();
+        public List<ETLScriptDet> Entities { get; set; } = new List<ETLScriptDet>();
         public string workflowFileId { get; set; }
         public string scriptSource { get; set; }
-        public string mappingschemaFileId { get; set; }
+      
         public  int id { get; set; }
 
 

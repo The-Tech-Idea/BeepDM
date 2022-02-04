@@ -14,7 +14,7 @@ namespace TheTechIdea.Beep.Workflow
 {
     public class WorkFlowStepEditor 
     {
-        public WorkFlowStepEditor(IWorkFlowEditor pWorkEdit, IDMEEditor pDME, IDataWorkFlowStep step)
+        public WorkFlowStepEditor(IWorkFlowEditor pWorkEdit, IDMEEditor pDME, IWorkFlowStep step)
         {
 
             DMEEditor = pDME;
@@ -23,7 +23,7 @@ namespace TheTechIdea.Beep.Workflow
             WorkFlowStep = step;
         }
 
-        public IDataWorkFlowStep WorkFlowStep { get; set; }
+        public IWorkFlowStep WorkFlowStep { get; set; }
         public IWorkFlowEditor WorkEditor { get; set; }
 
         public IDMEEditor DMEEditor { get; set; }

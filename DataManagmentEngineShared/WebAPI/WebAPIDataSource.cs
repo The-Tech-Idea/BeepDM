@@ -206,7 +206,7 @@ namespace TheTechIdea.Beep.WebAPI
         }
 
         
-        public IErrorsInfo RunScript(SyncEntity dDLScripts)
+        public IErrorsInfo RunScript(ETLScriptDet dDLScripts)
         {
             throw new NotImplementedException();
         }
@@ -215,7 +215,7 @@ namespace TheTechIdea.Beep.WebAPI
         {
             throw new NotImplementedException();
         }
-        public List<SyncEntity> GetCreateEntityScript(List<EntityStructure> entities = null)
+        public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
             throw new NotImplementedException();
         }

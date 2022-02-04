@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
    
-    public class SyncEntity : ISyncEntity
+    public class ETLScriptDet : ISyncEntity
     {
-        public SyncEntity()
+        public ETLScriptDet()
         {
             id = 1;
         }
@@ -26,8 +27,9 @@ namespace TheTechIdea.Beep.Editor
         public bool Active { get; set; } = false;
         public IErrorsInfo errorsInfo { get; set; }
         public DDLScriptType scriptType { get; set; }
+        public EntityDataMap_DTL Mapping { get; set; }
         public List<SyncErrorsandTracking> Tracking { get; set; } = new List<SyncErrorsandTracking>();
-        public List<SyncEntity> CopyDataScripts { get; set; } = new List<SyncEntity>();
+        public List<ETLScriptDet> CopyDataScripts { get; set; } = new List<ETLScriptDet>();
     }
    
    

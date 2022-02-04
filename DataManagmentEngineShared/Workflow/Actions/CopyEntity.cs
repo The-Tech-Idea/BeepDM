@@ -9,6 +9,7 @@ using TheTechIdea;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Workflow;
+using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
@@ -25,7 +26,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
         public IDMLogger logger { get; set; }
         public bool Finish { get; set; }
         public IDMEEditor DMEEditor { get; set ; }
-        public Mapping_rep Mapping { get; set; }
+        public EntityDataMap Mapping { get; set; }
         public List<IPassedArgs> InParameters { get; set; }
         public List<IPassedArgs> OutParameters { get; set; }
         public List<EntityStructure> OutStructures { get; set; }
@@ -35,21 +36,21 @@ namespace TheTechIdea.Beep.Workflow.Actions
         public string ClassName { get ; set ; }
         public string FullName { get ; set ; }
 
-        public event EventHandler<IDataWorkFlowEventArgs> WorkFlowStepStarted;
-        public event EventHandler<IDataWorkFlowEventArgs> WorkFlowStepEnded;
-        public event EventHandler<IDataWorkFlowEventArgs> WorkFlowStepRunning;
+        public event EventHandler<IWorkFlowEventArgs> WorkFlowStepStarted;
+        public event EventHandler<IWorkFlowEventArgs> WorkFlowStepEnded;
+        public event EventHandler<IWorkFlowEventArgs> WorkFlowStepRunning;
 
-        public void OnWorkFlowStepEnded(IDataWorkFlowEventArgs e)
+        public void OnWorkFlowStepEnded(IWorkFlowEventArgs e)
         {
             throw new NotImplementedException();
         }
 
-        public void OnWorkFlowStepRunning(IDataWorkFlowEventArgs e)
+        public void OnWorkFlowStepRunning(IWorkFlowEventArgs e)
         {
             throw new NotImplementedException();
         }
 
-        public void OnWorkFlowStepStarted(IDataWorkFlowEventArgs e)
+        public void OnWorkFlowStepStarted(IWorkFlowEventArgs e)
         {
             throw new NotImplementedException();
         }

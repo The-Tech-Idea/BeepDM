@@ -43,7 +43,7 @@ namespace TheTechIdea.Util
     
     public enum DefaultValueType
     {
-        DisplayLookup,ReplaceValue
+        DisplayLookup,ReplaceValue,Rule
     }
     public enum AddinType
     {
@@ -53,6 +53,9 @@ namespace TheTechIdea.Util
     {
         Insert,Update,Delete,Select
     }
-   
+    public enum EntityValidatorMesseges
+    {
+        OK,NullField,DuplicateValue,MissingRefernceValue
+    }
 
 }

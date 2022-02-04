@@ -39,7 +39,8 @@ namespace TheTechIdea.Beep.DataBase
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public IDataConnection Dataconnection { get; set; }
         public RDBDataConnection RDBMSConnection { get { return (RDBDataConnection)Dataconnection; } }
-      
+        static int recNumber = 0;
+        static string recEntity = "";
         public RDBSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
         {
             DatasourceName = datasourcename;
@@ -186,6 +187,13 @@ namespace TheTechIdea.Beep.DataBase
         }
        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
+            if (recEntity != EntityName)
+            {
+                recNumber = 1;
+                recEntity = EntityName;
+            }
+            else
+                recNumber += 1;
             if (UploadData != null)
             {
                 if (UploadData.GetType().ToString() != "System.Data.DataTable")
@@ -367,7 +375,14 @@ namespace TheTechIdea.Beep.DataBase
         }
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
-           // DataRow tb = object UploadDataRow;
+            if (recEntity != EntityName)
+            {
+                recNumber = 1;
+                recEntity = EntityName;
+            }
+            else
+                recNumber += 1;
+            // DataRow tb = object UploadDataRow;
             ErrorObject.Flag = Errors.Ok;
             EntityStructure DataStruct = GetEntityStructure(EntityName, true);
             DataRowView dv;
@@ -379,39 +394,39 @@ namespace TheTechIdea.Beep.DataBase
             Type enttype = GetEntityType(EntityName);
             var ti = Activator.CreateInstance(enttype);
             // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
-            if (UploadDataRow.GetType().FullName == "System.Data.DataRowView")
-            {
-                dv = (DataRowView)UploadDataRow;
-                dr = dv.Row;
+            //if (UploadDataRow.GetType().FullName == "System.Data.DataRowView")
+            //{
+            //    dv = (DataRowView)UploadDataRow;
+            //    dr = dv.Row;
 
-            } else 
-            if (UploadDataRow.GetType().FullName == "System.Data.DataRow")
-            {
-                dr = (DataRow)UploadDataRow;
-            }
-            else
-            {
-                dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
-                foreach (EntityField col in DataStruct.Fields)
-                {
-                    System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname);
+            //} else 
+            //if (UploadDataRow.GetType().FullName == "System.Data.DataRow")
+            //{
+            //    dr = (DataRow)UploadDataRow;
+            //}
+            //else
+            //{
+            //    dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
+            //    foreach (EntityField col in DataStruct.Fields)
+            //    {
+            //        System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname);
 
-                    //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
-                    //{
-                    System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-                    dynamic result = GetPropAInfo.GetValue(UploadDataRow);
+            //        //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
+            //        //{
+            //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+            //        dynamic result = GetPropAInfo.GetValue(UploadDataRow);
 
-                    if (result == null)
-                    {
-                        result = System.DBNull.Value;
-                    }
+            //        if (result == null)
+            //        {
+            //            result = System.DBNull.Value;
+            //        }
 
 
-                    dr[col.fieldname] = result;
-                }
-            }
-               
-            
+            //        dr[col.fieldname] = result;
+            //    }
+            //}
+
+            dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, UploadDataRow, DataStruct);
             try
             {
                 string updatestring = GetUpdateString(EntityName,  DataStruct);
@@ -471,51 +486,59 @@ namespace TheTechIdea.Beep.DataBase
             IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
             var ti = Activator.CreateInstance(enttype);
+            if (recEntity != EntityName)
+            {
+                recNumber = 1;
+                recEntity = EntityName;
+            }
+            else
+                recNumber += 1;
             // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
-            if (DeletedDataRow.GetType().FullName == "System.Data.DataRowView")
-            {
-                dv = (DataRowView)DeletedDataRow;
-                dr = dv.Row;
-                //foreach (EntityField col in DataStruct.Fields)
-                //{
-                //    // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
-                //    //if (dr[col.fieldname] != System.DBNull.Value)
-                //    //{
-                //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-                //        PropAInfo.SetValue(ti, dr[col.fieldname], null);
-                //    //}
+            //if (DeletedDataRow.GetType().FullName == "System.Data.DataRowView")
+            //{
+            //    dv = (DataRowView)DeletedDataRow;
+            //    dr = dv.Row;
+            //    //foreach (EntityField col in DataStruct.Fields)
+            //    //{
+            //    //    // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
+            //    //    //if (dr[col.fieldname] != System.DBNull.Value)
+            //    //    //{
+            //    //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+            //    //        PropAInfo.SetValue(ti, dr[col.fieldname], null);
+            //    //    //}
 
-                //}
+            //    //}
 
-            }
-            else
-               if (DeletedDataRow.GetType().FullName == "System.Data.DataRow")
-            {
-                dr = (DataRow)DeletedDataRow;
-            }
-            else
-            {
-                // Get where condition
+            //}
+            //else
+            //   if (DeletedDataRow.GetType().FullName == "System.Data.DataRow")
+            //{
+            //    dr = (DataRow)DeletedDataRow;
+            //}
+            //else
+            //{
+            //    // Get where condition
 
-                dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
-                foreach (EntityField col in DataStruct.Fields)
-                {
-                    System.Reflection.PropertyInfo GetPropAInfo = DeletedDataRow.GetType().GetProperty(col.fieldname);
+            //    dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
+            //    foreach (EntityField col in DataStruct.Fields)
+            //    {
+            //        System.Reflection.PropertyInfo GetPropAInfo = DeletedDataRow.GetType().GetProperty(col.fieldname);
 
-                    //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
-                    //{
-                    System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-                    dynamic result = GetPropAInfo.GetValue(DeletedDataRow);
+            //        //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
+            //        //{
+            //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+            //        dynamic result = GetPropAInfo.GetValue(DeletedDataRow);
 
-                    if (result == null)
-                    {
-                        result = System.DBNull.Value;
-                    }
+            //        if (result == null)
+            //        {
+            //            result = System.DBNull.Value;
+            //        }
 
 
-                    dr[col.fieldname] = result;
-                }
-            }
+            //        dr[col.fieldname] = result;
+            //    }
+            //}
+            dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, DeletedDataRow, DataStruct);
             try
             {
                 string updatestring = GetDeleteString(EntityName, DataStruct);
@@ -571,61 +594,71 @@ namespace TheTechIdea.Beep.DataBase
             // DataRow tb = object UploadDataRow;
             ErrorObject.Flag = Errors.Ok;
             EntityStructure DataStruct = GetEntityStructure(EntityName, true);
-            DataRowView dv;
-            DataTable tb;
+            //DataRowView dv;
+            //DataTable tb;
             DataRow dr;
             string msg = "";
             //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
             IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
             var ti = Activator.CreateInstance(enttype);
+            string updatestring="";
+            if (recEntity != EntityName)
+            {
+                recNumber = 1;
+                recEntity = EntityName;
+            }
+            else
+                recNumber += 1;
             // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
-            if (InsertedData.GetType().FullName == "System.Data.DataRowView")
-            {
-                dv = (DataRowView)InsertedData;
-                dr = dv.Row;
-           
-            }
-            else
-               if (InsertedData.GetType().FullName == "System.Data.DataRow")
-            {
-                dr = (DataRow)InsertedData;
-            }
-            else
-            {
-                dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
-                foreach (EntityField col in DataStruct.Fields)
-                {
-                    System.Reflection.PropertyInfo GetPropAInfo = InsertedData.GetType().GetProperty(col.fieldname);
+            //if (InsertedData.GetType().FullName == "System.Data.DataRowView")
+            //{
+            //    dv = (DataRowView)InsertedData;
+            //    dr = dv.Row;
 
-                    //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
-                    //{
-                    System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-                    dynamic result = GetPropAInfo.GetValue(InsertedData);
+            //}
+            //else
+            //   if (InsertedData.GetType().FullName == "System.Data.DataRow")
+            //{
+            //    dr = (DataRow)InsertedData;
+            //}
+            //else
+            //{
+            //    dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
+            //    foreach (EntityField col in DataStruct.Fields)
+            //    {
+            //        System.Reflection.PropertyInfo GetPropAInfo = InsertedData.GetType().GetProperty(col.fieldname);
 
-                    if (result == null)
-                    {
-                        result = System.DBNull.Value;
-                    }
+            //        //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
+            //        //{
+            //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+            //        dynamic result = GetPropAInfo.GetValue(InsertedData);
 
-                    if (result != null)
-                    {
-                        if (col.fieldtype.Contains("Date"))
-                        { 
-                            DateTime dt = (DateTime)result;
-                            if (dt == DateTime.MinValue || dt == DateTime.MaxValue)
-                            {
-                                result = DBNull.Value;
-                            }
-                           
-                        }
-                    }
-                    dr[col.fieldname] = result;
-                }
-            }
+            //        if (result == null)
+            //        {
+            //            result = System.DBNull.Value;
+            //        }
+
+            //        if (result != null)
+            //        {
+            //            if (col.fieldtype.Contains("Date"))
+            //            { 
+            //                DateTime dt = (DateTime)result;
+            //                if (dt == DateTime.MinValue || dt == DateTime.MaxValue)
+            //                {
+            //                    result = DBNull.Value;
+            //                }
+
+            //            }
+            //        }
+            //        dr[col.fieldname] = result;
+            //    }
+            //}
+
+            dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, InsertedData, DataStruct);
             try
             {
-                string updatestring = GetInsertString(EntityName, DataStruct);
+                updatestring = GetInsertString(EntityName, DataStruct);
 
 
                 command.CommandText = updatestring;
@@ -659,7 +692,7 @@ namespace TheTechIdea.Beep.DataBase
                 DMEEditor.ErrorObject.Flag = Errors.Failed;
                 command.Dispose();
                
-                DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
+                DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, updatestring, Errors.Failed);
 
             }
 
@@ -1248,7 +1281,7 @@ namespace TheTechIdea.Beep.DataBase
                 return null;
             }
         }
-        public IErrorsInfo RunScript(SyncEntity scripts)
+        public IErrorsInfo RunScript(ETLScriptDet scripts)
         {
             var t = Task.Run<IErrorsInfo>(() => { return ExecuteSql(scripts.ddl); });
             t.Wait();
@@ -1257,7 +1290,7 @@ namespace TheTechIdea.Beep.DataBase
             DMEEditor.ErrorObject = scripts.errorsInfo;
             return DMEEditor.ErrorObject;
         }
-        public List<SyncEntity> GetCreateEntityScript(List<EntityStructure> entities)
+        public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities)
         {
             return GetDDLScriptfromDatabase(entities);
         }
@@ -1333,17 +1366,17 @@ namespace TheTechIdea.Beep.DataBase
             }
             return createtablestring;
         }
-        public List<SyncEntity> GenerateCreatEntityScript(List<EntityStructure> entities)
+        public List<ETLScriptDet> GenerateCreatEntityScript(List<EntityStructure> entities)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             int i = 0;
-            List<SyncEntity> rt = new List<SyncEntity>();
+            List<ETLScriptDet> rt = new List<ETLScriptDet>();
             try
             {
                 // Generate Create Table First
                 foreach (EntityStructure item in entities)
                 {
-                    SyncEntity x = new SyncEntity();
+                    ETLScriptDet x = new ETLScriptDet();
                     x.destinationdatasourcename = DatasourceName;
 
                     x.ddl = CreateEntity(item);
@@ -1364,18 +1397,18 @@ namespace TheTechIdea.Beep.DataBase
             return rt;
 
         }
-        public List<SyncEntity> GenerateCreatEntityScript(EntityStructure entity)
+        public List<ETLScriptDet> GenerateCreatEntityScript(EntityStructure entity)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
 
             int i = 0;
 
-            List<SyncEntity> rt = new List<SyncEntity>();
+            List<ETLScriptDet> rt = new List<ETLScriptDet>();
             try
             {
                 // Generate Create Table First
 
-                SyncEntity x = new SyncEntity();
+                ETLScriptDet x = new ETLScriptDet();
                 x.destinationdatasourcename = DatasourceName;
                 x.ddl = CreateEntity(entity);
                 x.sourceDatasourceEntityName = entity.DatasourceEntityName;
@@ -1393,9 +1426,9 @@ namespace TheTechIdea.Beep.DataBase
             return rt;
 
         }
-        private List<SyncEntity> GetDDLScriptfromDatabase(string entity)
+        private List<ETLScriptDet> GetDDLScriptfromDatabase(string entity)
         {
-            List<SyncEntity> rt = new List<SyncEntity>();
+            List<ETLScriptDet> rt = new List<ETLScriptDet>();
 
             try
             {
@@ -1412,10 +1445,10 @@ namespace TheTechIdea.Beep.DataBase
                 {
                     DMEEditor.AddLogMessage("Fail", $"Error getting entity structure for {entity}", DateTime.Now, entstructure.Id, entstructure.DataSourceID, Errors.Failed);
                 }
-                var t2 = Task.Run<List<SyncEntity>>(() => { return GenerateCreatEntityScript(entstructure); });
+                var t2 = Task.Run<List<ETLScriptDet>>(() => { return GenerateCreatEntityScript(entstructure); });
                 t2.Wait();
                 rt.AddRange(t2.Result);
-                t2 = Task.Run<List<SyncEntity>>(() => { return CreateForKeyRelationScripts(entstructure); });
+                t2 = Task.Run<List<ETLScriptDet>>(() => { return CreateForKeyRelationScripts(entstructure); });
                 t2.Wait();
                 rt.AddRange(t2.Result);
             }
@@ -1425,14 +1458,14 @@ namespace TheTechIdea.Beep.DataBase
             }
             return rt;
         }
-        private List<SyncEntity> GetDDLScriptfromDatabase(List<EntityStructure> structureentities)
+        private List<ETLScriptDet> GetDDLScriptfromDatabase(List<EntityStructure> structureentities)
         {
-            List<SyncEntity> rt = new List<SyncEntity>();
+            List<ETLScriptDet> rt = new List<ETLScriptDet>();
             try
             {
                 if (structureentities.Count > 0)
                 {
-                    var t = Task.Run<List<SyncEntity>>(() => { return GenerateCreatEntityScript(structureentities); });
+                    var t = Task.Run<List<ETLScriptDet>>(() => { return GenerateCreatEntityScript(structureentities); });
                     t.Wait();
                     rt.AddRange(t.Result);
                 }
@@ -1506,9 +1539,9 @@ namespace TheTechIdea.Beep.DataBase
                 return null;
             };
         }
-        private List<SyncEntity> CreateForKeyRelationScripts(EntityStructure entity)
+        private List<ETLScriptDet> CreateForKeyRelationScripts(EntityStructure entity)
         {
-            List<SyncEntity> rt = new List<SyncEntity>();
+            List<ETLScriptDet> rt = new List<ETLScriptDet>();
             try
             {
                 int i = 0;
@@ -1522,7 +1555,7 @@ namespace TheTechIdea.Beep.DataBase
                         string[] rels = relations.Split(';');
                         foreach (string rl in rels)
                         {
-                            SyncEntity x = new SyncEntity();
+                            ETLScriptDet x = new ETLScriptDet();
                             x.destinationdatasourcename = DatasourceName;
                             ds = DMEEditor.GetDataSource(entity.DataSourceID);
                             x.sourceDatasourceEntityName = entity.DatasourceEntityName;
@@ -1541,9 +1574,9 @@ namespace TheTechIdea.Beep.DataBase
             }
             return rt;
         }
-        private List<SyncEntity> CreateForKeyRelationScripts(List<EntityStructure> entities)
+        private List<ETLScriptDet> CreateForKeyRelationScripts(List<EntityStructure> entities)
         {
-            List<SyncEntity> rt = new List<SyncEntity>();
+            List<ETLScriptDet> rt = new List<ETLScriptDet>();
 
             try
             {
@@ -1556,7 +1589,7 @@ namespace TheTechIdea.Beep.DataBase
                     {
                         if (item.Relations.Count > 0)
                         {
-                            SyncEntity x = new SyncEntity();
+                            ETLScriptDet x = new ETLScriptDet();
                             x.destinationdatasourcename = item.DataSourceID;
                             ds = DMEEditor.GetDataSource(item.DataSourceID);
                             x.sourceDatasourceEntityName = item.DatasourceEntityName;

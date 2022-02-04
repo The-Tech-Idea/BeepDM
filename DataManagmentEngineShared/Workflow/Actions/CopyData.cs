@@ -12,6 +12,7 @@ using TheTechIdea;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Workflow.Mapping;
 
 namespace TheTechIdea.Beep.Workflow.Actions
 {
@@ -28,7 +29,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
         public List<IPassedArgs> InParameters { get; set; }
         public List<IPassedArgs> OutParameters { get; set; }
         public List<EntityStructure> OutStructures { get; set; }
-        public Mapping_rep Mapping { get; set; }
+        public EntityDataMap Mapping { get; set; }
         public bool Finish { get; set; }
         public IDataSource Inds { get; set; }
         public IDataSource Outds { get; set; }
@@ -37,9 +38,9 @@ namespace TheTechIdea.Beep.Workflow.Actions
 
         public List<string> EntitesNames { get; set; }
         EntityStructure ent;
-        public event EventHandler<IDataWorkFlowEventArgs> WorkFlowStepStarted;
-        public event EventHandler<IDataWorkFlowEventArgs> WorkFlowStepEnded;
-        public event EventHandler<IDataWorkFlowEventArgs> WorkFlowStepRunning;
+        public event EventHandler<IWorkFlowEventArgs> WorkFlowStepStarted;
+        public event EventHandler<IWorkFlowEventArgs> WorkFlowStepEnded;
+        public event EventHandler<IWorkFlowEventArgs> WorkFlowStepRunning;
 
       
        public  IErrorsInfo PerformAction()
@@ -122,7 +123,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
             BackgroundWorker.WorkerReportsProgress = true;
             BackgroundWorker.ProgressChanged += (sender, eventArgs) =>
             {
-                IDataWorkFlowEventArgs passedArgs = new IDataWorkFlowEventArgs();
+                IWorkFlowEventArgs passedArgs = new IWorkFlowEventArgs();
                 ObjectItem item = new ObjectItem();
                 item.obj = eventArgs;
                 item.Name = "backgroundworkerprogress";
@@ -136,7 +137,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
 
             BackgroundWorker.DoWork += (sender, e) =>
             {
-                IDataWorkFlowEventArgs passedArgs = new IDataWorkFlowEventArgs();
+                IWorkFlowEventArgs passedArgs = new IWorkFlowEventArgs();
                 ObjectItem item1 = new ObjectItem();
                 item1.obj = e;
                 item1.Name = "backgroundworkerstarted";
@@ -200,7 +201,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
             {
                 // do something on the UI thread, like
                 // update status or display "result"
-                IDataWorkFlowEventArgs passedArgs = new IDataWorkFlowEventArgs();
+                IWorkFlowEventArgs passedArgs = new IWorkFlowEventArgs();
                 ObjectItem item = new ObjectItem();
                 item.obj = eventArgs;
                 item.Name = "backgroundworkerended";

@@ -7,6 +7,7 @@ using System.Dynamic;
 using System.Reflection;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Workflow;
+using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
@@ -55,5 +56,10 @@ namespace TheTechIdea.Beep
         Type GetListType(object someList);
         DataTable CreateDataTableFromListofStrings(List<string> strings);
         void GetEntityStructureFromListorTable(ref EntityStructure entity, dynamic retval);
+
+        DataRow GetDataRowFromobject(string EntityName, Type enttype, object UploadDataRow, EntityStructure DataStruct);
+        Type GetCollectionElementType(Type type);
+        object MapObjectToAnother(string DestEntityname, EntityDataMap_DTL SelectedMapping, object sourceobj);
+        object GetFieldValueFromObject(string fieldname, object sourceobj);
     }
 }

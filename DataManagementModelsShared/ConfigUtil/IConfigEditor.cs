@@ -29,9 +29,10 @@ namespace TheTechIdea.Util
         List<ConnectionProperties> DataConnections { get; set; }
      //  List<Mapping_rep> Mappings { get; set; }
      //   List<Map_Schema> MappingSchema { get; set; }
-        List<DataWorkFlow> WorkFlows { get; set; }
+        List<WorkFlow> WorkFlows { get; set; }
         List<QuerySqlRepo> QueryList { get; set; }
         List<ObjectTypes> objectTypes { get; set; }
+
         List<ConnectionDriversConfig> DataDriversClasses { get; set; }
         List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; }
         List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
@@ -39,7 +40,11 @@ namespace TheTechIdea.Util
          List<AssemblyClassDefinition> AppWritersClasses { get; set; }
         List<AssemblyClassDefinition> GlobalFunctions { get; set; }
         List<AssemblyClassDefinition> AppComponents { get; set; }
-        List<AssemblyClassDefinition> ReportWritersClasses { get; set; } 
+        List<AssemblyClassDefinition> ReportWritersClasses { get; set; }
+        List<AssemblyClassDefinition> WorkFlowActions { get; set; }
+        List<AssemblyClassDefinition> Rules { get; set; }
+        List<AssemblyClassDefinition> PrintManagers { get; set; }
+
         List<CategoryFolder> CategoryFolders { get; set; }
         List<Assembly> LoadedAssemblies { get; set; }
         List<Function2FunctionAction> Function2Functions { get; set; }
@@ -52,9 +57,9 @@ namespace TheTechIdea.Util
     //    List<App> Apps { get; set; }
         List<EntityStructure> EntityCreateObjects { get; set; }
         List<DatatypeMapping> DataTypesMap { get; set; }
-        List<AssemblyClassDefinition> WorkFlowActions { get; set; } 
+      
      //   List<DataSourceFieldProperties> AppfieldProperties { get; set; }
-        List<SyncDataSource> SyncedDataSources { get; set; }
+        List<ETLScriptHDR> SyncedDataSources { get; set; }
         List<DatatypeMapping> ReadDataTypeFile(string filename = "DataTypeMapping");
         void WriteDataTypeFile(string filename = "DataTypeMapping");
         string GetSql(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType);
@@ -133,7 +138,7 @@ namespace TheTechIdea.Util
         List<ReportsList> LoadAIScriptsValues();
 
         void WriteSyncDataSource(string filename = "SyncDataSource");
-        List<SyncDataSource> ReadSyncDataSource(string filename = "SyncDataSource");
+        List<ETLScriptHDR> ReadSyncDataSource(string filename = "SyncDataSource");
         
 
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
@@ -19,8 +20,9 @@ namespace TheTechIdea.Beep.Editor
         bool Active { get; set; }
         IErrorsInfo errorsInfo { get; set; }
         DDLScriptType scriptType { get; set; }
+        EntityDataMap_DTL Mapping { get; set; }
         List<SyncErrorsandTracking> Tracking { get; set; }
-        List<SyncEntity> CopyDataScripts { get; set; } 
+        List<ETLScriptDet> CopyDataScripts { get; set; } 
     }
     public enum DDLScriptType
     {

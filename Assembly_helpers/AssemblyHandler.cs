@@ -21,6 +21,7 @@ using TheTechIdea.Util;
 using TypeInfo = System.Reflection.TypeInfo;
 using System.Drawing;
 using System.Collections;
+using TheTechIdea.DataManagment_Engine.Addin;
 
 namespace TheTechIdea.Tools
 {
@@ -586,102 +587,129 @@ namespace TheTechIdea.Tools
                         //-------------------------------------------------------
                         // Get WorkFlow Definitions
                         if (type.ImplementedInterfaces.Contains(typeof(ILoaderExtention)))
-                        {
-                            AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                            xcls.className = type.Name;
-                            xcls.dllname = type.Module.Name;
-                            xcls.PackageName = type.FullName;
-                            xcls.type = type;
-                            xcls.componentType = "ILoaderExtention";
+                         {
+                            //    AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                            //    xcls.className = type.Name;
+                            //    xcls.dllname = type.Module.Name;
+                            //    xcls.PackageName = type.FullName;
+                            //    xcls.type = type;
+                            //    xcls.componentType = "ILoaderExtention";
+                            //    LoaderExtensions.Add(type);
+                            //    xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
+                            //    LoaderExtensionClasses.Add(xcls);
+                            //    if (xcls.classProperties != null)
+                            //    {
+                            //        xcls.Order = xcls.classProperties.order;
+                            //        xcls.RootName = "ILoaderExtention";
+                            //    }
                             LoaderExtensions.Add(type);
-                            xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                            LoaderExtensionClasses.Add(xcls);
+                            LoaderExtensionClasses.Add(GetAssemblyClassDefinition(type, "ILoaderExtention"));
                         }
                         //-------------------------------------------------------
                         // Get DataBase Drivers
                         if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
-                            {
-                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                                xcls.className = type.Name;
-                                xcls.dllname = type.Module.Name;
-                                xcls.PackageName = type.FullName;
-                                xcls.type = type;
-                                xcls.componentType = "IDataSource";
-                                xcls.classProperties= (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                                DataSourcesClasses.Add(xcls);
-                                 ConfigEditor.DataSourcesClasses.Add(xcls);
-                            }
-                            //-------------------------------------------------------
-                            // Get WorkFlow Definitions
-                            if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
-                            {
-                                AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                                xcls.className = type.Name;
-                                xcls.dllname = type.Module.Name;
-                                xcls.PackageName = type.FullName;
-                                xcls.type = type;
-                                xcls.componentType = "IWorkFlowAction";
-                                xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                                ConfigEditor.WorkFlowActions.Add(xcls);
-                            }
-                 
-                            // Get IFunctionExtension Definitions
-                            if (type.ImplementedInterfaces.Contains(typeof(IFunctionExtension)))
-                            {
+                        {
+                                //AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                                //xcls.className = type.Name;
+                                //xcls.dllname = type.Module.Name;
+                                //xcls.PackageName = type.FullName;
+                                //xcls.type = type;
+                                //xcls.componentType = "IDataSource";
+                                //xcls.classProperties= (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
+                                //DataSourcesClasses.Add(xcls);
+                                //ConfigEditor.DataSourcesClasses.Add(xcls);
+                                //if (xcls.classProperties != null)
+                                // {
+                                //xcls.Order = xcls.classProperties.order;
 
-                            AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                            xcls.Methods = new List<MethodsClass>();
-                            xcls.className = type.Name;
-                            xcls.dllname = type.Module.Name;
-                            xcls.PackageName = type.FullName;
-                            xcls.componentType = "IFunctionExtension";
-                            xcls.type = type;
-                           
-                            xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                            if (xcls.classProperties != null)
-                            {
-                                xcls.Order = xcls.classProperties.order;
-                              
-                                xcls.RootName = "IFunctionExtension";
-                            }
-
-                            //   xcls.RootName = "AI";
-                            //   xcls.BranchType = brcls.BranchType;
-                            foreach (MethodInfo methods in type.GetMethods()
-                                         .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
-                                          .ToArray())
-                            {
-
-                                CommandAttribute methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
-                                MethodsClass x = new MethodsClass();
-                                x.Caption = methodAttribute.Caption;
-                                x.Name = methodAttribute.Name;
-                                x.Info = methods;
-                                x.Hidden = methodAttribute.Hidden;
-                                x.Click = methodAttribute.Click;
-                                x.DoubleClick = methodAttribute.DoubleClick;
-                                x.iconimage = methodAttribute.iconimage;
-                                x.PointType = methodAttribute.PointType;
-                                xcls.Methods.Add(x);
-                            }
-                            if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
-                            {
-                                try
-                                {
-                                    IOrder cls = (IOrder)Activator.CreateInstance(type);
-                                    xcls.Order = cls.Order;
-                                    cls = null;
-                                }
-                                catch (Exception)
-                                {
-
-
-                                }
-
-                            }
-                            ConfigEditor.GlobalFunctions.Add(xcls);
+                                //xcls.RootName = "IDataSource";
+                                //}
+                            AssemblyClassDefinition xcls = GetAssemblyClassDefinition(type, "IDataSource");
+                            DataSourcesClasses.Add(xcls);
+                            ConfigEditor.DataSourcesClasses.Add(xcls);
                         }
+                         //-------------------------------------------------------
+                         // Get WorkFlow Definitions
+                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
+                        {
+                                //AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                                //xcls.className = type.Name;
+                                //xcls.dllname = type.Module.Name;
+                                //xcls.PackageName = type.FullName;
+                                //xcls.type = type;
+                                //xcls.componentType = "IWorkFlowAction";
+                                //xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
+                                //ConfigEditor.WorkFlowActions.Add(xcls);
+                                //if (xcls.classProperties != null)
+                                //{
+                                //    xcls.Order = xcls.classProperties.order;
 
+                                //    xcls.RootName = "IWorkFlowAction";
+                                //}
+
+                            ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowAction"));
+                        }
+                         // Get IFunctionExtension Definitions
+                        if (type.ImplementedInterfaces.Contains(typeof(IFunctionExtension)))
+                        {
+                            //AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+                            //xcls.Methods = new List<MethodsClass>();
+                            //xcls.className = type.Name;
+                            //xcls.dllname = type.Module.Name;
+                            //xcls.PackageName = type.FullName;
+                            //xcls.componentType = "IFunctionExtension";
+                            //xcls.type = type;
+                            //xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
+                            //if (xcls.classProperties != null)
+                            //{
+                            //    xcls.Order = xcls.classProperties.order;
+                              
+                            //    xcls.RootName = "IFunctionExtension";
+                            //}
+                            //foreach (MethodInfo methods in type.GetMethods()
+                            //             .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
+                            //              .ToArray())
+                            //{
+
+                            //    CommandAttribute methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
+                            //    MethodsClass x = new MethodsClass();
+                            //    x.Caption = methodAttribute.Caption;
+                            //    x.Name = methodAttribute.Name;
+                            //    x.Info = methods;
+                            //    x.Hidden = methodAttribute.Hidden;
+                            //    x.Click = methodAttribute.Click;
+                            //    x.DoubleClick = methodAttribute.DoubleClick;
+                            //    x.iconimage = methodAttribute.iconimage;
+                            //    x.PointType = methodAttribute.PointType;
+                            //    xcls.Methods.Add(x);
+
+                            //}
+                            //if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
+                            //{
+                            //    try
+                            //    {
+                            //        IOrder cls = (IOrder)Activator.CreateInstance(type);
+                            //        xcls.Order = cls.Order;
+                            //        cls = null;
+                            //    }
+                            //    catch (Exception)
+                            //    {
+
+                            //    }
+                            //}
+                            //ConfigEditor.GlobalFunctions.Add(xcls);
+
+                            ConfigEditor.GlobalFunctions.Add(GetAssemblyClassDefinition(type, "IFunctionExtension"));
+                         }
+                        // Get Print Managers Definitions
+                        if (type.ImplementedInterfaces.Contains(typeof(IPrintManager)))
+                        {
+                            ConfigEditor.PrintManagers.Add(GetAssemblyClassDefinition(type, "IPrintManager"));
+                        }
+                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowRule)))
+                        {
+                            ConfigEditor.Rules.Add(GetAssemblyClassDefinition(type, "IWorkFlowRule"));
+                        }
                     }
                 }
 
@@ -694,6 +722,56 @@ namespace TheTechIdea.Tools
                 return true;
            
            
+        }
+        private AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type,string typename)
+        {
+          
+            AssemblyClassDefinition xcls = new AssemblyClassDefinition();
+            xcls.Methods = new List<MethodsClass>();
+            xcls.className = type.Name;
+            xcls.dllname = type.Module.Name;
+            xcls.PackageName = type.FullName;
+            xcls.componentType = typename;
+            xcls.type = type;
+            xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
+            if (xcls.classProperties != null)
+            {
+                xcls.Order = xcls.classProperties.order;
+
+                xcls.RootName = typename;
+            }
+            foreach (MethodInfo methods in type.GetMethods()
+                         .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
+                          .ToArray())
+            {
+
+                CommandAttribute methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
+                MethodsClass x = new MethodsClass();
+                x.Caption = methodAttribute.Caption;
+                x.Name = methodAttribute.Name;
+                x.Info = methods;
+                x.Hidden = methodAttribute.Hidden;
+                x.Click = methodAttribute.Click;
+                x.DoubleClick = methodAttribute.DoubleClick;
+                x.iconimage = methodAttribute.iconimage;
+                x.PointType = methodAttribute.PointType;
+                xcls.Methods.Add(x);
+
+            }
+            if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
+            {
+                try
+                {
+                    IOrder cls = (IOrder)Activator.CreateInstance(type);
+                    xcls.Order = cls.Order;
+                    cls = null;
+                }
+                catch (Exception)
+                {
+
+                }
+            }
+            return xcls;
         }
         #endregion "Class Extractors"
         #region "Helpers"
