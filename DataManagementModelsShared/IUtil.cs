@@ -61,5 +61,6 @@ namespace TheTechIdea.Beep
         Type GetCollectionElementType(Type type);
         object MapObjectToAnother(string DestEntityname, EntityDataMap_DTL SelectedMapping, object sourceobj);
         object GetFieldValueFromObject(string fieldname, object sourceobj);
+        IErrorsInfo SetFieldValueFromObject(string fieldname, object sourceobj,object value);
     }
 }

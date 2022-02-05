@@ -24,7 +24,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
         public string Name { get; set; }="Copy Entity";
         public IErrorsInfo ErrorObject { get; set; }
         public IDMLogger logger { get; set; }
-        public bool Finish { get; set; }
+        public bool IsFinish { get; set; }
         public IDMEEditor DMEEditor { get; set ; }
         public EntityDataMap Mapping { get; set; }
         public List<IPassedArgs> InParameters { get; set; }
@@ -34,7 +34,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
         public IDataSource Outds { get; set; }
       
         public string ClassName { get ; set ; }
-        public string FullName { get ; set ; }
+        public string Name { get ; set ; }
 
         public event EventHandler<IWorkFlowEventArgs> WorkFlowStepStarted;
         public event EventHandler<IWorkFlowEventArgs> WorkFlowStepEnded;

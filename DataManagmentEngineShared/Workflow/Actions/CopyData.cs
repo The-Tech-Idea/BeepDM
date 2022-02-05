@@ -20,7 +20,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
     {
         public string Id { get; set; }
         public string ClassName { get; set; }
-        public string FullName { get; set; }
+        public string Name { get; set; }
         public string Description { get; set; } = "Copy Entity From one DataSource(InTable Parameters)  to Another (OutTable Parameters)";
         public BackgroundWorker BackgroundWorker { get; set; }
         public IErrorsInfo ErrorObject { get; set; }
@@ -30,7 +30,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
         public List<IPassedArgs> OutParameters { get; set; }
         public List<EntityStructure> OutStructures { get; set; }
         public EntityDataMap Mapping { get; set; }
-        public bool Finish { get; set; }
+        public bool IsFinish { get; set; }
         public IDataSource Inds { get; set; }
         public IDataSource Outds { get; set; }
         public object InData { get; set; }

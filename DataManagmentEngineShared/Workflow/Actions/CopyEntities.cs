@@ -20,7 +20,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
         public string Description { get; set; } = "Copy All Entities From one DataSource(InTable Parameters)  to Another (OutTable Parameters)";
         public string Id { get; set; } = "CopyEntities";
         public string ClassName { get ; set ; }
-        public string FullName { get ; set ; }
+        public string Name { get ; set ; }
         public BackgroundWorker BackgroundWorker { get ; set ; }
         public IDMEEditor DMEEditor { get ; set ; }
         public IErrorsInfo ErrorObject { get; set; }
@@ -31,7 +31,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
         public List<EntityStructure> OutStructures { get ; set ; }
         public IDataSource Inds { get; set; }
         public IDataSource Outds { get; set; }
-        public bool Finish { get ; set ; }
+        public bool IsFinish { get ; set ; }
         public List<string> EntitesNames { get; set; }
 
         public event EventHandler<IWorkFlowEventArgs> WorkFlowStepStarted;

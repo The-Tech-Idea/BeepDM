@@ -19,30 +19,30 @@ namespace TheTechIdea.Beep.ETL
         public IDMEEditor DMEEditor { get; set; }
         public IDataSource DataSource { get; set; }
         public EntityStructure Entity { get; set; }
-        public EntityValidatorMesseges CanInsertRecord(object record,string entityname,string datasource)
+        public EntityValidatorMesseges CanInsertRecord(object record, string entityname, string datasource)
         {
             EntityValidatorMesseges retval = EntityValidatorMesseges.OK;
             if (DMEEditor != null)
             {
                 DataSource = DMEEditor.GetDataSource(datasource);
 
-                if(DataSource != null && record!=null)
+                if (DataSource != null && record != null)
                 {
-                    if(DataSource.Openconnection()== System.Data.ConnectionState.Open)
+                    if (DataSource.Openconnection() == System.Data.ConnectionState.Open)
                     {
-                        Entity = DataSource.GetEntityStructure(entityname,false);
-                        if(Entity != null)
+                        Entity = DataSource.GetEntityStructure(entityname, false);
+                        if (Entity != null)
                         {
-                            retval= CanInsertRecord(record, Entity);
+                            retval = CanInsertRecord(record, Entity);
                         }
                     }
                 }
             }
-           return retval;
+            return retval;
         }
         public EntityValidatorMesseges CanInsertRecord(object record, EntityStructure entity)
         {
-            EntityValidatorMesseges retval =  EntityValidatorMesseges.OK;
+            EntityValidatorMesseges retval = EntityValidatorMesseges.OK;
             Entity = entity;
             if (DMEEditor != null)
             {
@@ -59,107 +59,142 @@ namespace TheTechIdea.Beep.ETL
                                 var fldval = DMEEditor.Utilfunction.GetFieldValueFromObject(fld.fieldname, record);
                                 if (fld.AllowDBNull == false)
                                 {
-                                    if(TrueifNotNull(record, fld.fieldname, fldval))
-                                    {
-                                        retval = EntityValidatorMesseges.NullField;
-                                    }
+
+                                    retval = TrueifNotNull(entity.EntityName, entity.DataSourceID,record, fld.fieldname, fldval);
+                                    
                                 }
                                 if (fld.IsUnique)
                                 {
-                                    if (TrueifNotUnique(record, fld.fieldname, fldval))
-                                    {
-                                        retval = EntityValidatorMesseges.DuplicateValue;
-                                    }
+                                    retval = TrueifNotUnique(entity.EntityName, entity.DataSourceID, record, fld.fieldname, fldval);
                                     
+
                                 }
                                 if (fld.ValueRetrievedFromParent)
                                 {
-                                    if (TrueifNotUnique(record, fld.fieldname, fldval))
-                                    {
-                                        retval = EntityValidatorMesseges.DuplicateValue;
-                                    }
-
+                                    retval = TrueifNotUnique(entity.EntityName, entity.DataSourceID, record, fld.fieldname, fldval);
                                 }
                             }
-                           
+
                         }
                     }
                 }
             }
             return retval;
         }
-        public bool TrueifNotNull(object record, string fieldname,object fldval)
+        public EntityValidatorMesseges TrueifNotNull(string entityname, string datasource, object record, string fieldname, object fldval)
         {
-            bool retval = false;
-          
-            if (fldval != null)
-            {
-                retval = true;
-            }
-            return retval;
-        }
-        public bool TrueifNotUnique(object record, string fieldname, object fldval)
-        {
-           
-            bool retval = false;
-            string strval=(string)fldval;
-            int intval;
-            int cnt = 0;
-            if (fldval != null)
-            {
-                if (int.TryParse(strval,out intval))
-                {
-                     cnt = (int)DataSource.RunQuery($"select count(*)  from {Entity.EntityName} where {fieldname}={intval}");
-                }
-                else 
-                {
-                     cnt = (int)DataSource.RunQuery($"select count(*)  from {Entity.EntityName} where {fieldname}='{strval}'");
-                }
-                if(cnt==0)
-                {
-                    retval = true;
-                }
-                
-            }
-            return retval;
-        }
-        public bool TrueifParentExist(object record, string fieldname, object fldval)
-         {
 
-            bool retval = true;
+            EntityValidatorMesseges retval = EntityValidatorMesseges.OK;
+            if (fldval != null)
+            {
+                retval =  EntityValidatorMesseges.OK;
+            }
+            return retval;
+        }
+        public EntityValidatorMesseges TrueifNotUnique(string entityname, string datasource, object record, string fieldname, object fldval)
+        {
+
+           
             string strval = (string)fldval;
             int intval;
             int cnt = 0;
-            if (fldval != null)
+            EntityValidatorMesseges retval = EntityValidatorMesseges.OK;
+            if (DMEEditor != null)
             {
-                //-------------------------------------------------------------
-                //--------------- Check Related Table ------------------------
-                List<RelationShipKeys> rels = Entity.Relations.Where(p => p.EntityColumnID == fieldname).ToList() ;
-                if (rels.Count > 0)
+                DataSource = DMEEditor.GetDataSource(datasource);
+
+                if (DataSource != null && record != null)
                 {
-                    foreach (RelationShipKeys rel in rels)
+                    if (DataSource.Openconnection() == System.Data.ConnectionState.Open)
                     {
-                        if (int.TryParse(strval, out intval))
+                        Entity = DataSource.GetEntityStructure(entityname, false);
+                        if (Entity != null)
                         {
-                             cnt = (int)DataSource.RunQuery($"select count(*)  from {rel.ParentEntityID} where {rel.ParentEntityColumnID}={intval}");
+                            if (fldval != null)
+                            {
+                                if (int.TryParse(strval, out intval))
+                                {
+                                    cnt = (int)DataSource.RunQuery($"select count(*)  from {Entity.EntityName} where {fieldname}={intval}");
+                                }
+                                else
+                                {
+                                    cnt = (int)DataSource.RunQuery($"select count(*)  from {Entity.EntityName} where {fieldname}='{strval}'");
+                                }
+                                if (cnt == 0)
+                                {
+                                    retval = EntityValidatorMesseges.OK ;
+                                }else
+                                    retval = EntityValidatorMesseges.DuplicateValue;
+
+                            }
                         }
-                        else
+
+                    }
+                }
+
+            }
+           
+            return retval;
+        }
+        public EntityValidatorMesseges TrueifParentExist(string entityname, string datasource, object record, string fieldname, object fldval)
+        {
+
+
+            string strval = (string)fldval;
+            int intval;
+            int cnt = 0;
+
+            
+            EntityValidatorMesseges retval = EntityValidatorMesseges.OK;
+            if (DMEEditor != null)
+            {
+                DataSource = DMEEditor.GetDataSource(datasource);
+                if(DataSource.Category== DatasourceCategory.RDBMS)
+                {
+                    RDBSource ds=(RDBSource)DataSource;
+                    if (ds != null && record != null)
+                    {
+                        if (ds.Openconnection() == System.Data.ConnectionState.Open)
                         {
-                             cnt = (int)DataSource.RunQuery($"select count(*)  from {rel.ParentEntityID} where {rel.ParentEntityColumnID}='{strval}'");
-                        }
-                        if (cnt == 0)
-                        {
-                            retval = false;
-                            break;
+                            Entity = ds.GetEntityStructure(entityname, false);
+                            if (Entity != null)
+                            {
+                                List<RelationShipKeys> rels = Entity.Relations.Where(p => p.EntityColumnID == fieldname).ToList();
+                                if (rels.Count > 0)
+                                {
+                                    foreach (RelationShipKeys rel in rels)
+                                    {
+                                        if (int.TryParse(strval, out intval))
+                                        {
+                                            cnt = (int)ds.RunQuery($"select count(*)  from {rel.ParentEntityID} where {rel.ParentEntityColumnID}={intval}");
+                                        }
+                                        else
+                                        {
+
+                                            cnt = (int)ds.RunQuery($"select count(*)  from {rel.ParentEntityID} where {rel.ParentEntityColumnID}='{strval}'");
+                                        }
+                                        if (cnt == 0)
+                                        {
+                                            retval = EntityValidatorMesseges.MissingRefernceValue;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            retval = EntityValidatorMesseges.OK;
+                                        }
+                                    }
+                                }
+                            }
+
                         }
                     }
                 }
-                
+               
 
-                
             }
             return retval;
         }
+        
 
     }
 }

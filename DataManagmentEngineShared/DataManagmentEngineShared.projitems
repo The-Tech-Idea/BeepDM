@@ -35,10 +35,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Util.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WEBAPIDataConnection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebAPIDataSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\CopyData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\CopyEntities.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\CopyEntity.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\Actions\RunScript.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\RulesParser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlowEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlowStepEditor.cs" />
@@ -50,5 +46,8 @@
     <Content Include="$(MSBuildThisFileDirectory)AppBuilder\apppbuilders.txt">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Workflow\Actions\" />
   </ItemGroup>
 </Project>

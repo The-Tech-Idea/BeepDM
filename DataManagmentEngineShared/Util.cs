@@ -1061,6 +1061,49 @@ namespace TheTechIdea.Beep
                 return typeof(object);
             return null;
         }
+        public IErrorsInfo SetFieldValueFromObject(string fieldname, object sourceobj, object value)
+        {
+            try
+            {
+                PropertyInfo SrcPropAInfo = sourceobj.GetType().GetProperty(fieldname);
+                //dynamic v = Convert.ChangeType(value, SrcPropAInfo.PropertyType);
+                int v;
+                string vs;
+                DateTime vd;
+                Type valtype=value.GetType();
+                Type rectype= SrcPropAInfo.GetType();
+                //if (valtype == typeof(System.Int16)|| valtype == typeof(System.Int32) || valtype == typeof(System.Int64))
+                //{
+                //     v = (int)value;
+                //    SrcPropAInfo.SetValue(v, sourceobj, null);
+
+                //}
+                //else if (valtype == typeof(System.String))
+                //{
+                //     vs = (string)value;
+                //    SrcPropAInfo.SetValue(vs, sourceobj, null);
+
+                //}
+                //else if (valtype == typeof(System.DateTime))
+                //{
+                //    vd = (DateTime)value;
+                //    SrcPropAInfo.SetValue(vd, sourceobj, null);
+                //}
+                if (SrcPropAInfo != null)
+                {
+                    Type t = Nullable.GetUnderlyingType(SrcPropAInfo.PropertyType) ?? SrcPropAInfo.PropertyType;
+                    object safeValue = (value == null) ? null : Convert.ChangeType(value, t);
+                    SrcPropAInfo.SetValue(sourceobj, safeValue, null);
+                }
+                //SrcPropAInfo.SetValue(sourceobj, Convert.ChangeType(value, SrcPropAInfo.PropertyType), null);
+
+            }
+            catch (Exception ex)
+            {
+                DME.AddLogMessage("Util", "Error Could not Set Value in Object " + value.ToString(), DateTime.Now, 0, value.ToString(), Errors.Failed);
+            }
+            return DME.ErrorObject;
+        }
     }
 }
 

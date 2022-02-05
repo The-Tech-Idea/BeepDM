@@ -19,13 +19,14 @@ namespace TheTechIdea.Beep.Workflow
         public List<IPassedArgs> InParameters { get ; set ; }
         public List<IPassedArgs> OutParameters { get ; set ; }
         public List<IWorkFlowRule> Rules { get ; set ; }
-        public bool Finish { get ; set ; }
+        public bool IsFinish { get ; set ; }
+        public bool IsRunning { get; set; }
         public string ClassName { get ; set ; }
-        public string FullName { get ; set ; }
+        public string Name { get ; set ; }
 
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowStepStarted;
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowStepEnded;
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowStepRunning;
+        public event EventHandler<IWorkFlowEventArgs> WorkFlowActionStarted;
+        public event EventHandler<IWorkFlowEventArgs> WorkFlowActionEnded;
+        public event EventHandler<IWorkFlowEventArgs> WorkFlowActionRunning;
 
         public PassedArgs PerformAction()
         {

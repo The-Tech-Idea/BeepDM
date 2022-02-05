@@ -118,6 +118,13 @@ namespace TheTechIdea.Beep.DataBase
                 cmd.CommandText = qrystr;
                 dt.Load(cmd.ExecuteReader(CommandBehavior.Default));
                 cmd.Dispose();
+                if (dt.Rows.Count== 1)
+                {
+                    if(dt.Columns.Count==1)
+                        return dt.Rows[0][0];
+                    else
+                        return dt.Rows[0];
+                }
                 return dt;
             }
 

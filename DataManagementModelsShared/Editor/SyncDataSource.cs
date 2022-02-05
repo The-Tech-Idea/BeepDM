@@ -11,7 +11,7 @@ namespace TheTechIdea.Beep.Editor
         {;
             id = 1;
         }
-        public List<ETLScriptDet> Entities { get; set; } = new List<ETLScriptDet>();
+        public List<ETLScriptDet> ScriptDTL { get; set; } = new List<ETLScriptDet>();
         public string workflowFileId { get; set; }
         public string scriptSource { get; set; }
       

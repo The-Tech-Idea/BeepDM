@@ -35,7 +35,7 @@ namespace TheTechIdea.Beep
         public IDMLogger Logger { get; set; }
         public IWorkFlowEditor WorkFlowEditor { get; set; }
         public IClassCreator classCreator { get; set; }
-        public ETLScriptHDR Script { get; set; } = new ETLScriptHDR();
+       // public ETLScriptHDR Script { get; set; } = new ETLScriptHDR();
         public BindingList<ILogAndError> Loganderrors { get; set; } = new BindingList<ILogAndError>();
         public IPassedArgs Passedarguments { get; set; }
 

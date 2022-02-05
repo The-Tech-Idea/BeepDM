@@ -29,6 +29,11 @@ namespace TheTechIdea
         string ParameterString1 { get; set; }
         string ParameterString2 { get; set; }
         string ParameterString3 { get; set; }
+        DateTime ParameterDate1 { get; set; }
+        DateTime ParameterDate2 { get; set; }
+        DateTime ParameterDate3 { get; set; }
+        object ReturnData { get; set; }
+        Type ReturnType { get; set; }
     }
 
     public class PassedArgs : IPassedArgs
@@ -54,6 +59,11 @@ namespace TheTechIdea
         public int ParameterInt1 { get; set; }
         public int ParameterInt2 { get; set; }
         public int ParameterInt3 { get; set; }
+        public DateTime ParameterDate1 { get; set; }
+        public DateTime ParameterDate2 { get; set; }
+        public DateTime ParameterDate3 { get; set; }
+        public object ReturnData { get; set; }
+        public Type ReturnType { get; set; }
         public int Id { get; set; }
         public PassedArgs()
         {

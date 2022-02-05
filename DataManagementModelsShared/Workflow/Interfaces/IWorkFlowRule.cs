@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using TheTechIdea.DataManagment_Engine.Workflow.Interfaces;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Workflow
@@ -12,6 +13,6 @@ namespace TheTechIdea.Beep.Workflow
         IDMEEditor DMEEditor { get; set; }
         string RuleName { get; set; }
         string Rule { get; set; }
-        PassedArgs ExecuteRule(PassedArgs args);
+        PassedArgs ExecuteRule(PassedArgs args, IRuleStructure rule);
     }
 }

@@ -786,6 +786,7 @@ namespace TheTechIdea.Tools
                 if (type == null)
                     return null;
 
+
                 instance = Activator.CreateInstance(type, args);
             }
             catch
@@ -914,6 +915,11 @@ namespace TheTechIdea.Tools
                 var assembly = item.DllLib;
                 try
                 {
+                    Console.WriteLine(assembly.FullName);
+                    if (assembly.FullName.Contains("TheTechIdea.Beep.Workflow.GetGUID"))
+                    {
+                        Console.WriteLine("Found");
+                    }
                     type = assembly.GetType(strFullyQualifiedName);
                 }
                 catch (Exception ex2)

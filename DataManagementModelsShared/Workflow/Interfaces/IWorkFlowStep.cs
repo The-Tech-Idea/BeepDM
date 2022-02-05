@@ -19,16 +19,17 @@ namespace TheTechIdea.Beep.Workflow
         int Seq { get; set; }
         string Description { get; set; }
         string ID { get; set; }
-        string StepName { get; set; }
+        string Name { get; set; }
         List<IWorkFlowRule> Rules { get; set; }
         IWorkFlowStep PrevStep { get; set; }
         List<IWorkFlowStep> NextStep { get; set; }
+        List<IWorkFlowAction> Actions { get; set; }
         List<IPassedArgs> InParameters { get; set; }
         List<IPassedArgs> OutParameters { get; set; }
-        Boolean IsFinish { get; set; }
-        Boolean IsRunning { get; set; }
+        bool IsFinish { get; set; }
+        bool IsRunning { get; set; }
 
-        }
+    }
     public class IWorkFlowEventArgs :PassedArgs
     {
         public IWorkFlowStep FlowStep { get; set; }

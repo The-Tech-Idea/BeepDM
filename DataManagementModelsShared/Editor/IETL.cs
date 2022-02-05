@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Util;
 
@@ -13,14 +14,15 @@ namespace TheTechIdea.Beep.Editor
     {
         event EventHandler<PassedArgs> PassEvent;
         IDMEEditor DMEEditor { get; set; }
-        List<EntityStructure> Entities { get; set; }
-        List<string> EntitiesNames { get; set; }
+        //List<EntityStructure> Entities { get; set; }
+      //  List<string> EntitiesNames { get; set; }
         PassedArgs Passedargs { get; set; }
-        ETLScriptHDR script { get; set; }
+        ETLScriptHDR Script { get; set; }
         int ScriptCount { get; set; }
         decimal StopErrorCount { get; set; }
         int CurrentScriptRecord { get; set; }
-       // LScriptTracking Tracker { get; set; }
+        List<LoadDataLogResult> LoadDataLogs { get; set; }
+        // LScriptTracking Tracker { get; set; }
         void CreateScriptHeader( IDataSource Srcds, IProgress<PassedArgs> progress, CancellationToken token);
         IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken toke, bool CreateMissingEntity = true);
         IErrorsInfo CopyEntityStructure(IDataSource sourceds, IDataSource destds, string srcentity,  string destentity, IProgress<PassedArgs> progress, CancellationToken toke, bool CreateMissingEntity = true);

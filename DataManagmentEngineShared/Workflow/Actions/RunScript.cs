@@ -19,9 +19,9 @@ namespace TheTechIdea.Beep.Workflow.Actions
         public List<IPassedArgs> OutParameters { get ; set ; }
         public List<EntityStructure> OutStructures { get ; set ; }
         public EntityDataMap Mapping { get ; set ; }
-        public bool Finish { get ; set ; }
+        public bool IsFinish { get ; set ; }
         public string ClassName { get ; set ; } = "RunScript";
-        public string FullName { get ; set ; } = "RunScript";
+        public string Name { get ; set ; } = "RunScript";
         public string Description { get; set; } = "Copy Entity From one DataSource(InTable Parameters)  to Another (OutTable Parameters)";
         public IDataSource Outds { get; set; }
         public string Id { get; set; } = "RunScript";

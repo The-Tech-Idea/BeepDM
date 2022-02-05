@@ -20,11 +20,12 @@ namespace TheTechIdea.Beep.Workflow
         public int Seq { get; set; }
         public string Description { get; set; }
         public string ID { get; set; }
-        public string StepName { get; set; }
+        public string Name { get; set; }
         public bool IsFinish { get; set; }=false;   
-        public Boolean IsRunning { get; set; } = false;
+        public bool IsRunning { get; set; } = false;
         public IWorkFlowStep PrevStep { get; set; }=null;
         public List<IWorkFlowStep> NextStep { get; set; }
+        public List<IWorkFlowAction> Actions { get; set; }
         public List<IPassedArgs> InParameters { get; set; } 
         public List<IPassedArgs> OutParameters { get; set; } 
         public List<IWorkFlowRule> Rules { get; set ; }
