@@ -684,7 +684,7 @@ namespace TheTechIdea.Beep.Editor
                                    // LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Done insert Record {CurrentScriptRecord}" });
                                     if (progress != null)
                                     {
-                                        PassedArgs ps = new PassedArgs { EventType = "NA", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                                        PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
                                         progress.Report(ps);
                                     }
                                 }
@@ -876,7 +876,46 @@ namespace TheTechIdea.Beep.Editor
                                     {
                                         var refval = DMEEditor.Utilfunction.GetFieldValueFromObject(item.EntityColumnID, retval);
                                         DMEEditor.Utilfunction.SetFieldValueFromObject(item.ParentEntityColumnID, parentob, refval);
-                                        DMEEditor.ErrorObject = destds.InsertEntity(item.ParentEntityID, parentob);
+                                        //DMEEditor.ErrorObject = destds.InsertEntity(item.ParentEntityID, parentob);
+                                        DMEEditor.ErrorObject = InsertEntity(destds, refentity, item.ParentEntityID, null, parentob, progress, token); ;
+                                        token.ThrowIfCancellationRequested();
+                                        if (DMEEditor.ErrorObject.Flag == Errors.Failed)
+                                        {
+
+                                            SyncErrorsandTracking tr = new SyncErrorsandTracking();
+                                            errorcount++;
+                                            tr.errormessage = DMEEditor.ErrorObject.Message;
+                                            tr.errorsInfo = DMEEditor.ErrorObject;
+                                            tr.rundate = DateTime.Now;
+                                            tr.sourceEntityName = refentity.EntityName;
+                                            tr.currenrecordindex = CurrentScriptRecord;
+                                            tr.sourceDataSourceName = refentity.DataSourceID;
+                                            //tr.parentscriptid = sc.id;
+                                            //sc.Tracking.Add(tr);
+                                            LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Failed in Inserting Record {CurrentScriptRecord} - {tr.errormessage}" });
+                                            if (progress != null)
+                                            {
+                                                PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                                                progress.Report(ps);
+
+                                            }
+                                            if (errorcount > StopErrorCount)
+                                            {
+                                                stoprun = true;
+                                                PassedArgs ps = new PassedArgs { EventType = "Stop", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                                                progress.Report(ps);
+                                                return DMEEditor.ErrorObject;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Done insert Record {CurrentScriptRecord}" });
+                                            if (progress != null)
+                                            {
+                                                PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                                                progress.Report(ps);
+                                            }
+                                        }
                                     }
                                 }
                             };

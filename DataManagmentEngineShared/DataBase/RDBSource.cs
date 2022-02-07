@@ -1066,7 +1066,6 @@ namespace TheTechIdea.Beep.DataBase
             }
           return fnd;
         }
-    
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
             try
