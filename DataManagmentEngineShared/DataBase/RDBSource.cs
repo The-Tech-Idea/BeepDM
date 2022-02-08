@@ -139,7 +139,7 @@ namespace TheTechIdea.Beep.DataBase
 
 
         }
-       private IDbCommand CreateCommandParameters(IDbCommand  command, DataRow r,EntityStructure DataStruct)
+        private IDbCommand CreateCommandParameters(IDbCommand  command, DataRow r,EntityStructure DataStruct)
         {
             command.Parameters.Clear();
             foreach (EntityField item in DataStruct.Fields)
@@ -192,7 +192,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             return command;
         }
-       public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
+        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
             if (recEntity != EntityName)
             {

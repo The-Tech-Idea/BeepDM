@@ -597,97 +597,10 @@ namespace TheTechIdea.Beep.Editor
                             LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Data fetched {ScriptCount} Record" });
                             foreach (var r in srcList)
                             {
-                                //object retval = r;
-                                //if (map_DTL != null)
-                                //{
-                                //    retval = DMEEditor.Utilfunction.MapObjectToAnother(destentity, map_DTL, r);
-                                //}
-                                //if (CurrrentDBDefaults.Count > 0)
-                                //{
-                                //    foreach (DefaultValue _defaultValue in CurrrentDBDefaults.Where(p=>p.propertyType== DefaultValueType.Rule))
-                                //    {
-                                //        if (destEntitystructure.Fields.Any(p => p.fieldname.Equals(_defaultValue.propertyName, StringComparison.InvariantCultureIgnoreCase)))
-                                //        {
-                                //            string fieldname = _defaultValue.propertyName;
-                                //            DMEEditor.Passedarguments.DatasourceName = destds.DatasourceName;
-                                //            DMEEditor.Passedarguments.CurrentEntity=destentity;
-                                //            ObjectItem ob = DMEEditor.Passedarguments.Objects.Find(p => p.Name == destentity);
-                                //            if (ob!=null)
-                                //            {
-                                //                DMEEditor.Passedarguments.Objects.Remove(ob);
-                                //            }
-                                //            DMEEditor.Passedarguments.Objects.Add(new ObjectItem() { Name = destentity, obj = retval });
-                                //            DMEEditor.Passedarguments.ParameterString1 = $":{_defaultValue.Rule}.{fieldname}.{_defaultValue.propoertValue}";
-                                //            var value=RulesEditor.SolveRule(DMEEditor.Passedarguments);
-                                //            if(value != null)
-                                //            {
-                                //                DMEEditor.Utilfunction.SetFieldValueFromObject(fieldname, retval, value);
-                                //            }
-                                //        }
-                                //    }
-                                //}
-                                //if (destEntitystructure.Relations.Any())
-                                //{
-                                //    foreach (RelationShipKeys item in destEntitystructure.Relations)
-                                //    {
-                                //        if (destEntitystructure.Fields.Any(p => p.fieldname.Equals(item.EntityColumnID, StringComparison.InvariantCultureIgnoreCase)))
-                                //        {
-                                //            if(MoveValidator.TrueifParentExist(destEntitystructure.EntityName,destEntitystructure.DataSourceID,retval, item.EntityColumnID, DMEEditor.Utilfunction.GetFieldValueFromObject(item.EntityColumnID, retval))== EntityValidatorMesseges.MissingRefernceValue)
-                                //            {
-                                //                LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Inserting Parent for  Record {CurrentScriptRecord}  in {item.ParentEntityID}" });
-                                //                //---- insert Parent Key ----
-                                //                object  parentob=destds.GetEntityType(item.ParentEntityID);
-                                //                if(parentob!=null)
-                                //                {
-                                //                    DMEEditor.Utilfunction.SetFieldValueFromObject(item.ParentEntityColumnID, parentob, DMEEditor.Utilfunction.GetFieldValueFromObject(item.EntityColumnID,retval));DMEEditor.ErrorObject = destds.InsertEntity(sc.destinationentityname, retval);
-                                //                    DMEEditor.ErrorObject = destds.InsertEntity(item.ParentEntityID, parentob);
-                                //                }
-                                //            }
-                                //        }
-                                //    }
-                                //}
-                                //CurrentScriptRecord += 1;
-                                //LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Inserting Record {CurrentScriptRecord} " });
-                                //DMEEditor.ErrorObject = destds.InsertEntity(sc.destinationentityname, retval);
+                             
                                 DMEEditor.ErrorObject = InsertEntity(destds,  destEntitystructure, destentity, map_DTL, r, progress, token); ;
                                 token.ThrowIfCancellationRequested();
-                                if (DMEEditor.ErrorObject.Flag == Errors.Failed)
-                                {
-                                    
-                                    SyncErrorsandTracking tr = new SyncErrorsandTracking();
-                                    errorcount++;
-                                    tr.errormessage = DMEEditor.ErrorObject.Message;
-                                    tr.errorsInfo = DMEEditor.ErrorObject;
-                                    tr.rundate = DateTime.Now;
-                                    tr.sourceEntityName = srcentitystructure.EntityName;
-                                    tr.currenrecordindex = CurrentScriptRecord;
-                                    tr.sourceDataSourceName = srcentitystructure.DataSourceID;
-                                    tr.parentscriptid = sc.id;
-                                    sc.Tracking.Add(tr);
-                                    LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Failed in Inserting Record {CurrentScriptRecord} - {tr.errormessage}" });
-                                    if (progress != null)
-                                    {
-                                        PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                        progress.Report(ps);
-
-                                    }
-                                    if (errorcount > StopErrorCount)
-                                    {
-                                        stoprun = true;
-                                        PassedArgs ps = new PassedArgs { EventType = "Stop", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                        progress.Report(ps);
-                                        return DMEEditor.ErrorObject;
-                                    }
-                                }
-                                else
-                                {
-                                   // LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Done insert Record {CurrentScriptRecord}" });
-                                    if (progress != null)
-                                    {
-                                        PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                        progress.Report(ps);
-                                    }
-                                }
+                              
                             }
                         }
                         if (progress != null)
@@ -879,43 +792,7 @@ namespace TheTechIdea.Beep.Editor
                                         //DMEEditor.ErrorObject = destds.InsertEntity(item.ParentEntityID, parentob);
                                         DMEEditor.ErrorObject = InsertEntity(destds, refentity, item.ParentEntityID, null, parentob, progress, token); ;
                                         token.ThrowIfCancellationRequested();
-                                        if (DMEEditor.ErrorObject.Flag == Errors.Failed)
-                                        {
-
-                                            SyncErrorsandTracking tr = new SyncErrorsandTracking();
-                                            errorcount++;
-                                            tr.errormessage = DMEEditor.ErrorObject.Message;
-                                            tr.errorsInfo = DMEEditor.ErrorObject;
-                                            tr.rundate = DateTime.Now;
-                                            tr.sourceEntityName = refentity.EntityName;
-                                            tr.currenrecordindex = CurrentScriptRecord;
-                                            tr.sourceDataSourceName = refentity.DataSourceID;
-                                            //tr.parentscriptid = sc.id;
-                                            //sc.Tracking.Add(tr);
-                                            LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Failed in Inserting Record {CurrentScriptRecord} - {tr.errormessage}" });
-                                            if (progress != null)
-                                            {
-                                                PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                                progress.Report(ps);
-
-                                            }
-                                            if (errorcount > StopErrorCount)
-                                            {
-                                                stoprun = true;
-                                                PassedArgs ps = new PassedArgs { EventType = "Stop", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                                progress.Report(ps);
-                                                return DMEEditor.ErrorObject;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            // LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Done insert Record {CurrentScriptRecord}" });
-                                            if (progress != null)
-                                            {
-                                                PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                                progress.Report(ps);
-                                            }
-                                        }
+                                        Sendmessege(refentity, progress, token);
                                     }
                                 }
                             };
@@ -926,7 +803,7 @@ namespace TheTechIdea.Beep.Editor
                 LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Inserting Record {CurrentScriptRecord} " });
                 DMEEditor.ErrorObject = destds.InsertEntity(destEntitystructure.EntityName, retval);
                 token.ThrowIfCancellationRequested();
-             
+                Sendmessege(destEntitystructure, progress, token);
             }
             catch (Exception ex )
             {
@@ -936,6 +813,46 @@ namespace TheTechIdea.Beep.Editor
 
 
             return DMEEditor.ErrorObject;
+        }
+        private void Sendmessege(EntityStructure refentity,IProgress<PassedArgs> progress, CancellationToken token)
+        {
+            if (DMEEditor.ErrorObject.Flag == Errors.Failed)
+            {
+
+                SyncErrorsandTracking tr = new SyncErrorsandTracking();
+                errorcount++;
+                tr.errormessage = DMEEditor.ErrorObject.Message;
+                tr.errorsInfo = DMEEditor.ErrorObject;
+                tr.rundate = DateTime.Now;
+                tr.sourceEntityName = refentity.EntityName;
+                tr.currenrecordindex = CurrentScriptRecord;
+                tr.sourceDataSourceName = refentity.DataSourceID;
+                //tr.parentscriptid = sc.id;
+                //sc.Tracking.Add(tr);
+                LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Failed in Inserting Record {CurrentScriptRecord} - {tr.errormessage}" });
+                if (progress != null)
+                {
+                    PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                    progress.Report(ps);
+
+                }
+                if (errorcount > StopErrorCount)
+                {
+                    stoprun = true;
+                    PassedArgs ps = new PassedArgs { EventType = "Stop", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                    progress.Report(ps);
+                   
+                }
+            }
+            else
+            {
+                 LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Done insert Record {CurrentScriptRecord}" });
+                if (progress != null)
+                {
+                    PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
+                    progress.Report(ps);
+                }
+            }
         }
     }
     

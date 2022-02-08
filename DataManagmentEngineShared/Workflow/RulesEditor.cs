@@ -66,7 +66,7 @@ namespace TheTechIdea.Beep.Workflow
 
                         if (DMEEditor.ErrorObject.Flag == Errors.Ok)
                         {
-                            DMEEditor.AddLogMessage("Run Rule", "Success Run Rule : " + Rule, DateTime.Now, 0, null, Errors.Ok);
+                           // DMEEditor.AddLogMessage("Run Rule", "Success Run Rule : " + Rule, DateTime.Now, 0, null, Errors.Ok);
                         }
                         else
                             DMEEditor.AddLogMessage("Run Rule", "Failed running Rule : " + Rule, DateTime.Now, -1, Rule, Errors.Failed);
