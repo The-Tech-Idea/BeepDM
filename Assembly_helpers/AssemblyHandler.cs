@@ -268,15 +268,13 @@ namespace TheTechIdea.Tools
                 }
 
             }
-            // Get Driver from Loaded Assembly
+               // Get Driver from Loaded Assembly
                 foreach (assemblies_rep item in Assemblies)
                 {
                    // AddLogMessage("Start", $"Started Processing Drivers  {item.DllName}", DateTime.Now, -1, item.DllName, Errors.Ok);
                     GetDrivers(item.DllLib);
                    // AddLogMessage("End", $"Started Processing Drivers  {item.DllName}", DateTime.Now, -1, item.DllName, Errors.Ok);
                 }
-           
-
                 foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.Addin).Select(x => x.FolderPath))
                 {
                     try
@@ -969,6 +967,19 @@ namespace TheTechIdea.Tools
                 if (founddr == null)
                 {
                      ConfigEditor.DataDriversClasses.Add(dr);
+                }else
+                {
+                    dr.ConnectionString= founddr.ConnectionString;
+                    dr.DatasourceType= founddr.DatasourceType;
+                    dr.classHandler= founddr.classHandler;
+                    dr.iconname= founddr.iconname;
+                    dr.DatasourceCategory= founddr.DatasourceCategory;
+                    dr.classHandler=    founddr.classHandler;
+                    dr.ADOType=dr.ADOType;
+                    dr.CreateLocal = founddr.CreateLocal;
+                    ConfigEditor.DataDriversClasses.Remove(founddr);
+                    ConfigEditor.DataDriversClasses.Add(dr);
+
                 }
             }
         }
@@ -988,110 +999,108 @@ namespace TheTechIdea.Tools
                 }
                 else
                 {
-                    
+                   
                     t1 = asm.GetTypes().Where(typeof(IDbDataAdapter).IsAssignableFrom).ToList() ;
                     t1.AddRange(asm.GetTypes().Where(typeof(IDataConnection).IsAssignableFrom).ToList());
-                    t1.AddRange(asm.GetTypes().Where(typeof(DbCommandBuilder).IsAssignableFrom).ToList());
+                    t1.AddRange(asm.GetTypes().Where(e=>e.BaseType.ToString().Contains("DbCommandBuilder")).ToList());
                     t1.AddRange(asm.GetTypes().Where(typeof(IDbTransaction).IsAssignableFrom).ToList());
 
                     t = t1.ToArray();
                 }
-                    
-                    
+
+                Console.WriteLine(asm.FullName);
                 foreach (var mytype in t)
                 {
                     try
                     {
-                        //if (mytype.FullName.Contains("DataAdapter"))
-                        //{
-                        //    Debug.WriteLine("found");
-                        //}
-                        TypeInfo type = mytype.GetTypeInfo();
-                        p = asm.FullName.Split(new char[] { ',' });
-                        p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
+                        if (mytype.BaseType != null)
+                        {
+                            TypeInfo type = mytype.GetTypeInfo();
+                            p = asm.FullName.Split(new char[] { ',' });
+                            p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
 
-                        driversConfig = DataDriversConfig.Where(c => c.DriverClass == p[0]).FirstOrDefault();
-                        bool recexist = false;
-                        //DbTransaction uc = (DbTransaction)Activator.CreateInstance(type);
-                        //if (uc != null)
-                        //{
-                        if (driversConfig == null)
-                        {
-                            driversConfig = new ConnectionDriversConfig();
-                            recexist = false;
-                        }
-                        else
-                        {
-                            recexist = true;
-                        }
-                        //-------------------------------------------------------
-                        // Get DataBase Drivers
-                        if (type.ImplementedInterfaces.Contains(typeof(IDbDataAdapter)))
-                        {
-                            //Logger.WriteLog($" NameSpaces {type.Namespace} ");
-                            //IDataAdapter uc = (IDataAdapter)Activator.CreateInstance(type);
+                            driversConfig = DataDriversConfig.Where(c => c.DriverClass == p[0]).FirstOrDefault();
+                            bool recexist = false;
 
-                            driversConfig.version = p[1];
-                            driversConfig.AdapterType = type.FullName;
-                            driversConfig.PackageName = p[0];
-                            driversConfig.DriverClass = p[0];
-                            driversConfig.dllname = type.Module.Name;
-                            driversConfig.ADOType = true;
-                            if (recexist == false)
+                            if (driversConfig == null)
                             {
-                                DataDriversConfig.Add(driversConfig);
+                                driversConfig = new ConnectionDriversConfig();
+                                recexist = false;
                             }
-
-
-
-
-                        }
-                        if (type.ImplementedInterfaces.Contains(typeof(DbCommandBuilder)))
-                        {
-
-                            driversConfig.CommandBuilderType = type.FullName;
-                            driversConfig.version = p[1];
-                            driversConfig.PackageName = p[0];
-                            driversConfig.DriverClass = p[0];
-                            driversConfig.dllname = type.Module.Name;
-                            if (recexist == false)
+                            else
                             {
-                                DataDriversConfig.Add(driversConfig);
+                                recexist = true;
                             }
-
-                            //  }
-                        }
-                        if (type.ImplementedInterfaces.Contains(typeof(IDbConnection)))
-                        {
-
-                            driversConfig.DbConnectionType = type.FullName;
-                            driversConfig.PackageName = p[0];
-                            driversConfig.DriverClass = p[0];
-                            driversConfig.version = p[1];
-                            driversConfig.dllname = type.Module.Name;
-                            if (recexist == false)
+                            //-------------------------------------------------------
+                            // Get DataBase Drivers
+                            if (type.ImplementedInterfaces.Contains(typeof(IDbDataAdapter)))
                             {
-                                DataDriversConfig.Add(driversConfig);
+                                //Logger.WriteLog($" NameSpaces {type.Namespace} ");
+                                //IDataAdapter uc = (IDataAdapter)Activator.CreateInstance(type);
+
+                                driversConfig.version = p[1];
+                                driversConfig.AdapterType = type.FullName;
+                                driversConfig.PackageName = p[0];
+                                driversConfig.DriverClass = p[0];
+                                driversConfig.dllname = type.Module.Name;
+                                driversConfig.ADOType = true;
+                                if (recexist == false)
+                                {
+                                    DataDriversConfig.Add(driversConfig);
+                                }
+
+
+
+
                             }
-
-                            //}
-                        }   
-                        if (type.ImplementedInterfaces.Contains(typeof(IDbTransaction)))
-                        {
-
-
-                            driversConfig.PackageName = p[0];
-                            driversConfig.DriverClass = p[0];
-                            driversConfig.version = p[1];
-                            driversConfig.dllname = type.Module.Name;
-                            driversConfig.DbTransactionType = type.FullName;
-                            if (recexist == false)
+                            if (type.BaseType.ToString().Contains("DbCommandBuilder"))
                             {
-                                DataDriversConfig.Add(driversConfig);
-                            }
 
-                            // }
+                                driversConfig.CommandBuilderType = type.FullName;
+                                driversConfig.version = p[1];
+                                driversConfig.PackageName = p[0];
+                                driversConfig.DriverClass = p[0];
+                                driversConfig.dllname = type.Module.Name;
+                                if (recexist == false)
+                                {
+                                    DataDriversConfig.Add(driversConfig);
+                                }
+
+                                //  }
+                            }
+                            if (type.ImplementedInterfaces.Contains(typeof(IDbConnection)))
+                            {
+
+                                driversConfig.DbConnectionType = type.FullName;
+                                driversConfig.PackageName = p[0];
+                                driversConfig.DriverClass = p[0];
+                                driversConfig.version = p[1];
+                                driversConfig.dllname = type.Module.Name;
+                                if (recexist == false)
+                                {
+                                    DataDriversConfig.Add(driversConfig);
+                                }
+
+                                //}
+                            }
+                            if (type.ImplementedInterfaces.Contains(typeof(IDbTransaction)))
+                            {
+
+
+                                driversConfig.PackageName = p[0];
+                                driversConfig.DriverClass = p[0];
+                                driversConfig.version = p[1];
+                                driversConfig.dllname = type.Module.Name;
+                                driversConfig.DbTransactionType = type.FullName;
+                                if (recexist == false)
+                                {
+                                    DataDriversConfig.Add(driversConfig);
+                                }
+
+                                // }
+                            }
                         }
+                       
                         //-----------------------------------------------------------
                     }
                     catch (Exception ex)

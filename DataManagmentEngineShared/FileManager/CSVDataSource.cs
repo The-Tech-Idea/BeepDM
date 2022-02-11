@@ -54,6 +54,8 @@ namespace TheTechIdea.Beep.FileManager
         public List<string> EntitiesNames { get; set; } = new List<string>();
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public List<object> Records { get; set; } = new List<object>();
+        public virtual string ColumnDelimiter { get; set; } = "''";
+        public virtual string ParameterDelimiter { get; set; } = ":";
         public IDMEEditor DMEEditor { get ; set ; }
         ConnectionState pConnectionStatus;
         public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; } set { pConnectionStatus = value; } }

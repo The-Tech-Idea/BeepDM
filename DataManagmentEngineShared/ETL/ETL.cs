@@ -393,33 +393,21 @@ namespace TheTechIdea.Beep.Editor
                         {
                             if (sc.scriptType == DDLScriptType.CopyData)
                             {
+                                SendMessege(progress, token, null, sc, $"Started Coping Data for Entity  { sc.destinationentityname}  in {sc.destinationdatasourcename}");
+                              
                                 await Task.Run(() =>
                                 {
                                     sc.errorsInfo = RunCopyEntityScript( sc,srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname, progress, token, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
                                 });
-                                if (DMEEditor.ErrorObject.Flag == Errors.Failed)
-                                {
-                                    errorcount += 1;
-                                    sc.errormessage = DMEEditor.ErrorObject.Message;
-                                    sc.errorsInfo = DMEEditor.ErrorObject;
-                                    sc.Active = false;
-                                    if (progress != null)
-                                    {
-                                        PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                        progress.Report(ps);
-                                    }
-                                }
+                                SendMessege(progress, token,null,sc, $"Error in Coping Data for Entity  { sc.destinationentityname}");;
                             }
-                            else
-                            {
-                                errorcount += 1;
-                                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                                DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
-                            }
-                            if (errorcount == StopErrorCount)
-                            {
-                                return DMEEditor.ErrorObject;
-                            }
+                        }
+                        else
+                        {
+                            DMEEditor.ErrorObject.Flag = Errors.Failed;
+                            DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dource  {sc.sourcedatasourcename}";
+                            errorcount = (int)StopErrorCount;
+                            SendMessege(progress, token, null, sc);
                         }
                     }
                 }
@@ -436,7 +424,7 @@ namespace TheTechIdea.Beep.Editor
           
             IDataSource destds = null;
             IDataSource srcds = null;
-          
+            LoadDataLogs = new List<LoadDataLogResult>();
             numberToCompute = DMEEditor.ETL.Script.ScriptDTL.Count();
             List<ETLScriptDet> crls = DMEEditor.ETL.Script.ScriptDTL.Where(i => i.scriptType == DDLScriptType.CreateEntity).ToList();
             List<ETLScriptDet> copudatals = DMEEditor.ETL.Script.ScriptDTL.Where(i => i.scriptType == DDLScriptType.CopyData).ToList();
@@ -448,6 +436,7 @@ namespace TheTechIdea.Beep.Editor
             ScriptCount = p1;
             CurrentScriptRecord = 0;
             errorcount = 0;
+            stoprun = false;
             foreach (ETLScriptDet sc in DMEEditor.ETL.Script.ScriptDTL.Where(u => u.scriptType == DDLScriptType.CreateEntity))
             {
                 destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
@@ -473,52 +462,32 @@ namespace TheTechIdea.Beep.Editor
                                     entitystr.DatasourceEntityName = sc.destinationentityname;
                                     entitystr.OriginalEntityName = sc.destinationentityname;
                                 }
+                                SendMessege(progress, token, entitystr, sc, $"Creating Entity  {entitystr.EntityName} ");
                                 bool retval = destds.CreateEntityAs(entitystr); // t.Result;
-                                sc.errorsInfo = DMEEditor.ErrorObject;
-                                sc.errormessage = DMEEditor.ErrorObject.Message;
-                                if (sc.errorsInfo.Flag == Errors.Ok)
+                                if (retval)
                                 {
+                                    SendMessege(progress, token, entitystr, sc, $"Successfully Created Entity  {entitystr.EntityName} ");
                                     sc.Active = true;
-                                    sc.errormessage = "Entity Creation is Successful";
-                                    if (progress != null)
-                                    {
-                                        PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                        progress.Report(ps);
-                                    }
                                     if (sc.CopyDataScripts.Count > 0)
                                     {
+                                        SendMessege(progress, token, entitystr, sc, $"Started  Coping Data From {entitystr.EntityName} ");
                                         await RunChildScriptAsync(sc, srcds, destds, progress, token);
                                     }
                                 }
                                 else
                                 {
-                                    sc.errormessage = DMEEditor.ErrorObject.Message;
-                                    sc.errorsInfo = DMEEditor.ErrorObject;
+                                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                                    DMEEditor.ErrorObject.Message = $"Failed in Creating Entity   {entitystr.EntityName} ";
+                                    SendMessege(progress, token, entitystr, sc, $"Failed in Creating Entity   {entitystr.EntityName} ");
                                     sc.Active = false;
-                                    if (progress != null)
-                                    {
-                                        PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                        progress.Report(ps);
-                                    }
-                                    if (errorcount == StopErrorCount)
-                                    {
-                                        return DMEEditor.ErrorObject;
-                                    }
                                 }
                             }
-                            else
-                            {
-                                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                                DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
-                            }
-                          
-                            if (progress != null)
-                            {
-                                PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
-                                progress.Report(ps);
-
-                            }
-
+                        }
+                        else
+                        {
+                            DMEEditor.ErrorObject.Flag = Errors.Failed;
+                            DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
+                            SendMessege(progress, token, null, sc);
                         }
                     }
                 }
@@ -569,11 +538,11 @@ namespace TheTechIdea.Beep.Editor
                             SelectedFields = srcentitystructure.Fields;
                             SourceFields = srcentitystructure.Fields;
                         }
-                        LoadDataLogs = new List<LoadDataLogResult>();
-                        LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Getting Data for  {srcentity}" });
+                        SendMessege(progress, token, null, sc, $"Getting Data for  {srcentity}"); ;
                         var src = Task.Run(() => { return sourceds.GetEntity(querystring, filters); });
                         src.Wait();
-                        LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Finish Getting Data for  {srcentity}" });
+                        SendMessege(progress, token, null, sc, $"Finish Getting Data for  {srcentity}"); ;
+                        
                         srcTb = src.Result;
                     
                         List<object> srcList = new List<object>();
@@ -594,7 +563,8 @@ namespace TheTechIdea.Beep.Editor
                                 srcList = (List<object>)srcTb;
                             }
                             ScriptCount += srcList.Count();
-                            LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Data fetched {ScriptCount} Record" });
+                            SendMessege(progress, token, null, sc, $"Data fetched {ScriptCount} Record"); ;
+                            
                             foreach (var r in srcList)
                             {
                              
@@ -603,11 +573,7 @@ namespace TheTechIdea.Beep.Editor
                               
                             }
                         }
-                        if (progress != null)
-                        {
-                            PassedArgs ps = new PassedArgs { ParameterString1 = $"Ended Copying Data from {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
-                            progress.Report(ps);
-                        }
+                       
                     }
                     else
                     {
@@ -620,7 +586,12 @@ namespace TheTechIdea.Beep.Editor
                     }
                 }
                 else
+                {
                     DMEEditor.AddLogMessage("Copy Data", $"Error Could not Find Entity  {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Failed);
+                    errorcount = (int)StopErrorCount;
+                    SendMessege(progress, token, null, sc, $"Error Could not Find Entity  {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} "); ;
+                }
+                    
             }
             catch (Exception ex)
             {
@@ -635,7 +606,9 @@ namespace TheTechIdea.Beep.Editor
             {
                 Script = new ETLScriptHDR();
                 Script.scriptSource = SelectedMapping.EntityDataSource;
-                
+                errorcount = 0;
+                ScriptCount = 0;
+                LoadDataLogs.Clear();
                 Script.ScriptDTL.Add(new ETLScriptDet() { Active = true, destinationdatasourcename = mapping.EntityDataSource, destinationDatasourceEntityName = mapping.EntityName, destinationentityname = mapping.EntityName, scriptType = DDLScriptType.CopyData, Mapping = SelectedMapping, sourcedatasourcename = SelectedMapping.EntityDataSource,sourceDatasourceEntityName= SelectedMapping.EntityName, sourceentityname = SelectedMapping.EntityName });
                 DMEEditor.AddLogMessage("OK", $"Generated Copy Data script", DateTime.Now, -1, "CopyDatabase", Errors.Ok);
             }
@@ -652,8 +625,9 @@ namespace TheTechIdea.Beep.Editor
             ScriptCount = 1;
             CurrentScriptRecord = 0;
             errorcount = 0;
-
+            stoprun = false;
             CurrentScriptRecord += 1;
+            LoadDataLogs = new List<LoadDataLogResult>();
             ETLScriptDet sc = DMEEditor.ETL.Script.ScriptDTL.First();
             if (sc != null)
             {
@@ -665,6 +639,7 @@ namespace TheTechIdea.Beep.Editor
                 }
                 if (destds != null)
                 {
+
                     DMEEditor.OpenDataSource(sc.destinationdatasourcename);
                     if (stoprun == false)
                     {
@@ -679,31 +654,22 @@ namespace TheTechIdea.Beep.Editor
                                 sc.errormessage = DMEEditor.ErrorObject.Message;
                                 sc.errorsInfo = DMEEditor.ErrorObject;
                                 sc.Active = false;
-                                if (progress != null)
-                                {
-                                    PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                                    progress.Report(ps);
-                                }
+                                SendMessege(progress, token,null,sc,"Starting Import Entities Script");
+                                
                                 if (errorcount == StopErrorCount)
                                 {
                                     return DMEEditor.ErrorObject;
                                 }
                                 var src = await Task.Run(() => { return RunCopyEntityScript( sc, srcds, destds, sc.sourceentityname, sc.destinationentityname, progress, token, false, sc.Mapping); });
                             }
-                            else
-                            {
-                                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                                DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
-                            }
-
-                            if (progress != null)
-                            {
-                                PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
-                                progress.Report(ps);
-
-                            }
-
                         }
+                        else
+                        {
+                            DMEEditor.ErrorObject.Flag = Errors.Failed;
+                            DMEEditor.ErrorObject.Message = $" Could not Connect to on the Data Dources {sc.destinationdatasourcename} or {sc.sourcedatasourcename}";
+                            SendMessege(progress, token);
+                        }
+
                     }
                 }
             }
@@ -711,33 +677,7 @@ namespace TheTechIdea.Beep.Editor
 
         }
         #endregion
-        private void UpdateMessege(ETLScriptDet sc,EntityStructure srcentitystructure, IProgress<PassedArgs> progress, CancellationToken token)
-        {
-            SyncErrorsandTracking tr = new SyncErrorsandTracking();
-            errorcount++;
-            tr.errormessage = DMEEditor.ErrorObject.Message;
-            tr.errorsInfo = DMEEditor.ErrorObject;
-            tr.rundate = DateTime.Now;
-            tr.sourceEntityName = srcentitystructure.EntityName;
-            tr.currenrecordindex = CurrentScriptRecord;
-            tr.sourceDataSourceName = srcentitystructure.DataSourceID;
-            tr.parentscriptid = sc.id;
-            sc.Tracking.Add(tr);
-            LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Failed in Inserting Record {CurrentScriptRecord} - {tr.errormessage}" });
-            if (progress != null)
-            {
-                PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                progress.Report(ps);
-
-            }
-            if (errorcount > StopErrorCount)
-            {
-                stoprun = true;
-                PassedArgs ps = new PassedArgs { EventType = "Stop", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
-                progress.Report(ps);
-                
-            }
-        }
+       
         public IErrorsInfo InsertEntity(IDataSource destds,  EntityStructure destEntitystructure,string destentity,EntityDataMap_DTL map_DTL,object r, IProgress<PassedArgs> progress, CancellationToken token)
         {
             object retval = r;
@@ -792,7 +732,7 @@ namespace TheTechIdea.Beep.Editor
                                         //DMEEditor.ErrorObject = destds.InsertEntity(item.ParentEntityID, parentob);
                                         DMEEditor.ErrorObject = InsertEntity(destds, refentity, item.ParentEntityID, null, parentob, progress, token); ;
                                         token.ThrowIfCancellationRequested();
-                                        Sendmessege(refentity, progress, token);
+                                        SendMessege( progress, token, refentity);
                                     }
                                 }
                             };
@@ -800,10 +740,10 @@ namespace TheTechIdea.Beep.Editor
                     }
                 }
                 CurrentScriptRecord += 1;
-                LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Inserting Record {CurrentScriptRecord} " });
+                SendMessege(progress, token, destEntitystructure, null, $"Inserting Record {CurrentScriptRecord} ");
                 DMEEditor.ErrorObject = destds.InsertEntity(destEntitystructure.EntityName, retval);
                 token.ThrowIfCancellationRequested();
-                Sendmessege(destEntitystructure, progress, token);
+                
             }
             catch (Exception ex )
             {
@@ -814,7 +754,7 @@ namespace TheTechIdea.Beep.Editor
 
             return DMEEditor.ErrorObject;
         }
-        private void Sendmessege(EntityStructure refentity,IProgress<PassedArgs> progress, CancellationToken token)
+        private void SendMessege(IProgress<PassedArgs> progress, CancellationToken token, EntityStructure refentity = null, ETLScriptDet sc=null,string messege=null)
         {
             if (DMEEditor.ErrorObject.Flag == Errors.Failed)
             {
@@ -824,12 +764,16 @@ namespace TheTechIdea.Beep.Editor
                 tr.errormessage = DMEEditor.ErrorObject.Message;
                 tr.errorsInfo = DMEEditor.ErrorObject;
                 tr.rundate = DateTime.Now;
-                tr.sourceEntityName = refentity.EntityName;
+                tr.sourceEntityName = refentity == null ? null : refentity.EntityName; 
                 tr.currenrecordindex = CurrentScriptRecord;
-                tr.sourceDataSourceName = refentity.DataSourceID;
-                //tr.parentscriptid = sc.id;
-                //sc.Tracking.Add(tr);
-                LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Failed in Inserting Record {CurrentScriptRecord} - {tr.errormessage}" });
+                tr.sourceDataSourceName = refentity == null ? null : refentity.DataSourceID;
+                if (sc != null)
+                {
+                    tr.parentscriptid =  sc.id;
+                    sc.Tracking.Add(tr);
+                }
+
+                LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Failed   {CurrentScriptRecord} -{messege} : {tr.errormessage}" });
                 if (progress != null)
                 {
                     PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };
@@ -846,7 +790,7 @@ namespace TheTechIdea.Beep.Editor
             }
             else
             {
-                 LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Done insert Record {CurrentScriptRecord}" });
+                 LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Success {CurrentScriptRecord} -{messege} " });
                 if (progress != null)
                 {
                     PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };

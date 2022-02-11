@@ -39,8 +39,10 @@ namespace TheTechIdea.Beep.DataBase
         public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
         public IDataConnection Dataconnection { get; set; }
         public RDBDataConnection RDBMSConnection { get { return (RDBDataConnection)Dataconnection; } }
-        static int recNumber = 0;
-        static string recEntity = "";
+        public virtual string ColumnDelimiter { get; set; } = "''";
+        public virtual string ParameterDelimiter { get; set; } = "@";
+        protected static int recNumber = 0;
+        protected string recEntity = "";
         public RDBSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
         {
             DatasourceName = datasourcename;
@@ -64,7 +66,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             return ConnectionStatus;
         }
-        public ConnectionState Closeconnection()
+        public virtual ConnectionState Closeconnection()
         {
             if (RDBMSConnection != null)
             {
@@ -617,50 +619,6 @@ namespace TheTechIdea.Beep.DataBase
             }
             else
                 recNumber += 1;
-            // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
-            //if (InsertedData.GetType().FullName == "System.Data.DataRowView")
-            //{
-            //    dv = (DataRowView)InsertedData;
-            //    dr = dv.Row;
-
-            //}
-            //else
-            //   if (InsertedData.GetType().FullName == "System.Data.DataRow")
-            //{
-            //    dr = (DataRow)InsertedData;
-            //}
-            //else
-            //{
-            //    dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
-            //    foreach (EntityField col in DataStruct.Fields)
-            //    {
-            //        System.Reflection.PropertyInfo GetPropAInfo = InsertedData.GetType().GetProperty(col.fieldname);
-
-            //        //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
-            //        //{
-            //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-            //        dynamic result = GetPropAInfo.GetValue(InsertedData);
-
-            //        if (result == null)
-            //        {
-            //            result = System.DBNull.Value;
-            //        }
-
-            //        if (result != null)
-            //        {
-            //            if (col.fieldtype.Contains("Date"))
-            //            { 
-            //                DateTime dt = (DateTime)result;
-            //                if (dt == DateTime.MinValue || dt == DateTime.MaxValue)
-            //                {
-            //                    result = DBNull.Value;
-            //                }
-
-            //            }
-            //        }
-            //        dr[col.fieldname] = result;
-            //    }
-            //}
 
             dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, InsertedData, DataStruct);
             try
@@ -824,7 +782,7 @@ namespace TheTechIdea.Beep.DataBase
            
             EntityName = EntityName.ToLower();
             string inname="";
-            string qrystr = "select* from ";
+            string qrystr = "select * from ";
             
             if (!string.IsNullOrEmpty(EntityName) && !string.IsNullOrWhiteSpace(EntityName))
             {
@@ -1062,6 +1020,10 @@ namespace TheTechIdea.Beep.DataBase
     
                         }
                     }
+                    else
+                    {
+                        fnd.Created = false;
+                    }
                 }
             }
           return fnd;
@@ -1120,23 +1082,27 @@ namespace TheTechIdea.Beep.DataBase
                        
                     i += 1;
                     }
-                    if (Entities.Count > 0)
-                    {
-                        List<string> ename = Entities.Select(p => p.EntityName.ToUpper()).ToList();
-                        List<string> diffnames = ename.Except(EntitiesNames.Select(o=>o.ToUpper())).ToList();
-                        if (diffnames.Count > 0)
-                        {
-                            foreach (string item in diffnames)
-                            {
-                               // GetEntityStructure(item, false);
-                               // int idx = Entities.FindIndex(p => p.EntityName.Equals(item, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(item, StringComparison.OrdinalIgnoreCase));
-                               // Entities[idx].Created = false;
-                                 EntitiesNames.Add(item);
-                            }
-                        }
-                    }
+                    //if (Entities.Count > 0)
+                    //{
+                    //    List<string> ename = Entities.Select(p => p.EntityName.ToUpper()).ToList();
+                    //    List<string> diffnames = ename.Except(EntitiesNames.Select(o=>o.ToUpper())).ToList();
+                    //    if (diffnames.Count > 0)
+                    //    {
+                    //        foreach (string item in diffnames)
+                    //        {
+                    //           // GetEntityStructure(item, false);
+                    //           // int idx = Entities.FindIndex(p => p.EntityName.Equals(item, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(item, StringComparison.OrdinalIgnoreCase));
+                    //           // Entities[idx].Created = false;
+                    //             EntitiesNames.Add(item);
+                    //        }
+                    //    }
+                    ////---------------------- Check for removed Entities ------------------
+                    
+                    //}
 
-                  
+
+
+
 
             }
             catch (Exception ex)
@@ -1688,48 +1654,9 @@ namespace TheTechIdea.Beep.DataBase
             int t = 0;
             foreach (EntityField item in DataStruct.Fields)
             {
-
-                //if (!DBNull.Value.Equals(row[item.fieldname]))
-                //{
-                    // insertfieldname = Regex.Replace(item.fieldname, @"\s+", "");
-                    Insertstr += "["+item.fieldname + "],";
-                    Valuestr += "@p_" + Regex.Replace(item.fieldname, @"\s+", "_") + ",";
-                    //switch (item.fieldtype)
-                    //{
-                    //    case "System.String":
-                    //        if (row[item.fieldname].ToString().Contains("'"))
-                    //        {
-                    //            string ve = row[item.fieldname].ToString();
-                    //            ve = ve.Replace("'", "''");
-                    //            Valuestr += "'" + ve + "',";
-                    //        }
-                    //        else
-                    //        {
-                    //            Valuestr += "'" + row[item.fieldname] + "',";
-                    //        }
-
-
-                    //        break;
-                    //    case "System.Int":
-                    //        Valuestr += "" + row[item.fieldname] + ",";
-                    //        break;
-                    //    case "System.DateTime":
-                    //        DateTime time = (DateTime)row[item.fieldname];
-                    //        Valuestr += "'" + time.ToString(dateformat) + "',";
-                    //        break;
-                    //    default:
-                    //        Valuestr += "'" + row[item.fieldname] + "',";
-                    //        break;
-                    //}
-                    //if (t == i)
-                    //{
-                    //    Insertstr += Valuestr + @"\n";
-                    //}
-                    //else
-                    //{
-                    //    Insertstr += Valuestr + @",\n";
-                    //}
-               // }
+               Insertstr += $"{GetFieldName(item.fieldname)},";
+               Valuestr += $"{ParameterDelimiter}p_" + Regex.Replace(item.fieldname, @"\s+", "_") + ",";
+                 
                 t += 1;
             }
             Insertstr = Insertstr.Remove(Insertstr.Length - 1);
@@ -1741,9 +1668,7 @@ namespace TheTechIdea.Beep.DataBase
         {
             List<EntityField> SourceEntityFields = new List<EntityField>();
             List<EntityField> DestEntityFields = new List<EntityField>();
-            // List<Mapping_rep_fields> map = new List < Mapping_rep_fields >()  ; 
-            //   map= Mapping.FldMapping;
-            //     EntityName = Regex.Replace(EntityName, @"\s+", "");
+          
             string Updatestr = @"Update " + EntityName + "  set " + Environment.NewLine;
             string Valuestr = "";
            
@@ -1753,14 +1678,9 @@ namespace TheTechIdea.Beep.DataBase
             {
                 if (!DataStruct.PrimaryKeys.Any(l => l.fieldname == item.fieldname))
                 {
-                   
-                        //     insertfieldname = Regex.Replace(item.fieldname, @"\s+", "_");
-                        Updatestr += "["+item.fieldname + "]=";
-                        Updatestr += "@p_" + item.fieldname + ",";
-                       
+                    Updatestr += $"{GetFieldName(item.fieldname)}= ";
+                    Updatestr += $"{ParameterDelimiter}p_" + item.fieldname + ",";
                 }
-
-
                 t += 1;
             }
 
@@ -1774,13 +1694,13 @@ namespace TheTechIdea.Beep.DataBase
                
                     if (t == 1)
                     {
-                        Updatestr +="["+ item.fieldname + "]=";
-                    }
+                        Updatestr += $"{GetFieldName(item.fieldname)}= ";
+                }
                     else
                     {
-                        Updatestr += " and [" + item.fieldname + "]=";
-                    }
-                    Updatestr += "@p_" + item.fieldname + "";
+                        Updatestr += $" and {GetFieldName(item.fieldname)}= ";
+                }
+                    Updatestr += $"{ParameterDelimiter}p_" + item.fieldname + "";
                   
                 t += 1;
             }
@@ -1803,13 +1723,13 @@ namespace TheTechIdea.Beep.DataBase
                 
                     if (t == 1)
                     {
-                        Updatestr += "["+item.fieldname + "]=";
-                    }
+                        Updatestr += $"{GetFieldName(item.fieldname)}= ";
+                }
                     else
                     {
-                        Updatestr += " and [" + item.fieldname + "]=";
+                        Updatestr += $" and  {GetFieldName(item.fieldname)}= ";
                     }
-                    Updatestr += "@p_" + item.fieldname + "";
+                    Updatestr += $"{ParameterDelimiter}p_" + item.fieldname + "";
                 t += 1;
             }
             return Updatestr;
@@ -1822,6 +1742,15 @@ namespace TheTechIdea.Beep.DataBase
             
             return dt;
 
+        }
+        private string GetFieldName(string fieldname)
+        {
+            string retval=fieldname; 
+            if(fieldname.IndexOf(" ") != -1)
+            {
+                retval=   $"{ColumnDelimiter}{fieldname}{ColumnDelimiter}";
+            }
+            return retval;
         }
         #region "Dapper"
         public virtual List<T> GetData<T>(string sql)
@@ -1931,6 +1860,10 @@ namespace TheTechIdea.Beep.DataBase
                 string adtype = Dataconnection.DataSourceDriver.AdapterType;
                 string cmdtype = Dataconnection.DataSourceDriver.CommandBuilderType;
                 string cmdbuildername = driversConfig.CommandBuilderType;
+                if (string.IsNullOrEmpty(cmdbuildername))
+                {
+                    return null;
+                }
                 Type adcbuilderType = DMEEditor.assemblyHandler.GetType(cmdbuildername);
                 List<ConstructorInfo> lsc = DMEEditor.assemblyHandler.GetInstance(adtype).GetType().GetConstructors().ToList(); ;
                 List<ConstructorInfo> lsc2 = DMEEditor.assemblyHandler.GetInstance(cmdbuildername).GetType().GetConstructors().ToList(); ;

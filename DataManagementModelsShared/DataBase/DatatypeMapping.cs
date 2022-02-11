@@ -16,6 +16,7 @@ namespace TheTechIdea.Beep.DataBase
         public string DataType { get; set; } 
         public string DataSourceName { get ; set ; }
         public string NetDataType { get ; set ; }
+        public bool Fav { get; set ; }   
 
      
     }

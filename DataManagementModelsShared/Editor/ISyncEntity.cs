@@ -6,7 +6,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public interface ISyncEntity
+    public interface IETLScriptDTL
     {
         int id { get; set; }
         string ddl { get; set; }
@@ -22,7 +22,7 @@ namespace TheTechIdea.Beep.Editor
         DDLScriptType scriptType { get; set; }
         EntityDataMap_DTL Mapping { get; set; }
         List<SyncErrorsandTracking> Tracking { get; set; }
-        List<ETLScriptDet> CopyDataScripts { get; set; } 
+      
     }
     public enum DDLScriptType
     {

@@ -118,6 +118,7 @@ namespace TheTechIdea.Util
         public string extensionstoHandle { get; set; }
         public DatasourceCategory DatasourceCategory { get; set; }
         public DataSourceType DatasourceType { get; set; }
+        public bool IsMissing { get;set; }=false;
     }
     public class ConnectionDriversTypes
     {

@@ -220,20 +220,26 @@ namespace TheTechIdea.Beep
             DataTable dt = new DataTable();
             using (StreamReader sr = new StreamReader(strFilePath))
             {
-                string[] headers = sr.ReadLine().Split(',');
-                foreach (string header in headers)
+                string l = sr.ReadLine();
+                if (l != null)
                 {
-                    dt.Columns.Add(header);
-                }
-                while (!sr.EndOfStream)
-                {
-                    string[] rows = sr.ReadLine().Split(',');
-                    DataRow dr = dt.NewRow();
-                    for (int i = 0; i < headers.Length; i++)
+                    string[] headers = l.Split(',');
+                    foreach (string header in headers)
                     {
-                        dr[i] = rows[i];
+                        dt.Columns.Add(header);
                     }
-                    dt.Rows.Add(dr);
+                    while (!sr.EndOfStream)
+                    {
+                        string[] rows = sr.ReadLine().Split(',');
+                        DataRow dr = dt.NewRow();
+                        for (int i = 0; i < headers.Length; i++)
+                        {
+                            dr[i] = rows[i];
+                        }
+                        dt.Rows.Add(dr);
+                    }
+
+
                 }
 
             }

@@ -30,8 +30,10 @@ namespace TheTechIdea.Beep.WebAPI
         public IDMEEditor DMEEditor { get; set; }
         public List<object> Records { get; set; }
         public ConnectionState ConnectionStatus { get; set; }
-       // public DataTable SourceEntityData { get; set; }
-       // IHttpClientFactory ClientFactory;
+        // public DataTable SourceEntityData { get; set; }
+        public virtual string ColumnDelimiter { get; set; } = "''";
+        public virtual string ParameterDelimiter { get; set; } = ":";
+        // IHttpClientFactory ClientFactory;
         public HttpClient client { get; set; } = new HttpClient();
 
         WebAPIDataConnection cn;

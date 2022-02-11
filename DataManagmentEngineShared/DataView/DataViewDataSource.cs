@@ -27,6 +27,8 @@ namespace TheTechIdea.Beep.DataView
         public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; } set { }  }
         public DataTable SourceEntityData { get ; set ; }
         public IDMDataView DataView { get; set; } = new DMDataView();
+        public virtual string ColumnDelimiter { get; set; } = "''";
+        public virtual string ParameterDelimiter { get; set; } = ":";
         public List<EntityStructure> Entities { get 
             {
                 if (DataView != null)

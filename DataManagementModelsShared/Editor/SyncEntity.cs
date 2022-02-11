@@ -7,7 +7,7 @@ using TheTechIdea.Util;
 namespace TheTechIdea.Beep.Editor
 {
    
-    public class ETLScriptDet : ISyncEntity
+    public class ETLScriptDet : IETLScriptDTL
     {
         public ETLScriptDet()
         {
@@ -25,8 +25,8 @@ namespace TheTechIdea.Beep.Editor
         public string destinationdatasourcename { get ; set ; }
         public string errormessage { get ; set ; }
         public bool Active { get; set; } = false;
-        public IErrorsInfo errorsInfo { get; set; }
-        public DDLScriptType scriptType { get; set; }
+        public IErrorsInfo errorsInfo { get; set; }=new ErrorsInfo();
+        public DDLScriptType scriptType { get; set; }=new DDLScriptType();
         public EntityDataMap_DTL Mapping { get; set; }
         public List<SyncErrorsandTracking> Tracking { get; set; } = new List<SyncErrorsandTracking>();
         public List<ETLScriptDet> CopyDataScripts { get; set; } = new List<ETLScriptDet>();

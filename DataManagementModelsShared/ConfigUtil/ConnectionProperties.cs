@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using TheTechIdea.Beep;
 using TheTechIdea.Beep.DataBase;
 
 namespace TheTechIdea.Util
@@ -47,10 +48,25 @@ namespace TheTechIdea.Util
     }
     public class WebApiHeader
     {
+        private IDMEEditor pDMEEditor;
+        private IDataConnection pConn;
+        private List<EntityField> pfields;
+
+        public WebApiHeader(string datasourcename, string databasename)
+        {
+
+        }
         public WebApiHeader()
         {
 
         }
+        public WebApiHeader(string datasourcename, string databasename, IDMEEditor pDMEEditor, IDataConnection pConn, List<EntityField> pfields) : this(datasourcename, databasename)
+        {
+            this.pDMEEditor = pDMEEditor;
+            this.pConn = pConn;
+            this.pfields = pfields;
+        }
+
         public string headername { get; set; }
         public string headervalue { get; set; }
     }
