@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
+using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
@@ -21,6 +22,7 @@ namespace TheTechIdea.Beep.Editor
         int ScriptCount { get; set; }
         decimal StopErrorCount { get; set; }
         int CurrentScriptRecord { get; set; }
+        IRulesEditor RulesEditor { get; set; }
         List<LoadDataLogResult> LoadDataLogs { get; set; }
         // LScriptTracking Tracker { get; set; }
         void CreateScriptHeader( IDataSource Srcds, IProgress<PassedArgs> progress, CancellationToken token);

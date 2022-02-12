@@ -40,11 +40,9 @@ namespace TheTechIdea.Tools
         private List<Type> LoaderExtensions { get; set; } = new List<Type>();
         public List<AssemblyClassDefinition> LoaderExtensionClasses { get; set; } = new List<AssemblyClassDefinition>();
         public List<assemblies_rep> Assemblies { get; set; } = new List<assemblies_rep>();
-        
         public List<IDM_Addin> AddIns { get; set; } = new List<IDM_Addin>();
         public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
         private List<ConnectionDriversConfig> DataDriversConfig = new List<ConnectionDriversConfig>();
-
         public AssemblyHandler(IConfigEditor pConfigEditor, IErrorsInfo pErrorObject, IDMLogger pLogger, IUtil pUtilfunction)
         {
 

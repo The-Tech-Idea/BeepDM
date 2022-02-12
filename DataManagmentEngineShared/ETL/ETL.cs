@@ -11,6 +11,7 @@ using TheTechIdea.Beep.ETL;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
+using TheTechIdea.DataManagment_Engine.Workflow;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
@@ -24,8 +25,8 @@ namespace TheTechIdea.Beep.Editor
         }
         public event EventHandler<PassedArgs> PassEvent;
         private IDMEEditor _DMEEditor;
-        public IDMEEditor DMEEditor { get { return _DMEEditor; } set { _DMEEditor = value;RulesEditor = new RulesEditor(value);MoveValidator = new EntityDataMoveValidator(DMEEditor); } }
-        public RulesEditor RulesEditor { get; set; }
+        public IDMEEditor DMEEditor { get { return _DMEEditor; } set { _DMEEditor = value; } } //;RulesEditor = new RulesEditor(value);MoveValidator = new EntityDataMoveValidator(DMEEditor);
+        public IRulesEditor RulesEditor { get; set; }
         public EntityDataMoveValidator MoveValidator { get; set; }
         public PassedArgs Passedargs { get; set; }
         public int ScriptCount { get; set; }
@@ -33,13 +34,7 @@ namespace TheTechIdea.Beep.Editor
         public decimal StopErrorCount { get; set; } = 10;
         public List<LoadDataLogResult> LoadDataLogs { get; set; } = new List<LoadDataLogResult>();
         public ETLScriptHDR Script { get; set; } = new ETLScriptHDR();
-      
-
         private List<DefaultValue> CurrrentDBDefaults = new List<DefaultValue>();
-
-
-     //   public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
-      // public List<string> EntitiesNames { get; set; } = new List<string>();
         #region "Local Variables"
         private bool stoprun = false;
         private int errorcount = 0;

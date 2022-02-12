@@ -17,6 +17,7 @@ using static TheTechIdea.Beep.Util;
 using TheTechIdea.Beep.Report;
 using System.Threading.Tasks;
 using System.Collections;
+using TheTechIdea.DataManagment_Engine.Workflow;
 
 namespace TheTechIdea.Beep
 {
@@ -449,7 +450,7 @@ namespace TheTechIdea.Beep
         }
 
         //----------------- ------------------------------ -----
-        public DMEEditor(IDMLogger logger, IUtil utilfunctions,IErrorsInfo per, IConfigEditor configEditor,IWorkFlowEditor pworkFlowEditor, IClassCreator pclasscreator, IETL pETL, IAssemblyHandler passemblyHandler, IDataTypesHelper dataTypesHelper)
+        public DMEEditor(IDMLogger logger, IUtil utilfunctions,IErrorsInfo per, IConfigEditor configEditor,IWorkFlowEditor pworkFlowEditor, IClassCreator pclasscreator, IETL pETL, IAssemblyHandler passemblyHandler, IDataTypesHelper dataTypesHelper,IWorkFlowEditor workFlowEditor,IWorkFlowStepEditor workFlowStepEditor,IRuleParser ruleParser,IRulesEditor rulesEditor)
         {
           
             logger.WriteLog("init all variables");
@@ -461,8 +462,18 @@ namespace TheTechIdea.Beep
             classCreator = pclasscreator;
             WorkFlowEditor = pworkFlowEditor;
             WorkFlowEditor.DMEEditor = this;
+            //WorkFlow Engine Setup
             ETL = pETL;
             ETL.DMEEditor = this;
+            workFlowEditor.DMEEditor = this;
+            workFlowStepEditor.DMEEditor = this;
+            workFlowEditor.StepEditor = workFlowStepEditor;
+            ruleParser.DMEEditor = this;
+            rulesEditor.DMEEditor= this;
+            rulesEditor.Parser = ruleParser;
+            ETL.RulesEditor = rulesEditor;
+            
+            //-------------------------------------------
             assemblyHandler = passemblyHandler;
             typesHelper = dataTypesHelper;
             typesHelper.DMEEditor = this;

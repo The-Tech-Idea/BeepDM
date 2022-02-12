@@ -83,6 +83,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Vis\IOrder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WEPAPI\IWebAPIDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IRuleStructure.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\IRuleParser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\IRulesEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\IWorkFlowStepEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\RuleStructure.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\Interfaces\IWorkFlow.cs" />

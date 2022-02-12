@@ -46,20 +46,20 @@ namespace TheTechIdea.Util
 		public List<QuerySqlRepo> QueryList { get; set; } = new List<QuerySqlRepo>();
 		public List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; } = new List<ConnectionDriversConfig>();
 		public List<ConnectionProperties> DataConnections { get; set; } = new List<ConnectionProperties>(); //DataSourceConnectionConfig
-	//	public List<Mapping_rep> Mappings { get; set; } = new List<Mapping_rep>();
-	//	public List<Map_Schema> MappingSchema { get; set; } = new List<Map_Schema>();
+
 		public List<WorkFlow> WorkFlows { get; set; } = new List<WorkFlow>();
 		public List<CategoryFolder> CategoryFolders { get; set; } = new List<CategoryFolder>();
 		public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> GlobalFunctions { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> AppWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
-	//	public List<App> Apps { get; set; } = new List<App>();
+	
 		public List<AssemblyClassDefinition> AppComponents { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> ReportWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> PrintManagers { get; set; }=new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> WorkFlowActions { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> Rules { get; set; } = new List<AssemblyClassDefinition>();
+		
 		public List<AddinTreeStructure> AddinTreeStructure { get; set; } = new List<AddinTreeStructure>();
 		public List<Function2FunctionAction> Function2Functions { get; set; } = new List<Function2FunctionAction>();
 		public List<ObjectTypes> objectTypes { get; set; } = new List<ObjectTypes>();

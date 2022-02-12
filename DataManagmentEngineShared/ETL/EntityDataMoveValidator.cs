@@ -10,7 +10,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.ETL
 {
-    public class EntityDataMoveValidator
+    public partial class EntityDataMoveValidator
     {
         public EntityDataMoveValidator(IDMEEditor pDMEEditor)
         {
@@ -19,6 +19,7 @@ namespace TheTechIdea.Beep.ETL
         public IDMEEditor DMEEditor { get; set; }
         public IDataSource DataSource { get; set; }
         public EntityStructure Entity { get; set; }
+      
         public EntityValidatorMesseges CanInsertRecord(object record, string entityname, string datasource)
         {
             EntityValidatorMesseges retval = EntityValidatorMesseges.OK;
