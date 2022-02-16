@@ -789,7 +789,7 @@ namespace TheTechIdea.Beep.Editor
             }
             else
             {
-                 LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Success {CurrentScriptRecord} -{messege} " });
+                 LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"{messege} " });
                 if (progress != null)
                 {
                     PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, ParameterString3 = DMEEditor.ErrorObject.Message };

@@ -902,38 +902,38 @@ namespace TheTechIdea.Beep.DataView
                        
                         foreach (var item in lsDiffDB)
                         {
-                            //if (k++ > 0)
-                            //{
-                            //    y++;
-                            //    item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}";
-                            //    Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-
-                            //}
-                            //else
-                            //{
-                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}"+y.ToString();
+                            if (k == 0)
+                            {
+                              
+                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}";
                                 Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-                            //}
-                         
+
+                            }
+                            else
+                            {
+                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" + k.ToString();
+                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                            }
+                          
                             k++;
                         }
-                        k = 0;
+                       
                         y = 0;
                         foreach (var item in lsSameDB)
                         {
-                            //if(k++ > 0)
-                            //{
-                            //    y++;
-                            //    item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" + y.ToString();
-                            //    Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-                            //}
-                            //else
-                            //{
-                            item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" + y.ToString();
-                            Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-                            //}
+                            if (y== 0)
+                            {
+                               
+                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" ;
+                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                            }
+                            else
+                            {
+                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" +y.ToString();
+                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                            }
+                            y++;
                            
-                            k++;
                         }
 
                     }

@@ -686,7 +686,13 @@ namespace TheTechIdea.Beep.DataBase
                 queryStructure.EntitiesString = sp[1];
                 string[] Tablesdsp = sp[1].Split(',');
                 queryStructure.Entities.AddRange(Tablesdsp);
-                qrystr += queryStructure.FieldsString + " " + " from " + queryStructure.EntitiesString;
+                if (GetSchemaName() == null)
+                {
+                    qrystr += queryStructure.FieldsString + " " + " from " + queryStructure.EntitiesString;
+                }
+                else
+                    qrystr += queryStructure.FieldsString + $" from {GetSchemaName().ToLower()}." + queryStructure.EntitiesString;
+
                 qrystr += Environment.NewLine;
                 if (Filter != null)
                 {
@@ -708,11 +714,11 @@ namespace TheTechIdea.Beep.DataBase
                                     //  EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
                                     if (item.Operator.ToLower() == "between")
                                     {
-                                        qrystr += item.FieldName + " " + item.Operator + " @p_" + item.FieldName + " and  @p_" + item.FieldName + "1 " + Environment.NewLine;
+                                        qrystr += item.FieldName + " " + item.Operator + $"{ParameterDelimiter}p_" + item.FieldName + $" and  {ParameterDelimiter}p_" + item.FieldName + "1 " + Environment.NewLine;
                                     }
                                     else
                                     {
-                                        qrystr += item.FieldName + " " + item.Operator + " @p_" + item.FieldName + " " + Environment.NewLine;
+                                        qrystr += item.FieldName + " " + item.Operator + $"{ParameterDelimiter}p_" + item.FieldName + " " + Environment.NewLine;
                                     }
 
                                 }
@@ -771,9 +777,9 @@ namespace TheTechIdea.Beep.DataBase
                 }
 
             }
-            catch (Exception )
+            catch (Exception ex )
             {
-                DMEEditor.AddLogMessage("Fail", $"Unable Build Query Object {originalquery}", DateTime.Now, 0, "Error", Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"Unable Build Query Object {originalquery}- {ex.Message}", DateTime.Now, 0, "Error", Errors.Failed);
             }
             return qrystr;
         }
@@ -1121,7 +1127,7 @@ namespace TheTechIdea.Beep.DataBase
         }
         public string GetSchemaName()
         {
-            string schemaname="";
+            string schemaname=null;
             
             if(!string.IsNullOrEmpty(Dataconnection.ConnectionProp.SchemaName))
             {
