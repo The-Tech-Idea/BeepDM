@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Addin\AddinTreeStructure.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Addin\DisplayLookUpDescription.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Addin\IDM_Addin.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Addin\IFunctionExtension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\ILoaderExtention.cs" />

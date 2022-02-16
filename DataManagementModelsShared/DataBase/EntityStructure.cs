@@ -130,10 +130,10 @@ namespace TheTechIdea.Beep.DataBase
     public class RelationShipKeys :IRelationShipKeys
     {
         public string RalationName { get; set; }
-        public string ParentEntityID { get; set; }
-        public string ParentEntityColumnID { get; set; }
+        public string RelatedEntityID { get; set; }
+        public string RelatedEntityColumnID { get; set; }
+        public int RelatedColumnSequenceID { get; set; }
         public string EntityColumnID { get; set; }
-        public int ParentColumnSequenceID { get; set; }
         public int EntityColumnSequenceID { get; set; }
 
         public RelationShipKeys()
@@ -142,8 +142,8 @@ namespace TheTechIdea.Beep.DataBase
         }
         public RelationShipKeys(string pParentEntityID, string pParentEntityColumnID, string pEntityColumnID)
         {
-            ParentEntityID = pParentEntityID;
-            ParentEntityColumnID = pParentEntityColumnID;
+            RelatedEntityID = pParentEntityID;
+            RelatedEntityColumnID = pParentEntityColumnID;
             EntityColumnID = pEntityColumnID;
 
         }

@@ -4,9 +4,9 @@
     {
         string EntityColumnID { get; set; }
         int EntityColumnSequenceID { get; set; }
-        int ParentColumnSequenceID { get; set; }
-        string ParentEntityColumnID { get; set; }
-        string ParentEntityID { get; set; }
+        int RelatedColumnSequenceID { get; set; }
+        string RelatedEntityColumnID { get; set; }
+        string RelatedEntityID { get; set; }
         string RalationName { get; set; }
     }
     public interface IChildRelation

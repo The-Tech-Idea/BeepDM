@@ -114,31 +114,33 @@ namespace TheTechIdea.Beep.DataBase
             IDbCommand cmd = GetDataCommand();
             try
             {
-
                 DataTable dt = new DataTable();
-
                 cmd.CommandText = qrystr;
                 dt.Load(cmd.ExecuteReader(CommandBehavior.Default));
                 cmd.Dispose();
-                if (dt.Rows.Count== 1)
+                if (dt != null)
                 {
-                    if(dt.Columns.Count==1)
-                        return dt.Rows[0][0];
-                    else
-                        return dt.Rows[0];
+                    if (dt.Rows.Count == 1)
+                    {
+                        if (dt.Columns.Count == 1)
+                            return dt.Rows[0][0];
+                    }
+                    else if (dt.Rows.Count > 1)
+                    {
+                        EntityStructure st = DMEEditor.Utilfunction.GetEntityStructure(dt);
+                        Type type = DMEEditor.Utilfunction.GetEntityType("tab", st.Fields);
+                        return DMEEditor.Utilfunction.ConvertTableToList(dt, st, type);
+                    }
                 }
-                return dt;
-            }
+                return null;
 
+            }
             catch (Exception ex)
             {
-              
                 cmd.Dispose();
                 DMEEditor.AddLogMessage("Fail", $"Error in getting entity Data({ ex.Message})", DateTime.Now, 0, "", Errors.Failed);
-               
                 return null;
             }
-
 
         }
         private IDbCommand CreateCommandParameters(IDbCommand  command, DataRow r,EntityStructure DataStruct)
@@ -1000,6 +1002,7 @@ namespace TheTechIdea.Beep.DataBase
                         {
                             if ((fnd.Relations.Count == 0) || refresh)
                             {
+                                fnd.Relations = new List<RelationShipKeys>();
                                 fnd.Relations = GetEntityforeignkeys(entname, Dataconnection.ConnectionProp.SchemaName);
                             }
                         }
@@ -1118,16 +1121,13 @@ namespace TheTechIdea.Beep.DataBase
         }
         public string GetSchemaName()
         {
-            string schemaname;
-            if (Dataconnection.ConnectionProp.Database == null)
+            string schemaname="";
+            
+            if(!string.IsNullOrEmpty(Dataconnection.ConnectionProp.SchemaName))
             {
-                schemaname = null;
+                schemaname = Dataconnection.ConnectionProp.SchemaName.ToUpper();
             }
-            else
-            {
-                schemaname = Dataconnection.ConnectionProp.Database.ToUpper();
-            }
-            if (Dataconnection.ConnectionProp.DatabaseType == DataSourceType.SqlServer)
+            if (Dataconnection.ConnectionProp.DatabaseType == DataSourceType.SqlServer && string.IsNullOrEmpty(Dataconnection.ConnectionProp.SchemaName))
             {
                 schemaname = "dbo";
             }
@@ -1198,7 +1198,7 @@ namespace TheTechIdea.Beep.DataBase
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                List<ChildRelation> ds = GetTablesFKColumnList(entityname, SchemaName, null);
+                List<ChildRelation> ds = GetTablesFKColumnList(entityname, GetSchemaName(), null);
                 //-------------------------------
                 // Create Parent Record First
                 //-------------------------------
@@ -1210,8 +1210,8 @@ namespace TheTechIdea.Beep.DataBase
                         {
                             RelationShipKeys rfk = new RelationShipKeys
                             {
-                                ParentEntityID = r.parent_table,
-                                ParentEntityColumnID = r.parent_column,
+                                RelatedEntityID = r.parent_table,
+                                RelatedEntityColumnID = r.parent_column,
                                 EntityColumnID = r.child_column,
                             };
                             try
@@ -1483,14 +1483,14 @@ namespace TheTechIdea.Beep.DataBase
             try
             {
                 int i = 0;
-                foreach (string item in t1.Relations.Select(o => o.ParentEntityID).Distinct())
+                foreach (string item in t1.Relations.Select(o => o.RelatedEntityID).Distinct())
                 {
                     string forkeys = "";
                     string refkeys = "";
-                    foreach (RelationShipKeys fk in t1.Relations.Where(p => p.ParentEntityID == item))
+                    foreach (RelationShipKeys fk in t1.Relations.Where(p => p.RelatedEntityID == item))
                     {
                         forkeys += fk.EntityColumnID + ",";
-                        refkeys += fk.ParentEntityColumnID + ",";
+                        refkeys += fk.RelatedEntityColumnID + ",";
                     }
                     i += 1;
                     forkeys = forkeys.Remove(forkeys.Length - 1, 1);
@@ -1745,10 +1745,19 @@ namespace TheTechIdea.Beep.DataBase
         }
         private string GetFieldName(string fieldname)
         {
-            string retval=fieldname; 
-            if(fieldname.IndexOf(" ") != -1)
+            string retval = fieldname;
+            if (fieldname.IndexOf(" ") != -1)
             {
-                retval=   $"{ColumnDelimiter}{fieldname}{ColumnDelimiter}";
+                if (ColumnDelimiter.Length==2) //(ColumnDelimiter.Contains("[") || ColumnDelimiter.Contains("]"))
+                {
+                    
+                    retval = $"{ColumnDelimiter[0]}{fieldname}{ColumnDelimiter[1]}";
+                }
+                else
+                {
+                    retval = $"{ColumnDelimiter}{fieldname}{ColumnDelimiter}";
+                }
+              
             }
             return retval;
         }

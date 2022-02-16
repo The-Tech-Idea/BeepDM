@@ -25,9 +25,9 @@ namespace TheTechIdea.Beep.Editor
         }
         public event EventHandler<PassedArgs> PassEvent;
         private IDMEEditor _DMEEditor;
-        public IDMEEditor DMEEditor { get { return _DMEEditor; } set { _DMEEditor = value; } } //;RulesEditor = new RulesEditor(value);MoveValidator = new EntityDataMoveValidator(DMEEditor);
+        public IDMEEditor DMEEditor { get { return _DMEEditor; } set { _DMEEditor = value;MoveValidator = new EntityDataMoveValidator(value); } } //;RulesEditor = new RulesEditor(value);MoveValidator = new EntityDataMoveValidator(DMEEditor);
         public IRulesEditor RulesEditor { get; set; }
-        public EntityDataMoveValidator MoveValidator { get; set; }
+        public EntityDataMoveValidator MoveValidator { get; set; } 
         public PassedArgs Passedargs { get; set; }
         public int ScriptCount { get; set; }
         public int CurrentScriptRecord { get; set; }
@@ -504,7 +504,7 @@ namespace TheTechIdea.Beep.Editor
                     if (destds.Category == DatasourceCategory.RDBMS)
                     {
                         IRDBSource rDB = (IRDBSource)destds;
-                        rDB.DisableFKConstraints(srcentitystructure);
+                        rDB.DisableFKConstraints(destEntitystructure);
                     }
                     if (destds.CheckEntityExist(destentity))
                     {
@@ -543,7 +543,7 @@ namespace TheTechIdea.Beep.Editor
                         List<object> srcList = new List<object>();
                         if (src.Result != null)
                         {
-                            DMTypeBuilder.CreateNewObject(srcentitystructure.EntityName, srcentitystructure.EntityName, SourceFields);
+                            DMTypeBuilder.CreateNewObject(destEntitystructure.EntityName, srcentitystructure.EntityName, SourceFields);
                             if (srcTb.GetType().FullName.Contains("DataTable"))
                             {
                                 srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, srcentitystructure);
@@ -708,29 +708,33 @@ namespace TheTechIdea.Beep.Editor
                 }
                 if (destEntitystructure.Relations.Any())
                 {
-                    foreach (RelationShipKeys item in destEntitystructure.Relations.Where(p=>!p.ParentEntityID.Equals(destEntitystructure.EntityName,StringComparison.InvariantCultureIgnoreCase)))
+                    foreach (RelationShipKeys item in destEntitystructure.Relations) // .Where(p => !p.RelatedEntityID.Equals(destEntitystructure.EntityName, StringComparison.InvariantCultureIgnoreCase)
                     {
-                        if (destEntitystructure.Fields.Any(p => p.fieldname.Equals(item.EntityColumnID, StringComparison.InvariantCultureIgnoreCase)))
+                        //if (destEntitystructure.Fields.Any(p => p.fieldname.Equals(item.EntityColumnID, StringComparison.InvariantCultureIgnoreCase)))
+                        //{
+                        if (!string.IsNullOrEmpty(item.RelatedEntityID))
                         {
-                            EntityStructure refentity= (EntityStructure)destds.GetEntityStructure(item.ParentEntityID,true).Clone();
+                            EntityStructure refentity = (EntityStructure)destds.GetEntityStructure(item.RelatedEntityID, true).Clone();
                             if (DMEEditor.Utilfunction.GetFieldValueFromObject(item.EntityColumnID, retval) != null)
                             {
                                 if (MoveValidator.TrueifParentExist(destEntitystructure.EntityName, destEntitystructure.DataSourceID, retval, item.EntityColumnID, DMEEditor.Utilfunction.GetFieldValueFromObject(item.EntityColumnID, retval)) == EntityValidatorMesseges.MissingRefernceValue)
                                 {
-                                    LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Inserting Parent for  Record {CurrentScriptRecord}  in {item.ParentEntityID}" });
+                                    LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Inserting Parent for  Record {CurrentScriptRecord}  in {item.RelatedEntityID}" });
                                     //---- insert Parent Key ----
-                                    object parentob = DMEEditor.Utilfunction.GetEntityObject(item.ParentEntityID,refentity.Fields) ;
+                                    object parentob = DMEEditor.Utilfunction.GetEntityObject(item.RelatedEntityID, refentity.Fields);
                                     if (parentob != null)
                                     {
                                         var refval = DMEEditor.Utilfunction.GetFieldValueFromObject(item.EntityColumnID, retval);
-                                        DMEEditor.Utilfunction.SetFieldValueFromObject(item.ParentEntityColumnID, parentob, refval);
+                                        DMEEditor.Utilfunction.SetFieldValueFromObject(item.RelatedEntityColumnID, parentob, refval);
                                         //DMEEditor.ErrorObject = destds.InsertEntity(item.ParentEntityID, parentob);
-                                        DMEEditor.ErrorObject = InsertEntity(destds, refentity, item.ParentEntityID, null, parentob, progress, token); ;
+                                        DMEEditor.ErrorObject = InsertEntity(destds, refentity, item.RelatedEntityID, null, parentob, progress, token); ;
                                         token.ThrowIfCancellationRequested();
-                                        SendMessege( progress, token, refentity);
+                                        SendMessege(progress, token, refentity);
                                     }
                                 }
-                            };
+                                //};
+                            }
+
                         }
                     }
                 }

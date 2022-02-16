@@ -167,12 +167,12 @@ namespace TheTechIdea.Beep.ETL
                                     {
                                         if (int.TryParse(strval, out intval))
                                         {
-                                            cnt = (int)ds.RunQuery($"select count(*)  from {rel.ParentEntityID} where {rel.ParentEntityColumnID}={intval}");
+                                            cnt = (int)ds.RunQuery($"select count(*)  from {rel.RelatedEntityID} where {rel.RelatedEntityColumnID}={intval}");
                                         }
                                         else
                                         {
 
-                                            cnt = (int)ds.RunQuery($"select count(*)  from {rel.ParentEntityID} where {rel.ParentEntityColumnID}='{strval}'");
+                                            cnt = (int)ds.RunQuery($"select count(*)  from {rel.RelatedEntityID} where {rel.RelatedEntityColumnID}='{strval}'");
                                         }
                                         if (cnt == 0)
                                         {

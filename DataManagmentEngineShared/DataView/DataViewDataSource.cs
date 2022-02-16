@@ -148,7 +148,7 @@ namespace TheTechIdea.Beep.DataView
             }
             else
             {
-                filepath = DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.DataView).FirstOrDefault().FolderPath;
+                filepath = DMEEditor.ConfigEditor.Config.Folders.FirstOrDefault(c => c.FolderFilesType == FolderFileTypes.DataView).FolderPath;
                 Dataconnection.ConnectionProp = new ConnectionProperties();
                 Dataconnection.ConnectionProp.FileName = filename;
                 Dataconnection.ConnectionProp.FilePath = filepath;
@@ -236,15 +236,15 @@ namespace TheTechIdea.Beep.DataView
         }
         public int EntityListIndex( string entityname)
         {
-            int retval= Entities.FindIndex(a => a.EntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
+            int retval= Entities.FindIndex(a => a.DatasourceEntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
             if (retval == -1)
             {
-                retval = Entities.FindIndex(a => a.OriginalEntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
+                retval = Entities.FindIndex(a => a.EntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
 
             }
             if (retval == -1)
             {
-                retval = Entities.FindIndex(a => a.DatasourceEntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
+                retval = Entities.FindIndex(a => a.OriginalEntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
 
             }
             return retval;
@@ -353,8 +353,9 @@ namespace TheTechIdea.Beep.DataView
         }
         public IErrorsInfo ExecuteSql(string sql)
         {
-            throw new NotImplementedException();
-         
+            DMEEditor.AddLogMessage("Beep", $"DataView DataSource {DatasourceName}  Method  {System.Reflection.MethodBase.GetCurrentMethod().Name } Not Implemented", DateTime.Now, 0, null, Errors.Ok);
+            return DMEEditor.ErrorObject;
+
         }
         public bool CreateEntityAs(EntityStructure entity)
         {
@@ -418,8 +419,9 @@ namespace TheTechIdea.Beep.DataView
 
         public object RunQuery( string qrystr)
         {
-            throw new NotImplementedException();
-          
+            DMEEditor.AddLogMessage("Beep", $"DataView DataSource {DatasourceName}  Method  {System.Reflection.MethodBase.GetCurrentMethod().Name } Not Implemented", DateTime.Now, 0, null, Errors.Ok);
+            return DMEEditor.ErrorObject;
+
         }
         public IErrorsInfo UpdateEntities(string EntityName, object UploadData,IProgress<PassedArgs> progress)
         {
@@ -487,7 +489,17 @@ namespace TheTechIdea.Beep.DataView
         }
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
-            throw new NotImplementedException();
+            IDataSource ds = GetDataSourceObject(EntityName);
+            if (ds.ConnectionStatus == ConnectionState.Open)
+            {
+               
+                return ds.InsertEntity(EntityName, InsertedData);
+            }
+            else
+            {
+                DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
+                return null;
+            }
         }
         public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
         {
@@ -861,6 +873,8 @@ namespace TheTechIdea.Beep.DataView
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             string tablename = maintab.DatasourceEntityName;
+            int k = 0;
+            int y = 0;
             try
             {
                 maintab.Id = NextHearId();
@@ -874,7 +888,61 @@ namespace TheTechIdea.Beep.DataView
                 if (CheckEntityExist(maintab.DatasourceEntityName))
                 {
                     int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count()+1;
-                    maintab.EntityName = maintab.DatasourceEntityName + "_" + cnt ;
+                    if (cnt>0)
+                    {
+                        List<EntityStructure> ls = new List<EntityStructure>();
+                        foreach (string item in EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            ls.Add(GetEntityStructure(item,false));
+                        }
+                        List<EntityStructure> lsSameDB = new List<EntityStructure>();
+                        lsSameDB.AddRange(ls.Where(p => p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase)).AsEnumerable());
+                        List<EntityStructure> lsDiffDB = new List<EntityStructure>();
+                        lsDiffDB.AddRange(ls.Where(p => !p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase)).AsEnumerable());
+                       
+                        foreach (var item in lsDiffDB)
+                        {
+                            if (k++ > 0)
+                            {
+                                y++;
+                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}";
+                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+
+                            }
+                            else
+                            {
+                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}"+y.ToString();
+                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                            }
+                         
+                            k++;
+                        }
+                        k = 0;
+                        foreach (var item in lsSameDB)
+                        {
+                            if(k++ > 0)
+                            {
+                                y++;
+                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" + y.ToString();
+                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                            }
+                            else
+                            {
+                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}";
+                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                            }
+                           
+                            k++;
+                        }
+
+                    }
+                    if (y > 0)
+                    {
+                        maintab.Caption = maintab.DatasourceEntityName + $"_{maintab.DataSourceID}_" + y;
+                    }
+                    else
+                        maintab.Caption = maintab.DatasourceEntityName + $"_{maintab.DataSourceID}";
+
                 }
 
                 DataView.Entities.Add(maintab);
@@ -937,7 +1005,7 @@ namespace TheTechIdea.Beep.DataView
         private EntityStructure SetupEntityInView(IDMDataView v, List<EntityStructure> Rootnamespacelist, string childtable, string parenttable, string childcolumn, string parentcolumn, int pid,string Datasourcename)
         {
 
-            EntityStructure a;
+            EntityStructure a=null;
             int pkid = NextHearId();
             IDataSource ds = DMEEditor.GetDataSource(Datasourcename);
             string schemaname = "";
@@ -946,29 +1014,32 @@ namespace TheTechIdea.Beep.DataView
                 IRDBSource rdb = (IRDBSource)ds;
                 schemaname = rdb.GetSchemaName();
             }
-
-            if (!Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.Equals(childtable,StringComparison.OrdinalIgnoreCase)).Any())//f => f.Id == childtable &&
+            if (childtable != null)
             {
-                //a = new EntityStructure() { Id = pkid, ParentId = pid, EntityName = childtable.ToUpper(), ViewID = v.ViewID };
-                //a.DataSourceID = v.Entities.Where(x => x.Id == pid).FirstOrDefault().DataSourceID;
-                //a.DatasourceEntityName = childtable;
-                //a.Relations = ds.GetEntityforeignkeys(childtable.ToUpper(), schemaname);
-               
-                a = (EntityStructure)ds.GetEntityStructure(childtable, true).Clone();
-                a.ParentId = pid;
-                a.Id = NextHearId();
-                Rootnamespacelist.Add(a);
+                if (!Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.Equals(childtable, StringComparison.OrdinalIgnoreCase)).Any())//f => f.Id == childtable &&
+                {
+                    //a = new EntityStructure() { Id = pkid, ParentId = pid, EntityName = childtable.ToUpper(), ViewID = v.ViewID };
+                    //a.DataSourceID = v.Entities.Where(x => x.Id == pid).FirstOrDefault().DataSourceID;
+                    //a.DatasourceEntityName = childtable;
+                    //a.Relations = ds.GetEntityforeignkeys(childtable.ToUpper(), schemaname);
+
+                    a = (EntityStructure)ds.GetEntityStructure(childtable, true).Clone();
+                    a.ParentId = pid;
+                    a.Id = NextHearId();
+                    Rootnamespacelist.Add(a);
 
 
+                }
+                else
+                {
+                    a = Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.Equals(childtable, StringComparison.OrdinalIgnoreCase)).FirstOrDefault(); //f.Id == childtable &&
+                                                                                                                                                                 //  a.DataSourceID = DatasourceName;
+                    a.DatasourceEntityName = childtable;
+                    a.Relations.Add(new RelationShipKeys { EntityColumnID = childcolumn.ToUpper(), RelatedEntityColumnID = parentcolumn.ToUpper(), RelatedEntityID = parenttable.ToUpper() });
+
+                }
             }
-            else
-            {
-                a = Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.Equals(childtable, StringComparison.OrdinalIgnoreCase)).FirstOrDefault(); //f.Id == childtable &&
-              //  a.DataSourceID = DatasourceName;
-                a.DatasourceEntityName = childtable;
-                a.Relations.Add(new RelationShipKeys { EntityColumnID = childcolumn.ToUpper(), ParentEntityColumnID = parentcolumn.ToUpper(), ParentEntityID = parenttable.ToUpper() });
-
-            }
+         
             return a;
         }
         public EntityStructure GetEntity(string entityname)
@@ -1117,7 +1188,7 @@ namespace TheTechIdea.Beep.DataView
 
 
                     //---------------- Adding Relations 
-                    List<RelationShipKeys> rl = entity.Relations.Where(c => c.ParentEntityID == parenttb.EntityName).ToList();
+                    List<RelationShipKeys> rl = entity.Relations.Where(c => c.RelatedEntityID == parenttb.EntityName).ToList();
 
                     DataTable Parenttb = dataset.Tables[parenttb.EntityName];
                     foreach (string relationname in rl.Select(x => x.RalationName).Distinct())
@@ -1128,7 +1199,7 @@ namespace TheTechIdea.Beep.DataView
                         DataColumn[] ChildColumn = new DataColumn[cnt];
                         foreach (RelationShipKeys keys in rl.Where(u => u.RalationName == relationname))
                         {
-                            ParentColumn[k] = Parenttb.Columns[keys.ParentEntityColumnID];
+                            ParentColumn[k] = Parenttb.Columns[keys.RelatedEntityColumnID];
                             ChildColumn[k] = tb.Columns[keys.EntityColumnID];
 
 
