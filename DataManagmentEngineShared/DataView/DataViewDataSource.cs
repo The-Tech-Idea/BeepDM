@@ -184,12 +184,12 @@ namespace TheTechIdea.Beep.DataView
                 }
                 foreach (EntityStructure i in DataView.Entities) //.Where(x=>x.Id>1)
                 {
-                    if (string.IsNullOrEmpty(i.DatasourceEntityName))
+                    if (string.IsNullOrEmpty(i.Caption))
                     {
                         retval.Add(i.EntityName);
                     }
                     else
-                        retval.Add(i.DatasourceEntityName); 
+                        retval.Add(i.Caption); 
                 }
             }
             catch (Exception ex)
@@ -244,7 +244,7 @@ namespace TheTechIdea.Beep.DataView
             }
             if (retval == -1)
             {
-                retval = Entities.FindIndex(a => a.OriginalEntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
+                retval = Entities.FindIndex(a => a.Caption.Equals(entityname, StringComparison.OrdinalIgnoreCase));
 
             }
             return retval;
@@ -902,35 +902,36 @@ namespace TheTechIdea.Beep.DataView
                        
                         foreach (var item in lsDiffDB)
                         {
-                            if (k++ > 0)
-                            {
-                                y++;
-                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}";
-                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                            //if (k++ > 0)
+                            //{
+                            //    y++;
+                            //    item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}";
+                            //    Entities[EntityListIndex(item.DatasourceEntityName)] = item;
 
-                            }
-                            else
-                            {
+                            //}
+                            //else
+                            //{
                                 item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}"+y.ToString();
                                 Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-                            }
+                            //}
                          
                             k++;
                         }
                         k = 0;
+                        y = 0;
                         foreach (var item in lsSameDB)
                         {
-                            if(k++ > 0)
-                            {
-                                y++;
-                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" + y.ToString();
-                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-                            }
-                            else
-                            {
-                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}";
-                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-                            }
+                            //if(k++ > 0)
+                            //{
+                            //    y++;
+                            //    item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" + y.ToString();
+                            //    Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                            //}
+                            //else
+                            //{
+                            item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" + y.ToString();
+                            Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                            //}
                            
                             k++;
                         }
@@ -942,9 +943,9 @@ namespace TheTechIdea.Beep.DataView
                     }
                     else
                         maintab.Caption = maintab.DatasourceEntityName + $"_{maintab.DataSourceID}";
-
+                  
                 }
-
+                maintab.OriginalEntityName = maintab.DatasourceEntityName;
                 DataView.Entities.Add(maintab);
                 EntitiesNames.Add(maintab.EntityName);
                 IDataSource entityds = DMEEditor.GetDataSource(maintab.DataSourceID);

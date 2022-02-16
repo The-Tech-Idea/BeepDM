@@ -106,7 +106,7 @@ namespace TheTechIdea.Beep.CompositeLayer
                     {
                         LayerInfo.Entities = new List<EntityStructure>();
                     }
-                    List<string> ents = ls.Except(LayerInfo.Entities.Select(p => p.EntityName).Distinct()).ToList();
+                    List<string> ents = ls.Except(LayerInfo.Entities.Select(p => p.OriginalEntityName).Distinct()).ToList();
                     // 
                     foreach (string item in ents)
                     {
