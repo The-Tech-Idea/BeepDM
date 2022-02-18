@@ -343,7 +343,7 @@ namespace TheTechIdea.Tools
             {
                 try
                 {
-                    Assembly loadedAssembly = Assembly.LoadFrom(dll);
+                    Assembly loadedAssembly = Assembly.LoadFile(dll);
 
                     assemblies_rep x = new assemblies_rep(loadedAssembly, path, dll, fileTypes);
                     Assemblies.Add(x);
@@ -584,20 +584,7 @@ namespace TheTechIdea.Tools
                         // Get WorkFlow Definitions
                         if (type.ImplementedInterfaces.Contains(typeof(ILoaderExtention)))
                          {
-                            //    AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                            //    xcls.className = type.Name;
-                            //    xcls.dllname = type.Module.Name;
-                            //    xcls.PackageName = type.FullName;
-                            //    xcls.type = type;
-                            //    xcls.componentType = "ILoaderExtention";
-                            //    LoaderExtensions.Add(type);
-                            //    xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                            //    LoaderExtensionClasses.Add(xcls);
-                            //    if (xcls.classProperties != null)
-                            //    {
-                            //        xcls.Order = xcls.classProperties.order;
-                            //        xcls.RootName = "ILoaderExtention";
-                            //    }
+                            
                             LoaderExtensions.Add(type);
                             LoaderExtensionClasses.Add(GetAssemblyClassDefinition(type, "ILoaderExtention"));
                         }
@@ -605,21 +592,7 @@ namespace TheTechIdea.Tools
                         // Get DataBase Drivers
                         if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
                         {
-                                //AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                                //xcls.className = type.Name;
-                                //xcls.dllname = type.Module.Name;
-                                //xcls.PackageName = type.FullName;
-                                //xcls.type = type;
-                                //xcls.componentType = "IDataSource";
-                                //xcls.classProperties= (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                                //DataSourcesClasses.Add(xcls);
-                                //ConfigEditor.DataSourcesClasses.Add(xcls);
-                                //if (xcls.classProperties != null)
-                                // {
-                                //xcls.Order = xcls.classProperties.order;
-
-                                //xcls.RootName = "IDataSource";
-                                //}
+                              
                             AssemblyClassDefinition xcls = GetAssemblyClassDefinition(type, "IDataSource");
                             DataSourcesClasses.Add(xcls);
                             ConfigEditor.DataSourcesClasses.Add(xcls);
@@ -628,21 +601,7 @@ namespace TheTechIdea.Tools
                          // Get WorkFlow Definitions
                         if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
                         {
-                                //AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                                //xcls.className = type.Name;
-                                //xcls.dllname = type.Module.Name;
-                                //xcls.PackageName = type.FullName;
-                                //xcls.type = type;
-                                //xcls.componentType = "IWorkFlowAction";
-                                //xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                                //ConfigEditor.WorkFlowActions.Add(xcls);
-                                //if (xcls.classProperties != null)
-                                //{
-                                //    xcls.Order = xcls.classProperties.order;
-
-                                //    xcls.RootName = "IWorkFlowAction";
-                                //}
-
+                      
                             ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowAction"));
                         }
                          // Get IFunctionExtension Definitions
@@ -792,6 +751,28 @@ namespace TheTechIdea.Tools
 
             return instance;
         }
+        public object CreateInstanceFromString(string dll,string typeName, params object[] args)
+        {
+            object instance = null;
+            Type type = null;
+
+            try
+            {
+                assemblies_rep dllas = Assemblies.Where(p => Path.GetFileName(p.DllName) == dll).FirstOrDefault();
+                type = dllas.DllLib.GetType(typeName);
+                if (type == null)
+                    return null;
+
+
+                instance = Activator.CreateInstance(type, args);
+            }
+            catch( Exception ex) 
+            {
+                return null;
+            }
+
+            return instance;
+        }
         private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
             // Ignore missing resources
@@ -866,7 +847,7 @@ namespace TheTechIdea.Tools
                 return type;
             try
             {
-                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies().Where(o=>o.FullName.StartsWith(assemblynamespace[0])))
+                foreach (var asm in CurrentDomain.GetAssemblies().Where(o=>o.FullName.StartsWith(assemblynamespace[0])))
                 {
                     try
                     {
@@ -906,31 +887,32 @@ namespace TheTechIdea.Tools
 
                
             }
+            //assemblies_rep dllas = Assemblies.Where(p=>p.DllLib.FullName== assemblynamespace[0]).FirstOrDefault();
+
+            //type = dllas.DllLib.GetType(strFullyQualifiedName);
             foreach (var item in Assemblies)
             {
                 var assembly = item.DllLib;
                 try
                 {
-                    Console.WriteLine(assembly.FullName);
-                    if (assembly.FullName.Contains("TheTechIdea.Beep.Workflow.GetGUID"))
-                    {
-                        Console.WriteLine("Found");
-                    }
+                    //Console.WriteLine(assembly.FullName);
+                    //if (assembly.FullName.Contains("MsDashboardFunctions"))
+                    //{
+                    //    Console.WriteLine("Found");
+                    //}
                     type = assembly.GetType(strFullyQualifiedName);
+                    if (type != null)
+                        return type;
                 }
                 catch (Exception ex2)
                 {
 
                     throw;
                 }
-              
-                // type = asm.GetType(strFullyQualifiedName);
-                if (type != null)
-                    return type;
-
             }
+               
 
-            return null;
+                return null;
         }
         public bool RunMethod(object ObjInstance, string FullClassName, string MethodName)
         {

@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.DataBase
         List<EntityField> Fields { get; set; }
         List<ReportFilter> Filters { get; set; }
         int Id { get; set; }
-        
+        string DefaultChartType { get; set; }
         int ParentId { get; set; }
         List<EntityField> PrimaryKeys { get; set; }
         List<RelationShipKeys> Relations { get; set; }

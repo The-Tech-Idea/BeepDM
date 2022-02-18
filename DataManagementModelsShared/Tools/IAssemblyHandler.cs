@@ -25,6 +25,7 @@ namespace TheTechIdea.Tools
         bool AddEngineDefaultDrivers();
         void CheckDriverAlreadyExistinList();
         object CreateInstanceFromString(string typeName, params object[] args);
+        object CreateInstanceFromString(string dll, string typeName, params object[] args);
         IErrorsInfo GetBuiltinClasses();
         List<ParentChildObject> GetAddinObjects(Assembly asm);
         List<ConnectionDriversConfig> GetDrivers(Assembly asm);

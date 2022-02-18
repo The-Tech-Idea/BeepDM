@@ -33,6 +33,7 @@ namespace TheTechIdea.Beep.DataBase
         public Boolean Created { get; set; } = true;
         public string KeyToken { get; set; }
         public string Category { get; set; }
+        public string DefaultChartType { get; set; }
         public List<EntityField> Fields { get; set; } = new List<EntityField>();
         public List<EntityParameters> Paramenters { get; set; } = new List<EntityParameters>();
         public List<RelationShipKeys> Relations { get; set; } = new List<RelationShipKeys>();
@@ -93,8 +94,10 @@ namespace TheTechIdea.Beep.DataBase
         public bool Checked { get; set; } = false;
         public int FieldIndex { get; set; }
         public bool ValueRetrievedFromParent { get; set; }
-     //   public string statusdescription { get; set; }
-      //  public Boolean created { get; set; }
+        public bool DisplayField { get;set; } = false;
+       
+        //   public string statusdescription { get; set; }
+        //  public Boolean created { get; set; }
         public string EntityName { get; set; }
        
 
