@@ -20,12 +20,21 @@ namespace TheTechIdea.Util
         }
         public List<T> DeserializeObject<T>(string filename)
         {
-           
+            var settings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                CheckAdditionalContent = true,
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter() }
+
+            };
+
             if (File.Exists(filename))
             {
                 String JSONtxt = File.ReadAllText(filename);
 
-                return  JsonConvert.DeserializeObject<List<T>>(JSONtxt);
+                return  JsonConvert.DeserializeObject<List<T>>(JSONtxt,settings);
             }else
             {
 
@@ -40,7 +49,9 @@ namespace TheTechIdea.Util
             {
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
-                CheckAdditionalContent = true
+                CheckAdditionalContent = true,
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter() }
 
             };
 
@@ -48,26 +59,75 @@ namespace TheTechIdea.Util
            
 
         }
+        public T DeserializeSingleObjectFromjsonString<T>(string jsonString)
+        {
+            var settings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                CheckAdditionalContent = true,
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter() }
+
+            };
+
+            return JsonConvert.DeserializeObject<T>(jsonString, settings);
+
+
+        }
         public T DeserializeSingleObject<T>(string filename)
         {
-
-            if (File.Exists(filename))
+            var settings = new JsonSerializerSettings
             {
-                String JSONtxt = File.ReadAllText(filename);
+                NullValueHandling = NullValueHandling.Ignore,
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                CheckAdditionalContent = true,
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter() }
 
-                return JsonConvert.DeserializeObject<T>(JSONtxt);
+            };
+            try
+            {
+                if (File.Exists(filename))
+                {
+                    String JSONtxt = File.ReadAllText(filename);
+
+                    return JsonConvert.DeserializeObject<T>(JSONtxt,settings);
+                }
+                else
+                    return default(T);
+
             }
-            else
-                return default(T);
-            
+            catch (Exception ex)
+            {
+
+                Console.WriteLine(ex.ToString());
+            }
+
+            return default(T);
         }
         public void Serialize(string filename, object t)
         {
-          
+
             using (StreamWriter file = File.CreateText(filename))
             {
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Serialize(file, t);
+                try
+                {
+                    JsonSerializer serializer = new JsonSerializer();
+                    serializer.NullValueHandling=NullValueHandling.Ignore;
+                    serializer.MissingMemberHandling=MissingMemberHandling.Ignore;
+                    serializer.CheckAdditionalContent = true;
+                    serializer.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                    serializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter() );
+                    serializer.Serialize(file, t);
+                }
+                catch (Exception ex)
+                {
+
+                   Console.WriteLine(ex.ToString());
+
+                }
+               
             }
         }
         public object DeserializeObjectString<T>(string stringobject)
@@ -76,7 +136,10 @@ namespace TheTechIdea.Util
             {
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
-                 CheckAdditionalContent=true
+                CheckAdditionalContent=true,
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter()}
+                
 
             };
             return JsonConvert.DeserializeObject<object>(stringobject, settings);

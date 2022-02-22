@@ -818,7 +818,7 @@ namespace TheTechIdea.Beep.DataBase
                 adp.Fill(dataSet);
                 DataTable dt = dataSet.Tables[0];
 
-                return dt;//DMEEditor.Utilfunction.ConvertTableToList(dt,GetEntityStructure(EntityName),GetEntityType(EntityName));
+                return dt;// DMEEditor.Utilfunction.ConvertTableToList(dt,GetEntityStructure(EntityName),GetEntityType(EntityName));
             }
 
             catch (Exception ex)
@@ -885,7 +885,7 @@ namespace TheTechIdea.Beep.DataBase
             {
                 fnd.DatasourceEntityName = fnd.EntityName;
             }
-            if (fnd.Created == false)
+            if (fnd.Created == false && fnd.Viewtype!= ViewType.Table)
             {
                 fnd.Created = false;
                 fnd.Drawn = false;
@@ -893,9 +893,7 @@ namespace TheTechIdea.Beep.DataBase
                 return fnd;
 
             }
-            else
-            {
-                if (refresh)
+            if (refresh)
                 {
                     if (!fnd.EntityName.Equals(fnd.DatasourceEntityName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(fnd.DatasourceEntityName))
                     {
@@ -1033,7 +1031,7 @@ namespace TheTechIdea.Beep.DataBase
                     {
                         fnd.Created = false;
                     }
-                }
+                
             }
           return fnd;
         }

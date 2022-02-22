@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CustomContractResolver.cs" />
     <Compile Include="JsonFieldsCollector.cs" />
     <Compile Include="JsonLoader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

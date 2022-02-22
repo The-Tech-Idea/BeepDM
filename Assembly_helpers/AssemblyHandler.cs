@@ -759,12 +759,20 @@ namespace TheTechIdea.Tools
             try
             {
                 assemblies_rep dllas = Assemblies.Where(p => Path.GetFileName(p.DllName) == dll).FirstOrDefault();
-                type = dllas.DllLib.GetType(typeName);
-                if (type == null)
-                    return null;
+                if(dllas != null)
+                {
+                    type = dllas.DllLib.GetType(typeName);
+                    if (type == null)
+                        return null;
 
 
-                instance = Activator.CreateInstance(type, args);
+                    instance = Activator.CreateInstance(type, args);
+                }
+                else
+                {
+                    instance= CreateInstanceFromString(typeName, args);
+                }
+           
             }
             catch( Exception ex) 
             {

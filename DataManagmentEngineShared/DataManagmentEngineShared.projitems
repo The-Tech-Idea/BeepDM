@@ -28,6 +28,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Logger\LogAndError.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\EventList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MVVM\ViewModelBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportDataManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Report\ReportOutput.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\ClassCreator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\WebApiGenerator.cs" />

@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.DataBase;
 
 namespace TheTechIdea.Beep.Report
 {
@@ -14,19 +15,22 @@ namespace TheTechIdea.Beep.Report
         List<ReportFilter> filters { get; set; }
         string EntityID { get; set; }
         string ViewID { get; set; }
-       
+
         int LocationY { get; set; }
         int LocationX { get; set; }
-      
-        Color ForeColor {get;set;}
+
+        Color ForeColor { get; set; }
         Color HeaderForeColor { get; set; }
-        Color   HeaderBackColor { get; set; } 
-     
+        Color HeaderBackColor { get; set; }
+
         Color BackColor { get; set; }
         Color AlternatingBackColor { get; set; }
         Color GridLineColor { get; set; }
         DataGridLineStyle GridLineStyle { get; set; }
         ReportBlockViewType ViewType { get; set; }
+        List<EntityField> Fields { get; set; }
+        List<EntityParameters> Paramenters { get; set; }
+        List<RelationShipKeys> Relations { get; set; }
     }
 
     public class ReportBlock : IReportBlock
@@ -45,6 +49,9 @@ namespace TheTechIdea.Beep.Report
         public  DataGridLineStyle GridLineStyle { get; set; }
         public List<ReportFilter> filters { get; set; } = new List<ReportFilter>();
         public List<ReportBlockColumns> BlockColumns { get; set; } = new List<ReportBlockColumns>();
+        public List<EntityField> Fields { get; set; }=new List<EntityField>();
+        public List<EntityParameters> Paramenters { get; set; }=new List<EntityParameters>();
+        public List<RelationShipKeys> Relations { get; set; }=new List<RelationShipKeys>();
         public Color HeaderForeColor { get; set; }
         public Color HeaderBackColor { get; set; }
       
