@@ -12,10 +12,7 @@ namespace TheTechIdea.Util
     {
         Web,Winform,Andriod,IOS,Linux,WPF
     }
-    public enum AppComponentType
-    {
-        SplashScreen,MainForm,Report,DataEntry,Dashboard
-    }
+   
     public enum ViewType
     { Table, Query,Code,File,Url }
     public enum ColumnViewType

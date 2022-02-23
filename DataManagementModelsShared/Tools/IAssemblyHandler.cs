@@ -35,6 +35,6 @@ namespace TheTechIdea.Tools
         string LoadAssembly(string path, FolderFileTypes fileTypes);
         IErrorsInfo LoadAllAssembly();
         bool RunMethod(object ObjInstance, string FullClassName, string MethodName);
-      
+        AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type, string typename);
     }
 }

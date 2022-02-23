@@ -607,52 +607,7 @@ namespace TheTechIdea.Tools
                          // Get IFunctionExtension Definitions
                         if (type.ImplementedInterfaces.Contains(typeof(IFunctionExtension)))
                         {
-                            //AssemblyClassDefinition xcls = new AssemblyClassDefinition();
-                            //xcls.Methods = new List<MethodsClass>();
-                            //xcls.className = type.Name;
-                            //xcls.dllname = type.Module.Name;
-                            //xcls.PackageName = type.FullName;
-                            //xcls.componentType = "IFunctionExtension";
-                            //xcls.type = type;
-                            //xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                            //if (xcls.classProperties != null)
-                            //{
-                            //    xcls.Order = xcls.classProperties.order;
-                              
-                            //    xcls.RootName = "IFunctionExtension";
-                            //}
-                            //foreach (MethodInfo methods in type.GetMethods()
-                            //             .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
-                            //              .ToArray())
-                            //{
-
-                            //    CommandAttribute methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
-                            //    MethodsClass x = new MethodsClass();
-                            //    x.Caption = methodAttribute.Caption;
-                            //    x.Name = methodAttribute.Name;
-                            //    x.Info = methods;
-                            //    x.Hidden = methodAttribute.Hidden;
-                            //    x.Click = methodAttribute.Click;
-                            //    x.DoubleClick = methodAttribute.DoubleClick;
-                            //    x.iconimage = methodAttribute.iconimage;
-                            //    x.PointType = methodAttribute.PointType;
-                            //    xcls.Methods.Add(x);
-
-                            //}
-                            //if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
-                            //{
-                            //    try
-                            //    {
-                            //        IOrder cls = (IOrder)Activator.CreateInstance(type);
-                            //        xcls.Order = cls.Order;
-                            //        cls = null;
-                            //    }
-                            //    catch (Exception)
-                            //    {
-
-                            //    }
-                            //}
-                            //ConfigEditor.GlobalFunctions.Add(xcls);
+                      
 
                             ConfigEditor.GlobalFunctions.Add(GetAssemblyClassDefinition(type, "IFunctionExtension"));
                          }
@@ -678,7 +633,7 @@ namespace TheTechIdea.Tools
            
            
         }
-        private AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type,string typename)
+        public AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type,string typename)
         {
           
             AssemblyClassDefinition xcls = new AssemblyClassDefinition();
