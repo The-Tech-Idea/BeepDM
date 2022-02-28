@@ -343,7 +343,7 @@ namespace TheTechIdea.Tools
             {
                 try
                 {
-                    Assembly loadedAssembly = Assembly.LoadFile(dll);
+                    Assembly loadedAssembly = Assembly.LoadFrom(dll);
 
                     assemblies_rep x = new assemblies_rep(loadedAssembly, path, dll, fileTypes);
                     Assemblies.Add(x);

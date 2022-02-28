@@ -13,6 +13,7 @@ using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.ConfigUtil;
 
 using TheTechIdea.Beep.Workflow.Mapping;
+using TheTechIdea.Beep.AppManager;
 
 namespace TheTechIdea.Util
 {
@@ -50,7 +51,7 @@ namespace TheTechIdea.Util
         List<Function2FunctionAction> Function2Functions { get; set; }
         List<Event> Events { get; set; }
         List<AddinTreeStructure> AddinTreeStructure { get; set; }
-        List<ReportTemplate> ReportsDefinition { get; set; }
+        List<AppTemplate> ReportsDefinition { get; set; }
         List<ReportsList> Reportslist { get; set; }
         List<ReportsList> AIScriptslist { get; set; }
         List<CompositeLayer> CompositeQueryLayers { get; set; }
@@ -133,7 +134,7 @@ namespace TheTechIdea.Util
 
         string CreateFileExtensionString();
         void SaveReportDefinitionsValues();
-        List<ReportTemplate> LoadReportsDefinitionValues();
+        List<AppTemplate> LoadReportsDefinitionValues();
         void SaveAIScriptsValues();
         List<ReportsList> LoadAIScriptsValues();
 

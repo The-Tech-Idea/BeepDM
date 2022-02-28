@@ -51,6 +51,8 @@ namespace TheTechIdea.Beep
         List<EntityField> GetFieldFromGeneratedObject(object dt, Type tp = null);
          DataTable JsonToDataTable(string jsonString);
         DataTable ToDataTable(IList list,Type tp);
+        DataTable ToDataTable(Type tp);
+        DataTable ToDataTable(IEntityStructure entity);
         Type GetEntityType(string EntityName, List<EntityField> Fields);
         object GetEntityObject(string EntityName, List<EntityField> Fields);
         Type GetListType(object someList);

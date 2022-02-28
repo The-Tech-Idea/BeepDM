@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TheTechIdea.Beep.Report
 {
-    public interface IReportFilter
+    public interface IAppFilter
     {
         string FieldName { get; set; }
         string FilterValue { get; set; }
@@ -16,9 +16,9 @@ namespace TheTechIdea.Beep.Report
          
     }
 
-    public class ReportFilter : IReportFilter
+    public class AppFilter : IAppFilter
     {
-        public ReportFilter()
+        public AppFilter()
         {
 
         }

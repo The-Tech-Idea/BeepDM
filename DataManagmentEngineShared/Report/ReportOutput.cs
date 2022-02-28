@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.AppManager;
 using TheTechIdea.Beep.DataView;
 using TheTechIdea.Util;
 
@@ -15,7 +16,7 @@ namespace TheTechIdea.Beep.Report
         {
 
         }
-        public IReportDefinition Definition { get; set; }
+        public IAppDefinition Definition { get; set; }
         public IDMEEditor DMEEditor { get; set; }
         public string ReportName { get; set; }
         public List<DataTable> Tables { get; set; } = new List<DataTable>();
@@ -23,7 +24,7 @@ namespace TheTechIdea.Beep.Report
         {
             string selectedfields = "";
 
-            foreach (ReportBlockColumns item in Definition.Blocks[0].BlockColumns.Where(x => x.Show).OrderBy(i => i.FieldDisplaySeq))
+            foreach (AppBlockColumns item in Definition.Blocks[0].BlockColumns.Where(x => x.Show).OrderBy(i => i.FieldDisplaySeq))
             {
 
                 selectedfields += "," + item.ColumnName + " as " + item.DisplayName;

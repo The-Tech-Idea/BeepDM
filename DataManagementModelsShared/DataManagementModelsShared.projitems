@@ -64,13 +64,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)Logger\IDMLogger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger\ILogAndError.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NOSQL\DatabaseCollection.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Report\IReportDMWriter.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportBlock.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportBlockColumns.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportFilter.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportDefinition.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportsList.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Report\ReportTemplet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Reports\IReportDMWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppManager\AppBlock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppManager\AppBlockColumns.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppManager\AppFilter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppManager\AppDefinition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Reports\ReportsList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppManager\AppTemplate.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\assemblies_rep.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\AssemblyItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\IAssemblyHandler.cs" />
@@ -107,5 +107,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Enums\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Reports\" />
   </ItemGroup>
 </Project>

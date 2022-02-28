@@ -487,7 +487,7 @@ namespace TheTechIdea.Beep.FileManager
             return EntitiesNames;
         }
 
-        public object GetEntity(string EntityName, List<ReportFilter> filter)
+        public object GetEntity(string EntityName, List<AppFilter> filter)
         {
             ErrorObject.Flag = Errors.Ok;
             try
@@ -639,7 +639,7 @@ namespace TheTechIdea.Beep.FileManager
         {
             throw new NotImplementedException();
         }
-        public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
+        public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
            return (Task<object>)GetEntity(EntityName, Filter);
         }

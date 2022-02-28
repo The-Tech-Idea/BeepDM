@@ -20,6 +20,7 @@ using TheTechIdea.Beep.Editor;
 
 using TheTechIdea.Beep.Report;
 using System.Data.SqlTypes;
+using TheTechIdea.Beep.AppManager;
 
 namespace TheTechIdea.Beep.DataBase
 {
@@ -100,7 +101,7 @@ namespace TheTechIdea.Beep.DataBase
                    
                     cmd.Dispose();
                    
-                  //  DMEEditor.AddLogMessage("Fail", " Could not run Script" + ex.Message, DateTime.Now, -1, ex.Message, Errors.Failed);
+                    DMEEditor.AddLogMessage("Fail", $" Could not run Script - {sql} -" + ex.Message, DateTime.Now, -1, ex.Message, Errors.Failed);
 
                 }
 
@@ -152,18 +153,18 @@ namespace TheTechIdea.Beep.DataBase
                 if (!command.Parameters.Contains("p_" + Regex.Replace(item.fieldname, @"\s+", "_")))
                 {
                     IDbDataParameter parameter = command.CreateParameter();
-                    if (!item.fieldtype.Equals("System.String", StringComparison.OrdinalIgnoreCase) && !item.fieldtype.Equals("System.DateTime", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
-                        {
-                            parameter.Value = Convert.ToDecimal(null);
-                        }
-                        else
-                        {
-                            parameter.Value = r[item.fieldname];
-                        }
-                    }
-                    else
+                    //if (!item.fieldtype.Equals("System.String", StringComparison.OrdinalIgnoreCase) && !item.fieldtype.Equals("System.DateTime", StringComparison.OrdinalIgnoreCase))
+                    //{
+                    //    if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
+                    //    {
+                    //        parameter.Value = Convert.ToDecimal(null);
+                    //    }
+                    //    else
+                    //    {
+                    //        parameter.Value = r[item.fieldname];
+                    //    }
+                    //}
+                    //else
                         if (item.fieldtype.Equals("System.DateTime", StringComparison.OrdinalIgnoreCase))
                     {
                         if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
@@ -665,7 +666,7 @@ namespace TheTechIdea.Beep.DataBase
 
             return ErrorObject;
         }
-        private string BuildQuery(string originalquery, List<ReportFilter> Filter)
+        private string BuildQuery(string originalquery, List<AppFilter> Filter)
         {
             string retval;
             string[] stringSeparators;
@@ -707,7 +708,7 @@ namespace TheTechIdea.Beep.DataBase
                                 FoundWhere = true;
                             }
 
-                            foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)))
+                            foreach (AppFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)))
                             {
                                 if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
                                 {
@@ -783,7 +784,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             return qrystr;
         }
-        public virtual object GetEntity(string EntityName, List<ReportFilter> Filter)
+        public virtual object GetEntity(string EntityName, List<AppFilter> Filter)
         {
             ErrorObject.Flag = Errors.Ok;
             //  int LoadedRecord;
@@ -831,7 +832,7 @@ namespace TheTechIdea.Beep.DataBase
 
 
         }
-        public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
+        public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             return (Task<object>)GetEntity(EntityName, Filter);
         }
@@ -1863,7 +1864,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             return cmd;
         }
-        public virtual IDbDataAdapter GetDataAdapter(string Sql, List<ReportFilter> Filter = null)
+        public virtual IDbDataAdapter GetDataAdapter(string Sql, List<AppFilter> Filter = null)
         {
             IDbDataAdapter adp = null;
           
@@ -1896,7 +1897,7 @@ namespace TheTechIdea.Beep.DataBase
                         if (Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
                         {
 
-                            foreach (ReportFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue)))
+                            foreach (AppFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue)))
                             {
                                
                                 IDbDataParameter parameter = adp.SelectCommand.CreateParameter();

@@ -30,7 +30,7 @@ namespace TheTechIdea.Beep.Workflow.Mapping
 
         }
         public string EntityDataSource { get; set; }
-        public List<ReportFilter> Filter { get; set; } = new List<ReportFilter>();
+        public List<AppFilter> Filter { get; set; } = new List<AppFilter>();
         public string EntityName { get; set; }
         public List<EntityField> EntityFields { get; set; } = new List<EntityField>();
         public List<EntityField> SelectedDestFields { get; set; } = new List<EntityField>();

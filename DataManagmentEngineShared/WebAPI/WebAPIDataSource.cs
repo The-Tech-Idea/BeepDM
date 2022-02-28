@@ -139,15 +139,15 @@ namespace TheTechIdea.Beep.WebAPI
         
        
 
-        public virtual object GetEntity(string EntityName, List<ReportFilter> filter)
+        public virtual object GetEntity(string EntityName, List<AppFilter> filter)
         {
             EntityStructure ent = GetEntityStructure(EntityName,false);
             string str = ent.CustomBuildQuery;
             if (ent.Filters == null)
             {
-                ent.Filters = new List<ReportFilter>();
+                ent.Filters = new List<AppFilter>();
             }
-            foreach (ReportFilter item in ent.Filters)
+            foreach (AppFilter item in ent.Filters)
             {
                 if (string.IsNullOrEmpty(item.FilterValue) || string.IsNullOrWhiteSpace(item.FilterValue))
                 {
@@ -227,7 +227,7 @@ namespace TheTechIdea.Beep.WebAPI
             throw new NotImplementedException();
         }
 
-        public virtual async Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
+        public virtual async Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             var request = new HttpRequestMessage();
             client = new HttpClient();

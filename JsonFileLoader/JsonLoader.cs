@@ -22,6 +22,7 @@ namespace TheTechIdea.Util
         {
             var settings = new JsonSerializerSettings
             {
+                TypeNameHandling = TypeNameHandling.All,
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 CheckAdditionalContent = true,
@@ -47,6 +48,7 @@ namespace TheTechIdea.Util
         {
             var settings = new JsonSerializerSettings
             {
+                TypeNameHandling = TypeNameHandling.All,
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 CheckAdditionalContent = true,
@@ -63,6 +65,7 @@ namespace TheTechIdea.Util
         {
             var settings = new JsonSerializerSettings
             {
+                TypeNameHandling = TypeNameHandling.All,
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 CheckAdditionalContent = true,
@@ -79,6 +82,7 @@ namespace TheTechIdea.Util
         {
             var settings = new JsonSerializerSettings
             {
+                TypeNameHandling = TypeNameHandling.All,
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 CheckAdditionalContent = true,
@@ -101,7 +105,7 @@ namespace TheTechIdea.Util
             catch (Exception ex)
             {
 
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine(ex.Message);
             }
 
             return default(T);
@@ -117,6 +121,7 @@ namespace TheTechIdea.Util
                     serializer.NullValueHandling=NullValueHandling.Ignore;
                     serializer.MissingMemberHandling=MissingMemberHandling.Ignore;
                     serializer.CheckAdditionalContent = true;
+                    serializer.TypeNameHandling = TypeNameHandling.All;
                     serializer.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                     serializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter() );
                     serializer.Serialize(file, t);
@@ -137,6 +142,7 @@ namespace TheTechIdea.Util
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 CheckAdditionalContent=true,
+                TypeNameHandling = TypeNameHandling.All,
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter()}
                 

@@ -214,7 +214,6 @@ namespace TheTechIdea.Beep
             else
                 return false;
         }
-       
         public DataTable CreateDataTableFromFile(string strFilePath)
         {
             DataTable dt = new DataTable();
@@ -295,6 +294,29 @@ namespace TheTechIdea.Beep
                 for (int i = 0; i < values.Length; i++)
                     values[i] = props[i].GetValue(item) ?? DBNull.Value;
                 table.Rows.Add(values);
+            }
+            return table;
+        }
+        public DataTable ToDataTable(Type tp)
+        {
+            PropertyDescriptorCollection props = TypeDescriptor.GetProperties(tp);
+            DataTable table = new DataTable();
+            for (int i = 0; i < props.Count; i++)
+            {
+                PropertyDescriptor prop = props[i];
+                table.Columns.Add(prop.Name, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType);
+            }
+           
+           
+            return table;
+        }
+        public DataTable ToDataTable(IEntityStructure entity)
+        {
+            DataTable table = new DataTable();
+            for (int i = 0; i < entity.Fields.Count; i++)
+            {
+                EntityField prop = entity.Fields[i];
+                table.Columns.Add(prop.fieldname, Type.GetType(prop.fieldtype));
             }
             return table;
         }

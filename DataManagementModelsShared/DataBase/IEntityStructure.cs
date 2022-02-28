@@ -16,7 +16,7 @@ namespace TheTechIdea.Beep.DataBase
         string DatasourceEntityName { get; set; }
         string Caption { get; set; }
         List<EntityField> Fields { get; set; }
-        List<ReportFilter> Filters { get; set; }
+        List<AppFilter> Filters { get; set; }
         int Id { get; set; }
         string DefaultChartType { get; set; }
         int ParentId { get; set; }

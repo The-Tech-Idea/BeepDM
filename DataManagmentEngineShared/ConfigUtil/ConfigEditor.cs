@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.Addin;
-
+using TheTechIdea.Beep.AppManager;
 using TheTechIdea.Beep.CompositeLayer;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
@@ -64,7 +64,7 @@ namespace TheTechIdea.Util
 		public List<Function2FunctionAction> Function2Functions { get; set; } = new List<Function2FunctionAction>();
 		public List<ObjectTypes> objectTypes { get; set; } = new List<ObjectTypes>();
 		public List<Event> Events { get; set; } = new List<Event>();
-		public List<ReportTemplate> ReportsDefinition { get; set; } = new List<ReportTemplate>();
+		public List<AppTemplate> ReportsDefinition { get; set; } = new List<AppTemplate>();
 		public List<ReportsList> Reportslist { get; set; } = new List<ReportsList>();
 		public List<ReportsList> AIScriptslist { get; set; } = new List<ReportsList>();
 		public List<CompositeLayer> CompositeQueryLayers { get; set; } = new List<CompositeLayer>();
@@ -741,10 +741,10 @@ namespace TheTechIdea.Util
 			JsonLoader.Serialize(path, ReportsDefinition);
 
 		}
-		public List<ReportTemplate> LoadReportsDefinitionValues()
+		public List<AppTemplate> LoadReportsDefinitionValues()
 		{
 			string path = Path.Combine(ConfigPath, "reportsDefinition.json");
-			ReportsDefinition = JsonLoader.DeserializeObject<ReportTemplate>(path);
+			ReportsDefinition = JsonLoader.DeserializeObject<AppTemplate>(path);
 			return ReportsDefinition;
 		}
 		#endregion "Reports L/S"

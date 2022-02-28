@@ -367,7 +367,7 @@ namespace TheTechIdea.Beep
         {
             PassEvent?.Invoke(sender, args);
         }
-        private async Task<dynamic> GetOutputAsync(IDataSource ds,string CurrentEntity, List<ReportFilter> filter)
+        private async Task<dynamic> GetOutputAsync(IDataSource ds, string CurrentEntity, List<AppFilter> filter)
         {
             return await ds.GetEntityAsync(CurrentEntity, filter).ConfigureAwait(false);
         }

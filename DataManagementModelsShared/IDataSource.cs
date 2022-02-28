@@ -47,8 +47,8 @@ namespace TheTechIdea
         IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow);
         IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow);
         IErrorsInfo InsertEntity(string EntityName, object InsertedData);
-        object GetEntity(string EntityName, List<ReportFilter> filter);
-        Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter);
+        object GetEntity(string EntityName, List<AppFilter> filter);
+        Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter);
         string ColumnDelimiter { get; set; }
         string ParameterDelimiter { get; set; }
         ConnectionState Openconnection();

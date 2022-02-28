@@ -393,6 +393,7 @@ namespace TheTechIdea.Beep.Editor
                                 await Task.Run(() =>
                                 {
                                     sc.errorsInfo = RunCopyEntityScript( sc,srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname, progress, token, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
+                                   
                                 });
                                 SendMessege(progress, token,null,sc, $"Error in Coping Data for Entity  { sc.destinationentityname}");;
                             }
@@ -463,6 +464,8 @@ namespace TheTechIdea.Beep.Editor
                                 {
                                     SendMessege(progress, token, entitystr, sc, $"Successfully Created Entity  {entitystr.EntityName} ");
                                     sc.Active = true;
+                                    sc.IsCreated = true;
+                                    sc.Active = true;
                                     if (sc.CopyDataScripts.Count > 0)
                                     {
                                         SendMessege(progress, token, entitystr, sc, $"Started  Coping Data From {entitystr.EntityName} ");
@@ -475,6 +478,7 @@ namespace TheTechIdea.Beep.Editor
                                     DMEEditor.ErrorObject.Message = $"Failed in Creating Entity   {entitystr.EntityName} ";
                                     SendMessege(progress, token, entitystr, sc, $"Failed in Creating Entity   {entitystr.EntityName} ");
                                     sc.Active = false;
+                                    sc.Failed = true;
                                 }
                             }
                         }
@@ -510,7 +514,7 @@ namespace TheTechIdea.Beep.Editor
                     {
                         object srcTb;
                         string querystring = null;
-                        List<ReportFilter> filters = null;
+                        List<AppFilter> filters = null;
                         List<EntityField> SelectedFields=null;
                         List<EntityField> SourceFields = null;
                         if (map_DTL != null)

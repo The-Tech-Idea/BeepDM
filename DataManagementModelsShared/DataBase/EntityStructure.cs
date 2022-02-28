@@ -38,7 +38,7 @@ namespace TheTechIdea.Beep.DataBase
         public List<EntityParameters> Paramenters { get; set; } = new List<EntityParameters>();
         public List<RelationShipKeys> Relations { get; set; } = new List<RelationShipKeys>();
         public List<EntityField> PrimaryKeys { get; set; } = new List<EntityField>();
-        public List<ReportFilter> Filters { get; set; }
+        public List<AppFilter> Filters { get; set; }
         public EntityStructure()
         {
 

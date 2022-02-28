@@ -5,12 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.Beep.Report
+namespace TheTechIdea.Beep.AppManager
 {
-    public interface IReportDefinition
+    public interface IAppDefinition
     {
         string ID { get; set; }
-        List<ReportBlock> Blocks { get; set; }
+        List<AppBlock> Blocks { get; set; }
         string DataSourceName { get; set; }
         TextBlock Description { get; set; }
      
@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.Report
         string Name { get; set; }
         string ReportEndText { get; set; }
         TextBlock SubTitle { get; set; }
-        ReportOrientation Orientation { get; set; }
+        AppOrientation Orientation { get; set; }
         TextBlock Title { get; set; }
         TextBlock Header { get; set; }
         TextBlock Footer { get; set; }

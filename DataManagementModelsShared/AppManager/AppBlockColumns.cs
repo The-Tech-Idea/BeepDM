@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TheTechIdea.Beep.Report
+namespace TheTechIdea.Beep.AppManager
 {
-    public interface IReportBlockColumns
+    public interface IAppBlockColumns
     {
         string ColumnName { get; set; }
         int ColumnSeq { get; set; }
@@ -23,9 +23,9 @@ namespace TheTechIdea.Beep.Report
          Color BorderLineColor { get; set; }
     }
 
-    public class ReportBlockColumns : IReportBlockColumns
+    public class AppBlockColumns : IAppBlockColumns
     {
-        public ReportBlockColumns()
+        public AppBlockColumns()
         {
 
         }

@@ -5,14 +5,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Report;
 
-namespace TheTechIdea.Beep.Report
+namespace TheTechIdea.Beep.AppManager
 {
-    public interface IReportBlock
+    public interface IAppBlock
     {
         string Title { get; set; }
-        List<ReportBlockColumns> BlockColumns { get; set; }
-        List<ReportFilter> filters { get; set; }
+        List<AppBlockColumns> BlockColumns { get; set; }
+        List<AppFilter> filters { get; set; }
         string EntityID { get; set; }
         string ViewID { get; set; }
 
@@ -27,18 +28,18 @@ namespace TheTechIdea.Beep.Report
         Color AlternatingBackColor { get; set; }
         Color GridLineColor { get; set; }
         DataGridLineStyle GridLineStyle { get; set; }
-        ReportBlockViewType ViewType { get; set; }
+        BlockViewType ViewType { get; set; }
         List<EntityField> Fields { get; set; }
         List<EntityParameters> Paramenters { get; set; }
         List<RelationShipKeys> Relations { get; set; }
     }
 
-    public class ReportBlock : IReportBlock
+    public class AppBlock : IAppBlock
     {
         public string Title { get; set; }
         public string EntityID { get; set; }
         public string ViewID { get; set; }
-        public ReportBlockViewType ViewType { get; set; }
+        public BlockViewType ViewType { get; set; }
         public int LocationY { get; set; } = 0;
         public int LocationX { get; set; } = 0;
       
@@ -47,8 +48,8 @@ namespace TheTechIdea.Beep.Report
         public Color AlternatingBackColor { get; set; }
         public Color GridLineColor { get; set; }
         public  DataGridLineStyle GridLineStyle { get; set; }
-        public List<ReportFilter> filters { get; set; } = new List<ReportFilter>();
-        public List<ReportBlockColumns> BlockColumns { get; set; } = new List<ReportBlockColumns>();
+        public List<AppFilter> filters { get; set; } = new List<AppFilter>();
+        public List<AppBlockColumns> BlockColumns { get; set; } = new List<AppBlockColumns>();
         public List<EntityField> Fields { get; set; }=new List<EntityField>();
         public List<EntityParameters> Paramenters { get; set; }=new List<EntityParameters>();
         public List<RelationShipKeys> Relations { get; set; }=new List<RelationShipKeys>();
@@ -56,12 +57,12 @@ namespace TheTechIdea.Beep.Report
         public Color HeaderBackColor { get; set; }
       
 
-        public ReportBlock()
+        public AppBlock()
         {
 
         }
     }
-    public enum ReportBlockViewType
+    public enum BlockViewType
     {
         Table, Details, Graph
     }

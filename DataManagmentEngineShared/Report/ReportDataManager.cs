@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.AppManager;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.DataView;
@@ -20,12 +21,12 @@ namespace TheTechIdea.Beep.Report
         {
             DMEEditor = pDMEEditor;
         }
-        public ReportDataManager(IDMEEditor pDMEEditor, IReportDefinition pDefinition)
+        public ReportDataManager(IDMEEditor pDMEEditor, IAppDefinition pDefinition)
         {
             DMEEditor = pDMEEditor;
             Definition = pDefinition;
         }
-        public IReportDefinition Definition { get; set; }
+        public IAppDefinition Definition { get; set; }
         public IDMEEditor DMEEditor { get; set; }
         public DataSet Data { get; set; }
         IDataSource ds;
@@ -34,7 +35,7 @@ namespace TheTechIdea.Beep.Report
         {
             string selectedfields = "";
 
-            foreach (ReportBlockColumns item in Definition.Blocks[0].BlockColumns.Where(x => x.Show).OrderBy(i => i.FieldDisplaySeq))
+            foreach (AppBlockColumns item in Definition.Blocks[0].BlockColumns.Where(x => x.Show).OrderBy(i => i.FieldDisplaySeq))
             {
 
                 selectedfields += "," + item.ColumnName + " as " + item.DisplayName;
@@ -43,7 +44,7 @@ namespace TheTechIdea.Beep.Report
             return selectedfields;
 
         }
-        private async Task<dynamic> GetOutputAsync(IDataSource ds, string CurrentEntity, List<ReportFilter> filter)
+        private async Task<dynamic> GetOutputAsync(IDataSource ds, string CurrentEntity, List<AppFilter> filter)
         {
             return await ds.GetEntityAsync(CurrentEntity, filter).ConfigureAwait(false);
         }
@@ -180,10 +181,6 @@ namespace TheTechIdea.Beep.Report
 
                     entityStructure.Fields.Add(x);
                 }
-
-
-
-
             }
             ds.Entities[ds.Entities.FindIndex(p => p.EntityName == entityStructure.EntityName)] = entityStructure;
             DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = entityStructure.DataSourceID, Entities = ds.Entities });
@@ -244,7 +241,7 @@ namespace TheTechIdea.Beep.Report
                 return null;
             }
         }
-        private object GetData(ReportBlock blk)
+        private object GetData(AppBlock blk)
         {
            return GetData(Definition.Blocks.IndexOf(blk));
                
@@ -261,6 +258,8 @@ namespace TheTechIdea.Beep.Report
                 {
                     parentColumn = dataSet.Tables[parenttable].Columns[parentcol];
                     childColumn = dataSet.Tables[childtable].Columns[childcol];
+                    DataRelation relation = new DataRelation(parenttable + "_" + childtable, parentColumn, childColumn);
+                    dataSet.Relations.Add(relation);
                     if (parentColumn != null && childColumn != null)
                     {
                         foreignKeyConstraint = new ForeignKeyConstraint
@@ -343,7 +342,7 @@ namespace TheTechIdea.Beep.Report
         }
         #endregion
         #region "Files Management"
-        public string GetReportFilePath(IReportDefinition reportDefinition)
+        public string GetReportFilePath(IAppDefinition reportDefinition)
         {
             string retval = null;
             try
@@ -465,11 +464,10 @@ namespace TheTechIdea.Beep.Report
 
 
         }
-
         public object GetList(string EntityID)
         {
 
-            ReportBlock blk = Definition.Blocks.Where(p => p.ViewID != null && p.EntityID.Equals(EntityID, StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
+            AppBlock blk = Definition.Blocks.Where(p => p.ViewID != null && p.EntityID.Equals(EntityID, StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
             if (blk != null)
             {
               return  GetList(blk);
@@ -477,7 +475,7 @@ namespace TheTechIdea.Beep.Report
                 return null;
             
         }
-        public object GetList(ReportBlock blk)
+        public object GetList(AppBlock blk)
         {
             object retval=null;
             try

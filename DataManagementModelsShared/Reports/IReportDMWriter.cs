@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using TheTechIdea.Beep.AppManager;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Report
 {
   public  interface IReportDMWriter
     {
-        IReportDefinition Definition { get; set; }
+        IAppDefinition Definition { get; set; }
         IDMEEditor DMEEditor { get; set; }
         bool Html { get; set; }
         bool Text { get; set; }
@@ -20,13 +21,5 @@ namespace TheTechIdea.Beep.Report
       
 
     }
-    public enum ReportType
-    {
-        html,xls,csv,pdf,txt
-    }
-    public enum ReportOrientation
-    {
-        Portrait = 0,
-        Landscape = 1
-    }
+   
 }

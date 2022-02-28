@@ -199,7 +199,7 @@ namespace TheTechIdea.Beep.DataView
             EntitiesNames = retval;
             return retval;
         }
-        public object GetEntity(string EntityName, List<ReportFilter> filter)
+        public object GetEntity(string EntityName, List<AppFilter> filter)
         {
             object retval = null;
             IDataSource ds = GetDataSourceObject(EntityName);
@@ -501,7 +501,7 @@ namespace TheTechIdea.Beep.DataView
                 return null;
             }
         }
-        public Task<object> GetEntityAsync(string EntityName, List<ReportFilter> Filter)
+        public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             return (Task<object>)GetEntity(EntityName, Filter);
         }

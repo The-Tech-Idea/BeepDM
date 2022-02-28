@@ -24,6 +24,10 @@ namespace TheTechIdea.Beep.Editor
         public string destinationDatasourceEntityName { get; set; }
         public string destinationdatasourcename { get ; set ; }
         public string errormessage { get ; set ; }
+        public bool IsCreated { get; set; }=false;
+        public bool IsModified { get; set; }=false ;
+        public bool IsDataCopied { get; set; }=false ;
+        public bool Failed { get; set; } = false;
         public bool Active { get; set; } = false;
         public IErrorsInfo errorsInfo { get; set; }=new ErrorsInfo();
         public DDLScriptType scriptType { get; set; }=new DDLScriptType();

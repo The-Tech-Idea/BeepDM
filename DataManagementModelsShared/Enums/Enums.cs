@@ -12,7 +12,15 @@ namespace TheTechIdea.Util
     {
         Web,Winform,Andriod,IOS,Linux,WPF
     }
-   
+    public enum ReportType
+    {
+        html, xls, csv, pdf, txt
+    }
+    public enum AppOrientation
+    {
+        Portrait = 0,
+        Landscape = 1
+    }
     public enum ViewType
     { Table, Query,Code,File,Url }
     public enum ColumnViewType
