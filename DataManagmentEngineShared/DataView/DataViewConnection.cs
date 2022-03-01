@@ -62,7 +62,7 @@ namespace TheTechIdea.Beep.DataView
         private ConnectionState OpenConn()
         {
             string filen = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
-            if (filen != null)
+            if (!string.IsNullOrEmpty(filen))
             {
                 if (File.Exists(filen))
                 {

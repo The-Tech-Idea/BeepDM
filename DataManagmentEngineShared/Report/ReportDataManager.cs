@@ -260,19 +260,19 @@ namespace TheTechIdea.Beep.Report
                     childColumn = dataSet.Tables[childtable].Columns[childcol];
                     DataRelation relation = new DataRelation(parenttable + "_" + childtable, parentColumn, childColumn);
                     dataSet.Relations.Add(relation);
-                    if (parentColumn != null && childColumn != null)
-                    {
-                        foreignKeyConstraint = new ForeignKeyConstraint
-                      (parenttable + "_" + parentcol, parentColumn, childColumn);
+                    //if (parentColumn != null && childColumn != null)
+                    //{
+                    //    foreignKeyConstraint = new ForeignKeyConstraint
+                    //  (parenttable + "_" + parentcol, parentColumn, childColumn);
 
-                        // Set null values when a value is deleted.
-                        foreignKeyConstraint.DeleteRule = Rule.SetNull;
-                        foreignKeyConstraint.UpdateRule = Rule.Cascade;
-                        foreignKeyConstraint.AcceptRejectRule = AcceptRejectRule.None;
+                    //    // Set null values when a value is deleted.
+                    //    foreignKeyConstraint.DeleteRule = Rule.SetNull;
+                    //    foreignKeyConstraint.UpdateRule = Rule.Cascade;
+                    //    foreignKeyConstraint.AcceptRejectRule = AcceptRejectRule.None;
 
-                        // Add the constraint, and set EnforceConstraints to true.
-                        dataSet.Tables[childtable].Constraints.Add(foreignKeyConstraint);
-                    }
+                    //    // Add the constraint, and set EnforceConstraints to true.
+                    //    dataSet.Tables[childtable].Constraints.Add(foreignKeyConstraint);
+                    //}
                 }
                
 

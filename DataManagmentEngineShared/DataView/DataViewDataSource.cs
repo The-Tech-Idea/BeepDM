@@ -726,16 +726,18 @@ namespace TheTechIdea.Beep.DataView
 
 
             EntityStructure maintab = new EntityStructure() { Id = NextHearId(), EntityName = tablename };
+            EntityStructure Parenttab = Entities[EntityListIndex(ParentTableIndex)];
             maintab.DataSourceID = conn.DatasourceName;
             maintab.EntityName = tablename;
             maintab.ViewID = DataView.ViewID;
             maintab.ParentId = ParentTableIndex;
             maintab.DatasourceEntityName = tablename;
-            if (CheckEntityExist(maintab.DatasourceEntityName))
-            {
-                int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count();
-                maintab.EntityName = maintab.DatasourceEntityName + "_" + cnt + 1;
-            }
+            //if (CheckEntityExist(maintab.DatasourceEntityName))
+            //{
+            //    int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count();
+            //    maintab.EntityName = maintab.DatasourceEntityName + "_" + cnt + 1;
+            //}
+            maintab.Caption = $"{maintab.DatasourceEntityName}_{Parenttab.EntityName}s";
             DataView.Entities.Add(maintab);
             EntitiesNames.Add(maintab.EntityName);
 
@@ -887,62 +889,78 @@ namespace TheTechIdea.Beep.DataView
                 //--- check entity already exist , if it does change Entity Name
                 if (CheckEntityExist(maintab.DatasourceEntityName))
                 {
-                    int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count()+1;
-                    if (cnt>0)
+                   if(maintab.ParentId == 0)
                     {
-                        List<EntityStructure> ls = new List<EntityStructure>();
-                        foreach (string item in EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)))
+                        int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count() + 1;
+                        if (cnt > 0)
                         {
-                            ls.Add(GetEntityStructure(item,false));
-                        }
-                        List<EntityStructure> lsSameDB = new List<EntityStructure>();
-                        lsSameDB.AddRange(ls.Where(p => p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase)).AsEnumerable());
-                        List<EntityStructure> lsDiffDB = new List<EntityStructure>();
-                        lsDiffDB.AddRange(ls.Where(p => !p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase)).AsEnumerable());
-                       
-                        foreach (var item in lsDiffDB)
-                        {
-                            if (k == 0)
+                            List<EntityStructure> ls = new List<EntityStructure>();
+                            foreach (string item in EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)))
                             {
-                              
-                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}";
-                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                                ls.Add(GetEntityStructure(item, false));
+                            }
+                            List<EntityStructure> lsSameDB = new List<EntityStructure>();
+                            lsSameDB.AddRange(ls.Where(p => p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase) && p.ParentId == 0).AsEnumerable());
+                            List<EntityStructure> lsDiffDB = new List<EntityStructure>();
+                            lsDiffDB.AddRange(ls.Where(p => !p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase) && p.ParentId==0).AsEnumerable());
+                            k=lsDiffDB.Count();
+                            y= lsSameDB.Count();
+                            if (k > 0)
+                            {
+                                maintab.Caption = maintab.DatasourceEntityName + $"_{maintab.DataSourceID}_" + k;
+                            }
+                            if (y > 0)
+                            {
+                                maintab.Caption = maintab.DatasourceEntityName + $"_{maintab.DataSourceID}_" + y;
+                            }
+                            //foreach (var item in lsDiffDB)
+                            //{
+                            //    if (k == 0)
+                            //    {
 
-                            }
-                            else
-                            {
-                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" + k.ToString();
-                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-                            }
-                          
-                            k++;
-                        }
-                       
-                        y = 0;
-                        foreach (var item in lsSameDB)
-                        {
-                            if (y== 0)
-                            {
-                               
-                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" ;
-                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-                            }
-                            else
-                            {
-                                item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" +y.ToString();
-                                Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-                            }
-                            y++;
-                           
-                        }
+                            //        item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}";
+                            //        Entities[EntityListIndex(item.DatasourceEntityName)] = item;
 
-                    }
-                    if (y > 0)
+                            //    }
+                            //    else
+                            //    {
+                            //        item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" + k.ToString();
+                            //        Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                            //    }
+
+                            //    k++;
+                            //}
+                            //y = 0;
+                            //foreach (var item in lsSameDB)
+                            //{
+                            //    if (y == 0)
+                            //    {
+
+                            //        item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}";
+                            //        Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                            //    }
+                            //    else
+                            //    {
+                            //        item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" + y.ToString();
+                            //        Entities[EntityListIndex(item.DatasourceEntityName)] = item;
+                            //    }
+                            //    y++;
+
+                            //}
+
+                        }
+                     
+                        
+                    }else
                     {
-                        maintab.Caption = maintab.DatasourceEntityName + $"_{maintab.DataSourceID}_" + y;
+                        IEntityStructure parententity = Entities[EntityListIndex(maintab.ParentId)];
+                        if (parententity != null)
+                        {
+                            maintab.Caption = parententity.DatasourceEntityName + $"_{maintab.EntityName}s";
+                        }
                     }
-                    else
-                        maintab.Caption = maintab.DatasourceEntityName + $"_{maintab.DataSourceID}";
+                   
+                   
                   
                 }
                 maintab.OriginalEntityName = maintab.DatasourceEntityName;
@@ -1026,6 +1044,7 @@ namespace TheTechIdea.Beep.DataView
 
                     a = (EntityStructure)ds.GetEntityStructure(childtable, true).Clone();
                     a.ParentId = pid;
+                    a.Caption= $"{parenttable}_{childtable}s";
                     a.Id = NextHearId();
                     Rootnamespacelist.Add(a);
 
