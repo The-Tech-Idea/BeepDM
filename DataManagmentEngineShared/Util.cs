@@ -720,8 +720,9 @@ namespace TheTechIdea.Beep
 
             // return listType.MakeGenericType(types);
         }
-        public void GetEntityStructureFromListorTable(ref EntityStructure entity, dynamic retval)
+        public EntityStructure GetEntityStructureFromListorTable(  dynamic retval)
         {
+            EntityStructure entity = new EntityStructure();
             Type tp = retval.GetType();
             DataTable dt;
             if (entity.Fields.Count == 0)
@@ -784,7 +785,7 @@ namespace TheTechIdea.Beep
                 }
 
             }
-         
+            return entity;
         }
         public List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype)
         {

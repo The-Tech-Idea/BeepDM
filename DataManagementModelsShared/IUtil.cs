@@ -57,7 +57,7 @@ namespace TheTechIdea.Beep
         object GetEntityObject(string EntityName, List<EntityField> Fields);
         Type GetListType(object someList);
         DataTable CreateDataTableFromListofStrings(List<string> strings);
-        void GetEntityStructureFromListorTable(ref EntityStructure entity, dynamic retval);
+        EntityStructure GetEntityStructureFromListorTable( dynamic retval);
 
         DataRow GetDataRowFromobject(string EntityName, Type enttype, object UploadDataRow, EntityStructure DataStruct);
         Type GetCollectionElementType(Type type);

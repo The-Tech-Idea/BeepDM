@@ -417,7 +417,7 @@ namespace TheTechIdea.Beep
                 {
                     try
                     {
-                        Utilfunction.GetEntityStructureFromListorTable(ref entity,retval);
+                        entity=Utilfunction.GetEntityStructureFromListorTable(retval);
                     }
                     catch (Exception ex)
                     {

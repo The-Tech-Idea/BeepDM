@@ -128,9 +128,9 @@ namespace TheTechIdea.Beep.DataBase
                     }
                     else if (dt.Rows.Count > 1)
                     {
-                        EntityStructure st = DMEEditor.Utilfunction.GetEntityStructure(dt);
-                        Type type = DMEEditor.Utilfunction.GetEntityType("tab", st.Fields);
-                        return DMEEditor.Utilfunction.ConvertTableToList(dt, st, type);
+                        //EntityStructure st = DMEEditor.Utilfunction.GetEntityStructure(dt);
+                        //Type type = DMEEditor.Utilfunction.GetEntityType("tab", st.Fields);
+                        return dt; // DMEEditor.Utilfunction.ConvertTableToList(dt, st, type);
                     }
                 }
                 return null;
