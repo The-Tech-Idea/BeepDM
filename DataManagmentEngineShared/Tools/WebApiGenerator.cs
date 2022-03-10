@@ -29,7 +29,7 @@ namespace TheTechIdea.Beep.Tools
 
             return retval;
         }
-        public string CreateController(string projectname,string modelname,List<EntityStructure> propertiesToEmit)
+        public string CreateController(string projectname,string modelname,List<EntityStructure> propertiesToEmit,string classname)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("using System;");
@@ -42,26 +42,26 @@ namespace TheTechIdea.Beep.Tools
             sb.AppendLine("{");
             sb.AppendLine($"public class {modelname}Controller : ApiController");
             sb.AppendLine("{");
-            sb.AppendLine("{     public IEnumerable<modelname> {modelname}");
-            sb.AppendLine("// GET api/{modelname}");
-            sb.AppendLine("public IEnumerable<{modelname}> Get()");
+            sb.AppendLine($"public IEnumerable<{modelname}> {modelname}");
+            sb.AppendLine($"// GET api/{modelname}");
+            sb.AppendLine($"public IEnumerable<{modelname}> Get()");
             sb.AppendLine("{");
             sb.AppendLine("return new ;");
             sb.AppendLine("}");
-            sb.AppendLine("// GET api/{modelname}/5");
-            sb.AppendLine("public {classname} Get(int id)");
+            sb.AppendLine($"// GET api/{modelname}/5");
+            sb.AppendLine($"public {classname} Get(int id)");
             sb.AppendLine("{");
             sb.AppendLine("return value;");
             sb.AppendLine("}");
-            sb.AppendLine("// POST api/{modelname}");
-            sb.AppendLine("public void Post([FromBody] {modelname} value)");
+            sb.AppendLine($"// POST api/{modelname}");
+            sb.AppendLine($"public void Post([FromBody] {modelname} value)");
             sb.AppendLine("{    ");
             sb.AppendLine("}");
-            sb.AppendLine("// PUT api/{modelname}/5");
-            sb.AppendLine("public void Put(int id, [FromBody] {modelname} value)");
+            sb.AppendLine($"// PUT api/{modelname}/5");
+            sb.AppendLine($"public void Put(int id, [FromBody] {modelname} value)");
             sb.AppendLine("{    ");
             sb.AppendLine("}");
-            sb.AppendLine("// DELETE api/modelname/5");
+            sb.AppendLine($"// DELETE api/modelname/5");
             sb.AppendLine("public void Delete(int id)");
             sb.AppendLine("{    ");
             sb.AppendLine("}");

@@ -16,7 +16,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ETL\EntityDataMoveValidator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileManager\CSVDataSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MVVM\DataListViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataView\DataViewConnection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Editor\DataTypesHelper.cs" />
@@ -26,8 +25,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)FileManager\FileConnection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileManager\TextFieldParser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger\LogAndError.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MVVM\EventList.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MVVM\ViewModelBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Report\ReportDataManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Report\ReportOutput.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\ClassCreator.cs" />
