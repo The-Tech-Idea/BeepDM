@@ -19,7 +19,7 @@ namespace TheTechIdea.Beep.AppManager
 
         int LocationY { get; set; }
         int LocationX { get; set; }
-
+        string CustomBuildQuery { get; set; }
         Color ForeColor { get; set; }
         Color HeaderForeColor { get; set; }
         Color HeaderBackColor { get; set; }
@@ -48,6 +48,7 @@ namespace TheTechIdea.Beep.AppManager
         public Color AlternatingBackColor { get; set; }
         public Color GridLineColor { get; set; }
         public  DataGridLineStyle GridLineStyle { get; set; }
+        public string CustomBuildQuery { get; set; }
         public List<AppFilter> filters { get; set; } = new List<AppFilter>();
         public List<AppBlockColumns> BlockColumns { get; set; } = new List<AppBlockColumns>();
         public List<EntityField> Fields { get; set; }=new List<EntityField>();
