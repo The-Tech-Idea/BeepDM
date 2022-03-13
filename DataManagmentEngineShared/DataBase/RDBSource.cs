@@ -678,7 +678,7 @@ namespace TheTechIdea.Beep.DataBase
             {
                 //stringSeparators = new string[] {"select ", " from ", " where ", " group by "," having ", " order by " };
                 // Get Selected Fields
-                stringSeparators = new string[] { "select ", " from " , " where ", " group by ", " having ", " order by " };
+                stringSeparators = new string[] { "select", "from" , "where", "group by", "having", "order by" };
                 sp = originalquery.ToLower().Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries);
                 queryStructure.FieldsString = sp[0];
                 string[] Fieldsp = sp[0].Split(',');
@@ -687,6 +687,7 @@ namespace TheTechIdea.Beep.DataBase
                 queryStructure.EntitiesString = sp[1];
                 string[] Tablesdsp = sp[1].Split(',');
                 queryStructure.Entities.AddRange(Tablesdsp);
+
                 if (GetSchemaName() == null)
                 {
                     qrystr += queryStructure.FieldsString + " " + " from " + queryStructure.EntitiesString;
@@ -695,6 +696,7 @@ namespace TheTechIdea.Beep.DataBase
                     qrystr += queryStructure.FieldsString + $" from {GetSchemaName().ToLower()}." + queryStructure.EntitiesString;
 
                 qrystr += Environment.NewLine;
+
                 if (Filter != null)
                 {
                     if (Filter.Count > 0)
@@ -734,7 +736,7 @@ namespace TheTechIdea.Beep.DataBase
                 {
                     qrystr += Environment.NewLine;
 
-                    string[] whereSeparators = new string[] { " where " };
+                    string[] whereSeparators = new string[] { "where", "group by", "having", "order by" };
 
                     string[] spwhere = originalquery.ToLower().Split(whereSeparators, StringSplitOptions.RemoveEmptyEntries);
                     queryStructure.WhereCondition = spwhere[0];
@@ -743,7 +745,7 @@ namespace TheTechIdea.Beep.DataBase
                         qrystr += " where " + Environment.NewLine;
                         FoundWhere = true;
                     }
-                    qrystr +=  spwhere[0];
+                    qrystr += spwhere[1];
                     qrystr += Environment.NewLine;
                  
                    
@@ -751,7 +753,7 @@ namespace TheTechIdea.Beep.DataBase
                 }
                 if (originalquery.ToLower().Contains("group by"))
                 {
-                    string[] groupbySeparators = new string[] { " group by " };
+                    string[] groupbySeparators = new string[] { "group by","having", "order by" };
 
                     string[] groupbywhere = originalquery.ToLower().Split(groupbySeparators, StringSplitOptions.RemoveEmptyEntries);
                     queryStructure.GroupbyCondition = groupbywhere[1];
@@ -760,7 +762,7 @@ namespace TheTechIdea.Beep.DataBase
                 }
                 if (originalquery.ToLower().Contains("having"))
                 {
-                    string[] havingSeparators = new string[] { " having " };
+                    string[] havingSeparators = new string[] { "having", "order by" };
 
                     string[] havingywhere = originalquery.ToLower().Split(havingSeparators, StringSplitOptions.RemoveEmptyEntries);
                     queryStructure.HavingCondition = havingywhere[1];
@@ -769,7 +771,7 @@ namespace TheTechIdea.Beep.DataBase
                 }
                 if (originalquery.ToLower().Contains("order by"))
                 {
-                    string[] orderbySeparators = new string[] { " order by " };
+                    string[] orderbySeparators = new string[] { "order by" };
 
                     string[] orderbywhere = originalquery.ToLower().Split(orderbySeparators, StringSplitOptions.RemoveEmptyEntries);
                     queryStructure.OrderbyCondition = orderbywhere[1];
@@ -809,7 +811,16 @@ namespace TheTechIdea.Beep.DataBase
                 }
                
             }
-            // EntityStructure ent = GetEntityStructure(inname);
+            EntityStructure ent = GetEntityStructure(inname);
+            if(ent != null)
+            {
+                if (!string.IsNullOrEmpty(ent.CustomBuildQuery))
+                {
+                    qrystr = ent.CustomBuildQuery;
+                }
+
+            }
+           
             qrystr= BuildQuery(qrystr, Filter);
           
             try
