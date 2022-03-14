@@ -9,7 +9,7 @@ using TheTechIdea.Beep.WebAPI;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-namespace DataManagmentEngineShared.WebAPI
+namespace TheTechIdea.Beep.WebAPI
 {
     public class WebAPIDataConnection : IDataConnection
 

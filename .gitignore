@@ -364,3 +364,18 @@ FodyWeavers.xsd
 
 #outputdll
 outputdll/
+/DataManagmentEngineShared/Addin/addins.dtx
+/DataManagmentEngineShared/AppBuilder/apppbuilders.dtx
+/DemoApp/Addin/HereweAddAllVisualAddin.dtx
+/DemoApp/Config/HereweAddAllConfguration.dtx
+/DemoApp/ConnectionDrivers/SqlCompact/amd64/Microsoft.VC90.CRT/README_ENU.dtx
+/DemoApp/ConnectionDrivers/HereweAddAllConnectionDrivers.dtx
+/DemoApp/DataFiles/HereweAddAllLocalDatabase.dtx
+/DemoApp/DataViews/HereweAddAllDataViews.dtx
+/DemoApp/Entities/HereweAddAllDatasourceEntities.dtx
+/DemoApp/GFX/HereweAddAllgfx.dtx
+/DemoApp/Mapping/HereweAddAllmapping.dtx
+/DemoApp/ProjectClasses/HereweputClasses.dtx
+/DemoApp/ProjectData/HereweAddAllfiles.dtx
+/DemoApp/Scripts/HereweAddAllscripts.dtx
+/DemoApp/WorkFlow/HereweAddAllworkflows.dtx

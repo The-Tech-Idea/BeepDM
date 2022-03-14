@@ -1,22 +1,18 @@
 ﻿using Autofac;
-using System;
 using System.Linq;
 using TheTechIdea.Beep;
 using TheTechIdea.Logger;
-
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Util;
 using TheTechIdea.Tools;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.Tools;
-using DemoApp;
-using TheTechIdea;
-using System.Collections.Generic;
-using TheTechIdea.DataManagment_Engine.Workflow;
 
-namespace DataManagment_Engine
+using TheTechIdea.DataManagment_Engine.Workflow;
+using System;
+
+namespace TheTechIdea.Beep
 
 {   
     public class MainApp
@@ -26,32 +22,37 @@ namespace DataManagment_Engine
         #region "System Components"
         public IDMEEditor DMEEditor { get; set; }
         public IConfigEditor Config_editor { get; set; }
-        public IWorkFlowEditor WorkFlowEditor { get; set; }
+
         public IDMLogger lg { get; set; }
         public IUtil util { get; set; }
+       
         public IErrorsInfo Erinfo { get; set; }
         public IJsonLoader jsonLoader { get; set; }
         public IAssemblyHandler LLoader { get; set; }
         public IClassCreator classCreator { get; set; }
+        public IDataTypesHelper typesHelper { get; set; }
         public IETL eTL { get; set; }
+        public IWorkFlowEditor WorkFlowEditor { get; set; }
+        public IWorkFlowStepEditor WorkFlowStepEditor { get; set; }
+        public IRuleParser ruleparser { get; set; }
+        public IRulesEditor rulesEditor { get; set; }
+
         #endregion
         public static IContainer Configure() //ContainerBuilder builder
         {
-          
             Builder = new ContainerBuilder();
             Builder.RegisterType<ErrorsInfo>().As<IErrorsInfo>().SingleInstance();
             Builder.RegisterType<DMLogger>().As<IDMLogger>().SingleInstance();
             Builder.RegisterType<ConfigEditor>().As<IConfigEditor>().SingleInstance();
             Builder.RegisterType<DataTypesHelper>().As<IDataTypesHelper>().SingleInstance();
             Builder.RegisterType<DMEEditor>().As<IDMEEditor>().SingleInstance();
-           // Builder.RegisterType<WorkFlowEditor>().As<IWorkFlowEditor>().SingleInstance();
-            Builder.RegisterType<Util>().As<IUtil>().SingleInstance();
          
+            Builder.RegisterType<Util>().As<IUtil>().SingleInstance();
+            
             Builder.RegisterType<JsonLoader>().As<IJsonLoader>().SingleInstance();
             Builder.RegisterType<AssemblyHandler>().As<IAssemblyHandler>().SingleInstance();
             Builder.RegisterType<ClassCreator>().As<IClassCreator>().SingleInstance();
             Builder.RegisterType<ETL>().As<IETL>().SingleInstance();
-        
             return Builder.Build();
         }
         public MainApp()
