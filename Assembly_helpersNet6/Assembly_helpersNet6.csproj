@@ -13,5 +13,22 @@
   <ItemGroup>
     <ProjectReference Include="..\DataManagmentModelsNet6\DataManagmentModelsNet6.csproj" />
   </ItemGroup>
+	<Target Name="CreateDirectories">
+		<MakeDir
+            Directories=" $(ProjectDir)..\outputdll\$(TargetName)\"/>
+	</Target>
+	<Target Name="CopyFiles">
+		<ItemGroup>
+			<!-- Because this ItemGroup is inside the target, this will enumerate
+                 all files just before calling Copy. If the ItemGroup were outside
+                 the target , it would enumerate the files during evaluation, before
+                 the build starts, which may miss files created during the build. -->
+			<MySourceFiles Include="$(ProjectDir)\bin\Debug\net6.0\$(TargetName).dll"/>
+		</ItemGroup>
 
+		<Copy
+            SourceFiles="@(MySourceFiles)"
+            DestinationFiles="$(SolutionDir)\%(RecursiveDir)%(Filename)%(Extension)"
+        />
+	</Target>
 </Project>
