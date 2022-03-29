@@ -4,7 +4,27 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>TheTechIdea.Beep</RootNamespace>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Authors>The Tech Idea</Authors>
+    <Description>Data Management Library.</Description>
+    <Copyright>2022</Copyright>
+    <PackageTags>Data;Oracle;sqlite;Sqlserver;sql;database;nosql;access;storage;beep</PackageTags>
+    <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/The-Tech-Idea/BeepDM</PackageProjectUrl>
+    <PackageIcon>SimpleODM.png</PackageIcon>
+    <PackageId>TheTechIdea.Beep.DataManagementEngineNet6</PackageId>
+    <FileVersion>1.0.0.1</FileVersion>
+    <AssemblyVersion>1.0.0.1</AssemblyVersion>
+    <Version>1.0.0.1</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\..\..\OneDrive\SimpleInfoapps\LogoGFx\128\SimpleODM.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.0.123" />

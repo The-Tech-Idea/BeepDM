@@ -34,14 +34,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebAPIDataSource.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="$(MSBuildThisFileDirectory)Addin\addins.txt">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)AppBuilder\apppbuilders.txt">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Addin\" />
+    <Folder Include="$(MSBuildThisFileDirectory)AppBuilder\" />
     <Folder Include="$(MSBuildThisFileDirectory)Workflow\Actions\" />
   </ItemGroup>
 </Project>
