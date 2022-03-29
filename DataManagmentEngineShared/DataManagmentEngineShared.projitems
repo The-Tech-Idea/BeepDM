@@ -35,7 +35,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Addin\" />
-    <Folder Include="$(MSBuildThisFileDirectory)AppBuilder\" />
     <Folder Include="$(MSBuildThisFileDirectory)Workflow\Actions\" />
   </ItemGroup>
 </Project>

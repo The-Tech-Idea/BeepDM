@@ -46,9 +46,7 @@ namespace TheTechIdea.Beep
             Builder.RegisterType<ConfigEditor>().As<IConfigEditor>().SingleInstance();
             Builder.RegisterType<DataTypesHelper>().As<IDataTypesHelper>().SingleInstance();
             Builder.RegisterType<DMEEditor>().As<IDMEEditor>().SingleInstance();
-         
             Builder.RegisterType<Util>().As<IUtil>().SingleInstance();
-            
             Builder.RegisterType<JsonLoader>().As<IJsonLoader>().SingleInstance();
             Builder.RegisterType<AssemblyHandler>().As<IAssemblyHandler>().SingleInstance();
             Builder.RegisterType<ClassCreator>().As<IClassCreator>().SingleInstance();

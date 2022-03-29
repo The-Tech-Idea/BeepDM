@@ -14,9 +14,10 @@
     <PackageProjectUrl>https://github.com/The-Tech-Idea/BeepDM</PackageProjectUrl>
     <PackageIcon>SimpleODM.png</PackageIcon>
     <PackageId>TheTechIdea.Beep.DataManagementEngineNet6</PackageId>
-    <FileVersion>1.0.0.1</FileVersion>
-    <AssemblyVersion>1.0.0.1</AssemblyVersion>
-    <Version>1.0.0.1</Version>
+    <FileVersion>1.0.0.3</FileVersion>
+    <AssemblyVersion>1.0.0.3</AssemblyVersion>
+    <Version>1.0.0.3</Version>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>

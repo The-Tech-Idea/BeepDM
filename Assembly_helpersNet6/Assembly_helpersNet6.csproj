@@ -4,6 +4,19 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>TheTechIdea.Beep</RootNamespace>
+    <PackageId>TheTechIdea.Beep.AssemblyHelper</PackageId>
+    <Authors>The Tech Idea</Authors>
+    <Product>TheTechIdea.Beep.AssemblyHelper</Product>
+    <Description>Assembly Loader for Beep Data Management Engine</Description>
+    <Copyright>2022</Copyright>
+    <PackageIcon>SimpleODM.png</PackageIcon>
+    <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/The-Tech-Idea/BeepDM</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <AssemblyVersion>1.0.0.2</AssemblyVersion>
+    <FileVersion>1.0.0.2</FileVersion>
+    <Version>1.0.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,11 +24,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\..\..\..\..\OneDrive\SimpleInfoapps\LogoGFx\128\SimpleODM.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\DataManagmentModelsNet6\DataManagmentModelsNet6.csproj" />
   </ItemGroup>
 	<Target Name="CreateDirectories">
-		<MakeDir
-            Directories=" $(ProjectDir)..\outputdll\$(TargetName)\"/>
+		<MakeDir Directories=" $(ProjectDir)..\outputdll\$(TargetName)\" />
 	</Target>
 	<Target Name="CopyFiles">
 		<ItemGroup>
@@ -23,12 +42,9 @@
                  all files just before calling Copy. If the ItemGroup were outside
                  the target , it would enumerate the files during evaluation, before
                  the build starts, which may miss files created during the build. -->
-			<MySourceFiles Include="$(ProjectDir)\bin\Debug\net6.0\$(TargetName).dll"/>
+			<MySourceFiles Include="$(ProjectDir)\bin\Debug\net6.0\$(TargetName).dll" />
 		</ItemGroup>
 
-		<Copy
-            SourceFiles="@(MySourceFiles)"
-            DestinationFiles="$(SolutionDir)\%(RecursiveDir)%(Filename)%(Extension)"
-        />
+		<Copy SourceFiles="@(MySourceFiles)" DestinationFiles="$(SolutionDir)\%(RecursiveDir)%(Filename)%(Extension)" />
 	</Target>
 </Project>

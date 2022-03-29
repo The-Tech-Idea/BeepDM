@@ -8,7 +8,7 @@ using TheTechIdea.Beep;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.Beep.ETL
+namespace TheTechIdea.Beep
 {
     public partial class EntityDataMoveValidator
     {
