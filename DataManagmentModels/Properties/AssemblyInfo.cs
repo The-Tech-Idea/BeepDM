@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("DataManagerNetModels")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("Beep Data Management Engine Models")]
+[assembly: AssemblyDescription("Beep Data Management Engine Models to Allow Developer to Build and Replace Existing Logic")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("The Tech Idea")]
-[assembly: AssemblyProduct("DataManagerNetModels")]
-[assembly: AssemblyCopyright("Copyright ©  2020")]
+[assembly: AssemblyProduct("Beep Data Management Engine Models")]
+[assembly: AssemblyCopyright("Copyright ©  2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

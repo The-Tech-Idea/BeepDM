@@ -1,0 +1,9 @@
+cd C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagment_Engine\
+dotnet nuget spec
+dotnet nuget spec DataManagment_Engine.csproj
+dotnet nuget pack
+
+cd C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentModels\
+dotnet nuget spec
+dotnet nuget spec DataManagmentModels.csproj
+dotnet nuget pack

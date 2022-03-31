@@ -5,9 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>TheTechIdea.Beep</RootNamespace>
-    <PackageId>TheTechIdea.Beep.AssemblyHelper</PackageId>
+    <PackageId>TheTechIdea.Beep.AssemblyHelperNet6</PackageId>
     <Authors>The Tech Idea</Authors>
-    <Product>TheTechIdea.Beep.AssemblyHelper</Product>
+    <Product>TheTechIdea.Beep.AssemblyHelperNet6</Product>
     <Description>Assembly Loader for Beep Data Management Engine</Description>
     <Copyright>2022</Copyright>
     <PackageIcon>SimpleODM.png</PackageIcon>
@@ -16,7 +16,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <AssemblyVersion>1.0.0.2</AssemblyVersion>
     <FileVersion>1.0.0.2</FileVersion>
-    <Version>1.0.0.2</Version>
+    <Version>1.0.0.5</Version>
   </PropertyGroup>
 
   <ItemGroup>

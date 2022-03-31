@@ -1,22 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DataManagmentEngineStandard</AssemblyName>
     <RootNamespace>TheTechIdea.Beep</RootNamespace>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>TheTechIdea.Beep.DataManagementEngine2.0</PackageId>
     <Authors>The Tech Idea</Authors>
+    <Version>1.0.0.5</Version>
+    <Product>TheTechIdea.Beep.DataManagementEngine2.0</Product>
     <Description>Data Management Library</Description>
     <Copyright>2022</Copyright>
-    <PackageTags>Data;Oracle;sqlite;Sqlserver;sql;database;nosql;access;storage;beep</PackageTags>
-    <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
     <PackageProjectUrl>https://github.com/The-Tech-Idea/BeepDM</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
     <PackageIcon>SimpleODM.png</PackageIcon>
-    <PackageId>TheTechIdea.Beep.DataManagementEngineNet6</PackageId>
-    <FileVersion>1.0.0.3</FileVersion>
-    <AssemblyVersion>1.0.0.3</AssemblyVersion>
-    <Version>1.0.0.5</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
@@ -29,11 +26,15 @@
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.0.123" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="System.CodeDom" Version="6.0.0" />
+    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+    <PackageReference Include="System.Reflection" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DataManagmentModelsNet6\DataManagmentModelsNet6.csproj" />
+    <ProjectReference Include="..\DataManagementModelsStandard\DataManagementModelsStandard.csproj" />
   </ItemGroup>
 
   <Import Project="..\DataManagmentEngineShared\DataManagmentEngineShared.projitems" Label="Shared" />

@@ -40,7 +40,7 @@ namespace TheTechIdea.Util
 		public string ContainerName { get; set; } = null;
 		public IErrorsInfo ErrorObject { get; set; }
 		public IJsonLoader JsonLoader { get; set; }
-		public ConfigandSettings Config { get; set; }
+		public ConfigandSettings Config { get; set; } = new ConfigandSettings();
 		public IDMLogger Logger { get; set; }
 		public List<string> Databasetypes { get; set; }
 		public List<QuerySqlRepo> QueryList { get; set; } = new List<QuerySqlRepo>();
@@ -1132,26 +1132,27 @@ namespace TheTechIdea.Util
 				if (File.Exists(path))
 				{
 					LoadConfigValues();
-
-					if (Config.ExePath != exedir)
-						{
-							Config.ExePath = exedir;
-							ExePath = exedir;
-							foreach (StorageFolders fold in Config.Folders)
-							{
-								var dirName = new DirectoryInfo(fold.FolderPath).Name;
-								fold.FolderPath = Path.Combine(containerpath, dirName);
-							}
-
-						}
-				//}
-					
 				}
 				else //if file does not exist first run
 				{
 					Config = new ConfigandSettings();
-
-				
+				}
+                if (Config != null)
+                {
+					if (Config.ExePath != exedir)
+					{
+						Config.ExePath = exedir;
+						ExePath = exedir;
+						foreach (StorageFolders fold in Config.Folders)
+						{
+							var dirName = new DirectoryInfo(fold.FolderPath).Name;
+							fold.FolderPath = Path.Combine(containerpath, dirName);
+						}
+					}
+                }
+                else
+                {
+					Config = new ConfigandSettings();
 				}
 				//Config.SystemEntryFormName = @"Frm_MainDisplayForm";
 				//Check Folders exist
