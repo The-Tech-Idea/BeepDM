@@ -12,7 +12,12 @@
     <PackageIcon>SimpleODM.png</PackageIcon>
     <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
   </PropertyGroup>
-
+	<Target Name="CopyPackage" AfterTargets="Pack">
+		<Copy
+		  SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg"
+		  DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local"
+    />
+	</Target>
   <ItemGroup>
     <Compile Include="..\JsonFileLoader\CustomContractResolver.cs" Link="CustomContractResolver.cs" />
     <Compile Include="..\JsonFileLoader\JsonFieldsCollector.cs" Link="JsonFieldsCollector.cs" />

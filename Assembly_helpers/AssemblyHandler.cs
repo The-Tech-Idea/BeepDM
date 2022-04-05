@@ -149,21 +149,25 @@ namespace TheTechIdea.Tools
 
                // DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.FullName.Contains("DataManagmentEngine") || x.FullName.Contains("Beep"));
-            try
-            {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            
                 foreach (Assembly item in assemblies)
                 {
-                    ScanAssembly(item);
-                    Utilfunction.FunctionHierarchy = GetAddinObjects(item);
+                    try
+                    {
+                        ScanAssembly(item);
+                        Utilfunction.FunctionHierarchy = GetAddinObjects(item);
+                    }
+                    catch (Exception ex)
+                    {
+
+                        //DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
+                    }
+
                 }
 
-            }
-            catch (Exception ex)
-            {
-
-                //DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
-            }
+         
+           
         
             return ErrorObject;
 
@@ -413,7 +417,8 @@ namespace TheTechIdea.Tools
             string objtype = "";
             Boolean Show = true;
             int cnt = 0;
-            foreach (Type type in asm.DefinedTypes)
+            var itype = typeof(IDM_Addin);
+            foreach (Type type in asm.DefinedTypes.Where(p => itype.IsAssignableFrom(p)))
             {
                 if (typeof(IDM_Addin).IsAssignableFrom(type))
                 {

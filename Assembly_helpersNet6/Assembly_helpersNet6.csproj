@@ -16,9 +16,12 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <AssemblyVersion>1.0.0.2</AssemblyVersion>
     <FileVersion>1.0.0.2</FileVersion>
-    <Version>1.0.0.5</Version>
+    <Version>1.0.0.6</Version>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
-
+	<Target Name="CopyPackage" AfterTargets="Pack">
+		<Copy SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg" DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local" />
+	</Target>
   <ItemGroup>
     <Compile Include="..\Assembly_helpers\AssemblyHandler.cs" Link="AssemblyHandler.cs" />
   </ItemGroup>

@@ -5,7 +5,7 @@
     <RootNamespace>TheTechIdea.Beep</RootNamespace>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.AssemblyHelper2.0</PackageId>
-    <Version>1.0.0.5</Version>
+    <Version>1.0.0.6</Version>
     <Authors>The Tech Idea</Authors>
     <Product>TheTechIdea.Beep.AssemblyHelper2.0</Product>
     <Description>Aseembly Loader for Data Management Engine</Description>
@@ -15,7 +15,12 @@
     <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
-
+	<Target Name="CopyPackage" AfterTargets="Pack">
+		<Copy
+		  SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg"
+		  DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local"
+    />
+	</Target>
   <ItemGroup>
     <Compile Include="..\Assembly_helpers\AssemblyHandler.cs" Link="AssemblyHandler.cs" />
   </ItemGroup>

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -16,16 +16,21 @@
     <PackageId>TheTechIdea.Beep.DataManagementEngineNet6</PackageId>
     <FileVersion>1.0.0.3</FileVersion>
     <AssemblyVersion>1.0.0.3</AssemblyVersion>
-    <Version>1.0.0.5</Version>
+    <Version>1.0.0.12</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+	
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="..\..\..\..\..\OneDrive\SimpleInfoapps\LogoGFx\128\SimpleODM.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
+	
+	<Target Name="CopyPackage" AfterTargets="Pack">
+		<Copy SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg" DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local" />
+	</Target>
+	<ItemGroup>
+	  <None Include="..\..\..\..\..\OneDrive\SimpleInfoapps\LogoGFx\128\SimpleODM.png">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	</ItemGroup>
+	
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.0.123" />

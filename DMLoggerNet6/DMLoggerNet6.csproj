@@ -17,7 +17,12 @@
     <AssemblyVersion>1.0.0.2</AssemblyVersion>
     <Version>1.0.0.5</Version>
   </PropertyGroup>
-
+	<Target Name="CopyPackage" AfterTargets="Pack">
+		<Copy
+		  SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg"
+		  DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local"
+    />
+	</Target>
   <ItemGroup>
     <Compile Include="..\DMLogger\DMLogger.cs" Link="DMLogger.cs" />
   </ItemGroup>
