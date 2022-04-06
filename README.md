@@ -24,11 +24,8 @@ The Directory Structure for Every Beep Data Management Project has the following
 * 14- Scripts         : Place to store scripts and logs
 * 15- WorkFlow        : place to store Workflow definitions
 
-![Image of Yaktocat](https://github.com/fahadTheTechIdea/gfx/raw/master/BeepDMProjectStructure.png) 
-![Image of Yaktocat](https://github.com/fahadTheTechIdea/gfx/blob/master/DataManagementEngine.png) 
 
-
-#Lets get to the good part:
+# Lets get to the good part:
 
 
 * Create New Data Source:
@@ -46,4 +43,5 @@ The Directory Structure for Every Beep Data Management Project has the following
    * ConnectionConfig.json : Define Drivers and DataSource Class that use them and other data (like icon).
    * DataTypeMapping.json :Define the DataType and Column Type Mapping for DataSource to Datasource.
    * DataConnections.json : Define Data Source Connections.
-
+   
+![Image of Yaktocat](https://github.com/fahadTheTechIdea/gfx/blob/master/DataManagementEngine.png) 
