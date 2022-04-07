@@ -25,28 +25,29 @@
     <Position X="1" Y="3.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAIAIAABAAAAAgUAAAEAAABAQAAAAAAAAAAAQAhAAAA=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\CompositeLayer\CompositeLayerDataSource.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\CompositeLayer\CompositeLayerDataSource.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="TheTechIdea.Util.ConfigEditor" Collapsed="true" BaseTypeListCollapsed="true">
     <Position X="9" Y="5.75" Width="1.5" />
     <TypeIdentifier>
       <HashCode>yybi1CyJ5pMnBJABMDzMFSyUJwUGQABHFGmmlXhE4IA=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\ConfigUtil\ConfigEditor.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\ConfigUtil\ConfigEditor.cs</FileName>
     </TypeIdentifier>
+    <Lollipop Position="0.2" />
   </Class>
   <Class Name="TheTechIdea.Util.DMTypeBuilder" Collapsed="true">
     <Position X="12.5" Y="2" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAgAACAABAEAAAAAQAQAAAAAAAAACAAAAAACAA=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\ConfigUtil\DMTypeBuilder.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\ConfigUtil\DMTypeBuilder.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="TheTechIdea.Beep.DataBase.RDBDataConnection" Collapsed="true" BaseTypeListCollapsed="true">
     <Position X="2.75" Y="2" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAABIigAAIAAAAAAAAAQAEAAAAAAAACAQAIAg=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\DataBase\RDBDataConnection.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\DataBase\RDBDataConnection.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
@@ -54,7 +55,7 @@
     <Position X="1" Y="2" Width="1.5" />
     <TypeIdentifier>
       <HashCode>kOoGAAADHTMGGAAtMECF0BEwJCAAIUAgAQGBCgkAKbQ=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\DataBase\RDBSource.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\DataBase\RDBSource.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" />
   </Class>
@@ -62,7 +63,7 @@
     <Position X="2.75" Y="4.75" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAABIigAAIAAAAAAAAAQAEAAAAAAAACAQAIAg=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\DataView\DataViewConnection.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\DataView\DataViewConnection.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
@@ -70,7 +71,7 @@
     <Position X="1" Y="4.75" Width="1.5" />
     <TypeIdentifier>
       <HashCode>EsIGAAA5ESsCAMBgFkCFXhEgAAhgDAAgAQWCiolAOrQ=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\DataView\DataViewDataSource.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\DataView\DataViewDataSource.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
@@ -78,7 +79,7 @@
     <Position X="9" Y="2.75" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAgAAAAICIAAABQAAAAAAAAAAFAAAAAAAAAACIAA=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Editor\DataTypesHelper.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Editor\DataTypesHelper.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
@@ -86,14 +87,14 @@
     <Position X="12.5" Y="2.75" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Editor\TypeHelper.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Editor\TypeHelper.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="TheTechIdea.Beep.Editor.ETL" Collapsed="true" BaseTypeListCollapsed="true">
     <Position X="9" Y="4.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>ABAEEgCAEAAGAAAAACiiBQACCAAAAMggAoQAAGAgCIA=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\ETL\ETL.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\ETL\ETL.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
@@ -101,7 +102,7 @@
     <Position X="8.5" Y="2" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AEyEAgBhkGIEAAg4CAAAAAQAABBAAAAAQAAKAkQAIAA=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Editor\DMEEditor.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Editor\DMEEditor.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
@@ -109,22 +110,15 @@
     <Position X="9" Y="5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>cAEARQABgBaAKEBQCEJBAAAKAZQMAUQIAUMIAgAAIQA=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Util.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Util.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
-  </Class>
-  <Class Name="TheTechIdea.Beep.ETL.EntityDataMoveValidator" Collapsed="true">
-    <Position X="10.75" Y="4.25" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>EAAAAAAAAAACAgAAAAAAAAAAAQEEAAAAABAAAAAAAAA=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\ETL\EntityDataMoveValidator.cs</FileName>
-    </TypeIdentifier>
   </Class>
   <Class Name="TheTechIdea.Beep.FileManager.CSVDataSource" Collapsed="true" BaseTypeListCollapsed="true">
     <Position X="1" Y="6" Width="1.5" />
     <TypeIdentifier>
       <HashCode>MGiGEAABESNCAAAgEEAFUBEgQAQAAAAgAQFACglIKLQ=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\FileManager\CSVDataSource.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\FileManager\CSVDataSource.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
@@ -132,7 +126,7 @@
     <Position X="2.75" Y="6" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAABIigAAIAAAAAAAAAQAEAAAAAAAACAQAIAg=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\FileManager\FileConnection.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\FileManager\FileConnection.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
@@ -140,7 +134,7 @@
     <Position X="4.5" Y="6" Width="1.5" />
     <TypeIdentifier>
       <HashCode>QgAICgAIAaACCAggAAAJAAAACEhAhIIAABDAAACQAAA=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\FileManager\TextFieldParser.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\FileManager\TextFieldParser.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
@@ -148,7 +142,7 @@
     <Position X="9" Y="6.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAICAQAAACAAAAAAAAQAAAAAAAAAAACAAAAAAAAAEAA=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Logger\LogAndError.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Logger\LogAndError.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
@@ -156,29 +150,21 @@
     <Position X="6.5" Y="2" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAIBAAAkEACCAAAAAAAAAEAgAAAABAAAAACAIAAAAo=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Report\ReportDataManager.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Report\ReportDataManager.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="TheTechIdea.Beep.Report.ReportOutput" Collapsed="true">
     <Position X="6.5" Y="2.75" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAiCAAAAEAAQAEAAAAAAAAAAAAEAAAAAAI=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Report\ReportOutput.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Report\ReportOutput.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="TheTechIdea.Beep.Tools.ClassCreator" Collapsed="true" BaseTypeListCollapsed="true">
     <Position X="9" Y="3.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AEAAQAQEAAACAIRAKAAAAAAAQQBAAAAQAAAAAAAQAAA=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Tools\ClassCreator.cs</FileName>
-    </TypeIdentifier>
-    <Lollipop Position="0.2" Collapsed="true" />
-  </Class>
-  <Class Name="DataManagmentEngineShared.WebAPI.WebAPIDataConnection" Collapsed="true" BaseTypeListCollapsed="true">
-    <Position X="2.75" Y="7.25" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAABIigAAIAAAAAAAAAQAEAAEAAAAACAQAIAg=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\WebAPI\WEBAPIDataConnection.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\Tools\ClassCreator.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
@@ -186,7 +172,7 @@
     <Position X="1" Y="7.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>sEAGAAgBESMCAAAgEEEFUBEgAAAAAAAgAQEADgkAKLQ=</HashCode>
-      <FileName>C:\Users\fahad\Source\Repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\WebAPI\WebAPIDataSource.cs</FileName>
+      <FileName>C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagmentEngineShared\WebAPI\WebAPIDataSource.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>

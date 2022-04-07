@@ -37,10 +37,4 @@
     <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\DataManagementModelsStandard\DataManagementModelsStandard.csproj" />
-  </ItemGroup>
-
-  <Import Project="..\DataManagmentEngineShared\DataManagmentEngineShared.projitems" Label="Shared" />
-
 </Project>

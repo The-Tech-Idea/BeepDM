@@ -609,7 +609,12 @@ namespace TheTechIdea.Tools
                       
                             ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowAction"));
                         }
-                         // Get IFunctionExtension Definitions
+                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
+                        {
+
+                            ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowAction"));
+                        }
+                        // Get IFunctionExtension Definitions
                         if (type.ImplementedInterfaces.Contains(typeof(IFunctionExtension)))
                         {
                       

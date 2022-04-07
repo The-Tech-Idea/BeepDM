@@ -26,9 +26,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly_helpers", "Assembl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataManagmentModels", "DataManagmentModels\DataManagmentModels.csproj", "{7697EBDC-A4F2-49B1-AF91-79031516E679}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataManagementEngineStandard", "DataManagementEngineStandard\DataManagementEngineStandard.csproj", "{171F8AA4-2CEC-4630-9F2C-7297FB73827F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataManagementEngineStandard", "DataManagementEngineStandard\DataManagementEngineStandard.csproj", "{171F8AA4-2CEC-4630-9F2C-7297FB73827F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataManagementModelsStandard", "DataManagementModelsStandard\DataManagementModelsStandard.csproj", "{CEF167D7-B37A-4D82-B004-3E2B6181257B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataManagementModelsStandard", "DataManagementModelsStandard\DataManagementModelsStandard.csproj", "{CEF167D7-B37A-4D82-B004-3E2B6181257B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataManagmentEngineNet6", "DataManagmentEngineNet6\DataManagmentEngineNet6.csproj", "{898C295C-684B-4AD1-8F6E-F0F0F1662DD0}"
 EndProject
@@ -40,15 +40,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DMLoggerNet6", "DMLoggerNet
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonFileLoaderNet6", "JsonFileLoaderNet6\JsonFileLoaderNet6.csproj", "{216E62AF-E59F-41F6-874F-9B4A2B66DA25}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly_helpersStandard", "Assembly_helpersStandard\Assembly_helpersStandard.csproj", "{52CEE9CD-982A-4FFF-A42C-570EDA61E743}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Assembly_helpersStandard", "Assembly_helpersStandard\Assembly_helpersStandard.csproj", "{52CEE9CD-982A-4FFF-A42C-570EDA61E743}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DMLoggerStandard", "DMLoggerStandard\DMLoggerStandard.csproj", "{F5B5F869-129E-4921-8ED7-DE7FDDFE6758}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DMLoggerStandard", "DMLoggerStandard\DMLoggerStandard.csproj", "{F5B5F869-129E-4921-8ED7-DE7FDDFE6758}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonFileLoaderStandard", "JsonFileLoaderStandard\JsonFileLoaderStandard.csproj", "{8B3DD821-009C-49DE-9BA1-4FA658300064}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonFileLoaderStandard", "JsonFileLoaderStandard\JsonFileLoaderStandard.csproj", "{8B3DD821-009C-49DE-9BA1-4FA658300064}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		DataManagmentEngineShared\DataManagmentEngineShared.projitems*{171f8aa4-2cec-4630-9f2c-7297fb73827f}*SharedItemsImports = 5
 		DataManagementModelsShared\DataManagementModelsShared.projitems*{2f745b0a-b2f4-4eb8-9a8e-5a87b2988f99}*SharedItemsImports = 13
 		DataManagmentEngineShared\DataManagmentEngineShared.projitems*{45983087-5e0e-4bfb-86c1-a5bc54d2a86f}*SharedItemsImports = 4
 		DataManagementModelsShared\DataManagementModelsShared.projitems*{7697ebdc-a4f2-49b1-af91-79031516e679}*SharedItemsImports = 4
