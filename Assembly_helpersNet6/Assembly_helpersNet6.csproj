@@ -34,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DataManagmentModelsNet6\DataManagmentModelsNet6.csproj" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModelsNet6" Version="1.0.0.6" />
   </ItemGroup>
 	<Target Name="CreateDirectories">
 		<MakeDir Directories=" $(ProjectDir)..\outputdll\$(TargetName)\" />

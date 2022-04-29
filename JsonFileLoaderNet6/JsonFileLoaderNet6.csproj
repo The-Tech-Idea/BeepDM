@@ -20,10 +20,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 	<Target Name="CopyPackage" AfterTargets="Pack">
-		<Copy
-		  SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg"
-		  DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local"
-    />
+		<Copy SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg" DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local" />
 	</Target>
   <ItemGroup>
     <Compile Include="..\JsonFileLoader\JsonFieldsCollector.cs" Link="JsonFieldsCollector.cs" />
@@ -39,10 +36,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\DataManagmentModelsNet6\DataManagmentModelsNet6.csproj" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModelsNet6" Version="1.0.0.6" />
   </ItemGroup>
 	<Target Name="CreateDirectories">
 		<MakeDir Directories=" $(ProjectDir)..\outputdll\$(TargetName)\" />

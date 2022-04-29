@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 using TheTechIdea.Beep;
-using TheTechIdea.DataManagment_Engine.Workflow.Interfaces;
+using TheTechIdea.Beep.Workflow.Interfaces;
 
-namespace TheTechIdea.DataManagment_Engine.Workflow
+namespace TheTechIdea.Beep.Workflow
 {
     public interface IRuleParser
     {

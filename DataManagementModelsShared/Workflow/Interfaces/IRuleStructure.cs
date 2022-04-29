@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TheTechIdea.DataManagment_Engine.Workflow.Interfaces
+namespace TheTechIdea.Beep.Workflow.Interfaces
 {
     public interface IRuleStructure
     {

@@ -16,10 +16,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 	<Target Name="CopyPackage" AfterTargets="Pack">
-		<Copy
-		  SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg"
-		  DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local"
-    />
+		<Copy SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg" DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local" />
 	</Target>
   <ItemGroup>
     <Compile Include="..\Assembly_helpers\AssemblyHandler.cs" Link="AssemblyHandler.cs" />
@@ -33,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels2.0" Version="1.0.0.3" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels2.0" Version="1.0.0.6" />
   </ItemGroup>
 
 </Project>

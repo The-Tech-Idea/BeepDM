@@ -1139,7 +1139,7 @@ namespace TheTechIdea.Util
 				}
                 if (Config != null)
                 {
-					if (Config.ExePath != exedir)
+					if (!Config.ExePath.Equals(exedir,StringComparison.InvariantCultureIgnoreCase))
 					{
 						Config.ExePath = exedir;
 						ExePath = exedir;

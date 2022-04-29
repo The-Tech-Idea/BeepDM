@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using TheTechIdea.DataManagment_Engine.Workflow.Interfaces;
+using TheTechIdea.Beep.Workflow.Interfaces;
 
-namespace TheTechIdea.DataManagment_Engine.Workflow
+namespace TheTechIdea.Beep.Workflow
 {
     public class RuleStructure: IRuleStructure
     {

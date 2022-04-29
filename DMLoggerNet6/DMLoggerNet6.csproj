@@ -18,10 +18,7 @@
     <Version>1.0.0.5</Version>
   </PropertyGroup>
 	<Target Name="CopyPackage" AfterTargets="Pack">
-		<Copy
-		  SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg"
-		  DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local"
-    />
+		<Copy SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg" DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local" />
 	</Target>
   <ItemGroup>
     <Compile Include="..\DMLogger\DMLogger.cs" Link="DMLogger.cs" />
@@ -38,10 +35,7 @@
     <PackageReference Include="Serilog" Version="2.10.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="4.0.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\DataManagmentModelsNet6\DataManagmentModelsNet6.csproj" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModelsNet6" Version="1.0.0.6" />
   </ItemGroup>
 	<Target Name="CreateDirectories">
 		<MakeDir Directories=" $(ProjectDir)..\outputdll\$(TargetName)\" />

@@ -5,10 +5,10 @@ using TheTechIdea.Beep;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
-using TheTechIdea.DataManagment_Engine.Workflow.Interfaces;
+using TheTechIdea.Beep.Workflow.Interfaces;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Workflow
+namespace TheTechIdea.Beep.Workflow
 {
     public interface IRulesEditor
     {

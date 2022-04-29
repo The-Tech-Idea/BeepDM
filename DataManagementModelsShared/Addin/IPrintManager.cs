@@ -7,7 +7,7 @@ using TheTechIdea.Beep.AppManager;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Util;
 
-namespace TheTechIdea.DataManagment_Engine.Addin
+namespace TheTechIdea.Beep.Addin
 {
     public interface IPrintManager
     {
