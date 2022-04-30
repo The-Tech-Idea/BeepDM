@@ -15,7 +15,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <FileVersion>1.0.0.2</FileVersion>
     <AssemblyVersion>1.0.0.2</AssemblyVersion>
-    <Version>1.0.0.5</Version>
+    <Version>1.0.0.7</Version>
     <RootNamespace>TheTechIdea.Beep</RootNamespace>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>

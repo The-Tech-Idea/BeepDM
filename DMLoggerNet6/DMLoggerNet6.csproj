@@ -15,7 +15,8 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <FileVersion>1.0.0.2</FileVersion>
     <AssemblyVersion>1.0.0.2</AssemblyVersion>
-    <Version>1.0.0.5</Version>
+    <Version>1.0.0.7</Version>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 	<Target Name="CopyPackage" AfterTargets="Pack">
 		<Copy SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg" DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local" />

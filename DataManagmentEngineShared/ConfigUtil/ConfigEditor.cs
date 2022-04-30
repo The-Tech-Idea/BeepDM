@@ -1139,10 +1139,11 @@ namespace TheTechIdea.Util
 				}
                 if (Config != null)
                 {
+					Config.ExePath = exedir;
+					ExePath = exedir;
 					if (!Config.ExePath.Equals(exedir,StringComparison.InvariantCultureIgnoreCase))
 					{
-						Config.ExePath = exedir;
-						ExePath = exedir;
+						
 						foreach (StorageFolders fold in Config.Folders)
 						{
 							var dirName = new DirectoryInfo(fold.FolderPath).Name;
