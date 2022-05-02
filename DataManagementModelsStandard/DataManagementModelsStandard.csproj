@@ -3,14 +3,14 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageIcon>SimpleODM.png</PackageIcon>
-    <Authors>TheTechIdea.Beep.DataManagementModels2.0</Authors>
+    <Authors>The Tech Idea</Authors>
     <Company>The Tech Idea</Company>
     <Product>TheTechIdea.Beep.DataManagementModels2.0</Product>
     <PackageProjectUrl>https://github.com/The-Tech-Idea/BeepDM</PackageProjectUrl>
     <Copyright>2022</Copyright>
     <Description>Data Management Library Models</Description>
     <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
-    <Version>1.0.0.6</Version>
+    <Version>1.0.0.7</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageId>TheTechIdea.Beep.DataManagementModels2.0</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>

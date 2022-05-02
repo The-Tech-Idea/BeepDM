@@ -17,7 +17,7 @@ namespace TheTechIdea.Beep.Workflow
         List<IWorkFlowRule> Rules { get; set; }
         IErrorsInfo RunWorkFlow(string WorkFlowName);
         IErrorsInfo StopWorkFlow();
-        IErrorsInfo SyncDatabase(IDataSource src, IRDBSource dest);
-        IErrorsInfo SyncEntity(IDataSource src, string SourceEntityName, IDataSource dest, string DestEntityName);
+        IErrorsInfo SaveWorkFlow(string WorkFlowName);
+        IErrorsInfo LoadWorkFlow(string WorkFlowName);
     }
 }

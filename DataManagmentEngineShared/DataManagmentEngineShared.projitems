@@ -32,6 +32,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)Util.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WEBAPIDataConnection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebAPI\WebAPIDataSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\DefaultRules\GetGUID.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\DefaultRules\GetNow.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\DefaultRules\GetString.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\DefaultRules\GetUser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\DefaultRules\SetDateTimeSyncField.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\RulesEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\RulesParser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlowEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlowStepEditor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Addin\" />
