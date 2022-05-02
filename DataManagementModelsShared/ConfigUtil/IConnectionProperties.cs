@@ -35,5 +35,6 @@ namespace TheTechIdea.Util
         List<DefaultValue> DatasourceDefaults { get; set; }
         char Delimiter { get; set; }
         bool CompositeLayer { get; set; }
+        bool Favourite { get; set; }
     }
 }

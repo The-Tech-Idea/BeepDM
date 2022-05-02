@@ -39,6 +39,7 @@ namespace TheTechIdea.Util
         public bool CompositeLayer { get; set; } = false;
         public string CompositeLayerName { get; set; }
         public List<DefaultValue> DatasourceDefaults { get; set; } = new List<DefaultValue>();
+        public bool Favourite { get; set; } = false;
         public ConnectionProperties()
         {
             

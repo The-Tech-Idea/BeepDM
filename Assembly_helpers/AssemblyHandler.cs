@@ -127,6 +127,7 @@ namespace TheTechIdea.Tools
             // look through assembly list
             Assembly currentAssem = Assembly.GetExecutingAssembly();
             Assembly rootassembly = Assembly.GetEntryAssembly();
+           
             
             try
             {
@@ -166,10 +167,9 @@ namespace TheTechIdea.Tools
                     }
 
                 }
-
-         
            
-        
+
+
             return ErrorObject;
 
         }
@@ -244,7 +244,36 @@ namespace TheTechIdea.Tools
                     }
 
                 }
-                foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL).Select(x => x.FolderPath))
+            //Assembly ss = Assembly.GetCallingAssembly();
+            //var refassembly = ss.GetReferencedAssemblies();
+            //foreach (AssemblyName assemblyName in refassembly)
+            //{
+                
+            //    try
+            //    {
+            //        Assembly loadedAssembly = Assembly.Load(assemblyName);
+
+            //        assemblies_rep x = new assemblies_rep(loadedAssembly,ConfigEditor.ExePath, loadedAssembly.FullName, FolderFileTypes.ProjectClass);
+            //        Assemblies.Add(x);
+            //    }
+            //    catch (FileLoadException loadEx)
+            //    {
+            //        ErrorObject.Flag = Errors.Failed;
+            //        res = "The Assembly has already been loaded" + loadEx.Message;
+            //    } // The Assembly has already been loaded.
+            //    catch (BadImageFormatException imgEx)
+            //    {
+            //        ErrorObject.Flag = Errors.Failed;
+            //        res = imgEx.Message;
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        ErrorObject.Flag = Errors.Failed;
+            //        res = ex.Message;
+            //    }
+
+            //}
+            foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL).Select(x => x.FolderPath))
                 {
                 try
                 {
