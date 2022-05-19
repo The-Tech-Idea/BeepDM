@@ -17,7 +17,7 @@ namespace TheTechIdea.Logger
         {
             logger = new LoggerConfiguration()
              .WriteTo.File("log.txt", outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-            .WriteTo.Console()
+           // .WriteTo.Console()
             .CreateLogger();
             WriteLog("Init Logger");  //File("log.txt"
            // Log.CloseAndFlush();

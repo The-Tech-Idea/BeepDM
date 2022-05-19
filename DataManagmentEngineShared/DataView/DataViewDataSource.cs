@@ -134,7 +134,7 @@ namespace TheTechIdea.Beep.DataView
             {
                 Logger = logger,
                 ErrorObject = ErrorObject,
-
+                DMEEditor=DMEEditor
             };
             string filename = Path.GetFileName(datasourcename);
             List<ConnectionProperties> cnlist = DMEEditor.ConfigEditor.DataConnections.Where(p => p.FileName != null && p.Category == DatasourceCategory.VIEWS).ToList();
@@ -970,21 +970,28 @@ namespace TheTechIdea.Beep.DataView
                 if (entityds != null && entityds.Category== DatasourceCategory.RDBMS)
                 {
                     List<ChildRelation> ds = entityds.GetChildTablesList(maintab.DatasourceEntityName, entityds.Dataconnection.ConnectionProp.SchemaName, null);
-                    if (ds != null && ds.Count > 0)
-                    {
-                        // var tb = ds.Tables[0];
-                        //-------------------------------
-                        // Create Parent Record First
-                        //-------------------------------
-                        if (ds.Count > 0)
+                   if(DMEEditor.ErrorObject.Flag== Errors.Ok)
+                   {
+                        if (ds != null && ds.Count > 0)
                         {
-                            foreach (ChildRelation r in ds)
+                            // var tb = ds.Tables[0];
+                            //-------------------------------
+                            // Create Parent Record First
+                            //-------------------------------
+                            if (ds.Count > 0)
                             {
-                                EntityStructure a;
-                                a = SetupEntityInView(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id, entityds.DatasourceName);
+                                foreach (ChildRelation r in ds)
+                                {
+                                    EntityStructure a;
+                                    a = SetupEntityInView(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id, entityds.DatasourceName);
+                                }
                             }
+                        }else
+                        {
+                            DMEEditor.ErrorObject.Flag = Errors.Ok;
                         }
                     }
+                  
                 }
 
                 return maintab.Id;

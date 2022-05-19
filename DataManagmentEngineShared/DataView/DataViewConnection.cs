@@ -43,8 +43,6 @@ namespace TheTechIdea.Beep.DataView
             if (string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString) == false)
             {
                 rep = DataSourceDriver.ConnectionString.Replace("{File}", ConnectionProp.ConnectionString);
-
-
             }
             if (string.IsNullOrWhiteSpace(ConnectionProp.Url) == false)
             {
@@ -52,50 +50,45 @@ namespace TheTechIdea.Beep.DataView
                 // rep =ConnectionProp.Url;
 
             }
-
+            if (ConnectionProp.FilePath.StartsWith(".") || ConnectionProp.FilePath.Equals("/") || ConnectionProp.FilePath.Equals("\\"))
+            {
+                ConnectionProp.FilePath = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
+            }
 
             return rep;
-
-
-
         }
         private ConnectionState OpenConn()
         {
-            string filen = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
-            if (!string.IsNullOrEmpty(filen))
+            ReplaceValueFromConnectionString();
+            if (Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName) != null)
             {
-                if (File.Exists(filen))
+                if (File.Exists(Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)))
                 {
-                    string str = $"Found File  ,{filen}";
-                 
+                    string str = $"Found File  ,{Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)}";
+
+                    //  DMEEditor.AddLogMessage("Success", str, DateTime.Now, -1, "", Errors.Ok);
                     ConnectionStatus = ConnectionState.Open;
-
-
-
-
-
                 }
                 else
                 {
-                    string str = $"Error in finding File  ,{filen}";
-                   
+                    string str = $"Error in finding File  ,{Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)}";
+
+                    DMEEditor.AddLogMessage("Fail", str, DateTime.Now, -1, "", Errors.Failed);
                     ConnectionStatus = ConnectionState.Broken;
                     //ErrorObject.Ex = e;
                 }
-
             }
             else
             {
-               
-                DMEEditor.AddLogMessage("Fail", $"Error No Path Exist  ,{filen}", DateTime.Now, -1, "", Errors.Failed);
+                string str = $"Error No Path Exist  ,{ConnectionProp.FilePath}";
+                DMEEditor.AddLogMessage("Fail", str, DateTime.Now, -1, "", Errors.Failed);
                 ConnectionStatus = ConnectionState.Closed;
             }
-
-
-
+            DMEEditor.AddLogMessage("Success", $"File Found {ConnectionProp.FileName}", DateTime.Now, -1, "", Errors.Ok);
             return ConnectionStatus;
         }
-        
+
+
         public ConnectionState OpenConnection(DataSourceType dbtype, string host, int port, string database, string userid, string password, string parameters)
         {
             throw new NotImplementedException();
