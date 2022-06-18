@@ -584,7 +584,7 @@ namespace TheTechIdea.Tools
         private bool ScanAssembly(Assembly asm)
         {
             Type[] t;
-            Console.WriteLine(asm.FullName);
+          //  Console.WriteLine(asm.FullName);
                 try
                 {
                     try
@@ -991,7 +991,7 @@ namespace TheTechIdea.Tools
                     t = t1.ToArray();
                 }
 
-                Console.WriteLine(asm.FullName);
+               // Console.WriteLine(asm.FullName);
                 foreach (var mytype in t)
                 {
                     try
