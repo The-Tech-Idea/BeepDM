@@ -13,5 +13,6 @@ namespace TheTechIdea.Beep.Vis
         public bool DoubleClick { get; set; } = false;
         public string iconimage { get; set; } = null;
         public EnumPointType PointType { get; set; }
+        public string ObjectType { get; set; }
     }
 }
