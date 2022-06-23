@@ -688,7 +688,7 @@ namespace TheTechIdea.Tools
             {
                 xcls.Order = xcls.classProperties.order;
 
-                xcls.RootName = typename;
+                xcls.RootName = xcls.classProperties.misc;
             }
             foreach (MethodInfo methods in type.GetMethods()
                          .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
