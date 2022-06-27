@@ -1193,23 +1193,23 @@ namespace TheTechIdea.Tools
             }
             catch (ReflectionTypeLoadException ex1)
             {
-                //DMEEditor.AddLogMessage("Failed", $"Showing Details for  {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
-                StringBuilder sb = new StringBuilder();
-                foreach (Exception exSub in ex1.LoaderExceptions)
-                {
-                    sb.AppendLine(exSub.Message);
-                    FileNotFoundException exFileNotFound = exSub as FileNotFoundException;
-                    if (exFileNotFound != null)
-                    {
-                        if (!string.IsNullOrEmpty(exFileNotFound.FusionLog))
-                        {
-                            sb.AppendLine("Fusion Log:");
-                            sb.AppendLine(exFileNotFound.FusionLog);
-                        }
-                    }
-                    sb.AppendLine();
-                }
-                string errorMessage = sb.ToString();
+                ////DMEEditor.AddLogMessage("Failed", $"Showing Details for  {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
+                //StringBuilder sb = new StringBuilder();
+                //foreach (Exception exSub in ex1.LoaderExceptions)
+                //{
+                //    sb.AppendLine(exSub.Message);
+                //    FileNotFoundException exFileNotFound = exSub as FileNotFoundException;
+                //    if (exFileNotFound != null)
+                //    {
+                //        if (!string.IsNullOrEmpty(exFileNotFound.FusionLog))
+                //        {
+                //            sb.AppendLine("Fusion Log:");
+                //            sb.AppendLine(exFileNotFound.FusionLog);
+                //        }
+                //    }
+                //    sb.AppendLine();
+                //}
+                //string errorMessage = sb.ToString();
                 //DMEEditor.AddLogMessage("Failed", $"Could not get Any types for {asm.GetName().ToString()} \n {errorMessage}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
 
                 
