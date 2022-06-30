@@ -13,6 +13,7 @@ namespace TheTechIdea.Beep.Vis
         public bool Hidden { get; set; } = false;
         public string iconimage { get; set; } = null;
         public string ObjectType { get; set; }
+        public string ClassType { get; set; }
         public int key { get; set; } = -1;
         public string misc {get;set;}
         public int parentkey { get; set; } = -1;

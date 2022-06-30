@@ -21,8 +21,7 @@ using TheTechIdea.Util;
 using TypeInfo = System.Reflection.TypeInfo;
 using System.Drawing;
 using System.Collections;
-
-
+using System.Threading;
 
 namespace TheTechIdea.Tools
 {
@@ -57,7 +56,7 @@ namespace TheTechIdea.Tools
         }
         
         #region "Loaders"
-        public void GetExtensionScanners()
+        public void GetExtensionScanners(IProgress<PassedArgs> progress, CancellationToken token)
         {
            
                 try
@@ -108,6 +107,7 @@ namespace TheTechIdea.Tools
                     try
                     {
                         ILoaderExtention cls = (ILoaderExtention)Activator.CreateInstance(item, new object[] { this } );
+                        SendMessege(progress, token, $"Sanning Extension {item.Name}");
                         cls.Scan();
                        
                     }
@@ -177,7 +177,7 @@ namespace TheTechIdea.Tools
         ///     This Method will go through all Folders ProjectClass,OtherDLL,Addin, Drivers and load DLL
         /// </summary>
         /// <returns></returns>
-        public IErrorsInfo LoadAllAssembly()
+        public IErrorsInfo LoadAllAssembly(IProgress<PassedArgs> progress, CancellationToken token)
         {
             ErrorObject.Flag = Errors.Ok;
             string res;
@@ -185,12 +185,13 @@ namespace TheTechIdea.Tools
             Utilfunction.Namespacelist = new List<string>();
             Utilfunction.Classlist = new List<string>();
             DataDriversConfig = new List<ConnectionDriversConfig>();
-           
+            SendMessege(progress, token,"Getting Non ADO Drivers");
             GetNonADODrivers();
+            SendMessege(progress, token, "Getting Builtin Classes");
             GetBuiltinClasses();
-          
-         
-                foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver).Select(x => x.FolderPath))
+
+            SendMessege(progress, token, "Getting Connection Drivers Classes");
+            foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver).Select(x => x.FolderPath))
                 {
                     try
                     {
@@ -218,7 +219,8 @@ namespace TheTechIdea.Tools
                     }
 
                 }
-                foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath))
+            SendMessege(progress, token, "Getting Project and Addin Classes");
+            foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath))
                 {
                     try
                     {
@@ -244,35 +246,7 @@ namespace TheTechIdea.Tools
                     }
 
                 }
-            //Assembly ss = Assembly.GetCallingAssembly();
-            //var refassembly = ss.GetReferencedAssemblies();
-            //foreach (AssemblyName assemblyName in refassembly)
-            //{
-                
-            //    try
-            //    {
-            //        Assembly loadedAssembly = Assembly.Load(assemblyName);
-
-            //        assemblies_rep x = new assemblies_rep(loadedAssembly,ConfigEditor.ExePath, loadedAssembly.FullName, FolderFileTypes.ProjectClass);
-            //        Assemblies.Add(x);
-            //    }
-            //    catch (FileLoadException loadEx)
-            //    {
-            //        ErrorObject.Flag = Errors.Failed;
-            //        res = "The Assembly has already been loaded" + loadEx.Message;
-            //    } // The Assembly has already been loaded.
-            //    catch (BadImageFormatException imgEx)
-            //    {
-            //        ErrorObject.Flag = Errors.Failed;
-            //        res = imgEx.Message;
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        ErrorObject.Flag = Errors.Failed;
-            //        res = ex.Message;
-            //    }
-
-            //}
+            SendMessege(progress, token, "Getting Other DLL Classes");
             foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL).Select(x => x.FolderPath))
                 {
                 try
@@ -300,14 +274,16 @@ namespace TheTechIdea.Tools
                 }
 
             }
-               // Get Driver from Loaded Assembly
-                foreach (assemblies_rep item in Assemblies)
+            // Get Driver from Loaded Assembly
+            SendMessege(progress, token, "Scanning Classes For Drivers");
+            foreach (assemblies_rep item in Assemblies)
                 {
                    // AddLogMessage("Start", $"Started Processing Drivers  {item.DllName}", DateTime.Now, -1, item.DllName, Errors.Ok);
                     GetDrivers(item.DllLib);
                    // AddLogMessage("End", $"Started Processing Drivers  {item.DllName}", DateTime.Now, -1, item.DllName, Errors.Ok);
                 }
-                foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.Addin).Select(x => x.FolderPath))
+            SendMessege(progress, token, "Scanning Classes For Addins");
+            foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.Addin).Select(x => x.FolderPath))
                 {
                     try
                     {
@@ -334,10 +310,11 @@ namespace TheTechIdea.Tools
                     }
 
                 }
-                // Scan Addin Assemblies
-                //-------------------------------
-                // Scan Project Class Assemblies
-                foreach (assemblies_rep s in Assemblies.Where(x => x.FileTypes == FolderFileTypes.ProjectClass || x.FileTypes == FolderFileTypes.Addin))
+            // Scan Addin Assemblies
+            //-------------------------------
+            // Scan Project Class Assemblies
+            SendMessege(progress, token, "Scanning Classes For Project's and Addin's");
+            foreach (assemblies_rep s in Assemblies.Where(x => x.FileTypes == FolderFileTypes.ProjectClass || x.FileTypes == FolderFileTypes.Addin))
                 {
                     try
                     {
@@ -354,12 +331,14 @@ namespace TheTechIdea.Tools
                     }
 
                 }
-               
-                //------------------------------
-           
+
+            //------------------------------
+            SendMessege(progress, token, "Adding Default Engine Drivers");
             AddEngineDefaultDrivers();
+            SendMessege(progress, token, "Organizing Drivers");
             CheckDriverAlreadyExistinList();
-            GetExtensionScanners();
+            SendMessege(progress, token, "Getting FrameWork Extensions");
+            GetExtensionScanners(progress, token);
             return ErrorObject;
         }
         /// <summary>
@@ -725,6 +704,16 @@ namespace TheTechIdea.Tools
         }
         #endregion "Class Extractors"
         #region "Helpers"
+        private void SendMessege(IProgress<PassedArgs> progress, CancellationToken token,  string messege = null)
+        {
+                         
+                if (progress != null)
+                {
+                    PassedArgs ps = new PassedArgs { EventType = "Update", ParameterString1=messege, ParameterString2 = ErrorObject.Message };
+                    progress.Report(ps);
+                }
+           
+        }
         public object CreateInstanceFromString(string typeName, params object[] args)
         {
             object instance = null;

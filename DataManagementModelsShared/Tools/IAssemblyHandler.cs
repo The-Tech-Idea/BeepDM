@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep;
 using TheTechIdea.Logger;
@@ -33,7 +34,7 @@ namespace TheTechIdea.Tools
         ParentChildObject RearrangeAddin(string p, string parentid, string Objt);
         Type GetType(string strFullyQualifiedName);
         string LoadAssembly(string path, FolderFileTypes fileTypes);
-        IErrorsInfo LoadAllAssembly();
+        IErrorsInfo LoadAllAssembly(IProgress<PassedArgs> progress, CancellationToken token);
         bool RunMethod(object ObjInstance, string FullClassName, string MethodName);
         AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type, string typename);
     }
