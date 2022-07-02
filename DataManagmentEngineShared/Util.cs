@@ -989,18 +989,19 @@ namespace TheTechIdea.Beep
                     {
                         result = System.DBNull.Value;
                     }
-                    if (result != null)
-                    {
-                        if (col.fieldtype.Contains("Date"))
-                        {
-                            DateTime dt = (DateTime)result;
-                            if (dt == DateTime.MinValue || dt == DateTime.MaxValue)
-                            {
-                                result = DBNull.Value;
-                            }
+                    //if (result != null && result != System.DBNull.Value)
+                    //{
+                    //    if (col.fieldtype.Contains("Date"))
+                    //    {
 
-                        }
-                    }
+                    //        DateTime? dt = (DateTime)result;
+                    //        if (dt == DateTime.MinValue || dt == DateTime.MaxValue)
+                    //        {
+                    //            result = DBNull.Value;
+                    //        }
+
+                    //    }
+                    //}
 
                     dr[col.fieldname] = result;
                 }
