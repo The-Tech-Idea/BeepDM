@@ -147,7 +147,8 @@ namespace TheTechIdea.Beep.DataBase
         private IDbCommand CreateCommandParameters(IDbCommand  command, DataRow r,EntityStructure DataStruct)
         {
             command.Parameters.Clear();
-            foreach (EntityField item in DataStruct.Fields)
+            
+            foreach (EntityField item in DataStruct.Fields.OrderBy(o => o.fieldname))
             {
 
                 if (!command.Parameters.Contains("p_" + Regex.Replace(item.fieldname, @"\s+", "_")))
@@ -1668,7 +1669,7 @@ namespace TheTechIdea.Beep.DataBase
             string typefield = "";
             int i = DataStruct.Fields.Count();
             int t = 0;
-            foreach (EntityField item in DataStruct.Fields)
+            foreach (EntityField item in DataStruct.Fields.OrderBy(o => o.fieldname))
             {
                Insertstr += $"{GetFieldName(item.fieldname)},";
                Valuestr += $"{ParameterDelimiter}p_" + Regex.Replace(item.fieldname, @"\s+", "_") + ",";
@@ -1690,7 +1691,7 @@ namespace TheTechIdea.Beep.DataBase
            
             int i = DataStruct.Fields.Count();
             int t = 0;
-            foreach (EntityField item in DataStruct.Fields)
+            foreach (EntityField item in DataStruct.Fields.OrderBy(o=>o.fieldname))
             {
                 if (!DataStruct.PrimaryKeys.Any(l => l.fieldname == item.fieldname))
                 {
