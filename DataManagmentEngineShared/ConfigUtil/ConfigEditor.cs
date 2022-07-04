@@ -1127,7 +1127,6 @@ namespace TheTechIdea.Util
 				else
 					containerpath = exedir;
 
-
 				string path = Path.Combine(containerpath, "Config.json");
 				if (File.Exists(path))
 				{
@@ -1143,12 +1142,14 @@ namespace TheTechIdea.Util
 					ExePath = exedir;
 					if (!Config.ExePath.Equals(exedir,StringComparison.InvariantCultureIgnoreCase))
 					{
-						
+						List<StorageFolders> folders = new List<StorageFolders>();
 						foreach (StorageFolders fold in Config.Folders)
 						{
 							var dirName = new DirectoryInfo(fold.FolderPath).Name;
-							fold.FolderPath = Path.Combine(containerpath, dirName);
+							folders.Add(new StorageFolders(Path.Combine(containerpath, dirName), fold.FolderFilesType));
+							//fold.FolderPath = Path.Combine(containerpath, dirName);
 						}
+						Config.Folders = folders;
 					}
                 }
                 else
@@ -1240,12 +1241,12 @@ namespace TheTechIdea.Util
 					Config.OtherDLLPath = Path.Combine(containerpath, "OtherDll");
 
 				}
-				//if (Config.WorkFlowPath == null)
-				//{
-					Config.WorkFlowPath = Path.Combine(containerpath, "WorkFlow");
+                if (Config.WorkFlowPath == null)
+                {
+                    Config.WorkFlowPath = Path.Combine(containerpath, "WorkFlow");
 
-				//}
-				if (Config.ConnectionDriversPath == null)
+                }
+                if (Config.ConnectionDriversPath == null)
 				{
 					Config.ConnectionDriversPath = Path.Combine(containerpath, "ConnectionDrivers");
 
