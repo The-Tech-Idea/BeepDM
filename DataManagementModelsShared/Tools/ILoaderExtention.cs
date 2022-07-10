@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using TheTechIdea.Beep;
 using TheTechIdea.Util;
@@ -14,6 +15,8 @@ namespace TheTechIdea.Tools
     //    List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
        // IDMEEditor DMEEditor { get; set; }
         IErrorsInfo LoadAllAssembly();
+        IErrorsInfo Scan(assemblies_rep assembly);
+        IErrorsInfo Scan(Assembly assembly);
         IErrorsInfo Scan();
     }
 }

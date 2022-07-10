@@ -15,7 +15,7 @@
     <PackageId>TheTechIdea.Beep.DataManagementModelsNet6</PackageId>
     <AssemblyVersion>1.0.0.3</AssemblyVersion>
     <FileVersion>1.0.0.3</FileVersion>
-    <Version>1.0.0.10</Version>
+    <Version>1.0.0.12</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 	<Target Name="CopyPackage" AfterTargets="Pack">

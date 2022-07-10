@@ -56,6 +56,43 @@ namespace TheTechIdea.Tools
         }
         
         #region "Loaders"
+        private void ScanExtensions(assemblies_rep assembly)
+        {
+            foreach (Type item in LoaderExtensions)
+            {
+                try
+                {
+                    ILoaderExtention cls = (ILoaderExtention)Activator.CreateInstance(item, new object[] { this });
+                   
+                    cls.Scan(assembly);
+
+                }
+                catch (Exception)
+                {
+
+
+                }
+            }
+        }
+        private void ScanExtensions(Assembly assembly)
+        {
+            foreach (Type item in LoaderExtensions)
+            {
+                try
+                {
+                    ILoaderExtention cls = (ILoaderExtention)Activator.CreateInstance(item, new object[] { this });
+
+                    cls.Scan(assembly);
+
+                }
+                catch (Exception)
+                {
+
+
+                }
+            }
+        }
+      
         public void GetExtensionScanners(IProgress<PassedArgs> progress, CancellationToken token)
         {
            
@@ -102,21 +139,7 @@ namespace TheTechIdea.Tools
                     }
 
                 }
-                foreach (Type item in LoaderExtensions)
-                {
-                    try
-                    {
-                        ILoaderExtention cls = (ILoaderExtention)Activator.CreateInstance(item, new object[] { this } );
-                        SendMessege(progress, token, $"Sanning Extension {item.Name}");
-                        cls.Scan();
-                       
-                    }
-                    catch (Exception)
-                    {
-
-
-                    }
-                }
+               
 
             
         }
@@ -179,16 +202,20 @@ namespace TheTechIdea.Tools
         /// <returns></returns>
         public IErrorsInfo LoadAllAssembly(IProgress<PassedArgs> progress, CancellationToken token)
         {
+
             ErrorObject.Flag = Errors.Ok;
             string res;
             Utilfunction.FunctionHierarchy = new List<ParentChildObject>();
             Utilfunction.Namespacelist = new List<string>();
             Utilfunction.Classlist = new List<string>();
             DataDriversConfig = new List<ConnectionDriversConfig>();
+          
             SendMessege(progress, token,"Getting Non ADO Drivers");
             GetNonADODrivers();
             SendMessege(progress, token, "Getting Builtin Classes");
             GetBuiltinClasses();
+            SendMessege(progress, token, "Getting FrameWork Extensions");
+            GetExtensionScanners(progress, token);
 
             SendMessege(progress, token, "Getting Connection Drivers Classes");
             foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver).Select(x => x.FolderPath))
@@ -337,8 +364,7 @@ namespace TheTechIdea.Tools
             AddEngineDefaultDrivers();
             SendMessege(progress, token, "Organizing Drivers");
             CheckDriverAlreadyExistinList();
-            SendMessege(progress, token, "Getting FrameWork Extensions");
-            GetExtensionScanners(progress, token);
+          
             return ErrorObject;
         }
         /// <summary>
@@ -639,8 +665,10 @@ namespace TheTechIdea.Tools
                         {
                             ConfigEditor.Rules.Add(GetAssemblyClassDefinition(type, "IWorkFlowRule"));
                         }
+                       
                     }
-                }
+                         ScanExtensions(asm);
+                    }
 
                 }
                 catch (Exception ex)
