@@ -12,4 +12,8 @@ namespace TheTechIdea.Beep.Vis
     {
         Root, DataPoint, Category, Entity, SubEntity, Function, Report,Global
     }
+    public enum ShowinType
+    {
+        Menu,Toolbar,Both
+    }
 }

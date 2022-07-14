@@ -14,5 +14,6 @@ namespace TheTechIdea.Beep.Vis
         public string iconimage { get; set; } = null;
         public EnumPointType PointType { get; set; }
         public string ObjectType { get; set; }
+        public ShowinType Showin { get; set; } = ShowinType.Both;
     }
 }

@@ -21,6 +21,7 @@ namespace TheTechIdea.Beep.Vis
         public int order { get; set; }
         public DisplayType displayType { get; set; } = DisplayType.InControl;
         public AddinType addinType { get; set; } = AddinType.Form;
+        public ShowinType Showin { get; set; } = ShowinType.Both;
         public DatasourceCategory Category { get; set; }
         public DataSourceType DatasourceType { get; set; }
         public string FileType { get; set; }
