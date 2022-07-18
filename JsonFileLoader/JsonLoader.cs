@@ -22,10 +22,10 @@ namespace TheTechIdea.Util
         {
             var settings = new JsonSerializerSettings
             {
-                TypeNameHandling = TypeNameHandling.All,
+         //       TypeNameHandling = TypeNameHandling.All,
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
-                CheckAdditionalContent = true,
+           //     CheckAdditionalContent = true,
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter() }
 
@@ -48,10 +48,10 @@ namespace TheTechIdea.Util
         {
             var settings = new JsonSerializerSettings
             {
-                TypeNameHandling = TypeNameHandling.All,
+            //    TypeNameHandling = TypeNameHandling.All,
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
-                CheckAdditionalContent = true,
+            //    CheckAdditionalContent = true,
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter() }
 
@@ -65,10 +65,10 @@ namespace TheTechIdea.Util
         {
             var settings = new JsonSerializerSettings
             {
-                TypeNameHandling = TypeNameHandling.All,
+              //  TypeNameHandling = TypeNameHandling.All,
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
-                CheckAdditionalContent = true,
+              //  CheckAdditionalContent = true,
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter() }
 
@@ -82,10 +82,10 @@ namespace TheTechIdea.Util
         {
             var settings = new JsonSerializerSettings
             {
-                TypeNameHandling = TypeNameHandling.All,
+               // TypeNameHandling = TypeNameHandling.All,
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
-                CheckAdditionalContent = true,
+             //   CheckAdditionalContent = true,
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter() }
 
@@ -118,12 +118,10 @@ namespace TheTechIdea.Util
                 try
                 {
                     JsonSerializer serializer = new JsonSerializer();
-                    serializer.NullValueHandling=NullValueHandling.Ignore;
-                    serializer.MissingMemberHandling=MissingMemberHandling.Ignore;
-                    serializer.CheckAdditionalContent = true;
-                    serializer.TypeNameHandling = TypeNameHandling.All;
+                    serializer.NullValueHandling = NullValueHandling.Ignore;
+                    serializer.MissingMemberHandling = MissingMemberHandling.Ignore;
                     serializer.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-                    serializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter() );
+                    serializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
                     serializer.Serialize(file, t);
                 }
                 catch (Exception ex)
@@ -141,8 +139,8 @@ namespace TheTechIdea.Util
             {
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
-                CheckAdditionalContent=true,
-                TypeNameHandling = TypeNameHandling.All,
+                //CheckAdditionalContent=true,
+                //TypeNameHandling = TypeNameHandling.All,
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter()}
                 

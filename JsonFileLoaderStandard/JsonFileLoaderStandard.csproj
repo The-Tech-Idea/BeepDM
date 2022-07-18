@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageId>TheTechIdea.Beep.JsonLoader2.0</PackageId>
-    <Version>1.0.0.7</Version>
+    <Version>1.0.0.8</Version>
     <Authors>The Tech Idea</Authors>
     <Product>TheTechIdea.Beep.JsonLoader2.0</Product>
     <Description>Component to for Loading and Saving Configuration files in Data Management Engine</Description>
@@ -14,7 +14,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 	<Target Name="CopyPackage" AfterTargets="Pack">
-		<Copy SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg" DestinationFolder="C:\Users\f_ald\source\repos\Nuget.Local" />
+		<Copy SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\Nuget.Local" />
 	</Target>
   <ItemGroup>
     <Compile Include="..\JsonFileLoader\CustomContractResolver.cs" Link="CustomContractResolver.cs" />

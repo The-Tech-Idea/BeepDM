@@ -450,24 +450,7 @@ namespace TheTechIdea.Util
 		{
 			string path = Path.Combine(ConfigPath, "DataConnections.json");
 			DataConnections = JsonLoader.DeserializeObject<ConnectionProperties>(path);
-			//foreach (ConnectionProperties item in DataConnections.Where(f=>f.Category== DatasourceCategory.WEBAPI).ToList())
-			//{
-			//	ConnectionProperties cn=DataConnections[DataConnections.FindIndex(o => o.ConnectionName == item.ConnectionName)];
-			//	foreach (EntityStructure ent in item.Entities.ToList())
-			//	{
-			//		List<EntityParameters> ls = new List<EntityParameters>();
-			//		foreach (EntityField fld in ent.Fields.ToList())
-			//		{
-			//			EntityParameters pr = new EntityParameters();
-			//			pr.parameterIndex = fld.FieldIndex;
-			//			pr.parameterName = fld.fieldname;
-			//			ls.Add(pr);
-
-			//		}
-			//		cn.Entities[cn.Entities.FindIndex(p => p.EntityName == ent.EntityName)].Paramenters = ls;
-			//	}
-			//}
-			//SaveDataconnectionsValues();
+			
 			return DataConnections;
 		}
 		public bool DataConnectionExist(string ConnectionName)
@@ -973,6 +956,9 @@ namespace TheTechIdea.Util
 					LoadConnectionDriversConfigValues();
 					//    Databasetypes = (DataSourceType)Enum.Parse(typeof(DataSourceType), );
 				}
+				else
+					DataConnections = new List<ConnectionProperties>();
+					SaveConnectionDriversConfigValues();
 
 				//LoadConnectionDriversConfigValues
 			}
@@ -1021,6 +1007,8 @@ namespace TheTechIdea.Util
 					LoadDatabasesValues();
 					//    Databasetypes = (DataSourceType)Enum.Parse(typeof(DataSourceType), );
 				}
+				else
+					SaveDatabasesValues();
 
 
 			}
@@ -1043,7 +1031,8 @@ namespace TheTechIdea.Util
 				if (File.Exists(path))
 				{
 					//  LoadQueryTypeValues();
-				}
+				}else
+					SaveQueryFile();
 
 			}
 			catch (Exception ex)
@@ -1076,6 +1065,7 @@ namespace TheTechIdea.Util
 				{
 					LoadCategoryFoldersValues();
 				}
+				else SaveCategoryFoldersValues();
 			}
 			catch (Exception ex)
 			{
@@ -1097,6 +1087,8 @@ namespace TheTechIdea.Util
 				{
 					LoadDataConnectionsValues();
 				}
+				else
+					SaveDataconnectionsValues();
 
 			}
 			catch (Exception ex)
