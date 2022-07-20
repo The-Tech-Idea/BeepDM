@@ -679,6 +679,7 @@ namespace TheTechIdea.Beep.DataBase
             {
                 //stringSeparators = new string[] {"select ", " from ", " where ", " group by "," having ", " order by " };
                 // Get Selected Fields
+                originalquery=GetTableName(originalquery);  
                 stringSeparators = new string[] { "select", "from" , "where", "group by", "having", "order by" };
                 sp = originalquery.ToLower().Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries);
                 queryStructure.FieldsString = sp[0];
@@ -801,10 +802,11 @@ namespace TheTechIdea.Beep.DataBase
                 if (!EntityName.Contains("select") && !EntityName.Contains("from"))
                 {
                     qrystr = "select * from " + EntityName;
+                    qrystr = GetTableName(qrystr);
                     inname = EntityName;
                 }else
                 {
-                   
+                    EntityName = GetTableName(EntityName);
                     string[] stringSeparators = new string[] { " from ", " where ", " group by "," order by " };
                     string[] sp = EntityName.Split(stringSeparators, StringSplitOptions.None);
                     qrystr = EntityName;
@@ -1663,6 +1665,7 @@ namespace TheTechIdea.Beep.DataBase
             //   map= Mapping.FldMapping;
             //    EntityName = Regex.Replace(EntityName, @"\s+", "");
             string Insertstr = "insert into " + EntityName + " (";
+            Insertstr = GetTableName(Insertstr);
             string Valuestr = ") values (";
             var insertfieldname = "";
             // string datafieldname = "";
@@ -1687,6 +1690,7 @@ namespace TheTechIdea.Beep.DataBase
             List<EntityField> DestEntityFields = new List<EntityField>();
           
             string Updatestr = @"Update " + EntityName + "  set " + Environment.NewLine;
+            Updatestr= GetTableName(Updatestr);
             string Valuestr = "";
            
             int i = DataStruct.Fields.Count();
@@ -1730,6 +1734,7 @@ namespace TheTechIdea.Beep.DataBase
             List<EntityField> SourceEntityFields = new List<EntityField>();
             List<EntityField> DestEntityFields = new List<EntityField>();
             string Updatestr = @"Delete from " + EntityName + "  ";
+            Updatestr = GetTableName(Updatestr);
             int i = DataStruct.Fields.Count();
             int t = 0;
             Updatestr += @" where ";
@@ -2019,6 +2024,30 @@ namespace TheTechIdea.Beep.DataBase
         public virtual string EnableFKConstraints(EntityStructure t1)
         {
             throw new NotImplementedException();
+        }
+        private string GetTableName(string querystring)
+        {
+            string schname = Dataconnection.ConnectionProp.SchemaName;
+            string userid = Dataconnection.ConnectionProp.UserID;
+            if (schname != null)
+            {
+                if (!schname.Equals(userid, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    int frompos = querystring.IndexOf("from", StringComparison.InvariantCultureIgnoreCase);
+                    int wherepos = querystring.IndexOf("where", StringComparison.InvariantCultureIgnoreCase);
+                    if (wherepos == 0)
+                    {
+                        wherepos = querystring.Length - 1;
+
+                    }
+
+                    int firstcharindex = querystring.IndexOf(' ', frompos);
+                    int lastcharindex = querystring.IndexOf(' ', firstcharindex + 2);
+                    string tablename = querystring.Substring(firstcharindex + 1, lastcharindex - firstcharindex - 1);
+                    querystring = querystring.Replace(' ' + tablename + ' ', $" {schname}.{tablename} ");
+                }
+            }
+            return querystring;
         }
         #endregion
         #region "dispose"
