@@ -71,7 +71,7 @@ namespace TheTechIdea.Beep
         {
             try
             {
-                ds1 = DataSources.Where(f => f.DatasourceName.Equals(pdatasourcename, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                ds1 = DataSources.Where(f => f.DatasourceName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 if (ds1 == null)
                 {
                     GetDataSource(pdatasourcename);
@@ -130,7 +130,7 @@ namespace TheTechIdea.Beep
             else {
                 try
                 {
-                    ds1 = DataSources.Where(f => f.DatasourceName.Equals(pdatasourcename, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                    ds1 = DataSources.Where(f => f.DatasourceName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 }
                 catch (Exception ex)
                 {
@@ -170,7 +170,7 @@ namespace TheTechIdea.Beep
             AssemblyClassDefinition retval = null;
             try
             {
-                ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName == DatasourceName).FirstOrDefault();
+                ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName.Equals(DatasourceName,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
                 if (cn==null || driversConfig == null)
                 {
@@ -190,7 +190,7 @@ namespace TheTechIdea.Beep
         }
         public IDataSource CreateNewDataSourceConnection(string pdatasourcename)
         {
-            ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName.Equals(pdatasourcename,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName.Equals(pdatasourcename,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             ErrorObject.Flag = Errors.Ok;
             if (cn != null)
             {
@@ -298,7 +298,7 @@ namespace TheTechIdea.Beep
         {
             try
             {
-                IDataSource ds = DataSources.Where(x => x.DatasourceName.ToLower() == pdatasourcename.ToLower()).FirstOrDefault();
+                IDataSource ds = DataSources.Where(x => x.DatasourceName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 if (ds != null)
                 {
                     if (ds.Dataconnection.DataSourceDriver.CreateLocal)
@@ -346,7 +346,7 @@ namespace TheTechIdea.Beep
             {
                 if (DataSources.Count > 0)
                 {
-                    return DataSources.Where(x => x.DatasourceName.ToLower() == pdatasourcename.ToLower()).Any();
+                    return DataSources.Any(x => x.DatasourceName.Equals(pdatasourcename,StringComparison.InvariantCultureIgnoreCase));
                 }else              
                     return false;
                
