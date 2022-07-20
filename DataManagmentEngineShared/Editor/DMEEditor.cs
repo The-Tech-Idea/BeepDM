@@ -347,21 +347,20 @@ namespace TheTechIdea.Beep
                 if (DataSources.Count > 0)
                 {
                     return DataSources.Where(x => x.DatasourceName.ToLower() == pdatasourcename.ToLower()).Any();
-                }
-                else
-                {
-                    return true;
-                }
+                }else              
+                    return false;
+               
 
              
                 // AddLogMessage("Success", "Added Database Connection", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-                string mes = "Could not check Datasource Exist";
-                AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+                return false;
+               
+                AddLogMessage("Beep", $"Could not check Datasource Exist {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
             };
-            return false;
+          
         }
         public void RaiseEvent(object sender, PassedArgs args)
         {
