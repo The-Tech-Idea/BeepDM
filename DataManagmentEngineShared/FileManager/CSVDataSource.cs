@@ -483,7 +483,9 @@ namespace TheTechIdea.Beep.FileManager
         {
             
             EntitiesNames.Clear();
-            EntitiesNames.Add(DatasourceName);
+            EntitiesNames.Add("Sheet1");
+            Entities.Clear();
+            Entities.Add(Getfields());
             return EntitiesNames;
         }
 

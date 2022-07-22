@@ -207,7 +207,7 @@ namespace TheTechIdea.Beep
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
             ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
-            if (ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).Any())
+            if (ConfigEditor.DataSourcesClasses.Any(x => x.className.Equals(driversConfig.classHandler,StringComparison.InvariantCultureIgnoreCase)))
             {
                 string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
                 if (packagename != null)
