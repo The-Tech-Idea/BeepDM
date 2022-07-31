@@ -100,9 +100,10 @@ namespace TheTechIdea.Tools
                 {
                    
                     LoadAssembly(Path.Combine(ConfigEditor.ExePath,"LoadingExtensions"), FolderFileTypes.LoaderExtensions);
+
                    
-                   
-                  
+
+
                 }
                 catch (FileLoadException loadEx)
                 {
