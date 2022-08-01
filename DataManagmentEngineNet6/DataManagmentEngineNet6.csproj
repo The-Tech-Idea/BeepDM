@@ -16,7 +16,7 @@
     <PackageId>TheTechIdea.Beep.DataManagementEngineNet6</PackageId>
     <FileVersion>1.0.0.3</FileVersion>
     <AssemblyVersion>1.0.0.3</AssemblyVersion>
-    <Version>1.0.0.27</Version>
+    <Version>1.0.0.28</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	
   </PropertyGroup>
