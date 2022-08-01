@@ -679,7 +679,7 @@ namespace TheTechIdea.Beep.DataBase
             {
                 //stringSeparators = new string[] {"select ", " from ", " where ", " group by "," having ", " order by " };
                 // Get Selected Fields
-                originalquery=GetTableName(originalquery);  
+                originalquery=GetTableName(originalquery.ToLower());  
                 stringSeparators = new string[] { "select", "from" , "where", "group by", "having", "order by" };
                 sp = originalquery.ToLower().Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries);
                 queryStructure.FieldsString = sp[0];
@@ -802,7 +802,7 @@ namespace TheTechIdea.Beep.DataBase
                 if (!EntityName.Contains("select") && !EntityName.Contains("from"))
                 {
                     qrystr = "select * from " + EntityName;
-                    qrystr = GetTableName(qrystr);
+                    qrystr = GetTableName(qrystr.ToLower());
                     inname = EntityName;
                 }else
                 {
@@ -1665,7 +1665,7 @@ namespace TheTechIdea.Beep.DataBase
             //   map= Mapping.FldMapping;
             //    EntityName = Regex.Replace(EntityName, @"\s+", "");
             string Insertstr = "insert into " + EntityName + " (";
-            Insertstr = GetTableName(Insertstr);
+            Insertstr = GetTableName(Insertstr.ToLower());
             string Valuestr = ") values (";
             var insertfieldname = "";
             // string datafieldname = "";
@@ -1690,7 +1690,7 @@ namespace TheTechIdea.Beep.DataBase
             List<EntityField> DestEntityFields = new List<EntityField>();
           
             string Updatestr = @"Update " + EntityName + "  set " + Environment.NewLine;
-            Updatestr= GetTableName(Updatestr);
+            Updatestr= GetTableName(Updatestr.ToLower());
             string Valuestr = "";
            
             int i = DataStruct.Fields.Count();
@@ -1734,7 +1734,7 @@ namespace TheTechIdea.Beep.DataBase
             List<EntityField> SourceEntityFields = new List<EntityField>();
             List<EntityField> DestEntityFields = new List<EntityField>();
             string Updatestr = @"Delete from " + EntityName + "  ";
-            Updatestr = GetTableName(Updatestr);
+            Updatestr = GetTableName(Updatestr.ToLower());
             int i = DataStruct.Fields.Count();
             int t = 0;
             Updatestr += @" where ";
@@ -2033,19 +2033,41 @@ namespace TheTechIdea.Beep.DataBase
             {
                 if (!schname.Equals(userid, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    int frompos = querystring.IndexOf("from", StringComparison.InvariantCultureIgnoreCase);
-                    int wherepos = querystring.IndexOf("where", StringComparison.InvariantCultureIgnoreCase);
-                    if (wherepos == 0)
+                    if (querystring.IndexOf("select") > 0)
                     {
-                        wherepos = querystring.Length - 1;
+                        int frompos = querystring.IndexOf("from", StringComparison.InvariantCultureIgnoreCase);
+                        int wherepos = querystring.IndexOf("where", StringComparison.InvariantCultureIgnoreCase);
+                        if (wherepos == 0)
+                        {
+                            wherepos = querystring.Length - 1;
 
+                        }
+
+                        int firstcharindex = querystring.IndexOf(' ', frompos);
+                        int lastcharindex = querystring.IndexOf(' ', firstcharindex + 2);
+                        string tablename = querystring.Substring(firstcharindex + 1, lastcharindex - firstcharindex - 1);
+                        querystring = querystring.Replace(' ' + tablename + ' ', $" {schname}.{tablename} ");
                     }
-
-                    int firstcharindex = querystring.IndexOf(' ', frompos);
-                    int lastcharindex = querystring.IndexOf(' ', firstcharindex + 2);
-                    string tablename = querystring.Substring(firstcharindex + 1, lastcharindex - firstcharindex - 1);
-                    querystring = querystring.Replace(' ' + tablename + ' ', $" {schname}.{tablename} ");
+                    else if (querystring.IndexOf("insert") >= 0)
+                    {
+                        int intopos = querystring.IndexOf("into", StringComparison.InvariantCultureIgnoreCase);
+                        string[] instokens = querystring.Split(' ');
+                        querystring = querystring.Replace(instokens[2], $" {schname}.{instokens[2]} ");
+                    }
+                    else if (querystring.IndexOf("update") >= 0)
+                    {
+                        int setpos = querystring.IndexOf("set", StringComparison.InvariantCultureIgnoreCase);
+                        string[] uptokens = querystring.Split(' ');
+                        querystring = querystring.Replace(uptokens[1], $" {schname}.{uptokens[1]} ");
+                    }
+                    else if (querystring.IndexOf("delete") >= 0)
+                    {
+                        int frompos = querystring.IndexOf("from", StringComparison.InvariantCultureIgnoreCase);
+                        string[] fromtokens = querystring.Split(' ');
+                        querystring = querystring.Replace(fromtokens[1], $" {schname}.{fromtokens[2]} ");
+                    }
                 }
+                    
             }
             return querystring;
         }
