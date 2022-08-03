@@ -21,28 +21,82 @@ using System.Collections;
 
 namespace TheTechIdea.Beep
 {
+
+    /// <summary>
+    /// Data Management Enterprize Editor (DMEEditor)
+    /// This is the Class that encapsulate all functionality of Data Management.
+    /// </summary>
     public class DMEEditor : IDMEEditor,IDisposable
     {
         private bool disposedValue;
+        /// <summary>
+        /// Container Properties to allow multi-tenant application
+        /// </summary>
         public bool ContainerMode { get; set; } = false;
         public string ContainerName { get; set; } = null;
+        /// <summary>
+        /// List of Datasources used in the Platform
+        /// </summary>
         public List<IDataSource> DataSources { get; set; } = new List<IDataSource>();
+        /// <summary>
+        /// Extract Tranform and Load Class 
+        /// </summary>
         public IETL ETL { get; set; }
+        /// <summary>
+        /// Configuration Editor class that handles all confiuration loading and saving
+        /// </summary>
         public IConfigEditor ConfigEditor { get; set; }
+        /// <summary>
+        /// Data Type Helper handles the Type Management for and Mapping between different Sourcs
+        /// </summary>
         public IDataTypesHelper typesHelper { get; set; }
+        /// <summary>
+        /// Utilitiy Class 
+        /// </summary>
         public IUtil Utilfunction { get; set; }
+        /// <summary>
+        /// Assembly Class that handle loading and extracting Plaform Class (IDatasource,IAddin,...)
+        /// </summary>
         public IAssemblyHandler assemblyHandler { get; set; }
+        /// <summary>
+        /// Error Object Handler 
+        /// </summary>
         public IErrorsInfo ErrorObject { get; set; }
+        /// <summary>
+        /// Logging Class 
+        /// </summary>
         public IDMLogger Logger { get; set; }
+        /// <summary>
+        /// WorkFlow Editor that handles and manage datawork flow's
+        /// </summary>
         public IWorkFlowEditor WorkFlowEditor { get; set; }
+        /// <summary>
+        /// Class and Type Creator based of EntityStructure and Data objects
+        /// </summary>
         public IClassCreator classCreator { get; set; }
-       // public ETLScriptHDR Script { get; set; } = new ETLScriptHDR();
+        /// <summary>
+        ///  Logs and Error Messeges
+        /// </summary>
         public BindingList<ILogAndError> Loganderrors { get; set; } = new BindingList<ILogAndError>();
+        /// <summary>
+        /// Global Passed Parameters and Arguments
+        /// </summary>
         public IPassedArgs Passedarguments { get; set; }
-
+        /// <summary>
+        /// Global Event Handler to handle events  in class
+        /// </summary>
         public event EventHandler<PassedArgs> PassEvent;
       
         IDataSource ds1;
+        /// <summary>
+        /// Function to Add Log Message 
+        /// </summary>
+        /// <param name="pLogType"></param>
+        /// <param name="pLogMessage"></param>
+        /// <param name="pLogData"></param>
+        /// <param name="pRecordID"></param>
+        /// <param name="pMiscData"></param>
+        /// <param name="pFlag"></param>
         public void AddLogMessage(string pLogType ,string pLogMessage ,DateTime pLogData , int pRecordID , string pMiscData,Errors pFlag)
         {
             if (Logger != null)
@@ -55,6 +109,10 @@ namespace TheTechIdea.Beep
                 Logger.WriteLog(errmsg);
             }
         }
+        /// <summary>
+        /// Function to Add Log Message 
+        /// </summary>
+        /// <param name="pLogMessage"></param>
         public void AddLogMessage( string pLogMessage)
         {
             if (Logger != null)
@@ -67,6 +125,11 @@ namespace TheTechIdea.Beep
                 Logger.WriteLog(errmsg);
             }
         }
+        /// <summary>
+        /// Open DataSource and add it list of DataSources , if the samename exist in connections list
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
         public ConnectionState OpenDataSource(string pdatasourcename)
         {
             try
@@ -92,6 +155,11 @@ namespace TheTechIdea.Beep
             }
 
         }
+        /// <summary>
+        /// Close DataSource
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
         public bool CloseDataSource(string pdatasourcename)
         {
             try
@@ -121,6 +189,11 @@ namespace TheTechIdea.Beep
                 return false;
             }
         }
+        /// <summary>
+        /// Get Existing DataSource Created and exist in List of DataSources
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
         public IDataSource GetDataSource(string pdatasourcename)
         {
             if (pdatasourcename == null)
@@ -165,6 +238,11 @@ namespace TheTechIdea.Beep
             }
             return ds1 ;
         }
+        /// <summary>
+        /// Get DataSource Assembly and Class Handling Class
+        /// </summary>
+        /// <param name="DatasourceName"></param>
+        /// <returns></returns>
         public AssemblyClassDefinition GetDataSourceClass(string DatasourceName)
         {
             AssemblyClassDefinition retval = null;
@@ -188,6 +266,11 @@ namespace TheTechIdea.Beep
             };
             return retval;
         }
+        /// <summary>
+        /// Create New Datasource and add to the List
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
         public IDataSource CreateNewDataSourceConnection(string pdatasourcename)
         {
             ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName.Equals(pdatasourcename,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
@@ -202,6 +285,12 @@ namespace TheTechIdea.Beep
                 return null;
             }
         }
+        /// <summary>
+        /// Create New Datasource and add to the List by passing new Connection Properties 
+        /// </summary>
+        /// <param name="cn"></param>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
         public IDataSource CreateNewDataSourceConnection(ConnectionProperties cn, string pdatasourcename)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -247,6 +336,13 @@ namespace TheTechIdea.Beep
                 return null;
             }
         }
+        /// <summary>
+        ///  Create New Datasource and add to the List by passing new Connection Properties and Datasource Class Handler
+        /// </summary>
+        /// <param name="dataConnection"></param>
+        /// <param name="pdatasourcename"></param>
+        /// <param name="ClassDBHandlerName"></param>
+        /// <returns></returns>
         public IDataSource CreateLocalDataSourceConnection(ConnectionProperties dataConnection, string pdatasourcename,string ClassDBHandlerName)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -294,6 +390,11 @@ namespace TheTechIdea.Beep
                 return null;
             }
         }
+        /// <summary>
+        /// Remove DataSource from List
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
         public bool RemoveDataDource(string pdatasourcename)
         {
             try
@@ -321,6 +422,12 @@ namespace TheTechIdea.Beep
                 return false;
             };
         }
+        /// <summary>
+        /// Get Entity Structure from DataSource
+        /// </summary>
+        /// <param name="entityname"></param>
+        /// <param name="datasourcename"></param>
+        /// <returns></returns>
         public EntityStructure GetEntityStructure(string entityname,string datasourcename)
         {
             IDataSource ds = null;
@@ -340,6 +447,11 @@ namespace TheTechIdea.Beep
                 return entity;
             }
         }
+        /// <summary>
+        /// Check DataSource Exist in List
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
         public bool CheckDataSourceExist(string pdatasourcename)
         {
             try
@@ -362,14 +474,32 @@ namespace TheTechIdea.Beep
             };
           
         }
+        /// <summary>
+        /// Raise the Public and Global event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         public void RaiseEvent(object sender, PassedArgs args)
         {
             PassEvent?.Invoke(sender, args);
         }
+        /// <summary>
+        /// Run Query on an Opened DataSource 
+        /// </summary>
+        /// <param name="ds"></param>
+        /// <param name="CurrentEntity"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         private async Task<dynamic> GetOutputAsync(IDataSource ds, string CurrentEntity, List<AppFilter> filter)
         {
             return await ds.GetEntityAsync(CurrentEntity, filter).ConfigureAwait(false);
         }
+        /// <summary>
+        /// Get Entity Data from an Opened DataSource
+        /// </summary>
+        /// <param name="ds"></param>
+        /// <param name="entity"></param>
+        /// <returns></returns>
         public object GetData(IDataSource ds,EntityStructure entity)
         {
             object retval = null;
@@ -432,6 +562,11 @@ namespace TheTechIdea.Beep
             }
             return retval;
         }
+        /// <summary>
+        /// Functio to Raise Question 
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
         public IErrorsInfo AskQuestion(IPassedArgs args)
         {
             try
