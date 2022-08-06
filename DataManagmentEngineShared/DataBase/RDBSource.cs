@@ -1765,7 +1765,7 @@ namespace TheTechIdea.Beep.DataBase
             return dt;
 
         }
-        private string GetFieldName(string fieldname)
+        public virtual string GetFieldName(string fieldname)
         {
             string retval = fieldname;
             if (fieldname.IndexOf(" ") != -1)
@@ -2025,7 +2025,7 @@ namespace TheTechIdea.Beep.DataBase
         {
             throw new NotImplementedException();
         }
-        private string GetTableName(string querystring)
+        public virtual string GetTableName(string querystring)
         {
             string schname = Dataconnection.ConnectionProp.SchemaName;
             string userid = Dataconnection.ConnectionProp.UserID;
