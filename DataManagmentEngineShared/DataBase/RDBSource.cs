@@ -20,7 +20,6 @@ using TheTechIdea.Beep.Editor;
 
 using TheTechIdea.Beep.Report;
 using System.Data.SqlTypes;
-using TheTechIdea.Beep.AppManager;
 
 namespace TheTechIdea.Beep.DataBase
 {
