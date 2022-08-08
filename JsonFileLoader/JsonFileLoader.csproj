@@ -34,11 +34,11 @@
     <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\..\fahadTheTechIdea\BeepEnterprize\packages\Dapper.2.0.123\lib\net461\Dapper.dll</HintPath>
     </Reference>
-    <Reference Include="DataManagementModelsStandard, Version=1.0.0.14, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\BeepWinFormAppNet\packages\TheTechIdea.Beep.DataManagementModels2.0.1.0.0.14\lib\netstandard2.0\DataManagementModelsStandard.dll</HintPath>
+    <Reference Include="DataManagementModelsStandard, Version=1.0.0.15, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\BeepWinFormAppNet\packages\TheTechIdea.Beep.DataManagementModels2.0.1.0.0.15\lib\netstandard2.0\DataManagementModelsStandard.dll</HintPath>
     </Reference>
-    <Reference Include="DataManagmentEngineStandard, Version=1.0.0.28, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\BeepWinFormAppNet\packages\TheTechIdea.Beep.DataManagementEngine2.0.1.0.0.28\lib\netstandard2.0\DataManagmentEngineStandard.dll</HintPath>
+    <Reference Include="DataManagmentEngineStandard, Version=1.0.0.30, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\BeepWinFormAppNet\packages\TheTechIdea.Beep.DataManagementEngine2.0.1.0.0.30\lib\netstandard2.0\DataManagmentEngineStandard.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>

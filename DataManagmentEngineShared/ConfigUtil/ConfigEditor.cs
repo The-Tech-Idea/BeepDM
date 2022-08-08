@@ -1128,22 +1128,23 @@ namespace TheTechIdea.Util
 				{
 					Config = new ConfigandSettings();
 				}
-                if (Config != null)
+				ExePath = exedir;
+				if (Config != null)
                 {
-					Config.ExePath = exedir;
-					ExePath = exedir;
+					
+					
 					if (!Config.ExePath.Equals(exedir,StringComparison.InvariantCultureIgnoreCase))
 					{
 						Config = new ConfigandSettings();
-						//List<StorageFolders> folders = new List<StorageFolders>();
-						//foreach (StorageFolders fold in Config.Folders)
-						//{
-						//	var dirName = new DirectoryInfo(fold.FolderPath).Name;
-						//	folders.Add(new StorageFolders(Path.Combine(containerpath, dirName), fold.FolderFilesType));
-						//	//fold.FolderPath = Path.Combine(containerpath, dirName);
-						//}
-						//Config.Folders = folders;
-					}
+                        List<StorageFolders> folders = new List<StorageFolders>();
+                        foreach (StorageFolders fold in Config.Folders)
+                        {
+                            var dirName = new DirectoryInfo(fold.FolderPath).Name;
+                            folders.Add(new StorageFolders(Path.Combine(containerpath, dirName), fold.FolderFilesType));
+                            //fold.FolderPath = Path.Combine(containerpath, dirName);
+                        }
+                        Config.Folders = folders;
+                    }
                 }
                 else
                 {
