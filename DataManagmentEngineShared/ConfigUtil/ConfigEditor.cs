@@ -21,23 +21,31 @@ namespace TheTechIdea.Util
 {
 	public class ConfigEditor : IConfigEditor
 	{
-		public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader,string execpath=null)
+		public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader,string folderpath=null, string containerfolder = null)
 		{
 			Logger = logger;
 			ErrorObject = per;
 			JsonLoader = jsonloader;
-			if (execpath != null)
+			if (!string.IsNullOrEmpty(folderpath))
 			{
-				ExePath = execpath;
-			}else
-			{
-				ExePath =  System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+				ExePath = Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), folderpath);
 			}
-			
+			else
+				ExePath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+
+
+
+			if (!string.IsNullOrEmpty(containerfolder))
+			{
+				
+				ExePath = Path.Combine(ExePath, containerfolder);
+				
+			}
+			ContainerName = ExePath;
 			Init();
 
 		}
-		public string ContainerName { get; set; } = null;
+		public string ContainerName { get; set; } 
 		public IErrorsInfo ErrorObject { get; set; }
 		public IJsonLoader JsonLoader { get; set; }
 		public ConfigandSettings Config { get; set; } = new ConfigandSettings();
@@ -1106,33 +1114,33 @@ namespace TheTechIdea.Util
 			ErrorObject.Flag = Errors.Ok;
 			try
 			{
-				string containerpath = null;
-				string exedir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+
+				string exedir = ExePath;
 				if (!string.IsNullOrEmpty(ContainerName) && !string.IsNullOrWhiteSpace(ContainerName))
 				{
-					containerpath = Path.Combine(exedir, ContainerName);
-					if (!Directory.Exists(containerpath))
+					//ContainerName = Path.Combine(exedir, ContainerName);
+					if (!Directory.Exists(ContainerName))
 					{
-						Directory.CreateDirectory(containerpath);
+						Directory.CreateDirectory(ContainerName);
 					}
 				}
 				else
-					containerpath = exedir;
+					ContainerName = exedir;
 
-				string path = Path.Combine(containerpath, "Config.json");
-				if (File.Exists(path))
+				string configfile = Path.Combine(ContainerName, "Config.json");
+				if (File.Exists(configfile))
 				{
 					LoadConfigValues();
 				}
 				else //if file does not exist first run
 				{
 					Config = new ConfigandSettings();
+					Config.ExePath = ContainerName;
 				}
-				ExePath = exedir;
+			
 				if (Config != null)
                 {
-					
-					
+				
 					if (!Config.ExePath.Equals(exedir,StringComparison.InvariantCultureIgnoreCase))
 					{
 						Config = new ConfigandSettings();
@@ -1140,39 +1148,42 @@ namespace TheTechIdea.Util
                         foreach (StorageFolders fold in Config.Folders)
                         {
                             var dirName = new DirectoryInfo(fold.FolderPath).Name;
-                            folders.Add(new StorageFolders(Path.Combine(containerpath, dirName), fold.FolderFilesType));
+                            folders.Add(new StorageFolders(Path.Combine(ContainerName, dirName), fold.FolderFilesType));
                             //fold.FolderPath = Path.Combine(containerpath, dirName);
                         }
-                        Config.Folders = folders;
+						Config.ExePath = exedir;
+
+						Config.Folders = folders;
                     }
                 }
                 else
                 {
 					Config = new ConfigandSettings();
+					Config.ExePath = ContainerName;
 				}
 				//Config.SystemEntryFormName = @"Frm_MainDisplayForm";
 				//Check Folders exist
-				CreateDirConfig(Path.Combine(containerpath, "Config"), FolderFileTypes.Config);
-				CreateDirConfig(Path.Combine(containerpath, "Addin"), FolderFileTypes.Addin);
-				CreateDirConfig(Path.Combine(containerpath, "DataFiles"), FolderFileTypes.DataFiles);
-				CreateDirConfig(Path.Combine(containerpath, "DataViews"), FolderFileTypes.DataView);
-				CreateDirConfig(Path.Combine(containerpath, "ProjectData"), FolderFileTypes.ProjectData);
-				CreateDirConfig(Path.Combine(containerpath, "ProjectClasses"), FolderFileTypes.ProjectClass);
-				CreateDirConfig(Path.Combine(containerpath, "ConnectionDrivers"), FolderFileTypes.ConnectionDriver);
-				CreateDirConfig(Path.Combine(containerpath, "GFX"), FolderFileTypes.GFX);
-				CreateDirConfig(Path.Combine(containerpath, "OtherDll"), FolderFileTypes.OtherDLL);
-				CreateDirConfig(Path.Combine(containerpath, "Entities"), FolderFileTypes.Entities);
-				CreateDirConfig(Path.Combine(containerpath, "Mapping"), FolderFileTypes.Mapping);
-				CreateDirConfig(Path.Combine(containerpath, "WorkFlow"), FolderFileTypes.WorkFlows);
-				CreateDirConfig(Path.Combine(containerpath, "Scripts"), FolderFileTypes.Scripts);
-				CreateDirConfig(Path.Combine(containerpath, "Scripts\\Logs"), FolderFileTypes.ScriptsLogs);
-				CreateDirConfig(Path.Combine(containerpath, "AI"), FolderFileTypes.Scripts);
-				CreateDirConfig(Path.Combine(containerpath, "Reports"), FolderFileTypes.Reports);
+				CreateDirConfig(Path.Combine(ContainerName, "Config"), FolderFileTypes.Config);
+				CreateDirConfig(Path.Combine(ContainerName, "Addin"), FolderFileTypes.Addin);
+				CreateDirConfig(Path.Combine(ContainerName, "DataFiles"), FolderFileTypes.DataFiles);
+				CreateDirConfig(Path.Combine(ContainerName, "DataViews"), FolderFileTypes.DataView);
+				CreateDirConfig(Path.Combine(ContainerName, "ProjectData"), FolderFileTypes.ProjectData);
+				CreateDirConfig(Path.Combine(ContainerName, "ProjectClasses"), FolderFileTypes.ProjectClass);
+				CreateDirConfig(Path.Combine(ContainerName, "ConnectionDrivers"), FolderFileTypes.ConnectionDriver);
+				CreateDirConfig(Path.Combine(ContainerName, "GFX"), FolderFileTypes.GFX);
+				CreateDirConfig(Path.Combine(ContainerName, "OtherDll"), FolderFileTypes.OtherDLL);
+				CreateDirConfig(Path.Combine(ContainerName, "Entities"), FolderFileTypes.Entities);
+				CreateDirConfig(Path.Combine(ContainerName, "Mapping"), FolderFileTypes.Mapping);
+				CreateDirConfig(Path.Combine(ContainerName, "WorkFlow"), FolderFileTypes.WorkFlows);
+				CreateDirConfig(Path.Combine(ContainerName, "Scripts"), FolderFileTypes.Scripts);
+				CreateDirConfig(Path.Combine(ContainerName, "Scripts\\Logs"), FolderFileTypes.ScriptsLogs);
+				CreateDirConfig(Path.Combine(ContainerName, "AI"), FolderFileTypes.Scripts);
+				CreateDirConfig(Path.Combine(ContainerName, "Reports"), FolderFileTypes.Reports);
 				
-				Config.ExePath = exedir;
+				Config.ExePath = ContainerName;
 				if (Config.ConfigPath == null)
 				{
-					Config.ConfigPath = Path.Combine(containerpath, "Config");
+					Config.ConfigPath = Path.Combine(ContainerName, "Config");
 
 				}
 				if (ConfigPath == null)
@@ -1182,67 +1193,67 @@ namespace TheTechIdea.Util
 				}
 				if (Config.ScriptsPath == null)
 				{
-					Config.ScriptsPath = Path.Combine(containerpath, "Scripts");
+					Config.ScriptsPath = Path.Combine(ContainerName, "Scripts");
 
 				}
 				if (Config.ScriptsLogsPath == null)
 				{
-					Config.ScriptsLogsPath = Path.Combine(containerpath, "Scripts\\Logs");
+					Config.ScriptsLogsPath = Path.Combine(ContainerName, "Scripts\\Logs");
 
 				}
 				if (Config.ProjectDataPath == null)
 				{
-					Config.ProjectDataPath = Path.Combine(containerpath, "ProjectData");
+					Config.ProjectDataPath = Path.Combine(ContainerName, "ProjectData");
 
 				}
 				if (Config.DataViewPath == null)
 				{
-					Config.DataViewPath = Path.Combine(containerpath, "DataViews");
+					Config.DataViewPath = Path.Combine(ContainerName, "DataViews");
 
 				}
 				if (Config.DataFilePath == null)
 				{
-					Config.DataFilePath = Path.Combine(containerpath, "DataFiles");
+					Config.DataFilePath = Path.Combine(ContainerName, "DataFiles");
 
 				}
 				if (Config.AddinPath == null)
 				{
-					Config.AddinPath = Path.Combine(containerpath, "Addin");
+					Config.AddinPath = Path.Combine(ContainerName, "Addin");
 
 				}
 				if (Config.ClassPath == null)
 				{
-					Config.ClassPath = Path.Combine(containerpath, "ProjectClasses");
+					Config.ClassPath = Path.Combine(ContainerName, "ProjectClasses");
 
 				}
 				if (Config.EntitiesPath == null)
 				{
-					Config.EntitiesPath = Path.Combine(containerpath, "Entities");
+					Config.EntitiesPath = Path.Combine(ContainerName, "Entities");
 
 				}
 				if (Config.GFXPath == null)
 				{
-					Config.GFXPath = Path.Combine(containerpath, "GFX");
+					Config.GFXPath = Path.Combine(ContainerName, "GFX");
 
 				}
 				if (Config.MappingPath == null)
 				{
-					Config.MappingPath = Path.Combine(containerpath, "Mapping");
+					Config.MappingPath = Path.Combine(ContainerName, "Mapping");
 
 				}
 				if (Config.OtherDLLPath == null)
 				{
-					Config.OtherDLLPath = Path.Combine(containerpath, "OtherDll");
+					Config.OtherDLLPath = Path.Combine(ContainerName, "OtherDll");
 
 				}
                 if (Config.WorkFlowPath == null)
                 {
-                    Config.WorkFlowPath = Path.Combine(containerpath, "WorkFlow");
+                    Config.WorkFlowPath = Path.Combine(ContainerName, "WorkFlow");
 
                 }
                 if (Config.ConnectionDriversPath == null)
 				{
-					Config.ConnectionDriversPath = Path.Combine(containerpath, "ConnectionDrivers");
+					Config.ConnectionDriversPath = Path.Combine(ContainerName, "ConnectionDrivers");
 
 				}
 				SaveConfigValues();
