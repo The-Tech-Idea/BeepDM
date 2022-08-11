@@ -14,6 +14,7 @@ using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
+using static Dapper.SqlMapper;
 
 namespace TheTechIdea.Beep.FileManager
 {
@@ -643,8 +644,8 @@ namespace TheTechIdea.Beep.FileManager
         }
         public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
-           var retval=GetEntity(EntityName, Filter);
-           return Task.FromResult(retval);
+           var retval =  Task.Run(() => GetEntity(EntityName, Filter)) ;
+           return retval;
         }
         #region "dispose"
         private bool disposedValue;
