@@ -643,7 +643,8 @@ namespace TheTechIdea.Beep.FileManager
         }
         public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
-           return (Task<object>)GetEntity(EntityName, Filter);
+           var retval=GetEntity(EntityName, Filter);
+           return Task.FromResult(retval);
         }
         #region "dispose"
         private bool disposedValue;
