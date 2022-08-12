@@ -832,7 +832,7 @@ namespace TheTechIdea.Beep.DataBase
                 adp.Fill(dataSet);
                 DataTable dt = dataSet.Tables[0];
 
-                return dt;// DMEEditor.Utilfunction.ConvertTableToList(dt,GetEntityStructure(EntityName),GetEntityType(EntityName));
+                return  DMEEditor.Utilfunction.ConvertTableToList(dt,GetEntityStructure(EntityName),GetEntityType(EntityName));
             }
 
             catch (Exception ex)
