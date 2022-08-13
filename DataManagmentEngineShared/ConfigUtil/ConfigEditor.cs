@@ -489,36 +489,42 @@ namespace TheTechIdea.Util
 		
 
 		}
-		public bool UpdateDataConnection(IEnumerable<ConnectionProperties> ls, string category)
+		public bool UpdateDataConnection(ConnectionProperties conn, string category)
 		{
 
 			try
 			{
-				var cnlist = DataConnections.Where(x => x.Category.ToString().Equals(category,StringComparison.OrdinalIgnoreCase)).ToList();
-				foreach (ConnectionProperties dt in cnlist)
+				int idx = DataConnections.FindIndex(0, p => p.ID == conn.ID);
+				if (idx == -1)
 				{
-					ConnectionProperties dc = ls.Where(x => x.ConnectionName.Equals(dt.ConnectionName,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-					if (dc == null)
-
-					{
-						DataConnections.Remove(dt);
-					}
+					return false;
 				}
-				foreach (ConnectionProperties item in ls)
-				{
-					ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.Equals(item.ConnectionName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-					if (dc != null)
-					{
-						dc = item;
-					}
-					else
-					{
-						DataConnections.Add(item);
-					}
-				}
+				DataConnections[idx] = conn;
+                //var cnlist = DataConnections.Where(x => x.Category.ToString().Equals(category,StringComparison.OrdinalIgnoreCase)).ToList();
+                //foreach (ConnectionProperties dt in cnlist)
+                //{
+                //	ConnectionProperties dc = ls.Where(x => x.ConnectionName.Equals(dt.ConnectionName,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                //	if (dc == null)
+
+                //	{
+                //		DataConnections.Remove(dt);
+                //	}
+                //}
+                //foreach (ConnectionProperties item in ls)
+                //{
+                //	ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.Equals(item.ConnectionName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                //	if (dc != null)
+                //	{
+                //		dc = item;
+                //	}
+                //	else
+                //	{
+                //		DataConnections.Add(item);
+                //	}
+                //}
 
 
-			}
+            }
 			catch (Exception )
 			{
 

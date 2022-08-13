@@ -81,7 +81,7 @@ namespace TheTechIdea.Util
 
          bool RemoveConnByID(int ID);
       
-        bool UpdateDataConnection(IEnumerable<ConnectionProperties> ls, string category);
+        bool UpdateDataConnection(ConnectionProperties ls, string category);
         List<ConnectionDriversConfig> LoadConnectionDriversConfigValues();
         void SaveConnectionDriversConfigValues();
         void SaveReportsValues();
