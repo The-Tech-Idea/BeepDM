@@ -1,7 +1,4 @@
-﻿
-
-
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,8 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
-
 using System.Reflection;
+using System.Text;
 using System.Xml.Serialization;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
@@ -20,7 +17,6 @@ using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
-using static TheTechIdea.Beep.Util;
 
 namespace TheTechIdea.Beep
 {
@@ -34,7 +30,6 @@ namespace TheTechIdea.Beep
         public IErrorsInfo ErrorObject { get; set; }
         public IConfigEditor ConfigEditor { get; set; }
         public IDMEEditor DME { get; set; }
-
         public Util(IDMLogger logger, IErrorsInfo per, IConfigEditor pConfigEditor)
         {
             Logger = logger;
@@ -296,6 +291,39 @@ namespace TheTechIdea.Beep
                 table.Rows.Add(values);
             }
             return table;
+        }
+        public bool ToCSVFile(IList list, Type tp,string filepath)
+        {
+            PropertyDescriptorCollection props = TypeDescriptor.GetProperties(tp);
+            var myObjectProperties = tp.GetMembers().Select(x => x.Name);
+            //Set the first row as your property names
+            var csvFile = string.Join(",", myObjectProperties);
+            object[] values = new object[props.Count];
+            foreach (var item in list)
+            {
+                var csvRow = Environment.NewLine;
+                for (int i = 0; i < values.Length; i++)
+                {
+                    values[i] = props[i].GetValue(item) ?? DBNull.Value;
+                    csvRow += $"{values[i]},";
+                }
+                  
+                csvRow.TrimEnd(',');
+                csvFile += csvRow;
+            }
+            try
+            {
+                File.WriteAllBytes(filepath, Encoding.ASCII.GetBytes(csvFile));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                DME.ErrorObject.Ex = ex;
+                DME.ErrorObject.Flag = Errors.Failed;
+                return false;
+            }
+            
+           
         }
         public DataTable ToDataTable(Type tp)
         {
@@ -945,7 +973,6 @@ namespace TheTechIdea.Beep
             }
             return retval;
         }
-       
         public  Type GetEntityType(string EntityName,List<EntityField> Fields)
         {
             

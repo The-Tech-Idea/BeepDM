@@ -45,11 +45,10 @@ namespace TheTechIdea.Beep
         Type GetTypeFromStringValue(string str);
         Type MakeGenericType(string typestring);
         Type MakeGenericListofType(string typestring);
-       
-        
         DataRow ConvertItemClassToDataRow(EntityStructure ent);
         List<EntityField> GetFieldFromGeneratedObject(object dt, Type tp = null);
-         DataTable JsonToDataTable(string jsonString);
+        bool ToCSVFile(IList list, Type tp, string filepath);
+        DataTable JsonToDataTable(string jsonString);
         DataTable ToDataTable(IList list,Type tp);
         DataTable ToDataTable(Type tp);
         DataTable ToDataTable(IEntityStructure entity);
@@ -58,7 +57,6 @@ namespace TheTechIdea.Beep
         Type GetListType(object someList);
         DataTable CreateDataTableFromListofStrings(List<string> strings);
         EntityStructure GetEntityStructureFromListorTable( dynamic retval);
-
         DataRow GetDataRowFromobject(string EntityName, Type enttype, object UploadDataRow, EntityStructure DataStruct);
         Type GetCollectionElementType(Type type);
         object MapObjectToAnother(string DestEntityname, EntityDataMap_DTL SelectedMapping, object sourceobj);
