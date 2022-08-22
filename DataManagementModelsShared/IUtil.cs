@@ -47,7 +47,7 @@ namespace TheTechIdea.Beep
         Type MakeGenericListofType(string typestring);
         DataRow ConvertItemClassToDataRow(EntityStructure ent);
         List<EntityField> GetFieldFromGeneratedObject(object dt, Type tp = null);
-        bool ToCSVFile(IList list, Type tp, string filepath);
+        bool ToCSVFile(IList list, string filepath);
         DataTable JsonToDataTable(string jsonString);
         DataTable ToDataTable(IList list,Type tp);
         DataTable ToDataTable(Type tp);

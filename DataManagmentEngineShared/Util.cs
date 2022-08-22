@@ -292,20 +292,36 @@ namespace TheTechIdea.Beep
             }
             return table;
         }
-        public bool ToCSVFile(IList list, Type tp,string filepath)
+        public bool ToCSVFile(IList list, string filepath)
         {
-            PropertyDescriptorCollection props = TypeDescriptor.GetProperties(tp);
-            var myObjectProperties = tp.GetMembers().Select(x => x.Name);
+            if(list == null)
+            {
+                return false;
+            }
+            if(list.Count == 0)
+            {
+                return false;
+            }
+            var r1 = list[0];
+            Type tp1 = r1.GetType();
+            PropertyDescriptorCollection props = TypeDescriptor.GetProperties(tp1);
+            //  var myObjectProperties = props.Select(x => x.Name);
             //Set the first row as your property names
-            var csvFile = string.Join(",", myObjectProperties);
-            object[] values = new object[props.Count];
+            List<string> ls = new List<string>();
+            for (int i = 0; i < props.Count; i++)
+            {
+                ls.Add(props[i].Name);
+            }  
+            var csvFile = string.Join(",",ls);
+           
             foreach (var item in list)
             {
                 var csvRow = Environment.NewLine;
-                for (int i = 0; i < values.Length; i++)
+                for (int i = 0; i < ls.Count(); i++)
                 {
-                    values[i] = props[i].GetValue(item) ?? DBNull.Value;
-                    csvRow += $"{values[i]},";
+                  
+                    var value = props[i].GetValue(item) ?? DBNull.Value;
+                    csvRow += $"{value},";
                 }
                   
                 csvRow.TrimEnd(',');
