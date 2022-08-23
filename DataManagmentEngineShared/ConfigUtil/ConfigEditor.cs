@@ -497,9 +497,9 @@ namespace TheTechIdea.Util
 				int idx = DataConnections.FindIndex(0, p => p.ID == conn.ID);
 				if (idx == -1)
 				{
-					return false;
-				}
-				DataConnections[idx] = conn;
+                    DataConnections.Add(conn);
+                }else
+					DataConnections[idx] = conn;
                 //var cnlist = DataConnections.Where(x => x.Category.ToString().Equals(category,StringComparison.OrdinalIgnoreCase)).ToList();
                 //foreach (ConnectionProperties dt in cnlist)
                 //{
