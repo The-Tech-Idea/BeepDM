@@ -410,15 +410,17 @@ namespace TheTechIdea.Beep
                 }
                 else
                 {
-                    AddLogMessage("Error", "Could not Find data source " + pdatasourcename, DateTime.Now, -1, pdatasourcename, Errors.Failed);
+                    ErrorObject.Flag = Errors.Failed;
+                    return false;
                 }
                 
                 return true;
             }
             catch (Exception ex)
             {
-                string mes = ex.Message;
-                AddLogMessage(ex.Message, "Could not Remove data source " + mes, DateTime.Now, -1, mes, Errors.Failed);
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+                ErrorObject.Flag = Errors.Failed;
                 return false;
             };
         }
