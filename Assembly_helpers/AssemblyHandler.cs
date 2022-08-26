@@ -713,6 +713,12 @@ namespace TheTechIdea.Tools
                 x.DoubleClick = methodAttribute.DoubleClick;
                 x.iconimage = methodAttribute.iconimage;
                 x.PointType = methodAttribute.PointType;
+                x.Category = methodAttribute.Category;
+                x.DatasourceType=methodAttribute.DatasourceType;
+                x.ClassType = methodAttribute.ClassType;
+                x.misc = methodAttribute.misc;
+                x.ObjectType = methodAttribute.ObjectType;
+                x.Showin= methodAttribute.Showin;
                 xcls.Methods.Add(x);
 
             }

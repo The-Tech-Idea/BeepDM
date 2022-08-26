@@ -27,17 +27,17 @@ namespace TheTechIdea.Util
     { TextBox, CheckBox, ComboBox, DateCalendar,Label }
     public enum DataSourceType
     {
-        Oracle , SqlServer, Mysql, SqlCompact, SqlLite,
+        NONE, Oracle , SqlServer, Mysql, SqlCompact, SqlLite,
         Text,CSV,Xls,WebService,Json,xml,
         Postgre,Firebase,FireBird,Couchbase,RavenDB,MongoDB,CouchDB,VistaDB,DB2,OPC,Kafka,Redis,Hadoop,LiteDB,SnowFlake,Parquet,Avro, ORC, TSV
     }
     public enum DatasourceCategory
     {
-        RDBMS,FILE,WEBAPI,NOSQL,CLOUD,VIEWS,STREAM,QUEUE
+        RDBMS,FILE,WEBAPI,NOSQL,CLOUD,VIEWS,STREAM,QUEUE,NONE
     }
     public enum FileTypes
     {
-        Text, Excel,xml,json
+        Text, Excel,xml,json,Parquet, Avro, ORC, TSV
     }
     public enum DbFieldCategory
     {

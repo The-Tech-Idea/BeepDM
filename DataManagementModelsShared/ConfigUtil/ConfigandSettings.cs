@@ -92,6 +92,12 @@ namespace TheTechIdea.Util
         public bool DoubleClick { get; set; } = false;
         public string iconimage { get; set; } = null;
         public EnumPointType PointType { get; set; }
+        public string ObjectType { get; set; } = null;
+        public string ClassType { get; set; } = null;
+        public string misc { get; set; } = null;
+        public DatasourceCategory Category { get; set; } = DatasourceCategory.NONE;
+        public DataSourceType DatasourceType { get; set; } = DataSourceType.NONE;
+        public ShowinType Showin { get; set; } = ShowinType.Both;
     }
     public class ConnectionDriversConfig
     {
