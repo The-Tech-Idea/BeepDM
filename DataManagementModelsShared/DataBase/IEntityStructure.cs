@@ -30,5 +30,7 @@ namespace TheTechIdea.Beep.DataBase
         string StatusDescription { get; set; }
         int ViewID { get; set; }
         ViewType Viewtype { get; set; }
+        int StartRow { get; set; }
+        int EndRow { get; set; }
     }
 }
