@@ -967,27 +967,33 @@ namespace TheTechIdea.Tools
 
         public void CheckDriverAlreadyExistinList()
         {
-
+            
             foreach (ConnectionDriversConfig dr in DataDriversConfig)
             {
-                ConnectionDriversConfig founddr =  ConfigEditor.DataDriversClasses.Where(c => c.PackageName == dr.PackageName && c.version == dr.version).FirstOrDefault();
-                if (founddr == null)
+                ConnectionDriversConfig founddr = null;
+                int idx = ConfigEditor.DataDriversClasses.FindIndex(c => c.PackageName == dr.PackageName && c.version == dr.version);
+                if(idx >= -1)
                 {
-                     ConfigEditor.DataDriversClasses.Add(dr);
-                }else
-                {
-                    dr.ConnectionString= founddr.ConnectionString;
-                    dr.DatasourceType= founddr.DatasourceType;
-                    dr.classHandler= founddr.classHandler;
-                    dr.iconname= founddr.iconname;
-                    dr.DatasourceCategory= founddr.DatasourceCategory;
-                    dr.classHandler=    founddr.classHandler;
-                    dr.ADOType=dr.ADOType;
-                    dr.CreateLocal = founddr.CreateLocal;
-                    ConfigEditor.DataDriversClasses.Remove(founddr);
-                    ConfigEditor.DataDriversClasses.Add(dr);
+                     founddr = ConfigEditor.DataDriversClasses[idx];
 
                 }
+                if (founddr == null)
+                {
+                    ConfigEditor.DataDriversClasses.Add(dr);
+                }
+                //}else
+                //{
+
+                //    founddr.ConnectionString = dr.ConnectionString;
+                //    founddr.DatasourceType = dr.DatasourceType ;
+                //    founddr.classHandler = dr.classHandler;
+                //     founddr.iconname = dr.iconname ;
+                //     founddr.DatasourceCategory = dr.DatasourceCategory;
+                //     founddr.classHandler = dr.classHandler;
+                //     founddr.ADOType = dr.ADOType;
+                //     founddr.CreateLocal = dr.CreateLocal;
+                //    founddr.AdapterType = dr.AdapterType;
+                //}
             }
         }
         private bool GetADOTypeDrivers(Assembly asm)
