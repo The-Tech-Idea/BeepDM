@@ -972,7 +972,7 @@ namespace TheTechIdea.Tools
             {
                 ConnectionDriversConfig founddr = null;
                 int idx = ConfigEditor.DataDriversClasses.FindIndex(c => c.PackageName == dr.PackageName && c.version == dr.version);
-                if(idx >= -1)
+                if(idx > -1)
                 {
                      founddr = ConfigEditor.DataDriversClasses[idx];
 
