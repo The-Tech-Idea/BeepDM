@@ -28,7 +28,7 @@ namespace TheTechIdea.Util
 			JsonLoader = jsonloader;
 			if (!string.IsNullOrEmpty(folderpath))
 			{
-				ExePath = Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), folderpath);
+				ExePath = folderpath;// Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), folderpath);
 			}
 			else
 				ExePath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
