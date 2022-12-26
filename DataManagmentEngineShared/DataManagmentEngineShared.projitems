@@ -9,7 +9,6 @@
     <Import_RootNamespace>TheTechIdea.DataManagment_Engine</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayerDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\ConfigEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigUtil\DMTypeBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\RDBDataConnection.cs" />

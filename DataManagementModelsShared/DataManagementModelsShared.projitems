@@ -13,6 +13,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Addin\DisplayLookUpDescription.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Addin\IDM_Addin.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Addin\IFunctionExtension.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\ICompositeLayerDataSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataView\IDataViewDataSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tools\ILoaderExtention.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Addin\PassedArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CompositeLayer\CompositeLayer.cs" />

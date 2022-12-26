@@ -12,7 +12,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.DataView
 {
-    public class DataViewDataSource : IDataSource,IDMDataView
+    public class DataViewDataSource : IDataViewDataSource, IDataSource,IDMDataView
     {
         public event EventHandler<PassedArgs> PassEvent;
         public DataSourceType DatasourceType { get ; set ; }
