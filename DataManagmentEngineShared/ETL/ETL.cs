@@ -42,19 +42,14 @@ namespace TheTechIdea.Beep.Editor
 
         private ETLScriptDet GenerateCopyScript(ETLScriptDet rt, EntityStructure item, string destSource)
         {
-               
-            
-                ETLScriptDet upscript = new ETLScriptDet();
-                upscript.sourcedatasourcename = item.DataSourceID;
-                upscript.sourceentityname = item.OriginalEntityName;
-                upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
-
-                upscript.destinationDatasourceEntityName = item.EntityName;
-                upscript.destinationentityname = item.EntityName;
-                upscript.destinationdatasourcename = destSource;
-                upscript.scriptType = DDLScriptType.CopyData;
-           
-
+            ETLScriptDet upscript = new ETLScriptDet();
+            upscript.sourcedatasourcename = item.DataSourceID;
+            upscript.sourceentityname = item.OriginalEntityName;
+            upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
+            upscript.destinationDatasourceEntityName = item.EntityName;
+            upscript.destinationentityname = item.EntityName;
+            upscript.destinationdatasourcename = destSource;
+            upscript.scriptType = DDLScriptType.CopyData;
             return upscript;
         }
         public List<ETLScriptDet> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities,IProgress<PassedArgs> progress, CancellationToken token)

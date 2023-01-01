@@ -19,7 +19,7 @@ namespace TheTechIdea.Beep.Workflow.DefaultRules
             Rule = "GUID";
         }
         public IDMEEditor DMEEditor { get; set; }
-        public string RuleName { get; set; } = "GetNow";
+        public string RuleName { get; set; } = "GetGUID";
         public string Rule { get; set; } = "GUID";
         private List<string> _Tokens = new List<string>();
 

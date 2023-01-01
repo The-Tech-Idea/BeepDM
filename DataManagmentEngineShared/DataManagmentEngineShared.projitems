@@ -35,7 +35,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\DefaultRules\GetNow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\DefaultRules\GetString.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\DefaultRules\GetUser.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Workflow\DefaultRules\SetDateTimeSyncField.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\RulesEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\RulesParser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Workflow\WorkFlowEditor.cs" />
