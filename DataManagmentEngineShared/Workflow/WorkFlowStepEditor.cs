@@ -17,13 +17,14 @@ namespace TheTechIdea.Beep.Workflow
 {
     public class WorkFlowStepEditor : IWorkFlowStepEditor
     {
-        public WorkFlowStepEditor()
+        public WorkFlowStepEditor(IDMEEditor pDMEEditor, IWorkFlowEditor pWorkEditor)
         {
-
-
+            DMEEditor = pDMEEditor;
+            WorkEditor = pWorkEditor;
         }
+       
 
-        public IWorkFlowStep WorkFlowStep { get; set; }
+      
         public IWorkFlowEditor WorkEditor { get; set; }
 
         public IDMEEditor DMEEditor { get; set; }

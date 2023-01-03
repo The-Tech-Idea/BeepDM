@@ -13,12 +13,12 @@ namespace TheTechIdea.Beep.Editor
 {
     public class DataTypesHelper : IDataTypesHelper
     {
-        public DataTypesHelper()
+        
+        public DataTypesHelper(IDMEEditor pDMEEditor)
         {
-           
+            DMEEditor = pDMEEditor;
         }
-        public IErrorsInfo ErrorObject { get; set; }
-        public IDMLogger Logger { get; set; }
+      
         public IDMEEditor DMEEditor { get; set; }
         public List<DatatypeMapping> mapping { get; set; }
         private string NetDataTypeDef1 = "byte,sbyte,int,uint,short,ushort,long,ulong,float,double,char,bool,object,string,decimal,DateTime";
@@ -32,11 +32,7 @@ namespace TheTechIdea.Beep.Editor
             }
             return p;
         }
-        public DataTypesHelper(IDMLogger plogger,  IErrorsInfo per)
-        {
-            Logger = Logger;
-            ErrorObject = per;
-        }
+       
         public string GetDataType(string DSname, EntityField fld)
         {
             string retval = null;

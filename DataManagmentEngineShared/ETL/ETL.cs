@@ -18,9 +18,10 @@ namespace TheTechIdea.Beep.Editor
 
     public class ETL : IETL
     {
-        public ETL()
+        public ETL(IDMEEditor _DMEEditor)
         {
-           
+           DMEEditor= _DMEEditor;
+            RulesEditor = new RulesEditor(DMEEditor);
         }
         public event EventHandler<PassedArgs> PassEvent;
         private IDMEEditor _DMEEditor;
@@ -37,9 +38,7 @@ namespace TheTechIdea.Beep.Editor
         #region "Local Variables"
         private bool stoprun = false;
         private int errorcount = 0;
-        
         #endregion
-
         private ETLScriptDet GenerateCopyScript(ETLScriptDet rt, EntityStructure item, string destSource)
         {
             ETLScriptDet upscript = new ETLScriptDet();
@@ -489,7 +488,6 @@ namespace TheTechIdea.Beep.Editor
             #endregion
             return DMEEditor.ErrorObject;
         }
-      
         private IErrorsInfo RunCopyEntityScript(ETLScriptDet sc, IDataSource sourceds, IDataSource destds, string srcentity, string destentity, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true, EntityDataMap_DTL map_DTL=null)
         {
             try
@@ -670,7 +668,6 @@ namespace TheTechIdea.Beep.Editor
 
         }
         #endregion
-       
         public IErrorsInfo InsertEntity(IDataSource destds,  EntityStructure destEntitystructure,string destentity,EntityDataMap_DTL map_DTL,object r, IProgress<PassedArgs> progress, CancellationToken token)
         {
             object retval = r;

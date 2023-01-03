@@ -26,13 +26,13 @@ namespace TheTechIdea.Beep.Tools
 
       
        
-        public ClassCreator()
+        public ClassCreator(IDMEEditor pDMEEditor)
         {
-           
+            DMEEditor= pDMEEditor;
         }
         public void CompileClassFromText(string SourceString, string output)
         {
-            throw new NotImplementedException();
+           
         }
         public string CreateDLL(string dllname, List<EntityStructure> entities, string outputpath, IProgress<PassedArgs> progress, CancellationToken token, string NameSpacestring = "TheTechIdea.ProjectClasses")
         {

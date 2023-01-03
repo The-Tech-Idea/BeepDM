@@ -9,9 +9,10 @@ namespace TheTechIdea.Beep.Workflow
 {
     public class WorkFlowEditor : IWorkFlowEditor
     {
-        public WorkFlowEditor()
+        public WorkFlowEditor(IDMEEditor pDMEEditor)
         {
-
+            DMEEditor= pDMEEditor;
+            StepEditor = new WorkFlowStepEditor(DMEEditor, this);
         }
 
         public IDMEEditor DMEEditor { get; set; }

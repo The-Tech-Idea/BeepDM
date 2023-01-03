@@ -13,9 +13,9 @@ namespace TheTechIdea.Beep.Workflow
     {
        
         public List<IRuleStructure> RuleStructures { get; set; }=new List<IRuleStructure>(){ };
-        public  RuleParser()
+        public  RuleParser(IDMEEditor pDMEEditor)
         {
-
+            DMEEditor = pDMEEditor;
         }
         public IDMEEditor DMEEditor { get; set; }
         public IRuleStructure ParseRule(string Rule)

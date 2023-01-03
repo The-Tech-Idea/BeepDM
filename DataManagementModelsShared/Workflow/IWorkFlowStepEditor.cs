@@ -10,7 +10,7 @@ namespace TheTechIdea.Beep.Workflow
 {
     public interface IWorkFlowStepEditor
     {
-        IWorkFlowStep WorkFlowStep { get; set; }
+      
         IWorkFlowEditor WorkEditor { get; set; }
 
         IDMEEditor DMEEditor { get; set; }

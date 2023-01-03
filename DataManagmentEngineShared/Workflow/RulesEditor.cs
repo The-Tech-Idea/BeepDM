@@ -16,10 +16,12 @@ namespace TheTechIdea.Beep.Workflow
 {
     public class RulesEditor:IRulesEditor
     {
-        public RulesEditor(IRuleParser pParser)
+      
+
+        public RulesEditor(IDMEEditor pDMEEditor)
         {
-          
-            Parser= pParser;
+            DMEEditor= pDMEEditor;
+            Parser = new RuleParser(DMEEditor);
         }
       
         public IDMEEditor DMEEditor { get; set; }

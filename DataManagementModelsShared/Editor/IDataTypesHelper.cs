@@ -9,8 +9,7 @@ namespace TheTechIdea.Beep.Editor
     public interface IDataTypesHelper
     {
         IDMEEditor DMEEditor { get; set; }
-        IErrorsInfo ErrorObject { get; set; }
-        IDMLogger Logger { get; set; }
+     
         List<DatatypeMapping> mapping { get; set; }
         List<string> GetDataClasses();
         //string[] GetMySqlDataTypes();

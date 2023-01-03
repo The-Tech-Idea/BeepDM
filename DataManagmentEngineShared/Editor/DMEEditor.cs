@@ -17,7 +17,7 @@ using static TheTechIdea.Beep.Util;
 using TheTechIdea.Beep.Report;
 using System.Threading.Tasks;
 using System.Collections;
-
+using TheTechIdea.Beep.Tools;
 
 namespace TheTechIdea.Beep
 {
@@ -586,7 +586,7 @@ namespace TheTechIdea.Beep
         }
 
         //----------------- ------------------------------ -----
-        public DMEEditor(IDMLogger logger, IUtil utilfunctions,IErrorsInfo per, IConfigEditor configEditor) //,IWorkFlowEditor pworkFlowEditor, IClassCreator pclasscreator, IETL pETL, IAssemblyHandler passemblyHandler, IDataTypesHelper dataTypesHelper,IWorkFlowEditor workFlowEditor,IWorkFlowStepEditor workFlowStepEditor,IRuleParser ruleParser,IRulesEditor rulesEditor
+        public DMEEditor(IDMLogger logger, IUtil utilfunctions,IErrorsInfo per, IConfigEditor configEditor, IAssemblyHandler LLoader) //,IWorkFlowEditor pworkFlowEditor, IClassCreator pclasscreator, IETL pETL, IAssemblyHandler passemblyHandler, IDataTypesHelper dataTypesHelper,IWorkFlowEditor workFlowEditor,IWorkFlowStepEditor workFlowStepEditor,IRuleParser ruleParser,IRulesEditor rulesEditor
         {
           
             logger.WriteLog("init all variables");
@@ -595,9 +595,11 @@ namespace TheTechIdea.Beep
             Utilfunction.DME = this;
             ConfigEditor = configEditor;
             ErrorObject = per;
-          
-
-
+            typesHelper= new DataTypesHelper(this);
+            ETL = new ETL(this);
+            assemblyHandler = LLoader;
+            classCreator = new ClassCreator(this);
+            WorkFlowEditor = new WorkFlowEditor(this);
         }
 
         protected virtual void Dispose(bool disposing)
