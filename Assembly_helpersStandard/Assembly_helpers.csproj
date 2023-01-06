@@ -4,10 +4,10 @@
 	  <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net7.0</TargetFrameworks>
     <RootNamespace>TheTechIdea.Beep</RootNamespace>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <PackageId>TheTechIdea.Beep.AssemblyHelper</PackageId>
+    <PackageId>TheTechIdea.Beep.AssemblyLoader</PackageId>
 	  <Version>1.0.0</Version>
     <Authors>The Tech Idea</Authors>
-    <Product>TheTechIdea.Beep.AssemblyHelper</Product>
+    <Product>TheTechIdea.Beep.AssemblyLoader</Product>
     <Description>Aseembly Loader for Data Management Engine</Description>
     <Copyright>2022</Copyright>
     <PackageProjectUrl>https://github.com/The-Tech-Idea/BeepDM</PackageProjectUrl>
