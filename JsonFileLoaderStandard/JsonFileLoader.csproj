@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>TheTechIdea.Beep.JsonLoader2.0</PackageId>
-    <Version>1.0.0.8</Version>
+	  <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net7.0</TargetFrameworks>
+    <PackageId>TheTechIdea.Beep.JsonLoader</PackageId>
+	  <Version>1.0.0</Version>
     <Authors>The Tech Idea</Authors>
-    <Product>TheTechIdea.Beep.JsonLoader2.0</Product>
+    <Product>TheTechIdea.Beep.JsonLoader</Product>
     <Description>Component to for Loading and Saving Configuration files in Data Management Engine</Description>
     <Copyright>2022</Copyright>
     <PackageProjectUrl>https://github.com/The-Tech-Idea/BeepDM</PackageProjectUrl>
@@ -14,7 +14,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 	<Target Name="CopyPackage" AfterTargets="Pack">
-		<Copy SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\Nuget.Local" />
+		<Copy SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\Nuget.Local" />
 	</Target>
   <ItemGroup>
     <Compile Include="..\JsonFileLoader\CustomContractResolver.cs" Link="CustomContractResolver.cs" />
@@ -31,7 +31,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels2.0" Version="1.0.0.25" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.0" />
   </ItemGroup>
 
 </Project>

@@ -1,14 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+	  <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net7.0</TargetFrameworks>
     <RootNamespace>TheTechIdea.Beep</RootNamespace>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <PackageId>TheTechIdea.Beep.DMLogger2.0</PackageId>
-    <Version>1.0.0.7</Version>
+    <PackageId>TheTechIdea.Beep.AssemblyHelper</PackageId>
+	  <Version>1.0.0</Version>
     <Authors>The Tech Idea</Authors>
-    <Product>TheTechIdea.Beep.DMLogger2.0</Product>
-    <Description>Logger Library for Data Management Library</Description>
+    <Product>TheTechIdea.Beep.AssemblyHelper</Product>
+    <Description>Aseembly Loader for Data Management Engine</Description>
     <Copyright>2022</Copyright>
     <PackageProjectUrl>https://github.com/The-Tech-Idea/BeepDM</PackageProjectUrl>
     <PackageIcon>SimpleODM.png</PackageIcon>
@@ -16,10 +16,10 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 	<Target Name="CopyPackage" AfterTargets="Pack">
-		<Copy SourceFiles="$(OutputPath)..\$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\Nuget.Local" />
+		<Copy SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\Nuget.Local" />
 	</Target>
   <ItemGroup>
-    <Compile Include="..\DMLogger\DMLogger.cs" Link="DMLogger.cs" />
+    <Compile Include="..\Assembly_helpers\AssemblyHandler.cs" Link="AssemblyHandler.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,10 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Serilog" Version="2.11.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="4.0.1" />
-    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels2.0" Version="1.0.0.22" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
