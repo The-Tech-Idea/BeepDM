@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
+	<TargetFrameworks>netstandard2.0;net6.0;net7.0</TargetFrameworks>
     <PackageIcon>SimpleODM.png</PackageIcon>
     <Authors>The Tech Idea</Authors>
     <Company>The Tech Idea</Company>
@@ -18,8 +18,6 @@
 	<Target Name="CopyPackage" AfterTargets="Pack">
 		<Copy SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\Nuget.Local" />
 	</Target>
-
-	<Import Project="..\DataManagementModelsShared\DataManagementModelsShared.projitems" Label="Shared" />
 
   <ItemGroup>
     <None Include="..\..\..\..\..\OneDrive\SimpleInfoapps\LogoGFx\128\SimpleODM.png">

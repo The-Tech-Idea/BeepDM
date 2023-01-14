@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
+	<TargetFrameworks>netstandard2.0;net6.0;net7.0</TargetFrameworks>
     <AssemblyName>DataManagmentEngine</AssemblyName>
     <RootNamespace>TheTechIdea.Beep</RootNamespace>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.DataManagementEngine</PackageId>
     <Authors>The Tech Idea</Authors>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Product>TheTechIdea.Beep.DataManagementEngine</Product>
     <Description>Data Management Library</Description>
     <Copyright>2022</Copyright>
@@ -20,6 +20,12 @@
 	<Target Name="CopyPackage" AfterTargets="Pack">
 		<Copy SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\Nuget.Local" />
 	</Target>
+	<ItemGroup>
+	  <Compile Remove="Workflow\Actions\CopyData.cs" />
+	  <Compile Remove="Workflow\Actions\CopyEntities.cs" />
+	  <Compile Remove="Workflow\Actions\CopyEntity.cs" />
+	  <Compile Remove="Workflow\Actions\RunScript.cs" />
+	</ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\..\..\..\OneDrive\SimpleInfoapps\LogoGFx\128\SimpleODM.png">
@@ -39,6 +45,10 @@
   <ItemGroup>
     <ProjectReference Include="..\DataManagementModelsStandard\DataManagementModels.csproj" />
   </ItemGroup>
-  <Import Project="..\DataManagmentEngineShared\DataManagmentEngineShared.projitems" Label="Shared" />
+  <ItemGroup>
+    <Folder Include="Addin\" />
+    <Folder Include="Workflow\Actions\" />
+  </ItemGroup>
+
 
 </Project>

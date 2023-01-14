@@ -350,10 +350,4 @@ Global
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {39440075-E230-4736-AAA7-1F9CD3EB062F}
 	EndGlobalSection
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		DataManagementModelsShared\DataManagementModelsShared.projitems*{2f745b0a-b2f4-4eb8-9a8e-5a87b2988f99}*SharedItemsImports = 13
-		DataManagmentEngineShared\DataManagmentEngineShared.projitems*{40d6dc59-2a88-4417-8408-375d51efa21c}*SharedItemsImports = 5
-		DataManagementModelsShared\DataManagementModelsShared.projitems*{6af040d9-1b39-43a3-86ef-5850ae0567e8}*SharedItemsImports = 5
-		DataManagmentEngineShared\DataManagmentEngineShared.projitems*{b5d91583-1eb4-4b3c-8288-88fd13e35556}*SharedItemsImports = 13
-	EndGlobalSection
 EndGlobal
