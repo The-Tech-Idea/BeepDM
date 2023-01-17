@@ -32,7 +32,16 @@ namespace TheTechIdea.Beep.Tools
         }
         public void CompileClassFromText(string SourceString, string output)
         {
-           
+            List<string> retval= CompileCode(provider, new List<string>() { SourceString }, output);
+            if (retval.Count > 0)
+            {
+                for (int i = 0; i < retval.Count-1; i++)
+                {
+                    DMEEditor.AddLogMessage("Beep Class Creator",retval[i],DateTime.Now,i,null, TheTechIdea.Util.Errors.Failed);
+                }
+               
+            }
+
         }
         public string CreateDLL(string dllname, List<EntityStructure> entities, string outputpath, IProgress<PassedArgs> progress, CancellationToken token, string NameSpacestring = "TheTechIdea.ProjectClasses")
         {
@@ -159,10 +168,9 @@ namespace TheTechIdea.Beep.Tools
             }
             GenerateCSharpCode(Path.Combine(outputpath, outputFileName + ".cs"));
             return NameSpacestring + "." + classname;
-            return "ok";
+           
             
         }
-
         public void GenerateCSharpCode(string fileName)
         {
          
