@@ -321,7 +321,7 @@ namespace TheTechIdea.Beep.FileManager
                     EntitiesNames.Add(DatasourceName);
                     DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new ConfigUtil.DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
 
-
+                   
                 }
 
             }
@@ -330,7 +330,10 @@ namespace TheTechIdea.Beep.FileManager
 
                 DMEEditor.AddLogMessage("Fail", $"Error : Could not Create Entity For File {DatasourceName}- {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
             }
-            fieldParser.Close();
+            if (fieldParser != null)
+            {
+                fieldParser.Close();
+            }
             return entityData;
         }
         private List<object> GetData(int nrofrows)

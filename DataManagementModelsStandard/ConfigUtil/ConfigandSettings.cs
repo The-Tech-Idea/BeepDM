@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Text.Json.Serialization;
+
 using System.Threading.Tasks;
 
 using TheTechIdea.Beep.Vis;
@@ -75,7 +75,7 @@ namespace TheTechIdea.Util
         public string Imagename { get; set; }
         public string RootName { get; set; }
         //public EnumBranchType BranchType { get; set; }
-        [JsonIgnore]
+      
         public Type type { get; set; }
         public string componentType { get; set; }
         public AddinAttribute classProperties { get; set; } = new AddinAttribute();
