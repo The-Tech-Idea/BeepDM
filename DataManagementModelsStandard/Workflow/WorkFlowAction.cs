@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace TheTechIdea.Beep.Workflow
@@ -31,7 +32,7 @@ namespace TheTechIdea.Beep.Workflow
         public event EventHandler<IWorkFlowEventArgs> WorkFlowActionEnded;
         public event EventHandler<IWorkFlowEventArgs> WorkFlowActionRunning;
 
-        public PassedArgs PerformAction()
+        public PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token)
         {
             throw new NotImplementedException();
         }
