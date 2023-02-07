@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Util;
@@ -26,7 +27,8 @@ namespace TheTechIdea.Beep.Workflow
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo RunWorkFlow(string WorkFlowName)
+      
+        public IErrorsInfo RunWorkFlow(string WorkFlowName, IProgress<PassedArgs> progress, CancellationToken token)
         {
             throw new NotImplementedException();
         }
