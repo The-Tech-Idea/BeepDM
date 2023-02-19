@@ -201,6 +201,14 @@ namespace TheTechIdea.Beep
                 return null;
             }
             else {
+                if (ds1 != null)
+                {
+                    if (pdatasourcename.Equals(ds1.DatasourceName))
+                    {
+                        return ds1;
+                    }
+                }
+               
                 try
                 {
                     ds1 = DataSources.Where(f => f.DatasourceName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
