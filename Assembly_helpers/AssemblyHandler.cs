@@ -92,7 +92,6 @@ namespace TheTechIdea.Tools
                 }
             }
         }
-      
         public void GetExtensionScanners(IProgress<PassedArgs> progress, CancellationToken token)
         {
            
@@ -304,7 +303,7 @@ namespace TheTechIdea.Tools
             }
             // Get Driver from Loaded Assembly
             SendMessege(progress, token, "Scanning Classes For Drivers");
-            foreach (assemblies_rep item in Assemblies)
+            foreach (assemblies_rep item in Assemblies.Where(c=>c.FileTypes==FolderFileTypes.ConnectionDriver).ToList())
                 {
                    // AddLogMessage("Start", $"Started Processing Drivers  {item.DllName}", DateTime.Now, -1, item.DllName, Errors.Ok);
                     GetDrivers(item.DllLib);
@@ -645,27 +644,36 @@ namespace TheTechIdea.Tools
                       
                             ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowAction"));
                         }
-                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
+                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowStep)))
                         {
 
-                            ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowAction"));
+                            ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowStep"));
                         }
-                        // Get IFunctionExtension Definitions
-                        if (type.ImplementedInterfaces.Contains(typeof(IFunctionExtension)))
+                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowStepEditor)))
                         {
-                      
 
-                            ConfigEditor.GlobalFunctions.Add(GetAssemblyClassDefinition(type, "IFunctionExtension"));
-                         }
-                        // Get Print Managers Definitions
-                        if (type.ImplementedInterfaces.Contains(typeof(IPrintManager)))
+                            ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowStepEditor"));
+                        }
+                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowEditor)))
                         {
-                            ConfigEditor.PrintManagers.Add(GetAssemblyClassDefinition(type, "IPrintManager"));
+
+                            ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowEditor"));
                         }
                         if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowRule)))
                         {
                             ConfigEditor.Rules.Add(GetAssemblyClassDefinition(type, "IWorkFlowRule"));
                         }
+                        // Get IFunctionExtension Definitions
+                        if (type.ImplementedInterfaces.Contains(typeof(IFunctionExtension)))
+                        {
+                            ConfigEditor.GlobalFunctions.Add(GetAssemblyClassDefinition(type, "IFunctionExtension"));
+                        }
+                        // Get Print Managers Definitions
+                        if (type.ImplementedInterfaces.Contains(typeof(IPrintManager)))
+                        {
+                            ConfigEditor.PrintManagers.Add(GetAssemblyClassDefinition(type, "IPrintManager"));
+                        }
+                        
                        
                     }
                         ScanExtensions(asm);
@@ -1114,7 +1122,7 @@ namespace TheTechIdea.Tools
                             }
                         }
                        
-                        //-----------------------------------------------------------
+                        //-----------------------------------------  ------------------
                     }
                     catch (Exception ex)
                     {
