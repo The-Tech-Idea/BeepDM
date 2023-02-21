@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 
 using System.Threading.Tasks;
-
+using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Vis;
 
 //using TheTechIdea.Beep.Vis;
@@ -79,6 +79,8 @@ namespace TheTechIdea.Util
         public Type type { get; set; }
         public string componentType { get; set; }
         public AddinAttribute classProperties { get; set; } = new AddinAttribute();
+        public AddinVisSchema  VisSchema { get; set; }=new AddinVisSchema();
+        
         public List<MethodsClass> Methods { get; set; } = new List<MethodsClass>();
     }
     public class MethodsClass

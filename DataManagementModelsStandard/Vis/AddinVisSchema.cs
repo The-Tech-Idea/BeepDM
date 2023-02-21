@@ -5,13 +5,9 @@ using TheTechIdea.Beep.Vis;
 
 namespace TheTechIdea.Beep.Addin
 {
-   public  class AddinVisSchema: IAddinVisSchema
+   public sealed class AddinVisSchema: Attribute, IAddinVisSchema
     {
-        public AddinVisSchema()
-        {
-
-        }
-
+       
         public string RootNodeName { get; set; }
         public string CatgoryName { get; set; }
         public string AddinName { get; set; }

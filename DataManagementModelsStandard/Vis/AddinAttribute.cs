@@ -26,6 +26,8 @@ namespace TheTechIdea.Beep.Vis
         public DataSourceType DatasourceType { get; set; } = DataSourceType.NONE;
         public string FileType { get; set; }
         public string returndataTypename { get; set; }
+        public bool DefaultCreate { get; set; }
+        public string Description { get; set; }
 
 
     }

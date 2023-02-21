@@ -60,15 +60,19 @@ namespace TheTechIdea.Util
 		public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> GlobalFunctions { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> AppWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
-	
 		public List<AssemblyClassDefinition> AppComponents { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> ReportWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> PrintManagers { get; set; }=new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
-		public List<AssemblyClassDefinition> WorkFlowActions { get; set; } = new List<AssemblyClassDefinition>();
-		public List<AssemblyClassDefinition> Rules { get; set; } = new List<AssemblyClassDefinition>();
-		
-		public List<AddinTreeStructure> AddinTreeStructure { get; set; } = new List<AddinTreeStructure>();
+        public List<AssemblyClassDefinition> WorkFlowActions { get; set; }=new List<AssemblyClassDefinition> { };
+        public List<AssemblyClassDefinition> WorkFlowEditors { get; set; }=new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> WorkFlowSteps { get; set; }=new	List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> WorkFlowStepEditors { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> FunctionExtensions { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> Addins { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> Others { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> Rules { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AddinTreeStructure> AddinTreeStructure { get; set; } = new List<AddinTreeStructure>();
 		public List<Function2FunctionAction> Function2Functions { get; set; } = new List<Function2FunctionAction>();
 		public List<ObjectTypes> objectTypes { get; set; } = new List<ObjectTypes>();
 		public List<Event> Events { get; set; } = new List<Event>();

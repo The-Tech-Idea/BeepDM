@@ -1,19 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.Addin;
-
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Beep.Report;
-
 using TheTechIdea.Beep.Workflow;
 
 using TheTechIdea.Logger;
@@ -40,7 +34,7 @@ namespace TheTechIdea.Tools
         private List<Type> LoaderExtensions { get; set; } = new List<Type>();
         public List<AssemblyClassDefinition> LoaderExtensionClasses { get; set; } = new List<AssemblyClassDefinition>();
         public List<assemblies_rep> Assemblies { get; set; } = new List<assemblies_rep>();
-        public List<IDM_Addin> AddIns { get; set; } = new List<IDM_Addin>();
+       // public List<IDM_Addin> AddIns { get; set; } = new List<IDM_Addin>();
         public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
         private List<ConnectionDriversConfig> DataDriversConfig = new List<ConnectionDriversConfig>();
         public AssemblyHandler(IConfigEditor pConfigEditor, IErrorsInfo pErrorObject, IDMLogger pLogger, IUtil pUtilfunction)
@@ -155,7 +149,7 @@ namespace TheTechIdea.Tools
             try
             {
                 ScanAssembly(currentAssem);
-               Utilfunction.FunctionHierarchy = GetAddinObjects(currentAssem);
+             //  Utilfunction.FunctionHierarchy = GetAddinObjects(currentAssem);
             }
             catch (Exception ex)
             {
@@ -166,7 +160,7 @@ namespace TheTechIdea.Tools
             try
             {
                 ScanAssembly(rootassembly);
-                Utilfunction.FunctionHierarchy = GetAddinObjects(rootassembly);
+              //  Utilfunction.FunctionHierarchy = GetAddinObjects(rootassembly);
 
             }
             catch (Exception ex)
@@ -181,7 +175,7 @@ namespace TheTechIdea.Tools
                     try
                     {
                         ScanAssembly(item);
-                       Utilfunction.FunctionHierarchy = GetAddinObjects(item);
+                  //     Utilfunction.FunctionHierarchy = GetAddinObjects(item);
                     }
                     catch (Exception ex)
                     {
@@ -347,7 +341,7 @@ namespace TheTechIdea.Tools
                     {
                         ////DMEEditor.AddLogMessage("Start", $"Started Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
                         ScanAssembly(s.DllLib);
-                        Utilfunction.FunctionHierarchy = GetAddinObjects(s.DllLib);
+                      //  Utilfunction.FunctionHierarchy = GetAddinObjects(s.DllLib);
                      //   //DMEEditor.AddLogMessage("End", $"Ended Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
 
                     }
@@ -364,7 +358,7 @@ namespace TheTechIdea.Tools
             AddEngineDefaultDrivers();
             SendMessege(progress, token, "Organizing Drivers");
             CheckDriverAlreadyExistinList();
-          
+            Utilfunction.FunctionHierarchy = GetAddinObjectsFromTree();
             return ErrorObject;
         }
         /// <summary>
@@ -480,69 +474,12 @@ namespace TheTechIdea.Tools
                                     {
                                         if (i == p.Length - 1)
                                         {
-
-
                                             try
                                             {
-                                                //AddinAttribute attrib=(AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
-                                                //if (attrib != null)
-                                                //{
-                                                    IDM_Addin uc = (IDM_Addin)Activator.CreateInstance(type);
-                                                    //if (attrib.addinType != AddinType.Class)
-                                                    //{
-                                                       
-                                                        if (uc != null)
-                                                        {
-                                                            addin = (IDM_Addin)uc;
-                                                            addin.DllPath = Path.GetDirectoryName(asm.Location);
-                                                            addin.ObjectName = type.Name;
-                                                            addin.DllName = Path.GetFileName(asm.Location);
-                                                            Show = addin.DefaultCreate;
-                                                           
-                                                        }
-                                                        Name = addin.AddinName;
-                                                        Descr = addin.Description;
-                                                        //}
-                                                    //else
-                                                    //{
-
-                                                    //}
-                                              //  }
-                                                AddIns.Add(addin);
-
-
-                                                if (addin.DefaultCreate)
-                                                {
-                                                    if (ConfigEditor.AddinTreeStructure.Where(x => x.className == type.Name).Any() == false)
-                                                    {
-                                                        Show = true;
-                                                        try
-                                                        {
-                                                            IAddinVisSchema cls = (IAddinVisSchema)addin;
-                                                            AddinTreeStructure xcls = new AddinTreeStructure();
-                                                            xcls.className = type.Name;
-                                                            xcls.dllname = type.Module.Name;
-                                                            xcls.PackageName = type.FullName;
-                                                            xcls.Order = cls.Order;
-                                                            xcls.Imagename = cls.IconImageName;
-                                                            xcls.RootName = cls.RootNodeName;
-                                                            xcls.NodeName = cls.BranchText;
-                                                            xcls.ObjectType = addin.ObjectType;
-                                                            ConfigEditor.AddinTreeStructure.Add(xcls);
-
-                                                        }
-                                                        catch (Exception)
-                                                        {
-
-                                                        }
-                                                    }
-                                                }
-
-                                                    //}
-                                                    //else Show = false;
+                                                   //else Show = false;
                                                     // objtype = "UserControl";
 
-                                                    if (Show)
+                                                if (Show)
                                                 {
                                                     a = RearrangeAddin(p[i], p[i - 1], objtype);
                                                 }
@@ -583,6 +520,87 @@ namespace TheTechIdea.Tools
             }
           
              ConfigEditor.SaveAddinTreeStructure();
+            return Utilfunction.FunctionHierarchy;
+        }
+        public List<ParentChildObject> GetAddinObjectsFromTree( )
+        {
+            IDM_Addin addin = null;
+            string objtype = "";
+            Boolean Show = true;
+            int cnt = 0;
+            
+
+            foreach (AddinTreeStructure tree in ConfigEditor.AddinTreeStructure)
+            {
+              
+                    try
+                    {
+                        if (tree.PackageName.Contains("Properties") == false)
+                        {
+
+                            string[] p = tree.PackageName.Split(new char[] { '.' });
+
+                            if (p.Length >= 0)
+                            {
+                                for (int i = 0; i < p.Length; i++)
+                                {
+                                    cnt += 1;
+                                    if (i == 0)
+                                    {
+                                        Name = p[i];
+                                        Descr = p[i];
+                                        a = RearrangeAddin(p[i], null, "namespace");
+                                    }
+                                    else
+                                    {
+                                        if (i == p.Length - 1)
+                                        {
+                                            try
+                                            {
+                                                //else Show = false;
+                                                // objtype = "UserControl";
+
+                                                if (Show)
+                                                {
+                                                    a = RearrangeAddin(p[i], p[i - 1], tree.ObjectType);
+                                                }
+                                                //DMEEditor.AddLogMessage("Success", $"Got Addin object {type.Name}", DateTime.Now, -1, type.Name, Errors.Ok);
+                                            }
+                                            catch (Exception ex)
+                                            {
+
+                                                //DMEEditor.AddLogMessage("Fail", $"Could get Addin information {type.Name}", DateTime.Now, -1, type.Name, Errors.Failed);
+                                            };
+
+
+                                        }
+                                        else
+                                        {
+                                            Name = p[i];
+                                            Descr = p[i];
+                                            a = RearrangeAddin(p[i], p[i - 1], "namespace");
+
+                                        }
+
+                                    }
+
+
+                                }
+
+                            }
+
+                        }
+                    }
+
+                    catch (Exception ex1)
+                    {
+                        //DMEEditor.AddLogMessage("Fail", $"Could get Addin object {type.Name} - {ex1.Message}", DateTime.Now, -1, type.Name, Errors.Failed);
+                    }
+          
+
+            }
+
+            ConfigEditor.SaveAddinTreeStructure();
             return Utilfunction.FunctionHierarchy;
         }
         #endregion
@@ -645,20 +663,46 @@ namespace TheTechIdea.Tools
                       
                             ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowAction"));
                         }
+                        if (type.ImplementedInterfaces.Contains(typeof(IDM_Addin)))
+                        {
+                            AssemblyClassDefinition cls=GetAssemblyClassDefinition(type, "IDM_Addin");
+                            ConfigEditor.Addins.Add(cls);
+                            if (type.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
+                            {
+                                AddinTreeStructure xcls = new AddinTreeStructure();
+                                xcls.className = type.Name;
+                                xcls.dllname = type.Module.Name;
+                                xcls.PackageName = type.FullName;
+                                xcls.Order = cls.Order;
+                                if (cls.VisSchema != null)
+                                {
+                                    xcls.className = type.Name;
+                                    xcls.dllname = type.Module.Name;
+                                    xcls.PackageName = type.FullName;
+                                    xcls.Order = cls.Order;
+                                    xcls.Imagename = cls.VisSchema.IconImageName;
+                                    xcls.RootName = cls.VisSchema.RootNodeName;
+                                    xcls.NodeName = cls.VisSchema.BranchText;
+                                    xcls.ObjectType = type.Name;
+                                }
+                              
+                                ConfigEditor.AddinTreeStructure.Add(xcls);
+                            }
+                        }
                         if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowStep)))
                         {
 
-                            ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowStep"));
+                            ConfigEditor.WorkFlowSteps.Add(GetAssemblyClassDefinition(type, "IWorkFlowStep"));
                         }
                         if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowStepEditor)))
                         {
 
-                            ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowStepEditor"));
+                            ConfigEditor.WorkFlowStepEditors.Add(GetAssemblyClassDefinition(type, "IWorkFlowStepEditor"));
                         }
                         if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowEditor)))
                         {
 
-                            ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowEditor"));
+                            ConfigEditor.WorkFlowStepEditors.Add(GetAssemblyClassDefinition(type, "IWorkFlowEditor"));
                         }
                         if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowRule)))
                         {
@@ -676,7 +720,7 @@ namespace TheTechIdea.Tools
                         }
                         if (type.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
                         {
-                            GetAddinObjects(asm);
+                            //GetAddinObjects(asm);
                         } 
                        
                     }
@@ -710,6 +754,8 @@ namespace TheTechIdea.Tools
 
                 xcls.RootName = xcls.classProperties.misc;
             }
+            xcls.VisSchema = (AddinVisSchema)type.GetCustomAttribute(typeof(AddinVisSchema), false);
+          
             foreach (MethodInfo methods in type.GetMethods()
                          .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
                           .ToArray())

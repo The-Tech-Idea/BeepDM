@@ -41,6 +41,11 @@ namespace TheTechIdea.Util
         List<AssemblyClassDefinition> AppComponents { get; set; }
         List<AssemblyClassDefinition> ReportWritersClasses { get; set; }
         List<AssemblyClassDefinition> WorkFlowActions { get; set; }
+        List<AssemblyClassDefinition> WorkFlowEditors { get; set; }
+        List<AssemblyClassDefinition> WorkFlowSteps { get; set; }
+        List<AssemblyClassDefinition> WorkFlowStepEditors { get; set; }
+        List<AssemblyClassDefinition> FunctionExtensions { get; set; }
+        List<AssemblyClassDefinition> Addins { get; set; } 
         List<AssemblyClassDefinition> Rules { get; set; }
         List<AssemblyClassDefinition> PrintManagers { get; set; }
         List<CategoryFolder> CategoryFolders { get; set; }
