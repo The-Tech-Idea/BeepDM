@@ -155,7 +155,7 @@ namespace TheTechIdea.Tools
             try
             {
                 ScanAssembly(currentAssem);
-              //  Utilfunction.FunctionHierarchy = GetAddinObjects(currentAssem);
+               Utilfunction.FunctionHierarchy = GetAddinObjects(currentAssem);
             }
             catch (Exception ex)
             {
@@ -166,7 +166,7 @@ namespace TheTechIdea.Tools
             try
             {
                 ScanAssembly(rootassembly);
-              //  Utilfunction.FunctionHierarchy = GetAddinObjects(rootassembly);
+                Utilfunction.FunctionHierarchy = GetAddinObjects(rootassembly);
 
             }
             catch (Exception ex)
@@ -181,7 +181,7 @@ namespace TheTechIdea.Tools
                     try
                     {
                         ScanAssembly(item);
-                     //   Utilfunction.FunctionHierarchy = GetAddinObjects(item);
+                       Utilfunction.FunctionHierarchy = GetAddinObjects(item);
                     }
                     catch (Exception ex)
                     {
@@ -347,7 +347,7 @@ namespace TheTechIdea.Tools
                     {
                         ////DMEEditor.AddLogMessage("Start", $"Started Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
                         ScanAssembly(s.DllLib);
-                      //  Utilfunction.FunctionHierarchy = GetAddinObjects(s.DllLib);
+                        Utilfunction.FunctionHierarchy = GetAddinObjects(s.DllLib);
                      //   //DMEEditor.AddLogMessage("End", $"Ended Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
 
                     }
