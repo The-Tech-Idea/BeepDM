@@ -33,7 +33,7 @@
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.0.123" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="1.0.5" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="1.0.6" />
     <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.8" />
   </ItemGroup>
 

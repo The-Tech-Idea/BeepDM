@@ -718,11 +718,11 @@ namespace TheTechIdea.Beep.DataBase
                                     //  EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
                                     if (item.Operator.ToLower() == "between")
                                     {
-                                        qrystr += item.FieldName + " " + item.Operator + $"{ParameterDelimiter}p_" + item.FieldName + $" and  {ParameterDelimiter}p_" + item.FieldName + "1 " + Environment.NewLine;
+                                        qrystr += item.FieldName + " " + item.Operator + $" {ParameterDelimiter}p_" + item.FieldName + $" and  {ParameterDelimiter}p_" + item.FieldName + "1 " + Environment.NewLine;
                                     }
                                     else
                                     {
-                                        qrystr += item.FieldName + " " + item.Operator + $"{ParameterDelimiter}p_" + item.FieldName + " " + Environment.NewLine;
+                                        qrystr += item.FieldName + " " + item.Operator + $" {ParameterDelimiter}p_" + item.FieldName + " " + Environment.NewLine;
                                     }
 
                                 }
