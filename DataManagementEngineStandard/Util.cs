@@ -294,7 +294,10 @@ namespace TheTechIdea.Beep
         }
         public bool ToCSVFile(IList list, string filepath)
         {
-            if(list == null)
+            StreamWriter tw = new StreamWriter(filepath);
+            string WriteValue = "";
+            List<string> ls = new List<string>();
+            if (list == null)
             {
                 return false;
             }
@@ -307,13 +310,14 @@ namespace TheTechIdea.Beep
             PropertyDescriptorCollection props = TypeDescriptor.GetProperties(tp1);
             //  var myObjectProperties = props.Select(x => x.Name);
             //Set the first row as your property names
-            List<string> ls = new List<string>();
+           
             for (int i = 0; i < props.Count; i++)
             {
                 ls.Add(props[i].Name);
-            }  
-            var csvFile = string.Join(",",ls);
-           
+            }
+            WriteValue = string.Join(",", ls);
+            tw.WriteLineAsync(WriteValue);
+
             foreach (var item in list)
             {
                 var csvRow = Environment.NewLine;
@@ -325,21 +329,74 @@ namespace TheTechIdea.Beep
                 }
                   
                 csvRow.TrimEnd(',');
-                csvFile += csvRow;
+                tw.WriteLineAsync(csvRow);
             }
             try
             {
-                File.WriteAllBytes(filepath, Encoding.ASCII.GetBytes(csvFile));
+                tw.Dispose();
+                // File.WriteAllBytes(filepath, Encoding.ASCII.GetBytes(csvFile));
                 return true;
             }
             catch (Exception ex)
             {
+                tw.Dispose();
                 DME.ErrorObject.Ex = ex;
                 DME.ErrorObject.Flag = Errors.Failed;
                 return false;
             }
             
            
+        }
+        public bool ToCSVFile(DataTable list, string filepath)
+        {
+            StreamWriter tw = new StreamWriter(filepath);
+            string WriteValue = "";
+            List<string> ls = new List<string>();
+            if (list == null)
+            {
+                return false;
+            }
+          
+            if (list.Rows.Count == 0)
+            {
+                return false;
+            }
+         
+            foreach (DataColumn item in list.Columns)
+            {
+               ls.Add(item.ColumnName);
+              
+            }
+             WriteValue = string.Join(",", ls);
+            tw.WriteLine(WriteValue);
+            for (int k = 0; k < list.Rows.Count; k++)
+            {
+                var csvRow = Environment.NewLine;
+                for (int i = 0; i < ls.Count(); i++)
+                {
+
+                    var value = list.Rows[k][ls[i]].ToString() ;
+                    csvRow += $"{value},";
+                }
+
+                csvRow.TrimEnd(',');
+               tw.WriteLine(csvRow);
+            }
+            try
+            {
+                //  File.WriteAllBytes(filepath, Encoding.ASCII.GetBytes(csvFile));
+                tw.Dispose();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                tw.Dispose();
+                DME.ErrorObject.Ex = ex;
+                DME.ErrorObject.Flag = Errors.Failed;
+                return false;
+            }
+
+
         }
         public DataTable ToDataTable(Type tp)
         {
