@@ -368,7 +368,7 @@ namespace TheTechIdea.Util
 		#region"Mapping Save and Load Methods"
 		//public void SaveMappingSchemaValue(string mapname)
 		//{
-		//	Map_Schema retval = MappingSchema.Where(x => x.SchemaName.Equals(mapname,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+		//	Map_Schema retval = MappingSchema.Where(x => x.SchemaName.Equals(mapname,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
 		//	if (retval != null)
 		//	{
 		//		string path = Path.Combine(ConfigPath, mapname + ".json");
@@ -378,7 +378,7 @@ namespace TheTechIdea.Util
 		//}
 		//public Map_Schema LoadMappingSchema(string mapname)
 		//{
-		//	Map_Schema Existingretval = MappingSchema.Where(x => x.SchemaName .Equals(mapname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+		//	Map_Schema Existingretval = MappingSchema.Where(x => x.SchemaName .Equals(mapname, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
 		//	Map_Schema retval = null;
 		//	string path = Path.Combine(ConfigPath, mapname + ".json");
 		//	//File.WriteAllText(path, JsonConvert.SerializeObject(ts));
@@ -467,7 +467,7 @@ namespace TheTechIdea.Util
 		}
 		public bool DataConnectionExist(string ConnectionName)
 		{
-			return DataConnections.Any(x => x.ConnectionName.Equals(ConnectionName, StringComparison.OrdinalIgnoreCase));
+			return DataConnections.Any(x => x.ConnectionName.Equals(ConnectionName, StringComparison.InvariantCultureIgnoreCase));
 		}
 		public bool AddDataConnection(ConnectionProperties cn)
 		{ try
@@ -504,10 +504,10 @@ namespace TheTechIdea.Util
                     DataConnections.Add(conn);
                 }else
 					DataConnections[idx] = conn;
-                //var cnlist = DataConnections.Where(x => x.Category.ToString().Equals(category,StringComparison.OrdinalIgnoreCase)).ToList();
+                //var cnlist = DataConnections.Where(x => x.Category.ToString().Equals(category,StringComparison.InvariantCultureIgnoreCase)).ToList();
                 //foreach (ConnectionProperties dt in cnlist)
                 //{
-                //	ConnectionProperties dc = ls.Where(x => x.ConnectionName.Equals(dt.ConnectionName,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                //	ConnectionProperties dc = ls.Where(x => x.ConnectionName.Equals(dt.ConnectionName,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 //	if (dc == null)
 
                 //	{
@@ -516,7 +516,7 @@ namespace TheTechIdea.Util
                 //}
                 //foreach (ConnectionProperties item in ls)
                 //{
-                //	ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.Equals(item.ConnectionName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                //	ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.Equals(item.ConnectionName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 //	if (dc != null)
                 //	{
                 //		dc = item;
@@ -539,7 +539,7 @@ namespace TheTechIdea.Util
 		public bool RemoveConnByName(string pname)
 		{
 
-			int i = DataConnections.FindIndex(x => x.ConnectionName.Equals(pname, StringComparison.OrdinalIgnoreCase));
+			int i = DataConnections.FindIndex(x => x.ConnectionName.Equals(pname, StringComparison.InvariantCultureIgnoreCase));
 
 			return DataConnections.Remove(DataConnections[i]);
 		}
@@ -555,7 +555,7 @@ namespace TheTechIdea.Util
 
 			try
 			{
-				ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.Equals(pname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+				ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.Equals(pname, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
 				if (dc != null)
 				{
 					DataConnections.Remove(dc);
@@ -614,7 +614,7 @@ namespace TheTechIdea.Util
 		{
 			try
 			{
-				CategoryFolder x = CategoryFolders.Where(y => y.FolderName.Equals(pfoldername,StringComparison.OrdinalIgnoreCase) && y.RootName.Equals( prootname,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+				CategoryFolder x = CategoryFolders.Where(y => y.FolderName.Equals(pfoldername,StringComparison.InvariantCultureIgnoreCase) && y.RootName.Equals( prootname,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
 				CategoryFolders.Remove(x);
 				SaveCategoryFoldersValues();
 				return true;
@@ -770,9 +770,9 @@ namespace TheTechIdea.Util
 		//	DataSourceFieldProperties retval = null ;
 		//	if (AppfieldProperties != null)
 		//	{
-		//		if (AppfieldProperties.Any(i => i.DatasourceName.Equals(dsname,StringComparison.OrdinalIgnoreCase)))
+		//		if (AppfieldProperties.Any(i => i.DatasourceName.Equals(dsname,StringComparison.InvariantCultureIgnoreCase)))
 		//		{
-		//			retval = AppfieldProperties.Where(i => i.DatasourceName.Equals(dsname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+		//			retval = AppfieldProperties.Where(i => i.DatasourceName.Equals(dsname, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
 		//			return retval;
 		//		}
 		//		else
@@ -798,7 +798,7 @@ namespace TheTechIdea.Util
 		public bool RemoveLayerByName(string LayerName)
 		{
 			
-			int i = CompositeQueryLayers.FindIndex(x => x.LayerName.Equals(LayerName,StringComparison.OrdinalIgnoreCase));
+			int i = CompositeQueryLayers.FindIndex(x => x.LayerName.Equals(LayerName,StringComparison.InvariantCultureIgnoreCase));
 			if (i > -1)
 			{
 				return CompositeQueryLayers.Remove(CompositeQueryLayers[i]);
@@ -810,7 +810,7 @@ namespace TheTechIdea.Util
 		public bool RemoveLayerByID(string ID)
 		{
 			
-			int i = CompositeQueryLayers.FindIndex(x => x.ID.Equals(ID,StringComparison.OrdinalIgnoreCase));
+			int i = CompositeQueryLayers.FindIndex(x => x.ID.Equals(ID,StringComparison.InvariantCultureIgnoreCase));
 			if (i > -1)
 			{
 				return CompositeQueryLayers.Remove(CompositeQueryLayers[i]);
@@ -838,14 +838,14 @@ namespace TheTechIdea.Util
 		//public bool RemoveAppByName(string AppName)
 		//{
 
-		//	int i = Apps.FindIndex(x => x.AppName.Equals(AppName,StringComparison.OrdinalIgnoreCase));
+		//	int i = Apps.FindIndex(x => x.AppName.Equals(AppName,StringComparison.InvariantCultureIgnoreCase));
 
 		//	return Apps.Remove(Apps[i]);
 		//}
 		//public bool RemoveAppByID(string ID)
 		//{
 
-		//	int i = Apps.FindIndex(x => x.ID.Equals(ID,StringComparison.OrdinalIgnoreCase));
+		//	int i = Apps.FindIndex(x => x.ID.Equals(ID,StringComparison.InvariantCultureIgnoreCase));
 
 		//	return Apps.Remove(Apps[i]);
 		//}
@@ -1293,7 +1293,7 @@ namespace TheTechIdea.Util
 			CreateDir(path);
 
 
-			if (!Config.Folders.Any(item => item.FolderPath.Equals(@path,StringComparison.OrdinalIgnoreCase)))
+			if (!Config.Folders.Any(item => item.FolderPath.Equals(@path,StringComparison.InvariantCultureIgnoreCase)))
 			{
 				Config.Folders.Add(new StorageFolders(path, foldertype));
 			}

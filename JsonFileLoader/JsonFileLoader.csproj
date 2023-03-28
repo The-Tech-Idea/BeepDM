@@ -60,7 +60,7 @@
       <Version>3.0.14</Version>
     </PackageReference>
     <PackageReference Include="TheTechIdea.Beep.DataManagementEngine">
-      <Version>1.0.11</Version>
+      <Version>1.0.13</Version>
     </PackageReference>
     <PackageReference Include="TheTechIdea.Beep.DataManagementModels">
       <Version>1.0.9</Version>

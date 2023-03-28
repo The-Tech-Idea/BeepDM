@@ -316,7 +316,7 @@ namespace TheTechIdea.Beep
                 ls.Add(props[i].Name);
             }
             WriteValue = string.Join(",", ls);
-            tw.WriteLineAsync(WriteValue);
+            tw.WriteLine(WriteValue);
 
             foreach (var item in list)
             {
@@ -329,7 +329,7 @@ namespace TheTechIdea.Beep
                 }
                   
                 csvRow.TrimEnd(',');
-                tw.WriteLineAsync(csvRow);
+                tw.WriteLine(csvRow);
             }
             try
             {

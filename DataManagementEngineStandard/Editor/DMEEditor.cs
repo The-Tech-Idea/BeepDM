@@ -145,7 +145,11 @@ namespace TheTechIdea.Beep
                     return ds1.Openconnection();
                 }
                 else
-                    return ConnectionState.Broken; 
+                {
+                    AddLogMessage("Fail", $"Could not Open DataSource Connection ", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return ConnectionState.Broken;
+                }
+              
             }
             catch (Exception ex)
             {
@@ -185,7 +189,7 @@ namespace TheTechIdea.Beep
             catch (Exception ex)
             {
 
-                AddLogMessage("Fail", $"Could not Open DataSource Connection {ex.Message}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                AddLogMessage("Fail", $"Could not close DataSource Connection {ex.Message}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
                 return false;
             }
         }
@@ -203,7 +207,7 @@ namespace TheTechIdea.Beep
             else {
                 if (ds1 != null)
                 {
-                    if (pdatasourcename.Equals(ds1.DatasourceName))
+                    if (pdatasourcename.Equals(ds1.DatasourceName,StringComparison.InvariantCultureIgnoreCase))
                     {
                         return ds1;
                     }
@@ -306,7 +310,7 @@ namespace TheTechIdea.Beep
             ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
             if (ConfigEditor.DataSourcesClasses.Any(x => x.className.Equals(driversConfig.classHandler,StringComparison.InvariantCultureIgnoreCase)))
             {
-                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).FirstOrDefault().PackageName;
+                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className.Equals(driversConfig.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
                 if (packagename != null)
                 {
                    Type adc = assemblyHandler.GetType(packagename);
@@ -356,10 +360,10 @@ namespace TheTechIdea.Beep
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
             ConnectionDriversConfig package=null;
-            if (ConfigEditor.DataDriversClasses.Where(x => x.classHandler == ClassDBHandlerName).Any())
+            if (ConfigEditor.DataDriversClasses.Where(x => x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).Any())
             {
-                package = ConfigEditor.DataDriversClasses.Where(x => x.classHandler == ClassDBHandlerName).FirstOrDefault();
-                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className == package.classHandler).FirstOrDefault().PackageName;
+                package = ConfigEditor.DataDriversClasses.Where(x => x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className.Equals(package.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
                 if (packagename != null)
                 {
                     Type adc = assemblyHandler.GetType(packagename);
