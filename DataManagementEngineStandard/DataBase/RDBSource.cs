@@ -153,7 +153,7 @@ namespace TheTechIdea.Beep.DataBase
                 if (!command.Parameters.Contains("p_" + Regex.Replace(item.fieldname, @"\s+", "_")))
                 {
                     IDbDataParameter parameter = command.CreateParameter();
-                    //if (!item.fieldtype.Equals("System.String", StringComparison.OrdinalIgnoreCase) && !item.fieldtype.Equals("System.DateTime", StringComparison.OrdinalIgnoreCase))
+                    //if (!item.fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase) && !item.fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
                     //{
                     //    if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
                     //    {
@@ -165,7 +165,7 @@ namespace TheTechIdea.Beep.DataBase
                     //    }
                     //}
                     //else
-                        if (item.fieldtype.Equals("System.DateTime", StringComparison.OrdinalIgnoreCase))
+                        if (item.fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
                     {
                         if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
                         {
@@ -857,11 +857,11 @@ namespace TheTechIdea.Beep.DataBase
             {
                 GetEntitesList();
             }
-            EntityStructure fnd = Entities.Where(d => d.EntityName.Equals(EntityName,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            EntityStructure fnd = Entities.Where(d => d.EntityName.Equals(EntityName,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             if (fnd == null)
             {
                 List<EntityStructure> ls = Entities.Where(d => !string.IsNullOrEmpty(d.OriginalEntityName)).ToList();
-                fnd = ls.Where(d => d.OriginalEntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                fnd = ls.Where(d => d.OriginalEntityName.Equals(EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             }
           
             if (fnd == null)
@@ -909,7 +909,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             if (refresh)
                 {
-                    if (!fnd.EntityName.Equals(fnd.DatasourceEntityName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(fnd.DatasourceEntityName))
+                    if (!fnd.EntityName.Equals(fnd.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(fnd.DatasourceEntityName))
                     {
                         entname = fnd.DatasourceEntityName;
                     }
@@ -1025,19 +1025,19 @@ namespace TheTechIdea.Beep.DataBase
                             }
                         }
 
-                        EntityStructure exist = Entities.Where(d => d.EntityName.Equals(fnd.EntityName,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                        EntityStructure exist = Entities.Where(d => d.EntityName.Equals(fnd.EntityName,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                         if (exist == null)
                         {
                             Entities.Add(fnd);
                         }
                         else
                         {
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Created = true;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Editable = false;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Drawn = true;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Fields = fnd.Fields;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Relations = fnd.Relations;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].PrimaryKeys = fnd.PrimaryKeys;
+                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Created = true;
+                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Editable = false;
+                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Drawn = true;
+                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Fields = fnd.Fields;
+                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Relations = fnd.Relations;
+                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].PrimaryKeys = fnd.PrimaryKeys;
     
                         }
                     }
@@ -1112,7 +1112,7 @@ namespace TheTechIdea.Beep.DataBase
                     //        foreach (string item in diffnames)
                     //        {
                     //           // GetEntityStructure(item, false);
-                    //           // int idx = Entities.FindIndex(p => p.EntityName.Equals(item, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(item, StringComparison.OrdinalIgnoreCase));
+                    //           // int idx = Entities.FindIndex(p => p.EntityName.Equals(item, StringComparison.InvariantCultureIgnoreCase) || p.DatasourceEntityName.Equals(item, StringComparison.InvariantCultureIgnoreCase));
                     //           // Entities[idx].Created = false;
                     //             EntitiesNames.Add(item);
                     //        }
@@ -1163,7 +1163,7 @@ namespace TheTechIdea.Beep.DataBase
         {
             if (Entities.Count > 0)
             {
-                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase));
             }else
             {
                 return -1;
@@ -1189,7 +1189,7 @@ namespace TheTechIdea.Beep.DataBase
             {
                 if (Entities.Count > 0)
                 {
-                    if (Entities.Where(p => p.EntityName.Equals(entity.EntityName, StringComparison.OrdinalIgnoreCase) && p.Created == false).Any())
+                    if (Entities.Where(p => p.EntityName.Equals(entity.EntityName, StringComparison.InvariantCultureIgnoreCase) && p.Created == false).Any())
                     {
                         string createstring = CreateEntity(entity);
                         DMEEditor.ErrorObject = ExecuteSql(createstring);

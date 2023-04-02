@@ -45,6 +45,7 @@ namespace TheTechIdea.Beep
         Type GetTypeFromStringValue(string str);
         Type MakeGenericType(string typestring);
         Type MakeGenericListofType(string typestring);
+        Type MakeGenericType(string typestring, Type[] parameters);
         DataRow ConvertItemClassToDataRow(EntityStructure ent);
         List<EntityField> GetFieldFromGeneratedObject(object dt, Type tp = null);
         bool ToCSVFile(DataTable list, string filepath);

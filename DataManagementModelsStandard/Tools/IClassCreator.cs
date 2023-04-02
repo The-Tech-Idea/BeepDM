@@ -1,12 +1,10 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Util;
 
 namespace TheTechIdea.Tools
 {
@@ -15,9 +13,20 @@ namespace TheTechIdea.Tools
         IDMEEditor DMEEditor { get; set; }
         string outputFileName { get; set; }
         string outputpath { get; set; }
-        string CreateClass(string classname, List<EntityField> flds,string outputpath, string NameSpacestring="TheTechIdea.ProjectClasses");
-        string CreateDLL(string dllname, List<EntityStructure> entities, string outputpath, IProgress<PassedArgs> progress, CancellationToken token, string NameSpacestring = "TheTechIdea.ProjectClasses");
-        void GenerateCSharpCode(string fileName);
+
+        void AddConstructor();
+        void AddFields(EntityField fld);
+        void AddProperties(EntityField fld);
         void CompileClassFromText(string SourceString, string output);
+       
+        Assembly CreateAssemblyFromCode(string code);
+        string CreateClass(string classname, List<EntityField> flds, string poutputpath, string NameSpacestring = "TheTechIdea.ProjectClasses");
+        string CreateClassFromTemplate(EntityStructure entity, string template, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses");
+        string CreateDLL(string dllname, List<EntityStructure> entities, string outputpath, IProgress<PassedArgs> progress, CancellationToken token, string NameSpacestring = "TheTechIdea.ProjectClasses");
+        string CreateDLL(string dllname, string filepath, string outputpath, IProgress<PassedArgs> progress, CancellationToken token, string NameSpacestring = "TheTechIdea.ProjectClasses");
+        string CreateINotifyClass(EntityStructure entity, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses");
+        string CreatePOCOClass(EntityStructure entity, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses");
+        Type CreateTypeFromCode(string code, string outputtypename);
+        void GenerateCSharpCode(string fileName);
     }
 }

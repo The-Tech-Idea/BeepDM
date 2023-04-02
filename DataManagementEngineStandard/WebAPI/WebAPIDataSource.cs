@@ -73,7 +73,7 @@ namespace TheTechIdea.Beep.WebAPI
         {
             if (Entities.Count > 0)
             {
-                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase));
             }
             else
             {
@@ -84,7 +84,7 @@ namespace TheTechIdea.Beep.WebAPI
         }
         public bool CheckEntityExist(string EntityName)
         {
-            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).Any();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(EntityName, StringComparison.InvariantCultureIgnoreCase)).Any();
         }
 
         public virtual bool CreateEntityAs(EntityStructure entity)
@@ -175,13 +175,13 @@ namespace TheTechIdea.Beep.WebAPI
 
         public EntityStructure GetEntityStructure(string EntityName, bool refresh)
         {
-            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
 
         }
 
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
-            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            return Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
         }
 
         public Type GetEntityType(string EntityName)

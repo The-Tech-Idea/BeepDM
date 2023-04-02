@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -518,7 +519,7 @@ namespace TheTechIdea.Beep
             Uri relativeUri = fromUri.MakeRelativeUri(toUri);
             string relativePath = Uri.UnescapeDataString(relativeUri.ToString());
 
-            if (string.Equals(toUri.Scheme, Uri.UriSchemeFile, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(toUri.Scheme, Uri.UriSchemeFile, StringComparison.InvariantCultureIgnoreCase))
             {
                 relativePath = relativePath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
             }
@@ -647,7 +648,7 @@ namespace TheTechIdea.Beep
                     if (row[item.ColumnName] != DBNull.Value)
                     {
                         string st = row[item.ColumnName].ToString();
-                        Type tp = Type.GetType(enttype.Fields.Where(p => p.fieldname.Equals(item.ColumnName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault().fieldtype);
+                        Type tp = Type.GetType(enttype.Fields.Where(p => p.fieldname.Equals(item.ColumnName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().fieldtype);
                         var v = Convert.ChangeType(row[item.ColumnName],tp);
                         if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st))
                         {
@@ -807,18 +808,28 @@ namespace TheTechIdea.Beep
         }
         public Type MakeGenericListofType(string typestring)
         {
+            Type genericType = typeof(List<>); // Generic type definition
             string elementTypeName = typestring;
             Type elementType = Type.GetType(elementTypeName);
-            Type[] types = new Type[] { elementType };
 
-            Type listType = typeof(List<>);
-            return listType.MakeGenericType(types);
+            Type specificType = genericType.MakeGenericType(elementType); // Construct specific generic type
+
+         
+
+            return specificType;
         }
         public Type MakeGenericType(string typestring)
         {
             string elementTypeName = typestring;
-            return Type.GetType(elementTypeName);
-
+            Type type= Type.GetType(elementTypeName);
+            return type.MakeGenericType();
+            // return listType.MakeGenericType(types);
+        }
+        public Type MakeGenericType(string typestring,Type[] parameters)
+        {
+            string elementTypeName = typestring;
+            Type type = Type.GetType(elementTypeName);
+            return type.MakeGenericType(parameters);
             // return listType.MakeGenericType(types);
         }
         public EntityStructure GetEntityStructureFromListorTable(  dynamic retval)

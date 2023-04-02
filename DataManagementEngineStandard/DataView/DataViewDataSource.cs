@@ -139,9 +139,9 @@ namespace TheTechIdea.Beep.DataView
             string filename = Path.GetFileName(datasourcename);
             List<ConnectionProperties> cnlist = DMEEditor.ConfigEditor.DataConnections.Where(p => p.FileName != null && p.Category == DatasourceCategory.VIEWS).ToList();
             string filepath; //= DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.DataView).FirstOrDefault().FolderPath;
-            if (cnlist.Where(c => c.FileName.Equals(filename, StringComparison.OrdinalIgnoreCase)).Any())
+            if (cnlist.Where(c => c.FileName.Equals(filename, StringComparison.InvariantCultureIgnoreCase)).Any())
             {
-                Dataconnection.ConnectionProp = cnlist.Where(c => c.FileName.Equals(filename,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                Dataconnection.ConnectionProp = cnlist.Where(c => c.FileName.Equals(filename,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 filepath = Dataconnection.ConnectionProp.FilePath;
 
 
@@ -236,15 +236,15 @@ namespace TheTechIdea.Beep.DataView
         }
         public int EntityListIndex( string entityname)
         {
-            int retval= Entities.FindIndex(a => a.DatasourceEntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
+            int retval= Entities.FindIndex(a => a.DatasourceEntityName.Equals(entityname, StringComparison.InvariantCultureIgnoreCase));
             if (retval == -1)
             {
-                retval = Entities.FindIndex(a => a.EntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase));
+                retval = Entities.FindIndex(a => a.EntityName.Equals(entityname, StringComparison.InvariantCultureIgnoreCase));
 
             }
             if (retval == -1)
             {
-                retval = Entities.FindIndex(a => a.Caption.Equals(entityname, StringComparison.OrdinalIgnoreCase));
+                retval = Entities.FindIndex(a => a.Caption.Equals(entityname, StringComparison.InvariantCultureIgnoreCase));
 
             }
             return retval;
@@ -375,7 +375,7 @@ namespace TheTechIdea.Beep.DataView
         }
         public bool CheckEntityExist(string entityname)
         {
-            if (Entities.Any(x=> x.EntityName.Equals(entityname, StringComparison.OrdinalIgnoreCase)))
+            if (Entities.Any(x=> x.EntityName.Equals(entityname, StringComparison.InvariantCultureIgnoreCase)))
             {
                 return true;
             }else
@@ -386,7 +386,7 @@ namespace TheTechIdea.Beep.DataView
         private IDataSource GetDataSourceObject(string entityname)
         {
             IDataSource retval;
-            EntityStructure dh = Entities.Where(x => string.Equals(x.EntityName, entityname, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            EntityStructure dh = Entities.Where(x => string.Equals(x.EntityName, entityname, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             if (dh==null)
             {
                 retval = DMEEditor.GetDataSource(DataView.EntityDataSourceID);
@@ -734,7 +734,7 @@ namespace TheTechIdea.Beep.DataView
             maintab.DatasourceEntityName = tablename;
             //if (CheckEntityExist(maintab.DatasourceEntityName))
             //{
-            //    int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count();
+            //    int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase)).Count();
             //    maintab.EntityName = maintab.DatasourceEntityName + "_" + cnt + 1;
             //}
             maintab.Caption = $"{maintab.DatasourceEntityName}_{Parenttab.EntityName}s";
@@ -782,7 +782,7 @@ namespace TheTechIdea.Beep.DataView
                 maintab.DatasourceEntityName = tablename;
                 if (CheckEntityExist(maintab.DatasourceEntityName))
                 {
-                    int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count();
+                    int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase)).Count();
                     maintab.EntityName = maintab.DatasourceEntityName + "_" + cnt + 1;
                 }
                 switch (maintab.DatabaseType)
@@ -891,11 +891,11 @@ namespace TheTechIdea.Beep.DataView
                 {
                    if(maintab.ParentId == 0)
                     {
-                        int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)).Count() + 1;
+                        int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase)).Count() + 1;
                         if (cnt > 0)
                         {
                             List<EntityStructure> ls = new List<EntityStructure>();
-                            foreach (string item in EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase)))
+                            foreach (string item in EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase)))
                             {
                                 ls.Add(GetEntityStructure(item, false));
                             }
@@ -1042,7 +1042,7 @@ namespace TheTechIdea.Beep.DataView
             }
             if (childtable != null)
             {
-                if (!Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.Equals(childtable, StringComparison.OrdinalIgnoreCase)).Any())//f => f.Id == childtable &&
+                if (!Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.Equals(childtable, StringComparison.InvariantCultureIgnoreCase)).Any())//f => f.Id == childtable &&
                 {
                     //a = new EntityStructure() { Id = pkid, ParentId = pid, EntityName = childtable.ToUpper(), ViewID = v.ViewID };
                     //a.DataSourceID = v.Entities.Where(x => x.Id == pid).FirstOrDefault().DataSourceID;
@@ -1059,7 +1059,7 @@ namespace TheTechIdea.Beep.DataView
                 }
                 else
                 {
-                    a = Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.Equals(childtable, StringComparison.OrdinalIgnoreCase)).FirstOrDefault(); //f.Id == childtable &&
+                    a = Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.Equals(childtable, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault(); //f.Id == childtable &&
                                                                                                                                                                  //  a.DataSourceID = DatasourceName;
                     a.DatasourceEntityName = childtable;
                     a.Relations.Add(new RelationShipKeys { EntityColumnID = childcolumn.ToUpper(), RelatedEntityColumnID = parentcolumn.ToUpper(), RelatedEntityID = parenttable.ToUpper() });

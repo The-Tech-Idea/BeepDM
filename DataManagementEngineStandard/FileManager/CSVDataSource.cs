@@ -201,7 +201,7 @@ namespace TheTechIdea.Beep.FileManager
                         }
                         try
                         {
-                            if (f.fieldtype.Equals("System.String", StringComparison.OrdinalIgnoreCase))
+                            if (f.fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase))
                             {
                                 if (!string.IsNullOrEmpty(r[j]) && !string.IsNullOrWhiteSpace(r[j]))
                                 {
@@ -223,7 +223,7 @@ namespace TheTechIdea.Beep.FileManager
                         }
                         try
                         {
-                            if (f.fieldtype.Equals("System.Decimal", StringComparison.OrdinalIgnoreCase))
+                            if (f.fieldtype.Equals("System.Decimal", StringComparison.InvariantCultureIgnoreCase))
                             {
                                 if (!string.IsNullOrEmpty(r[j]) && !string.IsNullOrWhiteSpace(r[j]))
                                 {
@@ -257,7 +257,7 @@ namespace TheTechIdea.Beep.FileManager
             // Check for string size
             foreach (EntityField fld in flds)
             {
-                if (fld.fieldtype.Equals("System.string", StringComparison.OrdinalIgnoreCase))
+                if (fld.fieldtype.Equals("System.string", StringComparison.InvariantCultureIgnoreCase))
                 {
                     if (fld.Size1 == 0)
                     {

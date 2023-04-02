@@ -4,9 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 
 namespace TheTechIdea.Util
@@ -150,47 +147,65 @@ namespace TheTechIdea.Util
         }
         public  DataTable JsonToDataTable(string jsonString)
         {
-            //var jsonLinq = JObject.Parse(jsonString);
-
-            //// Find the first array using Linq  
-            //var srcArray = jsonLinq.Descendants().Where(d => d is JArray).First();
-            //var trgArray = new JArray();
-            //foreach (JObject row in srcArray.Children<JObject>())
-            //{
-            //    var cleanRow = new JObject();
-            //    foreach (JProperty column in row.Properties())
-            //    {
-            //        // Only include JValue types  
-            //        if (column.Value is JValue)
-            //        {
-            //            cleanRow.Add(column.Name, column.Value);
-            //        }
-            //    }
-            //    trgArray.Add(cleanRow);
-            //}
-            DataTable dt;
-            try
+            DataTable dt = null;
+            DataSet ds= ConverttoDataset(jsonString);
+            if(ds!=null)
             {
-                dt= JsonConvert.DeserializeObject<DataTable>(jsonString);
-            }
-            catch (Exception ex)
-            {
-                try
+                if(ds.Tables.Count>0)
                 {
-                    dt = ConverttoDataset(jsonString).Tables[0];
-                }
-                catch (Exception ex1)
-                {
+                    dt = ds.Tables[0];
 
-                    dt = null;
                 }
-              
             }
+          
+           
             return dt;
         }
         public DataSet ConverttoDataset(string jsonString)
         {
-            return JsonConvert.DeserializeObject<DataSet>(jsonString);
+          
+
+            // Deserialize the JSON string to a JArray
+            JArray jsonArray = JsonConvert.DeserializeObject<JArray>(jsonString);
+            DataTable dataTable = new DataTable();
+            // Create a new DataSet
+            DataSet dataSet = new DataSet();
+            foreach (JToken token in jsonArray)
+            {
+                if (token.Type == JTokenType.Object)
+                {
+                    JObject jsonObject = token as JObject;
+                    if (jsonObject != null)
+                    {
+                        if (dataTable.Columns.Count == 0)
+                        {
+                            foreach (JProperty property in jsonObject.Properties())
+                            {
+                                dataTable.Columns.Add(property.Name, typeof(string));
+                            }
+                        }
+                        DataRow dataRow = dataTable.NewRow();
+                        foreach (JProperty property in jsonObject.Properties())
+                        {
+                            try
+                            {
+                                dataRow[property.Name] = property.Value.ToString();
+                            }
+                            catch (Exception ex1)
+                            {
+                                dataTable.Columns.Add(property.Name, typeof(string));
+                                dataRow[property.Name] = property.Value.ToString();
+
+
+                            }
+                          
+                        }
+                        dataTable.Rows.Add(dataRow);
+                    }
+                }
+            }
+            dataSet.Tables.Add(dataTable);
+            return dataSet;
         }
         public string CheckJsonType(JToken obj)
         {
