@@ -385,6 +385,50 @@ namespace TheTechIdea.Beep.DataBase
             }
             return ErrorObject;
         }
+        public virtual IErrorsInfo BeginTransaction(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                RDBMSConnection.DbConn.BeginTransaction();
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+
+        public virtual IErrorsInfo EndTransaction(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Beep", $"Error in end Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+
+        public virtual IErrorsInfo Commit(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
             if (recEntity != EntityName)
@@ -401,43 +445,11 @@ namespace TheTechIdea.Beep.DataBase
             DataTable tb;
             DataRow dr;
             string msg = "";
-            //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
+             //var sqlTran = RDBMSConnection.DbConn.BeginTransaction();
             IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
             var ti = Activator.CreateInstance(enttype);
-            // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
-            //if (UploadDataRow.GetType().FullName == "System.Data.DataRowView")
-            //{
-            //    dv = (DataRowView)UploadDataRow;
-            //    dr = dv.Row;
-
-            //} else 
-            //if (UploadDataRow.GetType().FullName == "System.Data.DataRow")
-            //{
-            //    dr = (DataRow)UploadDataRow;
-            //}
-            //else
-            //{
-            //    dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
-            //    foreach (EntityField col in DataStruct.Fields)
-            //    {
-            //        System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname);
-
-            //        //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
-            //        //{
-            //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-            //        dynamic result = GetPropAInfo.GetValue(UploadDataRow);
-
-            //        if (result == null)
-            //        {
-            //            result = System.DBNull.Value;
-            //        }
-
-
-            //        dr[col.fieldname] = result;
-            //    }
-            //}
-
+            
             dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, UploadDataRow, DataStruct);
             try
             {
@@ -505,51 +517,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             else
                 recNumber += 1;
-            // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
-            //if (DeletedDataRow.GetType().FullName == "System.Data.DataRowView")
-            //{
-            //    dv = (DataRowView)DeletedDataRow;
-            //    dr = dv.Row;
-            //    //foreach (EntityField col in DataStruct.Fields)
-            //    //{
-            //    //    // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
-            //    //    //if (dr[col.fieldname] != System.DBNull.Value)
-            //    //    //{
-            //    //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-            //    //        PropAInfo.SetValue(ti, dr[col.fieldname], null);
-            //    //    //}
-
-            //    //}
-
-            //}
-            //else
-            //   if (DeletedDataRow.GetType().FullName == "System.Data.DataRow")
-            //{
-            //    dr = (DataRow)DeletedDataRow;
-            //}
-            //else
-            //{
-            //    // Get where condition
-
-            //    dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
-            //    foreach (EntityField col in DataStruct.Fields)
-            //    {
-            //        System.Reflection.PropertyInfo GetPropAInfo = DeletedDataRow.GetType().GetProperty(col.fieldname);
-
-            //        //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
-            //        //{
-            //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-            //        dynamic result = GetPropAInfo.GetValue(DeletedDataRow);
-
-            //        if (result == null)
-            //        {
-            //            result = System.DBNull.Value;
-            //        }
-
-
-            //        dr[col.fieldname] = result;
-            //    }
-            //}
+           
             dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, DeletedDataRow, DataStruct);
             try
             {
@@ -2101,6 +2069,8 @@ namespace TheTechIdea.Beep.DataBase
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+
+       
         #endregion
 
 

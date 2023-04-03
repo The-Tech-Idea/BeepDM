@@ -17,6 +17,8 @@ namespace TheTechIdea.Beep.ConfigUtil
         DataSet ConverttoDataset(string jsonString);
         List<T> DeserializeObjectFromjsonString<T>(string jsonString);
         T DeserializeSingleObjectFromjsonString<T>(string jsonString);
+        string SerializeObject(object obj);
+        object DeserializeObject(string jsonstring);
 
     }
 }

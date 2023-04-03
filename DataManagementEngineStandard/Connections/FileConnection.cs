@@ -56,26 +56,26 @@ namespace TheTechIdea.Beep.FileManager
             }
             if (ConnectionProp.FilePath.StartsWith(".") || ConnectionProp.FilePath.Equals("/") || ConnectionProp.FilePath.Equals("\\"))
             {
-                ConnectionProp.FilePath = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
+                rep = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
             }
 
             return rep;
         }
         private ConnectionState OpenConn()
         {
-            ReplaceValueFromConnectionString();
-            if (Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName) != null)
+            string r= ReplaceValueFromConnectionString();
+            if (Path.Combine(r, ConnectionProp.FileName) != null)
             {
-                if (File.Exists(Path.Combine(ConnectionProp.FilePath,ConnectionProp.FileName)))
+                if (File.Exists(Path.Combine(r,ConnectionProp.FileName)))
                 {
-                    string str = $"Found File  ,{Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)}";
+                    string str = $"Found File  ,{Path.Combine(r, ConnectionProp.FileName)}";
                    
                   //  DMEEditor.AddLogMessage("Success", str, DateTime.Now, -1, "", Errors.Ok);
                     ConnectionStatus = ConnectionState.Open;
                 }
                 else
                 {
-                    string str = $"Error in finding File  ,{Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)}";
+                    string str = $"Error in finding File  ,{Path.Combine(r, ConnectionProp.FileName)}";
                 
                     DMEEditor.AddLogMessage("Fail", str, DateTime.Now, -1, "", Errors.Failed);
                     ConnectionStatus = ConnectionState.Broken;
@@ -84,7 +84,7 @@ namespace TheTechIdea.Beep.FileManager
             }
             else
             {
-                string str = $"Error No Path Exist  ,{ConnectionProp.FilePath}";
+                string str = $"Error No Path Exist  ,{r}";
                 DMEEditor.AddLogMessage("Fail", str, DateTime.Now, -1, "", Errors.Failed);
                 ConnectionStatus = ConnectionState.Closed;
             }
@@ -103,7 +103,8 @@ namespace TheTechIdea.Beep.FileManager
         }
         public virtual ConnectionState CloseConn()
         {
-            if (File.Exists(Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)))
+            string r = ReplaceValueFromConnectionString();
+            if (File.Exists(Path.Combine(r, ConnectionProp.FileName)))
             {
                 DMEEditor.AddLogMessage("Success", $"Closed Connection for File { ConnectionProp.FileName}", DateTime.Now, 0, ConnectionProp.FileName, Errors.Ok);
                 ConnectionStatus = ConnectionState.Closed;

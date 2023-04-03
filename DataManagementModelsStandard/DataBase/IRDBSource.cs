@@ -23,7 +23,9 @@ namespace TheTechIdea.Beep.DataBase
         string EnableFKConstraints( EntityStructure t1);
       
         string GetSchemaName();
-       
+        IErrorsInfo BeginTransaction(PassedArgs args);
+        IErrorsInfo EndTransaction(PassedArgs args);
+        IErrorsInfo Commit(PassedArgs args);
 
 
     }

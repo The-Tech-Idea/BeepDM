@@ -83,6 +83,7 @@ namespace TheTechIdea.Beep.DataView
                 DataView.Viewtype = value;
             }
         }
+
         public  bool Editable { get ; set ; }
         public string EntityDataSourceID { get ; set ; }
         public string CompositeLayerDataSourceID { get; set; }
@@ -163,6 +164,50 @@ namespace TheTechIdea.Beep.DataView
             }
             DataViewFile = Path.Combine(filepath, filename);
         
+        }
+        public virtual IErrorsInfo BeginTransaction(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+
+        public virtual IErrorsInfo EndTransaction(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Beep", $"Error in end Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+
+        public virtual IErrorsInfo Commit(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
         }
         public List<string> GetEntitesList()
         {

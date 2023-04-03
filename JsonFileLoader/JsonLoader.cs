@@ -15,6 +15,14 @@ namespace TheTechIdea.Util
         {
 
         }
+        public string SerializeObject(object obj)
+        {
+            return JsonConvert.SerializeObject(obj);
+        }
+        public object DeserializeObject(string jsonstring)
+        {
+            return JsonConvert.DeserializeObject(jsonstring);
+        }
         public List<T> DeserializeObject<T>(string filename)
         {
             var settings = new JsonSerializerSettings
@@ -170,6 +178,7 @@ namespace TheTechIdea.Util
             DataTable dataTable = new DataTable();
             // Create a new DataSet
             DataSet dataSet = new DataSet();
+            
             foreach (JToken token in jsonArray)
             {
                 if (token.Type == JTokenType.Object)

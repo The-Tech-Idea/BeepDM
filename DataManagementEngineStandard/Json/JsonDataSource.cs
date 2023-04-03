@@ -31,7 +31,8 @@ namespace TheTechIdea.Beep.Json
                 ErrorObject = ErrorObject,
 
             };
-            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == datasourcename).FirstOrDefault();
+            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName.Equals(datasourcename,StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
+            
             FileName = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
         }
         public event EventHandler<PassedArgs> PassEvent;
@@ -52,7 +53,7 @@ namespace TheTechIdea.Beep.Json
         public virtual string ColumnDelimiter { get; set; } = "''";
         public virtual string ParameterDelimiter { get; set; } = ":";
         string FileName;
-
+        
         #region "DataSource Methods"
         public int GetEntityIdx(string entityName)
         {
@@ -406,14 +407,7 @@ namespace TheTechIdea.Beep.Json
             }
             return retval;
         }
-        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
-        {
-            throw new NotImplementedException();
-        }
-        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
-        {
-            throw new NotImplementedException();
-        }
+      
         public IErrorsInfo RunScript(ETLScriptDet dDLScripts)
         {
             throw new NotImplementedException();
@@ -443,6 +437,113 @@ namespace TheTechIdea.Beep.Json
         {
             throw new NotImplementedException();
         }
+        public virtual IErrorsInfo BeginTransaction(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+              
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+
+        public virtual IErrorsInfo EndTransaction(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Beep", $"Error in end Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+
+        public virtual IErrorsInfo Commit(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                // Serialize the updated list of  objects back into a JSON array string
+                string updatedJson = DMEEditor.ConfigEditor.JsonLoader.SerializeObject(Records);
+
+                // Write the updated JSON array string back to the file
+                File.WriteAllText(FileName, updatedJson);
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
+        {
+            try
+            {
+               
+                DMEEditor.ErrorObject.Ex = null;
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
+                DMEEditor.ErrorObject.Message = "";
+                
+                EntityStructure DataStruct = GetEntityStructure(EntityName, true);
+                if (DataStruct != null)
+                {
+                    if(DataStruct.PrimaryKeys.Count > 0)
+                    {
+                        Type enttype = GetEntityType(EntityName);
+                        if(enttype != null)
+                        {
+                            if((UploadDataRow is  DataRow) || (UploadDataRow is DataRowView)){
+
+                            }
+                        }
+                        DataRow dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, UploadDataRow, DataStruct);
+                        if (dr != null)
+                        {
+
+                        }
+                    }
+                }
+               
+
+               
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.ErrorObject.Ex = ex;
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Message = ex.Message;
+            }
+            return DMEEditor.ErrorObject;
+        }
+        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
+        {
+            try
+            {
+                DMEEditor.ErrorObject.Ex = null;
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
+                DMEEditor.ErrorObject.Message = "";
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.ErrorObject.Ex = ex;
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Message = ex.Message;
+            }
+            return DMEEditor.ErrorObject;
+        }
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
             try
@@ -450,21 +551,7 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Ex = null;
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
                 DMEEditor.ErrorObject.Message = "";
-                DataTable dataTable = GetDataTable(EntityName);
-                if (dataTable != null)
-                {
-                    EntityStructure strc = GetEntityStructure(EntityName);
-                    DataRow dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, GetEntityType(EntityName), InsertedData, strc);
-                    DataRow newrow = dataTable.NewRow();
-                    if (dr != null)
-                    {
-                        foreach (var item in strc.Fields)
-                        {
-                            newrow[item.fieldname] = dr[item.fieldname];
-                        }
-                    }
-                    dataTable.Rows.Add(newrow);
-                }
+               
             }
             catch (Exception ex)
             {
