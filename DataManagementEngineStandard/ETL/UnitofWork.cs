@@ -5,11 +5,11 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
-using System.Diagnostics;
+
 using System.Linq;
-using System.Linq.Expressions;
+
 using System.Reflection;
-using System.Runtime.CompilerServices;
+
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -17,12 +17,15 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Util;
 
+
+
 namespace TheTechIdea.Beep.Editor
 {
     public class UnitofWork<T> where T : class, INotifyPropertyChanged, new() 
     {
         CancellationTokenSource tokenSource;
         CancellationToken token;
+        private  Dictionary<T, EntityState> _entityStates;
         protected virtual event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
         public UnitofWork(IDMEEditor dMEEditor,string datasourceName)
         {
@@ -83,12 +86,56 @@ namespace TheTechIdea.Beep.Editor
             InsertedKeys= new Dictionary<int,int>();
             UpdatedKeys  = new Dictionary<int,int>();
             DeletedKeys  = new Dictionary<int,int>();
+            _entityStates = new Dictionary<T, EntityState>();
             PrimaryKey = EntityStructure.PrimaryKeys.FirstOrDefault().fieldname;
             EntityType = DataSource.GetEntityType(EntityName);
             keysidx = 0;
             
         }
+        public void Create(T entity)
+        {
+            Units.Add(entity);
+            _entityStates[entity] = EntityState.Added;
+        }
+        public T Read(int id)
+        {
+            return Units.FirstOrDefault(x => x.GetType().GetProperty("Id")?.GetValue(x, null).ToString() == id.ToString());
+        }
 
+        public void Update(int id, T entity)
+        {
+            var index = Units.IndexOf(Units.FirstOrDefault(x => x.GetType().GetProperty("Id")?.GetValue(x, null).ToString() == id.ToString()));
+            if (index >= 0)
+            {
+                Units[index] = entity;
+                _entityStates[entity] = EntityState.Modified;
+            }
+        }
+
+        public void Delete(int id)
+        {
+            var entity = Units.FirstOrDefault(x => x.GetType().GetProperty("Id")?.GetValue(x, null).ToString() == id.ToString());
+            if (entity != null)
+            {
+                Units.Remove(entity);
+                _entityStates[entity] = EntityState.Deleted;
+            }
+        }
+
+        public IEnumerable<T> GetAddedEntities()
+        {
+            return _entityStates.Where(x => x.Value != EntityState.Added).Select(x => x.Key);
+        }
+        public IEnumerable<T> GetModifiedEntities()
+        {
+            return _entityStates.Where(x => x.Value != EntityState.Modified).Select(x => x.Key);
+        }
+        public IEnumerable<T> GetDeletedEntities()
+        {
+            return _entityStates.Where(x => x.Value == EntityState.Deleted).Select(x => x.Key);
+        }
+
+       
         private void Units_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             switch (e.Action)
@@ -132,6 +179,21 @@ namespace TheTechIdea.Beep.Editor
                 default:
                     break;
             }
+            if (e.OldItems != null)
+            {
+                foreach (T item in e.OldItems)
+                {
+                    _entityStates[item] = EntityState.Deleted;
+                }
+            }
+
+            if (e.NewItems != null)
+            {
+                foreach (T item in e.NewItems)
+                {
+                    _entityStates[item] = EntityState.Added;
+                }
+            }
         }
 
         private void ItemPropertyChangedHandler(object sender, PropertyChangedEventArgs e)
@@ -171,6 +233,7 @@ namespace TheTechIdea.Beep.Editor
             InsertedKeys.Clear();
             InsertedKeys.Clear();
             DeletedUnits.Clear();
+            _entityStates = new Dictionary<T, EntityState>();
         }
         public virtual async Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token)
         {
@@ -182,27 +245,49 @@ namespace TheTechIdea.Beep.Editor
             progress.Report(args);
             try
             {
-                foreach (var t in InsertedKeys)
+                foreach (T t in GetAddedEntities())
                 {
                     args.ParameterInt1 = x;
                     progress.Report(args);
-                    errorsInfo = await InsertAsync(Units[t.Value]);
+                    errorsInfo = await InsertAsync(t);
                     x++;
                 }
-                foreach (var t in UpdatedKeys)
+                foreach (var t in GetModifiedEntities())
                 {
                     args.ParameterInt1 = x;
                     progress.Report(args);
-                    errorsInfo = await UpdateAsync(Units[t.Value]);
+                    errorsInfo = await UpdateAsync(t);
                     x++;
                 }
-                foreach (var t in DeletedKeys)
+                foreach (var t in GetDeletedEntities())
                 {
                     args.ParameterInt1 = x;
                     progress.Report(args);
-                    errorsInfo = await DeleteAsync(Units[t.Value]);
+                    errorsInfo = await DeleteAsync(t);
                     x++;
                 }
+
+                //foreach (var t in InsertedKeys)
+                //{
+                //    args.ParameterInt1 = x;
+                //    progress.Report(args);
+                //    errorsInfo = await InsertAsync(Units[t.Value]);
+                //    x++;
+                //}
+                //foreach (var t in UpdatedKeys)
+                //{
+                //    args.ParameterInt1 = x;
+                //    progress.Report(args);
+                //    errorsInfo = await UpdateAsync(Units[t.Value]);
+                //    x++;
+                //}
+                //foreach (var t in DeletedKeys)
+                //{
+                //    args.ParameterInt1 = x;
+                //    progress.Report(args);
+                //    errorsInfo = await DeleteAsync(Units[t.Value]);
+                //    x++;
+                //}
                 args.ParameterString1 = $"Ended Saving Changes";
                 progress.Report(args);
             }
@@ -246,13 +331,6 @@ namespace TheTechIdea.Beep.Editor
                 DMEEditor.ErrorObject.Message = "Object is null";
                 return DMEEditor.ErrorObject;
             }
-            
-            if (!Units.Contains(doc))
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = "Object exist";
-                return DMEEditor.ErrorObject;
-            }
             IErrorsInfo retval = await UpdateDoc(doc);
             return DMEEditor.ErrorObject;
         }
@@ -268,7 +346,9 @@ namespace TheTechIdea.Beep.Editor
                 DMEEditor.ErrorObject.Message = "Object is null";
                 return DMEEditor.ErrorObject;
             }
-            if (Units.Contains(doc)){
+            var entityidx = DocExistByKey(doc);
+            if (entityidx == -1)
+            {
 
                 DMEEditor.ErrorObject.Flag = Errors.Failed;
                 DMEEditor.ErrorObject.Message = "Object exist";
@@ -287,13 +367,6 @@ namespace TheTechIdea.Beep.Editor
             {
                 DMEEditor.ErrorObject.Flag = Errors.Failed;
                 DMEEditor.ErrorObject.Message = "Object is null";
-                return DMEEditor.ErrorObject;
-            }
-            if (Units.Contains(doc))
-            {
-
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = "Object exist";
                 return DMEEditor.ErrorObject;
             }
             IErrorsInfo retval = await DeleteDoc(doc);
@@ -361,34 +434,34 @@ namespace TheTechIdea.Beep.Editor
             }
             return retval;
         }
-        //public virtual int FindDocIdx(T doc)
-        //{
-        //    int retval = -1;
+        public virtual int FindDocIdx(T doc)
+        {
+            int retval = -1;
 
-        //    retval=Units.FindIndex(p=>p.GetType().GetProperty(PrimaryKey).GetValue(doc,null).Equals(doc.GetType().GetProperty(PrimaryKey).GetValue(doc,null)));
+            retval = Units.IndexOf(doc);
 
-        //    return retval;
-        //}
-        //public virtual T GetDocFromList(KeyValuePair<int,int> key)
-        //{
-        //    return Units[key.Value];
-        //}
-        //public virtual int DocExistByKey(T doc)
-        //{
-        //    int retval = -1;
+            return retval;
+        }
+        public virtual T GetDocFromList(KeyValuePair<int, int> key)
+        {
+            return Units[key.Value];
+        }
+        public virtual int DocExistByKey(T doc)
+        {
+           
 
-        //    retval = Units.fi(p => p.GetType().GetProperty(PrimaryKey).GetValue(doc, null).Equals(doc.GetType().GetProperty(PrimaryKey).GetValue(doc, null)));
+            int retval = Units.IndexOf(Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(doc, null).Equals(doc.GetType().GetProperty(PrimaryKey).GetValue(doc, null))));
 
-        //    return retval;
-        //}
-        //public virtual int DocExist(T doc)
-        //{
-        //    int retval = -1;
+            return retval;
+        }
+        public virtual int DocExist(T doc)
+        {
+            int retval = -1;
 
-        //    retval = Units.IndexOf(doc);
+            retval = Units.IndexOf(doc);
 
-        //    return retval;
-        //}
+            return retval;
+        }
         public virtual int GetPrimaryKey(T doc)
         {
             int retval = -1;
@@ -507,5 +580,12 @@ namespace TheTechIdea.Beep.Editor
                 return null;
             }
         }
+    }
+    
+    public enum EntityState
+    {
+        Added,
+        Modified,
+        Deleted
     }
 }
