@@ -60,9 +60,9 @@ namespace TheTechIdea.Beep.DataBase
         #region "IDataSource Interface Methods"
         public ConnectionState Openconnection()
         {
-           if (RDBMSConnection != null)
+            if (RDBMSConnection != null)
             {
-                ConnectionStatus= RDBMSConnection.OpenConnection();
+                ConnectionStatus = RDBMSConnection.OpenConnection();
             }
             return ConnectionStatus;
         }
@@ -75,7 +75,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             if (Dataconnection != null)
             {
-               
+
                 Dataconnection.CloseConn();
             }
             return ConnectionStatus;
@@ -97,9 +97,9 @@ namespace TheTechIdea.Beep.DataBase
                 }
                 catch (Exception ex)
                 {
-                   
+
                     cmd.Dispose();
-                   
+
                     DMEEditor.AddLogMessage("Fail", $" Could not run Script - {sql} -" + ex.Message, DateTime.Now, -1, ex.Message, Errors.Failed);
 
                 }
@@ -138,22 +138,22 @@ namespace TheTechIdea.Beep.DataBase
             catch (Exception ex)
             {
                 cmd.Dispose();
-                DMEEditor.AddLogMessage("Fail", $"Error in getting entity Data({ ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"Error in getting entity Data({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
                 return null;
             }
 
         }
-        private IDbCommand CreateCommandParameters(IDbCommand  command, DataRow r,EntityStructure DataStruct)
+        private IDbCommand CreateCommandParameters(IDbCommand command, DataRow r, EntityStructure DataStruct)
         {
             command.Parameters.Clear();
-            
+
             foreach (EntityField item in DataStruct.Fields.OrderBy(o => o.fieldname))
             {
 
                 if (!command.Parameters.Contains("p_" + Regex.Replace(item.fieldname, @"\s+", "_")))
                 {
                     IDbDataParameter parameter = command.CreateParameter();
-                    //if (!item.fieldtype.Equals("System.String", StringComparison.OrdinalIgnoreCase) && !item.fieldtype.Equals("System.DateTime", StringComparison.OrdinalIgnoreCase))
+                    //if (!item.fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase) && !item.fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
                     //{
                     //    if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
                     //    {
@@ -165,7 +165,7 @@ namespace TheTechIdea.Beep.DataBase
                     //    }
                     //}
                     //else
-                        if (item.fieldtype.Equals("System.DateTime", StringComparison.OrdinalIgnoreCase))
+                    if (item.fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
                     {
                         if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
                         {
@@ -215,7 +215,7 @@ namespace TheTechIdea.Beep.DataBase
                 }
                 //  RunCopyDataBackWorker(EntityName,  UploadData,  Mapping );
                 #region "Update Code"
-              
+
                 //IDbTransaction sqlTran;
 
                 DataTable tb = (DataTable)UploadData;
@@ -241,8 +241,8 @@ namespace TheTechIdea.Beep.DataBase
                         // int i = 0;
                         string updatestring = null;
                         DataTable changes = tb;//.GetChanges();
-                      
-                       
+
+
                         for (int i = 0; i < tb.Rows.Count; i++)
                         {
                             try
@@ -343,28 +343,28 @@ namespace TheTechIdea.Beep.DataBase
                                 }
                                 args.ParameterInt1 = percentComplete;
 
-                       //         UpdateEvents(EntityName, msg, highestPercentageReached, CurrentRecord, numberToCompute, this);
+                                //         UpdateEvents(EntityName, msg, highestPercentageReached, CurrentRecord, numberToCompute, this);
                                 if (progress != null)
                                 {
-                                    PassedArgs ps = new PassedArgs {ParameterInt1=CurrentRecord, ParameterInt2 = DMEEditor.ETL.ScriptCount, ParameterString1 =null};
+                                    PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentRecord, ParameterInt2 = DMEEditor.ETL.ScriptCount, ParameterString1 = null };
                                     progress.Report(ps);
 
                                 }
 
-                             //   PassEvent?.Invoke(this, args);
-                             //   DMEEditor.RaiseEvent(this, args);
-                               
+                                //   PassEvent?.Invoke(this, args);
+                                //   DMEEditor.RaiseEvent(this, args);
+
                             }
                             catch (Exception er)
                             {
                                 string msg = $"Fail to I/U/D  Record {i} to {EntityName} : {updatestring}";
                                 if (progress != null)
                                 {
-                                    PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentRecord, ParameterInt2 = DMEEditor.ETL.ScriptCount,ParameterString1=msg };
+                                    PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentRecord, ParameterInt2 = DMEEditor.ETL.ScriptCount, ParameterString1 = msg };
                                     progress.Report(ps);
 
                                 }
-                                DMEEditor.AddLogMessage("Fail",msg, DateTime.Now,i, EntityName, Errors.Failed);
+                                DMEEditor.AddLogMessage("Fail", msg, DateTime.Now, i, EntityName, Errors.Failed);
                             }
                         }
                         DMEEditor.ETL.CurrentScriptRecord = DMEEditor.ETL.ScriptCount;
@@ -385,6 +385,50 @@ namespace TheTechIdea.Beep.DataBase
             }
             return ErrorObject;
         }
+        public virtual IErrorsInfo BeginTransaction(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                RDBMSConnection.DbConn.BeginTransaction();
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+
+        public virtual IErrorsInfo EndTransaction(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Beep", $"Error in end Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+
+        public virtual IErrorsInfo Commit(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
             if (recEntity != EntityName)
@@ -401,67 +445,35 @@ namespace TheTechIdea.Beep.DataBase
             DataTable tb;
             DataRow dr;
             string msg = "";
-            //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
+            //var sqlTran = RDBMSConnection.DbConn.BeginTransaction();
             IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
             var ti = Activator.CreateInstance(enttype);
-            // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
-            //if (UploadDataRow.GetType().FullName == "System.Data.DataRowView")
-            //{
-            //    dv = (DataRowView)UploadDataRow;
-            //    dr = dv.Row;
-
-            //} else 
-            //if (UploadDataRow.GetType().FullName == "System.Data.DataRow")
-            //{
-            //    dr = (DataRow)UploadDataRow;
-            //}
-            //else
-            //{
-            //    dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
-            //    foreach (EntityField col in DataStruct.Fields)
-            //    {
-            //        System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname);
-
-            //        //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
-            //        //{
-            //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-            //        dynamic result = GetPropAInfo.GetValue(UploadDataRow);
-
-            //        if (result == null)
-            //        {
-            //            result = System.DBNull.Value;
-            //        }
-
-
-            //        dr[col.fieldname] = result;
-            //    }
-            //}
 
             dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, UploadDataRow, DataStruct);
             try
             {
-                string updatestring = GetUpdateString(EntityName,  DataStruct);
+                string updatestring = GetUpdateString(EntityName, DataStruct);
                 command.CommandText = updatestring;
-                command = CreateCommandParameters(command,dr, DataStruct);
+                command = CreateCommandParameters(command, dr, DataStruct);
                 int rowsUpdated = command.ExecuteNonQuery();
                 if (rowsUpdated > 0)
                 {
                     msg = $"Successfully Updated  Record  to {EntityName} : {updatestring}";
-                   // DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
+                    // DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
                 }
                 else
                 {
                     msg = $"Fail to Updated  Record  to {EntityName} : {updatestring}";
                     DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
                 }
-                
+
 
             }
             catch (Exception ex)
             {
                 ErrorObject.Ex = ex;
-               
+
                 command.Dispose();
                 try
                 {
@@ -487,7 +499,7 @@ namespace TheTechIdea.Beep.DataBase
         }
         public virtual IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
         {
-          
+
             ErrorObject.Flag = Errors.Ok;
             EntityStructure DataStruct = GetEntityStructure(EntityName, true);
             string msg;
@@ -505,51 +517,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             else
                 recNumber += 1;
-            // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
-            //if (DeletedDataRow.GetType().FullName == "System.Data.DataRowView")
-            //{
-            //    dv = (DataRowView)DeletedDataRow;
-            //    dr = dv.Row;
-            //    //foreach (EntityField col in DataStruct.Fields)
-            //    //{
-            //    //    // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
-            //    //    //if (dr[col.fieldname] != System.DBNull.Value)
-            //    //    //{
-            //    //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-            //    //        PropAInfo.SetValue(ti, dr[col.fieldname], null);
-            //    //    //}
 
-            //    //}
-
-            //}
-            //else
-            //   if (DeletedDataRow.GetType().FullName == "System.Data.DataRow")
-            //{
-            //    dr = (DataRow)DeletedDataRow;
-            //}
-            //else
-            //{
-            //    // Get where condition
-
-            //    dr = DMEEditor.Utilfunction.ConvertItemClassToDataRow(DataStruct);
-            //    foreach (EntityField col in DataStruct.Fields)
-            //    {
-            //        System.Reflection.PropertyInfo GetPropAInfo = DeletedDataRow.GetType().GetProperty(col.fieldname);
-
-            //        //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
-            //        //{
-            //        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-            //        dynamic result = GetPropAInfo.GetValue(DeletedDataRow);
-
-            //        if (result == null)
-            //        {
-            //            result = System.DBNull.Value;
-            //        }
-
-
-            //        dr[col.fieldname] = result;
-            //    }
-            //}
             dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, DeletedDataRow, DataStruct);
             try
             {
@@ -562,7 +530,7 @@ namespace TheTechIdea.Beep.DataBase
                 if (rowsUpdated > 0)
                 {
                     msg = $"Successfully Deleted  Record  to {EntityName} : {updatestring}";
-                  //  DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
+                    //  DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Ok);
                 }
                 else
                 {
@@ -571,13 +539,13 @@ namespace TheTechIdea.Beep.DataBase
                 }
                 sqlTran.Commit();
                 command.Dispose();
-               
+
 
             }
             catch (Exception ex)
             {
                 ErrorObject.Ex = ex;
-               
+
                 command.Dispose();
                 try
                 {
@@ -614,7 +582,7 @@ namespace TheTechIdea.Beep.DataBase
             IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
             var ti = Activator.CreateInstance(enttype);
-            string updatestring="";
+            string updatestring = "";
             if (recEntity != EntityName)
             {
                 recNumber = 1;
@@ -645,9 +613,9 @@ namespace TheTechIdea.Beep.DataBase
                     msg = $"Fail to Insert  Record  to {EntityName} : {updatestring}";
                     DMEEditor.ErrorObject.Message = msg;
                     DMEEditor.ErrorObject.Flag = Errors.Failed;
-                    
 
-                  //  DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
+
+                    //  DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, null, Errors.Failed);
                 }
                 // DMEEditor.AddLogMessage("Success",$"Successfully Written Data to {EntityName}",DateTime.Now,0,null, Errors.Ok);
 
@@ -659,7 +627,7 @@ namespace TheTechIdea.Beep.DataBase
                 DMEEditor.ErrorObject.Message = msg;
                 DMEEditor.ErrorObject.Flag = Errors.Failed;
                 command.Dispose();
-               
+
                 DMEEditor.AddLogMessage("Beep", $"{msg} ", DateTime.Now, 0, updatestring, Errors.Failed);
 
             }
@@ -671,15 +639,15 @@ namespace TheTechIdea.Beep.DataBase
             string retval;
             string[] stringSeparators;
             string[] sp;
-            string qrystr="Select ";
+            string qrystr = "Select ";
             bool FoundWhere = false;
             QueryBuild queryStructure = new QueryBuild();
             try
             {
                 //stringSeparators = new string[] {"select ", " from ", " where ", " group by "," having ", " order by " };
                 // Get Selected Fields
-                originalquery=GetTableName(originalquery.ToLower());  
-                stringSeparators = new string[] { "select", "from" , "where", "group by", "having", "order by" };
+                originalquery = GetTableName(originalquery.ToLower());
+                stringSeparators = new string[] { "select", "from", "where", "group by", "having", "order by" };
                 sp = originalquery.ToLower().Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries);
                 queryStructure.FieldsString = sp[0];
                 string[] Fieldsp = sp[0].Split(',');
@@ -718,11 +686,11 @@ namespace TheTechIdea.Beep.DataBase
                                     //  EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
                                     if (item.Operator.ToLower() == "between")
                                     {
-                                        qrystr += item.FieldName + " " + item.Operator + $"{ParameterDelimiter}p_" + item.FieldName + $" and  {ParameterDelimiter}p_" + item.FieldName + "1 " + Environment.NewLine;
+                                        qrystr += item.FieldName + " " + item.Operator + $" {ParameterDelimiter}p_" + item.FieldName + $" and  {ParameterDelimiter}p_" + item.FieldName + "1 " + Environment.NewLine;
                                     }
                                     else
                                     {
-                                        qrystr += item.FieldName + " " + item.Operator + $"{ParameterDelimiter}p_" + item.FieldName + " " + Environment.NewLine;
+                                        qrystr += item.FieldName + " " + item.Operator + $" {ParameterDelimiter}p_" + item.FieldName + " " + Environment.NewLine;
                                     }
 
                                 }
@@ -732,7 +700,7 @@ namespace TheTechIdea.Beep.DataBase
                             }
                         }
                     }
-                 }
+                }
                 if (originalquery.ToLower().Contains("where"))
                 {
                     qrystr += Environment.NewLine;
@@ -748,13 +716,13 @@ namespace TheTechIdea.Beep.DataBase
                     }
                     qrystr += spwhere[1];
                     qrystr += Environment.NewLine;
-                 
-                   
+
+
 
                 }
                 if (originalquery.ToLower().Contains("group by"))
                 {
-                    string[] groupbySeparators = new string[] { "group by","having", "order by" };
+                    string[] groupbySeparators = new string[] { "group by", "having", "order by" };
 
                     string[] groupbywhere = originalquery.ToLower().Split(groupbySeparators, StringSplitOptions.RemoveEmptyEntries);
                     queryStructure.GroupbyCondition = groupbywhere[1];
@@ -781,7 +749,7 @@ namespace TheTechIdea.Beep.DataBase
                 }
 
             }
-            catch (Exception ex )
+            catch (Exception ex)
             {
                 DMEEditor.AddLogMessage("Fail", $"Unable Build Query Object {originalquery}- {ex.Message}", DateTime.Now, 0, "Error", Errors.Failed);
             }
@@ -791,11 +759,11 @@ namespace TheTechIdea.Beep.DataBase
         {
             ErrorObject.Flag = Errors.Ok;
             //  int LoadedRecord;
-           
+
             EntityName = EntityName.ToLower();
-            string inname="";
+            string inname = "";
             string qrystr = "select * from ";
-            
+
             if (!string.IsNullOrEmpty(EntityName) && !string.IsNullOrWhiteSpace(EntityName))
             {
                 if (!EntityName.Contains("select") && !EntityName.Contains("from"))
@@ -803,18 +771,19 @@ namespace TheTechIdea.Beep.DataBase
                     qrystr = "select * from " + EntityName;
                     qrystr = GetTableName(qrystr.ToLower());
                     inname = EntityName;
-                }else
+                }
+                else
                 {
                     EntityName = GetTableName(EntityName);
-                    string[] stringSeparators = new string[] { " from ", " where ", " group by "," order by " };
+                    string[] stringSeparators = new string[] { " from ", " where ", " group by ", " order by " };
                     string[] sp = EntityName.Split(stringSeparators, StringSplitOptions.None);
                     qrystr = EntityName;
                     inname = sp[1].Trim();
                 }
-               
+
             }
             EntityStructure ent = GetEntityStructure(inname);
-            if(ent != null)
+            if (ent != null)
             {
                 if (!string.IsNullOrEmpty(ent.CustomBuildQuery))
                 {
@@ -822,24 +791,24 @@ namespace TheTechIdea.Beep.DataBase
                 }
 
             }
-           
-            qrystr= BuildQuery(qrystr, Filter);
-          
+
+            qrystr = BuildQuery(qrystr, Filter);
+
             try
             {
-                IDataAdapter adp = GetDataAdapter(qrystr,Filter);
+                IDataAdapter adp = GetDataAdapter(qrystr, Filter);
                 DataSet dataSet = new DataSet();
                 adp.Fill(dataSet);
                 DataTable dt = dataSet.Tables[0];
 
-                return  DMEEditor.Utilfunction.ConvertTableToList(dt,GetEntityStructure(EntityName),GetEntityType(EntityName));
+                return DMEEditor.Utilfunction.ConvertTableToList(dt, GetEntityStructure(EntityName), GetEntityType(EntityName));
             }
 
             catch (Exception ex)
             {
-                
-                DMEEditor.AddLogMessage("Fail", $"Error in getting entity Data({ ex.Message})", DateTime.Now, 0, "", Errors.Failed);
-             
+
+                DMEEditor.AddLogMessage("Fail", $"Error in getting entity Data({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+
                 return null;
             }
 
@@ -857,13 +826,13 @@ namespace TheTechIdea.Beep.DataBase
             {
                 GetEntitesList();
             }
-            EntityStructure fnd = Entities.Where(d => d.EntityName.Equals(EntityName,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            EntityStructure fnd = Entities.Where(d => d.EntityName.Equals(EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             if (fnd == null)
             {
                 List<EntityStructure> ls = Entities.Where(d => !string.IsNullOrEmpty(d.OriginalEntityName)).ToList();
-                fnd = ls.Where(d => d.OriginalEntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                fnd = ls.Where(d => d.OriginalEntityName.Equals(EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             }
-          
+
             if (fnd == null)
             {
                 refresh = true;
@@ -871,7 +840,7 @@ namespace TheTechIdea.Beep.DataBase
                 retval.EntityName = EntityName;
                 retval.DatasourceEntityName = EntityName;
                 retval.Caption = EntityName;
-              
+
                 if (EntityName.ToUpper().Contains("SELECT") || EntityName.ToUpper().Contains("WHERE"))
                 {
                     retval.Viewtype = ViewType.Query;
@@ -882,8 +851,9 @@ namespace TheTechIdea.Beep.DataBase
                     retval.Viewtype = ViewType.Table;
                     retval.CustomBuildQuery = null;
                 }
-            
-            } else
+
+            }
+            else
             {
                 retval = fnd;
             }
@@ -899,7 +869,7 @@ namespace TheTechIdea.Beep.DataBase
             {
                 fnd.DatasourceEntityName = fnd.EntityName;
             }
-            if (fnd.Created == false && fnd.Viewtype!= ViewType.Table)
+            if (fnd.Created == false && fnd.Viewtype != ViewType.Table)
             {
                 fnd.Created = false;
                 fnd.Drawn = false;
@@ -908,146 +878,146 @@ namespace TheTechIdea.Beep.DataBase
 
             }
             if (refresh)
+            {
+                if (!fnd.EntityName.Equals(fnd.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(fnd.DatasourceEntityName))
                 {
-                    if (!fnd.EntityName.Equals(fnd.DatasourceEntityName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(fnd.DatasourceEntityName))
+                    entname = fnd.DatasourceEntityName;
+                }
+                if (string.IsNullOrEmpty(fnd.DatasourceEntityName))
+                {
+                    fnd.DatasourceEntityName = entname;
+                }
+                if (string.IsNullOrEmpty(fnd.Caption))
+                {
+                    fnd.Caption = entname;
+                }
+                fnd.DataSourceID = DatasourceName;
+                //  fnd.EntityName = EntityName;
+                if (fnd.Viewtype == ViewType.Query)
+                {
+                    tb = GetTableSchema(fnd.CustomBuildQuery);
+                }
+                else
+                {
+
+                    tb = GetTableSchema(entname);
+                }
+                if (tb.Rows.Count > 0)
+                {
+                    fnd.Fields = new List<EntityField>();
+                    fnd.PrimaryKeys = new List<EntityField>();
+                    DataRow rt = tb.Rows[0];
+                    fnd.Created = true;
+                    fnd.Editable = false;
+                    fnd.Drawn = true;
+                    foreach (DataRow r in rt.Table.Rows)
                     {
-                        entname = fnd.DatasourceEntityName;
-                    }
-                    if (string.IsNullOrEmpty(fnd.DatasourceEntityName))
-                    {
-                        fnd.DatasourceEntityName=entname;
-                    }
-                    if (string.IsNullOrEmpty(fnd.Caption))
-                    {
-                        fnd.Caption = entname;
-                    }
-                    fnd.DataSourceID = DatasourceName;
-                    //  fnd.EntityName = EntityName;
-                    if (fnd.Viewtype == ViewType.Query)
-                    {
-                        tb = GetTableSchema(fnd.CustomBuildQuery);
-                    }
-                    else
-                    {
-                       
-                        tb = GetTableSchema(entname);
-                    }
-                    if (tb.Rows.Count > 0)
-                    {
-                        fnd.Fields = new List<EntityField>();
-                        fnd.PrimaryKeys = new List<EntityField>();
-                        DataRow rt = tb.Rows[0];
-                        fnd.Created = true;
-                        fnd.Editable = false;
-                        fnd.Drawn = true;
-                        foreach (DataRow r in rt.Table.Rows)
+                        EntityField x = new EntityField();
+                        try
                         {
-                            EntityField x = new EntityField();
+
+                            x.fieldname = r.Field<string>("ColumnName");
+                            x.fieldtype = (r.Field<Type>("DataType")).ToString(); //"ColumnSize"
+                            x.Size1 = r.Field<int>("ColumnSize");
                             try
                             {
+                                x.IsAutoIncrement = r.Field<bool>("IsAutoIncrement");
+                            }
+                            catch (Exception)
+                            {
 
-                                x.fieldname = r.Field<string>("ColumnName");
-                                x.fieldtype = (r.Field<Type>("DataType")).ToString(); //"ColumnSize"
-                                x.Size1 = r.Field<int>("ColumnSize");
-                                try
-                                {
-                                    x.IsAutoIncrement = r.Field<bool>("IsAutoIncrement");
-                                }
-                                catch (Exception)
-                                {
+                            }
+                            try
+                            {
+                                x.AllowDBNull = r.Field<bool>("AllowDBNull");
+                            }
+                            catch (Exception)
+                            {
+                            }
+                            try
+                            {
+                                x.IsAutoIncrement = r.Field<bool>("IsIdentity");
+                            }
+                            catch (Exception)
+                            {
 
-                                }
-                                try
-                                {
-                                    x.AllowDBNull = r.Field<bool>("AllowDBNull");
-                                }
-                                catch (Exception)
-                                {
-                                }
-                                try
-                                {
-                                    x.IsAutoIncrement = r.Field<bool>("IsIdentity");
-                                }
-                                catch (Exception)
-                                {
+                            }
+                            try
+                            {
+                                x.IsKey = r.Field<bool>("IsKey");
+                            }
+                            catch (Exception)
+                            {
 
-                                }
-                                try
+                            }
+                            try
+                            {
+                                if (x.fieldtype == "System.Decimal" || x.fieldtype == "System.Float" || x.fieldtype == "System.Double")
                                 {
-                                    x.IsKey = r.Field<bool>("IsKey");
-                                }
-                                catch (Exception)
-                                {
-
-                                }
-                                try
-                                {
-                                  if (x.fieldtype == "System.Decimal" || x.fieldtype=="System.Float" || x.fieldtype == "System.Double") 
+                                    var NumericPrecision = r["NumericPrecision"];
+                                    var NumericScale = r["NumericScale"];
+                                    if (NumericPrecision != System.DBNull.Value && NumericScale != System.DBNull.Value)
                                     {
-                                        var NumericPrecision = r["NumericPrecision"];
-                                        var NumericScale = r["NumericScale"];
-                                        if (NumericPrecision != System.DBNull.Value && NumericScale != System.DBNull.Value)
-                                        {
-                                            x.NumericPrecision = (short)NumericPrecision;
-                                            x.NumericScale = (short)NumericScale;
-                                        }
+                                        x.NumericPrecision = (short)NumericPrecision;
+                                        x.NumericScale = (short)NumericScale;
                                     }
                                 }
-                                catch (Exception)
-                                {
-
-                                }
-                                try
-                                {
-                                    x.IsUnique = r.Field<bool>("IsUnique");
-                                }
-                                catch (Exception)
-                                {
-
-                                }
                             }
-                            catch (Exception ex)
+                            catch (Exception)
                             {
-                                DMEEditor.AddLogMessage("Fail", $"Error in Creating Field Type({ ex.Message})", DateTime.Now, 0, entname, Errors.Failed);
-                            }
-                            if (x.IsKey)
-                            {
-                                fnd.PrimaryKeys.Add(x);
-                            }
-                            fnd.Fields.Add(x);
-                        }
-                        if (fnd.Viewtype == ViewType.Table)
-                        {
-                            if ((fnd.Relations.Count == 0) || refresh)
-                            {
-                                fnd.Relations = new List<RelationShipKeys>();
-                                fnd.Relations = GetEntityforeignkeys(entname, Dataconnection.ConnectionProp.SchemaName);
-                            }
-                        }
 
-                        EntityStructure exist = Entities.Where(d => d.EntityName.Equals(fnd.EntityName,StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-                        if (exist == null)
-                        {
-                            Entities.Add(fnd);
+                            }
+                            try
+                            {
+                                x.IsUnique = r.Field<bool>("IsUnique");
+                            }
+                            catch (Exception)
+                            {
+
+                            }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Created = true;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Editable = false;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Drawn = true;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Fields = fnd.Fields;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].Relations = fnd.Relations;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.OrdinalIgnoreCase))].PrimaryKeys = fnd.PrimaryKeys;
-    
+                            DMEEditor.AddLogMessage("Fail", $"Error in Creating Field Type({ex.Message})", DateTime.Now, 0, entname, Errors.Failed);
                         }
+                        if (x.IsKey)
+                        {
+                            fnd.PrimaryKeys.Add(x);
+                        }
+                        fnd.Fields.Add(x);
+                    }
+                    if (fnd.Viewtype == ViewType.Table)
+                    {
+                        if ((fnd.Relations.Count == 0) || refresh)
+                        {
+                            fnd.Relations = new List<RelationShipKeys>();
+                            fnd.Relations = GetEntityforeignkeys(entname, Dataconnection.ConnectionProp.SchemaName);
+                        }
+                    }
+
+                    EntityStructure exist = Entities.Where(d => d.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                    if (exist == null)
+                    {
+                        Entities.Add(fnd);
                     }
                     else
                     {
-                        fnd.Created = false;
+                        Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Created = true;
+                        Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Editable = false;
+                        Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Drawn = true;
+                        Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Fields = fnd.Fields;
+                        Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Relations = fnd.Relations;
+                        Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].PrimaryKeys = fnd.PrimaryKeys;
+
                     }
-                
+                }
+                else
+                {
+                    fnd.Created = false;
+                }
+
             }
-          return fnd;
+            return fnd;
         }
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
@@ -1088,38 +1058,38 @@ namespace TheTechIdea.Beep.DataBase
             DataSet ds = new DataSet();
             try
             {
-                     string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getlistoftables, null, Dataconnection.ConnectionProp.SchemaName, null, DMEEditor.ConfigEditor.QueryList, DatasourceType);
-                    IDbDataAdapter adp = GetDataAdapter(sql, null);
-                    adp.Fill(ds);
+                string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getlistoftables, null, Dataconnection.ConnectionProp.SchemaName, null, DMEEditor.ConfigEditor.QueryList, DatasourceType);
+                IDbDataAdapter adp = GetDataAdapter(sql, null);
+                adp.Fill(ds);
 
-                    DataTable tb = new DataTable();
-                    tb = ds.Tables[0];
-                    EntitiesNames = new List<string>();
-                    int i = 0;
-                    foreach (DataRow row in tb.Rows)
-                    {
-                        EntitiesNames.Add(row.Field<string>("TABLE_NAME").ToUpper());
-                       
-                       
+                DataTable tb = new DataTable();
+                tb = ds.Tables[0];
+                EntitiesNames = new List<string>();
+                int i = 0;
+                foreach (DataRow row in tb.Rows)
+                {
+                    EntitiesNames.Add(row.Field<string>("TABLE_NAME").ToUpper());
+
+
                     i += 1;
-                    }
-                    //if (Entities.Count > 0)
-                    //{
-                    //    List<string> ename = Entities.Select(p => p.EntityName.ToUpper()).ToList();
-                    //    List<string> diffnames = ename.Except(EntitiesNames.Select(o=>o.ToUpper())).ToList();
-                    //    if (diffnames.Count > 0)
-                    //    {
-                    //        foreach (string item in diffnames)
-                    //        {
-                    //           // GetEntityStructure(item, false);
-                    //           // int idx = Entities.FindIndex(p => p.EntityName.Equals(item, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(item, StringComparison.OrdinalIgnoreCase));
-                    //           // Entities[idx].Created = false;
-                    //             EntitiesNames.Add(item);
-                    //        }
-                    //    }
-                    ////---------------------- Check for removed Entities ------------------
-                    
-                    //}
+                }
+                //if (Entities.Count > 0)
+                //{
+                //    List<string> ename = Entities.Select(p => p.EntityName.ToUpper()).ToList();
+                //    List<string> diffnames = ename.Except(EntitiesNames.Select(o=>o.ToUpper())).ToList();
+                //    if (diffnames.Count > 0)
+                //    {
+                //        foreach (string item in diffnames)
+                //        {
+                //           // GetEntityStructure(item, false);
+                //           // int idx = Entities.FindIndex(p => p.EntityName.Equals(item, StringComparison.InvariantCultureIgnoreCase) || p.DatasourceEntityName.Equals(item, StringComparison.InvariantCultureIgnoreCase));
+                //           // Entities[idx].Created = false;
+                //             EntitiesNames.Add(item);
+                //        }
+                //    }
+                ////---------------------- Check for removed Entities ------------------
+
+                //}
 
 
 
@@ -1128,8 +1098,8 @@ namespace TheTechIdea.Beep.DataBase
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("Fail", $"Error in getting  Table List ({ ex.Message})", DateTime.Now, 0, DatasourceName, Errors.Failed);
-              
+                DMEEditor.AddLogMessage("Fail", $"Error in getting  Table List ({ex.Message})", DateTime.Now, 0, DatasourceName, Errors.Failed);
+
             }
 
             return EntitiesNames;
@@ -1139,9 +1109,9 @@ namespace TheTechIdea.Beep.DataBase
         }
         public string GetSchemaName()
         {
-            string schemaname=null;
-            
-            if(!string.IsNullOrEmpty(Dataconnection.ConnectionProp.SchemaName))
+            string schemaname = null;
+
+            if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.SchemaName))
             {
                 schemaname = Dataconnection.ConnectionProp.SchemaName.ToUpper();
             }
@@ -1156,15 +1126,16 @@ namespace TheTechIdea.Beep.DataBase
             bool retval = false;
             GetEntitesList();
             string entspace = Regex.Replace(EntityName, @"\s+", "_");
-            retval = EntitiesNames.ConvertAll(d => d.ToUpper()).Contains(entspace.ToUpper()) ;
+            retval = EntitiesNames.ConvertAll(d => d.ToUpper()).Contains(entspace.ToUpper());
             return retval;
         }
         public int GetEntityIdx(string entityName)
         {
             if (Entities.Count > 0)
             {
-                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
-            }else
+                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase) || p.DatasourceEntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase));
+            }
+            else
             {
                 return -1;
             }
@@ -1174,8 +1145,8 @@ namespace TheTechIdea.Beep.DataBase
             bool retval = false;
             if (CheckEntityExist(entity.EntityName) == false)
             {
-                string createstring=CreateEntity(entity);
-                DMEEditor.ErrorObject=ExecuteSql(createstring);
+                string createstring = CreateEntity(entity);
+                DMEEditor.ErrorObject = ExecuteSql(createstring);
                 if (DMEEditor.ErrorObject.Flag == Errors.Failed)
                 {
                     retval = false;
@@ -1185,11 +1156,12 @@ namespace TheTechIdea.Beep.DataBase
                     Entities.Add(entity);
                     retval = true;
                 }
-            } else
+            }
+            else
             {
                 if (Entities.Count > 0)
                 {
-                    if (Entities.Where(p => p.EntityName.Equals(entity.EntityName, StringComparison.OrdinalIgnoreCase) && p.Created == false).Any())
+                    if (Entities.Where(p => p.EntityName.Equals(entity.EntityName, StringComparison.InvariantCultureIgnoreCase) && p.Created == false).Any())
                     {
                         string createstring = CreateEntity(entity);
                         DMEEditor.ErrorObject = ExecuteSql(createstring);
@@ -1248,7 +1220,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             catch (Exception ex)
             {
-               DMEEditor.AddLogMessage("Fail", $"Could not get forgien key  for {entityname} ({ ex.Message})", DateTime.Now, 0, entityname, Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"Could not get forgien key  for {entityname} ({ex.Message})", DateTime.Now, 0, entityname, Errors.Failed);
             }
             return fk;
         }
@@ -1267,7 +1239,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             catch (Exception ex)
             {
-             DMEEditor.AddLogMessage("Fail", $"Error in getting  child entities for {tablename} ({ ex.Message})", DateTime.Now, 0, tablename, Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"Error in getting  child entities for {tablename} ({ex.Message})", DateTime.Now, 0, tablename, Errors.Failed);
                 return null;
             }
         }
@@ -1293,7 +1265,7 @@ namespace TheTechIdea.Beep.DataBase
             {//-- Create Create string
                 int i = 1;
                 t1.EntityName = Regex.Replace(t1.EntityName, @"\s+", "_");
-                createtablestring += " " +t1.EntityName + "\n(";
+                createtablestring += " " + t1.EntityName + "\n(";
                 if (t1.Fields.Count == 0)
                 {
                     // t1=ds.GetEntityStructure()
@@ -1304,7 +1276,7 @@ namespace TheTechIdea.Beep.DataBase
                     createtablestring += "\n " + dbf.fieldname + " " + DMEEditor.typesHelper.GetDataType(DatasourceName, dbf) + " ";
                     if (dbf.IsAutoIncrement)
                     {
-                      //  dbf.fieldname = Regex.Replace(dbf.fieldname, @"\s+", "_");
+                        //  dbf.fieldname = Regex.Replace(dbf.fieldname, @"\s+", "_");
                         string autonumberstring = "";
                         autonumberstring = CreateAutoNumber(dbf);
                         if (DMEEditor.ErrorObject.Flag == Errors.Ok)
@@ -1515,7 +1487,7 @@ namespace TheTechIdea.Beep.DataBase
                     refkeys = refkeys.Remove(refkeys.Length - 1, 1);
                     retval += @" ALTER TABLE " + t1.EntityName + " ADD CONSTRAINT " + t1.EntityName + i + r.Next(10, 1000) + "  FOREIGN KEY (" + forkeys + ")  REFERENCES " + item + "(" + refkeys + "); \n";
                 }
-                if (i ==0)
+                if (i == 0)
                 {
                     retval = "";
                 }
@@ -1541,7 +1513,7 @@ namespace TheTechIdea.Beep.DataBase
                 {
                     if (entity.Relations.Count > 0)
                     {
-                        string relations=CreateAlterRalationString(entity);
+                        string relations = CreateAlterRalationString(entity);
                         string[] rels = relations.Split(';');
                         foreach (string rl in rels)
                         {
@@ -1637,7 +1609,7 @@ namespace TheTechIdea.Beep.DataBase
             catch (System.Exception ex)
             {
                 DMEEditor.AddLogMessage("Fail", $"Error Creating Auto number Field {f.EntityName} and {f.fieldname} ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
-              
+
             }
             return AutnumberString;
         }
@@ -1647,7 +1619,7 @@ namespace TheTechIdea.Beep.DataBase
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
             {
-                createtablestring= GenerateCreateEntityScript(t1);
+                createtablestring = GenerateCreateEntityScript(t1);
             }
             catch (System.Exception ex)
             {
@@ -1673,9 +1645,9 @@ namespace TheTechIdea.Beep.DataBase
             int t = 0;
             foreach (EntityField item in DataStruct.Fields.OrderBy(o => o.fieldname))
             {
-               Insertstr += $"{GetFieldName(item.fieldname)},";
-               Valuestr += $"{ParameterDelimiter}p_" + Regex.Replace(item.fieldname, @"\s+", "_") + ",";
-                 
+                Insertstr += $"{GetFieldName(item.fieldname)},";
+                Valuestr += $"{ParameterDelimiter}p_" + Regex.Replace(item.fieldname, @"\s+", "_") + ",";
+
                 t += 1;
             }
             Insertstr = Insertstr.Remove(Insertstr.Length - 1);
@@ -1687,14 +1659,14 @@ namespace TheTechIdea.Beep.DataBase
         {
             List<EntityField> SourceEntityFields = new List<EntityField>();
             List<EntityField> DestEntityFields = new List<EntityField>();
-          
+
             string Updatestr = @"Update " + EntityName + "  set " + Environment.NewLine;
-            Updatestr= GetTableName(Updatestr.ToLower());
+            Updatestr = GetTableName(Updatestr.ToLower());
             string Valuestr = "";
-           
+
             int i = DataStruct.Fields.Count();
             int t = 0;
-            foreach (EntityField item in DataStruct.Fields.OrderBy(o=>o.fieldname))
+            foreach (EntityField item in DataStruct.Fields.OrderBy(o => o.fieldname))
             {
                 if (!DataStruct.PrimaryKeys.Any(l => l.fieldname == item.fieldname))
                 {
@@ -1711,23 +1683,23 @@ namespace TheTechIdea.Beep.DataBase
             t = 1;
             foreach (EntityField item in DataStruct.PrimaryKeys)
             {
-               
-                    if (t == 1)
-                    {
-                        Updatestr += $"{GetFieldName(item.fieldname)}= ";
+
+                if (t == 1)
+                {
+                    Updatestr += $"{GetFieldName(item.fieldname)}= ";
                 }
-                    else
-                    {
-                        Updatestr += $" and {GetFieldName(item.fieldname)}= ";
+                else
+                {
+                    Updatestr += $" and {GetFieldName(item.fieldname)}= ";
                 }
-                    Updatestr += $"{ParameterDelimiter}p_" + item.fieldname + "";
-                  
+                Updatestr += $"{ParameterDelimiter}p_" + item.fieldname + "";
+
                 t += 1;
             }
             //  Updatestr = Updatestr.Remove(Valuestr.Length - 1);
             return Updatestr;
         }
-        public virtual string GetDeleteString(string EntityName,  EntityStructure DataStruct)
+        public virtual string GetDeleteString(string EntityName, EntityStructure DataStruct)
         {
 
             List<EntityField> SourceEntityFields = new List<EntityField>();
@@ -1741,16 +1713,16 @@ namespace TheTechIdea.Beep.DataBase
             t = 1;
             foreach (EntityField item in DataStruct.PrimaryKeys)
             {
-                
-                    if (t == 1)
-                    {
-                        Updatestr += $"{GetFieldName(item.fieldname)}= ";
+
+                if (t == 1)
+                {
+                    Updatestr += $"{GetFieldName(item.fieldname)}= ";
                 }
-                    else
-                    {
-                        Updatestr += $" and  {GetFieldName(item.fieldname)}= ";
-                    }
-                    Updatestr += $"{ParameterDelimiter}p_" + item.fieldname + "";
+                else
+                {
+                    Updatestr += $" and  {GetFieldName(item.fieldname)}= ";
+                }
+                Updatestr += $"{ParameterDelimiter}p_" + item.fieldname + "";
                 t += 1;
             }
             return Updatestr;
@@ -1760,7 +1732,7 @@ namespace TheTechIdea.Beep.DataBase
             IDbCommand cmd = GetDataCommand();
             cmd.CommandText = querystring;
             IDataReader dt = cmd.ExecuteReader();
-            
+
             return dt;
 
         }
@@ -1769,23 +1741,23 @@ namespace TheTechIdea.Beep.DataBase
             string retval = fieldname;
             if (fieldname.IndexOf(" ") != -1)
             {
-                if (ColumnDelimiter.Length==2) //(ColumnDelimiter.Contains("[") || ColumnDelimiter.Contains("]"))
+                if (ColumnDelimiter.Length == 2) //(ColumnDelimiter.Contains("[") || ColumnDelimiter.Contains("]"))
                 {
-                    
+
                     retval = $"{ColumnDelimiter[0]}{fieldname}{ColumnDelimiter[1]}";
                 }
                 else
                 {
                     retval = $"{ColumnDelimiter}{fieldname}{ColumnDelimiter}";
                 }
-              
+
             }
             return retval;
         }
         #region "Dapper"
         public virtual List<T> GetData<T>(string sql)
         {
-           // DMEEditor.OpenDataSource(ds.DatasourceName);
+            // DMEEditor.OpenDataSource(ds.DatasourceName);
             if (Dataconnection.OpenConnection() == ConnectionState.Open)
             {
                 return RDBMSConnection.DbConn.Query<T>(sql).AsList<T>();
@@ -1796,7 +1768,7 @@ namespace TheTechIdea.Beep.DataBase
 
 
 
-            
+
         }
         public virtual Task SaveData<T>(string sql, T parameters)
         {
@@ -1806,7 +1778,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             else
                 return null;
-               
+
 
         }
         #endregion
@@ -1857,17 +1829,18 @@ namespace TheTechIdea.Beep.DataBase
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                if(Dataconnection.OpenConnection()== ConnectionState.Open)
+                if (Dataconnection.OpenConnection() == ConnectionState.Open)
                 {
                     cmd = RDBMSConnection.DbConn.CreateCommand();
-                }else
+                }
+                else
                 {
                     cmd = null;
 
-                    DMEEditor.AddLogMessage("Fail", $"Error in Creating Data Command, Cannot get DataSource", DateTime.Now, -1,DatasourceName, Errors.Failed);
+                    DMEEditor.AddLogMessage("Fail", $"Error in Creating Data Command, Cannot get DataSource", DateTime.Now, -1, DatasourceName, Errors.Failed);
                 }
-               
-              
+
+
 
             }
             catch (Exception ex)
@@ -1883,7 +1856,7 @@ namespace TheTechIdea.Beep.DataBase
         public virtual IDbDataAdapter GetDataAdapter(string Sql, List<AppFilter> Filter = null)
         {
             IDbDataAdapter adp = null;
-          
+
             try
             {
                 ConnectionDriversConfig driversConfig = DMEEditor.Utilfunction.LinkConnection2Drivers(Dataconnection.ConnectionProp);
@@ -1902,7 +1875,7 @@ namespace TheTechIdea.Beep.DataBase
                 ConstructorInfo BuilderConstructer = lsc2[GetCtorForCommandBuilder(adcbuilderType.GetConstructors().ToList())];
                 ObjectActivator<IDbDataAdapter> adpActivator = GetActivator<IDbDataAdapter>(ctor);
                 ObjectActivator<DbCommandBuilder> cmdbuilderActivator = GetActivator<DbCommandBuilder>(BuilderConstructer);
-               
+
                 //create an instance:
                 adp = (IDbDataAdapter)adpActivator(Sql, RDBMSConnection.DbConn);
                 try
@@ -1915,7 +1888,7 @@ namespace TheTechIdea.Beep.DataBase
 
                             foreach (AppFilter item in Filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue)))
                             {
-                               
+
                                 IDbDataParameter parameter = adp.SelectCommand.CreateParameter();
                                 string dr = Filter.Where(i => i.FieldName == item.FieldName).FirstOrDefault().FilterValue;
                                 parameter.ParameterName = "p_" + item.FieldName;
@@ -1923,7 +1896,7 @@ namespace TheTechIdea.Beep.DataBase
                                 {
                                     parameter.DbType = DbType.DateTime;
                                     parameter.Value = DateTime.Parse(dr).ToShortDateString();
-                                    
+
                                 }
                                 else
                                 { parameter.Value = dr; }
@@ -1952,19 +1925,19 @@ namespace TheTechIdea.Beep.DataBase
                 catch (Exception ex)
                 {
 
-                   // DMEEditor.AddLogMessage("Fail", $"Error in Creating builder commands {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+                    // DMEEditor.AddLogMessage("Fail", $"Error in Creating builder commands {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
                 }
 
                 adp.MissingSchemaAction = MissingSchemaAction.AddWithKey;
                 adp.MissingMappingAction = MissingMappingAction.Passthrough;
 
-               
+
                 ErrorObject.Flag = Errors.Ok;
             }
             catch (Exception ex)
             {
 
-             //   DMEEditor.AddLogMessage("Fail", $"Error in Creating Adapter {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+                //   DMEEditor.AddLogMessage("Fail", $"Error in Creating Adapter {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
                 adp = null;
             }
 
@@ -1991,10 +1964,10 @@ namespace TheTechIdea.Beep.DataBase
             }
             catch (Exception ex)
             {
-             //   DMEEditor.AddLogMessage("Fail", $"unsuccessfully Executed Sql ({ex.Message})", DateTime.Now, 0, TableName, Errors.Failed);
+                //   DMEEditor.AddLogMessage("Fail", $"unsuccessfully Executed Sql ({ex.Message})", DateTime.Now, 0, TableName, Errors.Failed);
             }
 
-           return tb;
+            return tb;
         }
         public virtual List<ChildRelation> GetTablesFKColumnList(string tablename, string SchemaName, string Filterparamters)
         {
@@ -2012,7 +1985,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             catch (Exception ex)
             {
-             //   DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+                //   DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
                 return null;
             }
         }
@@ -2066,7 +2039,7 @@ namespace TheTechIdea.Beep.DataBase
                         querystring = querystring.Replace(fromtokens[1], $" {schname}.{fromtokens[2]} ");
                     }
                 }
-                    
+
             }
             return querystring;
         }
@@ -2101,6 +2074,8 @@ namespace TheTechIdea.Beep.DataBase
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+
+
         #endregion
 
 
