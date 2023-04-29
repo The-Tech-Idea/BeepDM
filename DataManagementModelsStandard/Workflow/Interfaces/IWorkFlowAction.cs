@@ -9,7 +9,7 @@ namespace TheTechIdea.Beep.Workflow
 {
     public interface IWorkFlowAction
     {
-        IDMEEditor DMEEditor { get; set; }
+       // IDMEEditor DMEEditor { get; set; }
         IWorkFlowAction PrevAction { get; set; }
         List<IWorkFlowAction> NextAction { get; set; }
         List<IPassedArgs> InParameters { get; set; }

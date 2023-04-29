@@ -28,6 +28,7 @@ namespace TheTechIdea.Beep.Vis
         public string returndataTypename { get; set; }
         public bool DefaultCreate { get; set; }
         public string Description { get; set; }
+      
 
 
     }

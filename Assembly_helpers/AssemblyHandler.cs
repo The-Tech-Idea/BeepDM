@@ -674,6 +674,7 @@ namespace TheTechIdea.Tools
                                 xcls.dllname = type.Module.Name;
                                 xcls.PackageName = type.FullName;
                                 xcls.Order = cls.Order;
+                                
                                 if (cls.VisSchema != null)
                                 {
                                     xcls.className = type.Name;
