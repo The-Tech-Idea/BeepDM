@@ -26,6 +26,9 @@ namespace TheTechIdea
         int ParameterInt1 { get; set; }
         int ParameterInt2 { get; set; }
         int ParameterInt3 { get; set; }
+        int Parameterdouble1 { get; set; }
+        int Parameterdouble2 { get; set; }
+        int Parameterdouble3 { get; set; }
         string ParameterString1 { get; set; }
         string ParameterString2 { get; set; }
         string ParameterString3 { get; set; }
@@ -59,6 +62,9 @@ namespace TheTechIdea
         public int ParameterInt1 { get; set; }
         public int ParameterInt2 { get; set; }
         public int ParameterInt3 { get; set; }
+        public int Parameterdouble1 { get; set; }
+        public int Parameterdouble2 { get; set; }
+        public int Parameterdouble3 { get; set; }
         public DateTime ParameterDate1 { get; set; }
         public DateTime ParameterDate2 { get; set; }
         public DateTime ParameterDate3 { get; set; }
