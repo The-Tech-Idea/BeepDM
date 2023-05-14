@@ -19,7 +19,7 @@
     <UserSecretsId>73e1a0d4-e787-46f6-9485-f23ff98f8835</UserSecretsId>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Platforms>AnyCPU;x64</Platforms>
+    
 	
   </PropertyGroup>
 
