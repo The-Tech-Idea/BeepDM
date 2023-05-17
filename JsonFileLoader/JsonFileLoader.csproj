@@ -75,13 +75,13 @@
       <Version>13.0.3</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json.Schema">
-      <Version>3.0.14</Version>
+      <Version>3.0.15</Version>
     </PackageReference>
     <PackageReference Include="TheTechIdea.Beep.DataManagementEngine">
       <Version>1.0.20</Version>
     </PackageReference>
     <PackageReference Include="TheTechIdea.Beep.DataManagementModels">
-      <Version>1.0.15</Version>
+      <Version>1.0.17</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -57,7 +57,6 @@ namespace TheTechIdea.Beep.Editor
                 init();
             }
         }
-      
         public  ObservableCollection<T> Units { get; set; }
         public string DatasourceName { get; set; }
         public List<T> DeletedUnits { get; set; } = new List<T>();
@@ -101,7 +100,6 @@ namespace TheTechIdea.Beep.Editor
         {
             return Units.FirstOrDefault(x => x.GetType().GetProperty("Id")?.GetValue(x, null).ToString() == id.ToString());
         }
-
         public void Update(int id, T entity)
         {
             var index = Units.IndexOf(Units.FirstOrDefault(x => x.GetType().GetProperty("Id")?.GetValue(x, null).ToString() == id.ToString()));
@@ -111,8 +109,7 @@ namespace TheTechIdea.Beep.Editor
                 _entityStates[entity] = EntityState.Modified;
             }
         }
-
-        public void Delete(int id)
+       public void Delete(int id)
         {
             var entity = Units.FirstOrDefault(x => x.GetType().GetProperty("Id")?.GetValue(x, null).ToString() == id.ToString());
             if (entity != null)
