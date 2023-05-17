@@ -12,6 +12,7 @@ using TheTechIdea.Beep.CompositeLayer;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
@@ -87,8 +88,9 @@ namespace TheTechIdea.Util
 		public List<ETLScriptHDR> Scripts { get; set; } = new List<ETLScriptHDR>();
 		public List<ETLScriptHDR> SyncedDataSources { get; set; } = new List<ETLScriptHDR>();
 		public List<ConnectionDriversConfig> DataDriversClasses { get; set; } = new List<ConnectionDriversConfig>();
-		
-		public string ExePath { get; set; } // System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location); //System.Reflection.Assembly.GetExecutingAssembly().Location
+        public List<IProjectManager> Projects { get; set; } = new List<IProjectManager>();
+
+        public string ExePath { get; set; } // System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location); //System.Reflection.Assembly.GetExecutingAssembly().Location
 		public string ConfigPath { get; set; } 
 		
 		public List<Assembly> LoadedAssemblies { get; set; } = new List<Assembly>();
@@ -1322,10 +1324,38 @@ namespace TheTechIdea.Util
 			retval += "All files(*.*)|*.*";
 			return retval;
 		}
-		
-		#endregion
-		//----------------------------------------------------------------------------------------------
-		public IErrorsInfo Init()
+
+        #endregion
+        #region "Projects L/S"
+        public void ReadProjects()
+        {
+            try
+            {
+                string path = Path.Combine(ConfigPath, "Projects.json");
+                Projects = JsonLoader.DeserializeObject<IProjectManager>(path);
+
+            }
+            catch (System.Exception)
+            {
+            }
+        }
+        public void SaveProjects()
+        {
+            try
+            {
+                string path = Path.Combine(ConfigPath, "Projects.json");
+                JsonLoader.Serialize(path, Projects);
+            }
+            catch (System.Exception)
+            {
+
+            }
+
+        }
+      
+        #endregion
+        //----------------------------------------------------------------------------------------------
+        public IErrorsInfo Init()
 		{
 			ErrorObject.Flag = Errors.Ok;
 			Logger.WriteLog($"Initlization Values and Lists");
@@ -1348,8 +1378,9 @@ namespace TheTechIdea.Util
 				LoadObjectTypes();
 			//	LoadMappingSchema();
 				ReadDataTypeFile();
-				//ReadSyncDataSource();
-				InitMapping();
+				ReadProjects();
+                //ReadSyncDataSource();
+                InitMapping();
 			}
 			catch (Exception ex)
 			{

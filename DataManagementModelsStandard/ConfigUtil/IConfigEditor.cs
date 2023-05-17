@@ -14,6 +14,8 @@ using TheTechIdea.Beep.ConfigUtil;
 
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Beep.AppManager;
+using System.IO;
+using TheTechIdea.Beep.FileManager;
 
 namespace TheTechIdea.Util
 {
@@ -60,11 +62,14 @@ namespace TheTechIdea.Util
         List<EntityStructure> EntityCreateObjects { get; set; }
         List<DatatypeMapping> DataTypesMap { get; set; }
         List<ETLScriptHDR> SyncedDataSources { get; set; }
+        List<IProjectManager> Projects { get; set; }
         List<DatatypeMapping> ReadDataTypeFile(string filename = "DataTypeMapping");
         void WriteDataTypeFile(string filename = "DataTypeMapping");
         string GetSql(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType);
         string GetSqlFromCustomQuery(Sqlcommandtype CmdType, string TableName, string customquery, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType);
         IErrorsInfo Init();
+        void ReadProjects();
+        void SaveProjects();
         List<QuerySqlRepo> InitQueryDefaultValues();
         ConfigandSettings LoadConfigValues();
         void SaveConfigValues();
