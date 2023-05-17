@@ -62,7 +62,7 @@ namespace TheTechIdea.Util
         List<EntityStructure> EntityCreateObjects { get; set; }
         List<DatatypeMapping> DataTypesMap { get; set; }
         List<ETLScriptHDR> SyncedDataSources { get; set; }
-        List<IProjectManager> Projects { get; set; }
+        List<IProjectFolder> Projects { get; set; }
         List<DatatypeMapping> ReadDataTypeFile(string filename = "DataTypeMapping");
         void WriteDataTypeFile(string filename = "DataTypeMapping");
         string GetSql(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType);

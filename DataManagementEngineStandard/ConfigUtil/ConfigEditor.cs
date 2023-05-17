@@ -88,7 +88,7 @@ namespace TheTechIdea.Util
 		public List<ETLScriptHDR> Scripts { get; set; } = new List<ETLScriptHDR>();
 		public List<ETLScriptHDR> SyncedDataSources { get; set; } = new List<ETLScriptHDR>();
 		public List<ConnectionDriversConfig> DataDriversClasses { get; set; } = new List<ConnectionDriversConfig>();
-        public List<IProjectManager> Projects { get; set; } = new List<IProjectManager>();
+        public List<IProjectFolder> Projects { get; set; } = new List<IProjectFolder>();
 
         public string ExePath { get; set; } // System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location); //System.Reflection.Assembly.GetExecutingAssembly().Location
 		public string ConfigPath { get; set; } 
@@ -1332,7 +1332,7 @@ namespace TheTechIdea.Util
             try
             {
                 string path = Path.Combine(ConfigPath, "Projects.json");
-                Projects = JsonLoader.DeserializeObject<IProjectManager>(path);
+                Projects = JsonLoader.DeserializeObject<IProjectFolder>(path);
 
             }
             catch (System.Exception)
