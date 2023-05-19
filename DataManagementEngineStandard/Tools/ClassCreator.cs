@@ -13,6 +13,7 @@ using TheTechIdea.Util;
 using System.Linq;
 using static System.Net.Mime.MediaTypeNames;
 using System.Text.RegularExpressions;
+using static Dapper.SqlMapper;
 
 namespace TheTechIdea.Beep.Tools
 {
@@ -47,7 +48,7 @@ namespace TheTechIdea.Beep.Tools
             }
 
         }
-        public string CreateDLL(string dllname, List<EntityStructure> entities, string outputpath, IProgress<PassedArgs> progress, CancellationToken token, string NameSpacestring = "TheTechIdea.ProjectClasses")
+        public string CreateDLL(string dllname, List<EntityStructure> entities, string outputpath, IProgress<PassedArgs> progress, CancellationToken token, string NameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true)
         {
 
             List<string> listofpaths = new List<string>();
@@ -127,7 +128,8 @@ namespace TheTechIdea.Beep.Tools
             }
 
         }
-        public string CreateDLL(string dllname, string filepath, string outputpath, IProgress<PassedArgs> progress, CancellationToken token, string NameSpacestring = "TheTechIdea.ProjectClasses")
+
+        public string CreateDLLFromFilesPath(string dllname, string filepath, string outputpath, IProgress<PassedArgs> progress, CancellationToken token, string NameSpacestring = "TheTechIdea.ProjectClasses")
         {
 
             List<string> listofpaths = new List<string>();
@@ -207,53 +209,19 @@ namespace TheTechIdea.Beep.Tools
             }
 
         }
-        public string CreateClass(string classname, List<EntityField> flds, string poutputpath, string NameSpacestring = "TheTechIdea.ProjectClasses")
+        public string CreateClass(string classname, List<EntityField> flds, string poutputpath, string NameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true)
         {
-            options.BracingStyle = "C";
-            targetUnit = new CodeCompileUnit();
-            CodeNamespace namespaces = new CodeNamespace(NameSpacestring);
-            // namespaces.Imports.Add(new CodeNamespaceImport("System"));
-            targetClass = new CodeTypeDeclaration(classname);
-            targetClass.IsClass = true;
-            targetClass.TypeAttributes =
-                TypeAttributes.Public;
-            namespaces.Types.Add(targetClass);
-            targetUnit.Namespaces.Add(namespaces);
-            outputpath = poutputpath;
-            outputFileName = classname;
-            AddConstructor();
+            EntityStructure entity = new EntityStructure();
+            entity.EntityName = flds.ElementAt(0).EntityName;
+            entity.Fields = flds;
 
-            foreach (var f in flds)
-            {
-                try
-                {
-                    AddProperties(f);
-                }
-                catch (Exception ex)
-                {
-
-                    throw;
-                }
-
-            }
-
-            EntityField entity = new EntityField();
-            //entity.fieldname = "Name";
-            //entity.fieldtype= "System.String";
-            //AddProperties(entity);
-            //entity = new EntityField();
-            //entity.fieldname = "RN";
-            //entity.fieldtype = "System.Int64";
-            //AddProperties(entity);
-
-            if (outputpath == null)
-            {
-                outputpath = Assembly.GetEntryAssembly().Location + "\\";
-            }
-            GenerateCSharpCode(Path.Combine(outputpath, outputFileName + ".cs"));
-            return NameSpacestring + "." + classname;
+              return CreatePOCOClass(classname, entity, null, null, null, null, NameSpacestring, GenerateCSharpCodeFiles);
 
 
+        }
+        public string CreateClass(string classname, EntityStructure entity, string poutputpath, string NameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true)
+        {
+            return CreatePOCOClass(classname,entity, null, null, null, null, NameSpacestring, GenerateCSharpCodeFiles); 
         }
         public void GenerateCSharpCode(string fileName)
         {
@@ -266,11 +234,11 @@ namespace TheTechIdea.Beep.Tools
             }
         }
         #region "Create Classes"
-        public string CreatePOCOClass(EntityStructure entity, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses")
+        public string CreatePOCOClass(string classname,EntityStructure entity, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true)
         {
-            return CreateClassFromTemplate(entity, "public  :FIELDTYPE :FIELDNAME {get;set;}", usingheader, implementations, extracode, outputpath, nameSpacestring);
+            return CreateClassFromTemplate(classname,entity, "public  :FIELDTYPE :FIELDNAME {get;set;}", usingheader, implementations, extracode, outputpath, nameSpacestring, GenerateCSharpCodeFiles);
         }
-        public string CreateINotifyClass(EntityStructure entity, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses")
+        public string CreateINotifyClass(EntityStructure entity, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true)
         {
             string implementations2 = "";
             if (string.IsNullOrEmpty(implementations))
@@ -285,9 +253,9 @@ namespace TheTechIdea.Beep.Tools
             string extracode2 = Environment.NewLine + " public event PropertyChangedEventHandler PropertyChanged;\r\n\r\n    // This method is called by the Set accessor of each property.\r\n    // The CallerMemberName attribute that is applied to the optional propertyName\r\n    // parameter causes the property name of the caller to be substituted as an argument.\r\n    private void NotifyPropertyChanged([CallerMemberName] string propertyName = \"\")\r\n    {\r\n        if (PropertyChanged != null)\r\n        {\r\n            PropertyChanged(this, new PropertyChangedEventArgs(propertyName));\r\n        }\r\n    }";
             string template2 = Environment.NewLine + " private :FIELDTYPE :FIELDNAMEValue ;";
             template2 += Environment.NewLine + " public :FIELDTYPE :FIELDNAME\r\n    {\r\n        get\r\n        {\r\n            return this.:FIELDNAMEValue;\r\n        }\r\n\r\n        set\r\n        {\r\n            if (value != this.:FIELDNAMEValue)\r\n            {\r\n                this.:FIELDNAMEValue = value;\r\n                NotifyPropertyChanged();\r\n            }\r\n        }\r\n    }";
-            return CreateClassFromTemplate(entity, template2, usingheader, implementations2, extracode2, outputpath, nameSpacestring);
+            return CreateClassFromTemplate(entity.EntityName,entity, template2, usingheader, implementations2, extracode2, outputpath, nameSpacestring, GenerateCSharpCodeFiles);
         }
-        public string CreateClassFromTemplate(EntityStructure entity, string template, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses")
+        public string CreateClassFromTemplate(string classname,EntityStructure entity, string template, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true)
         {
             string str = "";
             string filepath = "";
@@ -296,26 +264,34 @@ namespace TheTechIdea.Beep.Tools
                 filepath = Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, $"{entity.EntityName}.cs");
             }else
                 filepath = Path.Combine(outputpath, $"{entity.EntityName}.cs");
-            StreamWriter streamWriter = new StreamWriter(filepath);
+           
             try
             {
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
-
-                str = usingheader + Environment.NewLine;
-                str += $"namespace  {nameSpacestring} " + Environment.NewLine;
-                str += "{ " + Environment.NewLine;
-                if (string.IsNullOrEmpty(implementations))
+                string clsname = string.Empty;
+                if (string.IsNullOrEmpty(classname))
                 {
-                    str += $"public class {entity.EntityName} " + Environment.NewLine;
+                    clsname = classname;
                 }
                 else
                 {
-                    str += $"public class {entity.EntityName} : " + implementations + Environment.NewLine;
+                    clsname = entity.EntityName;
+                }
+                str = usingheader + Environment.NewLine;
+                str += $"namespace  {nameSpacestring} ;" + Environment.NewLine;
+                str += "{ " + Environment.NewLine;
+                if (string.IsNullOrEmpty(implementations))
+                {
+                    str += $"public class {clsname} " + Environment.NewLine;
+                }
+                else
+                {
+                    str += $"public class {clsname} : " + implementations + Environment.NewLine;
                 }
 
                 str += "{ " + Environment.NewLine; // start of Class
                 // Create CTOR
-                str += $"public  {entity.EntityName} ()"+"{}" + Environment.NewLine; 
+                str += $"public  {clsname} ()"+"{}" + Environment.NewLine; 
                 for (int i = 0; i < entity.Fields.Count - 1; i++)
                 {
                     EntityField fld = entity.Fields[i];
@@ -339,13 +315,18 @@ namespace TheTechIdea.Beep.Tools
                 }
                 str += Environment.NewLine;
 
-                str += "} " + Environment.NewLine; // end of namepspace
+            //    str += "} " + Environment.NewLine; // end of namepspace
                 string[] result = Regex.Split(str, "\r\n|\r|\n");
-                foreach (string line in result)
+                if (GenerateCSharpCodeFiles)
                 {
-                    streamWriter.WriteLine(line);
+                    StreamWriter streamWriter = new StreamWriter(filepath);
+                    foreach (string line in result)
+                    {
+                        streamWriter.WriteLine(line);
+                    }
+                    streamWriter.Close();
                 }
-                streamWriter.Close();
+              
                 return str;
             }
             catch (Exception ex)
@@ -417,42 +398,42 @@ namespace TheTechIdea.Beep.Tools
         #endregion
         #region "CodeDom Code"
 
-        public void AddFields(EntityField fld)
-        {
-            CodeMemberField widthValueField = new CodeMemberField();
-            widthValueField.Attributes = MemberAttributes.Private;
-            widthValueField.Name = fld.fieldname + "Value";
-            widthValueField.Type = new CodeTypeReference(Type.GetType(fld.fieldtype));
-            //widthValueField.Comments.Add(new CodeCommentStatement(
-            //    "The width of the object."));
-            targetClass.Members.Add(widthValueField);
-        }
-        public void AddProperties(EntityField fld)
-        {
-            // Declare the read-only Width property.
-            CodeTypeDeclaration newType = new CodeTypeDeclaration(fld.fieldtype);
-            CodeSnippetTypeMember snippet = new CodeSnippetTypeMember();
-            // snippet.Comments.Add(new CodeCommentStatement(" Generated by DeepDM property", true));
-            string fldtype = Type.GetType(fld.fieldtype).ToString();
-            if (fld.fieldtype.ToLower().Contains("decimal") || fld.fieldtype.ToLower().Contains("datetime"))
-            {
-                fldtype = fldtype + "?";
-            }
-            snippet.Text = "public " + fldtype + " " + fld.fieldname + "  { get; set; }";
-            targetClass.Members.Add(snippet);
+        //public void AddFields(EntityField fld)
+        //{
+        //    CodeMemberField widthValueField = new CodeMemberField();
+        //    widthValueField.Attributes = MemberAttributes.Private;
+        //    widthValueField.Name = fld.fieldname + "Value";
+        //    widthValueField.Type = new CodeTypeReference(Type.GetType(fld.fieldtype));
+        //    //widthValueField.Comments.Add(new CodeCommentStatement(
+        //    //    "The width of the object."));
+        //    targetClass.Members.Add(widthValueField);
+        //}
+        //public void AddProperties(EntityField fld)
+        //{
+        //    // Declare the read-only Width property.
+        //    CodeTypeDeclaration newType = new CodeTypeDeclaration(fld.fieldtype);
+        //    CodeSnippetTypeMember snippet = new CodeSnippetTypeMember();
+        //    // snippet.Comments.Add(new CodeCommentStatement(" Generated by DeepDM property", true));
+        //    string fldtype = Type.GetType(fld.fieldtype).ToString();
+        //    if (fld.fieldtype.ToLower().Contains("decimal") || fld.fieldtype.ToLower().Contains("datetime"))
+        //    {
+        //        fldtype = fldtype + "?";
+        //    }
+        //    snippet.Text = "public " + fldtype + " " + fld.fieldname + "  { get; set; }";
+        //    targetClass.Members.Add(snippet);
 
 
 
-        }
-        public void AddConstructor()
-        {
-            // Declare the constructor
-            CodeConstructor constructor = new CodeConstructor();
-            constructor.Attributes =
-                MemberAttributes.Public | MemberAttributes.Final;
+        //}
+        //public void AddConstructor()
+        //{
+        //    // Declare the constructor
+        //    CodeConstructor constructor = new CodeConstructor();
+        //    constructor.Attributes =
+        //        MemberAttributes.Public | MemberAttributes.Final;
 
-            targetClass.Members.Add(constructor);
-        }
+        //    targetClass.Members.Add(constructor);
+        //}
         public bool CompileCode(CodeDomProvider provider,
              String sourceFile,
              String exeFile)
@@ -611,6 +592,104 @@ namespace TheTechIdea.Beep.Tools
 
             // Invoke compilation.
             CompilerResults cr = provider.CompileAssemblyFromFile(cp, sourceFiles.ToArray());
+
+            if (cr.Errors.Count > 0)
+            {
+                // Display compilation errors.
+                Console.WriteLine("Errors building {0} into {1}",
+                    exeFile, cr.PathToAssembly);
+                retval.Add($"Errors building {exeFile} into {cr.PathToAssembly}");
+                foreach (CompilerError ce in cr.Errors)
+                {
+                    Console.WriteLine("  {0}", ce.ToString());
+                    retval.Add(ce.ToString());
+                    Console.WriteLine();
+                }
+            }
+            else
+            {
+                retval.Add("ok");
+                Console.WriteLine("Source {0} built into {1} successfully.",
+                    exeFile, cr.PathToAssembly);
+                Console.WriteLine("{0} temporary files created during the compilation.",
+                    cp.TempFiles.Count.ToString());
+            }
+
+            //// Return the results of compilation.
+            //if (cr.Errors.Count > 0)
+            //{
+            //    return false;
+            //}
+            //else
+            //{
+            //    return true;
+            //}
+            return retval;
+        }
+        public List<string> CompileCodeFromStrings(CodeDomProvider provider,
+          List<string> sourceFiles,
+          String exeFile)
+        {
+            List<string> retval = new List<string>();
+            CompilerParameters cp = new CompilerParameters();
+
+            // Generate an executable instead of
+            // a class library.
+            cp.GenerateExecutable = false;
+
+            // Set the assembly file name to generate.
+            cp.OutputAssembly = exeFile;
+
+            // Generate debug information.
+            cp.IncludeDebugInformation = false;
+
+            // Add an assembly reference.
+            //  cp.ReferencedAssemblies.Add("System.dll");
+
+            // Save the assembly as a physical file.
+            cp.GenerateInMemory = false;
+
+            // Set the level at which the compiler
+            // should start displaying warnings.
+            cp.WarningLevel = 3;
+
+            // Set whether to treat all warnings as errors.
+            cp.TreatWarningsAsErrors = false;
+
+            // Set compiler argument to optimize output.
+            cp.CompilerOptions = "/optimize";
+
+            // Set a temporary files collection.
+            // The TempFileCollection stores the temporary files
+            // generated during a build in the current directory,
+            // and does not delete them after compilation.
+            cp.TempFiles = new TempFileCollection(".", true);
+
+            //if (provider.Supports(GeneratorSupport.EntryPointMethod))
+            //{
+            //    // Specify the class that contains
+            //    // the main method of the executable.
+            //    cp.MainClass = "Samples.Class1";
+            //}
+
+            if (Directory.Exists("Resources"))
+            {
+                if (provider.Supports(GeneratorSupport.Resources))
+                {
+                    // Set the embedded resource file of the assembly.
+                    // This is useful for culture-neutral resources,
+                    // or default (fallback) resources.
+                    cp.EmbeddedResources.Add("Resources\\Default.resources");
+
+                    // Set the linked resource reference files of the assembly.
+                    // These resources are included in separate assembly files,
+                    // typically localized for a specific language and culture.
+                    cp.LinkedResources.Add("Resources\\nb-no.resources");
+                }
+            }
+
+            // Invoke compilation.
+            CompilerResults cr = provider.CompileAssemblyFromSource(cp, sourceFiles.ToArray());
 
             if (cr.Errors.Count > 0)
             {

@@ -21,6 +21,7 @@ namespace TheTechIdea.Util
 {
     public interface IConfigEditor
     {
+        bool IsLoaded { get;  }
         ConfigandSettings Config { get; set; }
         string ConfigPath { get; set; }
         IJsonLoader JsonLoader { get; set; }

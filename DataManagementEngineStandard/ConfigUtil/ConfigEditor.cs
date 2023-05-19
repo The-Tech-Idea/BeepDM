@@ -46,6 +46,7 @@ namespace TheTechIdea.Util
 			Init();
 
 		}
+		public bool IsLoaded => IsLocationSaved();
 		public string ContainerName { get; set; } 
 		public IErrorsInfo ErrorObject { get; set; }
 		public IJsonLoader JsonLoader { get; set; }
@@ -55,7 +56,6 @@ namespace TheTechIdea.Util
 		public List<QuerySqlRepo> QueryList { get; set; } = new List<QuerySqlRepo>();
 		public List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; } = new List<ConnectionDriversConfig>();
 		public List<ConnectionProperties> DataConnections { get; set; } = new List<ConnectionProperties>(); //DataSourceConnectionConfig
-
 		public List<WorkFlow> WorkFlows { get; set; } = new List<WorkFlow>();
 		public List<CategoryFolder> CategoryFolders { get; set; } = new List<CategoryFolder>();
 		public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
@@ -750,54 +750,83 @@ namespace TheTechIdea.Util
 			ReportsDefinition = JsonLoader.DeserializeObject<AppTemplate>(path);
 			return ReportsDefinition;
 		}
-		#endregion "Reports L/S"
-		//#region "AppFieldProperties L/S"
+        #endregion "Reports L/S"
+        #region "SaveLocation of App"
+        public void SaveLocation()
+        {
+            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TheTechIdea", "Beep")))
+            {
+                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TheTechIdea", "Beep"));
+                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TheTechIdea", "Beep", "BeepConfig.json");
+                JsonLoader.Serialize(path, Config);
+            }
+          
 
-		//public void SaveAppFieldPropertiesValues()
-		//{
-		//	foreach (var item in AppfieldProperties)
-		//	{
-		//		if (item != null)
-		//		{
-		//			string path = Path.Combine(ExePath + @"\Entities\", item.DatasourceName + "_properties.json");
-		//			JsonLoader.Serialize(path, AppfieldProperties);
-		//		}
-			
-		//	}
-		
+        }
+        public bool IsLocationSaved()
+        {
+			bool retval=false; 
+            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TheTechIdea", "Beep")))
+            {
+                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TheTechIdea", "Beep"));
+                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TheTechIdea", "Beep", "BeepConfig.json");
+                JsonLoader.Serialize(path, Config);
+				retval = true;
+            }else
+				retval = true;
 
-		//}
-		//public DataSourceFieldProperties LoadAppFieldPropertiesValues(string dsname)
-		//{
-		//	DataSourceFieldProperties retval = null ;
-		//	if (AppfieldProperties != null)
-		//	{
-		//		if (AppfieldProperties.Any(i => i.DatasourceName.Equals(dsname,StringComparison.InvariantCultureIgnoreCase)))
-		//		{
-		//			retval = AppfieldProperties.Where(i => i.DatasourceName.Equals(dsname, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-		//			return retval;
-		//		}
-		//		else
-		//		{
-		//			string path = Path.Combine(ExePath + @"\Entities\", dsname + "_properties.json");
-		//			retval = JsonLoader.DeserializeSingleObject<DataSourceFieldProperties>(path);
-		//			if (retval != null)
-		//			{
-		//				AppfieldProperties.Add(retval);
-		//				return retval;
-		//			}else
-		//			{
-		//				retval= null;
-		//			}
-				
-		//		}
-		//	}
-		//	return retval;
+			return retval;
+         
 
-		//}
-		//#endregion "Reports L/S"
-		#region "CompositeLayers L/S"\
-		public bool RemoveLayerByName(string LayerName)
+        }
+        #endregion "SaveLocation of App"
+        //#region "AppFieldProperties L/S"
+
+        //public void SaveAppFieldPropertiesValues()
+        //{
+        //	foreach (var item in AppfieldProperties)
+        //	{
+        //		if (item != null)
+        //		{
+        //			string path = Path.Combine(ExePath + @"\Entities\", item.DatasourceName + "_properties.json");
+        //			JsonLoader.Serialize(path, AppfieldProperties);
+        //		}
+
+        //	}
+
+
+        //}
+        //public DataSourceFieldProperties LoadAppFieldPropertiesValues(string dsname)
+        //{
+        //	DataSourceFieldProperties retval = null ;
+        //	if (AppfieldProperties != null)
+        //	{
+        //		if (AppfieldProperties.Any(i => i.DatasourceName.Equals(dsname,StringComparison.InvariantCultureIgnoreCase)))
+        //		{
+        //			retval = AppfieldProperties.Where(i => i.DatasourceName.Equals(dsname, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+        //			return retval;
+        //		}
+        //		else
+        //		{
+        //			string path = Path.Combine(ExePath + @"\Entities\", dsname + "_properties.json");
+        //			retval = JsonLoader.DeserializeSingleObject<DataSourceFieldProperties>(path);
+        //			if (retval != null)
+        //			{
+        //				AppfieldProperties.Add(retval);
+        //				return retval;
+        //			}else
+        //			{
+        //				retval= null;
+        //			}
+
+        //		}
+        //	}
+        //	return retval;
+
+        //}
+        //#endregion "Reports L/S"
+        #region "CompositeLayers L/S"\
+        public bool RemoveLayerByName(string LayerName)
 		{
 			
 			int i = CompositeQueryLayers.FindIndex(x => x.LayerName.Equals(LayerName,StringComparison.InvariantCultureIgnoreCase));
@@ -1381,7 +1410,9 @@ namespace TheTechIdea.Util
 				ReadProjects();
                 //ReadSyncDataSource();
                 InitMapping();
-			}
+				SaveLocation();
+
+            }
 			catch (Exception ex)
 			{
 
