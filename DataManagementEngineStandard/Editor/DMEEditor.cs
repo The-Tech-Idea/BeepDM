@@ -32,7 +32,9 @@ namespace TheTechIdea.Beep
         /// <summary>
         /// Container Properties to allow multi-tenant application
         /// </summary>
+        /// 
         public bool ContainerMode { get; set; } = false;
+        public IProgress<PassedArgs> progress { get; set; }
         public string ContainerName { get; set; } = null;
         /// <summary>
         /// List of Datasources used in the Platform
@@ -308,9 +310,9 @@ namespace TheTechIdea.Beep
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
             ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
-            if (ConfigEditor.DataSourcesClasses.Any(x => x.className.Equals(driversConfig.classHandler,StringComparison.InvariantCultureIgnoreCase)))
+            if (ConfigEditor.DataSourcesClasses.Any(x => x.className != null && x.className.Equals(driversConfig.classHandler,StringComparison.InvariantCultureIgnoreCase)))
             {
-                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className.Equals(driversConfig.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
+                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className != null && x.className.Equals(driversConfig.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
                 if (packagename != null)
                 {
                    Type adc = assemblyHandler.GetType(packagename);
@@ -360,9 +362,9 @@ namespace TheTechIdea.Beep
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
             ConnectionDriversConfig package=null;
-            if (ConfigEditor.DataDriversClasses.Where(x => x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).Any())
+            if (ConfigEditor.DataDriversClasses.Where(x => x.classHandler!=null  && x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).Any())
             {
-                package = ConfigEditor.DataDriversClasses.Where(x => x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                package = ConfigEditor.DataDriversClasses.Where(x => x.classHandler != null &&  x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className.Equals(package.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
                 if (packagename != null)
                 {
@@ -612,6 +614,20 @@ namespace TheTechIdea.Beep
             assemblyHandler = LLoader;
             classCreator = new ClassCreator(this);
             WorkFlowEditor = new WorkFlowEditor(this);
+            progress = new Progress<PassedArgs>(percent => {
+
+                if (!string.IsNullOrEmpty(percent.Messege))
+                {
+                    if(percent.IsError)
+                    {
+                        AddLogMessage("Beep", percent.Messege, DateTime.Now, 0, null, Errors.Failed);
+                    }else
+                        AddLogMessage("Beep", percent.Messege, DateTime.Now, 0, null, Errors.Ok);
+
+                }
+               
+
+            });
         }
 
         protected virtual void Dispose(bool disposing)

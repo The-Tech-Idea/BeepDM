@@ -26,9 +26,9 @@ namespace TheTechIdea
         int ParameterInt1 { get; set; }
         int ParameterInt2 { get; set; }
         int ParameterInt3 { get; set; }
-        int Parameterdouble1 { get; set; }
-        int Parameterdouble2 { get; set; }
-        int Parameterdouble3 { get; set; }
+        double Parameterdouble1 { get; set; }
+        double Parameterdouble2 { get; set; }
+        double Parameterdouble3 { get; set; }
         string ParameterString1 { get; set; }
         string ParameterString2 { get; set; }
         string ParameterString3 { get; set; }
@@ -37,6 +37,9 @@ namespace TheTechIdea
         DateTime ParameterDate3 { get; set; }
         object ReturnData { get; set; }
         Type ReturnType { get; set; }
+        string Messege { get; set; }
+        string ErrorCode { get; set; }
+        bool IsError { get; set; }
     }
 
     public class PassedArgs : IPassedArgs
@@ -62,14 +65,17 @@ namespace TheTechIdea
         public int ParameterInt1 { get; set; }
         public int ParameterInt2 { get; set; }
         public int ParameterInt3 { get; set; }
-        public int Parameterdouble1 { get; set; }
-        public int Parameterdouble2 { get; set; }
-        public int Parameterdouble3 { get; set; }
+        public double Parameterdouble1 { get; set; }
+        public double Parameterdouble2 { get; set; }
+        public double Parameterdouble3 { get; set; }
         public DateTime ParameterDate1 { get; set; }
         public DateTime ParameterDate2 { get; set; }
         public DateTime ParameterDate3 { get; set; }
         public object ReturnData { get; set; }
         public Type ReturnType { get; set; }
+        public string Messege { get; set; }
+        public string ErrorCode { get; set; }
+        public bool IsError { get; set; }
         public int Id { get; set; }
         public PassedArgs()
         {

@@ -19,7 +19,7 @@ namespace TheTechIdea.Beep
        
 
         List<IDataSource> DataSources { get; set; }
-  
+        IProgress<PassedArgs> progress { get; set; }
         bool ContainerMode { get; set; }
         string ContainerName { get; set; }
         IETL ETL { get; set; }

@@ -754,28 +754,23 @@ namespace TheTechIdea.Util
         #region "SaveLocation of App"
         public void SaveLocation()
         {
-            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TheTechIdea", "Beep")))
+            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "TheTechIdea", "Beep")))
             {
-                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TheTechIdea", "Beep"));
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TheTechIdea", "Beep", "BeepConfig.json");
-                JsonLoader.Serialize(path, Config);
+                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "TheTechIdea", "Beep"));
+			
             }
-          
+            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "TheTechIdea", "Beep", "BeepConfig.json");
+            string Beeppath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "TheTechIdea", "Beep", "BeepPath.txt");
+            StreamWriter streamWriter = new StreamWriter(Beeppath);
+            streamWriter.WriteLine(Config.ExePath);
+            streamWriter.Close();
+            JsonLoader.Serialize(path, Config);
 
         }
         public bool IsLocationSaved()
         {
-			bool retval=false; 
-            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TheTechIdea", "Beep")))
-            {
-                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TheTechIdea", "Beep"));
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TheTechIdea", "Beep", "BeepConfig.json");
-                JsonLoader.Serialize(path, Config);
-				retval = true;
-            }else
-				retval = true;
-
-			return retval;
+			SaveLocation();
+            return true;
          
 
         }

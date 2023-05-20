@@ -58,13 +58,16 @@ namespace TheTechIdea.Beep.FileManager
             {
                 rep = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
             }
-
+            if (!string.IsNullOrEmpty(ConnectionProp.FilePath) )
+            {
+                rep = ConnectionProp.FilePath;
+            }
             return rep;
         }
         private ConnectionState OpenConn()
         {
             string r= ReplaceValueFromConnectionString();
-            if (Path.Combine(r, ConnectionProp.FileName) != null)
+            if (!string.IsNullOrEmpty(r))
             {
                 if (File.Exists(Path.Combine(r,ConnectionProp.FileName)))
                 {
