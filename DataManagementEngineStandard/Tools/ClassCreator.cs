@@ -76,7 +76,7 @@ namespace TheTechIdea.Beep.Tools
 
                         if (progress != null)
                         {
-                            PassedArgs ps = new PassedArgs { ParameterString1 = $"Error in Creating class for {item.EntityName}", EventType = "Error", ParameterInt1 = i, ParameterInt2 = total, ParameterString3 = ex.Message };
+                            PassedArgs ps = new PassedArgs { ParameterString1 = $"Error in Creating class for {item.EntityName}", EventType = "Error", ParameterInt1 = i, ParameterInt2 = total, Messege = ex.Message };
                             progress.Report(ps);
 
                         }
@@ -157,7 +157,7 @@ namespace TheTechIdea.Beep.Tools
 
                         if (progress != null)
                         {
-                            PassedArgs ps = new PassedArgs { ParameterString1 = $"Error in Creating class for {item}", EventType = "Error", ParameterInt1 = i, ParameterInt2 = total, ParameterString3 = ex.Message };
+                            PassedArgs ps = new PassedArgs { ParameterString1 = $"Error in Creating class for {item}", EventType = "Error", ParameterInt1 = i, ParameterInt2 = total, Messege = ex.Message };
                             progress.Report(ps);
 
                         }

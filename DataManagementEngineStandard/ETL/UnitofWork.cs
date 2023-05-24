@@ -12,6 +12,7 @@ using System.Reflection;
 
 using System.Threading;
 using System.Threading.Tasks;
+using System.Transactions;
 using System.Xml.Linq;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
@@ -25,17 +26,10 @@ namespace TheTechIdea.Beep.Editor
     {
         CancellationTokenSource tokenSource;
         CancellationToken token;
-        private  Dictionary<T, EntityState> _entityStates;
+        private  Dictionary<int, EntityState> _entityStates;
+        private Dictionary<T, EntityState> _deletedentities;
         protected virtual event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
-        public UnitofWork(IDMEEditor dMEEditor,string datasourceName)
-        {
-            DMEEditor = dMEEditor;
-            DatasourceName = datasourceName;
-            if (OpenDataSource())
-            {
-                init();
-            }
-        }
+       
         public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName)
         {
             DMEEditor = dMEEditor;
@@ -60,9 +54,10 @@ namespace TheTechIdea.Beep.Editor
         public  ObservableCollection<T> Units { get; set; }
         public string DatasourceName { get; set; }
         public List<T> DeletedUnits { get; set; } = new List<T>();
-        public Dictionary<int,int> InsertedKeys { get; set; } = new Dictionary<int,int>();
-        public Dictionary<int,int>  UpdatedKeys { get; set; } = new Dictionary<int,int>();
-        public Dictionary<int,int>  DeletedKeys { get; set; } = new Dictionary<int,int>();
+       
+        public Dictionary<int, double> InsertedKeys { get; set; } = new Dictionary<int, double>();
+        public Dictionary<int,double>  UpdatedKeys { get; set; } = new Dictionary<int, double>();
+        public Dictionary<int, double>  DeletedKeys { get; set; } = new Dictionary<int, double>();
         public EntityStructure EntityStructure { get; set;}
         public IDMEEditor DMEEditor { get; }
         public IDataSource DataSource { get; set; }
@@ -70,69 +65,98 @@ namespace TheTechIdea.Beep.Editor
         public Type EntityType { get; set; }
         public string PrimaryKey { get; set; }
         public string GuidKey { get; set; }
-
         PropertyInfo PKProperty=null;
         PropertyInfo Guidproperty = null;
-
         int keysidx ;
         private void init()
         {
             Units = new ObservableCollection<T>();
-         
             Units.CollectionChanged -= Units_CollectionChanged;
             Units.CollectionChanged += Units_CollectionChanged;
             DeletedUnits  = new List<T>();
-            InsertedKeys= new Dictionary<int,int>();
-            UpdatedKeys  = new Dictionary<int,int>();
-            DeletedKeys  = new Dictionary<int,int>();
-            _entityStates = new Dictionary<T, EntityState>();
+            InsertedKeys= new Dictionary<int, double>();
+            UpdatedKeys  = new Dictionary<int, double>();
+            DeletedKeys  = new Dictionary<int, double>();
+            _entityStates = new Dictionary<int, EntityState>();
+            _deletedentities = new Dictionary<T, EntityState>();
+            EntityStructure = DataSource.GetEntityStructure(EntityName,false);
             PrimaryKey = EntityStructure.PrimaryKeys.FirstOrDefault().fieldname;
             EntityType = DataSource.GetEntityType(EntityName);
             keysidx = 0;
-            
+        }
+       public object GetIDValue(T entity)
+        {
+            var idValue = entity.GetType().GetProperty(PrimaryKey, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance)?.GetValue(entity, null);
+
+            return idValue;
+
+        }
+        public int Getindex(string id)
+        {
+            int index = -1;
+
+            var tentity = Units.FirstOrDefault(x => x.GetType().GetProperty(PrimaryKey, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance)?.GetValue(x, null).ToString() == id.ToString());
+            if (tentity != null)
+            {
+                 index = Units.IndexOf(tentity);
+                // Now index holds the position of the entity in the Units collection.
+            }
+            return index;
+
+        }
+        public int Getindex(T entity)
+        {
+            int index = Units.IndexOf(entity);
+            return index;
+
         }
         public void Create(T entity)
         {
             Units.Add(entity);
-            _entityStates[entity] = EntityState.Added;
+            _entityStates[Getindex(entity)] = EntityState.Added;
+            // Subscribe to PropertyChanged event
+            entity.PropertyChanged += ItemPropertyChangedHandler;
         }
-        public T Read(int id)
+        public T Read(string id)
         {
-            return Units.FirstOrDefault(x => x.GetType().GetProperty("Id")?.GetValue(x, null).ToString() == id.ToString());
+            return Units[Getindex(id)];
         }
-        public void Update(int id, T entity)
+        public void Update(string id, T entity)
         {
-            var index = Units.IndexOf(Units.FirstOrDefault(x => x.GetType().GetProperty("Id")?.GetValue(x, null).ToString() == id.ToString()));
+            var index = Getindex(id);
             if (index >= 0)
             {
                 Units[index] = entity;
-                _entityStates[entity] = EntityState.Modified;
+                if(_entityStates[index]!= EntityState.Added)
+                {
+                    _entityStates[index] = EntityState.Modified;
+                }
+              
             }
         }
-       public void Delete(int id)
+        public void Delete(string id)
         {
-            var entity = Units.FirstOrDefault(x => x.GetType().GetProperty("Id")?.GetValue(x, null).ToString() == id.ToString());
-            if (entity != null)
+            var index = Getindex(id);
+
+            if (index >=0)
             {
-                Units.Remove(entity);
-                _entityStates[entity] = EntityState.Deleted;
+                Units.RemoveAt(index);
+                _entityStates[index] = EntityState.Deleted;
+                //entity.PropertyChanged += ItemPropertyChangedHandler;
             }
         }
-
-        public IEnumerable<T> GetAddedEntities()
+        public IEnumerable<int> GetAddedEntities()
         {
             return _entityStates.Where(x => x.Value != EntityState.Added).Select(x => x.Key);
         }
-        public IEnumerable<T> GetModifiedEntities()
+        public IEnumerable<int> GetModifiedEntities()
         {
             return _entityStates.Where(x => x.Value != EntityState.Modified).Select(x => x.Key);
         }
         public IEnumerable<T> GetDeletedEntities()
         {
-            return _entityStates.Where(x => x.Value == EntityState.Deleted).Select(x => x.Key);
+            return _deletedentities.Where(x => x.Value == EntityState.Deleted).Select(x => x.Key);
         }
-
-       
         private void Units_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             switch (e.Action)
@@ -176,23 +200,8 @@ namespace TheTechIdea.Beep.Editor
                 default:
                     break;
             }
-            if (e.OldItems != null)
-            {
-                foreach (T item in e.OldItems)
-                {
-                    _entityStates[item] = EntityState.Deleted;
-                }
-            }
-
-            if (e.NewItems != null)
-            {
-                foreach (T item in e.NewItems)
-                {
-                    _entityStates[item] = EntityState.Added;
-                }
-            }
+    
         }
-
         private void ItemPropertyChangedHandler(object sender, PropertyChangedEventArgs e)
         {
           
@@ -200,10 +209,9 @@ namespace TheTechIdea.Beep.Editor
             if (!UpdatedKeys.Any(p=>p.Value.Equals((int)PKProperty.GetValue(item, null))))
             {
                 keysidx++;
-                UpdatedKeys.Add(keysidx, (int)PKProperty.GetValue(item, null));
+                UpdatedKeys.Add(keysidx, (double)PKProperty.GetValue(item, null));
             }
         }
-
         public virtual async Task<ObservableCollection<T>> GetAllFromSource()
         {
             clearunits();
@@ -230,7 +238,8 @@ namespace TheTechIdea.Beep.Editor
             InsertedKeys.Clear();
             InsertedKeys.Clear();
             DeletedUnits.Clear();
-            _entityStates = new Dictionary<T, EntityState>();
+            _entityStates = new Dictionary<int, EntityState>();
+            _deletedentities = new Dictionary<T, EntityState>();
         }
         public virtual async Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token)
         {
@@ -239,24 +248,26 @@ namespace TheTechIdea.Beep.Editor
             int x = 1;
             args.ParameterInt1=InsertedKeys.Count+UpdatedKeys.Count+DeletedKeys.Count;
             args.ParameterString1 = $"Started Saving Changes {args.ParameterInt1}";
+            args.Messege = $"Started Saving Changes {args.ParameterInt1}";
             progress.Report(args);
             try
             {
-                foreach (T t in GetAddedEntities())
+                foreach (int t in GetAddedEntities())
+                {
+                    args.ParameterInt1 = x;
+                  
+                    progress.Report(args);
+                    errorsInfo = await InsertAsync(Units[t]);
+                    x++;
+                }
+                foreach (int t in GetModifiedEntities())
                 {
                     args.ParameterInt1 = x;
                     progress.Report(args);
-                    errorsInfo = await InsertAsync(t);
+                    errorsInfo = await UpdateAsync(Units[t]);
                     x++;
                 }
-                foreach (var t in GetModifiedEntities())
-                {
-                    args.ParameterInt1 = x;
-                    progress.Report(args);
-                    errorsInfo = await UpdateAsync(t);
-                    x++;
-                }
-                foreach (var t in GetDeletedEntities())
+                foreach (T t in GetDeletedEntities())
                 {
                     args.ParameterInt1 = x;
                     progress.Report(args);
@@ -285,11 +296,13 @@ namespace TheTechIdea.Beep.Editor
                 //    errorsInfo = await DeleteAsync(Units[t.Value]);
                 //    x++;
                 //}
+                args.Messege = $"Ended Saving Changes";
                 args.ParameterString1 = $"Ended Saving Changes";
                 progress.Report(args);
             }
             catch (Exception ex)
             {
+                args.Messege = $"Error Saving Changes {ex.Message}";
                 args.ParameterString1 = $"Error Saving Changes {ex.Message}";
                 progress.Report(args);
                 errorsInfo.Ex = ex;
