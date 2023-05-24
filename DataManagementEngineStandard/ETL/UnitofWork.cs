@@ -79,13 +79,21 @@ namespace TheTechIdea.Beep.Editor
             DeletedKeys  = new Dictionary<int, double>();
             _entityStates = new Dictionary<int, EntityState>();
             _deletedentities = new Dictionary<T, EntityState>();
-            EntityStructure = DataSource.GetEntityStructure(EntityName,false);
-            PrimaryKey = EntityStructure.PrimaryKeys.FirstOrDefault().fieldname;
-            EntityType = DataSource.GetEntityType(EntityName);
             keysidx = 0;
+            if (!Validateall())
+            {
+                return ;
+            }
+           
+            EntityType = DataSource.GetEntityType(EntityName);
+          
         }
        public object GetIDValue(T entity)
         {
+            if (!Validateall())
+            {
+                return null;
+            }
             var idValue = entity.GetType().GetProperty(PrimaryKey, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance)?.GetValue(entity, null);
 
             return idValue;
@@ -93,6 +101,10 @@ namespace TheTechIdea.Beep.Editor
         }
         public int Getindex(string id)
         {
+            if (!Validateall())
+            {
+                return -1;
+            }
             int index = -1;
 
             var tentity = Units.FirstOrDefault(x => x.GetType().GetProperty(PrimaryKey, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance)?.GetValue(x, null).ToString() == id.ToString());
@@ -106,12 +118,20 @@ namespace TheTechIdea.Beep.Editor
         }
         public int Getindex(T entity)
         {
+            if (!Validateall())
+            {
+                return -1;
+            }
             int index = Units.IndexOf(entity);
             return index;
 
         }
         public void Create(T entity)
         {
+            if (!Validateall())
+            {
+                return ;
+            }
             Units.Add(entity);
             _entityStates[Getindex(entity)] = EntityState.Added;
             // Subscribe to PropertyChanged event
@@ -119,10 +139,18 @@ namespace TheTechIdea.Beep.Editor
         }
         public T Read(string id)
         {
+            if (!Validateall())
+            {
+                return null;
+            }
             return Units[Getindex(id)];
         }
         public void Update(string id, T entity)
         {
+            if (!Validateall())
+            {
+                return ;
+            }
             var index = Getindex(id);
             if (index >= 0)
             {
@@ -136,6 +164,10 @@ namespace TheTechIdea.Beep.Editor
         }
         public void Delete(string id)
         {
+            if (!Validateall())
+            {
+                return ;
+            }
             var index = Getindex(id);
 
             if (index >=0)
@@ -147,14 +179,26 @@ namespace TheTechIdea.Beep.Editor
         }
         public IEnumerable<int> GetAddedEntities()
         {
+            if (!Validateall())
+            {
+                return null;
+            }
             return _entityStates.Where(x => x.Value != EntityState.Added).Select(x => x.Key);
         }
         public IEnumerable<int> GetModifiedEntities()
         {
+            if (!Validateall())
+            {
+                return null;
+            }
             return _entityStates.Where(x => x.Value != EntityState.Modified).Select(x => x.Key);
         }
         public IEnumerable<T> GetDeletedEntities()
         {
+            if (!Validateall())
+            {
+                return null;
+            }
             return _deletedentities.Where(x => x.Value == EntityState.Deleted).Select(x => x.Key);
         }
         private void Units_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -520,6 +564,28 @@ namespace TheTechIdea.Beep.Editor
                     else
                         retval = true;
                 }
+            }
+            return retval;
+        }
+        private bool Validateall()
+        {
+            bool retval = true;
+            if (!OpenDataSource())
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error Opening DataSource in UnitofWork {DatasourceName}", DateTime.Now, -1, DatasourceName, Errors.Failed);
+                retval = false;
+            }
+            EntityStructure = DataSource.GetEntityStructure(EntityName, false);
+            if(EntityStructure == null)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error Entity Not Found in UnitofWork {EntityName}", DateTime.Now, -1, EntityName, Errors.Failed);
+                retval= false;
+            }
+            if(EntityStructure.PrimaryKeys.Count == 0)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error Entity dont have a primary key in UnitofWork {EntityName}", DateTime.Now, -1, EntityName, Errors.Failed);
+                retval = false;
+                
             }
             return retval;
         }
