@@ -131,7 +131,7 @@ namespace TheTechIdea.Beep.Editor
                     sc.sourceentityname = item.DatasourceEntityName;
                     sc.destinationentityname = item.EntityName;
                     sc.destinationdatasourcename = Dest.DatasourceName;
-                    sc.id = i;
+                    sc.ID = i;
                     i++;
                 }
 
@@ -143,7 +143,7 @@ namespace TheTechIdea.Beep.Editor
                     {
                         EntityStructure item = entities[entities.FindIndex(p => p.EntityName == sc.sourceentityname && p.DatasourceEntityName == sc.sourceDatasourceEntityName)];
                         ETLScriptDet copyscript = GenerateScript( item, Dest.DatasourceName, scriptType);
-                        copyscript.id = i;
+                        copyscript.ID = i;
                         i++;
                        // Script.ScriptDTL.Add(copyscript);
                         retval.Add(copyscript);
@@ -181,7 +181,7 @@ namespace TheTechIdea.Beep.Editor
                     foreach (EntityStructure sc in entities)
                         {
                             ETLScriptDet copyscript = GenerateScript( item, Dest.DatasourceName,  DDLScriptType.CopyData);
-                            copyscript.id = i;
+                            copyscript.ID = i;
                             i++;
                             //Script.ScriptDTL.Add(copyscript);
                             retval.Add(copyscript);
@@ -475,7 +475,7 @@ namespace TheTechIdea.Beep.Editor
             CurrentScriptRecord = 0;
             errorcount = 0;
             stoprun = false;
-            foreach (ETLScriptDet sc in DMEEditor.ETL.Script.ScriptDTL.OrderBy(p=>p.id))
+            foreach (ETLScriptDet sc in DMEEditor.ETL.Script.ScriptDTL.OrderBy(p=>p.ID))
             {
                 destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
                 srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
@@ -854,7 +854,7 @@ namespace TheTechIdea.Beep.Editor
                 tr.sourceDataSourceName = refentity == null ? null : refentity.DataSourceID;
                 if (sc != null)
                 {
-                    tr.parentscriptid =  sc.id;
+                    tr.parentscriptid =  sc.ID;
                     sc.Tracking.Add(tr);
                 }
 

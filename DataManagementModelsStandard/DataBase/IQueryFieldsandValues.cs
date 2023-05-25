@@ -6,8 +6,9 @@ namespace TheTechIdea.Beep.DataBase
 {
     public interface IQueryFieldsandValues
     {
-
-         IEntityField CompareField1 { get; set; }
+         int ID { get; set; }
+         string GuidID { get; set; } 
+        IEntityField CompareField1 { get; set; }
          string Fieldvalue { get; set; }
          string Comparison { get; set; }
     }

@@ -18,9 +18,10 @@ namespace TheTechIdea.Util
     {
         public ConfigandSettings()
         {
-
+            GuidID = Guid.NewGuid().ToString();
         }
         public string ID { get; set; }
+        public string GuidID { get; set; }
         public string SystemEntryFormName { get; set; } 
         public string ConfigPath { get; set; } 
         public string ExePath { get; set; } 
@@ -44,19 +45,22 @@ namespace TheTechIdea.Util
     public class StorageFolders
     {
         public string ID { get; set; }
+        public string GuidID { get; set; }
         public string FolderPath { get; set; }
         public FolderFileTypes FolderFilesType { get; set; }
         public string EntrypointClass { get; set; }
         public StorageFolders()
         {
-
+            GuidID = Guid.NewGuid().ToString();
         }
         public StorageFolders(string pFolderPath)
         {
+            GuidID = Guid.NewGuid().ToString();
             FolderPath = pFolderPath;
         }
         public StorageFolders(string pFolderPath, FolderFileTypes pFoderType)
         {
+            GuidID = Guid.NewGuid().ToString();
             FolderPath = pFolderPath;
             FolderFilesType = pFoderType;
         }
@@ -65,9 +69,10 @@ namespace TheTechIdea.Util
     {
         public AssemblyClassDefinition()
         {
-
+            
         }
         public string ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string className { get; set; }
         public string dllname { get; set; }
         public string PackageName { get; set; }
@@ -87,9 +92,10 @@ namespace TheTechIdea.Util
     {
         public MethodsClass()
         {
-
+            GuidID = Guid.NewGuid().ToString();
         }
-        public string ID { get; set; }
+        public int ID { get; set; }
+        public string GuidID { get; set; }
         public MethodInfo Info { get; set; }
         public string Name { get; set; }
         public string Caption { get; set; }
@@ -110,9 +116,10 @@ namespace TheTechIdea.Util
     {
         public ConnectionDriversConfig()
         {
-
+             
         }
-        public string ID { get; set; }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string PackageName { get; set; }
         public string DriverClass { get; set; }
         public string version { get; set; }
@@ -139,9 +146,10 @@ namespace TheTechIdea.Util
     {
         public ConnectionDriversTypes()
         {
-
+            GuidID = Guid.NewGuid().ToString();
         }
-        public string ID { get; set; }
+        public int ID { get; set; }
+        public string GuidID { get; set; }
         public string PackageName { get; set; }
         public string DriverClass { get; set; }
         public string version { get; set; }
@@ -155,9 +163,10 @@ namespace TheTechIdea.Util
     {
         public DataSourceConnectionConfig()
         {
-
+            GuidID = Guid.NewGuid().ToString();
         }
-        public string ID { get; set; }
+        public int ID { get; set; }
+        public string GuidID { get; set; }
         public string DataSourceName { get; set; }
         public DatasourceCategory datasourceCategory{get;set;}
         public List<string> ConnectionDrivers { get; set; } = new List<string>();
@@ -166,7 +175,8 @@ namespace TheTechIdea.Util
    
     public class CategoryFolder
     {
-        public string ID { get; set; }
+        public int ID { get; set; }
+        public string GuidID { get; set; }  = Guid.NewGuid().ToString();
         public string FolderName { get; set; }
         public string RootName { get; set; }
         public string ParentName { get; set; }
@@ -180,9 +190,10 @@ namespace TheTechIdea.Util
     {
         public Function2FunctionAction()
         {
-
+           
         }
-
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string ActionType { get; set; } //Event or Function
         public string Event { get; set; }
         public string FromClass { get; set; }
@@ -204,6 +215,8 @@ namespace TheTechIdea.Util
         {
 
         }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string EventName { get; set; }
     }
     public class DefaultValue
@@ -212,7 +225,8 @@ namespace TheTechIdea.Util
         {
 
         }
-        public string ID { get; set; }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string propertyName { get; set; }
         public string propoertValue { get; set; }
         public string Rule { get; set; }

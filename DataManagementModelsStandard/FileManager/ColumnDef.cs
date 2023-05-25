@@ -11,7 +11,8 @@ namespace TheTechIdea.Beep.FileManager
         public string ColumnName { get; set; }
         public string ColumnType { get; set; }
         public bool FoundValue    {get;set;}
-
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
 
         public ColumnDef()
         {

@@ -8,6 +8,8 @@ namespace TheTechIdea.Tools
 {
     public class assemblies_rep
     {
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public Assembly DllLib { get; set; }
         public string DllLibPath { get; set; }
         public string DllName { get; set; }

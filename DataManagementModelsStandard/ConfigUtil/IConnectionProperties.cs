@@ -5,6 +5,8 @@ namespace TheTechIdea.Util
 {
     public interface IConnectionProperties
     {
+         int ID { get; set; }
+         string GuidID { get; set; }
         string ConnectionName { get; set; }
         string ConnectionString { get; set; }
         string Database { get; set; }
@@ -14,7 +16,7 @@ namespace TheTechIdea.Util
          string DriverName { get; set; }
          string DriverVersion { get; set; }
         string Host { get; set; }
-        int ID { get; set; }
+      
         string Parameters { get; set; }
         string Password { get; set; }
         int Port { get; set; }

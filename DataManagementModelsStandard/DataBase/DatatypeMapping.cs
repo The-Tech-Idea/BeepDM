@@ -10,9 +10,10 @@ namespace TheTechIdea.Beep.DataBase
     {
         public DatatypeMapping()
         {
-
+            GuidID = Guid.NewGuid().ToString();
         }
-       
+        public int ID { get; set; }
+        public string GuidID { get; set; }
         public string DataType { get; set; } 
         public string DataSourceName { get ; set ; }
         public string NetDataType { get ; set ; }

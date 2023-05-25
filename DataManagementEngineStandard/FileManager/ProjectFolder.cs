@@ -28,6 +28,7 @@ namespace TheTechIdea.Beep.FileManager
             Tags = tags;
             Url = url;
             Version = version;
+            
         }
 
         public string Author { get  ; set  ; }
@@ -39,9 +40,13 @@ namespace TheTechIdea.Beep.FileManager
         public List<string> Tags { get  ; set  ; }
         public string Url { get  ; set  ; }
         public string Version { get  ; set  ; }
+        public int ID { get ; set; }
+        public string GuidID { get ; set ; } = Guid.NewGuid().ToString();
     }
     public class FolderFiles : IFolderFiles
     {
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string Name { get ; set ; }
 
         public List<string> Files { get; set; } = new List<string>();

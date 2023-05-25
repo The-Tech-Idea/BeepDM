@@ -17,7 +17,8 @@ namespace TheTechIdea.Beep.DataView
         public ConnectionDriversConfig DataSourceDriver { get ; set ; }
         public ConnectionState ConnectionStatus { get ; set ; }
         public IDMEEditor DMEEditor { get; set; }
-        public int ID { get ; set ; }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public IDMLogger Logger { get ; set ; }
         public IErrorsInfo ErrorObject { get ; set ; }
         public IDbConnection DbConn { get ; set ; }

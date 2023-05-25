@@ -6,6 +6,8 @@ namespace TheTechIdea.Beep.FileManager
 
 
     {
+        int ID { get; set; }
+        string GuidID { get; set; }
         string Author { get; set; }
         string Description { get; set; }
         List<IFolderFiles> Folders { get; }

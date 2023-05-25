@@ -19,7 +19,8 @@ namespace TheTechIdea.Beep.ConfigUtil
            
             Entities = new List<EntityStructure>();
         }
-
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string datasourcename { get ; set ; }
         public List<EntityStructure> Entities { get ; set ; }
      

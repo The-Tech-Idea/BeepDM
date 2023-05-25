@@ -10,6 +10,7 @@ namespace TheTechIdea.Beep.DataBase
     public class RDBDataConnection : IDataConnection
     {
         public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public IDbConnection DbConn { get; set; }
         public IDMEEditor DMEEditor { get; set; }
         public ConnectionState ConnectionStatus { get; set; } = ConnectionState.Closed;

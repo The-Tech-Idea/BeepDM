@@ -10,11 +10,12 @@ namespace TheTechIdea.Beep.CompositeLayer
         public CompositeLayer()
         {
             Entities = new List<EntityStructure>();
+            GuidID = Guid.NewGuid().ToString();
         }
         public CompositeLayer(string pLayerName, string pDataViewDataSourceName, string pLocalDBDriver,string  pLocalDBDriverVersion)
         {
             Entities = new List<EntityStructure>();
-
+            GuidID = Guid.NewGuid().ToString();
         }
         public List<EntityStructure> Entities { get; set; }
         public IDataSource DataSource { get ; set ; }
@@ -25,6 +26,7 @@ namespace TheTechIdea.Beep.CompositeLayer
         public DateTime DateCreated { get ; set ; }
         public DateTime DateUpdated { get ; set ; }
         public string LayerName { get ; set ; }
-        public string ID { get ; set ; }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
     }
 }

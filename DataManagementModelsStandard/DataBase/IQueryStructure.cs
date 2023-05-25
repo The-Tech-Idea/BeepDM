@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace TheTechIdea.Beep.DataBase
 {
     public interface IQueryStructure
     {
+         int ID { get; set; }
+         string GuidID { get; set; }
         List<QueryFieldsandValues> FieldsandValues { get; set; }
         List<EntityStructure> FromEntities { get; set; }
         int ParentTableID { get; set; }

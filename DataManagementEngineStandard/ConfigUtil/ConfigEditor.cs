@@ -477,6 +477,12 @@ namespace TheTechIdea.Util
 			{
 				if (!DataConnectionExist(cn.ConnectionName))
 				{
+					if(cn.ID<=0)
+					{
+						cn.ID = DataConnections.Max(p => p.ID) + 1;
+						
+
+                    }
 					DataConnections.Add(cn);
 					return true;
 				}

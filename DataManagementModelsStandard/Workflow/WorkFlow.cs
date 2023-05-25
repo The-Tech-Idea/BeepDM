@@ -12,7 +12,7 @@ namespace TheTechIdea.Beep.Workflow
     {
         public WorkFlow()
         {
-            Id = Guid.NewGuid().ToString();
+           
         }
         public List<IWorkFlowStep> Datasteps { get; set; } 
         public List<string> DataSources { get; set; } = new List<string>();
@@ -20,7 +20,8 @@ namespace TheTechIdea.Beep.Workflow
         public string WorkSpaceFolder { get; set; }
         public string DataWorkFlowName { get; set; }
         public string Description { get; set; }
-        public string Id { get; set; }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public List<WorkFlow_Run_Result> workFlow_Run_Results { get; set; }=new List<WorkFlow_Run_Result>();
 
         public event EventHandler<IWorkFlowEventArgs> WorkFlowStarted;

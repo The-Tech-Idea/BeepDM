@@ -9,12 +9,12 @@ namespace TheTechIdea.Beep.AppManager
 {
     public interface IAppDefinition
     {
-        string ID { get; set; }
+        int ID { get; set; }
         List<AppBlock> Blocks { get; set; }
         string DataSourceName { get; set; }
         TextBlock Description { get; set; }
-     
-     
+
+        string GuidID { get; set; }
         string Name { get; set; }
         string ReportEndText { get; set; }
         TextBlock SubTitle { get; set; }

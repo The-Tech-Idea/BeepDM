@@ -10,6 +10,8 @@ namespace TheTechIdea.Beep.Workflow
         {
 
         }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string ObjectName { get; set; }
         public string ObjectType { get; set; }
 

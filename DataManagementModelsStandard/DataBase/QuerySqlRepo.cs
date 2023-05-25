@@ -9,6 +9,8 @@ namespace TheTechIdea.Beep.DataBase
 {
     public class QuerySqlRepo
     {
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public DataSourceType DatabaseType { get; set; }
         public Sqlcommandtype Sqltype { get; set; }
         public string Sql { get; set; }

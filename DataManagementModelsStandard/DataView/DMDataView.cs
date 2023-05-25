@@ -20,7 +20,8 @@ namespace TheTechIdea.Beep.DataBase
         public string DataViewDataSourceID { get ; set ; }
         public string CompositeLayerDataSourceID { get; set; }
         public string VID { get ; set ; }
-
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public DMDataView()
         {
            

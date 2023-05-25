@@ -134,16 +134,16 @@ namespace TheTechIdea.Beep.FileManager
                 };
                 if (f.FilePath.Contains(DMEEditor.ConfigEditor.ExePath))
                 {
-                    f.FilePath.Replace(DMEEditor.ConfigEditor.ExePath, ".");
+                    f.FilePath = f.FilePath.Replace(DMEEditor.ConfigEditor.ExePath, ".\\");
                 }
-                if (f.FilePath.Contains(DMEEditor.ConfigEditor.Config.DataFilePath))
-                {
-                    f.FilePath.Replace(DMEEditor.ConfigEditor.Config.DataFilePath, ".");
-                }
-                if (f.FilePath.Contains(DMEEditor.ConfigEditor.Config.ProjectDataPath))
-                {
-                    f.FilePath.Replace(DMEEditor.ConfigEditor.Config.ProjectDataPath, ".");
-                }
+                //if (f.FilePath.Contains(DMEEditor.ConfigEditor.Config.DataFilePath))
+                //{
+                //    f.FilePath = f.FilePath.Replace(DMEEditor.ConfigEditor.Config.DataFilePath, ".");
+                //}
+                //if (f.FilePath.Contains(DMEEditor.ConfigEditor.Config.ProjectDataPath))
+                //{
+                //    f.FilePath = f.FilePath.Replace(DMEEditor.ConfigEditor.Config.ProjectDataPath, ".");
+                //}
                 string ext = Path.GetExtension(file).Replace(".", "").ToLower();
                 List<ConnectionDriversConfig> clss = DMEEditor.ConfigEditor.DataDriversClasses.Where(p => p.extensionstoHandle != null && p.extensionstoHandle.Contains(ext) && p.Favourite == true).ToList();
                 ConnectionDriversConfig c = clss.Where(o => o.extensionstoHandle.Contains(ext) && o.Favourite == true).FirstOrDefault();

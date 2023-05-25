@@ -22,14 +22,14 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class UnitofWork<T> where T : class, INotifyPropertyChanged, new() 
+    public class UnitofWork<T> : IUnitofWork<T> where T : class, INotifyPropertyChanged, new()
     {
         CancellationTokenSource tokenSource;
         CancellationToken token;
-        private  Dictionary<int, EntityState> _entityStates;
+        private Dictionary<int, EntityState> _entityStates;
         private Dictionary<T, EntityState> _deletedentities;
         protected virtual event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
-       
+
         public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName)
         {
             DMEEditor = dMEEditor;
@@ -40,55 +40,55 @@ namespace TheTechIdea.Beep.Editor
                 init();
             }
         }
-        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName,EntityStructure entityStructure)
+        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure)
         {
             DMEEditor = dMEEditor;
             DatasourceName = datasourceName;
             EntityName = entityName;
-            EntityStructure=entityStructure;
+            EntityStructure = entityStructure;
             if (OpenDataSource())
             {
                 init();
             }
         }
-        public  ObservableCollection<T> Units { get; set; }
+        public ObservableCollection<T> Units { get; set; }
         public string DatasourceName { get; set; }
         public List<T> DeletedUnits { get; set; } = new List<T>();
-       
+
         public Dictionary<int, double> InsertedKeys { get; set; } = new Dictionary<int, double>();
-        public Dictionary<int,double>  UpdatedKeys { get; set; } = new Dictionary<int, double>();
-        public Dictionary<int, double>  DeletedKeys { get; set; } = new Dictionary<int, double>();
-        public EntityStructure EntityStructure { get; set;}
+        public Dictionary<int, double> UpdatedKeys { get; set; } = new Dictionary<int, double>();
+        public Dictionary<int, double> DeletedKeys { get; set; } = new Dictionary<int, double>();
+        public EntityStructure EntityStructure { get; set; }
         public IDMEEditor DMEEditor { get; }
         public IDataSource DataSource { get; set; }
         public string EntityName { get; set; }
         public Type EntityType { get; set; }
         public string PrimaryKey { get; set; }
         public string GuidKey { get; set; }
-        PropertyInfo PKProperty=null;
+        PropertyInfo PKProperty = null;
         PropertyInfo Guidproperty = null;
-        int keysidx ;
+        int keysidx;
         private void init()
         {
             Units = new ObservableCollection<T>();
             Units.CollectionChanged -= Units_CollectionChanged;
             Units.CollectionChanged += Units_CollectionChanged;
-            DeletedUnits  = new List<T>();
-            InsertedKeys= new Dictionary<int, double>();
-            UpdatedKeys  = new Dictionary<int, double>();
-            DeletedKeys  = new Dictionary<int, double>();
+            DeletedUnits = new List<T>();
+            InsertedKeys = new Dictionary<int, double>();
+            UpdatedKeys = new Dictionary<int, double>();
+            DeletedKeys = new Dictionary<int, double>();
             _entityStates = new Dictionary<int, EntityState>();
             _deletedentities = new Dictionary<T, EntityState>();
             keysidx = 0;
             if (!Validateall())
             {
-                return ;
+                return;
             }
-           
+
             EntityType = DataSource.GetEntityType(EntityName);
-          
+
         }
-       public object GetIDValue(T entity)
+        public object GetIDValue(T entity)
         {
             if (!Validateall())
             {
@@ -110,7 +110,7 @@ namespace TheTechIdea.Beep.Editor
             var tentity = Units.FirstOrDefault(x => x.GetType().GetProperty(PrimaryKey, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance)?.GetValue(x, null).ToString() == id.ToString());
             if (tentity != null)
             {
-                 index = Units.IndexOf(tentity);
+                index = Units.IndexOf(tentity);
                 // Now index holds the position of the entity in the Units collection.
             }
             return index;
@@ -130,7 +130,7 @@ namespace TheTechIdea.Beep.Editor
         {
             if (!Validateall())
             {
-                return ;
+                return;
             }
             Units.Add(entity);
             _entityStates[Getindex(entity)] = EntityState.Added;
@@ -149,28 +149,28 @@ namespace TheTechIdea.Beep.Editor
         {
             if (!Validateall())
             {
-                return ;
+                return;
             }
             var index = Getindex(id);
             if (index >= 0)
             {
                 Units[index] = entity;
-                if(_entityStates[index]!= EntityState.Added)
+                if (_entityStates[index] != EntityState.Added)
                 {
                     _entityStates[index] = EntityState.Modified;
                 }
-              
+
             }
         }
         public void Delete(string id)
         {
             if (!Validateall())
             {
-                return ;
+                return;
             }
             var index = Getindex(id);
 
-            if (index >=0)
+            if (index >= 0)
             {
                 Units.RemoveAt(index);
                 _entityStates[index] = EntityState.Deleted;
@@ -214,7 +214,8 @@ namespace TheTechIdea.Beep.Editor
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
-                    foreach (T item in e.OldItems) {
+                    foreach (T item in e.OldItems)
+                    {
                         keysidx++;
                         DeletedKeys.Add(keysidx, (int)PKProperty.GetValue(item, null));
                     }
@@ -244,13 +245,13 @@ namespace TheTechIdea.Beep.Editor
                 default:
                     break;
             }
-    
+
         }
         private void ItemPropertyChangedHandler(object sender, PropertyChangedEventArgs e)
         {
-          
+
             T item = (T)sender;
-            if (!UpdatedKeys.Any(p=>p.Value.Equals((int)PKProperty.GetValue(item, null))))
+            if (!UpdatedKeys.Any(p => p.Value.Equals((int)PKProperty.GetValue(item, null))))
             {
                 keysidx++;
                 UpdatedKeys.Add(keysidx, (double)PKProperty.GetValue(item, null));
@@ -259,15 +260,15 @@ namespace TheTechIdea.Beep.Editor
         public virtual async Task<ObservableCollection<T>> GetAllFromSource()
         {
             clearunits();
-            var retval=DataSource.GetEntityAsync(EntityName,null).Result;
+            var retval = DataSource.GetEntityAsync(EntityName, null).Result;
             if (retval != null)
             {
-                if(retval is DataTable)
+                if (retval is DataTable)
                 {
                     DataTable dataTable = (DataTable)retval;
                     Units = ConvertDataTableToObservable<T>(dataTable);
                 }
-                if(retval is IList)
+                if (retval is IList)
                 {
                     List<T> list = (List<T>)retval;
                     Units = ConvertList2Observable<T>(list);
@@ -290,7 +291,7 @@ namespace TheTechIdea.Beep.Editor
             PassedArgs args = new PassedArgs();
             IErrorsInfo errorsInfo = new ErrorsInfo();
             int x = 1;
-            args.ParameterInt1=InsertedKeys.Count+UpdatedKeys.Count+DeletedKeys.Count;
+            args.ParameterInt1 = InsertedKeys.Count + UpdatedKeys.Count + DeletedKeys.Count;
             args.ParameterString1 = $"Started Saving Changes {args.ParameterInt1}";
             args.Messege = $"Started Saving Changes {args.ParameterInt1}";
             progress.Report(args);
@@ -299,7 +300,7 @@ namespace TheTechIdea.Beep.Editor
                 foreach (int t in GetAddedEntities())
                 {
                     args.ParameterInt1 = x;
-                  
+
                     progress.Report(args);
                     errorsInfo = await InsertAsync(Units[t]);
                     x++;
@@ -352,7 +353,7 @@ namespace TheTechIdea.Beep.Editor
                 errorsInfo.Ex = ex;
                 DMEEditor.AddLogMessage("UnitofWork", $"Saving and Commiting Changes error {ex.Message}", DateTime.Now, args.ParameterInt1, ex.Message, Errors.Failed);
             }
-            
+
             return await Task.FromResult<IErrorsInfo>(errorsInfo);
         }
         public virtual async Task<ObservableCollection<T>> GetByConditionFromSource(List<AppFilter> filters)
@@ -381,7 +382,7 @@ namespace TheTechIdea.Beep.Editor
             }
             if (doc == null)
             {
-                DMEEditor.ErrorObject.Flag= Errors.Failed;
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
                 DMEEditor.ErrorObject.Message = "Object is null";
                 return DMEEditor.ErrorObject;
             }
@@ -450,7 +451,7 @@ namespace TheTechIdea.Beep.Editor
 
             }
             IErrorsInfo retval = DataSource.InsertEntity(cname, doc);
-          
+
             return Task.FromResult<IErrorsInfo>(retval);
         }
         private Task<IErrorsInfo> UpdateDoc(T doc)
@@ -458,7 +459,7 @@ namespace TheTechIdea.Beep.Editor
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
             string cname = classnames[classnames.Count() - 1];
             IErrorsInfo retval = DataSource.UpdateEntity(cname, doc);
-              return Task.FromResult<IErrorsInfo>(retval);
+            return Task.FromResult<IErrorsInfo>(retval);
         }
         private Task<IErrorsInfo> DeleteDoc(T doc)
         {
@@ -470,7 +471,7 @@ namespace TheTechIdea.Beep.Editor
         public virtual int GetSeq(string SeqName)
         {
             int retval = -1;
-            if(DataSource.Category== DatasourceCategory.RDBMS && DataSource.DatasourceType== DataSourceType.Oracle )
+            if (DataSource.Category == DatasourceCategory.RDBMS && DataSource.DatasourceType == DataSourceType.Oracle)
             {
                 string querystring = $"select {SeqName}.nextval from dual";
                 string schname = DataSource.Dataconnection.ConnectionProp.SchemaName;
@@ -484,7 +485,7 @@ namespace TheTechIdea.Beep.Editor
                     else
                         querystring = $"select {SeqName}.nextval from dual";
                 }
-                retval=(int)DataSource.RunQuery(querystring);
+                retval = (int)DataSource.RunQuery(querystring);
             }
             return retval;
         }
@@ -502,7 +503,7 @@ namespace TheTechIdea.Beep.Editor
         }
         public virtual int DocExistByKey(T doc)
         {
-           
+
 
             int retval = Units.IndexOf(Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(doc, null).Equals(doc.GetType().GetProperty(PrimaryKey).GetValue(doc, null))));
 
@@ -525,7 +526,7 @@ namespace TheTechIdea.Beep.Editor
             }
             return retval;
         }
-        private  bool IsRequirmentsValidated()
+        private bool IsRequirmentsValidated()
         {
             bool retval = true;
             if (EntityStructure == null)
@@ -534,13 +535,14 @@ namespace TheTechIdea.Beep.Editor
                 DMEEditor.ErrorObject.Flag = Errors.Failed;
                 DMEEditor.ErrorObject.Message = "Missing Entity Structure";
 
-            }else
-             if (EntityStructure.PrimaryKeys.Count==0 )
-             {
+            }
+            else
+             if (EntityStructure.PrimaryKeys.Count == 0)
+            {
                 retval = false;
                 DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = "Missing Entity PrimaryKey";    
-             }
+                DMEEditor.ErrorObject.Message = "Missing Entity PrimaryKey";
+            }
             if (DataSource == null)
             {
                 retval = false;
@@ -551,15 +553,16 @@ namespace TheTechIdea.Beep.Editor
         }
         private bool OpenDataSource()
         {
-            bool retval= true;
-            if(DataSource == null)
+            bool retval = true;
+            if (DataSource == null)
             {
-                if(!string.IsNullOrEmpty(DatasourceName)) { 
-                    DataSource=DMEEditor.GetDataSource(DatasourceName);
+                if (!string.IsNullOrEmpty(DatasourceName))
+                {
+                    DataSource = DMEEditor.GetDataSource(DatasourceName);
                     if (DataSource == null)
                     {
                         DMEEditor.AddLogMessage("Beep", $"Error Opening DataSource in UnitofWork {DatasourceName}", DateTime.Now, -1, DatasourceName, Errors.Failed);
-                        retval= false;
+                        retval = false;
                     }
                     else
                         retval = true;
@@ -576,20 +579,20 @@ namespace TheTechIdea.Beep.Editor
                 retval = false;
             }
             EntityStructure = DataSource.GetEntityStructure(EntityName, false);
-            if(EntityStructure == null)
+            if (EntityStructure == null)
             {
                 DMEEditor.AddLogMessage("Beep", $"Error Entity Not Found in UnitofWork {EntityName}", DateTime.Now, -1, EntityName, Errors.Failed);
-                retval= false;
+                retval = false;
             }
-            if(EntityStructure.PrimaryKeys.Count == 0)
+            if (EntityStructure.PrimaryKeys.Count == 0)
             {
                 DMEEditor.AddLogMessage("Beep", $"Error Entity dont have a primary key in UnitofWork {EntityName}", DateTime.Now, -1, EntityName, Errors.Failed);
                 retval = false;
-                
+
             }
             return retval;
         }
-        public static ObservableCollection<T1> ConvertDataTableToObservable<T1>( DataTable table) where T1 : class, new()
+        public static ObservableCollection<T1> ConvertDataTableToObservable<T1>(DataTable table) where T1 : class, new()
         {
             try
             {
@@ -637,7 +640,7 @@ namespace TheTechIdea.Beep.Editor
                         try
                         {
                             PropertyInfo propertyInfo = obj.GetType().GetProperty(prop.Name);
-                            var vl= propertyInfo.GetValue(row, null);
+                            var vl = propertyInfo.GetValue(row, null);
                             propertyInfo.SetValue(obj, Convert.ChangeType(vl, propertyInfo.PropertyType), null);
                         }
                         catch
@@ -657,7 +660,7 @@ namespace TheTechIdea.Beep.Editor
             }
         }
     }
-    
+
     public enum EntityState
     {
         Added,

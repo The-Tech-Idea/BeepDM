@@ -20,7 +20,9 @@ namespace TheTechIdea.Beep.DataView
         public IDataConnection Dataconnection { get ; set ; }
         public string DatasourceName { get ; set ; }
         public IErrorsInfo ErrorObject { get ; set ; }
-        public string Id { get ; set ; }
+        public string Id { get; set; }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public IDMLogger Logger { get ; set ; }
         public List<string> EntitiesNames { get; set; } = new List<string>();
         public IDMEEditor DMEEditor { get ; set ; }

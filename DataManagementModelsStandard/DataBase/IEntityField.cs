@@ -4,6 +4,8 @@ namespace TheTechIdea.Beep.DataBase
 {
     public interface IEntityField
     {
+      
+         string GuidID { get; set; }
         bool AllowDBNull { get; set; }
        // bool created { get; set; }
         string EntityName { get; set; }

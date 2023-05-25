@@ -8,9 +8,10 @@ namespace TheTechIdea.Beep.Report
     {
         public ReportsList()
         {
-            id = Guid.NewGuid().ToString();
+           
         }
-        public string id { get;  }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string ReportName { get; set; }
         public string ReportDefinition { get; set; }
         public string ReportEngine { get; set; }

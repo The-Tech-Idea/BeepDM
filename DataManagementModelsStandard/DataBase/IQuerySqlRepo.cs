@@ -10,6 +10,8 @@ namespace TheTechIdea.Beep.DataBase
 
     public interface IQuerySqlRepo
     {
+         int ID { get; set; }
+         string GuidID { get; set; } 
         DataSourceType DatabaseType { get; set; }
         string Sql { get; set; }
         Sqlcommandtype Sqltype { get; set; }

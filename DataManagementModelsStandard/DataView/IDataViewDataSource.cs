@@ -12,6 +12,8 @@ namespace TheTechIdea.Beep.DataView
 {
     public interface IDataViewDataSource
     {
+        
+         string GuidID { get; set; }
         DatasourceCategory Category { get; set; }
         string ColumnDelimiter { get; set; }
         string CompositeLayerDataSourceID { get; set; }
@@ -28,7 +30,7 @@ namespace TheTechIdea.Beep.DataView
         string EntityDataSourceID { get; set; }
         IErrorsInfo ErrorObject { get; set; }
         bool FileLoaded { get; set; }
-        string Id { get; set; }
+       
         IDMLogger Logger { get; set; }
         string ParameterDelimiter { get; set; }
         DataTable SourceEntityData { get; set; }

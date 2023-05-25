@@ -1,7 +1,11 @@
-﻿namespace TheTechIdea.Beep.DataBase
+﻿using System;
+
+namespace TheTechIdea.Beep.DataBase
 {
     public interface IRelationShipKeys
     {
+         int ID { get; set; }
+         string GuidID { get; set; }
         string EntityColumnID { get; set; }
         int EntityColumnSequenceID { get; set; }
         int RelatedColumnSequenceID { get; set; }
@@ -11,6 +15,8 @@
     }
     public interface IChildRelation
     {
+         int ID { get; set; }
+         string GuidID { get; set; } 
         string child_table { get; set; }
         string child_column { get; set; }
         string parent_table { get; set; }

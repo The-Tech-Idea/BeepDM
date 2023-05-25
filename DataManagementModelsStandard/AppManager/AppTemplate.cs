@@ -7,7 +7,8 @@ namespace TheTechIdea.Beep.AppManager
 {
     public class AppTemplate : IAppDefinition
     {
-        public string ID { get; set; }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public List<AppBlock> Blocks { get; set; } = new List<AppBlock>();
         public string DataSourceName { get; set; }
         public TextBlock Description { get; set; } = new TextBlock();
@@ -32,7 +33,7 @@ namespace TheTechIdea.Beep.AppManager
             Title.Text = pTitle;
             SubTitle.Text = pSubTitle;
             Orientation = AppOrientation.Portrait;
-            ID = Guid.NewGuid().ToString();
+            GuidID = Guid.NewGuid().ToString();
         }
         public AppTemplate(string pHeader, string pFooter, string pTitle, string pSubTitle, AppOrientation pOrientation, string pDataSourceName)
         {
@@ -42,7 +43,7 @@ namespace TheTechIdea.Beep.AppManager
             SubTitle.Text = pSubTitle;
             Orientation = pOrientation;
             DataSourceName = pDataSourceName;
-            ID = Guid.NewGuid().ToString();
+            GuidID = Guid.NewGuid().ToString();
         }
         public AppTemplate(string pHeader, string pFooter, string pTitle, string pSubTitle, AppOrientation pOrientation, string pDataSourceName, List<AppBlock> pBlocks)
         {
@@ -53,7 +54,7 @@ namespace TheTechIdea.Beep.AppManager
             Orientation = pOrientation;
             DataSourceName = pDataSourceName;
             Blocks = pBlocks;
-            ID = Guid.NewGuid().ToString();
+            GuidID = Guid.NewGuid().ToString();
         }
     }
 }

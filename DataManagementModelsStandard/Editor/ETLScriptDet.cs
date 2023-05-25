@@ -11,9 +11,10 @@ namespace TheTechIdea.Beep.Editor
     {
         public ETLScriptDet()
         {
-            id = 1;
+            ID = 1;
         }
-        public  int id { get; set; }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string ddl { get ; set ; }
 
         public string sourcedatasourcename { get; set; }

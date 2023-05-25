@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.Workflow
         string              WorkSpaceFolder { get; set; }
         string              DataWorkFlowName { get; set; }
         string              Description { get; set; }
-        string              Id { get; set; }
+        int              ID { get; set; }
         List<WorkFlow_Run_Result> workFlow_Run_Results { get; set; }
 
 

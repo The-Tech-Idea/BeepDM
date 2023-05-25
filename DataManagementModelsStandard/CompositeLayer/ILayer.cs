@@ -17,8 +17,8 @@ namespace TheTechIdea.Beep.CompositeLayer
         DateTime DateCreated { get; set; }
         DateTime DateUpdated { get; set; }
         string  LayerName { get; set; }
-        string  ID { get; set; }
-      
+        int  ID { get; set; }
+        string GuidID { get; set; }
 
     }
 }

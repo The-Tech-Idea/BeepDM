@@ -10,6 +10,8 @@ namespace TheTechIdea.Beep.Addin
         {
 
         }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string               NodeName { get; set; }
         public string               Imagename { get; set; }
         public int                  Order { get; set; }

@@ -8,7 +8,8 @@ namespace TheTechIdea.Beep.Editor
 {
     public interface IETLScriptDTL
     {
-        int id { get; set; }
+         int ID { get; set; }
+         string GuidID { get; set; } 
         string ddl { get; set; }
         string sourceentityname { get; set; }
         string sourceDatasourceEntityName { get; set; }

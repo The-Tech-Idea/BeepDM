@@ -4,6 +4,8 @@ namespace TheTechIdea.Beep.DataBase
 {
     public interface IInsertTransaction
     {
+         int ID { get; set; }
+         string GuidID { get; set; } 
         string DestField { get; set; }
         Type FieldType { get; set; }
         string RecordIndex { get; set; }

@@ -21,7 +21,8 @@ namespace TheTechIdea.Beep.FileManager
         public IConnectionProperties ConnectionProp { get; set; } = new ConnectionProperties();
         public ConnectionDriversConfig DataSourceDriver { get ; set ; }
         public ConnectionState ConnectionStatus { get; set; } = ConnectionState.Closed;
-        public int ID { get ; set ; }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public IDMEEditor DMEEditor { get; set; }
         public IDMLogger Logger { get ; set ; }
         public IErrorsInfo ErrorObject { get ; set ; }

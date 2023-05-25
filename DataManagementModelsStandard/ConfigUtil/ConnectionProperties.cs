@@ -40,9 +40,10 @@ namespace TheTechIdea.Util
         public string CompositeLayerName { get; set; }
         public List<DefaultValue> DatasourceDefaults { get; set; } = new List<DefaultValue>();
         public bool Favourite { get; set; } = false;
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public ConnectionProperties()
         {
-            
+           
         }
 
      

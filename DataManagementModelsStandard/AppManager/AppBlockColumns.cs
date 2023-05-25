@@ -9,6 +9,8 @@ namespace TheTechIdea.Beep.AppManager
 {
     public interface IAppBlockColumns
     {
+         string ID { get; set; }
+         string GuidID { get; set; } 
         string ColumnName { get; set; }
         int ColumnSeq { get; set; }
         string DisplayName { get; set; }
@@ -29,6 +31,8 @@ namespace TheTechIdea.Beep.AppManager
         {
 
         }
+        public string ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string ColumnName { get; set; }
         public string DisplayName { get; set; }
         public int ColumnSeq { get; set; }

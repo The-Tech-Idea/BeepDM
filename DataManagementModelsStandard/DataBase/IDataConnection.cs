@@ -1,4 +1,5 @@
 ﻿
+using System;
 using System.Data;
 
 using TheTechIdea.Logger;
@@ -12,7 +13,8 @@ namespace TheTechIdea.Beep.DataBase
         ConnectionDriversConfig DataSourceDriver { get; set; }
         ConnectionState ConnectionStatus { get; set; }
         IDMEEditor DMEEditor { get; set; }
-        int ID { get; set; }
+         int ID { get; set; }
+         string GuidID { get; set; } 
         IDMLogger Logger { get; set; }
         IErrorsInfo ErrorObject { get; set; }
         ConnectionState OpenConnection();

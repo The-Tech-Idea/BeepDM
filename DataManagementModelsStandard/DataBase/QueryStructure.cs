@@ -8,6 +8,8 @@ namespace TheTechIdea.Beep.DataBase
 {
     public class QueryStructure : IQueryStructure
     {
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public QueryStructure()
         {
 
@@ -27,6 +29,8 @@ namespace TheTechIdea.Beep.DataBase
 
     public class QueryFieldsandValues
     {
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public QueryFieldsandValues()
         {
 
@@ -39,6 +43,8 @@ namespace TheTechIdea.Beep.DataBase
 
     public class FkListforSQLlite
     {
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public FkListforSQLlite()
         {
 

@@ -41,18 +41,20 @@ namespace TheTechIdea.Beep.DataBase
         public List<AppFilter> Filters { get; set; }
         public int StartRow { get; set; } = 0;
         public  int EndRow { get; set; }= 0;
+        public string GuidID { get; set; }
         public EntityStructure()
         {
-
+            GuidID = Guid.NewGuid().ToString();
 
         }
         public EntityStructure(string entityname)
         {
+            GuidID = Guid.NewGuid().ToString();
             EntityName = entityname;
         }
         public EntityStructure(string name, int parentId, string databaseID)
         {
-
+            GuidID = Guid.NewGuid().ToString();
             EntityName = name;
             ParentId = parentId;
             DataSourceID = databaseID;
@@ -61,7 +63,7 @@ namespace TheTechIdea.Beep.DataBase
         }
         public EntityStructure(string name, int parentId, string databaseID, ViewType viewtype)
         {
-
+            GuidID = Guid.NewGuid().ToString();
             EntityName = name;
             ParentId = parentId;
             DataSourceID = databaseID;
@@ -78,6 +80,7 @@ namespace TheTechIdea.Beep.DataBase
     {
 
         public int id { get; set; }
+        public string GuidID { get; set; }
         private string p_fieldname;
         public string fieldname { get { return p_fieldname; } set { p_oribinalfieldname = p_fieldname;p_fieldname=value ; } }
         private string p_oribinalfieldname;
@@ -105,14 +108,14 @@ namespace TheTechIdea.Beep.DataBase
 
         public EntityField()
         {
-
+            GuidID = Guid.NewGuid().ToString();
 
         }
     }
     public class EntityParameters 
     {
 
-        public int id { get; set; }
+       
         public string parameterName { get; set; }
         public string parametertype { get; set; } = "Text"; //string or numeric or date gets filled later.by pick list 
         public DbFieldCategory parameterCategory { get; set; } = DbFieldCategory.String;
@@ -125,10 +128,11 @@ namespace TheTechIdea.Beep.DataBase
         public string SourceFieldName { get; set; }
         public string SourceDataSource { get; set; }
 
-
+        public int ID { get; set; }
+        public string GuidID { get; set; }
         public EntityParameters()
         {
-
+            GuidID = Guid.NewGuid().ToString();
 
         }
     }
@@ -140,10 +144,11 @@ namespace TheTechIdea.Beep.DataBase
         public int RelatedColumnSequenceID { get; set; }
         public string EntityColumnID { get; set; }
         public int EntityColumnSequenceID { get; set; }
-
+        public int ID { get; set; }
+        public string GuidID { get; set; }
         public RelationShipKeys()
         {
-
+            GuidID = Guid.NewGuid().ToString();
         }
         public RelationShipKeys(string pParentEntityID, string pParentEntityColumnID, string pEntityColumnID)
         {
@@ -155,20 +160,24 @@ namespace TheTechIdea.Beep.DataBase
     }
     public class ColumnLookupList :IColumnLookupList
     {
+        public int ID { get; set; }
+        public string GuidID { get; set; }
         public object Value { get; set; }
         public string Display { get; set; }
 
         public ColumnLookupList()
         {
-
+            GuidID = Guid.NewGuid().ToString();
         }
     }
     public class InsertTransaction : IInsertTransaction
     {
         public InsertTransaction()
         {
-
+            GuidID = Guid.NewGuid().ToString();
         }
+        public int ID { get; set; }
+        public string GuidID { get; set; }
         public string RecordIndex { get; set; }
         public string SourceField { get; set; }
         public string DestField { get; set; }

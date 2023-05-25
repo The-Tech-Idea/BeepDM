@@ -11,6 +11,8 @@ namespace TheTechIdea.Beep.AppManager
 {
     public interface IAppBlock
     {
+         int ID { get; set; }
+        string GuidID { get; set; } 
         string Title { get; set; }
         List<AppBlockColumns> BlockColumns { get; set; }
         List<AppFilter> filters { get; set; }
@@ -36,6 +38,8 @@ namespace TheTechIdea.Beep.AppManager
 
     public class AppBlock : IAppBlock
     {
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string Title { get; set; }
         public string EntityID { get; set; }
         public string ViewID { get; set; }
@@ -73,6 +77,8 @@ namespace TheTechIdea.Beep.AppManager
         {
 
         }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string Text { get; set; }
         public int LocationY { get; set; } = 0;
         public int LocationX { get; set; } = 0;

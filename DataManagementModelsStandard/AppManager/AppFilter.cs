@@ -8,6 +8,8 @@ namespace TheTechIdea.Beep.Report
 {
     public interface IAppFilter
     {
+         int ID { get; set; }
+         string GuidID { get; set; }
         string FieldName { get; set; }
         string FilterValue { get; set; }
         string Operator { get; set; }
@@ -22,6 +24,8 @@ namespace TheTechIdea.Beep.Report
         {
 
         }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string FieldName { get; set; }
         public string Operator { get; set; }
         public string FilterValue { get; set; }
@@ -38,6 +42,8 @@ namespace TheTechIdea.Beep.Report
 
 
         }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public List<string> Fields { get; set; } = new List<string>();
         public List<string> Entities { get; set; } = new List<string>();
         public string FieldsString { get; set; }
@@ -54,6 +60,8 @@ namespace TheTechIdea.Beep.Report
             FilterDisplay = pfiltertype;
             FilterValue = pfiltertype;
         }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string FilterDisplay { get; set; }
         public  string FilterValue { get; set; }
     }

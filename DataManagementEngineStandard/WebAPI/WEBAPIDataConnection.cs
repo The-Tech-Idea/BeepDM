@@ -14,6 +14,7 @@ namespace TheTechIdea.Beep.WebAPI
     public class WebAPIDataConnection : IDataConnection
 
     {
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public IConnectionProperties ConnectionProp { get ; set ; }
         public ConnectionDriversConfig DataSourceDriver { get ; set ; }
         public ConnectionState ConnectionStatus { get ; set ; }

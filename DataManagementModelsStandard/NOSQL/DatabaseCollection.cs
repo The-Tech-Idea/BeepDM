@@ -8,6 +8,8 @@ namespace TheTechIdea.Beep.NOSQL
     {
         public DatabaseCollection()
         { }
+        public int ID { get; set; }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public int CountOfDocuments { get; set; }
         public string DatabasName { get; set; }
         public List<string> Collections { get; set; } = new List<string>();

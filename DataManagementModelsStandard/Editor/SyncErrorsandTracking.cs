@@ -19,6 +19,8 @@ namespace TheTechIdea.Beep.Editor
             script = pscript;
         }
         public static int id { get; set; }
+      
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public DateTime rundate { get; set; }
         public int parentscriptid { get; set; }
         public string sourceDataSourceName { get; set; }
