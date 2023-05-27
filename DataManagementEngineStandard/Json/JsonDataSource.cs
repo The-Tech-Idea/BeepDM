@@ -1,10 +1,12 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
@@ -31,10 +33,11 @@ namespace TheTechIdea.Beep.Json
                 ErrorObject = ErrorObject,
 
             };
-            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName.Equals(datasourcename,StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
+            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName.Equals(datasourcename,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             
-            FileName = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+           // FileName = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
         }
+        private bool IsFileRead=false;
         public event EventHandler<PassedArgs> PassEvent;
         public DataSourceType DatasourceType { get; set; }= DataSourceType.Json;
         public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;
@@ -48,27 +51,29 @@ namespace TheTechIdea.Beep.Json
         public IDMEEditor DMEEditor { get; set; }
         public List<object> Records { get; set; }
         public ConnectionState ConnectionStatus { get; set; } = ConnectionState.Closed;
-        public DataSet ds { get; set; }=new DataSet();
+      //  public DataSet ds { get; set; }=new DataSet();
         public bool HeaderExist { get; set; }
         public virtual string ColumnDelimiter { get; set; } = "''";
         public virtual string ParameterDelimiter { get; set; } = ":";
-        string FileName;
-        
+        string FileName => Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+        string jsonData  ;
+        JArray jArray ;
+
         #region "DataSource Methods"
         public int GetEntityIdx(string entityName)
         {
             int i = -1;
             if (Entities.Count > 0)
             {
-                i = Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+                i = Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase));
                 if (i < 0)
                 {
-                    i = Entities.FindIndex(p => p.DatasourceEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+                    i = Entities.FindIndex(p => p.DatasourceEntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase));
                 }
                 else
                     if (i < 0)
                 {
-                    i = Entities.FindIndex(p => p.OriginalEntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+                    i = Entities.FindIndex(p => p.OriginalEntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase));
                 }
                 return i;
             }
@@ -112,7 +117,7 @@ namespace TheTechIdea.Beep.Json
             {
                 if (Entities != null)
                 {
-                    if (Entities.Where(x => string.Equals(x.EntityName, EntityName, StringComparison.OrdinalIgnoreCase)).Count() > 0)
+                    if (Entities.Where(x => string.Equals(x.EntityName, EntityName, StringComparison.InvariantCultureIgnoreCase)).Count() > 0)
                     {
                         retval = true;
                     }
@@ -146,7 +151,7 @@ namespace TheTechIdea.Beep.Json
                                     co.DataType = Type.GetType(col.fieldtype);
 
                                 }
-                                ds.Tables.Add(tb);
+                                //ds.Tables.Add(tb);
                             }
                             Entities.Add(entity);
                             EntitiesNames.Add(entity.EntityName);
@@ -214,7 +219,8 @@ namespace TheTechIdea.Beep.Json
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                DataTable dt = null;
+                List<dynamic> filteredRecords = new List<dynamic>(); ;
+               
                 string qrystr = "";
                 EntityStructure entity = GetEntityStructure(EntityName);
 
@@ -248,62 +254,24 @@ namespace TheTechIdea.Beep.Json
                         }
                     }
                     int idx = -1;
-                    if (Entities.Count > 0)
+                   
+                    if (Entities.Count > -1)
                     {
-                        idx = Entities.FindIndex(p => p.EntityName.Equals(EntityName, StringComparison.InvariantCultureIgnoreCase));
-
-                    }
-
-                    if (idx > -1)
-                    {
-                        entity = Entities[idx];
-                        dt = ReadDataTable(EntityName, HeaderExist, fromline, toline);
-                        SyncFieldTypes(ref dt, EntityName);
+                        entity = Entities[0];
+                     
                         if (filter != null)
                         {
                             if (filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
                             {
 
-                                foreach (AppFilter item in filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator) && !p.FieldName.Equals("ToLine", StringComparison.InvariantCultureIgnoreCase) && !p.FieldName.Equals("FromLine", StringComparison.InvariantCultureIgnoreCase)))
-                                {
-                                    if (!string.IsNullOrEmpty(item.FilterValue) && !string.IsNullOrWhiteSpace(item.FilterValue))
-                                    {
-                                        //  EntityField f = ent.Fields.Where(i => i.fieldname == item.FieldName).FirstOrDefault();
-                                        if (item.Operator.ToLower() == "between")
-                                        {
-                                            if (item.valueType == "System.DateTime")
-                                            {
-                                                qrystr += "[" + item.FieldName + "] " + item.Operator + " '" + DateTime.Parse(item.FilterValue) + "' and  '" + DateTime.Parse(item.FilterValue1) + "'" + Environment.NewLine;
-                                            }
-                                            else
-                                            {
-                                                qrystr += "[" + item.FieldName + "] " + item.Operator + " " + item.FilterValue + " and  " + item.FilterValue1 + " " + Environment.NewLine;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if (item.valueType == "System.String")
-                                            {
-                                                qrystr += "[" + item.FieldName + "] " + item.Operator + " '" + item.FilterValue + "' " + Environment.NewLine;
-                                            }
-                                            else
-                                            {
-                                                qrystr += "[" + item.FieldName + "] " + item.Operator + " " + item.FilterValue + " " + Environment.NewLine;
-                                            }
-
-                                        }
-                                    }
-                                }
+                                filteredRecords = ApplyAppFilters(Records, filter);
                             }
-                            if (!string.IsNullOrEmpty(qrystr))
-                            {
-                                dt = dt.Select(qrystr).CopyToDataTable();
-                            }
+                           
                         }
                     }
 
                 }
-                return dt;
+                return filteredRecords;
             }
             catch (Exception ex)
             {
@@ -314,6 +282,51 @@ namespace TheTechIdea.Beep.Json
                 return null;
             }
         }
+        public List<dynamic> ApplyAppFilters(List<dynamic> records, List<AppFilter> filters)
+        {
+            var filteredRecords = records;
+
+            foreach (var filter in filters)
+            {
+                filteredRecords = filteredRecords.Where(record => ApplyFilterCondition(record, filter)).ToList();
+            }
+
+            return filteredRecords;
+        }
+
+        public bool ApplyFilterCondition(dynamic record, AppFilter filter)
+        {
+            var fieldValue = ((IDictionary<string, object>)record)[filter.FieldName];
+
+            switch (filter.Operator)
+            {
+                case "equals":
+                case "=":
+                    return fieldValue == filter.FilterValue;
+                case "contains":
+                    return fieldValue.ToString().Contains(filter.FilterValue);
+                case ">":
+                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) > 0;
+                case "<":
+                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) < 0;
+                case ">=":
+                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) >= 0;
+                case "<=":
+                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) <= 0;
+                case "<>":
+                case "!=":
+                    return fieldValue != filter.FilterValue;
+                case "between":
+                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) >= 0 &&
+                           Comparer.Default.Compare(fieldValue, filter.FilterValue1) <= 0;
+                default:
+                    throw new ArgumentException($"Invalid filter operator: {filter.Operator}");
+            }
+        }
+
+
+
+
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             throw new NotImplementedException();
@@ -347,25 +360,19 @@ namespace TheTechIdea.Beep.Json
                     }
                 }
 
-                retval = Entities.Where(x => string.Equals(x.OriginalEntityName, EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                retval = Entities.Where(x => string.Equals(x.OriginalEntityName, EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 if (retval == null || refresh)
                 {
-                    EntityStructure fndval = GetSheetEntity(EntityName);
-                    retval = fndval;
-                    if (retval == null)
-                    {
-                        Entities.Add(fndval);
-                    }
-                    else
-                    {
-
-                        Entities[GetEntityIdx(EntityName)] = fndval;
-                    }
-                }
-                if (Entities.Count() == 0)
-                {
+                    IsFileRead = false;
                     Getfields();
+                    if (Entities.Count >= 0)
+                    {
+                        retval = Entities[0];
+                    }
+                  
+                   
                 }
+               
                 DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
             }
             return retval;
@@ -381,33 +388,18 @@ namespace TheTechIdea.Beep.Json
                     if (Entities.Count == 0)
                     {
                         Getfields();
-
                     }
                 }
-                retval = Entities.Where(x => string.Equals(x.OriginalEntityName, fnd.EntityName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                retval = Entities.Where(x => string.Equals(x.OriginalEntityName, fnd.EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 if (retval == null || refresh)
                 {
-                    EntityStructure fndval = GetSheetEntity(fnd.EntityName);
-                    retval = fndval;
-                    if (retval == null)
-                    {
-                        Entities.Add(fndval);
-                    }
-                    else
-                    {
-                        Entities[GetEntityIdx(fnd.EntityName)] = fndval;
-                    }
+                    GetEntityStructure(fnd.EntityName, true);
                 }
-                if (Entities.Count() == 0)
-                {
-                    Getfields();
-
-                }
+              
                 DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
             }
             return retval;
         }
-      
         public IErrorsInfo RunScript(ETLScriptDet dDLScripts)
         {
             throw new NotImplementedException();
@@ -451,7 +443,6 @@ namespace TheTechIdea.Beep.Json
             }
             return DMEEditor.ErrorObject;
         }
-
         public virtual IErrorsInfo EndTransaction(PassedArgs args)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -466,17 +457,13 @@ namespace TheTechIdea.Beep.Json
             }
             return DMEEditor.ErrorObject;
         }
-
         public virtual IErrorsInfo Commit(PassedArgs args)
         {
             ErrorObject.Flag = Errors.Ok;
             try
             {
                 // Serialize the updated list of  objects back into a JSON array string
-                string updatedJson = DMEEditor.ConfigEditor.JsonLoader.SerializeObject(Records);
-
-                // Write the updated JSON array string back to the file
-                File.WriteAllText(FileName, updatedJson);
+                SaveJsonFile();
 
             }
             catch (Exception ex)
@@ -495,28 +482,7 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
                 DMEEditor.ErrorObject.Message = "";
                 
-                EntityStructure DataStruct = GetEntityStructure(EntityName, true);
-                if (DataStruct != null)
-                {
-                    if(DataStruct.PrimaryKeys.Count > 0)
-                    {
-                        Type enttype = GetEntityType(EntityName);
-                        if(enttype != null)
-                        {
-                            if((UploadDataRow is  DataRow) || (UploadDataRow is DataRowView)){
-
-                            }
-                        }
-                        DataRow dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, UploadDataRow, DataStruct);
-                        if (dr != null)
-                        {
-
-                        }
-                    }
-                }
-               
-
-               
+              
 
             }
             catch (Exception ex)
@@ -568,6 +534,81 @@ namespace TheTechIdea.Beep.Json
         }
         #endregion
         #region "Json Reading MEthods"
+
+        public List<EntityStructure> ParseJsonFile(string filePath)
+    {
+        var entityStructures = new List<EntityStructure>();
+
+        jsonData = File.ReadAllText(filePath);
+        var jsonObject = JObject.Parse(jsonData);
+
+        // Check if the JSON object contains multiple lists or a single list
+        if (jsonObject.HasValues)
+        {
+            if (jsonObject.Children().Count() == 1 && jsonObject.First is JArray jsonArray)
+            {
+                // Single list case
+                var entityStructure = new EntityStructure("Entity");
+                foreach (var jObject in jsonArray.Children<JObject>())
+                {
+                    var entityField = new EntityField();
+
+                    foreach (var fieldProperty in jObject.Properties())
+                    {
+                        var fieldName = fieldProperty.Name;
+                        var fieldValue = fieldProperty.Value.ToString();
+
+                        // Update the EntityField properties dynamically based on the field properties in JSON
+                        var propertyInfo = entityField.GetType().GetProperty(fieldName);
+                        if (propertyInfo != null)
+                        {
+                            propertyInfo.SetValue(entityField, Convert.ChangeType(fieldValue, propertyInfo.PropertyType));
+                        }
+                    }
+
+                    entityStructure.Fields.Add(entityField);
+                }
+
+                entityStructures.Add(entityStructure);
+            }
+            else
+            {
+                // Multiple lists case
+                foreach (var property in jsonObject.Properties())
+                {
+                    if (property.Value is JArray jsonArray2)
+                    {
+                        var entityStructure = new EntityStructure(property.Name);
+
+                        foreach (var jObject in jsonArray2.Children<JObject>())
+                        {
+                            var entityField = new EntityField();
+
+                            foreach (var fieldProperty in jObject.Properties())
+                            {
+                                var fieldName = fieldProperty.Name;
+                                var fieldValue = fieldProperty.Value.ToString();
+
+                                // Update the EntityField properties dynamically based on the field properties in JSON
+                                var propertyInfo = entityField.GetType().GetProperty(fieldName);
+                                if (propertyInfo != null)
+                                {
+                                    propertyInfo.SetValue(entityField, Convert.ChangeType(fieldValue, propertyInfo.PropertyType));
+                                }
+                            }
+
+                            entityStructure.Fields.Add(entityField);
+                        }
+
+                        entityStructures.Add(entityStructure);
+                    }
+                }
+            }
+        }
+
+        return entityStructures;
+    }
+
         public TypeCode ToConvert(Type dest)
         {
             TypeCode retval = TypeCode.String;
@@ -672,11 +713,12 @@ namespace TheTechIdea.Beep.Json
         }
         public ConnectionState OpenConnection()
         {
-            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName == Dataconnection.ConnectionProp.ConnectionName).FirstOrDefault();
-            Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(Dataconnection.ConnectionProp.ConnectionName).Entities;
+            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName.Equals(Dataconnection.ConnectionProp.ConnectionName,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+           
 
-            if (File.Exists(FileName))
+            if (GetFileState()== ConnectionState.Open)
             {
+                Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(Dataconnection.ConnectionProp.ConnectionName).Entities;
                 ConnectionStatus = ConnectionState.Open;
 
                 Entities = GetEntityStructures(false);
@@ -694,8 +736,8 @@ namespace TheTechIdea.Beep.Json
         }
         public ConnectionState GetFileState()
         {
-            string filen = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.ConnectionName);
-            if (File.Exists(filen))
+         //   string filen = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.ConnectionName);
+            if (File.Exists(FileName))
             {
                 ConnectionStatus = ConnectionState.Open;
 
@@ -715,12 +757,11 @@ namespace TheTechIdea.Beep.Json
             List<string> entlist = new List<string>();
             if (GetFileState() == ConnectionState.Open)
             {
+                if (!IsFileRead)
+                {
+                    LoadJsonFile();
+                }
 
-                entlist = (from DataTable sheet in ds.Tables select sheet.TableName).ToList();
-
-            }
-            else
-            {
                 if (Entities.Count() > 0)
                 {
 
@@ -731,6 +772,8 @@ namespace TheTechIdea.Beep.Json
                     return entlist;
                 }
             }
+          
+           
             return entlist;
         }
         public IErrorsInfo LoadJsonFile()
@@ -740,9 +783,12 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Ex = null;
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
                 DMEEditor.ErrorObject.Message = "";
-                string json = File.ReadAllText(Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName));
-
-                ds = DMEEditor.ConfigEditor.JsonLoader.ConverttoDataset(json);
+                if(GetFileState()  == ConnectionState.Open)
+                {
+                    InferSchemaFromRecords(FileName);
+                    IsFileRead = true;
+                }
+               
             }
             catch (Exception ex)
             {
@@ -759,9 +805,10 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Ex = null;
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
                 DMEEditor.ErrorObject.Message = "";
-                string json = File.ReadAllText(Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName));
-
-                DMEEditor.ConfigEditor.JsonLoader.Serialize(json, ds);
+                string updatedJson = DMEEditor.ConfigEditor.JsonLoader.SerializeObject(Records);
+                // Write the updated JSON array string back to the file
+                File.WriteAllText(FileName, updatedJson);
+            
             }
             catch (Exception ex)
             {
@@ -776,13 +823,13 @@ namespace TheTechIdea.Beep.Json
             List<EntityStructure> retval = new List<EntityStructure>();
 
 
-            string filen = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
-            if (File.Exists(filen))
+           // string filen = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+            if (GetFileState()== ConnectionState.Open)
             {
 
                 if ((Entities == null) || (Entities.Count == 0) || refresh)
                 {
-                    Entities = new List<EntityStructure>();
+                   // Entities = new List<EntityStructure>();
                     Getfields();
                     DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = Dataconnection.ConnectionProp.ConnectionName, Entities = Entities });
                     // Dataconnection.ConnectionProp.Entities = Entities;
@@ -793,6 +840,7 @@ namespace TheTechIdea.Beep.Json
                 {
                     if (refresh)
                     {
+                        IsFileRead = false;
                         Entities = new List<EntityStructure>();
                         Getfields();
                         DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = Dataconnection.ConnectionProp.ConnectionName, Entities = Entities });
@@ -818,50 +866,25 @@ namespace TheTechIdea.Beep.Json
         }
         private void Getfields()
         {
-            ds = new DataSet(); ;
-            Entities = new List<EntityStructure>();
+            //ds = new DataSet(); ;
+            //Entities = new List<EntityStructure>();
 
-            if (File.Exists(Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName)) == true)
+            if (File.Exists(FileName) == true)
             {
                 try
                 {
-
-                    LoadJsonFile();
+                    if(!IsFileRead)
+                    {
+                        LoadJsonFile();
+                    }
+                  
                     if (DMEEditor.ErrorObject.Flag == Errors.Failed)
                     {
                         return;
                     }
-                    int i = 0;
-                    foreach (DataTable tb in ds.Tables)
-                    {
-                        string sheetname = tb.TableName;
-                        EntityStructure entityData = new EntityStructure();
-                        int idx = Entities.FindIndex(p => p.EntityName.Equals(tb.TableName, StringComparison.InvariantCultureIgnoreCase));
-                        if (idx > -1)
-                        {
-                            entityData = Entities[idx];
-                        }
-                        else
-                        {
+                    
 
-                            entityData = new EntityStructure();
-                            entityData.Viewtype = ViewType.File;
-                            entityData.DatabaseType = DataSourceType.Text;
-                            entityData.DataSourceID = FileName;
-                            entityData.DatasourceEntityName = tb.TableName;
-                            entityData.Caption = tb.TableName;
-                            entityData.EntityName = sheetname;
-                            entityData.Id = i;
-                            i++;
-                            entityData.OriginalEntityName = sheetname;
-                            Entities.Add(entityData);
-                            entityData.Drawn = true;
-                            entityData.Fields = new List<EntityField>();
-                            DataTable tbdata = ReadDataTable(tb.TableName, true, entityData.StartRow);
-                            entityData.Fields.AddRange(GetFieldsbyTableScan(tbdata, tbdata.TableName, tbdata.Columns));
-                            entityData.Drawn = true;
-                        }
-                    }
+
                 }
                 catch (Exception)
                 {
@@ -877,337 +900,261 @@ namespace TheTechIdea.Beep.Json
 
 
         }
-        private List<EntityField> GetFieldsbyTableScan(DataTable tbdata, string sheetname, DataColumnCollection datac)
+        public IErrorsInfo InferSchemaFromRecords(string jsonFilePath)
         {
-            var rows = from DataRow a in tbdata.Rows select a;
-            IEnumerable<DataRow> tb = rows;
-            List<EntityField> flds = new List<EntityField>();
-            int y = 0;
-            string valstring;
-            decimal dval;
-            double dblval;
-            long longval;
-            bool boolval;
-            int intval;
-            short shortval;
-            float floatval;
-
-            DateTime dateval = DateTime.Now;
-            // setup Fields for Entity
-            foreach (DataColumn field in datac)
+            Records = new List<object>();
+            jsonData = File.ReadAllText(jsonFilePath);
+            jArray = JArray.Parse(jsonData);
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            EntityStructure entityStructure = new EntityStructure();
+            try
             {
-                EntityField f = new EntityField();
-                string entspace = Regex.Replace(field.ColumnName, @"\s+", "_");
-                f.fieldname = field.ColumnName;
-                f.Originalfieldname = field.ColumnName;
-                f.fieldtype = field.DataType.ToString();
-                f.ValueRetrievedFromParent = false;
-                f.EntityName = sheetname;
-                f.FieldIndex = y;
-                f.Checked = false;
-                f.AllowDBNull = true;
-                f.IsAutoIncrement = false;
-                f.IsCheck = false;
-                f.IsKey = false;
-                f.IsUnique = false;
-                y++;
-                flds.Add(f);
-            }
-            // Scan all rows in Table for types
-            foreach (DataRow r in tb)
-            {
-                try
+                if (jArray.Count > 0)
                 {
-                    // Scan fields in row for Types
-                    foreach (EntityField f in flds)
+                    entityStructure.Fields = new List<EntityField>();
+
+                    // Get the first record to infer the schema.
+                    var firstRecord = jArray[0] as JObject;
+
+                    foreach (var property in firstRecord.Properties())
                     {
-                        try
+                        var entityField = new EntityField
                         {
-                            if (r[f.fieldname] != DBNull.Value)
-                            {
-                                valstring = r[f.fieldname].ToString();
-                                dateval = DateTime.Now;
+                            fieldname = property.Name,
+                            Originalfieldname = property.Name,
+                            fieldtype = MapJsonTypeToDotNetType(property.Value.Type.ToString())
+                        };
+                        entityStructure.Fields.Add(entityField);
+                    }
+                    foreach (var jObject in jArray.Children<JObject>())
+                    {
+                        dynamic record = new ExpandoObject();
+                        var recordDictionary = (IDictionary<string, object>)record;
 
-                                if (!string.IsNullOrEmpty(valstring) && !string.IsNullOrWhiteSpace(valstring))
-                                {
-                                    if (f.fieldtype != "System.String")
-                                    {
-                                        if (decimal.TryParse(valstring, out dval))
-                                        {
-                                            f.fieldtype = "System.Decimal";
-                                            f.Checked = true;
-                                        }
-                                        else
-                                        if (double.TryParse(valstring, out dblval))
-                                        {
-                                            f.fieldtype = "System.Double";
-                                            f.Checked = true;
-                                        }
-                                        else
-                                        if (long.TryParse(valstring, out longval))
-                                        {
-                                            f.fieldtype = "System.Long";
-                                            f.Checked = true;
-                                        }
-                                        else
-                                        if (float.TryParse(valstring, out floatval))
-                                        {
-                                            f.fieldtype = "System.Float";
-                                            f.Checked = true;
-                                        }
-                                        else
-                                        if (int.TryParse(valstring, out intval))
-                                        {
-                                            f.fieldtype = "System.Int32";
-                                            f.Checked = true;
-                                        }
-                                        else
-                                        if (DateTime.TryParse(valstring, out dateval))
-                                        {
-                                            f.fieldtype = "System.DateTime";
-                                            f.Checked = true;
-                                        }
-                                        else
-                                        if (bool.TryParse(valstring, out boolval))
-                                        {
-                                            f.fieldtype = "System.Bool";
-                                            f.Checked = true;
-                                        }
-                                        else
-                                        if (short.TryParse(valstring, out shortval))
-                                        {
-                                            f.fieldtype = "System.Short";
-                                            f.Checked = true;
-                                        }
-                                        else
-                                            f.fieldtype = "System.String";
-                                    }
-                                    else
-                                        f.fieldtype = "System.String";
-
-                                }
-                            }
-                        }
-                        catch (Exception Fieldex)
+                        foreach (var entityField in entityStructure.Fields)
                         {
-
-                        }
-                        try
-                        {
-                            if (f.fieldtype.Equals("System.String", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (r[f.fieldname] != DBNull.Value)
-                                {
-                                    if (!string.IsNullOrEmpty(r[f.fieldname].ToString()))
-                                    {
-                                        if (r[f.fieldname].ToString().Length > f.Size1)
-                                        {
-                                            f.Size1 = r[f.fieldname].ToString().Length;
-                                        }
-
-                                    }
-                                }
-
-                            }
-                        }
-                        catch (Exception stringsizeex)
-                        {
-
-                        }
-                        try
-                        {
-                            if (f.fieldtype.Equals("System.Decimal", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (r[f.fieldname] != DBNull.Value)
-                                {
-                                    if (!string.IsNullOrEmpty(r[f.fieldname].ToString()))
-                                    {
-                                        valstring = r[f.fieldname].ToString();
-                                        if (decimal.TryParse(valstring, out dval))
-                                        {
-
-                                            f.fieldtype = "System.Decimal";
-                                            f.Size1 = GetDecimalPrecision(dval);
-                                            f.Size2 = GetDecimalScale(dval);
-                                        }
-                                    }
-                                }
-
-                            }
-                        }
-                        catch (Exception decimalsizeex)
-                        {
+                            var value = ConvertJTokenToType(jObject[entityField.fieldname], entityField.fieldtype);
+                            recordDictionary[entityField.fieldname] = value;
                         }
 
+                        Records.Add(record);
                     }
                 }
-                catch (Exception rowex)
-                {
-
-                }
-
+                Entities.Clear();
+                Entities.Add(entityStructure);
+                EntitiesNames.Clear();
+                EntitiesNames.Add(Dataconnection.ConnectionProp.FileName);
             }
-            // Check for string size
-            foreach (EntityField fld in flds)
+            catch (Exception ex)
             {
-                if (fld.fieldtype.Equals("System.string", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (fld.Size1 == 0)
-                    {
-                        fld.Size1 = 150;
-                    }
-
-                }
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.AddLogMessage("Error", $"Error Loadin Json File {ex.Message} - {Dataconnection.ConnectionProp.FileName}", DateTime.Now, -1, "", Errors.Failed);
             }
-            return flds;
+
+
+
+
+            return DMEEditor.ErrorObject;
         }
-        private DataTable GetDataTable(string entityname)
+        public object ConvertJTokenToType(JToken token, string type)
         {
-            DataTable dataTable = null;
-            if (Entities.Count > 0)
+            // Adjust this conversion according to your needs and possible types.
+            switch (type)
             {
-                if (ds.Tables.Count > 0)
+                case "System.String":
+                    return token.ToString();
+                case "System.Int32":
+                    return token.ToObject<int>();
+                case "System.Int64":
+                    return token.ToObject<long>();
+                case "System.Decimal":
+                    return token.ToObject<decimal>();
+                case "System.Double":
+                    return token.ToObject<double>();
+                case "System.Boolean":
+                    return token.ToObject<bool>();
+                case "System.DateTime":
+                    return token.ToObject<DateTime>();
+                case "System.Guid":
+                    return token.ToObject<Guid>();
+                case "System.Collections.Generic.List`1[System.String]":
+                    return token.ToObject<List<string>>();
+                case "System.Collections.Generic.List`1[System.Int32]":
+                    return token.ToObject<List<int>>();
+                case "System.Collections.Generic.Dictionary`2[System.String,System.String]":
+                    return token.ToObject<Dictionary<string, string>>();
+                case "System.Object":
+                    return token.ToObject<object>();
+                default:
+                    throw new ArgumentException($"Invalid type: {type}");
+            }
+        }
+        public List<dynamic> LoadJsonData(string jsonFilePath, EntityStructure entityStructure)
+        {
+            var jsonData = File.ReadAllText(jsonFilePath);
+            var jArray = JArray.Parse(jsonData);
+
+            var records = new List<dynamic>();
+
+            foreach (var jObject in jArray.Cast<JObject>())
+            {
+                dynamic record = new ExpandoObject();
+                var recordDictionary = (IDictionary<string, object>)record;
+                foreach (var entityField in entityStructure.Fields)
                 {
-                    dataTable = ds.Tables[entityname];
+                    // Convert the JToken to the type indicated by EntityField.
+                    var value = ConvertJTokenToType(jObject[entityField.fieldname], entityField.fieldtype);
+                    recordDictionary[entityField.fieldname] = value;
+                }
+                records.Add(record);
+            }
+
+            return records;
+        }
+        public string MapJsonTypeToDotNetType(string jsonType)
+        {
+            switch (jsonType.ToLower())
+            {
+                case "string":
+                    return typeof(string).FullName;
+                case "number":
+                    return typeof(double).FullName; // or Decimal or Float based on your requirement
+                case "integer":
+                    return typeof(int).FullName; // or Int64 based on your requirement
+                case "boolean":
+                    return typeof(bool).FullName;
+                case "object":
+                    return typeof(object).FullName;
+                case "array":
+                    return typeof(Array).FullName;
+                case "null":
+                    return typeof(void).FullName;
+                case "datetime":
+                    return typeof(DateTime).FullName;
+                case "guid":
+                    return typeof(Guid).FullName;
+                default:
+                    throw new ArgumentException($"Invalid JSON type: {jsonType}");
+            }
+        }
+        #region "Data Table Methods"
+        public DataTable LoadJsonFileToDataTable(string jsonFilePath)
+        {
+             jsonData = File.ReadAllText(jsonFilePath);
+             jArray = JArray.Parse(jsonData);
+
+
+            DataTable dataTable = new DataTable();
+            EntityStructure entityStructure = new EntityStructure();
+
+            if (jArray.Count > 0)
+            {
+                var firstRecord = (JObject)jArray[0];
+                var fieldNames = firstRecord.Properties().Select(p => p.Name).ToList();
+
+                // Set up the fields in the EntityStructure based on field names
+                entityStructure.Fields = fieldNames.Select(fieldName => new EntityField
+                {
+                    fieldname = fieldName,
+                    fieldtype = "System.Object" // Set the default field type as System.Object
+                }).ToList();
+
+                foreach (var property in firstRecord.Properties())
+                {
+                    var columnName = property.Name;
+                    var columnType = MapJsonTypeToDotNetType(property.Value.Type.ToString());
+                    dataTable.Columns.Add(columnName, Type.GetType(columnType));
+                }
+
+                foreach (var jObject in jArray.Children<JObject>())
+                {
+                    var dataRow = dataTable.NewRow();
+
+                    foreach (var property in jObject.Properties())
+                    {
+                        var columnName = property.Name;
+                        var columnValue = ConvertJTokenToType(property.Value, dataTable.Columns[columnName].DataType.FullName);
+                        dataRow[columnName] = columnValue;
+                    }
+
+                    dataTable.Rows.Add(dataRow);
                 }
             }
+
+            Entities.Clear();
+            Entities.Add(entityStructure);
+            EntitiesNames.Clear();
+            EntitiesNames.Add(Dataconnection.ConnectionProp.FileName);
             return dataTable;
         }
-        private List<EntityField> GetSheetColumns(string psheetname)
+        public DataTable ConvertListToDataTable(List<dynamic> records)
         {
-            DataTable tb = null;
-            tb=GetDataTable(psheetname);
-            if (tb != null)
-            {
-                Getfields();
-            }
-            return GetEntityDataType(psheetname).Fields.Where(x => x.EntityName.Equals(psheetname,StringComparison.CurrentCultureIgnoreCase)).ToList();
-        }
-        private EntityStructure GetEntityDataType(string psheetname)
-        {
+            DataTable dataTable = new DataTable();
 
-            return Entities.Where(x => x.EntityName == psheetname).FirstOrDefault();
-        }
-        private EntityStructure GetEntityDataType(int sheetno)
-        {
-
-            return Entities[sheetno];
-        }
-        private EntityStructure GetSheetEntity(string EntityName)
-        {
-            EntityStructure entityData = new EntityStructure();
-            if (GetFileState() == ConnectionState.Open)
+            if (records.Count > 0)
             {
-                try
+                var firstRecord = (IDictionary<string, object>)records[0];
+
+                foreach (var propertyName in firstRecord.Keys)
                 {
-                    Getfields();
-                    if (Entities != null)
+                    var propertyValue = firstRecord[propertyName];
+                    var columnType = propertyValue?.GetType() ?? typeof(object);
+                    dataTable.Columns.Add(propertyName, columnType);
+                }
+
+                foreach (var record in records)
+                {
+                    var dataRow = dataTable.NewRow();
+
+                    foreach (var propertyName in ((IDictionary<string, object>)record).Keys)
                     {
-                        int idx = Entities.FindIndex(p => p.EntityName.Equals(EntityName, StringComparison.InvariantCultureIgnoreCase));
-                        if (idx > -1)
-                            entityData = Entities[idx];
+                        dataRow[propertyName] = ((IDictionary<string, object>)record)[propertyName];
                     }
+
+                    dataTable.Rows.Add(dataRow);
                 }
-                catch (Exception ex)
+            }
+
+            return dataTable;
+        }
+        public void SaveDataTableToJsonFile(DataTable dataTable, string jsonFilePath)
+        {
+            // Load the original JSON file into a JArray
+            JArray jsonArray;
+            using (StreamReader file = File.OpenText(jsonFilePath))
+            using (JsonTextReader reader = new JsonTextReader(file))
+            {
+                jsonArray = JArray.Load(reader);
+            }
+
+            // Iterate over the rows of the DataTable
+            for (int rowIndex = 0; rowIndex < dataTable.Rows.Count; rowIndex++)
+            {
+                DataRow row = dataTable.Rows[rowIndex];
+
+                // Find the corresponding JObject in the JArray
+                JObject jsonObject = (JObject)jsonArray[rowIndex];
+
+                // Update the properties in the JObject with the values from the DataRow
+                foreach (DataColumn column in dataTable.Columns)
                 {
-                    entityData = null;
-                    DMEEditor.AddLogMessage("Fail", $"Error in getting Entity from File  {ex.Message}", DateTime.Now, 0, FileName, Errors.Failed);
+                    string columnName = column.ColumnName;
+                    object columnValue = row[column];
 
+                    // Update the property in the JObject
+                    jsonObject[columnName] = JToken.FromObject(columnValue);
                 }
             }
 
-            return entityData;
-
-
-        }
-        public int GetSheetNumber(DataSet ls, string sheetname)
-        {
-            int retval = 0;
-            if (ls.Tables.Count == 1)
+            // Save the modified JArray back to the JSON file
+            using (StreamWriter file = File.CreateText(jsonFilePath))
+            using (JsonTextWriter writer = new JsonTextWriter(file))
             {
-                retval = 0;
+                jsonArray.WriteTo(writer);
             }
-            else
-            {
-                if (ls.Tables.Count == 0)
-                {
-                    retval = -1;
-                }
-                else
-                {
-                    if (ls.Tables.Count > 1)
-                    {
-                        int i = 0;
-                        string found = "NotFound";
-                        while (found == "Found" || found == "ExitandNotFound")
-                        {
-
-                            if (ls.Tables[i].TableName.Equals(sheetname, StringComparison.OrdinalIgnoreCase))
-                            {
-                                retval = i;
-
-                                found = "Found";
-                            }
-                            else
-                            {
-                                if (i == ls.Tables.Count - 1)
-                                {
-                                    found = "ExitandNotFound";
-                                }
-                                else
-                                {
-                                    i += 1;
-                                }
-                            }
-                        }
-
-
-                    }
-                }
-
-            }
-            return retval;
-
         }
-        public static int GetDecimalScale(decimal value)
-        {
-            if (value == 0)
-                return 0;
-            int[] bits = decimal.GetBits(value);
-            return (int)((bits[3] >> 16) & 0x7F);
-        }
-        public static int GetDecimalPrecision(decimal value)
-        {
-            if (value == 0)
-                return 0;
-            int[] bits = decimal.GetBits(value);
-            //We will use false for the sign (false =  positive), because we don't care about it.
-            //We will use 0 for the last argument instead of bits[3] to eliminate the fraction point.
-            decimal d = new Decimal(bits[0], bits[1], bits[2], false, 0);
-            return (int)Math.Floor(Math.Log10((double)d)) + 1;
-        }
-        public DataTable ReadDataTable(int sheetno = 0, bool HeaderExist = true, int fromline = 0, int toline = 100)
-        {
-            if (GetFileState() == ConnectionState.Open)
-            {
-                DataTable dataRows = new DataTable();
+        #endregion "Data Table Methods"
 
-                dataRows = ds.Tables[sheetno];
-                toline = dataRows.Rows.Count;
-             //   List<EntityField> flds = GetSheetColumns(ds.Tables[sheetno].TableName);
-
-                return dataRows;
-            }
-            else
-            {
-                return null;
-            }
-
-        }
-        public DataTable ReadDataTable(string sheetname, bool HeaderExist = true, int fromline = 0, int toline = 100)
-        {
-            return ReadDataTable(GetSheetNumber(ds, sheetname), HeaderExist, fromline, toline); ;
-        }
         //public void CreateClass(int sheetno = 0)
         //{
         //    if (GetFileState() == ConnectionState.Open)
