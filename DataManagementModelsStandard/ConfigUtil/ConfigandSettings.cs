@@ -180,6 +180,9 @@ namespace TheTechIdea.Util
         public string FolderName { get; set; }
         public string RootName { get; set; }
         public string ParentName { get; set; }
+        public int ParentID { get; set; }
+        public bool IsParentRoot { get; set; }=true;
+        public bool IsPhysicalFolder { get; set; }=false;
         public BindingList<string> items { get; set; } = new BindingList<string>();
         public CategoryFolder()
         {
