@@ -839,10 +839,10 @@ namespace TheTechIdea.Util
 				return true;
 		
 		}
-		public bool RemoveLayerByID(string ID)
+		public bool RemoveLayerByID(int ID)
 		{
 			
-			int i = CompositeQueryLayers.FindIndex(x => x.ID.Equals(ID,StringComparison.InvariantCultureIgnoreCase));
+			int i = CompositeQueryLayers.FindIndex(x => x.ID==ID);
 			if (i > -1)
 			{
 				return CompositeQueryLayers.Remove(CompositeQueryLayers[i]);

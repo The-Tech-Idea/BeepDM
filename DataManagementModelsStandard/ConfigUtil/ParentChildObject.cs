@@ -10,7 +10,7 @@ namespace TheTechIdea.Util
     public class ParentChildObject
 
     {
-        public int ID { get; set; }
+        public string id { get; set; }
         public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string ParentID { get; set; }
         public string ObjType { get; set; }

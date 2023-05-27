@@ -9,6 +9,7 @@ namespace TheTechIdea.Beep.DataBase
 {
     public class RDBDataConnection : IDataConnection
     {
+        public bool InMemory { get; set; } = false;
         public int ID { get; set; }
         public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public IDbConnection DbConn { get; set; }

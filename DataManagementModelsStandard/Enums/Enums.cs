@@ -28,8 +28,8 @@ namespace TheTechIdea.Util
     public enum DataSourceType
     {
         NONE, Oracle , SqlServer, Mysql, SqlCompact, SqlLite,
-        Text,CSV,Xls,WebService,Json,xml,
-        Postgre,Firebase,FireBird,Couchbase,RavenDB,MongoDB,CouchDB,VistaDB,DB2,OPC,Kafka,Redis,Hadoop,LiteDB,SnowFlake,Parquet,Avro, ORC, TSV
+        Text,CSV,Xls,WebService,Json,xml,DuckDB,RealIM,Hdf5,
+        Postgre,Firebase,FireBird,Couchbase,RavenDB,MongoDB,CouchDB,VistaDB,DB2,OPC,Kafka,Redis,Hadoop,LiteDB,SnowFlake
     }
     public enum DatasourceCategory
     {
@@ -37,7 +37,7 @@ namespace TheTechIdea.Util
     }
     public enum FileTypes
     {
-        Text, Excel,xml,json,Parquet, Avro, ORC, TSV
+        Text, Excel,xml,json,Parquet, Avro, ORC, TSV,Onnx
     }
     public enum DbFieldCategory
     {

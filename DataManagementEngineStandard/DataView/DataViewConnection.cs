@@ -13,6 +13,7 @@ namespace TheTechIdea.Beep.DataView
 {
     public class DataViewConnection : IDataConnection
     {
+        public bool InMemory { get; set; } = false;
         public IConnectionProperties ConnectionProp { get ; set ; }
         public ConnectionDriversConfig DataSourceDriver { get ; set ; }
         public ConnectionState ConnectionStatus { get ; set ; }

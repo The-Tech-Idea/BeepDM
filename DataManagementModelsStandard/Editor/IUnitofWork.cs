@@ -10,7 +10,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public interface IUnitofWork<T> where T : class, INotifyPropertyChanged, new()
+    public interface IUnitofWork<T> where T : Entity
     {
         IDataSource DataSource { get; set; }
         string DatasourceName { get; set; }

@@ -5,15 +5,10 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
-
 using System.Linq;
-
 using System.Reflection;
-
 using System.Threading;
 using System.Threading.Tasks;
-using System.Transactions;
-using System.Xml.Linq;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Util;
@@ -22,13 +17,13 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class UnitofWork<T> : IUnitofWork<T> where T : class, INotifyPropertyChanged, new()
+    public class UnitofWork<T> : IUnitofWork<T> where T : Entity, INotifyPropertyChanged
     {
         CancellationTokenSource tokenSource;
         CancellationToken token;
         private Dictionary<int, EntityState> _entityStates;
         private Dictionary<T, EntityState> _deletedentities;
-        protected virtual event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+        protected virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
 
         public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName)
         {
@@ -141,7 +136,7 @@ namespace TheTechIdea.Beep.Editor
         {
             if (!Validateall())
             {
-                return null;
+                return default(T);
             }
             return Units[Getindex(id)];
         }
@@ -265,13 +260,13 @@ namespace TheTechIdea.Beep.Editor
             {
                 if (retval is DataTable)
                 {
-                    DataTable dataTable = (DataTable)retval;
-                    Units = ConvertDataTableToObservable<T>(dataTable);
+                  //  DataTable dataTable = (DataTable)retval;
+                 //   Units = ConvertDataTableToObservable<T>(dataTable);
                 }
                 if (retval is IList)
                 {
-                    List<T> list = (List<T>)retval;
-                    Units = ConvertList2Observable<T>(list);
+                  //  List<T> list = (List<T>)retval;
+                   // Units = ConvertList2Observable<T>(list);
                 }
             }
             return await Task.FromResult(Units);
@@ -361,15 +356,22 @@ namespace TheTechIdea.Beep.Editor
             var retval = DataSource.GetEntityAsync(EntityName, filters).Result;
             if (retval != null)
             {
+                Units = new ObservableCollection<T>();
+                List<T> list = new List<T>();
                 if (retval is DataTable)
                 {
                     DataTable dataTable = (DataTable)retval;
-                    Units = ConvertDataTableToObservable<T>(dataTable);
+                    //Units
+                    list=DMEEditor.Utilfunction.ConvertDataTable<T>(dataTable);
                 }
                 if (retval is IList)
                 {
-                    List<T> list = (List<T>)retval;
-                    Units = ConvertList2Observable<T>(list);
+                    list = (List<T>)retval;
+                   
+                }
+                foreach (var item in list)
+                {
+                    Units.Add(item);
                 }
             }
             return await Task.FromResult(Units);
@@ -592,73 +594,73 @@ namespace TheTechIdea.Beep.Editor
             }
             return retval;
         }
-        public static ObservableCollection<T1> ConvertDataTableToObservable<T1>(DataTable table) where T1 : class, new()
-        {
-            try
-            {
-                ObservableCollection<T1> list = new ObservableCollection<T1>();
+        //public static ObservableCollection<T1> ConvertDataTableToObservable<T1>(DataTable table) where T1 : class, new()
+        //{
+        //    try
+        //    {
+        //        ObservableCollection<T1> list = new ObservableCollection<T1>();
 
-                foreach (var row in table.AsEnumerable())
-                {
-                    T1 obj = new T1();
+        //        foreach (var row in table.AsEnumerable())
+        //        {
+        //            T1 obj = new T1();
 
-                    foreach (var prop in obj.GetType().GetProperties())
-                    {
-                        try
-                        {
-                            PropertyInfo propertyInfo = obj.GetType().GetProperty(prop.Name);
-                            propertyInfo.SetValue(obj, Convert.ChangeType(row[prop.Name], propertyInfo.PropertyType), null);
-                        }
-                        catch
-                        {
-                            continue;
-                        }
-                    }
+        //            foreach (var prop in obj.GetType().GetProperties())
+        //            {
+        //                try
+        //                {
+        //                    PropertyInfo propertyInfo = obj.GetType().GetProperty(prop.Name);
+        //                    propertyInfo.SetValue(obj, Convert.ChangeType(row[prop.Name], propertyInfo.PropertyType), null);
+        //                }
+        //                catch
+        //                {
+        //                    continue;
+        //                }
+        //            }
 
-                    list.Add(obj);
-                }
+        //            list.Add(obj);
+        //        }
 
-                return list;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-        public static ObservableCollection<T1> ConvertList2Observable<T1>(IList table) where T1 : class, new()
-        {
-            try
-            {
-                ObservableCollection<T1> list = new ObservableCollection<T1>();
+        //        return list;
+        //    }
+        //    catch
+        //    {
+        //        return null;
+        //    }
+        //}
+        //public static ObservableCollection<T1> ConvertList2Observable<T1>(IList table) where T1 : class, new()
+        //{
+        //    try
+        //    {
+        //        ObservableCollection<T1> list = new ObservableCollection<T1>();
 
-                foreach (var row in table)
-                {
-                    T1 obj = new T1();
+        //        foreach (var row in table)
+        //        {
+        //            T1 obj = new T1();
 
-                    foreach (var prop in obj.GetType().GetProperties())
-                    {
-                        try
-                        {
-                            PropertyInfo propertyInfo = obj.GetType().GetProperty(prop.Name);
-                            var vl = propertyInfo.GetValue(row, null);
-                            propertyInfo.SetValue(obj, Convert.ChangeType(vl, propertyInfo.PropertyType), null);
-                        }
-                        catch
-                        {
-                            continue;
-                        }
-                    }
+        //            foreach (var prop in obj.GetType().GetProperties())
+        //            {
+        //                try
+        //                {
+        //                    PropertyInfo propertyInfo = obj.GetType().GetProperty(prop.Name);
+        //                    var vl = propertyInfo.GetValue(row, null);
+        //                    propertyInfo.SetValue(obj, Convert.ChangeType(vl, propertyInfo.PropertyType), null);
+        //                }
+        //                catch
+        //                {
+        //                    continue;
+        //                }
+        //            }
 
-                    list.Add(obj);
-                }
+        //            list.Add(obj);
+        //        }
 
-                return list;
-            }
-            catch
-            {
-                return null;
-            }
-        }
+        //        return list;
+        //    }
+        //    catch
+        //    {
+        //        return null;
+        //    }
+        //}
     }
 
     public enum EntityState

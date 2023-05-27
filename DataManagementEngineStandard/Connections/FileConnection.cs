@@ -18,6 +18,7 @@ namespace TheTechIdea.Beep.FileManager
         {
             DMEEditor = pDMEEditor;
         }
+        public bool InMemory { get; set; } = false;
         public IConnectionProperties ConnectionProp { get; set; } = new ConnectionProperties();
         public ConnectionDriversConfig DataSourceDriver { get ; set ; }
         public ConnectionState ConnectionStatus { get; set; } = ConnectionState.Closed;

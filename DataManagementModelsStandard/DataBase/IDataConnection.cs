@@ -17,6 +17,7 @@ namespace TheTechIdea.Beep.DataBase
          string GuidID { get; set; } 
         IDMLogger Logger { get; set; }
         IErrorsInfo ErrorObject { get; set; }
+        bool InMemory { get; set; }
         ConnectionState OpenConnection();
       //  IDbConnection DbConn { get; set; }
         string ReplaceValueFromConnectionString();

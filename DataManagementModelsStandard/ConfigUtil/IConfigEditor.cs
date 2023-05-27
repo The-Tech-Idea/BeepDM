@@ -116,7 +116,7 @@ namespace TheTechIdea.Util
         void SaveAddinTreeStructure();
         void SaveCompositeLayersValues();
         bool RemoveLayerByName(string LayerName);
-        bool RemoveLayerByID(string ID);
+        bool RemoveLayerByID(int ID);
         List<CompositeLayer> LoadCompositeLayersValues();
       //  void SaveAppValues();
      //   bool RemoveAppByName(string LayerName);
