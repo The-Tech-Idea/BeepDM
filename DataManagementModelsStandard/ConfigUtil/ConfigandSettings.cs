@@ -14,7 +14,7 @@ using TheTechIdea.Beep.Vis;
 
 namespace TheTechIdea.Util
 {
-    public class ConfigandSettings
+    public partial class ConfigandSettings
     {
         public ConfigandSettings()
         {
@@ -39,6 +39,7 @@ namespace TheTechIdea.Util
         public string ConnectionDriversPath { get; set; }
         public string OtherDLLPath { get; set; }
         public string DefaultReportWriter { get; set; }
+        public string ProjectsPath { get; set; }
         public List<StorageFolders> Folders { get; set; } = new List<StorageFolders>();
         
     }
