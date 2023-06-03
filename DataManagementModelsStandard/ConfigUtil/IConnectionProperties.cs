@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using TheTechIdea.Beep.DataBase;
 
 namespace TheTechIdea.Util
@@ -38,5 +39,35 @@ namespace TheTechIdea.Util
         char Delimiter { get; set; }
         bool CompositeLayer { get; set; }
         bool Favourite { get; set; }
+
+       
+         bool IsLocal { get; set; } 
+
+
+         bool IsRemote { get; set; } 
+
+
+         bool IsWebApi { get; set; } 
+
+
+         bool IsFile { get; set; }
+
+
+         bool IsDatabase { get; set; }
+
+
+         bool IsComposite { get; set; }
+
+
+         bool IsCloud { get; set; } 
+
+
+         bool IsFavourite { get; set; }
+
+
+         bool IsDefault { get; set; } 
+
+
+         bool IsInMemory { get; set; } 
     }
 }

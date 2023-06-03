@@ -19,6 +19,7 @@ namespace TheTechIdea.Beep.DataBase
         public IDMLogger Logger { get; set; }
         public IErrorsInfo ErrorObject { get; set; }
     
+        string ConnString { get; set; }
         public IConnectionProperties ConnectionProp { get; set; } = new ConnectionProperties();
         public RDBDataConnection(IDMEEditor pDMEEditor)
         {
@@ -44,10 +45,10 @@ namespace TheTechIdea.Beep.DataBase
         public string ReplaceValueFromConnectionString()
         {
             string rep="";
-            if (string.IsNullOrWhiteSpace(DataSourceDriver.ConnectionString) == false )
+            if (string.IsNullOrWhiteSpace(ConnString) == false )
             {
 
-                rep = DataSourceDriver.ConnectionString.Replace("{Host}", ConnectionProp.Host);
+                rep = ConnString.Replace("{Host}", ConnectionProp.Host);
                 rep = rep.Replace("{UserID}", ConnectionProp.UserID);
                 rep = rep.Replace("{Password}", ConnectionProp.Password);
                 rep = rep.Replace("{Database}", ConnectionProp.Database);
@@ -68,7 +69,15 @@ namespace TheTechIdea.Beep.DataBase
                
                 if (rep.Contains("{File}"))
                 {
-                    rep = rep.Replace("{File}", Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName));
+                    string file = ConnectionProp.FileName;
+                    string dirpath= ConnectionProp.FilePath;
+                    string filename = string.Empty;
+                    if(string.IsNullOrEmpty(dirpath))
+                    {
+                        filename = file;
+                    }else
+                        filename=Path.Combine(dirpath, file);
+                    rep = rep.Replace("{File}", filename);
                 }
             }
            
@@ -88,19 +97,22 @@ namespace TheTechIdea.Beep.DataBase
                 {
                     
                     ConnectionStatus = DbConn.State;
-                 //   DMEEditor.AddLogMessage("Success", $"RDBMS already Open {ConnectionProp.ConnectionName}", DateTime.Now, -1, "", Errors.Ok);
-                   
+                    DMEEditor.AddLogMessage("Success", $"RDBMS already Open {ConnectionProp.ConnectionName}", DateTime.Now, -1, "", Errors.Ok);
                     return DbConn.State;
                 }
-
+                
             }
-            else
-            {
-                try
+            try
                 {
                     DbConn = (IDbConnection) DMEEditor.assemblyHandler.GetInstance(DataSourceDriver.DbConnectionType);
                     if (DbConn != null)
                     {
+                        if (!string.IsNullOrEmpty(ConnectionProp.ConnectionString))
+                        {
+                            ConnString = ConnectionProp.ConnectionString;
+                        }
+                        else ConnString = DataSourceDriver.ConnectionString;
+
                         DbConn.ConnectionString = ReplaceValueFromConnectionString(); //ConnectionProp.ConnectionString;
                     }
                     else
@@ -117,14 +129,12 @@ namespace TheTechIdea.Beep.DataBase
                   
                 }
 
-            }
-                try
+            try
             {
                 if (DbConn != null)
                 {
                     if (ConnectionProp.FilePath!=null && ConnectionProp.FileName!=null && !string.IsNullOrEmpty(ConnectionProp.FilePath) && !string.IsNullOrEmpty(ConnectionProp.FileName))
                     {
-
                         if (System.IO.File.Exists(Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)))
                         {
                             DbConn.Open();

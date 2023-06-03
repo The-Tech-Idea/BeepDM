@@ -58,7 +58,7 @@ namespace TheTechIdea.Beep.DataBase
             };
         }
         #region "IDataSource Interface Methods"
-        public ConnectionState Openconnection()
+        public virtual ConnectionState Openconnection()
         {
            if (RDBMSConnection != null)
             {
@@ -448,7 +448,7 @@ namespace TheTechIdea.Beep.DataBase
              //var sqlTran = RDBMSConnection.DbConn.BeginTransaction();
             IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
-            var ti = Activator.CreateInstance(enttype);
+          //  var ti = Activator.CreateInstance(enttype);
             
             dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, UploadDataRow, DataStruct);
             try
@@ -509,7 +509,7 @@ namespace TheTechIdea.Beep.DataBase
             var sqlTran = RDBMSConnection.DbConn.BeginTransaction();
             IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
-            var ti = Activator.CreateInstance(enttype);
+           // var ti = Activator.CreateInstance(enttype);
             if (recEntity != EntityName)
             {
                 recNumber = 1;
@@ -581,7 +581,7 @@ namespace TheTechIdea.Beep.DataBase
             //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
             IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
             Type enttype = GetEntityType(EntityName);
-            var ti = Activator.CreateInstance(enttype);
+           // var ti = Activator.CreateInstance(enttype);
             string updatestring="";
             if (recEntity != EntityName)
             {

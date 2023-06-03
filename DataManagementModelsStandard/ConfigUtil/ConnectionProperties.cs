@@ -41,6 +41,16 @@ namespace TheTechIdea.Util
         public List<DefaultValue> DatasourceDefaults { get; set; } = new List<DefaultValue>();
         public bool Favourite { get; set; } = false;
         public string GuidID { get; set; } = Guid.NewGuid().ToString();
+        public bool IsLocal { get; set; } = false;
+        public bool IsRemote { get; set; } = false;
+        public bool IsWebApi { get; set; } = false;
+        public bool IsFile { get; set; } = false;
+        public bool IsDatabase { get; set; } = false;
+        public bool IsComposite { get; set; } = false;
+        public bool IsCloud { get; set; } = false;
+        public bool IsFavourite { get; set; } = false;
+        public bool IsDefault { get; set; } = false;
+        public bool IsInMemory { get; set; } = false;
         public ConnectionProperties()
         {
            

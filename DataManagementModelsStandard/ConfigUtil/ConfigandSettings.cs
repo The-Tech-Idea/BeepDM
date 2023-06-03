@@ -81,7 +81,10 @@ namespace TheTechIdea.Util
         public string Imagename { get; set; }
         public string RootName { get; set; }
         //public EnumBranchType BranchType { get; set; }
-      
+
+        public bool LocalDB { get; set; } = false;
+        public bool InMemory { get; set; } = false;
+        public bool IsDataSource { get; set; } = false;
         public Type type { get; set; }
         public string componentType { get; set; }
         public AddinAttribute classProperties { get; set; } = new AddinAttribute();
@@ -137,7 +140,9 @@ namespace TheTechIdea.Util
         public string classHandler { get; set; }
         public bool ADOType { get; set; } = false;
         public bool CreateLocal { get; set; } = false;
-        public string extensionstoHandle { get; set; }
+        public bool InMemory { get; set; } = false;
+
+       public string extensionstoHandle { get; set; }
         public bool Favourite { get; set; }=false;
         public DatasourceCategory DatasourceCategory { get; set; }
         public DataSourceType DatasourceType { get; set; }

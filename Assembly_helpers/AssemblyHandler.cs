@@ -16,6 +16,7 @@ using TypeInfo = System.Reflection.TypeInfo;
 using System.Drawing;
 using System.Collections;
 using System.Threading;
+using DataManagementModels.DataBase;
 
 namespace TheTechIdea.Tools
 {
@@ -748,6 +749,18 @@ namespace TheTechIdea.Tools
             xcls.PackageName = type.FullName;
             xcls.componentType = typename;
             xcls.type = type;
+            if (type.ImplementedInterfaces.Contains(typeof(ILocalDB)))
+            {
+                xcls.LocalDB= true;
+            }
+            if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
+            {
+                xcls.IsDataSource = true;
+            }
+            if (type.ImplementedInterfaces.Contains(typeof(IInMemoryDB)))
+            {
+                xcls.InMemory = true;
+            }
             xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
             if (xcls.classProperties != null)
             {
