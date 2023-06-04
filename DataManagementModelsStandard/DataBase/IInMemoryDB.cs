@@ -8,6 +8,7 @@ namespace DataManagementModels.DataBase
     public interface IInMemoryDB
     {
        IErrorsInfo OpenDatabaseInMemory(string databasename);
+       string GetConnectionString();
       
     }
 }
