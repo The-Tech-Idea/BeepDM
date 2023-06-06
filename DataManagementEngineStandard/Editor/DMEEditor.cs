@@ -365,7 +365,8 @@ namespace TheTechIdea.Beep
             if (ConfigEditor.DataDriversClasses.Where(x => x.classHandler!=null  && x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).Any())
             {
                 package = ConfigEditor.DataDriversClasses.Where(x => x.classHandler != null &&  x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className.Equals(package.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
+                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className!=null &&  x.className.Equals(package.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
+
                 if (packagename != null)
                 {
                     Type adc = assemblyHandler.GetType(packagename);

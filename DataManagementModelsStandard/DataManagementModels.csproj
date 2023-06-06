@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	  <TargetFrameworks>netstandard2.0;net6.0;net7.0</TargetFrameworks>
+	  <TargetFrameworks>net48;netstandard2.0;net6.0;net7.0</TargetFrameworks>
     <PackageIcon>SimpleODM.png</PackageIcon>
     <Authors>The Tech Idea</Authors>
     <Company>The Tech Idea</Company>
@@ -10,7 +10,7 @@
     <Copyright>2022</Copyright>
     <Description>Data Management Library Models</Description>
     <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
-	  <Version>1.0.43</Version>
+	  <Version>1.0.45</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageId>TheTechIdea.Beep.DataManagementModels</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -19,7 +19,9 @@
 	<Target Name="CopyPackage" AfterTargets="Pack">
 		<Copy SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\Nuget.Local" />
 	</Target>
-
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Copy SourceFiles="$(TargetDir)$(MSBuildProjectName).dll" DestinationFolder="$(ProjectDir)..\..\outputDLL\$(PackageId)\$(TargetFramework)" SkipUnchangedFiles="false" />
+	</Target>
   <ItemGroup>
     <None Include="..\..\..\..\..\OneDrive\SimpleInfoapps\LogoGFx\128\SimpleODM.png">
       <Pack>True</Pack>

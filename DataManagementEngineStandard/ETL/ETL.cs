@@ -52,14 +52,14 @@ namespace TheTechIdea.Beep.Editor
             {
                 ls.Add(Srcds.GetEntityStructure(item, true));
             }
-            DMEEditor.ETL.GetCreateEntityScript(Srcds, ls, progress, token, DDLScriptType.CreateEntity);
+            Script.ScriptDTL= DMEEditor.ETL.GetCreateEntityScript(Srcds, ls, progress, token);
             foreach (var item in ls)
             {
 
                 ETLScriptDet upscript = new ETLScriptDet();
                 upscript.sourcedatasourcename = item.DataSourceID;
                 upscript.sourceentityname = item.EntityName;
-                upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
+                upscript.sourceDatasourceEntityName = item.EntityName;
                 upscript.destinationDatasourceEntityName = item.EntityName;
                 upscript.destinationentityname = item.EntityName;
                 upscript.destinationdatasourcename = Srcds.DatasourceName;
@@ -68,88 +68,57 @@ namespace TheTechIdea.Beep.Editor
                 i += 1;
             }
         }
-        public List<ETLScriptDet> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token, DDLScriptType scriptType)
+        public List<ETLScriptDet> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token)
         {
             List<ETLScriptDet> rt = new List<ETLScriptDet>();
+            List<EntityStructure> ls = new List<EntityStructure>();
             try
             {
                 foreach (string item in entities)
                 {
-                    var t = Task.Run<EntityStructure>(() => { return ds.GetEntityStructure(item, true); });
-                    t.Wait();
-                    EntityStructure t1 = t.Result;
-                    t1.Created = false;
+                    EntityStructure t1 = ds.GetEntityStructure(item, true); ;// t.Result;
+                    ls.Add(t1);
                 }
-
-                if (ds.Entities.Count > 0)
-                {
-                    var t = Task.Run<List<ETLScriptDet>>(() => { return GetCreateEntityScript(ds, ds.Entities, progress, token, scriptType); });
-                    t.Wait();
-                    rt.AddRange(t.Result);
-                }
+                rt.AddRange(GetCreateEntityScript(ds, ls, progress, token));
+                
             }
             catch (System.Exception ex)
             {
                 DMEEditor.AddLogMessage("Fail", $"Error in getting entities from Database ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
 
             }
+           // Script.ScriptDTL.AddRange(rt);
             return rt;
         }
         private ETLScriptDet GenerateScript( EntityStructure item, string destSource, DDLScriptType scriptType)
         {
             ETLScriptDet upscript = new ETLScriptDet();
             upscript.sourcedatasourcename = item.DataSourceID;
-            upscript.sourceentityname = item.OriginalEntityName;
-            upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
+            upscript.sourceentityname = item.EntityName;
+            upscript.sourceDatasourceEntityName = item.EntityName;
             upscript.destinationDatasourceEntityName = item.EntityName;
             upscript.destinationentityname = item.EntityName;
             upscript.destinationdatasourcename = destSource;
             upscript.scriptType = scriptType;
             return upscript;
         }
-        public List<ETLScriptDet> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities, IProgress<PassedArgs> progress, CancellationToken token, DDLScriptType scriptType)
+        public List<ETLScriptDet> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities, IProgress<PassedArgs> progress, CancellationToken token)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-
             int i = 0;
-
             List<ETLScriptDet> retval = new List<ETLScriptDet>();
-            Script = new ETLScriptHDR();
-            List<EntityStructure> ls = new List<EntityStructure>();
-            List<ETLScriptDet> rt = new List<ETLScriptDet>();
+          
             try
             {
-                rt = Dest.GetCreateEntityScript(entities);
-                // Generate Create Table First
-               
-                foreach (ETLScriptDet sc in rt)
+                //rt = Dest.GetCreateEntityScript(entities);
+                foreach (EntityStructure item in entities)
                 {
-                    EntityStructure item = entities[entities.FindIndex(p => p.EntityName == sc.sourceentityname && p.DatasourceEntityName == sc.sourceDatasourceEntityName)];
-                    sc.sourcedatasourcename = item.DataSourceID;
-                    sc.sourceDatasourceEntityName = item.DatasourceEntityName;
-                    sc.destinationentityname = item.EntityName;
-                    sc.sourceentityname = item.DatasourceEntityName;
-                    sc.destinationentityname = item.EntityName;
-                    sc.destinationdatasourcename = Dest.DatasourceName;
-                    sc.ID = i;
-                    i++;
+                    ETLScriptDet copyscript = GenerateScript(item, Dest.DatasourceName, DDLScriptType.CreateEntity);
+                    copyscript.ID = i;
+                    retval.Add(copyscript);
+                     i++;
                 }
-
-               // Script.ScriptDTL.AddRange(rt);
-                retval.AddRange(rt);
-                if (scriptType == DDLScriptType.CopyData)
-                {
-                    foreach (ETLScriptDet sc in rt)
-                    {
-                        EntityStructure item = entities[entities.FindIndex(p => p.EntityName == sc.sourceentityname && p.DatasourceEntityName == sc.sourceDatasourceEntityName)];
-                        ETLScriptDet copyscript = GenerateScript( item, Dest.DatasourceName, scriptType);
-                        copyscript.ID = i;
-                        i++;
-                       // Script.ScriptDTL.Add(copyscript);
-                        retval.Add(copyscript);
-                    }
-                    
-                }
+                
                 DMEEditor.AddLogMessage("Success", $"Generated Script", DateTime.Now, 0, null, Errors.Ok);
 
             }
@@ -169,26 +138,20 @@ namespace TheTechIdea.Beep.Editor
             int i = 0;
 
             List<ETLScriptDet> retval = new List<ETLScriptDet>();
-            Script = new ETLScriptHDR();
+          
             try
             {
                 // Generate Create Table First
-                foreach (EntityStructure item in entities)
-                {
-                   
-                    List<EntityStructure> ls = new List<EntityStructure>();
-                 
                     foreach (EntityStructure sc in entities)
                         {
-                            ETLScriptDet copyscript = GenerateScript( item, Dest.DatasourceName,  DDLScriptType.CopyData);
+                            ETLScriptDet copyscript = GenerateScript( sc, Dest.DatasourceName,  DDLScriptType.CopyData);
                             copyscript.ID = i;
                             i++;
                             //Script.ScriptDTL.Add(copyscript);
                             retval.Add(copyscript);
                         }
                    i += 1;
-                }
-                DMEEditor.AddLogMessage("Success", $"Generated Script", DateTime.Now, 0, null, Errors.Ok);
+                  DMEEditor.AddLogMessage("Success", $"Generated Script", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {

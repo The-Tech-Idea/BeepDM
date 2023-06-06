@@ -438,18 +438,13 @@ namespace TheTechIdea.Beep.DataBase
             }
             else
                 recNumber += 1;
-            // DataRow tb = object UploadDataRow;
+            SetObjects(EntityName);
             ErrorObject.Flag = Errors.Ok;
-            EntityStructure DataStruct = GetEntityStructure(EntityName, true);
+         
             DataRowView dv;
             DataTable tb;
             DataRow dr;
             string msg = "";
-             //var sqlTran = RDBMSConnection.DbConn.BeginTransaction();
-            IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
-            Type enttype = GetEntityType(EntityName);
-          //  var ti = Activator.CreateInstance(enttype);
-            
             dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, UploadDataRow, DataStruct);
             try
             {
@@ -499,17 +494,14 @@ namespace TheTechIdea.Beep.DataBase
         }
         public virtual IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
         {
-          
+            SetObjects(EntityName);
             ErrorObject.Flag = Errors.Ok;
-            EntityStructure DataStruct = GetEntityStructure(EntityName, true);
+         
             string msg;
             DataRowView dv;
             DataTable tb;
             DataRow dr;
             var sqlTran = RDBMSConnection.DbConn.BeginTransaction();
-            IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
-            Type enttype = GetEntityType(EntityName);
-           // var ti = Activator.CreateInstance(enttype);
             if (recEntity != EntityName)
             {
                 recNumber = 1;
@@ -569,19 +561,30 @@ namespace TheTechIdea.Beep.DataBase
 
             return ErrorObject;
         }
+        #region "Insert or Update or Delete Objects"
+        EntityStructure DataStruct = null; 
+        IDbCommand command = null; 
+        Type enttype = null;
+        bool ObjectsCreated = false;
+        string lastentityname = null;
+        #endregion
+        private void SetObjects(string Entityname)
+        {
+            if (!ObjectsCreated || Entityname!=lastentityname)
+            {
+                DataStruct = GetEntityStructure(Entityname, true);
+                command = RDBMSConnection.DbConn.CreateCommand();
+                enttype = GetEntityType(Entityname);
+                ObjectsCreated = true;
+                lastentityname = Entityname;
+            }
+        }
         public virtual IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
-            // DataRow tb = object UploadDataRow;
+            SetObjects(EntityName);
             ErrorObject.Flag = Errors.Ok;
-            EntityStructure DataStruct = GetEntityStructure(EntityName, true);
-            //DataRowView dv;
-            //DataTable tb;
             DataRow dr;
             string msg = "";
-            //   var sqlTran = Dataconnection.DbConn.BeginTransaction();
-            IDbCommand command = RDBMSConnection.DbConn.CreateCommand();
-            Type enttype = GetEntityType(EntityName);
-           // var ti = Activator.CreateInstance(enttype);
             string updatestring="";
             if (recEntity != EntityName)
             {
@@ -1071,28 +1074,6 @@ namespace TheTechIdea.Beep.DataBase
                        
                     i += 1;
                     }
-                    //if (Entities.Count > 0)
-                    //{
-                    //    List<string> ename = Entities.Select(p => p.EntityName.ToUpper()).ToList();
-                    //    List<string> diffnames = ename.Except(EntitiesNames.Select(o=>o.ToUpper())).ToList();
-                    //    if (diffnames.Count > 0)
-                    //    {
-                    //        foreach (string item in diffnames)
-                    //        {
-                    //           // GetEntityStructure(item, false);
-                    //           // int idx = Entities.FindIndex(p => p.EntityName.Equals(item, StringComparison.InvariantCultureIgnoreCase) || p.DatasourceEntityName.Equals(item, StringComparison.InvariantCultureIgnoreCase));
-                    //           // Entities[idx].Created = false;
-                    //             EntitiesNames.Add(item);
-                    //        }
-                    //    }
-                    ////---------------------- Check for removed Entities ------------------
-                    
-                    //}
-
-
-
-
-
             }
             catch (Exception ex)
             {
@@ -1754,7 +1735,7 @@ namespace TheTechIdea.Beep.DataBase
         public virtual List<T> GetData<T>(string sql)
         {
            // DMEEditor.OpenDataSource(ds.DatasourceName);
-            if (Dataconnection.OpenConnection() == ConnectionState.Open)
+            if (Dataconnection.ConnectionStatus == ConnectionState.Open)
             {
                 return RDBMSConnection.DbConn.Query<T>(sql).AsList<T>();
 
@@ -1768,7 +1749,7 @@ namespace TheTechIdea.Beep.DataBase
         }
         public virtual Task SaveData<T>(string sql, T parameters)
         {
-            if (Dataconnection.OpenConnection() == ConnectionState.Open)
+            if (Dataconnection.ConnectionStatus == ConnectionState.Open)
             {
                 return RDBMSConnection.DbConn.ExecuteAsync(sql, parameters);
             }
@@ -1825,7 +1806,7 @@ namespace TheTechIdea.Beep.DataBase
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                if(Dataconnection.OpenConnection()== ConnectionState.Open)
+                if(Dataconnection.ConnectionStatus== ConnectionState.Open)
                 {
                     cmd = RDBMSConnection.DbConn.CreateCommand();
                 }else
