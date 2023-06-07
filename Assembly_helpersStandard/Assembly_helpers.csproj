@@ -17,14 +17,14 @@
    
   </PropertyGroup>
 	<Target Name="CopyPackage" AfterTargets="Pack">
-		<Copy SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\Nuget.Local" />
+		<Copy SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\LocalNugetFiles" />
 	</Target>
   <ItemGroup>
     <Compile Include="..\Assembly_helpers\AssemblyHandler.cs" Link="AssemblyHandler.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\..\..\..\OneDrive\SimpleInfoapps\LogoGFx\128\SimpleODM.png">
+    <None Include="..\..\InstallationScripts\LogoGFx\128\SimpleODM.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
