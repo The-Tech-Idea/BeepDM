@@ -163,7 +163,8 @@ namespace TheTechIdea.Beep.Editor
 
         }
         #endregion "Create Scripts"
-        public IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities,IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
+        #region "Copy Data"
+        public IErrorsInfo CopyEntitiesStructure(IDataSource sourceds, IDataSource destds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true)
         {
             try
             {
@@ -174,7 +175,7 @@ namespace TheTechIdea.Beep.Editor
                 string entname = "";
                 foreach (EntityStructure item in ls)
                 {
-                    CopyEntityStructure(sourceds, destds, item.EntityName, item.EntityName,progress, token, CreateMissingEntity);
+                    CopyEntityStructure(sourceds, destds, item.EntityName, item.EntityName, progress, token, CreateMissingEntity);
                 }
 
             }
@@ -220,13 +221,13 @@ namespace TheTechIdea.Beep.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        public IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true, EntityDataMap_DTL map_DTL=null)
+        public IErrorsInfo CopyDatasourceData(IDataSource sourceds, IDataSource destds, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true, EntityDataMap_DTL map_DTL = null)
         {
             try
             {
                 foreach (EntityStructure item in sourceds.Entities)
                 {
-                    CopyEntityData(sourceds, destds, item.EntityName, item.EntityName,progress, token, CreateMissingEntity);
+                    CopyEntityData(sourceds, destds, item.EntityName, item.EntityName, progress, token, CreateMissingEntity);
                 }
 
             }
@@ -251,10 +252,10 @@ namespace TheTechIdea.Beep.Editor
                 {
                     if ((item.EntityName != item.DatasourceEntityName) && (!string.IsNullOrEmpty(item.DatasourceEntityName)))
                     {
-                        CopyEntityData(sourceds, destds, item.DatasourceEntityName, item.EntityName,progress, token, CreateMissingEntity);
+                        CopyEntityData(sourceds, destds, item.DatasourceEntityName, item.EntityName, progress, token, CreateMissingEntity);
                     }
                     else
-                        CopyEntityData(sourceds, destds, item.EntityName, item.EntityName,progress, token,  CreateMissingEntity);
+                        CopyEntityData(sourceds, destds, item.EntityName, item.EntityName, progress, token, CreateMissingEntity);
 
                 }
 
@@ -285,7 +286,7 @@ namespace TheTechIdea.Beep.Editor
                         var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
                         src.Wait();
                         srcTb = src.Result;
-                        List<object> srcList=new List<object>();
+                        List<object> srcList = new List<object>();
                         if (src.Result != null)
                         {
                             DMTypeBuilder.CreateNewObject(item.EntityName, item.EntityName, item.Fields);
@@ -307,18 +308,18 @@ namespace TheTechIdea.Beep.Editor
                             {
                                 CurrentScriptRecord += 1;
                                 // DMEEditor.ErrorObject=destds.InsertEntity(item.EntityName, r);
-                                InsertEntity(destds,item,item.EntityName,null, r,progress,token);
+                                InsertEntity(destds, item, item.EntityName, null, r, progress, token);
                                 token.ThrowIfCancellationRequested();
                                 if (progress != null)
                                 {
-                                    PassedArgs ps = new PassedArgs {   ParameterInt1= CurrentScriptRecord, ParameterInt2 = ScriptCount, Messege = DMEEditor.ErrorObject.Message };
+                                    PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, Messege = DMEEditor.ErrorObject.Message };
                                     progress.Report(ps);
 
                                 }
-                               
+
                             }
                         }
-                       if (progress != null)
+                        if (progress != null)
                         {
                             PassedArgs ps = new PassedArgs { ParameterString1 = $"Ended Copying Data from {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount };
                             progress.Report(ps);
@@ -361,7 +362,7 @@ namespace TheTechIdea.Beep.Editor
                     }
                     else
                         srcentityname = s.sourceentityname;
-                    CopyEntityData(sourceds, destds, srcentityname, s.sourceentityname,progress, token,CreateMissingEntity);
+                    CopyEntityData(sourceds, destds, srcentityname, s.sourceentityname, progress, token, CreateMissingEntity);
                 }
 
             }
@@ -371,9 +372,7 @@ namespace TheTechIdea.Beep.Editor
             }
             return DMEEditor.ErrorObject;
         }
-        //-----------------------
-
-
+        #endregion "Copy Data"
         #region "Run Scripts"
         public async Task<IErrorsInfo> RunChildScriptAsync(ETLScriptDet ParentScript, IDataSource srcds, IDataSource destds, IProgress<PassedArgs> progress, CancellationToken token)
         {
@@ -642,8 +641,6 @@ namespace TheTechIdea.Beep.Editor
             return DMEEditor.ErrorObject;
         }
         #endregion "Run Scripts"
-
-
         #region "Import Methods"
         public IErrorsInfo CreateImportScript(EntityDataMap mapping, EntityDataMap_DTL SelectedMapping)
         {

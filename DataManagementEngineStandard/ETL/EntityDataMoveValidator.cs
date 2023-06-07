@@ -195,7 +195,25 @@ namespace TheTechIdea.Beep
             }
             return retval;
         }
-        
+        public bool TrueifEntityExist(string entityname, string datasource)
+        {
+            bool retval = false;
+           
+            if (DMEEditor != null)
+            {
+                DataSource = DMEEditor.GetDataSource(datasource);
+                if (DataSource.Openconnection() == System.Data.ConnectionState.Open)
+               {
+                    Entity = DataSource.GetEntityStructure(entityname, false);
+                    if (Entity == null)
+                    {
+                        retval = true;
+                    }
+
+               }
+            }
+            return retval;
+        }
 
     }
 }

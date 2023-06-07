@@ -834,7 +834,7 @@ namespace TheTechIdea.Beep.DataBase
                 List<EntityStructure> ls = Entities.Where(d => !string.IsNullOrEmpty(d.OriginalEntityName)).ToList();
                 fnd = ls.Where(d => d.OriginalEntityName.Equals(EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             }
-          
+            
             if (fnd == null)
             {
                 refresh = true;
