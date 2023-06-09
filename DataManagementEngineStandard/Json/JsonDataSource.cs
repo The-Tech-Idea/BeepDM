@@ -35,8 +35,12 @@ namespace TheTechIdea.Beep.Json
             };
             Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName.Equals(datasourcename,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             
-           // FileName = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+            if(File.Exists(FileName))
+            {
+                LoadJsonFile();
+            }
         }
+       
         private bool IsFileRead=false;
         public event EventHandler<PassedArgs> PassEvent;
         public DataSourceType DatasourceType { get; set; }= DataSourceType.Json;
@@ -51,7 +55,6 @@ namespace TheTechIdea.Beep.Json
         public IDMEEditor DMEEditor { get; set; }
         public List<object> Records { get; set; }
         public ConnectionState ConnectionStatus { get; set; } = ConnectionState.Closed;
-      //  public DataSet ds { get; set; }=new DataSet();
         public bool HeaderExist { get; set; }
         public virtual string ColumnDelimiter { get; set; } = "''";
         public virtual string ParameterDelimiter { get; set; } = ":";
@@ -93,7 +96,10 @@ namespace TheTechIdea.Beep.Json
                 if (DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName) == null)
                 {
 
-                    Getfields();
+                    if (GetFileState() == ConnectionState.Open && !IsFileRead)
+                    {
+                        Getfields();
+                    }
                     DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
                 }
                 else
@@ -186,7 +192,7 @@ namespace TheTechIdea.Beep.Json
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                if (GetFileState() == ConnectionState.Open)
+                if (GetFileState() == ConnectionState.Open && !IsFileRead)
                 {
                     Getfields();
                 }
@@ -254,7 +260,7 @@ namespace TheTechIdea.Beep.Json
                         }
                     }
                     int idx = -1;
-                   
+                    //Records= (List<object>)DMEEditor.ConfigEditor.JsonLoader.DeserializeObject(EntityName);
                     if (Entities.Count > -1)
                     {
                         entity = Entities[0];
@@ -293,7 +299,6 @@ namespace TheTechIdea.Beep.Json
 
             return filteredRecords;
         }
-
         public bool ApplyFilterCondition(dynamic record, AppFilter filter)
         {
             var fieldValue = ((IDictionary<string, object>)record)[filter.FieldName];
@@ -323,10 +328,6 @@ namespace TheTechIdea.Beep.Json
                     throw new ArgumentException($"Invalid filter operator: {filter.Operator}");
             }
         }
-
-
-
-
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             throw new NotImplementedException();
@@ -538,49 +539,21 @@ namespace TheTechIdea.Beep.Json
         public List<EntityStructure> ParseJsonFile(string filePath)
     {
         var entityStructures = new List<EntityStructure>();
-
-        jsonData = File.ReadAllText(filePath);
-        var jsonObject = JObject.Parse(jsonData);
-
-        // Check if the JSON object contains multiple lists or a single list
-        if (jsonObject.HasValues)
-        {
-            if (jsonObject.Children().Count() == 1 && jsonObject.First is JArray jsonArray)
+            EntityStructure entityStructure=null;
+            jsonData = File.ReadAllText(filePath);
+            string filename=Path.GetFileNameWithoutExtension(filePath);
+            var token = JToken.Parse(jsonData);
+            Records = new List<object>();
+            if (token is JObject jsonObject)
             {
-                // Single list case
-                var entityStructure = new EntityStructure("Entity");
-                foreach (var jObject in jsonArray.Children<JObject>())
+                // handle JSON Object
+                if (jsonObject.HasValues)
                 {
-                    var entityField = new EntityField();
-
-                    foreach (var fieldProperty in jObject.Properties())
+                    if (jsonObject.Children().Count() == 1 && jsonObject.First is JArray jsonArray)
                     {
-                        var fieldName = fieldProperty.Name;
-                        var fieldValue = fieldProperty.Value.ToString();
-
-                        // Update the EntityField properties dynamically based on the field properties in JSON
-                        var propertyInfo = entityField.GetType().GetProperty(fieldName);
-                        if (propertyInfo != null)
-                        {
-                            propertyInfo.SetValue(entityField, Convert.ChangeType(fieldValue, propertyInfo.PropertyType));
-                        }
-                    }
-
-                    entityStructure.Fields.Add(entityField);
-                }
-
-                entityStructures.Add(entityStructure);
-            }
-            else
-            {
-                // Multiple lists case
-                foreach (var property in jsonObject.Properties())
-                {
-                    if (property.Value is JArray jsonArray2)
-                    {
-                        var entityStructure = new EntityStructure(property.Name);
-
-                        foreach (var jObject in jsonArray2.Children<JObject>())
+                        // Single list case
+                         entityStructure = new EntityStructure(filename);
+                        foreach (var jObject in jsonArray.Children<JObject>())
                         {
                             var entityField = new EntityField();
 
@@ -602,9 +575,96 @@ namespace TheTechIdea.Beep.Json
 
                         entityStructures.Add(entityStructure);
                     }
+                    else
+                    {
+                        // Multiple lists case
+                        foreach (var property in jsonObject.Properties())
+                        {
+                            if (property.Value is JArray jsonArray2)
+                            {
+                                 entityStructure = new EntityStructure(property.Name);
+
+                                foreach (var jObject in jsonArray2.Children<JObject>())
+                                {
+                                    var entityField = new EntityField();
+
+                                    foreach (var fieldProperty in jObject.Properties())
+                                    {
+                                        var fieldName = fieldProperty.Name;
+                                        var fieldValue = fieldProperty.Value.ToString();
+
+                                        // Update the EntityField properties dynamically based on the field properties in JSON
+                                        var propertyInfo = entityField.GetType().GetProperty(fieldName);
+                                        if (propertyInfo != null)
+                                        {
+                                            propertyInfo.SetValue(entityField, Convert.ChangeType(fieldValue, propertyInfo.PropertyType));
+                                        }
+                                    }
+
+                                    entityStructure.Fields.Add(entityField);
+                                }
+
+                                entityStructures.Add(entityStructure);
+                            }
+                        }
+                        Entities.Clear();
+                        Entities = entityStructures;
+                        EntitiesNames.Clear();
+                        EntitiesNames.AddRange(entityStructures.Select(p=>p.EntityName).ToList());
+
+                    }
                 }
             }
-        }
+            else if (token is JArray jArray)
+            {
+                if (jArray.Count > 0)
+                {
+                    entityStructure = new EntityStructure(DatasourceName);
+                    entityStructure.Fields = new List<EntityField>();
+
+                    // Get the first record to infer the schema.
+                    var firstRecord = jArray[0] as JObject;
+
+                    foreach (var property in firstRecord.Properties())
+                    {
+                        var entityField = new EntityField
+                        {
+                            fieldname = property.Name,
+                            Originalfieldname = property.Name,
+                            fieldtype = MapJsonTypeToDotNetType(property.Value.Type.ToString())
+                        };
+                        entityStructure.Fields.Add(entityField);
+                    }
+                    foreach (var jObject in jArray.Children<JObject>())
+                    {
+                        dynamic record = new ExpandoObject();
+                        var recordDictionary = (IDictionary<string, object>)record;
+
+                        foreach (var entityField in entityStructure.Fields)
+                        {
+                            try
+                            {
+                                 var   value = ConvertJTokenToType(jObject[entityField.fieldname], entityField.fieldtype);
+                                recordDictionary[entityField.fieldname] = value;
+                            }
+                            catch (Exception ex)
+                            {
+                                DMEEditor.AddLogMessage("Beep", $"JsonDataSource Error in Mapping Fields {entityField.fieldname} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                            }
+
+                        }
+                        
+                        Records.Add(record);
+                    }
+                }
+                Entities.Clear();
+                Entities.Add(entityStructure);
+                EntitiesNames = new List<string>();
+                EntitiesNames.Clear();
+                EntitiesNames.Add(filename);
+            }
+            // Check if the JSON object contains multiple lists or a single list
+         
 
         return entityStructures;
     }
@@ -785,7 +845,8 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Message = "";
                 if(GetFileState()  == ConnectionState.Open)
                 {
-                    InferSchemaFromRecords(FileName);
+                    ParseJsonFile(FileName);
+                    // InferSchemaFromRecords(FileName);
                     IsFileRead = true;
                 }
                
@@ -805,9 +866,9 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Ex = null;
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
                 DMEEditor.ErrorObject.Message = "";
-                string updatedJson = DMEEditor.ConfigEditor.JsonLoader.SerializeObject(Records);
+                DMEEditor.ConfigEditor.JsonLoader.Serialize(FileName,Records);
                 // Write the updated JSON array string back to the file
-                File.WriteAllText(FileName, updatedJson);
+             //   File.WriteAllText(FileName, updatedJson);
             
             }
             catch (Exception ex)
@@ -933,8 +994,16 @@ namespace TheTechIdea.Beep.Json
 
                         foreach (var entityField in entityStructure.Fields)
                         {
-                            var value = ConvertJTokenToType(jObject[entityField.fieldname], entityField.fieldtype);
-                            recordDictionary[entityField.fieldname] = value;
+                            try
+                            {
+                                var value = ConvertJTokenToType(jObject[entityField.fieldname], entityField.fieldtype);
+                                recordDictionary[entityField.fieldname] = value;
+                            }
+                            catch (Exception ex)
+                            {
+                                DMEEditor.AddLogMessage("Beep", $"JsonDataSource Error in Mapping Fields {entityField.fieldname} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                            }
+                          
                         }
 
                         Records.Add(record);
@@ -959,6 +1028,10 @@ namespace TheTechIdea.Beep.Json
         public object ConvertJTokenToType(JToken token, string type)
         {
             // Adjust this conversion according to your needs and possible types.
+            if(token == null)
+            {
+                return string.Empty;
+            }
             switch (type)
             {
                 case "System.String":
@@ -985,6 +1058,8 @@ namespace TheTechIdea.Beep.Json
                     return token.ToObject<Dictionary<string, string>>();
                 case "System.Object":
                     return token.ToObject<object>();
+                case "System.Array":
+                    return token.ToObject<List<object>>();
                 default:
                     throw new ArgumentException($"Invalid type: {type}");
             }

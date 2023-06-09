@@ -1245,6 +1245,14 @@ namespace TheTechIdea.Beep
             }
             return DME.ErrorObject;
         }
+        public List<T> GetTypedList<T>(List<object> ls)
+        {
+             
+            List<T> ret = ls
+         .OfType<T>()
+         .ToList();
+            return ret;
+        }
     }
 }
 

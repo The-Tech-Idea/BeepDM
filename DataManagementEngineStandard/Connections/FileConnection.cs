@@ -35,6 +35,10 @@ namespace TheTechIdea.Beep.FileManager
         public string ReplaceValueFromConnectionString()
         {
             string rep = "";
+            if (!string.IsNullOrEmpty(DataSourceDriver.ConnectionString) && string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString))
+            {
+                ConnectionProp.ConnectionString = DataSourceDriver.ConnectionString;
+            } 
             if (string.IsNullOrWhiteSpace(DataSourceDriver.ConnectionString) == false)
             {
 
@@ -46,24 +50,24 @@ namespace TheTechIdea.Beep.FileManager
                 rep = rep.Replace("{Port}", ConnectionProp.Port.ToString());
 
             }
-            if (string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString) == false)
-            {
-                rep = DataSourceDriver.ConnectionString.Replace("{File}", ConnectionProp.ConnectionString);
-            }
-            if (string.IsNullOrWhiteSpace(ConnectionProp.Url) == false)
-            {
-                rep = DataSourceDriver.ConnectionString.Replace("{Url}", ConnectionProp.Url);
-                // rep =ConnectionProp.Url;
-
-            }
             if (ConnectionProp.FilePath.StartsWith(".") || ConnectionProp.FilePath.Equals("/") || ConnectionProp.FilePath.Equals("\\"))
             {
-                rep = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
+                ConnectionProp.FilePath = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
             }
-            if (!string.IsNullOrEmpty(ConnectionProp.FilePath) )
+            if (!string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString))
             {
-                rep = ConnectionProp.FilePath;
+                rep = DataSourceDriver.ConnectionString.Replace("{File}", Path.Combine(ConnectionProp.FilePath,ConnectionProp.FileName));
             }
+            if (!string.IsNullOrWhiteSpace(ConnectionProp.Url))
+            {
+                rep = DataSourceDriver.ConnectionString.Replace("{Url}", ConnectionProp.Url);
+            
+            }
+            if (string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString) && !string.IsNullOrEmpty(ConnectionProp.FilePath) && !string.IsNullOrEmpty(ConnectionProp.FileName))
+            {
+
+            }
+            
             return rep;
         }
         private ConnectionState OpenConn()
@@ -71,7 +75,7 @@ namespace TheTechIdea.Beep.FileManager
             string r= ReplaceValueFromConnectionString();
             if (!string.IsNullOrEmpty(r))
             {
-                if (File.Exists(Path.Combine(r,ConnectionProp.FileName)))
+                if (File.Exists(r))
                 {
                     string str = $"Found File  ,{Path.Combine(r, ConnectionProp.FileName)}";
                    

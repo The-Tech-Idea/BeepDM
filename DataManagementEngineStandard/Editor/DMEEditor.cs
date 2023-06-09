@@ -313,9 +313,10 @@ namespace TheTechIdea.Beep
             if (ConfigEditor.DataSourcesClasses.Any(x => x.className != null && x.className.Equals(driversConfig.classHandler,StringComparison.InvariantCultureIgnoreCase)))
             {
                 string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className != null && x.className.Equals(driversConfig.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
-                if (packagename != null)
+                AssemblyClassDefinition ase= ConfigEditor.DataSourcesClasses.Where(x => x.className != null && x.className.Equals(driversConfig.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                if (ase != null)
                 {
-                   Type adc = assemblyHandler.GetType(packagename);
+                   Type adc = assemblyHandler.GetType(ase.type.AssemblyQualifiedName);
                    if (adc != null)
                    {
                         ConstructorInfo ctor = adc.GetConstructors().Where(o => o.GetParameters().Count() == 5).FirstOrDefault();
@@ -366,10 +367,10 @@ namespace TheTechIdea.Beep
             {
                 package = ConfigEditor.DataDriversClasses.Where(x => x.classHandler != null &&  x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className!=null &&  x.className.Equals(package.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
-
-                if (packagename != null)
+                AssemblyClassDefinition ase = ConfigEditor.DataSourcesClasses.Where(x => x.className != null && x.className.Equals(package.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                if (ase != null)
                 {
-                    Type adc = assemblyHandler.GetType(packagename);
+                    Type adc = assemblyHandler.GetType(ase.type.AssemblyQualifiedName);
                     ConstructorInfo ctor = adc.GetConstructors().Where(o => o.GetParameters().Count() == 5).FirstOrDefault();
                     if (ctor == null)
                     {
