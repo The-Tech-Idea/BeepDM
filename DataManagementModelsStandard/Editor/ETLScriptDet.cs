@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Util;
 
@@ -20,7 +21,7 @@ namespace TheTechIdea.Beep.Editor
         public string sourcedatasourcename { get; set; }
         public string sourceentityname { get ; set ; }
         public string sourceDatasourceEntityName { get; set; }
-
+        public EntityStructure SourceEntity { get; set; }
         public string destinationentityname { get; set; }
         public string destinationDatasourceEntityName { get; set; }
         public string destinationdatasourcename { get ; set ; }

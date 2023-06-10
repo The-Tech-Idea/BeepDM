@@ -230,7 +230,7 @@ namespace TheTechIdea.Beep
                         ds1 = CreateNewDataSourceConnection(pdatasourcename);
                         if (ds1 != null)
                         {
-                            if (ds1.Entities.Count == 0)
+                            if (ds1.Entities.Count == 0 && !ds1.Dataconnection.ConnectionProp.IsInMemory)
                             {
 
                                 if (ConfigEditor.LoadDataSourceEntitiesValues(ds1.DatasourceName) != null)
@@ -638,16 +638,17 @@ namespace TheTechIdea.Beep
             {
                 if (disposing)
                 {
+                    foreach (var item in DataSources)
+                    {
+                        item.Closeconnection();
+                        item.Dispose();
+                    }
                     // TODO: dispose managed state (managed objects)
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer
                 // TODO: set large fields to null
-                foreach (var item in DataSources)
-                {
-                    item.Closeconnection();
-                    item.Dispose();
-                }
+               
                 disposedValue = true;
             }
         }

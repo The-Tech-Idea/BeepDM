@@ -12,6 +12,7 @@ using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Util;
+using System.IO;
 
 namespace TheTechIdea.Beep.Editor
 {
@@ -71,15 +72,16 @@ namespace TheTechIdea.Beep.Editor
         public List<ETLScriptDet> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token)
         {
             List<ETLScriptDet> rt = new List<ETLScriptDet>();
-            List<EntityStructure> ls = new List<EntityStructure>();
+           
             try
-            {
-                foreach (string item in entities)
-                {
-                    EntityStructure t1 = ds.GetEntityStructure(item, true); ;// t.Result;
-                    ls.Add(t1);
-                }
-                rt.AddRange(GetCreateEntityScript(ds, ls, progress, token));
+            {  
+                //List<EntityStructure> ls = new List<EntityStructure>();
+                //foreach (string item in entities)
+                //{
+                //    EntityStructure t1 = ds.GetEntityStructure(item, true); ;// t.Result;
+                //    ls.Add(t1);
+                //}
+                rt.AddRange(GetCreateEntityScript(ds, entities, progress, token));
                 
             }
             catch (System.Exception ex)
@@ -95,10 +97,11 @@ namespace TheTechIdea.Beep.Editor
             ETLScriptDet upscript = new ETLScriptDet();
             upscript.sourcedatasourcename = item.DataSourceID;
             upscript.sourceentityname = item.EntityName;
-            upscript.sourceDatasourceEntityName = item.EntityName;
+            upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
             upscript.destinationDatasourceEntityName = item.EntityName;
             upscript.destinationentityname = item.EntityName;
             upscript.destinationdatasourcename = destSource;
+            upscript.SourceEntity = item;
             upscript.scriptType = scriptType;
             return upscript;
         }
@@ -534,7 +537,7 @@ namespace TheTechIdea.Beep.Editor
                     }
                 }
             }
-
+           // SaveETL(destds.DatasourceName);
             #endregion
             return DMEEditor.ErrorObject;
         }
@@ -637,6 +640,47 @@ namespace TheTechIdea.Beep.Editor
             catch (Exception ex)
             {
                 DMEEditor.AddLogMessage("Fail", $"Error copying Data {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+        public IErrorsInfo LoadETL(string DatasourceName)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                string dbpath = DMEEditor.ConfigEditor.ExePath + "\\Scripts\\" + DatasourceName;
+                Directory.CreateDirectory(dbpath);
+                string filepath = Path.Combine(dbpath, "createscripts.json");
+                //string InMemoryStructuresfilepath = Path.Combine(dbpath, "InMemoryStructures.json");
+            
+                if (File.Exists(filepath))
+                {
+                    Script = DMEEditor.ConfigEditor.JsonLoader.DeserializeSingleObject<ETLScriptHDR>(filepath);
+                }
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Could not Load InMemory Structure for {DatasourceName}- {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+        public IErrorsInfo SaveETL(string DatasourceName)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                string   dbpath = DMEEditor.ConfigEditor.ExePath + "\\Scripts\\" + DatasourceName;
+                  Directory.CreateDirectory(dbpath);
+                  string filepath = Path.Combine(dbpath, "createscripts.json");
+                  string InMemoryStructuresfilepath = Path.Combine(dbpath, "InMemoryStructures.json");
+                  DMEEditor.ConfigEditor.JsonLoader.Serialize(filepath, Script);
+                  //DMEEditor.ConfigEditor.JsonLoader.Serialize(InMemoryStructuresfilepath, InMemoryStructures);
+               
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Could not save InMemory Structure for {DatasourceName}- {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
             }
             return DMEEditor.ErrorObject;
         }

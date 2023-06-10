@@ -226,7 +226,7 @@ namespace TheTechIdea.Beep.Json
             try
             {
                 List<dynamic> filteredRecords = new List<dynamic>(); ;
-               
+                bool FilterExist = false;
                 string qrystr = "";
                 EntityStructure entity = GetEntityStructure(EntityName);
 
@@ -260,22 +260,23 @@ namespace TheTechIdea.Beep.Json
                         }
                     }
                     int idx = -1;
+                  
                     //Records= (List<object>)DMEEditor.ConfigEditor.JsonLoader.DeserializeObject(EntityName);
                     if (Entities.Count > -1)
                     {
-                        entity = Entities[0];
-                     
                         if (filter != null)
                         {
-                            if (filter.Where(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.Operator)).Any())
+                            if (filter.Any(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.FieldName)))
                             {
-
+                                FilterExist=true;
                                 filteredRecords = ApplyAppFilters(Records, filter);
                             }
-                           
                         }
                     }
-
+                }
+                if (!FilterExist)
+                {
+                    filteredRecords = Records;
                 }
                 return filteredRecords;
             }
@@ -1059,7 +1060,7 @@ namespace TheTechIdea.Beep.Json
                 case "System.Object":
                     return token.ToObject<object>();
                 case "System.Array":
-                    return token.ToObject<List<object>>();
+                     return token.ToString();  //token.ToObject<List<object>>();
                 default:
                     throw new ArgumentException($"Invalid type: {type}");
             }

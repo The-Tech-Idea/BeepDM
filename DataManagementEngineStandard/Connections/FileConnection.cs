@@ -39,7 +39,7 @@ namespace TheTechIdea.Beep.FileManager
             {
                 ConnectionProp.ConnectionString = DataSourceDriver.ConnectionString;
             } 
-            if (string.IsNullOrWhiteSpace(DataSourceDriver.ConnectionString) == false)
+            if (string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString) == false)
             {
 
                 rep = DataSourceDriver.ConnectionString.Replace("{Host}", ConnectionProp.Host);
@@ -65,7 +65,7 @@ namespace TheTechIdea.Beep.FileManager
             }
             if (string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString) && !string.IsNullOrEmpty(ConnectionProp.FilePath) && !string.IsNullOrEmpty(ConnectionProp.FileName))
             {
-
+                rep = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
             }
             
             return rep;

@@ -9,6 +9,7 @@ namespace DataManagementModels.DataBase
     {
        IErrorsInfo OpenDatabaseInMemory(string databasename);
        string GetConnectionString();
+        IErrorsInfo SaveStructure();
       
     }
 }

@@ -1104,8 +1104,14 @@ namespace TheTechIdea.Beep.DataBase
         {
             bool retval = false;
             GetEntitesList();
-            string entspace = Regex.Replace(EntityName, @"\s+", "_");
-            retval = EntitiesNames.ConvertAll(d => d.ToUpper()).Contains(entspace.ToUpper()) ;
+            if (EntitiesNames.Count == 0)
+            {
+                retval = false;
+            }
+            if (Entities.Count > 0) {
+                retval = Entities.Any(p=>p.EntityName == EntityName || p.OriginalEntityName==EntityName || p.DatasourceEntityName==EntityName);
+            }
+           
             return retval;
         }
         public int GetEntityIdx(string entityName)
@@ -2022,12 +2028,13 @@ namespace TheTechIdea.Beep.DataBase
         #endregion
         #region "dispose"
         private bool disposedValue;
-        protected virtual void Dispose(bool disposing)
+        protected  void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (disposing)
                 {
+                    Closeconnection();
                     // TODO: dispose managed state (managed objects)
                 }
 
@@ -2044,7 +2051,7 @@ namespace TheTechIdea.Beep.DataBase
         //     Dispose(disposing: false);
         // }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
