@@ -4,6 +4,7 @@ using TheTechIdea.Util;
 using System.Data;
 using System.Data.Common;
 using System.IO;
+using TheTechIdea.Beep.Connections;
 
 namespace TheTechIdea.Beep.DataBase
 {
@@ -44,44 +45,44 @@ namespace TheTechIdea.Beep.DataBase
         }
         public string ReplaceValueFromConnectionString()
         {
-            string rep="";
-            if (string.IsNullOrWhiteSpace(ConnString) == false )
-            {
+            //string rep="";
+            //if (string.IsNullOrWhiteSpace(ConnString) == false )
+            //{
 
-                rep = ConnString.Replace("{Host}", ConnectionProp.Host);
-                rep = rep.Replace("{UserID}", ConnectionProp.UserID);
-                rep = rep.Replace("{Password}", ConnectionProp.Password);
-                rep = rep.Replace("{Database}", ConnectionProp.Database);
-                rep = rep.Replace("{Port}", ConnectionProp.Port.ToString());
+            //    rep = ConnString.Replace("{Host}", ConnectionProp.Host);
+            //    rep = rep.Replace("{UserID}", ConnectionProp.UserID);
+            //    rep = rep.Replace("{Password}", ConnectionProp.Password);
+            //    rep = rep.Replace("{Database}", ConnectionProp.Database);
+            //    rep = rep.Replace("{Port}", ConnectionProp.Port.ToString());
               
               
-                if (rep.Contains("{Url}"))
-                {
-                    rep = rep.Replace("{Url}", ConnectionProp.Url);
-                }
-                if (!string.IsNullOrEmpty(ConnectionProp.FilePath))
-                {
-                    if (ConnectionProp.FilePath.StartsWith(".") || ConnectionProp.FilePath.Equals("./") || ConnectionProp.FilePath.Equals(".\\"))
-                    {
-                        ConnectionProp.FilePath = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
-                    }
-                }
+            //    if (rep.Contains("{Url}"))
+            //    {
+            //        rep = rep.Replace("{Url}", ConnectionProp.Url);
+            //    }
+            //    if (!string.IsNullOrEmpty(ConnectionProp.FilePath))
+            //    {
+            //        if (ConnectionProp.FilePath.StartsWith(".") || ConnectionProp.FilePath.Equals("./") || ConnectionProp.FilePath.Equals(".\\"))
+            //        {
+            //            ConnectionProp.FilePath = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
+            //        }
+            //    }
                
-                if (rep.Contains("{File}"))
-                {
-                    string file = ConnectionProp.FileName;
-                    string dirpath= ConnectionProp.FilePath;
-                    string filename = string.Empty;
-                    if(string.IsNullOrEmpty(dirpath))
-                    {
-                        filename = file;
-                    }else
-                        filename=Path.Combine(dirpath, file);
-                    rep = rep.Replace("{File}", filename);
-                }
-            }
+            //    if (rep.Contains("{File}"))
+            //    {
+            //        string file = ConnectionProp.FileName;
+            //        string dirpath= ConnectionProp.FilePath;
+            //        string filename = string.Empty;
+            //        if(string.IsNullOrEmpty(dirpath))
+            //        {
+            //            filename = file;
+            //        }else
+            //            filename=Path.Combine(dirpath, file);
+            //        rep = rep.Replace("{File}", filename);
+            //    }
+            //}
            
-             return rep;             
+             return  UtilConnections.ReplaceValueFromConnectionString(DataSourceDriver, ConnectionProp, DMEEditor);
         }
         public virtual ConnectionState OpenConnection()
         {
@@ -107,11 +108,11 @@ namespace TheTechIdea.Beep.DataBase
                     DbConn = (IDbConnection) DMEEditor.assemblyHandler.GetInstance(DataSourceDriver.DbConnectionType);
                     if (DbConn != null)
                     {
-                        if (!string.IsNullOrEmpty(ConnectionProp.ConnectionString))
-                        {
-                            ConnString = ConnectionProp.ConnectionString;
-                        }
-                        else ConnString = DataSourceDriver.ConnectionString;
+                        //if (!string.IsNullOrEmpty(ConnectionProp.ConnectionString))
+                        //{
+                        //    ConnString = ConnectionProp.ConnectionString;
+                        //}
+                        //else ConnString = DataSourceDriver.ConnectionString;
 
                         DbConn.ConnectionString = ReplaceValueFromConnectionString(); //ConnectionProp.ConnectionString;
                     }
