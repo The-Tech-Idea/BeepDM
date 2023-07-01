@@ -7,6 +7,8 @@ using System.Data;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
@@ -15,6 +17,7 @@ using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
+using static Dapper.SqlMapper;
 
 
 namespace TheTechIdea.Beep.Json
@@ -165,14 +168,16 @@ namespace TheTechIdea.Beep.Json
                             EntitiesNames.Add(entity.EntityName);
                             DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
                         }
+                        else
+                            DMEEditor.AddLogMessage("Beep", $"Could not Add Entity {entity.EntityName} is Exist already", DateTime.Now, 0, null, Errors.Failed);
                     }
                 }
 
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                DMEEditor.AddLogMessage("Beep", $"Could not Add Entity {entity.EntityName}- {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
                 return false;
             }
 
@@ -392,7 +397,26 @@ namespace TheTechIdea.Beep.Json
         }
         public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
-            throw new NotImplementedException();
+            try
+            {
+                DMEEditor.ErrorObject.Ex = null;
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
+                DMEEditor.ErrorObject.Message = "";
+                //SetObjects(EntityName);
+                //DataRow dr = (DataRow)InsertedData;
+                //DataTable dataTable = Dataset.Tables[EntityName];
+                //dataTable.Rows.Add(dr);
+                //foreach (var entity in Entities)
+                //{
+
+                //}
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error in Insert {EntityName}  - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
         }
         public object RunQuery(string qrystr)
         {
@@ -526,6 +550,24 @@ namespace TheTechIdea.Beep.Json
             }
             return DMEEditor.ErrorObject;
         }
+        #region "Insert or Update or Delete Objects"
+        EntityStructure DataStruct = null;
+        IDbCommand command = null;
+        Type enttype = null;
+        bool ObjectsCreated = false;
+        string lastentityname = null;
+        #endregion
+        private void SetObjects(string Entityname)
+        {
+            if (!ObjectsCreated || Entityname != lastentityname)
+            {
+                DataStruct = GetEntityStructure(Entityname, true);
+               // command = RDBMSConnection.DbConn.CreateCommand();
+                enttype = GetEntityType(Entityname);
+                ObjectsCreated = true;
+                lastentityname = Entityname;
+            }
+        }
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
             try
@@ -534,15 +576,22 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Ex = null;
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
                 DMEEditor.ErrorObject.Message = "";
-                
-              
+                SetObjects(EntityName);
+                DataTable dataTable = Dataset.Tables[EntityName];
+                DataRow dr = (DataRow)UploadDataRow;
+                if (dataTable != null)
+                {
+                    int idx=dataTable.Rows.IndexOf(dr);
+                    if (idx != -1)
+                    {
+                       // dataTable.Rows[idx]. = dr;
+                    }
+                }
 
             }
             catch (Exception ex)
             {
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = ex.Message;
+                DMEEditor.AddLogMessage("Beep", $"Error in Update {EntityName} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
             }
             return DMEEditor.ErrorObject;
         }
@@ -553,13 +602,17 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Ex = null;
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
                 DMEEditor.ErrorObject.Message = "";
-
+                SetObjects(EntityName);
+                DataTable dataTable = Dataset.Tables[EntityName];
+                DataRow dr = (DataRow)DeletedDataRow;
+                if (dataTable != null)
+                {
+                    dataTable.Rows.Remove(dr);
+                }
             }
             catch (Exception ex)
             {
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = ex.Message;
+                DMEEditor.AddLogMessage("Beep", $"Error in Delete {EntityName}  - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
             }
             return DMEEditor.ErrorObject;
         }
@@ -570,13 +623,15 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Ex = null;
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
                 DMEEditor.ErrorObject.Message = "";
+                SetObjects(EntityName);
+                DataRow dr = (DataRow)InsertedData;
+                DataTable dataTable = Dataset.Tables[EntityName] ;
+                dataTable.Rows.Add(dr);
                
             }
             catch (Exception ex)
             {
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = ex.Message;
+                DMEEditor.AddLogMessage("Beep", $"Error in Insert {EntityName}  - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
             }
             return DMEEditor.ErrorObject;
 

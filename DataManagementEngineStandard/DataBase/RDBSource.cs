@@ -215,9 +215,7 @@ namespace TheTechIdea.Beep.DataBase
                 }
                 //  RunCopyDataBackWorker(EntityName,  UploadData,  Mapping );
                 #region "Update Code"
-              
                 //IDbTransaction sqlTran;
-
                 DataTable tb = (DataTable)UploadData;
                 // DMEEditor.classCreator.CreateClass();
                 //List<object> f = DMEEditor.Utilfunction.GetListByDataTable(tb);
@@ -235,28 +233,22 @@ namespace TheTechIdea.Beep.DataBase
                 {
                     if (tb != null)
                     {
-
                         numberToCompute = tb.Rows.Count;
                         tb.TableName = EntityName;
                         // int i = 0;
                         string updatestring = null;
                         DataTable changes = tb;//.GetChanges();
-                      
-                       
                         for (int i = 0; i < tb.Rows.Count; i++)
                         {
                             try
                             {
                                 DataRow r = tb.Rows[i];
-
                                 CurrentRecord = i;
                                 switch (r.RowState)
                                 {
                                     case DataRowState.Unchanged:
                                     case DataRowState.Added:
                                         updatestring = GetInsertString(EntityName, DataStruct);
-
-
                                         break;
                                     case DataRowState.Deleted:
                                         updatestring = GetDeleteString(EntityName, DataStruct);
@@ -268,10 +260,8 @@ namespace TheTechIdea.Beep.DataBase
                                         updatestring = GetInsertString(EntityName, DataStruct);
                                         break;
                                 }
-
                                 command.CommandText = updatestring;
                                 command = CreateCommandParameters(command, r, DataStruct);
-
                                 errorstring = updatestring.Clone().ToString();
                                 foreach (EntityField item in DataStruct.Fields)
                                 {
@@ -292,13 +282,7 @@ namespace TheTechIdea.Beep.DataBase
                                     }
                                     catch (Exception ex1)
                                     {
-
-
                                     }
-
-
-
-
                                 }
                                 string msg = "";
                                 int rowsUpdated = command.ExecuteNonQuery();
@@ -322,8 +306,6 @@ namespace TheTechIdea.Beep.DataBase
                                     DatasourceName = DatasourceName,
                                     DataSource = this,
                                     EventType = "UpdateEntity",
-
-
                                 };
                                 if (DataStruct.PrimaryKeys != null)
                                 {
@@ -338,33 +320,27 @@ namespace TheTechIdea.Beep.DataBase
                                     if (DataStruct.PrimaryKeys.Count == 3)
                                     {
                                         args.ParameterString3 = r[DataStruct.PrimaryKeys[2].fieldname].ToString();
-
                                     }
                                 }
                                 args.ParameterInt1 = percentComplete;
-
-                       //         UpdateEvents(EntityName, msg, highestPercentageReached, CurrentRecord, numberToCompute, this);
+                                //         UpdateEvents(EntityName, msg, highestPercentageReached, CurrentRecord, numberToCompute, this);
                                 if (progress != null)
                                 {
-                                    PassedArgs ps = new PassedArgs {ParameterInt1=CurrentRecord, ParameterInt2 = DMEEditor.ETL.ScriptCount, ParameterString1 =null};
+                                    PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentRecord, ParameterInt2 = DMEEditor.ETL.ScriptCount, ParameterString1 = null };
                                     progress.Report(ps);
-
                                 }
-
-                             //   PassEvent?.Invoke(this, args);
-                             //   DMEEditor.RaiseEvent(this, args);
-                               
+                                //   PassEvent?.Invoke(this, args);
+                                //   DMEEditor.RaiseEvent(this, args);
                             }
                             catch (Exception er)
                             {
                                 string msg = $"Fail to I/U/D  Record {i} to {EntityName} : {updatestring}";
                                 if (progress != null)
                                 {
-                                    PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentRecord, ParameterInt2 = DMEEditor.ETL.ScriptCount,ParameterString1=msg };
+                                    PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentRecord, ParameterInt2 = DMEEditor.ETL.ScriptCount, ParameterString1 = msg };
                                     progress.Report(ps);
-
                                 }
-                                DMEEditor.AddLogMessage("Fail",msg, DateTime.Now,i, EntityName, Errors.Failed);
+                                DMEEditor.AddLogMessage("Fail", msg, DateTime.Now, i, EntityName, Errors.Failed);
                             }
                         }
                         DMEEditor.ETL.CurrentScriptRecord = DMEEditor.ETL.ScriptCount;

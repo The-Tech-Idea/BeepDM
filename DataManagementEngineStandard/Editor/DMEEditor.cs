@@ -108,7 +108,7 @@ namespace TheTechIdea.Beep
                 string errmsg = pLogType + "," + pLogMessage;
                 ErrorObject.Flag = pFlag;
                 ErrorObject.Message = errmsg;
-                Logger.WriteLog(errmsg);
+                Task.Run(()=> Logger.WriteLog(errmsg));
             }
         }
         /// <summary>
@@ -124,7 +124,7 @@ namespace TheTechIdea.Beep
                 string errmsg = "Beep" + "," + pLogMessage;
                 ErrorObject.Flag =  Errors.Ok;
                 ErrorObject.Message = errmsg;
-                Logger.WriteLog(errmsg);
+                Task.Run(() => Logger.WriteLog(errmsg));
             }
         }
         /// <summary>
