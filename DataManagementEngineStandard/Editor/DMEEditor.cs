@@ -510,7 +510,7 @@ namespace TheTechIdea.Beep
         /// <returns></returns>
         private async Task<dynamic> GetOutputAsync(IDataSource ds, string CurrentEntity, List<AppFilter> filter)
         {
-            return await ds.GetEntityAsync(CurrentEntity, filter).ConfigureAwait(false);
+            return await ds.GetEntityAsync(CurrentEntity, filter);
         }
         /// <summary>
         /// Get Entity Data from an Opened DataSource
@@ -666,5 +666,6 @@ namespace TheTechIdea.Beep
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+      
     }
 }

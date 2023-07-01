@@ -22,7 +22,7 @@ namespace TheTechIdea.Util
 {
     public interface IConfigEditor
     {
-        bool IsLoaded { get;  }
+        bool IsLoaded { get; }
         ConfigandSettings Config { get; set; }
         string ConfigPath { get; set; }
         IJsonLoader JsonLoader { get; set; }
@@ -40,7 +40,7 @@ namespace TheTechIdea.Util
         List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; }
         List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
         List<AssemblyClassDefinition> BranchesClasses { get; set; }
-         List<AssemblyClassDefinition> AppWritersClasses { get; set; }
+        List<AssemblyClassDefinition> AppWritersClasses { get; set; }
         List<AssemblyClassDefinition> GlobalFunctions { get; set; }
         List<AssemblyClassDefinition> AppComponents { get; set; }
         List<AssemblyClassDefinition> ReportWritersClasses { get; set; }
@@ -49,7 +49,7 @@ namespace TheTechIdea.Util
         List<AssemblyClassDefinition> WorkFlowSteps { get; set; }
         List<AssemblyClassDefinition> WorkFlowStepEditors { get; set; }
         List<AssemblyClassDefinition> FunctionExtensions { get; set; }
-        List<AssemblyClassDefinition> Addins { get; set; } 
+        List<AssemblyClassDefinition> Addins { get; set; }
         List<AssemblyClassDefinition> Rules { get; set; }
         List<AssemblyClassDefinition> PrintManagers { get; set; }
         List<CategoryFolder> CategoryFolders { get; set; }
@@ -63,7 +63,7 @@ namespace TheTechIdea.Util
         List<CompositeLayer> CompositeQueryLayers { get; set; }
         List<EntityStructure> EntityCreateObjects { get; set; }
         List<DatatypeMapping> DataTypesMap { get; set; }
-        List<ETLScriptHDR> SyncedDataSources { get; set; }
+        //     List<ETLScriptHDR> SyncedDataSources { get; set; }
         List<ProjectFolder> Projects { get; set; }
         List<DatatypeMapping> ReadDataTypeFile(string filename = "DataTypeMapping");
         void WriteDataTypeFile(string filename = "DataTypeMapping");
@@ -83,10 +83,8 @@ namespace TheTechIdea.Util
 
         bool AddDataConnection(ConnectionProperties cn);
         bool RemoveDataConnection(string pname);
-         bool RemoveConnByName(string pname);
-
-         bool RemoveConnByID(int ID);
-      
+        bool RemoveConnByName(string pname);
+        bool RemoveConnByID(int ID);
         bool UpdateDataConnection(ConnectionProperties ls, string category);
         List<ConnectionDriversConfig> LoadConnectionDriversConfigValues();
         void SaveConnectionDriversConfigValues();
@@ -96,57 +94,53 @@ namespace TheTechIdea.Util
         void SaveQueryFile();
         void SaveMappingValues(string Entityname, string datasource, EntityDataMap mapping_Rep);
         EntityDataMap LoadMappingValues(string Entityname, string datasource);
-
-        void SaveMappingSchemaValue(string schemaname,  Map_Schema mapping_Rep);
-        Map_Schema LoadMappingSchema(string schemaname );
-       // void SaveMappingSchemaValue();
-       // void LoadMappingSchema();
+        void SaveMappingSchemaValue(string schemaname, Map_Schema mapping_Rep);
+        Map_Schema LoadMappingSchema(string schemaname);
+        // void SaveMappingSchemaValue();
+        // void LoadMappingSchema();
         //void SaveMapsValues();
         // void LoadMapsValues();
-         List<ConnectionDriversConfig> LoadConnectionDriversDefinition();
-         void SaveConnectionDriversDefinitions();
+        List<ConnectionDriversConfig> LoadConnectionDriversDefinition();
+        void SaveConnectionDriversDefinitions();
         CategoryFolder AddFolderCategory(string pfoldername, string prootname, string pparentname);
         bool RemoveFolderCategory(string pfoldername, string prootname);
         void LoadCategoryFoldersValues();
-         void SaveCategoryFoldersValues();
+        void SaveCategoryFoldersValues();
         void SaveFucntion2Function();
-         void LoadFucntion2Function();
-         void SaveEvents();
-         void LoadEvents();
+        void LoadFucntion2Function();
+        void SaveEvents();
+        void LoadEvents();
         void LoadAddinTreeStructure();
         void SaveAddinTreeStructure();
         void SaveCompositeLayersValues();
         bool RemoveLayerByName(string LayerName);
         bool RemoveLayerByID(int ID);
         List<CompositeLayer> LoadCompositeLayersValues();
-      //  void SaveAppValues();
-     //   bool RemoveAppByName(string LayerName);
-      //  bool RemoveAppByID(string ID);
-     //   List<App> LoadAppValues();
+        //  void SaveAppValues();
+        //   bool RemoveAppByName(string LayerName);
+        //  bool RemoveAppByID(string ID);
+        //   List<App> LoadAppValues();
         List<EntityStructure> LoadTablesEntities();
-
         void SaveTablesEntities();
         DatasourceEntities LoadDataSourceEntitiesValues(string dsname);
         void SaveDataSourceEntitiesValues(DatasourceEntities datasourceEntities);
         bool RemoveDataSourceEntitiesValues(string dsname);
         void CreateDirConfig(string path, FolderFileTypes foldertype);
-         void ReadWork();
-      
-         void SaveWork();
-         void SaveObjectTypes();  
-         List<ObjectTypes> LoadObjectTypes();
-     //   void SaveAppFieldPropertiesValues();
-    //    DataSourceFieldProperties LoadAppFieldPropertiesValues(string dsname);
-
+        void ReadWork();
+        void SaveWork();
+        void SaveObjectTypes();
+        List<ObjectTypes> LoadObjectTypes();
+        //   void SaveAppFieldPropertiesValues();
+        //    DataSourceFieldProperties LoadAppFieldPropertiesValues(string dsname);
         string CreateFileExtensionString();
         void SaveReportDefinitionsValues();
         List<AppTemplate> LoadReportsDefinitionValues();
         void SaveAIScriptsValues();
         List<ReportsList> LoadAIScriptsValues();
-
-        void WriteSyncDataSource(string filename = "SyncDataSource");
-        List<ETLScriptHDR> ReadSyncDataSource(string filename = "SyncDataSource");
-        
+        //  void WriteSyncDataSource(string filename = "SyncDataSource");
+        // List<ETLScriptHDR> ReadSyncDataSource(string filename = "SyncDataSource");
+        List<DefaultValue> Getdefaults(IDMEEditor DMEEditor, string DatasourceName);
+        IErrorsInfo Savedefaults(IDMEEditor DMEEditor, List<DefaultValue> defaults, string DatasourceName);
 
 
     }

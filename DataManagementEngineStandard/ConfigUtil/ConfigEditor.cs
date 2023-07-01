@@ -33,18 +33,12 @@ namespace TheTechIdea.Util
 			}
 			else
 				ExePath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
-
-
-
 			if (!string.IsNullOrEmpty(containerfolder))
 			{
-				
 				ExePath = Path.Combine(ExePath, containerfolder);
-				
 			}
 			ContainerName = ExePath;
 			Init();
-
 		}
 		public bool IsLoaded => IsLocationSaved();
 		public string ContainerName { get; set; } 
@@ -85,42 +79,27 @@ namespace TheTechIdea.Util
 		public List<DatatypeMapping> DataTypesMap { get; set; } = new List<DatatypeMapping>();
 	//	public List<DataSourceFieldProperties> AppfieldProperties { get; set; } = new List<DataSourceFieldProperties>();
 		public Dictionary<string, string> Entities { get; set; } = new Dictionary<string, string>();
-		public List<ETLScriptHDR> Scripts { get; set; } = new List<ETLScriptHDR>();
-		public List<ETLScriptHDR> SyncedDataSources { get; set; } = new List<ETLScriptHDR>();
+	//	public List<ETLScriptHDR> Scripts { get; set; } = new List<ETLScriptHDR>();
+	//	public List<ETLScriptHDR> SyncedDataSources { get; set; } = new List<ETLScriptHDR>();
 		public List<ConnectionDriversConfig> DataDriversClasses { get; set; } = new List<ConnectionDriversConfig>();
         public List<ProjectFolder> Projects { get; set; } = new List<ProjectFolder>();
-
         public string ExePath { get; set; } // System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location); //System.Reflection.Assembly.GetExecutingAssembly().Location
 		public string ConfigPath { get; set; } 
-		
 		public List<Assembly> LoadedAssemblies { get; set; } = new List<Assembly>();
 		#region "Scripts and logs L/S"
-		public void SaveScriptsValues()
+		public void SaveScriptsValues(ETLScriptHDR Scripts) 
 		{
 			string path = Path.Combine(Config.ScriptsPath, "Scripts.json");
 			JsonLoader.Serialize(path, Scripts);
 
 		}
-		public List<ETLScriptHDR> LoadScriptsValues()
+		public ETLScriptHDR LoadScriptsValues()
 		{
 			string path = Path.Combine(Config.ScriptsPath, "Scripts.json");
-			Scripts = JsonLoader.DeserializeObject<ETLScriptHDR>(path);
+            ETLScriptHDR Scripts = JsonLoader.DeserializeSingleObject<ETLScriptHDR>(path);
 			return Scripts;
 		}
-		public void SaveScriptTrackingValues(SyncErrorsandTracking scriptid)
-		{
-			string dateformat = scriptid.rundate.ToString("ddmmyyyyHmmss");
-			string path = Path.Combine(Config.ScriptsLogsPath, $"{dateformat}_{scriptid.parentscriptid}.json");
-			JsonLoader.Serialize(path, Scripts);
-
-		}
-		public SyncErrorsandTracking LoadScriptTrackingValues(SyncErrorsandTracking scriptid)
-		{
-			string dateformat = scriptid.rundate.ToString("ddmmyyyyHmmss");
-			string path = Path.Combine(Config.ScriptsLogsPath, $"{dateformat}_{scriptid.parentscriptid}.json");
-			
-			return JsonLoader.DeserializeSingleObject<SyncErrorsandTracking>(path); ;
-		}
+	
 		#endregion "Reports L/S"
 		#region "Reading and writing Query files"
 		public string GetSql(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType) //string TableName,string SchemaName
@@ -973,21 +952,7 @@ namespace TheTechIdea.Util
 			return DataTypesMap;
 		}
 		#endregion
-		#region "SyncDataSource L/S"
-		public void WriteSyncDataSource(string filename = "SyncDataSource")
-		{
-			string path = Path.Combine(ConfigPath, $"{filename}.json");
-			JsonLoader.Serialize(path, SyncedDataSources);
-
-
-		}
-		public List<ETLScriptHDR> ReadSyncDataSource(string filename = "SyncDataSource")
-		{
-			string path = Path.Combine(ConfigPath, $"{filename}.json");
-			SyncedDataSources = JsonLoader.DeserializeObject<ETLScriptHDR>(path);
-			return SyncedDataSources;
-		}
-		#endregion
+		
 		#region "Init Values"
 		private IErrorsInfo InitConnectionConfigDrivers()
 		{
@@ -1382,8 +1347,56 @@ namespace TheTechIdea.Util
             }
 
         }
-      
+
         #endregion
+        #region"Defaults"
+        public List<DefaultValue> Getdefaults(IDMEEditor DMEEditor, string DatasourceName)
+        {
+            DMEEditor.ErrorObject.Message = null;
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            List<DefaultValue> defaults = null;
+            try
+            {
+                ConnectionProperties cn = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == DatasourceName)];
+                if (cn != null)
+                {
+                    defaults = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == DatasourceName)].DatasourceDefaults;
+                }
+                else DMEEditor.AddLogMessage("Beep", $"Could not Find DataSource  {DatasourceName}", DateTime.Now, 0, null, Errors.Failed);
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Could not Save DataSource Defaults Values {DatasourceName}- {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+
+            }
+            return defaults;
+
+        }
+        public  IErrorsInfo Savedefaults(IDMEEditor DMEEditor, List<DefaultValue> defaults, string DatasourceName)
+        {
+            DMEEditor.ErrorObject.Message = null;
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+
+                ConnectionProperties cn = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == DatasourceName)];
+                if (cn != null)
+                {
+                    cn.DatasourceDefaults = defaults;
+                    DMEEditor.ConfigEditor.SaveDataconnectionsValues();
+                }
+                else DMEEditor.AddLogMessage("Beep", $"Could not Find DataSource  {DatasourceName}", DateTime.Now, 0, null, Errors.Failed);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Could not Save DataSource Defaults Values {DatasourceName}- {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+
+            return DMEEditor.ErrorObject;
+        }
+        #endregion"Defaults"
+
         //----------------------------------------------------------------------------------------------
         public IErrorsInfo Init()
 		{

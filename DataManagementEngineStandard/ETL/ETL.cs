@@ -19,27 +19,26 @@ namespace TheTechIdea.Beep.Editor
 
     public class ETL : IETL
     {
-        
         public ETL(IDMEEditor _DMEEditor)
         {
-           DMEEditor= _DMEEditor;
+            DMEEditor = _DMEEditor;
             RulesEditor = new RulesEditor(DMEEditor);
         }
         public event EventHandler<PassedArgs> PassEvent;
-        private IDMEEditor _DMEEditor;
-        public IDMEEditor DMEEditor { get { return _DMEEditor; } set { _DMEEditor = value;MoveValidator = new EntityDataMoveValidator(value); } } //;RulesEditor = new RulesEditor(value);MoveValidator = new EntityDataMoveValidator(DMEEditor);
+        public IDMEEditor DMEEditor { get { return _DMEEditor; } set { _DMEEditor = value; } } //;RulesEditor = new RulesEditor(value);MoveValidator = new EntityDataMoveValidator(DMEEditor);
         public IRulesEditor RulesEditor { get; set; }
-        public EntityDataMoveValidator MoveValidator { get; set; } 
         public PassedArgs Passedargs { get; set; }
         public int ScriptCount { get; set; }
         public int CurrentScriptRecord { get; set; }
         public decimal StopErrorCount { get; set; } = 10;
         public List<LoadDataLogResult> LoadDataLogs { get; set; } = new List<LoadDataLogResult>();
         public ETLScriptHDR Script { get; set; } = new ETLScriptHDR();
-        private List<DefaultValue> CurrrentDBDefaults = new List<DefaultValue>();
+      
         #region "Local Variables"
         private bool stoprun = false;
+        private IDMEEditor _DMEEditor;
         private int errorcount = 0;
+        private List<DefaultValue> CurrrentDBDefaults = new List<DefaultValue>();
         #endregion
         #region "Create Scripts"
         public void CreateScriptHeader(IDataSource Srcds, IProgress<PassedArgs> progress, CancellationToken token)
@@ -53,7 +52,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 ls.Add(Srcds.GetEntityStructure(item, true));
             }
-            Script.ScriptDTL= DMEEditor.ETL.GetCreateEntityScript(Srcds, ls, progress, token);
+            Script.ScriptDTL = DMEEditor.ETL.GetCreateEntityScript(Srcds, ls, progress, token);
             foreach (var item in ls)
             {
 
@@ -72,9 +71,9 @@ namespace TheTechIdea.Beep.Editor
         public List<ETLScriptDet> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token)
         {
             List<ETLScriptDet> rt = new List<ETLScriptDet>();
-           
+
             try
-            {  
+            {
                 //List<EntityStructure> ls = new List<EntityStructure>();
                 //foreach (string item in entities)
                 //{
@@ -82,17 +81,17 @@ namespace TheTechIdea.Beep.Editor
                 //    ls.Add(t1);
                 //}
                 rt.AddRange(GetCreateEntityScript(ds, entities, progress, token));
-                
+
             }
             catch (System.Exception ex)
             {
                 DMEEditor.AddLogMessage("Fail", $"Error in getting entities from Database ({ex.Message})", DateTime.Now, -1, "CopyDatabase", Errors.Failed);
 
             }
-           // Script.ScriptDTL.AddRange(rt);
+            // Script.ScriptDTL.AddRange(rt);
             return rt;
         }
-        private ETLScriptDet GenerateScript( EntityStructure item, string destSource, DDLScriptType scriptType)
+        private ETLScriptDet GenerateScript(EntityStructure item, string destSource, DDLScriptType scriptType)
         {
             ETLScriptDet upscript = new ETLScriptDet();
             upscript.sourcedatasourcename = item.DataSourceID;
@@ -110,7 +109,7 @@ namespace TheTechIdea.Beep.Editor
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             int i = 0;
             List<ETLScriptDet> retval = new List<ETLScriptDet>();
-          
+
             try
             {
                 //rt = Dest.GetCreateEntityScript(entities);
@@ -119,9 +118,9 @@ namespace TheTechIdea.Beep.Editor
                     ETLScriptDet copyscript = GenerateScript(item, Dest.DatasourceName, DDLScriptType.CreateEntity);
                     copyscript.ID = i;
                     retval.Add(copyscript);
-                     i++;
+                    i++;
                 }
-                
+
                 DMEEditor.AddLogMessage("Success", $"Generated Script", DateTime.Now, 0, null, Errors.Ok);
 
             }
@@ -141,20 +140,20 @@ namespace TheTechIdea.Beep.Editor
             int i = 0;
 
             List<ETLScriptDet> retval = new List<ETLScriptDet>();
-          
+
             try
             {
                 // Generate Create Table First
-                    foreach (EntityStructure sc in entities)
-                        {
-                            ETLScriptDet copyscript = GenerateScript( sc, Dest.DatasourceName,  DDLScriptType.CopyData);
-                            copyscript.ID = i;
-                            i++;
-                            //Script.ScriptDTL.Add(copyscript);
-                            retval.Add(copyscript);
-                        }
-                   i += 1;
-                  DMEEditor.AddLogMessage("Success", $"Generated Script", DateTime.Now, 0, null, Errors.Ok);
+                foreach (EntityStructure sc in entities)
+                {
+                    ETLScriptDet copyscript = GenerateScript(sc, Dest.DatasourceName, DDLScriptType.CopyData);
+                    copyscript.ID = i;
+                    i++;
+                    //Script.ScriptDTL.Add(copyscript);
+                    retval.Add(copyscript);
+                }
+                i += 1;
+                DMEEditor.AddLogMessage("Success", $"Generated Script", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
@@ -440,7 +439,7 @@ namespace TheTechIdea.Beep.Editor
             CurrentScriptRecord = 0;
             errorcount = 0;
             stoprun = false;
-            foreach (ETLScriptDet sc in DMEEditor.ETL.Script.ScriptDTL.OrderBy(p=>p.ID))
+            foreach (ETLScriptDet sc in DMEEditor.ETL.Script.ScriptDTL.OrderBy(p => p.ID))
             {
                 destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
                 srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
@@ -537,7 +536,7 @@ namespace TheTechIdea.Beep.Editor
                     }
                 }
             }
-           // SaveETL(destds.DatasourceName);
+            // SaveETL(destds.DatasourceName);
             #endregion
             return DMEEditor.ErrorObject;
         }
@@ -652,7 +651,7 @@ namespace TheTechIdea.Beep.Editor
                 Directory.CreateDirectory(dbpath);
                 string filepath = Path.Combine(dbpath, "createscripts.json");
                 //string InMemoryStructuresfilepath = Path.Combine(dbpath, "InMemoryStructures.json");
-            
+
                 if (File.Exists(filepath))
                 {
                     Script = DMEEditor.ConfigEditor.JsonLoader.DeserializeSingleObject<ETLScriptHDR>(filepath);
@@ -669,13 +668,13 @@ namespace TheTechIdea.Beep.Editor
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
             {
-                string   dbpath = DMEEditor.ConfigEditor.ExePath + "\\Scripts\\" + DatasourceName;
-                  Directory.CreateDirectory(dbpath);
-                  string filepath = Path.Combine(dbpath, "createscripts.json");
-                  string InMemoryStructuresfilepath = Path.Combine(dbpath, "InMemoryStructures.json");
-                  DMEEditor.ConfigEditor.JsonLoader.Serialize(filepath, Script);
-                  //DMEEditor.ConfigEditor.JsonLoader.Serialize(InMemoryStructuresfilepath, InMemoryStructures);
-               
+                string dbpath = DMEEditor.ConfigEditor.ExePath + "\\Scripts\\" + DatasourceName;
+                Directory.CreateDirectory(dbpath);
+                string filepath = Path.Combine(dbpath, "createscripts.json");
+                string InMemoryStructuresfilepath = Path.Combine(dbpath, "InMemoryStructures.json");
+                DMEEditor.ConfigEditor.JsonLoader.Serialize(filepath, Script);
+                //DMEEditor.ConfigEditor.JsonLoader.Serialize(InMemoryStructuresfilepath, InMemoryStructures);
+
 
             }
             catch (Exception ex)
@@ -695,7 +694,7 @@ namespace TheTechIdea.Beep.Editor
                 errorcount = 0;
                 ScriptCount = 0;
                 LoadDataLogs.Clear();
-                Script.ScriptDTL.Add(new ETLScriptDet() { Active = true, destinationdatasourcename = mapping.EntityDataSource, destinationDatasourceEntityName = mapping.EntityName, destinationentityname = mapping.EntityName, scriptType = DDLScriptType.CopyData, Mapping = SelectedMapping, sourcedatasourcename = SelectedMapping.EntityDataSource,sourceDatasourceEntityName= SelectedMapping.EntityName, sourceentityname = SelectedMapping.EntityName });
+                Script.ScriptDTL.Add(new ETLScriptDet() { Active = true, destinationdatasourcename = mapping.EntityDataSource, destinationDatasourceEntityName = mapping.EntityName, destinationentityname = mapping.EntityName, scriptType = DDLScriptType.CopyData, Mapping = SelectedMapping, sourcedatasourcename = SelectedMapping.EntityDataSource, sourceDatasourceEntityName = SelectedMapping.EntityName, sourceentityname = SelectedMapping.EntityName });
                 DMEEditor.AddLogMessage("OK", $"Generated Copy Data script", DateTime.Now, -1, "CopyDatabase", Errors.Ok);
             }
             catch (Exception ex)
@@ -740,13 +739,13 @@ namespace TheTechIdea.Beep.Editor
                                 sc.errormessage = DMEEditor.ErrorObject.Message;
                                 sc.errorsInfo = DMEEditor.ErrorObject;
                                 sc.Active = false;
-                                SendMessege(progress, token,null,sc,"Starting Import Entities Script");
-                                
+                                SendMessege(progress, token, null, sc, "Starting Import Entities Script");
+
                                 if (errorcount == StopErrorCount)
                                 {
                                     return DMEEditor.ErrorObject;
                                 }
-                                var src = await Task.Run(() => { return RunCopyEntityScript( sc, srcds, destds, sc.sourceentityname, sc.destinationentityname, progress, token, false, sc.Mapping); });
+                                var src = await Task.Run(() => { return RunCopyEntityScript(sc, srcds, destds, sc.sourceentityname, sc.destinationentityname, progress, token, false, sc.Mapping); });
                             }
                         }
                         else
@@ -763,7 +762,7 @@ namespace TheTechIdea.Beep.Editor
 
         }
         #endregion
-        public IErrorsInfo InsertEntity(IDataSource destds,  EntityStructure destEntitystructure,string destentity,EntityDataMap_DTL map_DTL,object r, IProgress<PassedArgs> progress, CancellationToken token)
+        public IErrorsInfo InsertEntity(IDataSource destds, EntityStructure destEntitystructure, string destentity, EntityDataMap_DTL map_DTL, object r, IProgress<PassedArgs> progress, CancellationToken token)
         {
             object retval = r;
             try
@@ -807,7 +806,7 @@ namespace TheTechIdea.Beep.Editor
                             EntityStructure refentity = (EntityStructure)destds.GetEntityStructure(item.RelatedEntityID, true).Clone();
                             if (DMEEditor.Utilfunction.GetFieldValueFromObject(item.EntityColumnID, retval) != null)
                             {
-                                if (MoveValidator.TrueifParentExist(destEntitystructure.EntityName, destEntitystructure.DataSourceID, retval, item.EntityColumnID, DMEEditor.Utilfunction.GetFieldValueFromObject(item.EntityColumnID, retval)) == EntityValidatorMesseges.MissingRefernceValue)
+                                if (EntityDataMoveValidator.TrueifParentExist(DMEEditor, destds, destEntitystructure, retval, item.EntityColumnID, DMEEditor.Utilfunction.GetFieldValueFromObject(item.EntityColumnID, retval)) == EntityValidatorMesseges.MissingRefernceValue)
                                 {
                                     LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Inserting Parent for  Record {CurrentScriptRecord}  in {item.RelatedEntityID}" });
                                     //---- insert Parent Key ----
@@ -832,18 +831,18 @@ namespace TheTechIdea.Beep.Editor
                 SendMessege(progress, token, destEntitystructure, null, $"Inserting Record {CurrentScriptRecord} ");
                 DMEEditor.ErrorObject = destds.InsertEntity(destEntitystructure.EntityName, retval);
                 token.ThrowIfCancellationRequested();
-                
+
             }
-            catch (Exception ex )
+            catch (Exception ex)
             {
                 DMEEditor.AddLogMessage("ETL", $"Failed to Insert Entity {destEntitystructure.EntityName} :{ex.Message}", DateTime.Now, CurrentScriptRecord, ex.Message, Errors.Failed);
-                
+
             }
 
 
             return DMEEditor.ErrorObject;
         }
-        private void SendMessege(IProgress<PassedArgs> progress, CancellationToken token, EntityStructure refentity = null, ETLScriptDet sc=null,string messege=null)
+        private void SendMessege(IProgress<PassedArgs> progress, CancellationToken token, EntityStructure refentity = null, ETLScriptDet sc = null, string messege = null)
         {
             if (DMEEditor.ErrorObject.Flag == Errors.Failed)
             {
@@ -853,12 +852,12 @@ namespace TheTechIdea.Beep.Editor
                 tr.errormessage = DMEEditor.ErrorObject.Message;
                 tr.errorsInfo = DMEEditor.ErrorObject;
                 tr.rundate = DateTime.Now;
-                tr.sourceEntityName = refentity == null ? null : refentity.EntityName; 
+                tr.sourceEntityName = refentity == null ? null : refentity.EntityName;
                 tr.currenrecordindex = CurrentScriptRecord;
                 tr.sourceDataSourceName = refentity == null ? null : refentity.DataSourceID;
                 if (sc != null)
                 {
-                    tr.parentscriptid =  sc.ID;
+                    tr.parentscriptid = sc.ID;
                     sc.Tracking.Add(tr);
                 }
 
@@ -874,12 +873,12 @@ namespace TheTechIdea.Beep.Editor
                     stoprun = true;
                     PassedArgs ps = new PassedArgs { EventType = "Stop", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, Messege = DMEEditor.ErrorObject.Message };
                     progress.Report(ps);
-                   
+
                 }
             }
             else
             {
-                 LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"{messege} " });
+                LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"{messege} " });
                 if (progress != null)
                 {
                     PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, Messege = DMEEditor.ErrorObject.Message };
@@ -888,5 +887,5 @@ namespace TheTechIdea.Beep.Editor
             }
         }
     }
-    
+
 }
