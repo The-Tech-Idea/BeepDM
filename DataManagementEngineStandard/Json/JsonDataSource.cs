@@ -641,7 +641,7 @@ namespace TheTechIdea.Beep.Json
                 }
                 Entities.Add(entityStructure);
             }
-
+            EntitiesNames = new List<string>();
             EntitiesNames.Clear();
             EntitiesNames.AddRange(Entities.Select(p => p.EntityName).ToList());
             return Dataset;
