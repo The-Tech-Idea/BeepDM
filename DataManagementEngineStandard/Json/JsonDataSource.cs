@@ -402,14 +402,33 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Ex = null;
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
                 DMEEditor.ErrorObject.Message = "";
-                //SetObjects(EntityName);
-                //DataRow dr = (DataRow)InsertedData;
-                //DataTable dataTable = Dataset.Tables[EntityName];
-                //dataTable.Rows.Add(dr);
-                //foreach (var entity in Entities)
-                //{
-
-                //}
+                SetObjects(EntityName);
+               
+                DataTable dataTable = Dataset.Tables[EntityName];
+                DataTable updatedTable = (DataTable)UploadData;
+                // Check changes
+                DataTable changesTable = updatedTable.GetChanges();
+                if (changesTable != null)
+                {
+                    foreach (DataRow dr in changesTable.Rows)
+                    {
+                        // Insert new rows
+                        if (dr.RowState == DataRowState.Added)
+                        {
+                            InsertEntity(EntityName, dr);
+                        }
+                        // Update modified rows
+                        else if (dr.RowState == DataRowState.Modified)
+                        {
+                            UpdateEntity(EntityName, dr);
+                        }
+                        // Delete removed rows
+                        else if (dr.RowState == DataRowState.Deleted)
+                        {
+                            DeleteEntity(EntityName, dr);
+                        }
+                    }
+                }
 
             }
             catch (Exception ex)
@@ -577,16 +596,31 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
                 DMEEditor.ErrorObject.Message = "";
                 SetObjects(EntityName);
-                DataTable dataTable = Dataset.Tables[EntityName];
-                DataRow dr = (DataRow)UploadDataRow;
-                if (dataTable != null)
+                if (DataStruct.PrimaryKeys.Count > 0)
                 {
-                    int idx=dataTable.Rows.IndexOf(dr);
-                    if (idx != -1)
+                    DataTable dataTable = Dataset.Tables[EntityName];
+                    DataRow dr =DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, UploadDataRow, DataStruct);
+                    if (dataTable != null)
                     {
-                       // dataTable.Rows[idx]. = dr;
+                        // Create an array to hold the values of the primary keys from the row to update
+                        object[] keyValues = new object[DataStruct.PrimaryKeys.Count];
+
+                        for (int i = 0; i < DataStruct.PrimaryKeys.Count; i++)
+                        {
+                            keyValues[i] = dr[DataStruct.PrimaryKeys[i].fieldname];
+                        }
+
+                        // Find the row in the DataTable with the same primary keys
+                        DataRow rowToUpdate = dataTable.Rows.Find(keyValues);
+
+                        if (rowToUpdate != null)
+                        {
+                            // Update the DataRow in the DataTable with new DataRow
+                            rowToUpdate.ItemArray = dr.ItemArray;
+                        }
                     }
                 }
+              
 
             }
             catch (Exception ex)
@@ -604,10 +638,34 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Message = "";
                 SetObjects(EntityName);
                 DataTable dataTable = Dataset.Tables[EntityName];
-                DataRow dr = (DataRow)DeletedDataRow;
+                DataRow dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, DeletedDataRow, DataStruct);
                 if (dataTable != null)
                 {
-                    dataTable.Rows.Remove(dr);
+                    if (DataStruct.PrimaryKeys.Count > 0)
+                    {
+                        
+                        if (dataTable != null)
+                        {
+                            // Create an array to hold the values of the primary keys from the row to delete
+                            object[] keyValues = new object[DataStruct.PrimaryKeys.Count];
+
+                            for (int i = 0; i < DataStruct.PrimaryKeys.Count; i++)
+                            {
+                                keyValues[i] = dr[DataStruct.PrimaryKeys[i].fieldname];
+                            }
+
+                            // Find the row in the DataTable with the same primary keys
+                            DataRow rowToDelete = dataTable.Rows.Find(keyValues);
+
+                            if (rowToDelete != null)
+                            {
+                                // Delete the DataRow from the DataTable
+                                rowToDelete.Delete();
+                                // Commit the change to the DataTable
+                                dataTable.AcceptChanges();
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -624,10 +682,33 @@ namespace TheTechIdea.Beep.Json
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
                 DMEEditor.ErrorObject.Message = "";
                 SetObjects(EntityName);
-                DataRow dr = (DataRow)InsertedData;
-                DataTable dataTable = Dataset.Tables[EntityName] ;
-                dataTable.Rows.Add(dr);
-               
+                if (DataStruct.PrimaryKeys.Count > 0)
+                {
+                    DataTable dataTable = Dataset.Tables[EntityName];
+                    DataRow dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, InsertedData, DataStruct);
+                    if (dataTable != null)
+                    {
+                        // Create an array to hold the values of the primary keys from the row to insert
+                        object[] keyValues = new object[DataStruct.PrimaryKeys.Count];
+
+                        for (int i = 0; i < DataStruct.PrimaryKeys.Count; i++)
+                        {
+                            keyValues[i] = dr[DataStruct.PrimaryKeys[i].fieldname];
+                        }
+
+                        // Find the row in the DataTable with the same primary keys
+                        DataRow existingRow = dataTable.Rows.Find(keyValues);
+
+                        if (existingRow == null)
+                        {
+                            // Insert the DataRow into the DataTable
+                            DataRow newRow = dataTable.NewRow();
+                            newRow.ItemArray = dr.ItemArray;
+                            dataTable.Rows.Add(newRow);
+                        }
+                    }
+                }
+
             }
             catch (Exception ex)
             {

@@ -14,17 +14,17 @@ namespace TheTechIdea.Beep.Editor
     {
         IDataSource DataSource { get; set; }
         string DatasourceName { get; set; }
-        Dictionary<int, double> DeletedKeys { get; set; }
+        Dictionary<int, string> DeletedKeys { get; set; }
         List<T> DeletedUnits { get; set; }
         IDMEEditor DMEEditor { get; }
         string EntityName { get; set; }
         EntityStructure EntityStructure { get; set; }
         Type EntityType { get; set; }
         string GuidKey { get; set; }
-        Dictionary<int, double> InsertedKeys { get; set; }
+        Dictionary<int, string> InsertedKeys { get; set; }
         string PrimaryKey { get; set; }
         ObservableCollection<T> Units { get; set; }
-        Dictionary<int, double> UpdatedKeys { get; set; }
+        Dictionary<int, string> UpdatedKeys { get; set; }
 
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         void Create(T entity);
@@ -33,8 +33,8 @@ namespace TheTechIdea.Beep.Editor
         int DocExistByKey(T doc);
         int FindDocIdx(T doc);
         IEnumerable<int> GetAddedEntities();
-        Task<ObservableCollection<T>> GetAllFromSource();
-        Task<ObservableCollection<T>> GetByConditionFromSource(List<AppFilter> filters);
+        Task<ObservableCollection<T>> Get();
+        Task<ObservableCollection<T>> Get(List<AppFilter> filters);
         IEnumerable<T> GetDeletedEntities();
         T GetDocFromList(KeyValuePair<int, int> key);
         object GetIDValue(T entity);

@@ -50,9 +50,9 @@ namespace TheTechIdea.Beep.Editor
         public string DatasourceName { get; set; }
         public List<T> DeletedUnits { get; set; } = new List<T>();
 
-        public Dictionary<int, double> InsertedKeys { get; set; } = new Dictionary<int, double>();
-        public Dictionary<int, double> UpdatedKeys { get; set; } = new Dictionary<int, double>();
-        public Dictionary<int, double> DeletedKeys { get; set; } = new Dictionary<int, double>();
+        public Dictionary<int, string> InsertedKeys { get; set; } = new Dictionary<int, string>();
+        public Dictionary<int, string> UpdatedKeys { get; set; } = new Dictionary<int, string>();
+        public Dictionary<int, string> DeletedKeys { get; set; } = new Dictionary<int, string>();
         public EntityStructure EntityStructure { get; set; }
         public IDMEEditor DMEEditor { get; }
         public IDataSource DataSource { get; set; }
@@ -65,23 +65,25 @@ namespace TheTechIdea.Beep.Editor
         int keysidx;
         private void init()
         {
-            Units = new ObservableCollection<T>();
-            Units.CollectionChanged -= Units_CollectionChanged;
-            Units.CollectionChanged += Units_CollectionChanged;
-            DeletedUnits = new List<T>();
-            InsertedKeys = new Dictionary<int, double>();
-            UpdatedKeys = new Dictionary<int, double>();
-            DeletedKeys = new Dictionary<int, double>();
-            _entityStates = new Dictionary<int, EntityState>();
-            _deletedentities = new Dictionary<T, EntityState>();
-            keysidx = 0;
             if (!Validateall())
             {
                 return;
             }
-
+            reset();
+        }
+        private void reset()
+        {
+            Units = new ObservableCollection<T>();
+            Units.CollectionChanged -= Units_CollectionChanged;
+            Units.CollectionChanged += Units_CollectionChanged;
+            DeletedUnits = new List<T>();
+            InsertedKeys = new Dictionary<int, string>();
+            UpdatedKeys = new Dictionary<int, string>();
+            DeletedKeys = new Dictionary<int, string>();
+            _entityStates = new Dictionary<int, EntityState>();
+            _deletedentities = new Dictionary<T, EntityState>();
+            keysidx = 0;
             EntityType = DataSource.GetEntityType(EntityName);
-
         }
         public object GetIDValue(T entity)
         {
@@ -204,7 +206,7 @@ namespace TheTechIdea.Beep.Editor
                     foreach (T item in e.NewItems)
                     {
                         keysidx++;
-                        InsertedKeys.Add(keysidx, (int)PKProperty.GetValue(item, null));
+                        InsertedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
                         item.PropertyChanged += ItemPropertyChangedHandler;
                     }
                     break;
@@ -212,20 +214,20 @@ namespace TheTechIdea.Beep.Editor
                     foreach (T item in e.OldItems)
                     {
                         keysidx++;
-                        DeletedKeys.Add(keysidx, (int)PKProperty.GetValue(item, null));
+                        DeletedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
                     foreach (T item in e.OldItems)
                     {
                         keysidx++;
-                        DeletedKeys.Add(keysidx, (int)PKProperty.GetValue(item, null));
+                        DeletedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
 
                     }
                     foreach (T item in e.NewItems)
                     {
                         keysidx++;
-                        InsertedKeys.Add(keysidx, (int)PKProperty.GetValue(item, null));
+                        InsertedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
@@ -249,27 +251,56 @@ namespace TheTechIdea.Beep.Editor
             if (!UpdatedKeys.Any(p => p.Value.Equals((int)PKProperty.GetValue(item, null))))
             {
                 keysidx++;
-                UpdatedKeys.Add(keysidx, (double)PKProperty.GetValue(item, null));
+                UpdatedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
             }
         }
-        public virtual async Task<ObservableCollection<T>> GetAllFromSource()
+        public virtual async Task<ObservableCollection<T>> Get(List<AppFilter> filters)
+        {
+            var retval = DataSource.GetEntityAsync(EntityName, filters).Result;
+            GetDataInUnits(retval);
+            return await Task.FromResult(Units);
+        }
+        public virtual async Task<ObservableCollection<T>> Get()
         {
             clearunits();
             var retval = DataSource.GetEntityAsync(EntityName, null).Result;
-            if (retval != null)
+            GetDataInUnits(retval);
+            return await Task.FromResult(Units);
+        }
+        private bool GetDataInUnits(object retval)
+        {
+            reset();
+            if (retval == null)
             {
+                DMEEditor.AddLogMessage("Beep", $"No Data Found", DateTime.Now, 0, null, Errors.Failed);
+                return false;
+            }
+            try
+            {
+               
+                List<T> list = new List<T>();
                 if (retval is DataTable)
                 {
-                  //  DataTable dataTable = (DataTable)retval;
-                 //   Units = ConvertDataTableToObservable<T>(dataTable);
+                    DataTable dataTable = (DataTable)retval;
+                    //Units
+                    list = DMEEditor.Utilfunction.ConvertDataTable<T>(dataTable);
                 }
                 if (retval is IList)
                 {
-                  //  List<T> list = (List<T>)retval;
-                   // Units = ConvertList2Observable<T>(list);
+                    list = (List<T>)retval;
+
                 }
+                foreach (var item in list)
+                {
+                    Units.Add(item);
+                }
+                return true;
             }
-            return await Task.FromResult(Units);
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error Converting Data to Units {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return false;
+            }
         }
         private void clearunits()
         {
@@ -350,31 +381,6 @@ namespace TheTechIdea.Beep.Editor
             }
 
             return await Task.FromResult<IErrorsInfo>(errorsInfo);
-        }
-        public virtual async Task<ObservableCollection<T>> GetByConditionFromSource(List<AppFilter> filters)
-        {
-            var retval = DataSource.GetEntityAsync(EntityName, filters).Result;
-            if (retval != null)
-            {
-                Units = new ObservableCollection<T>();
-                List<T> list = new List<T>();
-                if (retval is DataTable)
-                {
-                    DataTable dataTable = (DataTable)retval;
-                    //Units
-                    list=DMEEditor.Utilfunction.ConvertDataTable<T>(dataTable);
-                }
-                if (retval is IList)
-                {
-                    list = (List<T>)retval;
-                   
-                }
-                foreach (var item in list)
-                {
-                    Units.Add(item);
-                }
-            }
-            return await Task.FromResult(Units);
         }
         private async Task<IErrorsInfo> UpdateAsync(T doc)
         {
@@ -522,7 +528,7 @@ namespace TheTechIdea.Beep.Editor
         public virtual int GetPrimaryKey(T doc)
         {
             int retval = -1;
-            if (DataSource.Category == DatasourceCategory.RDBMS && DataSource.DatasourceType == DataSourceType.Oracle)
+            if (DataSource.Category == DatasourceCategory.RDBMS)
             {
                 retval = GetSeq(PrimaryKey);
             }
