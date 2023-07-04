@@ -128,7 +128,6 @@ namespace TheTechIdea.Beep.Tools
             }
 
         }
-
         public string CreateDLLFromFilesPath(string dllname, string filepath, string outputpath, IProgress<PassedArgs> progress, CancellationToken token, string NameSpacestring = "TheTechIdea.ProjectClasses")
         {
 
@@ -254,6 +253,17 @@ namespace TheTechIdea.Beep.Tools
             string template2 = Environment.NewLine + " private :FIELDTYPE :FIELDNAMEValue ;";
             template2 += Environment.NewLine + " public :FIELDTYPE :FIELDNAME\r\n    {\r\n        get\r\n        {\r\n            return this.:FIELDNAMEValue;\r\n        }\r\n\r\n        set\r\n        {\r\n            if (value != this.:FIELDNAMEValue)\r\n            {\r\n                this.:FIELDNAMEValue = value;\r\n                NotifyPropertyChanged();\r\n            }\r\n        }\r\n    }";
             return CreateClassFromTemplate(entity.EntityName,entity, template2, usingheader, implementations2, extracode2, outputpath, nameSpacestring, GenerateCSharpCodeFiles);
+        }
+        public string CreatEntityClass(EntityStructure entity, string usingheader, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true)
+        {
+            string implementations2 = " Entity ";
+
+
+            string extracode2 = null;//Environment.NewLine + " public event PropertyChangedEventHandler PropertyChanged;\r\n\r\n    // This method is called by the Set accessor of each property.\r\n    // The CallerMemberName attribute that is applied to the optional propertyName\r\n    // parameter causes the property name of the caller to be substituted as an argument.\r\n    private void NotifyPropertyChanged([CallerMemberName] string propertyName = \"\")\r\n    {\r\n        if (PropertyChanged != null)\r\n        {\r\n            PropertyChanged(this, new PropertyChangedEventArgs(propertyName));\r\n        }\r\n    }";
+            //string template2 = null;//Environment.NewLine + " private :FIELDTYPE :FIELDNAMEValue ;";
+            string template2 = Environment.NewLine + $" private :FIELDTYPE _:FIELDNAME. ;";
+            template2 = Environment.NewLine + " public :FIELDTYPE :FIELDNAME\r\n    {\r\n        get\r\n        {\r\n            return this._:FIELDNAMEValue;\r\n        }\r\n\r\n        set\r\n        {\r\n            if (value != this._:FIELDNAMEValue)\r\n            {\r\n                this._:FIELDNAMEValue = value;\r\n                SetProperty(ref _:FIELDNAMEValue, value);;\r\n            }\r\n        }\r\n    }";
+            return CreateClassFromTemplate(entity.EntityName, entity, template2, usingheader, implementations2, extracode2, outputpath, nameSpacestring, GenerateCSharpCodeFiles);
         }
         public string CreateClassFromTemplate(string classname,EntityStructure entity, string template, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true)
         {

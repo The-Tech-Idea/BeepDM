@@ -17,15 +17,14 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class UnitofWork<T> : IUnitofWork<T> where T : Entity, INotifyPropertyChanged
+    public class GenericUnitofWork<T> : IGenericUnitofWork<T> where T : class
     {
         CancellationTokenSource tokenSource;
         CancellationToken token;
         private Dictionary<int, EntityState> _entityStates;
         private Dictionary<T, EntityState> _deletedentities;
         protected virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-
-        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName)
+        public GenericUnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName)
         {
             DMEEditor = dMEEditor;
             DatasourceName = datasourceName;
@@ -35,7 +34,7 @@ namespace TheTechIdea.Beep.Editor
                 init();
             }
         }
-        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure)
+        public GenericUnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure)
         {
             DMEEditor = dMEEditor;
             DatasourceName = datasourceName;
@@ -46,10 +45,11 @@ namespace TheTechIdea.Beep.Editor
                 init();
             }
         }
+      
         public ObservableCollection<T> Units { get; set; }
+        public string Sequencer { get; set; }
         public string DatasourceName { get; set; }
         public List<T> DeletedUnits { get; set; } = new List<T>();
-
         public Dictionary<int, string> InsertedKeys { get; set; } = new Dictionary<int, string>();
         public Dictionary<int, string> UpdatedKeys { get; set; } = new Dictionary<int, string>();
         public Dictionary<int, string> DeletedKeys { get; set; } = new Dictionary<int, string>();
@@ -132,7 +132,7 @@ namespace TheTechIdea.Beep.Editor
             Units.Add(entity);
             _entityStates[Getindex(entity)] = EntityState.Added;
             // Subscribe to PropertyChanged event
-            entity.PropertyChanged += ItemPropertyChangedHandler;
+            //entity.PropertyChanged += ItemPropertyChangedHandler;
         }
         public T Read(string id)
         {
@@ -207,7 +207,7 @@ namespace TheTechIdea.Beep.Editor
                     {
                         keysidx++;
                         InsertedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
-                        item.PropertyChanged += ItemPropertyChangedHandler;
+                       // item.PropertyChanged += ItemPropertyChangedHandler;
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
@@ -669,10 +669,5 @@ namespace TheTechIdea.Beep.Editor
         //}
     }
 
-    public enum EntityState
-    {
-        Added,
-        Modified,
-        Deleted
-    }
+
 }
