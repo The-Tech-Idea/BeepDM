@@ -45,8 +45,8 @@ namespace TheTechIdea.Beep.Editor
                 init();
             }
         }
-      
-        public ObservableCollection<T> Units { get; set; }
+
+        public ObservableCollection<T> Units { get; set; } = new ObservableCollection<T>();
         public string Sequencer { get; set; }
         public string DatasourceName { get; set; }
         public List<T> DeletedUnits { get; set; } = new List<T>();

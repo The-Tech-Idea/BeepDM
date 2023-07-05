@@ -8,7 +8,7 @@ using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Util
 {
-    public class ConnectionProperties : Entity
+    public class ConnectionProperties : Entity,IConnectionProperties
     {
 
         private int _id;
