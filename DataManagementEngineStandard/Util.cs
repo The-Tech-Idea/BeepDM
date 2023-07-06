@@ -1,7 +1,7 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
 using System.Dynamic;
@@ -10,10 +10,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
-using System.Text;
 using System.Xml.Serialization;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Logger;
@@ -196,12 +194,38 @@ namespace TheTechIdea.Beep
                 foreach (PropertyInfo pro in temp.GetProperties())
                 {
                     if (pro.Name == column.ColumnName)
-                        pro.SetValue(obj, dr[column.ColumnName], null);
-                    else
-                        continue;
+                    {
+                        var value = dr[column.ColumnName];
+
+                        if (value == DBNull.Value)
+                        {
+                            value = pro.PropertyType.IsValueType ? Activator.CreateInstance(pro.PropertyType) : null;
+                        }
+
+                        // If the property is of type char and the value is a string with a length of 1, convert the string to char
+                        else if (pro.PropertyType == typeof(char) && value is string str && str.Length == 1)
+                        {
+                            value = str[0];
+                        }
+
+                        // If the property is of enum type, parse the string value as an enum
+                        else if (pro.PropertyType.IsEnum && value is string enumString)
+                        {
+                            value = Enum.Parse(pro.PropertyType, enumString);
+                        }
+
+                        pro.SetValue(obj, value, null);
+                    }
                 }
             }
             return obj;
+        }
+
+
+        public ObservableCollection<T> ConvertToObservableCollection<T>(List<T> list)
+        {
+            var observableCollection = new ObservableCollection<T>(list);
+            return observableCollection;
         }
         public bool AddinInterfaceFilter(Type typeObj, Object criteriaObj)
         {

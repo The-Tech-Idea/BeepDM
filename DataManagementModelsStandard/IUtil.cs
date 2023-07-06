@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Data;
-using System.Dynamic;
-using System.Reflection;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
@@ -15,6 +12,7 @@ namespace TheTechIdea.Beep
 {
     public interface IUtil
     {
+        ObservableCollection<T> ConvertToObservableCollection<T>(List<T> list);
         List<string> Classlist { get; set; }
       //  Dictionary<Type, DbType> typeMap { get; set; }
         IErrorsInfo ErrorObject { get; set; }

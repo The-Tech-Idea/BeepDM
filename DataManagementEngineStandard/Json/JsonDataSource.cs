@@ -37,9 +37,9 @@ namespace TheTechIdea.Beep.Json
                 ErrorObject = ErrorObject,
 
             };
-            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName.Equals(datasourcename,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-            
-            if(File.Exists(FileName))
+            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName.Equals(datasourcename,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+            FileName = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+            if (File.Exists(FileName))
             {
                 LoadJsonFile();
             }
@@ -63,7 +63,7 @@ namespace TheTechIdea.Beep.Json
         public bool HeaderExist { get; set; }
         public virtual string ColumnDelimiter { get; set; } = "''";
         public virtual string ParameterDelimiter { get; set; } = ":";
-        string FileName => Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+        string FileName;
         string jsonData  ;
         JArray jArray ;
 
@@ -723,6 +723,45 @@ namespace TheTechIdea.Beep.Json
         }
         #endregion
         #region "Json Reading MEthods"
+        public DataTable GenerateDataTable(JArray jArray)
+        {
+            var dataTable = new DataTable();
+
+            if (jArray.Count > 0)
+            {
+                // Use the first object to add columns
+                JObject firstObject = (JObject)jArray[0];
+                foreach (var property in firstObject.Properties())
+                {
+                    Type columnType = property.Name.ToLower() == "id" ? typeof(int) : typeof(string);
+                    dataTable.Columns.Add(property.Name, columnType);
+                }
+
+                // Populate rows
+                foreach (JObject item in jArray)
+                {
+                    var row = dataTable.NewRow();
+
+                    foreach (var property in item.Properties())
+                    {
+                        if (property.Name.ToLower() == "id")
+                        {
+                            row[property.Name] = property.Value.ToObject<int>();
+                        }
+                        else
+                        {
+                            row[property.Name] = property.Value.ToObject<string>();
+                        }
+                    }
+
+                    dataTable.Rows.Add(row);
+                }
+            }
+
+            return dataTable;
+        }
+    
+
         public DataSet ParseJsonFile(string filePath)
         {
             string jsonData = File.ReadAllText(filePath);
@@ -737,7 +776,7 @@ namespace TheTechIdea.Beep.Json
                 {
                     if (property.Value is JArray jsonArray)
                     {
-                        var dataTable = JsonConvert.DeserializeObject<DataTable>(jsonArray.ToString());
+                        var dataTable = LoadJsonToDataTable(jsonArray);
                         dataTable.TableName = property.Name;
                         Dataset.Tables.Add(dataTable);
 
@@ -759,7 +798,7 @@ namespace TheTechIdea.Beep.Json
             }
             else if (token is JArray jArray) // Handle a single JArray
             {
-                var dataTable = JsonConvert.DeserializeObject<DataTable>(jArray.ToString());
+                var dataTable = LoadJsonToDataTable(jArray);
                 dataTable.TableName = tableName;
                 Dataset.Tables.Add(dataTable);
 
@@ -782,7 +821,13 @@ namespace TheTechIdea.Beep.Json
             EntitiesNames.AddRange(Entities.Select(p => p.EntityName).ToList());
             return Dataset;
         }
+        public List<dynamic> ParseJsonFileAsdynamic(string filePath)
+        {
+            string jsonData = File.ReadAllText(filePath);
+            var objectsList = JsonConvert.DeserializeObject<List<dynamic>>(jsonData);
 
+            return objectsList;
+        }
         public List<EntityStructure> ParseJsonFileBk(string filePath)
     {
         var entityStructures = new List<EntityStructure>();
@@ -885,7 +930,7 @@ namespace TheTechIdea.Beep.Json
                         {
                             fieldname = property.Name,
                             Originalfieldname = property.Name,
-                            fieldtype = MapJsonTypeToDotNetType(property.Value.Type.ToString())
+                            fieldtype = MapJsonTypeToDotNetType(property.Value.Type)
                         };
                         entityStructure.Fields.Add(entityField);
                     }
@@ -1275,7 +1320,7 @@ namespace TheTechIdea.Beep.Json
                         {
                             fieldname = property.Name,
                             Originalfieldname = property.Name,
-                            fieldtype = MapJsonTypeToDotNetType(property.Value.Type.ToString())
+                            fieldtype = MapJsonTypeToDotNetType(property.Value.Type)
                         };
                         entityStructure.Fields.Add(entityField);
                     }
@@ -1391,9 +1436,8 @@ namespace TheTechIdea.Beep.Json
                 case "boolean":
                     return typeof(bool).FullName;
                 case "object":
-                    return typeof(object).FullName;
                 case "array":
-                    return typeof(Array).FullName;
+                    return typeof(string).FullName;
                 case "null":
                     return typeof(void).FullName;
                 case "datetime":
@@ -1404,7 +1448,93 @@ namespace TheTechIdea.Beep.Json
                     throw new ArgumentException($"Invalid JSON type: {jsonType}");
             }
         }
+        public string MapJsonTypeToDotNetType(JTokenType tokenType)
+        {
+            switch (tokenType)
+            {
+                case JTokenType.String:
+                    return typeof(string).FullName;
+                case JTokenType.Integer:
+                    // Check if it fits into an int, otherwise use long
+                    return typeof(int).FullName;
+                case JTokenType.Float:
+                    return typeof(double).FullName;
+                case JTokenType.Boolean:
+                    return typeof(bool).FullName;
+                case JTokenType.Date:
+                    return typeof(DateTime).FullName;
+                case JTokenType.Guid:
+                    return typeof(Guid).FullName;
+                case JTokenType.Array:
+                case JTokenType.Object:
+                    // Since Array and Object types are being serialized to strings
+                    // they are mapped to string type in .NET
+                    return typeof(string).FullName;
+                case JTokenType.Null:
+                case JTokenType.Undefined:
+                    return typeof(DBNull).FullName;
+                default:
+                    throw new ArgumentException($"Invalid JSON token type: {tokenType}");
+            }
+        }
+
         #region "Data Table Methods"
+        public DataTable LoadJsonToDataTable(JArray jArray)
+        {
+            DataTable dataTable = new DataTable();
+            EntityStructure entityStructure = new EntityStructure();
+
+            if (jArray.Count > 0)
+            {
+                var firstRecord = (JObject)jArray[0];
+                var fieldNames = firstRecord.Properties().Select(p => p.Name).ToList();
+
+                // Set up the fields in the EntityStructure based on field names
+                entityStructure.Fields = fieldNames.Select(fieldName => new EntityField
+                {
+                    fieldname = fieldName,
+                    fieldtype = "System.Object" // Set the default field type as System.Object
+                }).ToList();
+
+                foreach (var property in firstRecord.Properties())
+                {
+                    var columnName = property.Name;
+                    var columnType = MapJsonTypeToDotNetType(property.Value.Type);
+                    dataTable.Columns.Add(columnName, Type.GetType(columnType));
+                }
+
+                foreach (var jObject in jArray.Children<JObject>())
+                {
+                    var dataRow = dataTable.NewRow();
+
+                    foreach (var property in jObject.Properties())
+                    {
+                        var columnName = property.Name;
+                        object columnValue;
+
+                        // If it's an array or object, convert to a JSON string
+                        if (property.Value.Type == JTokenType.Array || property.Value.Type == JTokenType.Object)
+                        {
+                            columnValue = property.Value.ToString();
+                        }
+                        else
+                        {
+                            // Otherwise, convert to the corresponding .NET type
+                            columnValue = property.Value.ToObject(dataTable.Columns[columnName].DataType);
+                        }
+
+                        // If the column value is null, use DBNull.Value. Otherwise, use the actual value.
+                        dataRow[columnName] = columnValue ?? DBNull.Value;
+                    }
+
+                    dataTable.Rows.Add(dataRow);
+                }
+            }
+
+          
+            return dataTable;
+        }
+
         public DataTable LoadJsonFileToDataTable(string jsonFilePath)
         {
              jsonData = File.ReadAllText(jsonFilePath);

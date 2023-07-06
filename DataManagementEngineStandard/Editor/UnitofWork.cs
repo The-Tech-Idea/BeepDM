@@ -19,10 +19,20 @@ namespace TheTechIdea.Beep.Editor
 {
     public class UnitofWork<T> : IUnitofWork<T> where T : Entity, INotifyPropertyChanged
     {
+        public bool IsInListMode { get; set; } = false;
+        public UnitofWork(bool isInListMode, ObservableCollection<T> ts)
+        {
+
+            IsInListMode = isInListMode;
+            init();
+            Units = ts;
+
+
+        }
         CancellationTokenSource tokenSource;
         CancellationToken token;
-        private Dictionary<int, EntityState> _entityStates;
-        private Dictionary<T, EntityState> _deletedentities;
+        private Dictionary<int, EntityState> _entityStates=new Dictionary<int, EntityState>();
+        private Dictionary<T, EntityState> _deletedentities=new Dictionary<T, EntityState>();
         protected virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
         public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName)
         {
@@ -45,7 +55,6 @@ namespace TheTechIdea.Beep.Editor
                 init();
             }
         }
-
         public ObservableCollection<T> Units { get; set; } = new ObservableCollection<T>();
         public string Sequencer { get; set; }
         public string DatasourceName { get; set; }
@@ -83,7 +92,11 @@ namespace TheTechIdea.Beep.Editor
             _entityStates = new Dictionary<int, EntityState>();
             _deletedentities = new Dictionary<T, EntityState>();
             keysidx = 0;
-            EntityType = DataSource.GetEntityType(EntityName);
+            if (!IsInListMode)
+            {
+                EntityType = DataSource.GetEntityType(EntityName);
+            }
+           
         }
         public object GetIDValue(T entity)
         {
@@ -256,15 +269,26 @@ namespace TheTechIdea.Beep.Editor
         }
         public virtual async Task<ObservableCollection<T>> Get(List<AppFilter> filters)
         {
-            var retval = DataSource.GetEntityAsync(EntityName, filters).Result;
-            GetDataInUnits(retval);
+            if (!IsInListMode)
+            {
+                clearunits();
+                var retval = DataSource.GetEntity(EntityName, filters);
+
+                GetDataInUnits(retval);
+            }
+            
             return await Task.FromResult(Units);
         }
         public virtual async Task<ObservableCollection<T>> Get()
         {
-            clearunits();
-            var retval = DataSource.GetEntityAsync(EntityName, null).Result;
-            GetDataInUnits(retval);
+           
+            if (!IsInListMode)
+            {
+                clearunits();
+                var retval = DataSource.GetEntity(EntityName, null);
+
+                GetDataInUnits(retval);
+            }
             return await Task.FromResult(Units);
         }
         private bool GetDataInUnits(object retval)
@@ -314,6 +338,10 @@ namespace TheTechIdea.Beep.Editor
         }
         public virtual async Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token)
         {
+            if(!IsInListMode)
+            {
+                return DMEEditor.ErrorObject;
+            }
             PassedArgs args = new PassedArgs();
             IErrorsInfo errorsInfo = new ErrorsInfo();
             int x = 1;
@@ -438,6 +466,7 @@ namespace TheTechIdea.Beep.Editor
         }
         private Task<IErrorsInfo> InsertDoc(T doc)
         {
+           
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
             string cname = classnames[classnames.Count() - 1];
             if (!string.IsNullOrEmpty(PrimaryKey))
@@ -562,6 +591,10 @@ namespace TheTechIdea.Beep.Editor
         private bool OpenDataSource()
         {
             bool retval = true;
+            if (IsInListMode)
+            {
+                return true;
+            }
             if (DataSource == null)
             {
                 if (!string.IsNullOrEmpty(DatasourceName))
@@ -581,6 +614,10 @@ namespace TheTechIdea.Beep.Editor
         private bool Validateall()
         {
             bool retval = true;
+            if(IsInListMode)
+            {
+                return true;
+            }
             if (!OpenDataSource())
             {
                 DMEEditor.AddLogMessage("Beep", $"Error Opening DataSource in UnitofWork {DatasourceName}", DateTime.Now, -1, DatasourceName, Errors.Failed);

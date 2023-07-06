@@ -12,6 +12,7 @@ namespace TheTechIdea.Beep.Editor
 {
     public interface IUnitofWork<T> where T : Entity
     {
+        bool IsInListMode { get; set; }
         IDataSource DataSource { get; set; }
         string DatasourceName { get; set; }
         Dictionary<int, string> DeletedKeys { get; set; }

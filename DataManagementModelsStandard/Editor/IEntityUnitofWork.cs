@@ -15,6 +15,7 @@ namespace DataManagementModels.Editor
 {
     public interface IEntityUnitofWork
     {
+        bool IsInListMode { get; set; }
         IDataSource DataSource { get; set; }
         string DatasourceName { get; set; }
         Dictionary<int, string> DeletedKeys { get; set; }
