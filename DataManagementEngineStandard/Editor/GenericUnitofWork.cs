@@ -73,6 +73,12 @@ namespace TheTechIdea.Beep.Editor
         PropertyInfo PKProperty = null;
         PropertyInfo Guidproperty = null;
         int keysidx;
+        public virtual T Get(string PrimaryKeyid)
+        {
+
+            var retval = Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(p, null).ToString() == PrimaryKeyid);
+            return retval;
+        }
         private void init()
         {
             if (!Validateall())
@@ -228,17 +234,17 @@ namespace TheTechIdea.Beep.Editor
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
-                    foreach (T item in e.OldItems)
-                    {
-                        keysidx++;
-                        DeletedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
+                    //foreach (T item in e.OldItems)
+                    //{
+                    //    keysidx++;
+                    //    DeletedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
 
-                    }
-                    foreach (T item in e.NewItems)
-                    {
-                        keysidx++;
-                        InsertedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
-                    }
+                    //}
+                    //foreach (T item in e.NewItems)
+                    //{
+                    //    keysidx++;
+                    //    InsertedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
+                    //}
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
                     foreach (T item in e.NewItems)
@@ -525,9 +531,9 @@ namespace TheTechIdea.Beep.Editor
 
             return retval;
         }
-        public virtual T GetDocFromList(KeyValuePair<int, int> key)
+        public virtual T Get( int key)
         {
-            return Units[key.Value];
+            return Units[key];
         }
         public virtual int DocExistByKey(T doc)
         {

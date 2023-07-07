@@ -2,10 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,15 +20,19 @@ namespace TheTechIdea.Beep.Editor
     public class UnitofWork<T> : IUnitofWork<T> where T : Entity, INotifyPropertyChanged
     {
         public bool IsInListMode { get; set; } = false;
-        public UnitofWork(bool isInListMode, ObservableCollection<T> ts)
+        public UnitofWork(IDMEEditor dMEEditor, bool isInListMode, ObservableCollection<T> ts,string primarykey)
         {
-
+            DMEEditor = dMEEditor;
             IsInListMode = isInListMode;
             init();
             Units = ts;
+            PrimaryKey = primarykey;
+            getPrimaryKey(ts.FirstOrDefault());
 
 
         }
+        private bool _suppressNotification = false;
+       
         CancellationTokenSource tokenSource;
         CancellationToken token;
         private Dictionary<int, EntityState> _entityStates=new Dictionary<int, EntityState>();
@@ -55,7 +59,71 @@ namespace TheTechIdea.Beep.Editor
                 init();
             }
         }
-        public ObservableCollection<T> Units { get; set; } = new ObservableCollection<T>();
+        private ObservableCollection<T> _units;
+        public ObservableCollection<T> Units
+        {
+            get { return _units; }
+            set
+            {
+                if (_units != null)
+                {
+                    _units.CollectionChanged -= Units_CollectionChanged;
+                    foreach (var item in _units)
+                    {
+                        item.PropertyChanged -= ItemPropertyChangedHandler;
+                    }
+                   
+                }
+                clearunits();
+                _units = value;
+
+                if (_units != null)
+                {
+                    
+                    _units.CollectionChanged += Units_CollectionChanged;
+                    foreach (var item in _units)
+                    {
+                        item.PropertyChanged += ItemPropertyChangedHandler;
+                    }
+                   
+                }
+            }
+        }
+        private ObservableCollection<T> _filteredunits;
+        public ObservableCollection<T> FilteredUnits
+        {
+            get { return _filteredunits; }
+            set
+            {
+                if (_filteredunits != null)
+                {
+                    _filteredunits.CollectionChanged -= Units_CollectionChanged;
+                    foreach (var item in _filteredunits)
+                    {
+                        item.PropertyChanged -= ItemPropertyChangedHandler;
+                    }
+
+                }
+                if (_filteredunits == null)
+                {
+                    _filteredunits = new ObservableCollection<T>();
+                }
+                else
+                    _filteredunits.Clear();
+                _filteredunits = value;
+
+                if (_filteredunits != null)
+                {
+
+                    _filteredunits.CollectionChanged += Units_CollectionChanged;
+                    foreach (var item in _filteredunits)
+                    {
+                        item.PropertyChanged += ItemPropertyChangedHandler;
+                    }
+
+                }
+            }
+        }
         public string Sequencer { get; set; }
         public string DatasourceName { get; set; }
         public List<T> DeletedUnits { get; set; } = new List<T>();
@@ -67,11 +135,24 @@ namespace TheTechIdea.Beep.Editor
         public IDataSource DataSource { get; set; }
         public string EntityName { get; set; }
         public Type EntityType { get; set; }
-        public string PrimaryKey { get; set; }
+        string _primarykey;
+        public string PrimaryKey { get { return _primarykey; } set { _primarykey = value; } }
         public string GuidKey { get; set; }
         PropertyInfo PKProperty = null;
         PropertyInfo Guidproperty = null;
         int keysidx;
+        private void getPrimaryKey(T doc)
+        {
+            if (!string.IsNullOrEmpty(PrimaryKey))
+            {
+                if (PKProperty == null)
+                {
+                    PKProperty = doc.GetType().GetProperty(PrimaryKey);
+                }
+               
+
+            }
+        }
         private void init()
         {
             if (!Validateall())
@@ -145,7 +226,7 @@ namespace TheTechIdea.Beep.Editor
             Units.Add(entity);
             _entityStates[Getindex(entity)] = EntityState.Added;
             // Subscribe to PropertyChanged event
-            entity.PropertyChanged += ItemPropertyChangedHandler;
+           // entity.PropertyChanged += ItemPropertyChangedHandler;
         }
         public T Read(string id)
         {
@@ -213,6 +294,10 @@ namespace TheTechIdea.Beep.Editor
         }
         private void Units_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
+            if (_suppressNotification)
+            {
+                return;
+            }
             switch (e.Action)
             {
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
@@ -220,7 +305,7 @@ namespace TheTechIdea.Beep.Editor
                     {
                         keysidx++;
                         InsertedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
-                        item.PropertyChanged += ItemPropertyChangedHandler;
+                       // item.PropertyChanged += ItemPropertyChangedHandler;
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
@@ -231,17 +316,17 @@ namespace TheTechIdea.Beep.Editor
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
-                    foreach (T item in e.OldItems)
-                    {
-                        keysidx++;
-                        DeletedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
+                    //foreach (T item in e.OldItems)
+                    //{
+                    //    keysidx++;
+                    //    DeletedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
 
-                    }
-                    foreach (T item in e.NewItems)
-                    {
-                        keysidx++;
-                        InsertedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
-                    }
+                    //}
+                    //foreach (T item in e.NewItems)
+                    //{
+                    //    keysidx++;
+                    //    InsertedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
+                    //}
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
                     foreach (T item in e.NewItems)
@@ -259,14 +344,120 @@ namespace TheTechIdea.Beep.Editor
         }
         private void ItemPropertyChangedHandler(object sender, PropertyChangedEventArgs e)
         {
-
+            if (_suppressNotification)
+            {
+                return;
+            }
             T item = (T)sender;
-            if (!UpdatedKeys.Any(p => p.Value.Equals((int)PKProperty.GetValue(item, null))))
+            if (item != null)
+            {
+                if (InsertedKeys.ContainsValue((string)PKProperty.GetValue(item, null)))
+                {
+                    return;
+                }
+            }
+            if (!UpdatedKeys.Any(p => p.Value.Equals((string)PKProperty.GetValue(item, null))))
             {
                 keysidx++;
                 UpdatedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
             }
         }
+        private ObservableCollection<T> FilterCollection<T>(ObservableCollection<T> originalCollection, List<AppFilter> filters)
+        {
+            try
+            {
+                var parameter = Expression.Parameter(typeof(T), "x");
+
+                Expression combinedExpression = null;
+                foreach (var filter in filters)
+                {
+                    var property = Expression.Property(parameter, filter.FieldName);
+                    var propertyType = property.Type;
+
+                    object convertedValue;
+                    if (propertyType.IsEnum)
+                    {
+                        convertedValue = Enum.Parse(propertyType, filter.FilterValue.ToString());
+                    }
+                    else
+                    {
+                        convertedValue = Convert.ChangeType(filter.FilterValue, propertyType);
+                    }
+
+                    var constant = Expression.Constant(convertedValue, propertyType);
+                    var equality = Expression.Equal(property, constant);
+
+                    if (combinedExpression == null)
+                    {
+                        combinedExpression = equality;
+                    }
+                    else
+                    {
+                        combinedExpression = Expression.AndAlso(combinedExpression, equality);
+                    }
+                }
+
+                if (combinedExpression == null)
+                {
+                    throw new Exception("No filters provided.");
+                }
+
+                var lambda = Expression.Lambda<Func<T, bool>>(combinedExpression, parameter);
+
+                var filteredData = new ObservableCollection<T>(
+                    originalCollection.AsQueryable().Where(lambda.Compile())
+                );
+
+                return filteredData;
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error in Filtering Data {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+        }
+
+        private ObservableCollection<T> FilterCollection<T>(ObservableCollection<T> originalCollection, string propertyName, object value)
+        {
+            try
+            {
+                var parameter = Expression.Parameter(typeof(T), "x");
+                var property = Expression.Property(parameter, propertyName);
+                var propertyType = property.Type;
+
+                object convertedValue;
+                if (propertyType.IsEnum)
+                {
+                    // Convert the string to an Enum
+                    convertedValue = Enum.Parse(propertyType, value.ToString());
+                }
+                else
+                {
+                    convertedValue = Convert.ChangeType(value, propertyType);
+                }
+                
+                var constant = Expression.Constant(convertedValue, propertyType);
+            //    DMEEditor.AddLogMessage("Beep", $"Property type: {property.Type}. Constant type: {constant.Type}", DateTime.Now, 0, null, Errors.Ok);
+                var equality = Expression.Equal(property, constant);
+                var lambda = Expression.Lambda<Func<T, bool>>(equality, parameter);
+
+                var filteredData = new ObservableCollection<T>(
+                    originalCollection.AsQueryable().Where(lambda.Compile())
+                );
+
+                return filteredData;
+            }
+            catch (Exception ex)
+            {
+                
+               DMEEditor.AddLogMessage("Beep", $"Error in Filtering Data {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+         
+        }
+
+
+
         public virtual async Task<ObservableCollection<T>> Get(List<AppFilter> filters)
         {
             if (!IsInListMode)
@@ -275,9 +466,41 @@ namespace TheTechIdea.Beep.Editor
                 var retval = DataSource.GetEntity(EntityName, filters);
 
                 GetDataInUnits(retval);
+              
             }
-            
+            else
+            {
+                if(filters!=null && Units!=null )
+                {
+                    if (Units.Count > 0)
+                    {
+                        _suppressNotification = true;
+                        foreach (var filter in filters)
+                        {
+
+                            FilteredUnits = FilterCollection<T>(Units, filters);
+                            //FilteredUnits = new ObservableCollection<T>();
+                            //if (t != null)
+                            //{
+                            //    foreach (var item in t)
+                            //    {
+                            //        FilteredUnits.Add(item);
+                            //    }
+                            //}
+                           
+                         
+                        }
+                        _suppressNotification = false;
+                        return await Task.FromResult(FilteredUnits);
+                       
+                    }
+                    
+                }
+            }
             return await Task.FromResult(Units);
+
+
+
         }
         public virtual async Task<ObservableCollection<T>> Get()
         {
@@ -328,7 +551,14 @@ namespace TheTechIdea.Beep.Editor
         }
         private void clearunits()
         {
-            Units.Clear();
+            if (Units != null)
+            {
+                Units.Clear();
+            }
+            if (FilteredUnits != null)
+            {
+                FilteredUnits.Clear();
+            }
             DeletedKeys.Clear();
             InsertedKeys.Clear();
             InsertedKeys.Clear();
@@ -469,15 +699,7 @@ namespace TheTechIdea.Beep.Editor
            
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
             string cname = classnames[classnames.Count() - 1];
-            if (!string.IsNullOrEmpty(PrimaryKey))
-            {
-                if (PKProperty == null)
-                {
-                    PKProperty = doc.GetType().GetProperty(PrimaryKey);
-                }
-                PKProperty.SetValue(GetPrimaryKey(doc), null);
-
-            }
+           
             if (!string.IsNullOrEmpty(GuidKey))
             {
                 if (Guidproperty == null)
@@ -534,9 +756,15 @@ namespace TheTechIdea.Beep.Editor
 
             return retval;
         }
-        public virtual T GetDocFromList(KeyValuePair<int, int> key)
+        public virtual T Get(int key)
         {
-            return Units[key.Value];
+            return Units[key];
+        }
+        public virtual T Get(string PrimaryKeyid)
+        {
+
+            var retval = Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(p, null).ToString() == PrimaryKeyid);
+            return retval;
         }
         public virtual int DocExistByKey(T doc)
         {
@@ -554,7 +782,7 @@ namespace TheTechIdea.Beep.Editor
 
             return retval;
         }
-        public virtual int GetPrimaryKey(T doc)
+        public virtual int GetPrimaryKeySequence(T doc)
         {
             int retval = -1;
             if (DataSource.Category == DatasourceCategory.RDBMS)

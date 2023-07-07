@@ -27,23 +27,24 @@ namespace TheTechIdea.Beep.Editor
         string PrimaryKey { get; set; }
         ObservableCollection<T> Units { get; set; }
         Dictionary<int, string> UpdatedKeys { get; set; }
-
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         void Create(T entity);
         void Delete(string id);
         int DocExist(T doc);
         int DocExistByKey(T doc);
         int FindDocIdx(T doc);
+        T Get(string PrimaryKeyid);
+       
         IEnumerable<int> GetAddedEntities();
         Task<ObservableCollection<T>> Get();
         Task<ObservableCollection<T>> Get(List<AppFilter> filters);
         IEnumerable<T> GetDeletedEntities();
-        T GetDocFromList(KeyValuePair<int, int> key);
+        T Get(int key);
         object GetIDValue(T entity);
         int Getindex(string id);
         int Getindex(T entity);
         IEnumerable<int> GetModifiedEntities();
-        int GetPrimaryKey(T doc);
+        int GetPrimaryKeySequence(T doc);
         int GetSeq(string SeqName);
         T Read(string id);
         void Update(string id, T entity);

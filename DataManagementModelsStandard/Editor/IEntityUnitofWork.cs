@@ -41,7 +41,8 @@ namespace DataManagementModels.Editor
         Task<ObservableCollection<Entity>> Get();
         Task<ObservableCollection<Entity>> Get(List<AppFilter> filters);
         IEnumerable<Entity> GetDeletedEntities();
-        Entity GetDocFromList(KeyValuePair<int, int> key);
+        Entity Get( int key);
+        Entity Get(string primarykeyid);
         object GetIDValue(Entity entity);
         int Getindex(string id);
         int Getindex(Entity entity);

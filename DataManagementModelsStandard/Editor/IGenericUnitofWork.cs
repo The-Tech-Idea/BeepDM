@@ -38,7 +38,8 @@ namespace TheTechIdea.Beep.Editor
         Task<ObservableCollection<T>> Get();
         Task<ObservableCollection<T>> Get(List<AppFilter> filters);
         IEnumerable<T> GetDeletedEntities();
-        T GetDocFromList(KeyValuePair<int, int> key);
+        T Get( int key);
+        T Get(string primarykeyid);
         object GetIDValue(T entity);
         int Getindex(string id);
         int Getindex(T entity);

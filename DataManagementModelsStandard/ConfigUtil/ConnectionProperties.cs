@@ -276,7 +276,7 @@ namespace TheTechIdea.Util
         }  
         public ConnectionProperties()
         {
-
+            GuidID = Guid.NewGuid().ToString();
         }
 
 

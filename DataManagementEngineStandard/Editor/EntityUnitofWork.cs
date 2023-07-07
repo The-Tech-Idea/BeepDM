@@ -56,8 +56,35 @@ namespace TheTechIdea.Beep.Editor
                 init();
             }
         }
-      
-        public ObservableCollection<Entity> Units { get; set; }
+
+        private ObservableCollection<Entity> _units;
+        public ObservableCollection<Entity> Units
+        {
+            get { return _units; }
+            set
+            {
+                if (_units != null)
+                {
+                    _units.CollectionChanged -= Units_CollectionChanged;
+                    foreach (var item in _units)
+                    {
+                        item.PropertyChanged -= ItemPropertyChangedHandler;
+                    }
+                }
+
+                _units = value;
+
+                if (_units != null)
+                {
+                    _units.CollectionChanged += Units_CollectionChanged;
+                    foreach (var item in _units)
+                    {
+                        item.PropertyChanged += ItemPropertyChangedHandler;
+                    }
+                }
+            }
+        }
+
         public string DatasourceName { get; set; }
         public string  Sequencer { get; set; }
         public List<Entity> DeletedUnits { get; set; } = new List<Entity>();
@@ -81,6 +108,12 @@ namespace TheTechIdea.Beep.Editor
                 return;
             }
             reset();
+        }
+        public virtual Entity Get(string PrimaryKeyid)
+        {
+
+            var retval = Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(p, null).ToString() == PrimaryKeyid);
+            return retval;
         }
         private void reset()
         {
@@ -229,17 +262,17 @@ namespace TheTechIdea.Beep.Editor
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
-                    foreach (Entity item in e.OldItems)
-                    {
-                        keysidx++;
-                        DeletedKeys.Add(keysidx, (string)item.GetType().GetProperty(PrimaryKey).GetValue(item));
-                        InsertedKeys.Remove(keysidx); // Remove old item from InsertedKeys
-                    }
-                    foreach (Entity item in e.NewItems)
-                    {
-                        keysidx++;
-                        InsertedKeys.Add(keysidx, (string)item.GetType().GetProperty(PrimaryKey).GetValue(item));
-                    }
+                    //foreach (Entity item in e.OldItems)
+                    //{
+                    //    keysidx++;
+                    //    DeletedKeys.Add(keysidx, (string)item.GetType().GetProperty(PrimaryKey).GetValue(item));
+                    //    InsertedKeys.Remove(keysidx); // Remove old item from InsertedKeys
+                    //}
+                    //foreach (Entity item in e.NewItems)
+                    //{
+                    //    keysidx++;
+                    //    InsertedKeys.Add(keysidx, (string)item.GetType().GetProperty(PrimaryKey).GetValue(item));
+                    //}
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
                     foreach (Entity item in e.NewItems)
@@ -535,9 +568,9 @@ namespace TheTechIdea.Beep.Editor
 
             return retval;
         }
-        public virtual Entity GetDocFromList(KeyValuePair<int, int> key)
+        public virtual Entity Get( int key)
         {
-            return Units[key.Value];
+            return Units[key];
         }
         public virtual int DocExistByKey(Entity doc)
         {
