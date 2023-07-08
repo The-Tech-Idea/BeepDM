@@ -8,6 +8,7 @@ using System.IO;
 using TheTechIdea.Util;
 using System.ComponentModel;
 using System.Linq;
+using DataManagementModels.DriversConfigurations;
 
 namespace TheTechIdea.Beep.Editor
 {

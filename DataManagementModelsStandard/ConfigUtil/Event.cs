@@ -1,11 +1,12 @@
 ﻿using System;
+
 using TheTechIdea.Beep.Editor;
 
-namespace TheTechIdea.Beep.Workflow
+namespace DataManagementModels.ConfigUtil
 {
-    public class ObjectTypes : Entity
+    public class Event : Entity
     {
-        public ObjectTypes()
+        public Event()
         {
             GuidID = Guid.NewGuid().ToString();
         }
@@ -24,20 +25,12 @@ namespace TheTechIdea.Beep.Workflow
             set { SetProperty(ref _guidid, value); }
         }
 
-        private string _objectname;
-        public string ObjectName
+        private string _eventname;
+        public string EventName
         {
-            get { return _objectname; }
-            set { SetProperty(ref _objectname, value); }
+            get { return _eventname; }
+            set { SetProperty(ref _eventname, value); }
         }
-
-        private string _objecttype;
-        public string ObjectType
-        {
-            get { return _objecttype; }
-            set { SetProperty(ref _objecttype, value); }
-        }
-
     }
 
 }

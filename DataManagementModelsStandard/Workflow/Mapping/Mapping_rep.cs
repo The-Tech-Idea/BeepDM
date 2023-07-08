@@ -1,26 +1,55 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Workflow
 {
-    public class Map_Schema : IMap_Schema
+    public class Map_Schema : Entity, IMap_Schema
     {
-
-        public string Id { get; set; }
-        public string SchemaName { get; set; }
-        public string Description { get; set; }
-        public List<EntityDataMap> Maps { get; set; } = new List<EntityDataMap>();
         public Map_Schema()
         {
-            Id = Guid.NewGuid().ToString();
+
+            GuidID = Guid.NewGuid().ToString();
+            Maps = new List<EntityDataMap>();
+
+        }
+
+        private string _guidid;
+        public string GuidID
+        {
+            get { return _guidid; }
+            set { SetProperty(ref _guidid, value); }
+        }
+
+        private int _id;
+        public int Id
+        {
+            get { return _id; }
+            set { SetProperty(ref _id, value); }
+        }
+
+        private string _schemaname;
+        public string SchemaName
+        {
+            get { return _schemaname; }
+            set { SetProperty(ref _schemaname, value); }
+        }
+
+        private string _description;
+        public string Description
+        {
+            get { return _description; }
+            set { SetProperty(ref _description, value); }
+        }
+        private List<EntityDataMap> _maps;
+        public List<EntityDataMap> Maps 
+         {
+           get { return _maps; }
+           set { SetProperty(ref _maps, value);}
         }
     }
-   
+
+
 }

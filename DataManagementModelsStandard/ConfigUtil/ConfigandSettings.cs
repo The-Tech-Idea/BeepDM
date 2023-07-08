@@ -8,6 +8,7 @@ using System.Text;
 
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Vis;
 
 //using TheTechIdea.Beep.Vis;
@@ -80,8 +81,6 @@ namespace TheTechIdea.Util
         public int Order { get; set; } = 0;
         public string Imagename { get; set; }
         public string RootName { get; set; }
-        //public EnumBranchType BranchType { get; set; }
-
         public bool LocalDB { get; set; } = false;
         public bool InMemory { get; set; } = false;
         public bool IsDataSource { get; set; } = false;
@@ -116,55 +115,8 @@ namespace TheTechIdea.Util
         public DataSourceType DatasourceType { get; set; } = DataSourceType.NONE;
         public ShowinType Showin { get; set; } = ShowinType.Both;
     }
-    public class ConnectionDriversConfig
-    {
-        public ConnectionDriversConfig()
-        {
-             
-        }
-        public int ID { get; set; }
-        public string GuidID { get; set; } = Guid.NewGuid().ToString();
-        public string PackageName { get; set; }
-        public string DriverClass { get; set; }
-        public string version { get; set; }
-        public string dllname { get; set; }
-        public string AdapterType { get; set; }
-        public string CommandBuilderType { get; set; }
-        public string DbConnectionType { get; set; }
-        public string DbTransactionType { get; set; }
-        public string ConnectionString { get; set; }
-        public string parameter1 { get; set; }
-        public string parameter2 { get; set; }
-        public string parameter3 { get; set; }
-        public string iconname { get; set; }
-        public string classHandler { get; set; }
-        public bool ADOType { get; set; } = false;
-        public bool CreateLocal { get; set; } = false;
-        public bool InMemory { get; set; } = false;
 
-       public string extensionstoHandle { get; set; }
-        public bool Favourite { get; set; }=false;
-        public DatasourceCategory DatasourceCategory { get; set; }
-        public DataSourceType DatasourceType { get; set; }
-        public bool IsMissing { get;set; }=false;
-    }
-    public class ConnectionDriversTypes
-    {
-        public ConnectionDriversTypes()
-        {
-            GuidID = Guid.NewGuid().ToString();
-        }
-        public int ID { get; set; }
-        public string GuidID { get; set; }
-        public string PackageName { get; set; }
-        public string DriverClass { get; set; }
-        public string version { get; set; }
-        public string dllname { get; set; }
-        public Type AdapterType { get; set; }
-        public Type CommandBuilderType { get; set; }
-        public Type DbConnectionType { get; set; }
-
-    }
+  
     public class DataSourceConnectionConfig
     {
         public DataSourceConnectionConfig()
@@ -178,69 +130,79 @@ namespace TheTechIdea.Util
         public List<string> ConnectionDrivers { get; set; } = new List<string>();
 
     }
-   
-    public class CategoryFolder
+
+    public class CategoryFolder : Entity
     {
-        public int ID { get; set; }
-        public string GuidID { get; set; }  = Guid.NewGuid().ToString();
-        public string FolderName { get; set; }
-        public string RootName { get; set; }
-        public string ParentName { get; set; }
-        public int ParentID { get; set; }
-        public bool IsParentRoot { get; set; }=true;
-        public bool IsPhysicalFolder { get; set; }=false;
-        public BindingList<string> items { get; set; } = new BindingList<string>();
+
+        private int _id;
+        public int ID
+        {
+            get { return _id; }
+            set { SetProperty(ref _id, value); }
+        }
+
+        private string _guidid;
+        public string GuidID
+        {
+            get { return _guidid; }
+            set { SetProperty(ref _guidid, value); }
+        }
+
+        private string _foldername;
+        public string FolderName
+        {
+            get { return _foldername; }
+            set { SetProperty(ref _foldername, value); }
+        }
+
+        private string _rootname;
+        public string RootName
+        {
+            get { return _rootname; }
+            set { SetProperty(ref _rootname, value); }
+        }
+
+        private string _parentname;
+        public string ParentName
+        {
+            get { return _parentname; }
+            set { SetProperty(ref _parentname, value); }
+        }
+
+        private int _parentid;
+        public int ParentID
+        {
+            get { return _parentid; }
+            set { SetProperty(ref _parentid, value); }
+        }
+
+        private bool _isparentroot;
+        public bool IsParentRoot
+        {
+            get { return _isparentroot; }
+            set { SetProperty(ref _isparentroot, value); }
+        }
+
+        private bool _isphysicalfolder;
+        public bool IsPhysicalFolder
+        {
+            get { return _isphysicalfolder; }
+            set { SetProperty(ref _isphysicalfolder, value); }
+        }
+        private BindingList<string> _items;
+        public BindingList<string> items
+        {
+            get { return _items; }
+            set { SetProperty(ref _items, value); }
+        }
+      
         public CategoryFolder()
         {
+            _items = new BindingList<string>();
+            GuidID = Guid.NewGuid().ToString();
+        }
+    }
 
-        }
-    }
-    public class Function2FunctionAction
-    {
-        public Function2FunctionAction()
-        {
-           
-        }
-        public int ID { get; set; }
-        public string GuidID { get; set; } = Guid.NewGuid().ToString();
-        public string ActionType { get; set; } //Event or Function
-        public string Event { get; set; }
-        public string FromClass { get; set; }
-        public string FromMethod { get; set; }
-        public string ToClass { get; set; }
-        public string ToMethod { get; set; }
-        public int FromID { get; set; }
-        public int ToID { get; set; }
-        public string Param1 { get; set; }
-        public string Param2 { get; set; }
-        public string Param3 { get; set; }
-        public string Param4 { get; set; }
-        public string Param5 { get; set; }
-        public string Param6 { get; set; }
-    }
-    public class Event
-    {
-        public Event()
-        {
 
-        }
-        public int ID { get; set; }
-        public string GuidID { get; set; } = Guid.NewGuid().ToString();
-        public string EventName { get; set; }
-    }
-    public class DefaultValue
-    {
-        public DefaultValue()
-        {
 
-        }
-        public int ID { get; set; }
-        public string GuidID { get; set; } = Guid.NewGuid().ToString();
-        public string propertyName { get; set; }
-        public string propoertValue { get; set; }
-        public string Rule { get; set; }
-        public DefaultValueType propertyType { get; set; }
-        public string propertyCategory { get; set; }
-       
-    }
 }

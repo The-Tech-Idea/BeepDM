@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.Common;
 using System.IO;
 using TheTechIdea.Beep.Connections;
+using DataManagementModels.DriversConfigurations;
 
 namespace TheTechIdea.Beep.DataBase
 {

@@ -14,5 +14,6 @@ namespace TheTechIdea.Beep.Workflow
         string FromFieldName { get; set; }
         string FromFieldType { get; set; }
         string Rules { get; set; }
+        string GuidID { get; set; }
     }
 }

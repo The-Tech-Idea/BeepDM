@@ -3,149 +3,540 @@ using System;
 using System.Collections.Generic;
 using TheTechIdea.Util;
 using TheTechIdea.Beep.Report;
+using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Beep.DataBase
 {
-    public class EntityStructure : IEntityStructure,ICloneable
+    public class EntityStructure : Entity, IEntityStructure,ICloneable
     {
 
-        public int Id { get; set; }
-        private string m_entname;
-        private string m_OriginalEntityName;
-        public string EntityName { get { return m_entname; } set { m_OriginalEntityName = m_entname; m_entname = value;  } }
-        public string OriginalEntityName { get { return m_OriginalEntityName; } set { m_OriginalEntityName = value; } }
-        public string DatasourceEntityName { get; set; }
-        public string Caption { get; set; }
-        public DataSourceType DatabaseType { get; set; }
-        public string StatusDescription { get; set; }
-        public string DataSourceID { get; set; }
-
-        //---------------- View Entity Properties ---------------
-        public string CustomBuildQuery { get; set; }
-        public int ParentId { get; set; }
-        public bool Show { get; set; } = true;
-        public ViewType Viewtype { get; set; }
-        public bool Editable { get; set; }
-        public bool Drawn { get; set; } = false;
-        public int ViewID { get; set; }
-        //---------------- View Entity Properties ---------------
-        public string SchemaOrOwnerOrDatabase { get; set; }
-        public Boolean Created { get; set; } = true;
-        public string KeyToken { get; set; }
-        public string Category { get; set; }
-        public string DefaultChartType { get; set; }
-        public List<EntityField> Fields { get; set; } = new List<EntityField>();
-        public List<EntityParameters> Paramenters { get; set; } = new List<EntityParameters>();
-        public List<RelationShipKeys> Relations { get; set; } = new List<RelationShipKeys>();
-        public List<EntityField> PrimaryKeys { get; set; } = new List<EntityField>();
-        public List<AppFilter> Filters { get; set; }
-        public int StartRow { get; set; } = 0;
-        public  int EndRow { get; set; }= 0;
-        public string GuidID { get; set; }
-        public EntityStructure()
-        {
-            GuidID = Guid.NewGuid().ToString();
-
-        }
-        public EntityStructure(string entityname)
-        {
-            GuidID = Guid.NewGuid().ToString();
-            EntityName = entityname;
-        }
-        public EntityStructure(string name, int parentId, string databaseID)
-        {
-            GuidID = Guid.NewGuid().ToString();
-            EntityName = name;
-            ParentId = parentId;
-            DataSourceID = databaseID;
-
-
-        }
-        public EntityStructure(string name, int parentId, string databaseID, ViewType viewtype)
-        {
-            GuidID = Guid.NewGuid().ToString();
-            EntityName = name;
-            ParentId = parentId;
-            DataSourceID = databaseID;
-            Viewtype = viewtype;
-
-        }
-
-        public object Clone()
-        {
-            return this.MemberwiseClone();
-        }
+        
+private int _id;
+    public int Id
+    {
+        get { return _id; }
+        set { SetProperty(ref _id, value); }
     }
-    public class EntityField :IEntityField
+
+    private string _entityname;
+    public string EntityName
+    {
+        get { return _entityname; }
+        set { SetProperty(ref _entityname, value); }
+    }
+
+    private string _originalentityname;
+    public string OriginalEntityName
+    {
+        get { return _originalentityname; }
+        set { SetProperty(ref _originalentityname, value); }
+    }
+
+    private string _datasourceentityname;
+    public string DatasourceEntityName
+    {
+        get { return _datasourceentityname; }
+        set { SetProperty(ref _datasourceentityname, value); }
+    }
+
+    private string _caption;
+    public string Caption
+    {
+        get { return _caption; }
+        set { SetProperty(ref _caption, value); }
+    }
+
+    private DataSourceType _databasetype;
+    public DataSourceType DatabaseType
+    {
+        get { return _databasetype; }
+        set { SetProperty(ref _databasetype, value); }
+    }
+
+    private string _statusdescription;
+    public string StatusDescription
+    {
+        get { return _statusdescription; }
+        set { SetProperty(ref _statusdescription, value); }
+    }
+
+    private string _datasourceid;
+    public string DataSourceID
+    {
+        get { return _datasourceid; }
+        set { SetProperty(ref _datasourceid, value); }
+    }
+
+    //---------------- View Entity Properties ---------------
+
+    private string _custombuildquery;
+    public string CustomBuildQuery
+    {
+        get { return _custombuildquery; }
+        set { SetProperty(ref _custombuildquery, value); }
+    }
+
+    private int _parentid;
+    public int ParentId
+    {
+        get { return _parentid; }
+        set { SetProperty(ref _parentid, value); }
+    }
+
+    private bool _show;
+    public bool Show
+    {
+        get { return _show; }
+        set { SetProperty(ref _show, value); }
+    }
+
+    private ViewType _viewtype;
+    public ViewType Viewtype
+    {
+        get { return _viewtype; }
+        set { SetProperty(ref _viewtype, value); }
+    }
+
+    private bool _editable;
+    public bool Editable
+    {
+        get { return _editable; }
+        set { SetProperty(ref _editable, value); }
+    }
+
+    private bool _drawn;
+    public bool Drawn
+    {
+        get { return _drawn; }
+        set { SetProperty(ref _drawn, value); }
+    }
+
+    private int _viewid;
+    public int ViewID
+    {
+        get { return _viewid; }
+        set { SetProperty(ref _viewid, value); }
+    }
+    //---------------- View Entity Properties ---------------
+
+    private string _schemaorownerordatabase;
+    public string SchemaOrOwnerOrDatabase
+    {
+        get { return _schemaorownerordatabase; }
+        set { SetProperty(ref _schemaorownerordatabase, value); }
+    }
+
+    private Boolean _created;
+    public Boolean Created
+    {
+        get { return _created; }
+        set { SetProperty(ref _created, value); }
+    }
+
+    private string _keytoken;
+    public string KeyToken
+    {
+        get { return _keytoken; }
+        set { SetProperty(ref _keytoken, value); }
+    }
+
+    private string _category;
+    public string Category
+    {
+        get { return _category; }
+        set { SetProperty(ref _category, value); }
+    }
+
+    private string _defaultcharttype;
+    public string DefaultChartType
+    {
+        get { return _defaultcharttype; }
+        set { SetProperty(ref _defaultcharttype, value); }
+    }
+    public List<EntityField> Fields { get; set; }
+    public List<EntityParameters> Paramenters { get; set; }
+    public List<RelationShipKeys> Relations { get; set; }
+    public List<EntityField> PrimaryKeys { get; set; }
+    public List<AppFilter> Filters { get; set; }
+
+    private int _startrow;
+    public int StartRow
+    {
+        get { return _startrow; }
+        set { SetProperty(ref _startrow, value); }
+    }
+    public int EndRow { get; set; }
+
+    private string _guidid;
+    public string GuidID
+    {
+        get { return _guidid; }
+        set { SetProperty(ref _guidid, value); }
+    }
+    public EntityStructure()
+    {
+        init();
+
+    }
+    public EntityStructure(string entityname)
+    {
+        init();
+        EntityName = entityname;
+    }
+    public EntityStructure(string name, int parentId, string databaseID)
+    {
+        init();
+        EntityName = name;
+        ParentId = parentId;
+        DataSourceID = databaseID;
+
+
+    }
+    public EntityStructure(string name, int parentId, string databaseID, ViewType viewtype)
+    {
+        init();
+        EntityName = name;
+        ParentId = parentId;
+        DataSourceID = databaseID;
+        Viewtype = viewtype;
+
+    }
+    private void init()
+    {
+        GuidID = Guid.NewGuid().ToString();
+        StartRow = 0;
+        EndRow = 0;
+        Fields = new List<EntityField>();
+        Paramenters = new List<EntityParameters>();
+        Relations = new List<RelationShipKeys>();
+        PrimaryKeys = new List<EntityField>();
+        Filters = new List<AppFilter>();
+    }
+
+    public object Clone()
+    {
+        return this.MemberwiseClone();
+    }
+}
+
+    public class EntityField : Entity, IEntityField
     {
 
-        public int id { get; set; }
-        public string GuidID { get; set; }
-        private string p_fieldname;
-        public string fieldname { get { return p_fieldname; } set { p_oribinalfieldname = p_fieldname;p_fieldname=value ; } }
-        private string p_oribinalfieldname;
-        public string Originalfieldname { get { return p_oribinalfieldname; } set { p_oribinalfieldname = value; } }
-        public string fieldtype { get; set; } = "Text"; //string or numeric or date gets filled later.by pick list 
-        public int Size1 { get; set; }
-        public int Size2 { get; set; }
-        public short NumericPrecision { get; set; }
-        public short NumericScale { get; set; }
-        public DbFieldCategory fieldCategory { get; set; } = DbFieldCategory.String;
-        public bool IsAutoIncrement { get; set; } = false;
-        public bool AllowDBNull { get; set; } = false;
-        public bool IsCheck { get; set; } = false;
-        public bool IsUnique { get; set; } = false;
-        public bool IsKey { get; set; } = false;
-        public bool Checked { get; set; } = false;
-        public int FieldIndex { get; set; }
-        public bool ValueRetrievedFromParent { get; set; }
-        public bool DisplayField { get;set; } = false;
-       
-        //   public string statusdescription { get; set; }
-        //  public Boolean created { get; set; }
-        public string EntityName { get; set; }
-       
+
+        private int _id;
+        public int id
+        {
+            get { return _id; }
+            set { SetProperty(ref _id, value); }
+        }
+
+        private string _guidid;
+        public string GuidID
+        {
+            get { return _guidid; }
+            set { SetProperty(ref _guidid, value); }
+        }
+
+        private string _fieldname;
+        public string fieldname
+        {
+            get { return _fieldname; }
+            set { SetProperty(ref _fieldname, value); }
+        }
+
+        private string _originalfieldname;
+        public string Originalfieldname
+        {
+            get { return _originalfieldname; }
+            set { SetProperty(ref _originalfieldname, value); }
+        }
+
+        private string _fieldtype;
+        public string fieldtype
+        {
+            get { return _fieldtype; }
+            set { SetProperty(ref _fieldtype, value); }
+        }
+
+        private int _size1;
+        public int Size1
+        {
+            get { return _size1; }
+            set { SetProperty(ref _size1, value); }
+        }
+
+        private int _size2;
+        public int Size2
+        {
+            get { return _size2; }
+            set { SetProperty(ref _size2, value); }
+        }
+
+        private short _numericprecision;
+        public short NumericPrecision
+        {
+            get { return _numericprecision; }
+            set { SetProperty(ref _numericprecision, value); }
+        }
+
+        private short _numericscale;
+        public short NumericScale
+        {
+            get { return _numericscale; }
+            set { SetProperty(ref _numericscale, value); }
+        }
+
+        private DbFieldCategory _fieldcategory;
+        public DbFieldCategory fieldCategory
+        {
+            get { return _fieldcategory; }
+            set { SetProperty(ref _fieldcategory, value); }
+        }
+
+        private bool _isautoincrement;
+        public bool IsAutoIncrement
+        {
+            get { return _isautoincrement; }
+            set { SetProperty(ref _isautoincrement, value); }
+        }
+
+        private bool _allowdbnull;
+        public bool AllowDBNull
+        {
+            get { return _allowdbnull; }
+            set { SetProperty(ref _allowdbnull, value); }
+        }
+
+        private bool _ischeck;
+        public bool IsCheck
+        {
+            get { return _ischeck; }
+            set { SetProperty(ref _ischeck, value); }
+        }
+
+        private bool _isunique;
+        public bool IsUnique
+        {
+            get { return _isunique; }
+            set { SetProperty(ref _isunique, value); }
+        }
+
+        private bool _iskey;
+        public bool IsKey
+        {
+            get { return _iskey; }
+            set { SetProperty(ref _iskey, value); }
+        }
+
+        private bool _checked;
+        public bool Checked
+        {
+            get { return _checked; }
+            set { SetProperty(ref _checked, value); }
+        }
+
+        private int _fieldindex;
+        public int FieldIndex
+        {
+            get { return _fieldindex; }
+            set { SetProperty(ref _fieldindex, value); }
+        }
+
+        private bool _valueretrievedfromparent;
+        public bool ValueRetrievedFromParent
+        {
+            get { return _valueretrievedfromparent; }
+            set { SetProperty(ref _valueretrievedfromparent, value); }
+        }
+        public bool DisplayField { get; set; }
+
+
+        private string _entityname;
+        public string EntityName
+        {
+            get { return _entityname; }
+            set { SetProperty(ref _entityname, value); }
+        }
+
 
         public EntityField()
         {
+            fieldtype = "Text";
+            fieldCategory = DbFieldCategory.String;
             GuidID = Guid.NewGuid().ToString();
+            IsAutoIncrement = false;
+            AllowDBNull = false;
+            IsCheck = false;
+            IsUnique = false;
+            IsKey = false;
+            Checked = false;
+            DisplayField = false;
 
         }
     }
-    public class EntityParameters 
+
+    public class EntityParameters : Entity
     {
 
-       
-        public string parameterName { get; set; }
-        public string parametertype { get; set; } = "Text"; //string or numeric or date gets filled later.by pick list 
-        public DbFieldCategory parameterCategory { get; set; } = DbFieldCategory.String;
-        public Boolean IsKey { get; set; } = false;
-        public int parameterIndex { get; set; }
-        public string StringValue { get; set; }
-        public DateTime DateTimeValue { get; set; }
-        public int intValue { get; set; }
-        public string SourceEntityName { get; set; }
-        public string SourceFieldName { get; set; }
-        public string SourceDataSource { get; set; }
 
-        public int ID { get; set; }
-        public string GuidID { get; set; }
+        private string _parametername;
+        public string parameterName
+        {
+            get { return _parametername; }
+            set { SetProperty(ref _parametername, value); }
+        }
+
+        private string _parametertype;
+        public string parametertype
+        {
+            get { return _parametertype; }
+            set { SetProperty(ref _parametertype, value); }
+        }
+
+        private DbFieldCategory _parametercategory;
+        public DbFieldCategory parameterCategory
+        {
+            get { return _parametercategory; }
+            set { SetProperty(ref _parametercategory, value); }
+        }
+
+        private Boolean _iskey;
+        public Boolean IsKey
+        {
+            get { return _iskey; }
+            set { SetProperty(ref _iskey, value); }
+        } 
+
+        private int _parameterindex;
+        public int parameterIndex
+        {
+            get { return _parameterindex; }
+            set { SetProperty(ref _parameterindex, value); }
+        }
+
+        private string _stringvalue;
+        public string StringValue
+        {
+            get { return _stringvalue; }
+            set { SetProperty(ref _stringvalue, value); }
+        }
+
+        private DateTime _datetimevalue;
+        public DateTime DateTimeValue
+        {
+            get { return _datetimevalue; }
+            set { SetProperty(ref _datetimevalue, value); }
+        }
+
+        private int _intvalue;
+        public int intValue
+        {
+            get { return _intvalue; }
+            set { SetProperty(ref _intvalue, value); }
+        }
+
+        private string _sourceentityname;
+        public string SourceEntityName
+        {
+            get { return _sourceentityname; }
+            set { SetProperty(ref _sourceentityname, value); }
+        }
+
+        private string _sourcefieldname;
+        public string SourceFieldName
+        {
+            get { return _sourcefieldname; }
+            set { SetProperty(ref _sourcefieldname, value); }
+        }
+
+        private string _sourcedatasource;
+        public string SourceDataSource
+        {
+            get { return _sourcedatasource; }
+            set { SetProperty(ref _sourcedatasource, value); }
+        }
+
+
+        private int _id;
+        public int ID
+        {
+            get { return _id; }
+            set { SetProperty(ref _id, value); }
+        }
+
+        private string _guidid;
+        public string GuidID
+        {
+            get { return _guidid; }
+            set { SetProperty(ref _guidid, value); }
+        }
         public EntityParameters()
         {
             GuidID = Guid.NewGuid().ToString();
+            parametertype = "Text"; //string or numeric or date gets filled later.by pick list 
+            parameterCategory = DbFieldCategory.String;
 
         }
     }
-    public class RelationShipKeys :IRelationShipKeys
+
+    public class RelationShipKeys : Entity, IRelationShipKeys
     {
-        public string RalationName { get; set; }
-        public string RelatedEntityID { get; set; }
-        public string RelatedEntityColumnID { get; set; }
-        public int RelatedColumnSequenceID { get; set; }
-        public string EntityColumnID { get; set; }
-        public int EntityColumnSequenceID { get; set; }
-        public int ID { get; set; }
-        public string GuidID { get; set; }
+
+        private string _ralationname;
+        public string RalationName
+        {
+            get { return _ralationname; }
+            set { SetProperty(ref _ralationname, value); }
+        }
+
+        private string _relatedentityid;
+        public string RelatedEntityID
+        {
+            get { return _relatedentityid; }
+            set { SetProperty(ref _relatedentityid, value); }
+        }
+
+        private string _relatedentitycolumnid;
+        public string RelatedEntityColumnID
+        {
+            get { return _relatedentitycolumnid; }
+            set { SetProperty(ref _relatedentitycolumnid, value); }
+        }
+
+        private int _relatedcolumnsequenceid;
+        public int RelatedColumnSequenceID
+        {
+            get { return _relatedcolumnsequenceid; }
+            set { SetProperty(ref _relatedcolumnsequenceid, value); }
+        }
+
+        private string _entitycolumnid;
+        public string EntityColumnID
+        {
+            get { return _entitycolumnid; }
+            set { SetProperty(ref _entitycolumnid, value); }
+        }
+
+        private int _entitycolumnsequenceid;
+        public int EntityColumnSequenceID
+        {
+            get { return _entitycolumnsequenceid; }
+            set { SetProperty(ref _entitycolumnsequenceid, value); }
+        }
+
+        private int _id;
+        public int ID
+        {
+            get { return _id; }
+            set { SetProperty(ref _id, value); }
+        }
+
+        private string _guidid;
+        public string GuidID
+        {
+            get { return _guidid; }
+            set { SetProperty(ref _guidid, value); }
+        }
         public RelationShipKeys()
         {
             GuidID = Guid.NewGuid().ToString();
@@ -158,18 +549,44 @@ namespace TheTechIdea.Beep.DataBase
 
         }
     }
-    public class ColumnLookupList :IColumnLookupList
+
+    public class ColumnLookupList : Entity, IColumnLookupList
     {
-        public int ID { get; set; }
-        public string GuidID { get; set; }
-        public object Value { get; set; }
-        public string Display { get; set; }
+
+        private int _id;
+        public int ID
+        {
+            get { return _id; }
+            set { SetProperty(ref _id, value); }
+        }
+
+        private string _guidid;
+        public string GuidID
+        {
+            get { return _guidid; }
+            set { SetProperty(ref _guidid, value); }
+        }
+
+        private object _value;
+        public object Value
+        {
+            get { return _value; }
+            set { SetProperty(ref _value, value); }
+        }
+
+        private string _display;
+        public string Display
+        {
+            get { return _display; }
+            set { SetProperty(ref _display, value); }
+        }
 
         public ColumnLookupList()
         {
             GuidID = Guid.NewGuid().ToString();
         }
     }
+
     public class InsertTransaction : IInsertTransaction
     {
         public InsertTransaction()
