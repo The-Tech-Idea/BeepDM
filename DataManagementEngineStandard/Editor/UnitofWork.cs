@@ -13,8 +13,6 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Util;
 
-
-
 namespace TheTechIdea.Beep.Editor
 {
     public class UnitofWork<T> : IUnitofWork<T> where T : Entity, INotifyPropertyChanged
@@ -22,17 +20,16 @@ namespace TheTechIdea.Beep.Editor
         public bool IsInListMode { get; set; } = false;
         public UnitofWork(IDMEEditor dMEEditor, bool isInListMode, ObservableCollection<T> ts,string primarykey)
         {
+            _suppressNotification = true;
             DMEEditor = dMEEditor;
             IsInListMode = isInListMode;
             init();
             Units = ts;
             PrimaryKey = primarykey;
             getPrimaryKey(ts.FirstOrDefault());
-
-
+            _suppressNotification = false;
         }
         private bool _suppressNotification = false;
-       
         CancellationTokenSource tokenSource;
         CancellationToken token;
         private Dictionary<int, EntityState> _entityStates=new Dictionary<int, EntityState>();
@@ -40,6 +37,7 @@ namespace TheTechIdea.Beep.Editor
         protected virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
         public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName)
         {
+            _suppressNotification=true;
             DMEEditor = dMEEditor;
             DatasourceName = datasourceName;
             EntityName = entityName;
@@ -47,9 +45,11 @@ namespace TheTechIdea.Beep.Editor
             {
                 init();
             }
+            _suppressNotification = false;
         }
         public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure)
         {
+            _suppressNotification = true;
             DMEEditor = dMEEditor;
             DatasourceName = datasourceName;
             EntityName = entityName;
@@ -58,6 +58,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 init();
             }
+            _suppressNotification = false;
         }
         private ObservableCollection<T> _units;
         public ObservableCollection<T> Units
@@ -224,7 +225,8 @@ namespace TheTechIdea.Beep.Editor
                 return;
             }
             Units.Add(entity);
-            _entityStates[Getindex(entity)] = EntityState.Added;
+            int index = Getindex(entity);
+            _entityStates.Add(index, EntityState.Added);
             // Subscribe to PropertyChanged event
            // entity.PropertyChanged += ItemPropertyChangedHandler;
         }
@@ -246,11 +248,22 @@ namespace TheTechIdea.Beep.Editor
             if (index >= 0)
             {
                 Units[index] = entity;
-                if (_entityStates[index] != EntityState.Added)
+                if (_entityStates.Count > 0)
                 {
-                    _entityStates[index] = EntityState.Modified;
+                    if (_entityStates.ContainsKey(index))
+                    {
+                        if (_entityStates[index] != EntityState.Added)
+                        {
+                            _entityStates[index]= EntityState.Modified;
+                        }
+                    }
+                    else
+                    {
+                        _entityStates.Add(index, EntityState.Modified);
+                    }
+                  
                 }
-
+                
             }
         }
         public void Delete(string id)
@@ -416,7 +429,6 @@ namespace TheTechIdea.Beep.Editor
                 return null;
             }
         }
-
         private ObservableCollection<T> FilterCollection<T>(ObservableCollection<T> originalCollection, string propertyName, object value)
         {
             try
@@ -455,9 +467,6 @@ namespace TheTechIdea.Beep.Editor
             }
          
         }
-
-
-
         public virtual async Task<ObservableCollection<T>> Get(List<AppFilter> filters)
         {
             if (!IsInListMode)
@@ -768,10 +777,7 @@ namespace TheTechIdea.Beep.Editor
         }
         public virtual int DocExistByKey(T doc)
         {
-
-
             int retval = Units.IndexOf(Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(doc, null).Equals(doc.GetType().GetProperty(PrimaryKey).GetValue(doc, null))));
-
             return retval;
         }
         public virtual int DocExist(T doc)
@@ -933,7 +939,6 @@ namespace TheTechIdea.Beep.Editor
         //    }
         //}
     }
-
     public enum EntityState
     {
         Added,
