@@ -124,6 +124,20 @@ namespace TheTechIdea.Beep.FileManager
         {
             try
             {
+                if (!File.Exists(file))
+                {
+                    DMEEditor.AddLogMessage("Beep", $"Error Could not Find File {file}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
+                    return null;
+                }
+                string filename = Path.GetFileName(file);
+                string ext = Path.GetExtension(file).Replace(".", "").ToLower();
+
+                ConnectionDriversConfig driversConfig = GetConnectionDrivers(ext);
+                if (driversConfig == null)
+                {
+                    DMEEditor.AddLogMessage("Beep", $"Error Could not Find Drivers for {filename}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
+                    return null;
+                }
                 ConnectionProperties f = new ConnectionProperties
                 {
                     FileName = Path.GetFileName(file),
@@ -137,21 +151,9 @@ namespace TheTechIdea.Beep.FileManager
                 {
                     f.FilePath = f.FilePath.Replace(DMEEditor.ConfigEditor.ExePath, ".\\");
                 }
-                //if (f.FilePath.Contains(DMEEditor.ConfigEditor.Config.DataFilePath))
-                //{
-                //    f.FilePath = f.FilePath.Replace(DMEEditor.ConfigEditor.Config.DataFilePath, ".");
-                //}
-                //if (f.FilePath.Contains(DMEEditor.ConfigEditor.Config.ProjectDataPath))
-                //{
-                //    f.FilePath = f.FilePath.Replace(DMEEditor.ConfigEditor.Config.ProjectDataPath, ".");
-                //}
-                string ext = Path.GetExtension(file).Replace(".", "").ToLower();
-                List<ConnectionDriversConfig> clss = DMEEditor.ConfigEditor.DataDriversClasses.Where(p => p.extensionstoHandle != null && p.extensionstoHandle.Contains(ext) && p.Favourite == true).ToList();
-                ConnectionDriversConfig c = clss.Where(o => o.extensionstoHandle.Contains(ext) && o.Favourite == true).FirstOrDefault();
-                if (c is null)
-                {
-                    c = clss.Where(o => o.classHandler.Equals("CSVDataSource", StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                }
+               
+                
+                ConnectionDriversConfig c = GetConnectionDrivers(ext);
                 if (c != null)
                 {
                     f.DriverName = c.PackageName;
@@ -196,6 +198,58 @@ namespace TheTechIdea.Beep.FileManager
                 DMEEditor.AddLogMessage(ex.Message, "Could not Load Files ", DateTime.Now, -1, mes, Errors.Failed);
                 return null;
             };
+        }
+        public ConnectionDriversConfig GetConnectionDrivers(string ext)
+        {
+            List<ConnectionDriversConfig> configs = new List<ConnectionDriversConfig>();
+            ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
+            configs = DMEEditor.ConfigEditor.DriverDefinitionsConfig.Where(p => p.extensionstoHandle != null &&  p.extensionstoHandle.Contains(ext)).ToList();
+            if (configs.Count > 0)
+            {
+                //-----------  Get Favourite
+
+                driversConfig = configs.FirstOrDefault(p => p.Favourite);
+                //----------- Get Latest version if Favourite not available
+                if (driversConfig == null)
+                {
+                    driversConfig = configs.OrderByDescending(p => p.version).FirstOrDefault();
+                }
+
+            }
+            else
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error Could not Find Drivers for extension {ext}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
+                return null;
+            }
+            return driversConfig;
+
+        }
+        public IDataSource CreateDataSource(string filepath)
+        {
+            IDataSource ds=null;
+            if(!File.Exists(filepath))
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error Could not Find File {filepath}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
+                return null;
+            }
+            string filename = Path.GetFileNameWithoutExtension(filepath);
+            string ext = Path.GetExtension(filepath);
+            // Find Drivers
+            ConnectionDriversConfig driversConfig = GetConnectionDrivers(ext);
+            if (driversConfig == null)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error Could not Find Drivers for {filename}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
+                return null;
+            }
+            // Found Drivers
+            ConnectionProperties cn= CreateFileDataConnection(filepath);
+            if(cn != null) { 
+                DMEEditor.ConfigEditor.AddDataConnection(cn);
+                DMEEditor.ConfigEditor.SaveDataconnectionsValues();
+                ds = DMEEditor.GetDataSource(filename);
+            }
+            return ds;
+
         }
     }
 }
