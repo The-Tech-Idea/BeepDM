@@ -1035,7 +1035,10 @@ namespace TheTechIdea.Beep.DataBase
             DataSet ds = new DataSet();
             try
             {
-                     string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getlistoftables, null, Dataconnection.ConnectionProp.SchemaName, null, DMEEditor.ConfigEditor.QueryList, DatasourceType);
+               
+                string[] schemas =Dataconnection.ConnectionProp.SchemaName.Split(',');
+      
+                    string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getlistoftables, null, Dataconnection.ConnectionProp.SchemaName, null, DMEEditor.ConfigEditor.QueryList, DatasourceType);
                     IDbDataAdapter adp = GetDataAdapter(sql, null);
                     adp.Fill(ds);
 
@@ -1046,10 +1049,10 @@ namespace TheTechIdea.Beep.DataBase
                     foreach (DataRow row in tb.Rows)
                     {
                         EntitiesNames.Add(row.Field<string>("TABLE_NAME").ToUpper());
-                       
-                       
-                    i += 1;
+                        i += 1;
                     }
+               
+               
             }
             catch (Exception ex)
             {
@@ -1061,6 +1064,31 @@ namespace TheTechIdea.Beep.DataBase
 
 
 
+        }
+        public string AddNewEntity(string entityName,string schemaname)
+        {
+            if (entityName == null)
+            {
+                return "Entity Name is null";
+            }
+            if (schemaname == null)
+            {
+                return "schema Name is null";
+            }
+            if (!string.IsNullOrEmpty(schemaname))
+            {
+                int  ent=Entities.FindIndex(p=>p.EntityName.ToUpper()==entityName.ToUpper());
+                if (ent> -1)
+                {
+                    return "Entity Exist";
+                }
+
+            }
+            EntityStructure entity=new EntityStructure();
+            entity.EntityName = entityName;
+            entity.SchemaOrOwnerOrDatabase = schemaname;
+            Entities.Add(entity);
+            return null;
         }
         public string GetSchemaName()
         {
@@ -1895,7 +1923,7 @@ namespace TheTechIdea.Beep.DataBase
             catch (Exception ex)
             {
 
-             //   DMEEditor.AddLogMessage("Fail", $"Error in Creating Adapter {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+                DMEEditor.AddLogMessage("Beep", $"Error in Creating Adapter for {Sql}- {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
                 adp = null;
             }
 
@@ -1907,12 +1935,21 @@ namespace TheTechIdea.Beep.DataBase
             DataTable tb = new DataTable();
             IDataReader reader;
             IDbCommand cmd = GetDataCommand();
+          //  EntityStructure entityStructure = GetEntityStructure(TableName, false);
             try
             {
                 if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.SchemaName) && !string.IsNullOrWhiteSpace(Dataconnection.ConnectionProp.SchemaName))
                 {
                     TableName = Dataconnection.ConnectionProp.SchemaName + "." + TableName;
                 }
+                //if (entityStructure != null)
+                //{
+                //    if (!string.IsNullOrEmpty(entityStructure.SchemaOrOwnerOrDatabase))
+                //    {
+                //        TableName = entityStructure.SchemaOrOwnerOrDatabase + "." + TableName;
+                //    }
+                //}
+                
                 cmd.CommandText = "Select * from " + TableName.ToLower();// + " where 1=2";
                 reader = cmd.ExecuteReader(CommandBehavior.KeyInfo);
 
@@ -1922,7 +1959,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             catch (Exception ex)
             {
-             //   DMEEditor.AddLogMessage("Fail", $"unsuccessfully Executed Sql ({ex.Message})", DateTime.Now, 0, TableName, Errors.Failed);
+                DMEEditor.AddLogMessage("Beep", $"Error Fetching Schema for {TableName} -{ex.Message}", DateTime.Now, 0, TableName, Errors.Failed);
             }
 
            return tb;
@@ -1943,7 +1980,7 @@ namespace TheTechIdea.Beep.DataBase
             }
             catch (Exception ex)
             {
-             //   DMEEditor.AddLogMessage("Fail", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
+                DMEEditor.AddLogMessage("Beep", $"Unsuccessfully Retrieve Child tables list {ex.Message}", DateTime.Now, -1, ex.Message, Errors.Failed);
                 return null;
             }
         }

@@ -153,13 +153,39 @@ private int _id;
         get { return _defaultcharttype; }
         set { SetProperty(ref _defaultcharttype, value); }
     }
-    public List<EntityField> Fields { get; set; }
-    public List<EntityParameters> Paramenters { get; set; }
-    public List<RelationShipKeys> Relations { get; set; }
-    public List<EntityField> PrimaryKeys { get; set; }
-    public List<AppFilter> Filters { get; set; }
+        private List<EntityField> _fields;
+        public List<EntityField> Fields
+        {
+            get { return _fields; }
+            set { SetProperty(ref _fields, value); }
+        }
+        private List<EntityParameters> _parameters;
+        public List<EntityParameters> Parameters
+        {
+            get { return _parameters; }
+            set { SetProperty(ref _parameters, value); }
+        }
 
-    private int _startrow;
+        private List<RelationShipKeys> _relations;
+        public List<RelationShipKeys> Relations
+        {
+            get { return _relations; }
+            set { SetProperty(ref _relations, value); }
+        }
+        private List<EntityField> _primarykeys;
+        public List<EntityField> PrimaryKeys
+        {
+            get { return _primarykeys; }
+            set { SetProperty(ref _primarykeys, value); }
+        }
+        private List<AppFilter> _filters;
+        public List<AppFilter> Filters
+        {
+            get { return _filters; }
+            set { SetProperty(ref _filters, value); }
+        }
+
+        private int _startrow;
     public int StartRow
     {
         get { return _startrow; }
@@ -207,7 +233,7 @@ private int _id;
         StartRow = 0;
         EndRow = 0;
         Fields = new List<EntityField>();
-        Paramenters = new List<EntityParameters>();
+        Parameters = new List<EntityParameters>();
         Relations = new List<RelationShipKeys>();
         PrimaryKeys = new List<EntityField>();
         Filters = new List<AppFilter>();

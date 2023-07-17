@@ -115,7 +115,24 @@ namespace TheTechIdea.Util
 			return String.Format(ret, TableName, SchemaName, Filterparamters); ;
 
 		}
-		public string GetSqlFromCustomQuery(Sqlcommandtype CmdType, string TableName, string customquery, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType) //string TableName,string SchemaName
+        public List<string>  GetSqlList(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType) //string TableName,string SchemaName
+        {
+            var ret = (from a in QueryList
+                       where a.DatabaseType == DatabaseType
+                       where a.Sqltype == CmdType
+                       select a.Sql).ToList();
+			List<string> list = new List<string>();
+			foreach (var a in ret)
+			{
+				string av = String.Format(a, TableName, SchemaName, Filterparamters);
+
+                list.Add(av);
+			}
+
+            return list ;
+
+        }
+        public string GetSqlFromCustomQuery(Sqlcommandtype CmdType, string TableName, string customquery, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType) //string TableName,string SchemaName
 		{
 			var ret = (from a in QueryList
 					   where a.DatabaseType == DatabaseType

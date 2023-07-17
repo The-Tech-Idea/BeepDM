@@ -24,7 +24,7 @@ namespace TheTechIdea.Beep.DataBase
         int ParentId { get; set; }
         List<EntityField> PrimaryKeys { get; set; }
         List<RelationShipKeys> Relations { get; set; }
-        List<EntityParameters> Paramenters { get; set; }
+        List<EntityParameters> Parameters { get; set; }
         string KeyToken { get; set; }
         string Category { get; set; }
         string SchemaOrOwnerOrDatabase { get; set; }

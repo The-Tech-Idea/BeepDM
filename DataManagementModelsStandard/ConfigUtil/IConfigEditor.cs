@@ -69,6 +69,7 @@ namespace TheTechIdea.Util
         List<DatatypeMapping> ReadDataTypeFile(string filename = "DataTypeMapping");
         void WriteDataTypeFile(string filename = "DataTypeMapping");
         string GetSql(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType);
+        List<string> GetSqlList(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType);
         string GetSqlFromCustomQuery(Sqlcommandtype CmdType, string TableName, string customquery, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType);
         IErrorsInfo Init();
         void ReadProjects();

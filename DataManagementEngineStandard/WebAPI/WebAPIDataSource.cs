@@ -153,7 +153,7 @@ namespace TheTechIdea.Beep.WebAPI
                     
                 }
             }
-            foreach (EntityParameters item in ent.Paramenters)
+            foreach (EntityParameters item in ent.Parameters)
             {
                 str = str.Replace("{" + item.parameterIndex + "}", ent.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault());
             }
