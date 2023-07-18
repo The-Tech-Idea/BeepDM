@@ -11,9 +11,7 @@ using Microsoft.CSharp;
 using System.Threading;
 using TheTechIdea.Util;
 using System.Linq;
-using static System.Net.Mime.MediaTypeNames;
 using System.Text.RegularExpressions;
-using static Dapper.SqlMapper;
 
 namespace TheTechIdea.Beep.Tools
 {
@@ -28,10 +26,7 @@ namespace TheTechIdea.Beep.Tools
 
         private CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
         private CodeGeneratorOptions options = new CodeGeneratorOptions();
-
-
-
-        public ClassCreator(IDMEEditor pDMEEditor)
+       public ClassCreator(IDMEEditor pDMEEditor)
         {
             DMEEditor = pDMEEditor;
         }
