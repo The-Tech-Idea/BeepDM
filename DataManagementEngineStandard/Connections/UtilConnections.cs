@@ -44,10 +44,7 @@ namespace TheTechIdea.Beep.Connections
             }
             if (!string.IsNullOrWhiteSpace(ConnectionProp.FilePath) || !string.IsNullOrWhiteSpace(ConnectionProp.FileName))
             {
-                if (string.IsNullOrWhiteSpace(ConnectionProp.FilePath))
-                {
-                    ConnectionProp.FilePath = "./";
-                }
+               
                 IsFile = true;
             }
             if (IsConnectionString)

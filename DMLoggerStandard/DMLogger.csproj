@@ -33,7 +33,7 @@
     <PackageReference Include="Serilog" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="1.0.139" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="1.0.141" />
     <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.61" />
   </ItemGroup>
 
