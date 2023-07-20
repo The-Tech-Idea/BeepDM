@@ -1511,7 +1511,12 @@ namespace TheTechIdea.Beep.Json
                     {
                         var columnName = property.Name;
                         object columnValue;
-
+                        // Check if the column exists in the DataTable
+                        if (!dataTable.Columns.Contains(columnName))
+                        {
+                            // Add the missing column with a default type
+                            dataTable.Columns.Add(columnName, Type.GetType(MapJsonTypeToDotNetType(property.Value.Type)));
+                        }
                         // If it's an array or object, convert to a JSON string
                         if (property.Value.Type == JTokenType.Array || property.Value.Type == JTokenType.Object)
                         {
@@ -1519,8 +1524,18 @@ namespace TheTechIdea.Beep.Json
                         }
                         else
                         {
-                            // Otherwise, convert to the corresponding .NET type
-                            columnValue = property.Value.ToObject(dataTable.Columns[columnName].DataType);
+                            var columnType = dataTable.Columns[columnName].DataType;
+
+                            if (columnType.IsEnum)
+                            {
+                                // Convert the enum value to the underlying type of the enum
+                                columnValue = Convert.ChangeType(property.Value.ToObject<int>(), Enum.GetUnderlyingType(columnType));
+                            }
+                            else
+                            {
+                                // Convert to the corresponding .NET type
+                                columnValue = property.Value.ToObject(columnType);
+                            }
                         }
 
                         // If the column value is null, use DBNull.Value. Otherwise, use the actual value.
