@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DataManagementModels.Editor;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -10,7 +11,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public interface IGenericUnitofWork<T> where T : class
+    public interface IGenericUnitofWork<T> where   T : INotifyPropertyChanged
     {
         bool IsInListMode { get; set; }
         IDataSource DataSource { get; set; }
@@ -25,7 +26,7 @@ namespace TheTechIdea.Beep.Editor
         string Sequencer { get; set; }
         Dictionary<int, string> InsertedKeys { get; set; }
         string PrimaryKey { get; set; }
-        ObservableCollection<T> Units { get; set; }
+        ObservableBindingList<T> Units { get; set; }
         Dictionary<int, string> UpdatedKeys { get; set; }
 
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
@@ -35,8 +36,8 @@ namespace TheTechIdea.Beep.Editor
         int DocExistByKey(T doc);
         int FindDocIdx(T doc);
         IEnumerable<int> GetAddedEntities();
-        Task<ObservableCollection<T>> Get();
-        Task<ObservableCollection<T>> Get(List<AppFilter> filters);
+        Task<ObservableBindingList<T>> Get();
+        Task<ObservableBindingList<T>> Get(List<AppFilter> filters);
         IEnumerable<T> GetDeletedEntities();
         T Get( int key);
         T Get(string primarykeyid);

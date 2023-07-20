@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DataManagementModels.Editor;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -17,10 +18,10 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class GenericUnitofWork<T> : IGenericUnitofWork<T> where T : class
+    public class GenericUnitofWork<T> : IGenericUnitofWork<T> where  T : INotifyPropertyChanged
     {
         public bool IsInListMode { get; set; } = false;
-        public GenericUnitofWork(bool isInListMode, ObservableCollection<T> ts)
+        public GenericUnitofWork(bool isInListMode, ObservableBindingList<T> ts)
         {
 
             IsInListMode = isInListMode;
@@ -56,7 +57,7 @@ namespace TheTechIdea.Beep.Editor
             }
         }
       
-        public ObservableCollection<T> Units { get; set; }
+        public ObservableBindingList<T> Units { get; set; }
         public string Sequencer { get; set; }
         public string DatasourceName { get; set; }
         public List<T> DeletedUnits { get; set; } = new List<T>();
@@ -89,7 +90,7 @@ namespace TheTechIdea.Beep.Editor
         }
         private void reset()
         {
-            Units = new ObservableCollection<T>();
+            Units = new ObservableBindingList<T>();
             Units.CollectionChanged -= Units_CollectionChanged;
             Units.CollectionChanged += Units_CollectionChanged;
             DeletedUnits = new List<T>();
@@ -270,7 +271,7 @@ namespace TheTechIdea.Beep.Editor
                 UpdatedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
             }
         }
-        public virtual async Task<ObservableCollection<T>> Get(List<AppFilter> filters)
+        public virtual async Task<ObservableBindingList<T>> Get(List<AppFilter> filters)
         {
             if (!IsInListMode)
             {
@@ -281,7 +282,7 @@ namespace TheTechIdea.Beep.Editor
             }
             return await Task.FromResult(Units);
         }
-        public virtual async Task<ObservableCollection<T>> Get()
+        public virtual async Task<ObservableBindingList<T>> Get()
         {
             
             if (!IsInListMode)

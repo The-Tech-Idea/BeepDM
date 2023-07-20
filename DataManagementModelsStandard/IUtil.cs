@@ -53,14 +53,14 @@ namespace TheTechIdea.Beep
         DataTable ToDataTable(IList list,Type tp);
         DataTable ToDataTable(Type tp);
         DataTable ToDataTable(IEntityStructure entity);
-        Type GetEntityType(string EntityName, List<EntityField> Fields);
-        object GetEntityObject(string EntityName, List<EntityField> Fields);
+        Type GetEntityType(IDMEEditor DMEEditor, string EntityName, List<EntityField> Fields);
+        object GetEntityObject(IDMEEditor DMEEditor, string EntityName, List<EntityField> Fields);
         Type GetListType(object someList);
         DataTable CreateDataTableFromListofStrings(List<string> strings);
         EntityStructure GetEntityStructureFromListorTable( dynamic retval);
         DataRow GetDataRowFromobject(string EntityName, Type enttype, object UploadDataRow, EntityStructure DataStruct);
         Type GetCollectionElementType(Type type);
-        object MapObjectToAnother(string DestEntityname, EntityDataMap_DTL SelectedMapping, object sourceobj);
+        object MapObjectToAnother(IDMEEditor DMEEditor, string DestEntityname, EntityDataMap_DTL SelectedMapping, object sourceobj);
         object GetFieldValueFromObject(string fieldname, object sourceobj);
         IErrorsInfo SetFieldValueFromObject(string fieldname, object sourceobj,object value);
         List<T> GetTypedList<T>(List<object> ls);

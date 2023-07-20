@@ -314,11 +314,11 @@ namespace TheTechIdea.Beep.FileManager
                         fl.Add(f);
                     }
                    
-                    entityData.Fields = GetFieldsbyTableScan(DatasourceName,fl, flds);
+                    entityData.Fields = GetFieldsbyTableScan(sheetname, fl, flds);
                     Entities = new List<EntityStructure>();
                     EntitiesNames = new List<string>();
                     Entities.Add(entityData);
-                    EntitiesNames.Add(DatasourceName);
+                    EntitiesNames.Add(sheetname);
                     DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new ConfigUtil.DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
 
                    
@@ -362,7 +362,7 @@ namespace TheTechIdea.Beep.FileManager
                    fieldParser = new CsvTextFieldParser(Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName));
                    fieldParser.SetDelimiter(',');
 
-                    DMTypeBuilder.CreateNewObject(DatasourceName, DatasourceName, Entities[0].Fields);
+                    DMTypeBuilder.CreateNewObject(DMEEditor, "Beep.CSVDataSource", Entities[0].EntityName, Entities[0].Fields);
                     Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
                     foreach (EntityField item in Entities[0].Fields)
                     {
@@ -617,7 +617,7 @@ namespace TheTechIdea.Beep.FileManager
 
           
 
-            DMTypeBuilder.CreateNewObject(Entities.FirstOrDefault().EntityName, Entities.FirstOrDefault().EntityName, Entities.FirstOrDefault().Fields);
+            DMTypeBuilder.CreateNewObject(DMEEditor, "Beep.CSVDataSource", Entities.FirstOrDefault().EntityName, Entities.FirstOrDefault().Fields);
             return DMTypeBuilder.myType;
         }
 

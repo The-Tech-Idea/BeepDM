@@ -21,7 +21,7 @@ namespace TheTechIdea.Beep.Editor
     public class EntityUnitofWork:IEntityUnitofWork
     {
         public bool IsInListMode { get; set; } = false;
-        public EntityUnitofWork(bool isInListMode,ObservableCollection<Entity> ts)
+        public EntityUnitofWork(bool isInListMode,ObservableBindingList<Entity> ts)
         {
 
             IsInListMode = isInListMode;
@@ -57,8 +57,8 @@ namespace TheTechIdea.Beep.Editor
             }
         }
 
-        private ObservableCollection<Entity> _units;
-        public ObservableCollection<Entity> Units
+        private ObservableBindingList<Entity> _units;
+        public ObservableBindingList<Entity> Units
         {
             get { return _units; }
             set
@@ -117,7 +117,7 @@ namespace TheTechIdea.Beep.Editor
         }
         private void reset()
         {
-            Units = new ObservableCollection<Entity>();
+            Units = new ObservableBindingList<Entity>();
             Units.CollectionChanged -= Units_CollectionChanged;
             Units.CollectionChanged += Units_CollectionChanged;
             DeletedUnits = new List<Entity>();
@@ -306,7 +306,7 @@ namespace TheTechIdea.Beep.Editor
                 }
             }
         }
-        public virtual async Task<ObservableCollection<Entity>> Get(List<AppFilter> filters)
+        public virtual async Task<ObservableBindingList<Entity>> Get(List<AppFilter> filters)
         {
             
             if (!IsInListMode)
@@ -318,7 +318,7 @@ namespace TheTechIdea.Beep.Editor
             }
             return await Task.FromResult(Units);
         }
-        public virtual async Task<ObservableCollection<Entity>> Get()
+        public virtual async Task<ObservableBindingList<Entity>> Get()
         {
             
             if (!IsInListMode)
@@ -671,11 +671,11 @@ namespace TheTechIdea.Beep.Editor
             }
             return retval;
         }
-        //public static ObservableCollection<T1> ConvertDataTableToObservable<T1>(DataTable table) where T1 : class, new()
+        //public static ObservableBindingList<T1> ConvertDataTableToObservable<T1>(DataTable table) where T1 : class, new()
         //{
         //    try
         //    {
-        //        ObservableCollection<T1> list = new ObservableCollection<T1>();
+        //        ObservableBindingList<T1> list = new ObservableBindingList<T1>();
 
         //        foreach (var row in table.AsEnumerable())
         //        {
@@ -704,11 +704,11 @@ namespace TheTechIdea.Beep.Editor
         //        return null;
         //    }
         //}
-        //public static ObservableCollection<T1> ConvertList2Observable<T1>(IList table) where T1 : class, new()
+        //public static ObservableBindingList<T1> ConvertList2Observable<T1>(IList table) where T1 : class, new()
         //{
         //    try
         //    {
-        //        ObservableCollection<T1> list = new ObservableCollection<T1>();
+        //        ObservableBindingList<T1> list = new ObservableBindingList<T1>();
 
         //        foreach (var row in table)
         //        {

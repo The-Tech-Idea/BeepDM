@@ -151,7 +151,7 @@ namespace TheTechIdea.Beep.Json
                     {
                         if (!CheckEntityExist(entity.EntityName))
                         {
-                            Type entype = DMEEditor.Utilfunction.GetEntityType(entity.EntityName, entity.Fields);
+                            Type entype = DMEEditor.Utilfunction.GetEntityType(DMEEditor, entity.EntityName, entity.Fields);
                             if (entype == null) return false;
                             if (entity.Fields != null)
                             {
@@ -392,7 +392,7 @@ namespace TheTechIdea.Beep.Json
         public Type GetEntityType(string EntityName)
         {
             string filenamenoext = EntityName;
-            DMTypeBuilder.CreateNewObject(EntityName, EntityName, Entities.Where(x => x.EntityName == EntityName).FirstOrDefault().Fields);
+            DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, Entities.Where(x => x.EntityName == EntityName).FirstOrDefault().Fields);
             return DMTypeBuilder.myType;
         }
         public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)

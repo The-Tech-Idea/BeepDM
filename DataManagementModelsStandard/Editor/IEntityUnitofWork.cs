@@ -28,7 +28,7 @@ namespace DataManagementModels.Editor
         Dictionary<int, string> InsertedKeys { get; set; }
         string PrimaryKey { get; set; }
         string Sequencer { get; set; }
-        ObservableCollection<Entity> Units { get; set; }
+        ObservableBindingList<Entity> Units { get; set; }
         Dictionary<int, string> UpdatedKeys { get; set; }
 
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
@@ -38,8 +38,8 @@ namespace DataManagementModels.Editor
         int DocExistByKey(Entity doc);
         int FindDocIdx(Entity doc);
         IEnumerable<int> GetAddedEntities();
-        Task<ObservableCollection<Entity>> Get();
-        Task<ObservableCollection<Entity>> Get(List<AppFilter> filters);
+        Task<ObservableBindingList<Entity>> Get();
+        Task<ObservableBindingList<Entity>> Get(List<AppFilter> filters);
         IEnumerable<Entity> GetDeletedEntities();
         Entity Get( int key);
         Entity Get(string primarykeyid);

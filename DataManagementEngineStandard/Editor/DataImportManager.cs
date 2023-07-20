@@ -1,10 +1,15 @@
-﻿using System;
+﻿using DataManagementModels.ConfigUtil;
+using DataManagementModels.Editor;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Mapping;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Util;
@@ -13,6 +18,7 @@ namespace TheTechIdea.Beep.Editor
 {
     public partial class DataImportManager
     {
+       
         public string SourceEntityName { get; set; } = string.Empty;
         public string DestEntityName { get; set; } = string.Empty;
         public string SourceDataSourceName { get; set; } = string.Empty;
@@ -21,238 +27,200 @@ namespace TheTechIdea.Beep.Editor
         public EntityStructure DestEntityStructure { get; set; }
         public IDataSource SourceData { get; set; }
         public IDataSource DestData { get; set; }
-
+        public DefaultValueType DefaultValueType { get; set; }
         public UnitofWork<Entity> SrcunitofWork { get; set; }
         public UnitofWork<Entity> DstunitofWork { get; set; }
+        public UnitofWork<EntityDataMap_DTL> MappingunitofWork { get; set; }
+        public EntityDataMap_DTL CurrentMappingDTL { get; set; }
         public EntityDataMap Mapping { get; set; }
-      
-
         public IDMEEditor DMEEditor { get; }
-
+        public List<DefaultValue> Defaults { get; set; } = new List<DefaultValue>();
+        bool IsEntitychanged = false;
         public DataImportManager(IDMEEditor dMEEditor)
         {
             DMEEditor = dMEEditor;
-            
+
         }
-        public IErrorsInfo LoadSourceData(string datasourcename,string sourceEntityName)
+        public DataImportManager(IDMEEditor dMEEditor, string destEntityName, string destDataSourceName)
+        {
+            DMEEditor = dMEEditor;
+            LoadMapping();
+            if (Mapping == null)
+            {
+                LoadDestEntityStructure(destEntityName, destDataSourceName);
+                Mapping.MappedEntities.Add( MappingManager.AddEntitytoMappedEntities(dMEEditor, SourceEntityStructure, DestEntityStructure));
+            }
+        }
+        public DataImportManager(IDMEEditor dMEEditor, string destEntityName, string destDataSourceName, string srcEntityName, string srcDataSourceName)
+        {
+            DMEEditor = dMEEditor;
+            LoadMapping();
+            if (Mapping == null)
+            {
+                LoadDestEntityStructure(destEntityName, destDataSourceName);
+                LoadSourceEntityStructure(srcEntityName, srcDataSourceName);
+                Mapping.MappedEntities.Add(MappingManager.AddEntitytoMappedEntities(dMEEditor, SourceEntityStructure, DestEntityStructure));
+            }
+
+        }
+        public IErrorsInfo LoadDestEntityStructure(string destEntityName, string destDataSourceName)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                DestData = DMEEditor.GetDataSource(destDataSourceName);
+                if (DestData != null)
+                {
+                    DestDataSourceName = destDataSourceName; DestEntityName = destEntityName;
+                    if (DestData.ConnectionStatus == ConnectionState.Open)
+                    {
+                        Defaults = DMEEditor.Getdefaults(destDataSourceName);
+                        DestEntityStructure = (EntityStructure)DestData.GetEntityStructure(destEntityName, false).Clone();
+                    }
+                    else DMEEditor.AddLogMessage("Beep", $"Error Could open  Destination Datasource {destDataSourceName} ", DateTime.Now, 0, null, Errors.Failed);
+                }
+                else DMEEditor.AddLogMessage("Beep", $"Error Could Get  Destination Datasource {destDataSourceName} ", DateTime.Now, 0, null, Errors.Failed);
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error Loading Destination Data for  {destDataSourceName} -{destEntityName} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+        public IErrorsInfo LoadSourceEntityStructure(string srcEntityName, string srcDataSourceName)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                SourceData = DMEEditor.GetDataSource(srcDataSourceName);
+                if (DestData != null)
+                {
+                    SourceDataSourceName = srcDataSourceName;
+                    SourceEntityName = srcEntityName;
+                    if (SourceData.ConnectionStatus == ConnectionState.Open)
+                    {
+                        DestEntityStructure = (EntityStructure)SourceData.GetEntityStructure(srcEntityName, false).Clone();
+                    }
+                    else DMEEditor.AddLogMessage("Beep", $"Error Could open  Destination Datasource {srcDataSourceName} ", DateTime.Now, 0, null, Errors.Failed);
+                }
+                else DMEEditor.AddLogMessage("Beep", $"Error Could Get  Destination Datasource {srcDataSourceName} ", DateTime.Now, 0, null, Errors.Failed);
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error Loading Destination Data for  {srcDataSourceName} -{srcEntityName} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
+        public IErrorsInfo LoadMapping(string destEntityName, string destDataSourceName)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                if (!destEntityName.Equals(DestEntityName, StringComparison.InvariantCultureIgnoreCase) || !destDataSourceName.Equals(DestDataSourceName, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    IsEntitychanged = true;
+                    DestDataSourceName = destDataSourceName; DestEntityName = destEntityName;
+                }
+                Mapping = DMEEditor.ConfigEditor.LoadMappingValues(destEntityName, destDataSourceName);
+                if (DestEntityStructure == null || IsEntitychanged)
+                {
+                    LoadDestEntityStructure(destEntityName, destDataSourceName);
+                }
+                MappingunitofWork = new UnitofWork<EntityDataMap_DTL>(DMEEditor, true,new ObservableBindingList<EntityDataMap_DTL>(Mapping.MappedEntities), "GuidID");
+                MappingunitofWork.PrimaryKey = "GuidID";
+                IsEntitychanged = false;
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error Loading Mapping File Data {destDataSourceName} -{destEntityName} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+
+        }
+        public IErrorsInfo LoadMapping()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
             {
 
+                Mapping = DMEEditor.ConfigEditor.LoadMappingValues(DestEntityName, DestDataSourceName);
+                if (DestEntityStructure == null || IsEntitychanged)
+                {
+                    LoadDestEntityStructure(DestEntityName, DestDataSourceName);
+                }
+                if (SourceEntityName == null || IsEntitychanged)
+                {
+                    LoadSourceEntityStructure(SourceEntityName,SourceDataSourceName);
+                }
+                MappingunitofWork = new UnitofWork<EntityDataMap_DTL>(DMEEditor, true, new ObservableBindingList<EntityDataMap_DTL>(Mapping.MappedEntities), "GuidID");
+                MappingunitofWork.PrimaryKey = "GuidID";
+              
+
             }
             catch (Exception ex)
             {
+                DMEEditor.AddLogMessage("Beep", $"Error Loading Mapping File Data {DestDataSourceName} -{DestEntityName} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
 
-                DMEEditor.AddLogMessage("Beep", $"Error Loading Source Data {datasourcename} -{sourceEntityName}", DateTime.Now, 0, null, Errors.Failed);
+        }
+        public IErrorsInfo SaveMapping()
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                Mapping.MappedEntities = MappingunitofWork.Units.ToList();
+                 DMEEditor.ConfigEditor.SaveMappingValues(DestEntityName, DestDataSourceName,Mapping);
+
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error Loading Mapping File Data {DestDataSourceName} -{DestEntityName} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+
+        }
+        private bool GetIsEntityChanges(string sourceentityname, string destentityname)
+        {
+            if (!SourceEntityName.Equals(sourceentityname, StringComparison.InvariantCultureIgnoreCase) ||
+                (!DestEntityName.Equals(destentityname, StringComparison.InvariantCultureIgnoreCase)))
+            {
+                IsEntitychanged = true;
+                return true;
+            }
+            else
+            {
+                IsEntitychanged = false;
+                return false;
+            }
+
+        }
+        public IErrorsInfo RunImport(IProgress<IPassedArgs> progress, CancellationToken token )
+        {
+            try
+            {
+                      
+                var ScriptRun = Task.Run(() => {
+                     token.Register(() => StopTask());
+                    DMEEditor.ETL.CreateImportScript(Mapping, CurrentMappingDTL);
+                    DMEEditor.ETL.RunImportScript(progress, token).Wait();
+                }).ContinueWith(t => { Update(); });
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error Running Import Data {DestDataSourceName} -{DestEntityName} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
             }
             return DMEEditor.ErrorObject;
         }
-        public Tuple<IErrorsInfo, EntityDataMap> CreateEntityMap(string SourceEntityName, string SourceDataSourceName, string DestEntityName, string DestDataSourceName)
+        public void StopTask()
         {
-            try
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                IDataSource Destds = null;
-                //  IDataSource Srcds=null;
-                EntityDataMap Mapping = DMEEditor.ConfigEditor.LoadMappingValues(DestEntityName, DestDataSourceName);
-                if (Mapping == null)
-                {
-                    Mapping = new EntityDataMap();
-                    Mapping.EntityName = DestEntityName;
-                    Mapping.EntityDataSource = DestDataSourceName;
-                }
-
-                Destds = DMEEditor.GetDataSource(DestDataSourceName);
-                Destds.Openconnection();
-                EntityStructure destent = null;
-                if (Destds != null && Destds.ConnectionStatus == ConnectionState.Open)
-                {
-                    destent = (EntityStructure)Destds.GetEntityStructure(DestEntityName, true).Clone();
-                }
-                else destent = (EntityStructure)Destds.GetEntityStructure(DestEntityName, false).Clone();
-
-                Mapping.EntityFields = destent.Fields;
-                Mapping.MappingName = $"{DestEntityName}_{DestDataSourceName}";
-                if (Mapping.MappedEntities.Count > 0)
-                {
-                    if (!Mapping.MappedEntities.Where(p => p.EntityName != null && p.EntityName.Equals(SourceEntityName, StringComparison.OrdinalIgnoreCase) && p.EntityDataSource != null && p.EntityDataSource.Equals(SourceDataSourceName, StringComparison.OrdinalIgnoreCase)).Any())
-                    {
-                        Mapping.MappedEntities.Add(AddEntitytoMappedEntities(SourceDataSourceName, SourceEntityName, destent));
-                    }
-
-                }
-                else
-                {
-                    Mapping.MappedEntities = new List<EntityDataMap_DTL>();
-                    Mapping.MappedEntities.Add(AddEntitytoMappedEntities(destent));
-                }
-                DMEEditor.ConfigEditor.SaveMappingValues(DestEntityName, DestDataSourceName, Mapping);
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-
-            }
-            return new Tuple<IErrorsInfo, EntityDataMap>(DMEEditor.ErrorObject,Mapping);
+            DMEEditor.AddLogMessage("Beep", $"Error Running Import Data {DestDataSourceName} -{DestEntityName} Stopped by user", DateTime.Now, 0, null, Errors.Failed);
         }
-        public Tuple<IErrorsInfo, EntityDataMap> CreateEntityMap(string DestEntityName, string DestDataSourceName)
+        public void Update()
         {
-            try
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                IDataSource Destds;
-                //IDataSource Srcds;
-                EntityDataMap Mapping = DMEEditor.ConfigEditor.LoadMappingValues(DestEntityName, DestDataSourceName);
-                if (Mapping == null)
-                {
-                    Mapping = new EntityDataMap();
-                    Mapping.EntityName = DestEntityName;
-                    Mapping.EntityDataSource = DestDataSourceName;
-                }
-
-                Destds = DMEEditor.GetDataSource(DestDataSourceName);
-                Destds.Openconnection();
-                EntityStructure destent = null;
-                if (Destds != null && Destds.ConnectionStatus == ConnectionState.Open)
-                {
-                    destent = (EntityStructure)Destds.GetEntityStructure(DestEntityName, true).Clone();
-                }
-                else destent = (EntityStructure)Destds.GetEntityStructure(DestEntityName, false).Clone();
-               
-                if (Mapping.MappedEntities == null)
-                {
-                    Mapping.MappedEntities = new List<EntityDataMap_DTL>();
-
-                }
-                Mapping.MappingName = $"{DestEntityName}_{DestDataSourceName}";
-                DMEEditor.ConfigEditor.SaveMappingValues(DestEntityName, DestDataSourceName, Mapping);
-
-
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-
-            }
-            return new Tuple<IErrorsInfo, EntityDataMap>(DMEEditor.ErrorObject, Mapping);
+            DMEEditor.AddLogMessage("Beep", $"Running Import Data {DestDataSourceName} -{DestEntityName} Finished", DateTime.Now, 0, null, Errors.Ok);
         }
-        public void Save()
-        {
-            DMEEditor.ConfigEditor.SaveMappingValues(Mapping.EntityName, Mapping.EntityDataSource, Mapping);
-        }
-        public EntityDataMap_DTL AddEntitytoMappedEntities(string SourceDataSourceName, string SourceEntityName, EntityStructure destent)
-        {
-            EntityDataMap_DTL det = new EntityDataMap_DTL();
-            try
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                if (!string.IsNullOrEmpty(SourceEntityName))
-                {
-                    det.EntityDataSource = SourceDataSourceName;
-                    det.EntityName = SourceEntityName;
-                    IDataSource Srcds = DMEEditor.GetDataSource(SourceDataSourceName);
-                    Srcds.Openconnection();
-                    EntityStructure srcent = null;
-                    if (Srcds != null && Srcds.ConnectionStatus == ConnectionState.Open)
-                    {
-                        srcent = (EntityStructure)Srcds.GetEntityStructure(SourceEntityName, true).Clone();
-                    }
-                    else srcent = (EntityStructure)Srcds.GetEntityStructure(SourceEntityName, false).Clone();
-                    det.EntityFields = srcent.Fields;
-                }
-                det.SelectedDestFields = destent.Fields;
-                det.FieldMapping = MapEntityFields(det);
-            }
-            catch (Exception ex)
-            {
-
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.ErrorObject.Message = ex.Message;
-            }
-            return det;
-        }
-        public EntityDataMap_DTL AddEntitytoMappedEntities(EntityDataMap_DTL det, string SourceDataSourceName, string SourceEntityName, EntityStructure destent)
-        {
-            try
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                if (!string.IsNullOrEmpty(SourceEntityName))
-                {
-                    det.EntityDataSource = SourceDataSourceName;
-                    det.EntityName = SourceEntityName;
-                    IDataSource Srcds = DMEEditor.GetDataSource(SourceDataSourceName);
-                    Srcds.Openconnection();
-                    EntityStructure srcent = null;
-                    if (Srcds != null && Srcds.ConnectionStatus == ConnectionState.Open)
-                    {
-                        srcent = (EntityStructure)Srcds.GetEntityStructure(SourceEntityName, true).Clone();
-                    }
-                    else srcent = (EntityStructure)Srcds.GetEntityStructure(SourceEntityName, false).Clone();
-                    det.EntityFields = srcent.Fields;
-                }
-                det.SelectedDestFields = destent.Fields;
-                det.FieldMapping = MapEntityFields(det);
-            }
-            catch (Exception ex)
-            {
-
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.ErrorObject.Message = ex.Message;
-            }
-            return det;
-        }
-        public EntityDataMap_DTL AddEntitytoMappedEntities(EntityStructure destent)
-        {
-            EntityDataMap_DTL det = new EntityDataMap_DTL();
-            try
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                det.SelectedDestFields = destent.Fields;
-                det.FieldMapping = MapEntityFields(det);
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.ErrorObject.Message = ex.Message;
-            }
-            return det;
-        }
-        public List<Mapping_rep_fields> MapEntityFields(EntityDataMap_DTL datamap)
-        {
-            List<Mapping_rep_fields> retval = new List<Mapping_rep_fields>();
-            try
-            {
-                for (int i = 0; i < datamap.SelectedDestFields.Count; i++)
-                {
-                    Mapping_rep_fields x = new Mapping_rep_fields();
-                    x.ToFieldName = datamap.SelectedDestFields[i].fieldname;
-                    x.ToFieldType = datamap.SelectedDestFields[i].fieldtype;
-                    foreach (EntityField item in datamap.EntityFields)
-                    {
-                        if (item.fieldname.Equals(x.ToFieldName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            x.FromFieldName = item.fieldname;
-                            x.FromFieldType = item.fieldtype;
-                        }
-                    }
-                    retval.Add(x);
-                }
-            }
-            catch (Exception ex)
-            {
-                retval = null;
-            }
-            return retval;
-        }
-      
-
-        
-
     }
 }

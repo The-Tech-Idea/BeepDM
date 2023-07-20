@@ -1,7 +1,7 @@
-﻿using System;
+﻿using DataManagementModels.Editor;
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
 using System.Linq;
@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.Editor
     public class UnitofWork<T> : IUnitofWork<T> where T : Entity, INotifyPropertyChanged
     {
         public bool IsInListMode { get; set; } = false;
-        public UnitofWork(IDMEEditor dMEEditor, bool isInListMode, ObservableCollection<T> ts,string primarykey)
+        public UnitofWork(IDMEEditor dMEEditor, bool isInListMode, ObservableBindingList<T> ts,string primarykey)
         {
             _suppressNotification = true;
             DMEEditor = dMEEditor;
@@ -54,14 +54,16 @@ namespace TheTechIdea.Beep.Editor
             DatasourceName = datasourceName;
             EntityName = entityName;
             EntityStructure = entityStructure;
+            PrimaryKey = entityStructure.PrimaryKeys.FirstOrDefault().fieldname;
             if (OpenDataSource())
             {
                 init();
+              
             }
             _suppressNotification = false;
         }
-        private ObservableCollection<T> _units;
-        public ObservableCollection<T> Units
+        private ObservableBindingList<T> _units;
+        public ObservableBindingList<T> Units
         {
             get { return _units; }
             set
@@ -90,8 +92,8 @@ namespace TheTechIdea.Beep.Editor
                 }
             }
         }
-        private ObservableCollection<T> _filteredunits;
-        public ObservableCollection<T> FilteredUnits
+        private ObservableBindingList<T> _filteredunits;
+        public ObservableBindingList<T> FilteredUnits
         {
             get { return _filteredunits; }
             set
@@ -107,7 +109,7 @@ namespace TheTechIdea.Beep.Editor
                 }
                 if (_filteredunits == null)
                 {
-                    _filteredunits = new ObservableCollection<T>();
+                    _filteredunits = new ObservableBindingList<T>();
                 }
                 else
                     _filteredunits.Clear();
@@ -164,7 +166,7 @@ namespace TheTechIdea.Beep.Editor
         }
         private void reset()
         {
-            Units = new ObservableCollection<T>();
+            Units = new ObservableBindingList<T>();
             Units.CollectionChanged -= Units_CollectionChanged;
             Units.CollectionChanged += Units_CollectionChanged;
             DeletedUnits = new List<T>();
@@ -375,7 +377,7 @@ namespace TheTechIdea.Beep.Editor
                 UpdatedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
             }
         }
-        private ObservableCollection<T> FilterCollection<T>(ObservableCollection<T> originalCollection, List<AppFilter> filters)
+        private ObservableBindingList<T> FilterCollection(ObservableBindingList<T> originalCollection, List<AppFilter> filters)
         {
             try
             {
@@ -417,9 +419,10 @@ namespace TheTechIdea.Beep.Editor
 
                 var lambda = Expression.Lambda<Func<T, bool>>(combinedExpression, parameter);
 
-                var filteredData = new ObservableCollection<T>(
-                    originalCollection.AsQueryable().Where(lambda.Compile())
-                );
+                var filteredData = new ObservableBindingList<T>(
+     originalCollection.AsQueryable().Where(lambda.Compile()).ToList()
+ );
+
 
                 return filteredData;
             }
@@ -429,7 +432,7 @@ namespace TheTechIdea.Beep.Editor
                 return null;
             }
         }
-        private ObservableCollection<T> FilterCollection<T>(ObservableCollection<T> originalCollection, string propertyName, object value)
+        private ObservableBindingList<T> FilterCollection(ObservableBindingList<T> originalCollection, string propertyName, object value)
         {
             try
             {
@@ -453,9 +456,10 @@ namespace TheTechIdea.Beep.Editor
                 var equality = Expression.Equal(property, constant);
                 var lambda = Expression.Lambda<Func<T, bool>>(equality, parameter);
 
-                var filteredData = new ObservableCollection<T>(
-                    originalCollection.AsQueryable().Where(lambda.Compile())
-                );
+                var filteredData = new ObservableBindingList<T>(
+     originalCollection.AsQueryable().Where(lambda.Compile()).ToList()
+ );
+
 
                 return filteredData;
             }
@@ -467,7 +471,7 @@ namespace TheTechIdea.Beep.Editor
             }
          
         }
-        public virtual async Task<ObservableCollection<T>> Get(List<AppFilter> filters)
+        public virtual async Task<ObservableBindingList<T>> Get(List<AppFilter> filters)
         {
             if (!IsInListMode)
             {
@@ -487,8 +491,8 @@ namespace TheTechIdea.Beep.Editor
                         foreach (var filter in filters)
                         {
 
-                            FilteredUnits = FilterCollection<T>(Units, filters);
-                            //FilteredUnits = new ObservableCollection<T>();
+                            FilteredUnits = FilterCollection(Units, filters);
+                            //FilteredUnits = new ObservableBindingList<T>();
                             //if (t != null)
                             //{
                             //    foreach (var item in t)
@@ -511,7 +515,7 @@ namespace TheTechIdea.Beep.Editor
 
 
         }
-        public virtual async Task<ObservableCollection<T>> Get()
+        public virtual async Task<ObservableBindingList<T>> Get()
         {
            
             if (!IsInListMode)
@@ -871,11 +875,11 @@ namespace TheTechIdea.Beep.Editor
             }
             return retval;
         }
-        //public static ObservableCollection<T1> ConvertDataTableToObservable<T1>(DataTable table) where T1 : class, new()
+        //public static ObservableBindingList<T1> ConvertDataTableToObservable<T1>(DataTable table) where T1 : class, new()
         //{
         //    try
         //    {
-        //        ObservableCollection<T1> list = new ObservableCollection<T1>();
+        //        ObservableBindingList<T1> list = new ObservableBindingList<T1>();
 
         //        foreach (var row in table.AsEnumerable())
         //        {
@@ -904,11 +908,11 @@ namespace TheTechIdea.Beep.Editor
         //        return null;
         //    }
         //}
-        //public static ObservableCollection<T1> ConvertList2Observable<T1>(IList table) where T1 : class, new()
+        //public static ObservableBindingList<T1> ConvertList2Observable<T1>(IList table) where T1 : class, new()
         //{
         //    try
         //    {
-        //        ObservableCollection<T1> list = new ObservableCollection<T1>();
+        //        ObservableBindingList<T1> list = new ObservableBindingList<T1>();
 
         //        foreach (var row in table)
         //        {

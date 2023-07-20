@@ -78,10 +78,10 @@
       <Version>3.0.15</Version>
     </PackageReference>
     <PackageReference Include="TheTechIdea.Beep.DataManagementEngine">
-      <Version>1.0.141</Version>
+      <Version>1.0.161</Version>
     </PackageReference>
     <PackageReference Include="TheTechIdea.Beep.DataManagementModels">
-      <Version>1.0.61</Version>
+      <Version>1.0.66</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

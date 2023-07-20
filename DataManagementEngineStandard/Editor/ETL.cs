@@ -292,7 +292,7 @@ namespace TheTechIdea.Beep.Editor
                         List<object> srcList = new List<object>();
                         if (src.Result != null)
                         {
-                            DMTypeBuilder.CreateNewObject(item.EntityName, item.EntityName, item.Fields);
+                            DMTypeBuilder.CreateNewObject(DMEEditor, item.EntityName, item.EntityName, item.Fields);
                             if (srcTb.GetType().FullName.Contains("DataTable"))
                             {
                                 srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, item);
@@ -592,7 +592,7 @@ namespace TheTechIdea.Beep.Editor
                         List<object> srcList = new List<object>();
                         if (src.Result != null)
                         {
-                            DMTypeBuilder.CreateNewObject(destEntitystructure.EntityName, srcentitystructure.EntityName, SourceFields);
+                            DMTypeBuilder.CreateNewObject(DMEEditor, destEntitystructure.EntityName, srcentitystructure.EntityName, SourceFields);
                             if (srcTb.GetType().FullName.Contains("DataTable"))
                             {
                                 srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, srcentitystructure);
@@ -770,7 +770,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 if (map_DTL != null)
                 {
-                    retval = DMEEditor.Utilfunction.MapObjectToAnother(destentity, map_DTL, r);
+                    retval = DMEEditor.Utilfunction.MapObjectToAnother(DMEEditor, destentity, map_DTL, r);
                 }
                 if (CurrrentDBDefaults.Count > 0)
                 {
@@ -811,7 +811,7 @@ namespace TheTechIdea.Beep.Editor
                                 {
                                     LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Inserting Parent for  Record {CurrentScriptRecord}  in {item.RelatedEntityID}" });
                                     //---- insert Parent Key ----
-                                    object parentob = DMEEditor.Utilfunction.GetEntityObject(item.RelatedEntityID, refentity.Fields);
+                                    object parentob = DMEEditor.Utilfunction.GetEntityObject(DMEEditor, item.RelatedEntityID, refentity.Fields);
                                     if (parentob != null)
                                     {
                                         var refval = DMEEditor.Utilfunction.GetFieldValueFromObject(item.EntityColumnID, retval);

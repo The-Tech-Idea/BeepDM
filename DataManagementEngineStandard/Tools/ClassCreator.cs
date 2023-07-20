@@ -256,8 +256,8 @@ namespace TheTechIdea.Beep.Tools
 
             string extracode2 = null;//Environment.NewLine + " public event PropertyChangedEventHandler PropertyChanged;\r\n\r\n    // This method is called by the Set accessor of each property.\r\n    // The CallerMemberName attribute that is applied to the optional propertyName\r\n    // parameter causes the property name of the caller to be substituted as an argument.\r\n    private void NotifyPropertyChanged([CallerMemberName] string propertyName = \"\")\r\n    {\r\n        if (PropertyChanged != null)\r\n        {\r\n            PropertyChanged(this, new PropertyChangedEventArgs(propertyName));\r\n        }\r\n    }";
             //string template2 = null;//Environment.NewLine + " private :FIELDTYPE :FIELDNAMEValue ;";
-            string template2 = Environment.NewLine + $" private :FIELDTYPE _:FIELDNAME. ;";
-            template2 = Environment.NewLine + " public :FIELDTYPE :FIELDNAME\r\n    {\r\n        get\r\n        {\r\n            return this._:FIELDNAMEValue;\r\n        }\r\n\r\n        set\r\n        {\r\n            if (value != this._:FIELDNAMEValue)\r\n            {\r\n                this._:FIELDNAMEValue = value;\r\n                SetProperty(ref _:FIELDNAMEValue, value);;\r\n            }\r\n        }\r\n    }";
+            string template2 = Environment.NewLine + $" private :FIELDTYPE  _:FIELDNAMEValue ;\r\n";
+            template2 = template2 +Environment.NewLine + " public :FIELDTYPE :FIELDNAME\r\n    {\r\n        get\r\n        {\r\n            return this._:FIELDNAMEValue;\r\n        }\r\n\r\n        set\r\n        {\r\n            if (value != this._:FIELDNAMEValue)\r\n            {\r\n                this._:FIELDNAMEValue = value;\r\n                SetProperty(ref _:FIELDNAMEValue, value);;\r\n            }\r\n        }\r\n    }";
             return CreateClassFromTemplate(entity.EntityName, entity, template2, usingheader, implementations2, extracode2, outputpath, nameSpacestring, GenerateCSharpCodeFiles);
         }
         public string CreateClassFromTemplate(string classname,EntityStructure entity, string template, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true)
@@ -283,7 +283,7 @@ namespace TheTechIdea.Beep.Tools
                     clsname = entity.EntityName;
                 }
                 str = usingheader + Environment.NewLine;
-                str += $"namespace  {nameSpacestring} ;" + Environment.NewLine;
+                str += $"namespace  {nameSpacestring} " + Environment.NewLine;
                 str += "{ " + Environment.NewLine;
                 if (string.IsNullOrEmpty(implementations))
                 {
@@ -297,7 +297,7 @@ namespace TheTechIdea.Beep.Tools
                 str += "{ " + Environment.NewLine; // start of Class
                 // Create CTOR
                 str += $"public  {clsname} ()"+"{}" + Environment.NewLine; 
-                for (int i = 0; i < entity.Fields.Count - 1; i++)
+                for (int i = 0; i < entity.Fields.Count ; i++)
                 {
                     EntityField fld = entity.Fields[i];
                     if (string.IsNullOrEmpty(template))
@@ -320,7 +320,7 @@ namespace TheTechIdea.Beep.Tools
                 }
                 str += Environment.NewLine;
 
-            //    str += "} " + Environment.NewLine; // end of namepspace
+                 str += "} " + Environment.NewLine; // end of namepspace
                 string[] result = Regex.Split(str, "\r\n|\r|\n");
                 if (GenerateCSharpCodeFiles)
                 {

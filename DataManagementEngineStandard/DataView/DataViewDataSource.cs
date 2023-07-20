@@ -353,7 +353,7 @@ namespace TheTechIdea.Beep.DataView
 
                 default:
                    
-                    DMTypeBuilder.CreateNewObject(entityname, entityname,dh.Fields);
+                    DMTypeBuilder.CreateNewObject(DMEEditor, entityname, entityname,dh.Fields);
                     retval= DMTypeBuilder.myType;
                     break;
             }

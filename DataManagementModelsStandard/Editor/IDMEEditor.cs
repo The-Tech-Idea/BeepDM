@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DataManagementModels.ConfigUtil;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -46,10 +47,11 @@ namespace TheTechIdea.Beep
         void AddLogMessage(string pLogMessage);
        
         void RaiseEvent(object sender,PassedArgs args);
-
         IErrorsInfo AskQuestion(IPassedArgs args);
         object GetData(IDataSource ds, EntityStructure entity);
-
+        List<DefaultValue> Getdefaults(string DatasourceName);
+        IErrorsInfo Savedefaults(List<DefaultValue> defaults, string DatasourceName);
+       
 
     }
 }

@@ -1026,7 +1026,7 @@ namespace TheTechIdea.Beep.DataBase
         public virtual Type GetEntityType(string EntityName)
         {
             EntityStructure x = GetEntityStructure(EntityName);
-            DMTypeBuilder.CreateNewObject(EntityName, EntityName, x.Fields);
+            DMTypeBuilder.CreateNewObject(DMEEditor,"Beep."+DatasourceName, EntityName, x.Fields);
             return DMTypeBuilder.myType;
         }
         public virtual List<string> GetEntitesList()

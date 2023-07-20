@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using System.Collections;
 using TheTechIdea.Beep.Tools;
 using DataManagementModels.DriversConfigurations;
+using DataManagementModels.ConfigUtil;
 
 namespace TheTechIdea.Beep
 {
@@ -667,6 +668,50 @@ namespace TheTechIdea.Beep
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
-      
+        public  List<DefaultValue> Getdefaults( string DatasourceName)
+        {
+            ErrorObject.Message = null;
+            ErrorObject.Flag = Errors.Ok;
+            List<DefaultValue> defaults = null;
+            try
+            {
+                ConnectionProperties cn = ConfigEditor.DataConnections[ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName.Equals(DatasourceName,StringComparison.InvariantCultureIgnoreCase))];
+                if (cn != null)
+                {
+                    defaults = ConfigEditor.DataConnections[ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName.Equals(DatasourceName, StringComparison.InvariantCultureIgnoreCase))].DatasourceDefaults;
+                }
+                else AddLogMessage("Beep", $"Could not Find DataSource  {DatasourceName}", DateTime.Now, 0, null, Errors.Failed);
+
+            }
+            catch (Exception ex)
+            {
+                AddLogMessage("Beep", $"Could not Save DataSource Defaults Values {DatasourceName}- {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+
+            }
+            return defaults;
+
+        }
+        public  IErrorsInfo Savedefaults(List<DefaultValue> defaults, string DatasourceName)
+        {
+            ErrorObject.Message = null;
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+
+                ConnectionProperties cn = ConfigEditor.DataConnections[ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName.Equals(DatasourceName, StringComparison.InvariantCultureIgnoreCase))];
+                if (cn != null)
+                {
+                    cn.DatasourceDefaults = defaults;
+                    ConfigEditor.SaveDataconnectionsValues();
+                }
+                else AddLogMessage("Beep", $"Could not Find DataSource  {DatasourceName}", DateTime.Now, 0, null, Errors.Failed);
+            }
+            catch (Exception ex)
+            {
+                AddLogMessage("Beep", $"Could not Save DataSource Defaults Values {DatasourceName}- {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+
+            return ErrorObject;
+        }
     }
 }

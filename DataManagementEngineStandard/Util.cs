@@ -1082,15 +1082,15 @@ namespace TheTechIdea.Beep
             }
             return retval;
         }
-        public  Type GetEntityType(string EntityName,List<EntityField> Fields)
+        public  Type GetEntityType(IDMEEditor DMEEditor, string EntityName,List<EntityField> Fields)
         {
             
-            DMTypeBuilder.CreateNewObject(EntityName, EntityName, Fields);
+            DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, Fields);
             return DMTypeBuilder.myType;
         }
-        public object GetEntityObject(string EntityName, List<EntityField> Fields)
+        public object GetEntityObject(IDMEEditor DMEEditor, string EntityName, List<EntityField> Fields)
         {
-            DMTypeBuilder.CreateNewObject(EntityName, EntityName, Fields);
+            DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, Fields);
             return DMTypeBuilder.myObject;
         }
         public DataRow GetDataRowFromobject(string EntityName, Type enttype,object UploadDataRow, EntityStructure DataStruct)
@@ -1144,9 +1144,9 @@ namespace TheTechIdea.Beep
             }
             return dr;
         }
-        public object  MapObjectToAnother(string destentityname, EntityDataMap_DTL SelectedMapping ,object sourceobj)
+        public object  MapObjectToAnother(IDMEEditor DMEEditor, string destentityname, EntityDataMap_DTL SelectedMapping ,object sourceobj)
         {
-            object destobj = GetEntityObject(destentityname, SelectedMapping.SelectedDestFields);
+            object destobj = GetEntityObject(DMEEditor,destentityname, SelectedMapping.SelectedDestFields);
             foreach (Mapping_rep_fields col in SelectedMapping.FieldMapping)
             {
                 try
