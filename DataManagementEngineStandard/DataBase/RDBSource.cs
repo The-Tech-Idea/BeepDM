@@ -1035,10 +1035,21 @@ namespace TheTechIdea.Beep.DataBase
             DataSet ds = new DataSet();
             try
             {
+                if (Dataconnection != null)
+                {
+                    if(Dataconnection.ConnectionProp!=null)
+                    {
+                        if(Dataconnection.ConnectionProp.SchemaName!=null)
+                        {
+                            if (Dataconnection.ConnectionProp.SchemaName.Contains(','))
+                            {
+                                string[] schemas = Dataconnection.ConnectionProp.SchemaName.Split(',');
+                            }
+                        }
+                    }
+                }
                
-                string[] schemas =Dataconnection.ConnectionProp.SchemaName.Split(',');
-      
-                    string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getlistoftables, null, Dataconnection.ConnectionProp.SchemaName, null, DMEEditor.ConfigEditor.QueryList, DatasourceType);
+                string sql = DMEEditor.ConfigEditor.GetSql(Sqlcommandtype.getlistoftables, null, Dataconnection.ConnectionProp.SchemaName, null, DMEEditor.ConfigEditor.QueryList, DatasourceType);
                     IDbDataAdapter adp = GetDataAdapter(sql, null);
                     adp.Fill(ds);
 

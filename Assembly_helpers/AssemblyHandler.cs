@@ -16,6 +16,7 @@ using TypeInfo = System.Reflection.TypeInfo;
 using System.Threading;
 using DataManagementModels.DataBase;
 using DataManagementModels.DriversConfigurations;
+using System.Data.Common;
 
 namespace TheTechIdea.Tools
 {
@@ -1083,11 +1084,20 @@ namespace TheTechIdea.Tools
                 }
                 else
                 {
-                   
-                    t1 = asm.GetTypes().Where(typeof(IDbDataAdapter).IsAssignableFrom).ToList() ;
-                    t1.AddRange(asm.GetTypes().Where(typeof(IDataConnection).IsAssignableFrom).ToList());
-                    t1.AddRange(asm.GetTypes().Where(e=>e.BaseType.ToString().Contains("DbCommandBuilder")).ToList());
-                    t1.AddRange(asm.GetTypes().Where(typeof(IDbTransaction).IsAssignableFrom).ToList());
+
+                    //t1 = asm.GetTypes().Where(typeof(IDbDataAdapter).IsAssignableFrom).ToList() ;
+                    //t1.AddRange(asm.GetTypes().Where(typeof(IDataConnection).IsAssignableFrom).ToList());
+                    //t1.AddRange(asm.GetTypes().Where(e=>e.BaseType.ToString().Contains("DbCommandBuilder")).ToList());
+                    //t1.AddRange(asm.GetTypes().Where(typeof(IDbTransaction).IsAssignableFrom).ToList());
+                     t1 = asm.GetTypes().Where(type => typeof(IDbDataAdapter).IsAssignableFrom(type)).ToList();
+                    t1.AddRange(asm.GetTypes().Where(type => typeof(IDbConnection).IsAssignableFrom(type)).ToList());
+                    t1.AddRange(asm.GetTypes().Where(type => type.BaseType != null && type.BaseType.ToString().Contains("DbCommandBuilder")).ToList());
+                    t1.AddRange(asm.GetTypes().Where(type => typeof(IDbTransaction).IsAssignableFrom(type)).ToList());
+                    t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbConnection))).ToList());
+                    t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbCommand))).ToList());
+                    t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbDataReader))).ToList());
+                    t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbParameter))).ToList());
+                    t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbTransaction))).ToList());
 
                     t = t1.ToArray();
                 }
@@ -1117,7 +1127,7 @@ namespace TheTechIdea.Tools
                             }
                             //-------------------------------------------------------
                             // Get DataBase Drivers
-                            if (type.ImplementedInterfaces.Contains(typeof(IDbDataAdapter)))
+                            if (type.ImplementedInterfaces.Contains(typeof(IDbDataAdapter)) )
                             {
                                 //Logger.WriteLog($" NameSpaces {type.Namespace} ");
                                 //IDataAdapter uc = (IDataAdapter)Activator.CreateInstance(type);
@@ -1145,6 +1155,7 @@ namespace TheTechIdea.Tools
                                 driversConfig.PackageName = p[0];
                                 driversConfig.DriverClass = p[0];
                                 driversConfig.dllname = type.Module.Name;
+                                driversConfig.ADOType = true;
                                 if (recexist == false)
                                 {
                                     DataDriversConfig.Add(driversConfig);
@@ -1152,7 +1163,7 @@ namespace TheTechIdea.Tools
 
                                 //  }
                             }
-                            if (type.ImplementedInterfaces.Contains(typeof(IDbConnection)))
+                            if (type.ImplementedInterfaces.Contains(typeof(IDbConnection))|| typeof(DbConnection).IsAssignableFrom(type))
                             {
 
                                 driversConfig.DbConnectionType = type.FullName;
@@ -1160,6 +1171,7 @@ namespace TheTechIdea.Tools
                                 driversConfig.DriverClass = p[0];
                                 driversConfig.version = p[1];
                                 driversConfig.dllname = type.Module.Name;
+                                driversConfig.ADOType = true;
                                 if (recexist == false)
                                 {
                                     DataDriversConfig.Add(driversConfig);
@@ -1167,7 +1179,7 @@ namespace TheTechIdea.Tools
 
                                 //}
                             }
-                            if (type.ImplementedInterfaces.Contains(typeof(IDbTransaction)))
+                            if (type.ImplementedInterfaces.Contains(typeof(IDbTransaction)) || typeof(DbTransaction).IsAssignableFrom(type))
                             {
 
 

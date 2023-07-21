@@ -12,7 +12,7 @@ namespace TheTechIdea.Beep.Tools
 {
     public static class RoslynFunctions
     {
-        public static Tuple<Type,Assembly> CompileAndGetFirstType(string classname,string code)
+        public static Tuple<Type,Assembly> CompileAndGetClassType(string classname,string code)
         {
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
 
@@ -59,5 +59,46 @@ namespace TheTechIdea.Beep.Tools
                 }
             }
         }
+        public static Type CompileCreateDLLAndGetClassType(string filepath, string classname, string code)
+        {
+            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
+
+            string assemblyName = Path.GetFileNameWithoutExtension(filepath);
+            MetadataReference[] references = new MetadataReference[]
+            {
+        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(System.ComponentModel.INotifyPropertyChanged).GetTypeInfo().Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(Enumerable).GetTypeInfo().Assembly.Location),
+        MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location), "System.Private.CoreLib.dll")),
+        MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location), "System.Runtime.dll"))
+            };
+            CSharpCompilation compilation = CSharpCompilation.Create(
+                assemblyName,
+                syntaxTrees: new[] { syntaxTree },
+                references: references,
+                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            string filename = Path.Combine(filepath, classname, ".cs");
+            EmitResult result = compilation.Emit(filename);  // Emit to file instead of MemoryStream
+
+            if (!result.Success)
+            {
+                IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
+                    diagnostic.IsWarningAsError ||
+                    diagnostic.Severity == DiagnosticSeverity.Error);
+
+                foreach (Diagnostic diagnostic in failures)
+                {
+                    Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
+                }
+                return null;
+            }
+            else
+            {
+                Assembly assembly = Assembly.LoadFrom(filename);  // Load the assembly from file
+
+                return assembly.GetTypes().FirstOrDefault(p => p.Name.Contains(classname));  // Gets first type. Adjust this if you need to get a specific type.
+            }
+        }
+
     }
 }
