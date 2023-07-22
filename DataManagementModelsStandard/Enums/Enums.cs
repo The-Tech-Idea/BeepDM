@@ -29,7 +29,9 @@ namespace TheTechIdea.Util
     {
         NONE, Oracle , SqlServer, Mysql, SqlCompact, SqlLite,
         Text,CSV,Xls,WebService,Json,xml,DuckDB,RealIM,Hdf5, Parquet, Avro, ORC, TSV, Onnx,
-        Postgre,Firebase,FireBird,Couchbase,RavenDB,MongoDB,CouchDB,VistaDB,DB2,OPC,Kafka,Redis,Hadoop,LiteDB,SnowFlake
+        Postgre,Firebase,FireBird,Couchbase,RavenDB,MongoDB,CouchDB,VistaDB,DB2,OPC,Kafka,Redis,Hadoop,LiteDB,SnowFlake,ElasticSearch,
+        Petastorm,MiModel,RocketSet,Spanner,Hana,Cockroach,Firebolt,Hologres,Presto,Trino,GoogleBigQuery,GoogleSheets,TerraData,TimeScale,
+        Vertica,DataBricks,AzureCloud
     }
     public enum DatasourceCategory
     {

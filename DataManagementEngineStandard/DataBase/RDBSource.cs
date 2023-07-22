@@ -792,7 +792,7 @@ namespace TheTechIdea.Beep.DataBase
 
 
         }
-        public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public virtual Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             return (Task<object>)GetEntity(EntityName, Filter);
         }
@@ -996,7 +996,7 @@ namespace TheTechIdea.Beep.DataBase
             }
           return fnd;
         }
-        public IErrorsInfo CreateEntities(List<EntityStructure> entities)
+        public  virtual IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
             try
             {
@@ -1076,7 +1076,7 @@ namespace TheTechIdea.Beep.DataBase
 
 
         }
-        public string AddNewEntity(string entityName,string schemaname)
+        public virtual string AddNewEntity(string entityName,string schemaname)
         {
             if (entityName == null)
             {
@@ -1101,7 +1101,7 @@ namespace TheTechIdea.Beep.DataBase
             Entities.Add(entity);
             return null;
         }
-        public string GetSchemaName()
+        public virtual string GetSchemaName()
         {
             string schemaname=null;
             
@@ -1180,7 +1180,7 @@ namespace TheTechIdea.Beep.DataBase
 
             return retval;
         }
-        public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
+        public virtual List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             List<RelationShipKeys> fk = new List<RelationShipKeys>();
             ErrorObject.Flag = Errors.Ok;
@@ -1241,7 +1241,7 @@ namespace TheTechIdea.Beep.DataBase
                 return null;
             }
         }
-        public IErrorsInfo RunScript(ETLScriptDet scripts)
+        public virtual IErrorsInfo RunScript(ETLScriptDet scripts)
         {
             var t = Task.Run<IErrorsInfo>(() => { return ExecuteSql(scripts.ddl); });
             t.Wait();
@@ -1250,7 +1250,7 @@ namespace TheTechIdea.Beep.DataBase
             DMEEditor.ErrorObject = scripts.errorsInfo;
             return DMEEditor.ErrorObject;
         }
-        public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities)
+        public virtual List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities)
         {
             return GetDDLScriptfromDatabase(entities);
         }
