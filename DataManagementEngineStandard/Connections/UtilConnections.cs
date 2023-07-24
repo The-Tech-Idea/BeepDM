@@ -67,7 +67,7 @@ namespace TheTechIdea.Beep.Connections
                 {
                     ConnectionProp.FilePath = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
                 }
-                input= Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
+               // input= Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
             }
            
 
