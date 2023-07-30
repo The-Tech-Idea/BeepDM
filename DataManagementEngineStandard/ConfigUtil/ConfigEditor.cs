@@ -462,25 +462,49 @@ namespace TheTechIdea.Util
 		{
 			string path = Path.Combine(ConfigPath, "DataConnections.json");
 			DataConnections = JsonLoader.DeserializeObject<ConnectionProperties>(path);
-			
-			return DataConnections;
+            if (DataConnections == null)
+            {
+                DataConnections = new List<ConnectionProperties>();
+
+            }
+            return DataConnections;
 		}
 		public bool DataConnectionExist(string ConnectionName)
 		{
-			return DataConnections.Any(x => x.ConnectionName.Equals(ConnectionName, StringComparison.InvariantCultureIgnoreCase));
+            if (DataConnections == null)
+            {
+                DataConnections = new List<ConnectionProperties>();
+
+            }
+            return DataConnections!=null? DataConnections.Any(x => x.ConnectionName.Equals(ConnectionName, StringComparison.InvariantCultureIgnoreCase)) : false;
 		}
 		public bool AddDataConnection(ConnectionProperties cn)
 		{ try
 
 			{
-				if (!DataConnectionExist(cn.ConnectionName))
+                if (DataConnections == null)
+                {
+                    DataConnections = new List<ConnectionProperties>();
+
+                }
+                if (!DataConnectionExist(cn.ConnectionName))
 				{
 					if(cn.ID<=0)
 					{
-						cn.ID = DataConnections.Max(p => p.ID) + 1;
+                        if(DataConnections.Count == 0)
+						{
+							cn.ID = 1;
+						}
+						else
+						{
+                            cn.ID = DataConnections.Max(p => p.ID) + 1 ;
+                        }
+
+                    
 						
 
                     }
+		
 					DataConnections.Add(cn);
 					return true;
 				}

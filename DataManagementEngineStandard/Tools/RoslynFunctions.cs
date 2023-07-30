@@ -23,7 +23,7 @@ namespace TheTechIdea.Beep.Tools
           MetadataReference.CreateFromFile(typeof(System.ComponentModel.INotifyPropertyChanged).GetTypeInfo().Assembly.Location), // for System.ComponentModel
           MetadataReference.CreateFromFile(typeof(Enumerable).GetTypeInfo().Assembly.Location),
           MetadataReference.CreateFromFile(typeof(Entity).GetTypeInfo().Assembly.Location),
-          MetadataReference.CreateFromFile(Path.Combine( Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location), "System.Private.CoreLib.dll")),
+          //MetadataReference.CreateFromFile(Path.Combine( Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location), "System.Private.CoreLib.dll")),
           MetadataReference.CreateFromFile(Path.Combine( Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location), "System.Runtime.dll"))
                 // Add any other references you need...
                
@@ -69,7 +69,7 @@ namespace TheTechIdea.Beep.Tools
         MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
         MetadataReference.CreateFromFile(typeof(System.ComponentModel.INotifyPropertyChanged).GetTypeInfo().Assembly.Location),
         MetadataReference.CreateFromFile(typeof(Enumerable).GetTypeInfo().Assembly.Location),
-        MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location), "System.Private.CoreLib.dll")),
+     //   MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location), "System.Private.CoreLib.dll")),
         MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location), "System.Runtime.dll"))
             };
             CSharpCompilation compilation = CSharpCompilation.Create(
