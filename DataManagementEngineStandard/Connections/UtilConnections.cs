@@ -93,7 +93,7 @@ namespace TheTechIdea.Beep.Connections
             replacement = ConnectionProp.Port.ToString() ?? string.Empty;
             input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
 
-          
+
 
 
 
@@ -101,10 +101,16 @@ namespace TheTechIdea.Beep.Connections
             if (!string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString) && IsFile)
             {
                 pattern = "{File}";
-                replacement = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName) ?? string.Empty; 
+                replacement = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName) ?? string.Empty;
                 input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
-               
+
             }
+            else
+            {
+                input = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
+            }
+           
+
 
             rep = input;
             return rep;
