@@ -98,18 +98,20 @@ namespace TheTechIdea.Beep.Connections
 
 
 
-            if (!string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString) && IsFile)
+            if (IsFile)
             {
-                pattern = "{File}";
-                replacement = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName) ?? string.Empty;
-                input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
+                if (!string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString))
+                {
 
+                    pattern = "{File}";
+                    replacement = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName) ?? string.Empty;
+                    input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
+                }
+                else
+                {
+                    input = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
+                }
             }
-            else
-            {
-                input = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
-            }
-           
 
 
             rep = input;
