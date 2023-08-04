@@ -251,5 +251,89 @@ namespace TheTechIdea.Beep.FileManager
             return ds;
 
         }
+        public Tuple<IErrorsInfo,Project> CreateProject(string folderpath)
+        {
+            Project projectFolder = new Project();
+            try
+            {
+                if (!string.IsNullOrEmpty(folderpath))
+                {
+                    if (Directory.Exists(folderpath))
+                    {
+                        string dirname = new System.IO.DirectoryInfo(folderpath).Name;
+                        projectFolder.Url = folderpath;
+                        projectFolder.Name = dirname;
+                        Folder folder = new Folder(folderpath);
+                        folder= CreateFolderStructure( folderpath);
+                        DMEEditor.AddLogMessage("Success", "Added Project Folder ", DateTime.Now, 0, null, Errors.Ok);
+                    }
+                    else
+                    {
+                        projectFolder = null;
+                        DMEEditor.AddLogMessage("Failed", "Project Folder not found ", DateTime.Now, 0, null, Errors.Failed);
+
+                    }
+                }
+                else
+                {
+                    projectFolder = null;
+                    DMEEditor.AddLogMessage("Failed", "Project Folder string is empty ", DateTime.Now, 0, null, Errors.Failed);
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                string mes = "Could not Show File";
+                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return new (DMEEditor.ErrorObject, projectFolder);
+        }
+        public Folder CreateFolderStructure(Folder folder, string path)
+        {
+           
+            IEnumerable<string> files = Directory.EnumerateFiles(path);
+            foreach (string file in files)
+            {
+                IFile files1 = new FFile(file);
+                folder.Files.Add(files1);
+                string filename = Path.GetFileName(file);
+                ConnectionProperties conn = CreateFileDataConnection(file);
+                DMEEditor.ConfigEditor.AddDataConnection(conn);
+              }
+            IEnumerable<string> dr = Directory.EnumerateDirectories(path);
+            if (dr.Any())
+            {
+                foreach (string drpath in dr)
+                {
+                    Folder folder1 = new Folder(drpath);
+                    CreateFolderStructure(folder1, drpath);
+                }
+            }
+            return folder;
+           
+        }
+        public Folder CreateFolderStructure( string path)
+        {
+            Folder folder=new Folder(path);
+            IEnumerable<string> files = Directory.EnumerateFiles(path);
+            foreach (string file in files)
+            {
+                IFile files1 = new FFile(file);
+                folder.Files.Add(files1);
+                string filename = Path.GetFileName(file);
+                ConnectionProperties conn = CreateFileDataConnection(file);
+                DMEEditor.ConfigEditor.AddDataConnection(conn);
+            }
+            IEnumerable<string> dr = Directory.EnumerateDirectories(path);
+            if (dr.Any())
+            {
+                foreach (string drpath in dr)
+                {
+                    folder.Folders.Add(CreateFolderStructure( drpath));
+                }
+            }
+            return folder;
+
+        }
     }
 }
