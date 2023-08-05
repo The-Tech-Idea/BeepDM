@@ -1,13 +1,11 @@
 ﻿using DataManagementModels.DriversConfigurations;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Logger;
-using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public interface IDataTypesHelper
+    public interface IDataTypesHelper:IDisposable
     {
         IDMEEditor DMEEditor { get; set; }
      

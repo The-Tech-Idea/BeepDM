@@ -13,7 +13,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Tools
 {
-    public interface IAssemblyHandler
+    public interface IAssemblyHandler:IDisposable
     {
       //  List<IDM_Addin> AddIns { get; set; }
         List<assemblies_rep> Assemblies { get; set; }

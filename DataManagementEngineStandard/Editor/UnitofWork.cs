@@ -144,6 +144,8 @@ namespace TheTechIdea.Beep.Editor
         PropertyInfo PKProperty = null;
         PropertyInfo Guidproperty = null;
         int keysidx;
+        private bool disposedValue;
+
         private void getPrimaryKey(T doc)
         {
             if (!string.IsNullOrEmpty(PrimaryKey))
@@ -874,6 +876,35 @@ namespace TheTechIdea.Beep.Editor
 
             }
             return retval;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                disposedValue = true;
+            }
+        }
+
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~UnitofWork()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
         //public static ObservableBindingList<T1> ConvertDataTableToObservable<T1>(DataTable table) where T1 : class, new()
         //{

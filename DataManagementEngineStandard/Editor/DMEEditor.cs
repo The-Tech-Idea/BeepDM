@@ -28,7 +28,7 @@ namespace TheTechIdea.Beep
     /// Data Management Enterprize Editor (DMEEditor)
     /// This is the Class that encapsulate all functionality of Data Management.
     /// </summary>
-    public class DMEEditor : IDMEEditor,IDisposable
+    public class DMEEditor : IDMEEditor
     {
         private bool disposedValue;
         /// <summary>
@@ -645,6 +645,10 @@ namespace TheTechIdea.Beep
                         item.Closeconnection();
                         item.Dispose();
                     }
+                    ConfigEditor.Dispose();
+                    ETL.Dispose();
+                    typesHelper.Dispose();
+                    assemblyHandler.Dispose();
                     // TODO: dispose managed state (managed objects)
                 }
 

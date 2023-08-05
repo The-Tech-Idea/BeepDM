@@ -1754,6 +1754,11 @@ namespace TheTechIdea.Beep.Json
                 if (disposing)
                 {
                     // TODO: dispose managed state (managed objects)
+                    Closeconnection();
+                    Entities = null;
+                    EntitiesNames = null;
+                    Records = null;
+                    Dataset = null;
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer

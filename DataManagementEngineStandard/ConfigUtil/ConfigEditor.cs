@@ -24,7 +24,9 @@ namespace TheTechIdea.Util
 {
 	public class ConfigEditor : IConfigEditor
 	{
-		public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader,string folderpath=null, string containerfolder = null)
+        private bool disposedValue;
+
+        public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader,string folderpath=null, string containerfolder = null)
 		{
 			Logger = logger;
 			ErrorObject = per;
@@ -1481,5 +1483,66 @@ namespace TheTechIdea.Util
 			return ErrorObject;
 		}
 
-	}
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                    QueryList = null;
+                    DriverDefinitionsConfig = null;
+                    DataConnections = null;
+                    WorkFlows = null;
+                    CategoryFolders = null;
+                    BranchesClasses = null;
+                    GlobalFunctions = null;
+                    AppWritersClasses = null;
+                    AppComponents = null;
+                    ReportWritersClasses = null;
+                    PrintManagers = null;
+                    DataSourcesClasses = null;
+                    WorkFlowActions = null;
+                    WorkFlowEditors = null;
+                    WorkFlowSteps = null;
+                    WorkFlowStepEditors = null;
+                    FunctionExtensions = null;
+                    Addins = null;
+                    Others = null;
+                    Rules = null;
+                    AddinTreeStructure = null;
+                    Function2Functions = null;
+                    objectTypes = null;
+                    Events = null;
+                    ReportsDefinition = null;
+                    Reportslist = null;
+                    AIScriptslist = null;
+                    CompositeQueryLayers = null;
+                    EntityCreateObjects = null;
+                    DataTypesMap = null;
+                    Entities = null;
+                    DataDriversClasses = null;
+
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                disposedValue = true;
+            }
+        }
+
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~ConfigEditor()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+    }
 }

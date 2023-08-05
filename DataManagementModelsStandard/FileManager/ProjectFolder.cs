@@ -6,24 +6,24 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.FileManager
 {
-    public class Project: IProject
+    public class RootFolder: IProject
     {
-        public Project()
+        public RootFolder()
         {
             GuidID = Guid.NewGuid().ToString();
         }
-        public Project(string url)
+        public RootFolder(string url)
         {
             Url = url;
             GuidID = Guid.NewGuid().ToString();
         }
-        public Project(string name,string url)
+        public RootFolder(string name,string url)
         {
             Name = name;
             Url = url;
             GuidID = Guid.NewGuid().ToString();
         }
-        public Project(string author, string description, List<IFolder> folders, string name, string tags, string url, string version)
+        public RootFolder(string author, string description, List<IFolder> folders, string name, string tags, string url, string version)
         {
             Author = author;
             Description = description;

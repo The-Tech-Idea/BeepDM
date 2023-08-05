@@ -14,7 +14,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep
 {
-    public interface IDMEEditor
+    public interface IDMEEditor: IDisposable
     {
 
        

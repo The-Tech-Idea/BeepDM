@@ -2059,6 +2059,9 @@ namespace TheTechIdea.Beep.DataBase
                 if (disposing)
                 {
                     Closeconnection();
+                    Entities = null;
+                    EntitiesNames = null;
+                    
                     // TODO: dispose managed state (managed objects)
                 }
 

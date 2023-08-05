@@ -869,7 +869,7 @@ namespace TheTechIdea.Beep.DataView
                     case DataSourceType.Xls:
                     case DataSourceType.Json:
 
-                    case DataSourceType.xml:
+                    case DataSourceType.XML:
                         maintab.Viewtype = ViewType.File;
                         break;
                     case DataSourceType.WebService:
@@ -878,7 +878,10 @@ namespace TheTechIdea.Beep.DataView
                         maintab.Viewtype = ViewType.Url;
                         break;
                     default:
+
+                        maintab.Viewtype = ViewType.Table;
                         break;
+                        
                 }
 
                 DataView.Entities.Add(maintab);

@@ -733,6 +733,9 @@ namespace TheTechIdea.Beep.FileManager
                 if (disposing)
                 {
                     // TODO: dispose managed state (managed objects)
+                    Closeconnection();
+                    Entities = null;
+                    EntitiesNames = null;
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer

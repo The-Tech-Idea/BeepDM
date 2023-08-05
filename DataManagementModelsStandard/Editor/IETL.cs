@@ -11,7 +11,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public interface IETL
+    public interface IETL:IDisposable
     {
         event EventHandler<PassedArgs> PassEvent;
         IDMEEditor DMEEditor { get; set; }

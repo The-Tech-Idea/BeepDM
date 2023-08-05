@@ -101,14 +101,21 @@ namespace TheTechIdea.Beep.FileManager
             List<ConnectionProperties> retval = new List<ConnectionProperties>();
             try
             {
-                foreach (String file in filenames)
+                foreach (string file in filenames)
                 {
                     {
-                        ConnectionProperties c = CreateFileDataConnection(file);
-                        if (c != null)
+                        if (!File.Exists(file))
                         {
-                            retval.Add(c);
+                            ConnectionProperties c = CreateFileDataConnection(file);
+                            if (c != null)
+                            {
+                                retval.Add(c);
+                            }
+                        }else
+                        {
+                            DMEEditor.AddLogMessage("Bepp", $"File {file} Exist ", DateTime.Now, -1, null, Errors.Failed);
                         }
+                      
                     }
                 }
                 return retval;
@@ -159,7 +166,6 @@ namespace TheTechIdea.Beep.FileManager
                     f.DriverName = c.PackageName;
                     f.DriverVersion = c.version;
                     f.Category = c.DatasourceCategory;
-
                     switch (f.Ext.ToLower())
                     {
                         case "txt":
@@ -169,19 +175,91 @@ namespace TheTechIdea.Beep.FileManager
                             f.DatabaseType = DataSourceType.CSV;
                             break;
                         case "xml":
-                            f.DatabaseType = DataSourceType.xml;
+                            f.DatabaseType = DataSourceType.XML;
                             break;
                         case "json":
                             f.DatabaseType = DataSourceType.Json;
                             break;
                         case "xls":
+                            f.DatabaseType = DataSourceType.Xls;
+                            break;
                         case "xlsx":
                             f.DatabaseType = DataSourceType.Xls;
                             break;
+                        case "tsv":
+                            f.DatabaseType = DataSourceType.TSV;
+                            break;
+                        case "parquet":
+                            f.DatabaseType = DataSourceType.Parquet;
+                            break;
+                        case "avro":
+                            f.DatabaseType = DataSourceType.Avro;
+                            break;
+                        case "orc":
+                            f.DatabaseType = DataSourceType.ORC;
+                            break;
+                        case "onnx":
+                            f.DatabaseType = DataSourceType.Onnx;
+                            break;
+                        case "html":
+                        case "htm":
+                            f.DatabaseType = DataSourceType.HTML;
+                            break;
+                        case "sql":
+                            f.DatabaseType = DataSourceType.SQL;
+                            break;
+                        case "ini":
+                        case "cfg":
+                            f.DatabaseType = DataSourceType.INI;
+                            break;
+                        case "log":
+                            f.DatabaseType = DataSourceType.Log;
+                            break;
+                        case "pdf":
+                            f.DatabaseType = DataSourceType.PDF;
+                            break;
+                        case "doc":
+                        case "docx":
+                            f.DatabaseType = DataSourceType.Doc;
+                            break;
+                        case "ppt":
+                        case "pptx":
+                            f.DatabaseType = DataSourceType.PPT;
+                            break;
+                        case "yaml":
+                        case "yml":
+                            f.DatabaseType = DataSourceType.YAML;
+                            break;
+                        case "md":
+                        case "markdown":
+                            f.DatabaseType = DataSourceType.Markdown;
+                            break;
+                        case "feather":
+                            f.DatabaseType = DataSourceType.Feather;
+                            break;
+                        case "tfrecord":
+                            f.DatabaseType = DataSourceType.TFRecord;
+                            break;
+                        case "recordio":
+                            f.DatabaseType = DataSourceType.RecordIO;
+                            break;
+                        case "libsvm":
+                            f.DatabaseType = DataSourceType.LibSVM;
+                            break;
+                        case "graphml":
+                            f.DatabaseType = DataSourceType.GraphML;
+                            break;
+                        case "dicom":
+                            f.DatabaseType = DataSourceType.DICOM;
+                            break;
+                        case "las":
+                            f.DatabaseType = DataSourceType.LAS;
+                            break;
                         default:
-                            f.DatabaseType = DataSourceType.Text;
+                            f.DatabaseType = DataSourceType.NONE;
                             break;
                     }
+
                     f.Category = DatasourceCategory.FILE;
                     return f;
 
@@ -251,9 +329,9 @@ namespace TheTechIdea.Beep.FileManager
             return ds;
 
         }
-        public Tuple<IErrorsInfo,Project> CreateProject(string folderpath)
+        public Tuple<IErrorsInfo,RootFolder> CreateProject(string folderpath)
         {
-            Project projectFolder = new Project();
+            RootFolder projectFolder = new RootFolder();
             try
             {
                 if (!string.IsNullOrEmpty(folderpath))

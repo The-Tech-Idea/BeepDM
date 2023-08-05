@@ -27,20 +27,26 @@ namespace TheTechIdea.Util
     { TextBox, CheckBox, ComboBox, DateCalendar,Label }
     public enum DataSourceType
     {
-        NONE, Oracle , SqlServer, Mysql, SqlCompact, SqlLite,
-        Text,CSV,Xls,WebService,Json,xml,DuckDB,RealIM,Hdf5, Parquet, Avro, ORC, TSV, Onnx,
-        Postgre,Firebase,FireBird,Couchbase,RavenDB,MongoDB,CouchDB,VistaDB,DB2,OPC,Kafka,Redis,Hadoop,LiteDB,SnowFlake,ElasticSearch,
-        Petastorm,MiModel,RocketSet,Spanner,Hana,Cockroach,Firebolt,Hologres,Presto,Trino,GoogleBigQuery,GoogleSheets,TerraData,TimeScale,
-        Vertica,DataBricks,AzureCloud
+        NONE, Oracle, SqlServer, Mysql, SqlCompact, SqlLite,
+        Text, CSV, Xls, WebService, Json, XML, DuckDB, RealIM, Hdf5, Parquet, Avro, ORC, TSV, Onnx,
+        Postgre, Firebase, FireBird, Couchbase, RavenDB, MongoDB, CouchDB, VistaDB, DB2, OPC, Kafka, Redis, Hadoop, LiteDB, SnowFlake, ElasticSearch,
+        Petastorm, MiModel, RocketSet, Spanner, Hana, Cockroach, Firebolt, Hologres, Presto, Trino, GoogleBigQuery, GoogleSheets, TerraData, TimeScale,
+        Vertica, DataBricks, AzureCloud,
+        HTML, SQL, INI, Log, PDF, Doc, Docx, PPT, PPTX,
+        YAML, Markdown,
+        Feather, TFRecord, RecordIO, LibSVM, GraphML, DICOM, LAS
     }
+
     public enum DatasourceCategory
     {
         RDBMS,FILE,WEBAPI,NOSQL,CLOUD,VIEWS,STREAM,QUEUE,NONE,INMEMORY
     }
     public enum FileTypes
     {
-        Text, Excel,xml,json,Parquet, Avro, ORC, TSV,Onnx
+        Text, CSV, XML, Json, Xls, Xlsx, TSV, YAML, Markdown, HTML, SQL, INI, Log, PDF, Doc, Docx, PPT, PPTX,
+        Parquet, Avro, ORC, Onnx, Feather, TFRecord, RecordIO, LibSVM, GraphML, DICOM, LAS
     }
+
     public enum DbFieldCategory
     {
         String,Numeric,Date

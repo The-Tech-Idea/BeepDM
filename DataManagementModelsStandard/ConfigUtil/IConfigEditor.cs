@@ -18,10 +18,11 @@ using System.IO;
 using TheTechIdea.Beep.FileManager;
 using DataManagementModels.ConfigUtil;
 using DataManagementModels.DriversConfigurations;
+using System;
 
 namespace TheTechIdea.Util
 {
-    public interface IConfigEditor
+    public interface IConfigEditor: IDisposable
     {
         bool IsLoaded { get; }
         ConfigandSettings Config { get; set; }
