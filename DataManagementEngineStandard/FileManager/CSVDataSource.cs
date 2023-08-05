@@ -59,6 +59,7 @@ namespace TheTechIdea.Beep.FileManager
         public virtual string ParameterDelimiter { get; set; } = ":";
         public IDMEEditor DMEEditor { get ; set ; }
         ConnectionState pConnectionStatus;
+        bool IsFieldsScanned = false;
         public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; } set { pConnectionStatus = value; } }
 
         public event EventHandler<PassedArgs> PassEvent;
@@ -108,145 +109,162 @@ namespace TheTechIdea.Beep.FileManager
 
             DateTime dateval = DateTime.Now;
             // setup Fields for Entity
-           
+            
             int i = 1;
             fieldParser.TrimWhiteSpace = true;
+            if (IsFieldsScanned)
+            {
+                if (Entities.Count > 0)
+                {
+                    return Entities[0].Fields;
+                }
+
+            }
             // Scan all rows in Table for types
-            while ((fieldParser.EndOfData == false))
+            while ((fieldParser.EndOfData == false) || (i<=100))
             {
                 try
                 {
+                    
                     string[] r = fieldParser.ReadFields();
+                    if (r == null)
+                    {
+                        i = 101;
+                    }
+                    
                     i += 1;
                     int j = 0;
-                    // Scan fields in row for Types
-                    foreach (EntityField f in flds)
-                    {
-                        try
+                    if (i <= 100)
+                    { // Scan fields in row for Types
+                        foreach (EntityField f in flds)
                         {
-                            if (f.fieldname.ToLower().Contains("date") || f.fieldname.ToLower().Contains("_dt"))
+                            try
                             {
-                                f.fieldtype = "System.DateTime";
-                                f.Checked = true;
-                            }
-                            else
-                            {
-                                valstring = r[j].ToString();
-                                dateval = DateTime.Now;
-                                if (!f.Checked)
+                                if (f.fieldname.ToLower().Contains("date") || f.fieldname.ToLower().Contains("_dt"))
                                 {
-                                    if (!string.IsNullOrEmpty(valstring) && !string.IsNullOrWhiteSpace(valstring))
-                                    {
-                                        if (decimal.TryParse(valstring, out dval))
-                                        {
-                                            f.fieldtype = "System.Decimal";
-                                            //    f.Checked = true;
-                                        }
-                                        else
-                                         if (double.TryParse(valstring, out dblval))
-                                        {
-                                            f.fieldtype = "System.Double";
-                                            //  f.Checked = true;
-                                        }
-                                        else
-                                        if (long.TryParse(valstring, out longval))
-                                        {
-                                            f.fieldtype = "System.Long";
-                                            // f.Checked = true;
-                                        }
-                                        else
-                                         if (float.TryParse(valstring, out floatval))
-                                        {
-                                            f.fieldtype = "System.Float";
-                                            //  f.Checked = true;
-                                        }
-                                        else
-                                         if (int.TryParse(valstring, out intval))
-                                        {
-                                            f.fieldtype = "System.Int32";
-                                            //   f.Checked = true;
-                                        }
-                                        else
-                                         if (DateTime.TryParse(valstring, out dateval))
-                                        {
-                                            f.fieldtype = "System.DateTime";
-                                            // f.Checked = true;
-                                        }
-                                        else
-                                         if (bool.TryParse(valstring, out boolval))
-                                        {
-                                            f.fieldtype = "System.Bool";
-                                            //  f.Checked = true;
-                                        }
-                                        else
-                                         if (short.TryParse(valstring, out shortval))
-                                        {
-                                            f.fieldtype = "System.Short";
-                                            //f.Checked = true;
-                                        }
-                                        else
-                                        {
-                                            f.fieldtype = "System.String";
-                                            f.Checked = true;
-                                        }
-
-                                    }
+                                    f.fieldtype = "System.DateTime";
+                                    f.Checked = true;
                                 }
-                              
-                            }
-                        }
-                        catch (Exception Fieldex)
-                        {
-
-                        }
-                        try
-                        {
-                            if (f.fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                if (!string.IsNullOrEmpty(r[j]) && !string.IsNullOrWhiteSpace(r[j]))
+                                else
                                 {
-                                    if (!string.IsNullOrEmpty(r[j].ToString()))
+                                    valstring = r[j].ToString();
+                                    dateval = DateTime.Now;
+                                    if (!f.Checked)
                                     {
-                                        if (r[j].ToString().Length > f.Size1)
+                                        if (!string.IsNullOrEmpty(valstring) && !string.IsNullOrWhiteSpace(valstring))
                                         {
-                                            f.Size1 = r[j].Length;
-                                        }
+                                            if (decimal.TryParse(valstring, out dval))
+                                            {
+                                                f.fieldtype = "System.Decimal";
+                                                //    f.Checked = true;
+                                            }
+                                            else
+                                             if (double.TryParse(valstring, out dblval))
+                                            {
+                                                f.fieldtype = "System.Double";
+                                                //  f.Checked = true;
+                                            }
+                                            else
+                                            if (long.TryParse(valstring, out longval))
+                                            {
+                                                f.fieldtype = "System.Long";
+                                                // f.Checked = true;
+                                            }
+                                            else
+                                             if (float.TryParse(valstring, out floatval))
+                                            {
+                                                f.fieldtype = "System.Float";
+                                                //  f.Checked = true;
+                                            }
+                                            else
+                                             if (int.TryParse(valstring, out intval))
+                                            {
+                                                f.fieldtype = "System.Int32";
+                                                //   f.Checked = true;
+                                            }
+                                            else
+                                             if (DateTime.TryParse(valstring, out dateval))
+                                            {
+                                                f.fieldtype = "System.DateTime";
+                                                // f.Checked = true;
+                                            }
+                                            else
+                                             if (bool.TryParse(valstring, out boolval))
+                                            {
+                                                f.fieldtype = "System.Bool";
+                                                //  f.Checked = true;
+                                            }
+                                            else
+                                             if (short.TryParse(valstring, out shortval))
+                                            {
+                                                f.fieldtype = "System.Short";
+                                                //f.Checked = true;
+                                            }
+                                            else
+                                            {
+                                                f.fieldtype = "System.String";
+                                                f.Checked = true;
+                                            }
 
-                                    }
-                                }
-
-                            }
-                        }
-                        catch (Exception stringsizeex)
-                        {
-
-                        }
-                        try
-                        {
-                            if (f.fieldtype.Equals("System.Decimal", StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                if (!string.IsNullOrEmpty(r[j]) && !string.IsNullOrWhiteSpace(r[j]))
-                                {
-                                    if (!string.IsNullOrEmpty(r[j].ToString()))
-                                    {
-                                        valstring = r[j].ToString();
-                                        if (decimal.TryParse(valstring, out dval))
-                                        {
-
-                                            f.fieldtype = "System.Decimal";
-                                            f.Size1 = GetDecimalPrecision(dval);
-                                            f.Size2 = GetDecimalScale(dval);
                                         }
                                     }
+
                                 }
+                            }
+                            catch (Exception Fieldex)
+                            {
 
                             }
+                            try
+                            {
+                                if (f.fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    if (!string.IsNullOrEmpty(r[j]) && !string.IsNullOrWhiteSpace(r[j]))
+                                    {
+                                        if (!string.IsNullOrEmpty(r[j].ToString()))
+                                        {
+                                            if (r[j].ToString().Length > f.Size1)
+                                            {
+                                                f.Size1 = r[j].Length;
+                                            }
+
+                                        }
+                                    }
+
+                                }
+                            }
+                            catch (Exception stringsizeex)
+                            {
+
+                            }
+                            try
+                            {
+                                if (f.fieldtype.Equals("System.Decimal", StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    if (!string.IsNullOrEmpty(r[j]) && !string.IsNullOrWhiteSpace(r[j]))
+                                    {
+                                        if (!string.IsNullOrEmpty(r[j].ToString()))
+                                        {
+                                            valstring = r[j].ToString();
+                                            if (decimal.TryParse(valstring, out dval))
+                                            {
+
+                                                f.fieldtype = "System.Decimal";
+                                                f.Size1 = GetDecimalPrecision(dval);
+                                                f.Size2 = GetDecimalScale(dval);
+                                            }
+                                        }
+                                    }
+
+                                }
+                            }
+                            catch (Exception decimalsizeex)
+                            {
+                            }
+                            j++;
                         }
-                        catch (Exception decimalsizeex)
-                        {
-                        }
-                        j++;
                     }
+                   
                 }
                 catch (Exception rowex)
                 {
@@ -274,6 +292,14 @@ namespace TheTechIdea.Beep.FileManager
             EntityStructure entityData = new EntityStructure();
             try
             {
+                if (IsFieldsScanned)
+                {
+                    if(Entities.Count > 0)
+                    {
+                        return Entities[0];
+                    }
+                  
+                }
                 string[] flds = null;
                 if(GetFileState()== ConnectionState.Open)
                 {
@@ -320,8 +346,9 @@ namespace TheTechIdea.Beep.FileManager
                     Entities.Add(entityData);
                     EntitiesNames.Add(sheetname);
                     DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new ConfigUtil.DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
+                    IsFieldsScanned=true;
 
-                   
+
                 }
 
             }
@@ -485,11 +512,14 @@ namespace TheTechIdea.Beep.FileManager
 
         public List<string> GetEntitesList()
         {
-            
-            EntitiesNames.Clear();
-            EntitiesNames.Add("Sheet1");
-            Entities.Clear();
-            Entities.Add(Getfields());
+            if(Entities.Count == 0)
+            {
+                EntitiesNames.Clear();
+                EntitiesNames.Add("Sheet1");
+                Entities.Clear();
+                Entities.Add(Getfields());
+            }
+          
             return EntitiesNames;
         }
 
@@ -544,12 +574,12 @@ namespace TheTechIdea.Beep.FileManager
             }
             else
             {
-                Entities = new List<EntityStructure>();
+               // Entities = new List<EntityStructure>();
                 Getfields();
             }
             if (refresh)
             {
-                Entities = new List<EntityStructure>();
+               // Entities = new List<EntityStructure>();
                 Getfields();
             }
            
@@ -579,12 +609,12 @@ namespace TheTechIdea.Beep.FileManager
             }
             else
             {
-                Entities = new List<EntityStructure>();
+              //  Entities = new List<EntityStructure>();
                 Getfields();
             }
             if (refresh)
             {
-                Entities = new List<EntityStructure>();
+             //   Entities = new List<EntityStructure>();
                 Getfields();
             }
             if (Entities.Count == 1)
@@ -611,7 +641,7 @@ namespace TheTechIdea.Beep.FileManager
             }
             else
             {
-                Entities = new List<EntityStructure>();
+              //  Entities = new List<EntityStructure>();
                 Getfields();
             }
 
