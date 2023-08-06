@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.FileManager
@@ -139,18 +138,14 @@ namespace TheTechIdea.Beep.FileManager
                 string filename = Path.GetFileName(file);
                 string ext = Path.GetExtension(file).Replace(".", "").ToLower();
 
-                ConnectionDriversConfig driversConfig = GetConnectionDrivers(ext);
-                if (driversConfig == null)
-                {
-                    DMEEditor.AddLogMessage("Beep", $"Error Could not Find Drivers for {filename}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
-                    return null;
-                }
+           
+              
                 ConnectionProperties f = new ConnectionProperties
                 {
-                    FileName = Path.GetFileName(file),
+                    FileName = filename,
                     FilePath = Path.GetDirectoryName(file),
-                    Ext = Path.GetExtension(file).Replace(".", "").ToLower(),
-                    ConnectionName = Path.GetFileName(file)
+                    Ext =ext,
+                    ConnectionName = filename
 
 
                 };
@@ -161,6 +156,11 @@ namespace TheTechIdea.Beep.FileManager
                
                 
                 ConnectionDriversConfig c = GetConnectionDrivers(ext);
+                if (c == null)
+                {
+                    DMEEditor.AddLogMessage("Beep", $"Error Could not Find Drivers for {filename}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
+                    return null;
+                }
                 if (c != null)
                 {
                     f.DriverName = c.PackageName;
@@ -281,7 +281,7 @@ namespace TheTechIdea.Beep.FileManager
         {
             List<ConnectionDriversConfig> configs = new List<ConnectionDriversConfig>();
             ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
-            configs = DMEEditor.ConfigEditor.DriverDefinitionsConfig.Where(p => p.extensionstoHandle != null &&  p.extensionstoHandle.Contains(ext)).ToList();
+            configs = DMEEditor.ConfigEditor.DataDriversClasses.Where(p => p.extensionstoHandle != null &&  p.extensionstoHandle.Contains(ext)).ToList();
             if (configs.Count > 0)
             {
                 //-----------  Get Favourite

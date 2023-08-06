@@ -481,9 +481,10 @@ namespace TheTechIdea.Util
             return DataConnections!=null? DataConnections.Any(x => x.ConnectionName.Equals(ConnectionName, StringComparison.InvariantCultureIgnoreCase)) : false;
 		}
 		public bool AddDataConnection(ConnectionProperties cn)
-		{ try
-
+		{ 
+			try
 			{
+				if (cn == null) { return false; }
                 if (DataConnections == null)
                 {
                     DataConnections = new List<ConnectionProperties>();
