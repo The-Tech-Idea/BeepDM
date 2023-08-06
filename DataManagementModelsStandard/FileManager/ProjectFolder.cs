@@ -23,7 +23,7 @@ namespace TheTechIdea.Beep.FileManager
             Url = url;
             GuidID = Guid.NewGuid().ToString();
         }
-        public RootFolder(string author, string description, List<IFolder> folders, string name, string tags, string url, string version)
+        public RootFolder(string author, string description, List<Folder> folders, string name, string tags, string url, string version)
         {
             Author = author;
             Description = description;
@@ -35,8 +35,8 @@ namespace TheTechIdea.Beep.FileManager
             GuidID = Guid.NewGuid().ToString();
 
         }
-
-        public List<IFolder> Folders { get  ; set  ; }
+        public ProjectFolderType FolderType { get; set; }
+        public List<Folder> Folders { get  ; set  ; }
         public int ID { get  ; set  ; }
         public string GuidID { get  ; set  ; }
         public string Name { get  ; set  ; }
@@ -80,8 +80,8 @@ namespace TheTechIdea.Beep.FileManager
         public int ID { get; set; }
         public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public string Name { get ; set ; }
-        public List<IFolder> Folders { get; set; }=new List<IFolder>();
-        public List<IFile> Files { get; set; } = new List<IFile>();
+        public List<Folder> Folders { get; set; }=new List<Folder>();
+        public List<FFile> Files { get; set; } = new List<FFile>();
         public string Ext { get ; set ; }
         public string Tags { get ; set ; }
         public string Url { get ; set ; }

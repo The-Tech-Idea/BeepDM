@@ -6,12 +6,13 @@ namespace TheTechIdea.Beep.FileManager
 {
     public interface IProject: IObjectCommon
     {
-        List<IFolder> Folders { get; set; }
+        List<Folder> Folders { get; set; }
+        ProjectFolderType FolderType { get; set; }
     }
     public interface IFolder: IObjectCommon
     {
-        List<IFile> Files { get; set; }
-        List<IFolder> Folders { get; set; }
+        List<FFile> Files { get; set; }
+        List<Folder> Folders { get; set; }
     }
     public interface IFile: IObjectCommon
     {

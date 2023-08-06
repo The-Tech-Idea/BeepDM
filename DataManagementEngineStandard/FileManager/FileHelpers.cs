@@ -280,7 +280,7 @@ namespace TheTechIdea.Beep.FileManager
         public ConnectionDriversConfig GetConnectionDrivers(string ext)
         {
             List<ConnectionDriversConfig> configs = new List<ConnectionDriversConfig>();
-            ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
+            ConnectionDriversConfig driversConfig = null;
             configs = DMEEditor.ConfigEditor.DataDriversClasses.Where(p => p.extensionstoHandle != null &&  p.extensionstoHandle.Contains(ext)).ToList();
             if (configs.Count > 0)
             {
@@ -332,6 +332,7 @@ namespace TheTechIdea.Beep.FileManager
         public Tuple<IErrorsInfo,RootFolder> CreateProject(string folderpath)
         {
             RootFolder projectFolder = new RootFolder();
+            projectFolder.Folders = new List<Folder>();
             try
             {
                 if (!string.IsNullOrEmpty(folderpath))
@@ -343,6 +344,7 @@ namespace TheTechIdea.Beep.FileManager
                         projectFolder.Name = dirname;
                         Folder folder = new Folder(folderpath);
                         folder= CreateFolderStructure( folderpath);
+                        projectFolder.Folders.Add(folder);
                         DMEEditor.AddLogMessage("Success", "Added Project Folder ", DateTime.Now, 0, null, Errors.Ok);
                     }
                     else
@@ -372,11 +374,16 @@ namespace TheTechIdea.Beep.FileManager
             IEnumerable<string> files = Directory.EnumerateFiles(path);
             foreach (string file in files)
             {
-                IFile files1 = new FFile(file);
-                folder.Files.Add(files1);
-                string filename = Path.GetFileName(file);
+               
                 ConnectionProperties conn = CreateFileDataConnection(file);
-                DMEEditor.ConfigEditor.AddDataConnection(conn);
+                if (conn != null)
+                {
+                    FFile files1 = new FFile(file);
+                    folder.Files.Add(files1);
+                    string filename = Path.GetFileName(file);
+                    DMEEditor.ConfigEditor.AddDataConnection(conn);
+                }
+               
               }
             IEnumerable<string> dr = Directory.EnumerateDirectories(path);
             if (dr.Any())
@@ -384,6 +391,7 @@ namespace TheTechIdea.Beep.FileManager
                 foreach (string drpath in dr)
                 {
                     Folder folder1 = new Folder(drpath);
+                    folder1.Name = new DirectoryInfo(drpath).Name;
                     CreateFolderStructure(folder1, drpath);
                 }
             }
@@ -393,14 +401,21 @@ namespace TheTechIdea.Beep.FileManager
         public Folder CreateFolderStructure( string path)
         {
             Folder folder=new Folder(path);
+            folder.Folders = new List<Folder>();
+            folder.Name = new DirectoryInfo(path).Name;
             IEnumerable<string> files = Directory.EnumerateFiles(path);
             foreach (string file in files)
             {
-                IFile files1 = new FFile(file);
-                folder.Files.Add(files1);
-                string filename = Path.GetFileName(file);
+               
                 ConnectionProperties conn = CreateFileDataConnection(file);
-                DMEEditor.ConfigEditor.AddDataConnection(conn);
+                if (conn != null)
+                {
+                    FFile files1 = new FFile(file);
+                    folder.Files.Add(files1);
+                   
+                    DMEEditor.ConfigEditor.AddDataConnection(conn);
+                }
+                
             }
             IEnumerable<string> dr = Directory.EnumerateDirectories(path);
             if (dr.Any())
@@ -411,6 +426,41 @@ namespace TheTechIdea.Beep.FileManager
                 }
             }
             return folder;
+
+        }
+        public RootFolder CreateFolderStructure(string path, ProjectFolderType folderType = ProjectFolderType.Files)
+        {
+            RootFolder rootFolder=new RootFolder(path);
+            rootFolder.Folders = new List<Folder>();
+            rootFolder.FolderType = folderType;
+            rootFolder.Name = new DirectoryInfo(path).Name;
+            Folder folder = new Folder(path);
+
+            IEnumerable<string> files = Directory.EnumerateFiles(path);
+            foreach (string file in files)
+            {
+               
+
+                ConnectionProperties conn = CreateFileDataConnection(file);
+                if(conn != null)
+                {
+                    FFile files1 = new FFile(file);
+                    folder.Files.Add(files1);
+                 
+                    DMEEditor.ConfigEditor.AddDataConnection(conn);
+                }
+               
+            }
+            IEnumerable<string> dr = Directory.EnumerateDirectories(path);
+            if (dr.Any())
+            {
+                foreach (string drpath in dr)
+                {
+                    folder.Folders.Add(CreateFolderStructure(drpath));
+                }
+            }
+            rootFolder.Folders.Add(folder);
+            return rootFolder;
 
         }
     }
