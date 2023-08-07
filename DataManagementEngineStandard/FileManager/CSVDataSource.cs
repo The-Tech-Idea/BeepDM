@@ -45,6 +45,7 @@ namespace TheTechIdea.Beep.FileManager
             FilePath = Dataconnection.ConnectionProp.FilePath;
 
         }
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public DataSourceType DatasourceType { get; set; } = DataSourceType.CSV;
         public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;
         public IDataConnection Dataconnection { get ; set ; }

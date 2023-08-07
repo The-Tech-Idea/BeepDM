@@ -34,7 +34,7 @@ namespace TheTechIdea.Beep.WebAPI
         public virtual string ParameterDelimiter { get; set; } = ":";
         // IHttpClientFactory ClientFactory;
         public HttpClient client { get; set; } = new HttpClient();
-
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         WebAPIDataConnection cn;
       
         public WebAPIDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)

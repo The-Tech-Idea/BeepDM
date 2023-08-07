@@ -51,7 +51,10 @@ namespace TheTechIdea.Beep
         object GetData(IDataSource ds, EntityStructure entity);
         List<DefaultValue> Getdefaults(string DatasourceName);
         IErrorsInfo Savedefaults(List<DefaultValue> defaults, string DatasourceName);
-       
 
+        bool RemoveDataDourceUsingGuidID(string guidID);
+        bool CheckDataSourceExistUsingGuidID(string guidID);
+        ConnectionState OpenDataSourceUsingGuidID(string guidID);
+        bool CloseDataSourceUsingGuidID(string guidID);
     }
 }

@@ -27,6 +27,7 @@ namespace TheTechIdea.Beep.DataBase
     {
         public event EventHandler<PassedArgs> PassEvent;
         static Random r = new Random();
+        public string GuidID { get; set; }=Guid.NewGuid().ToString();
         public string Id { get; set; }
         public string DatasourceName { get; set; }
         public DataSourceType DatasourceType { get; set; }

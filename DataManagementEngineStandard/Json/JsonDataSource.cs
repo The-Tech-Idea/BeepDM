@@ -44,7 +44,7 @@ namespace TheTechIdea.Beep.Json
                 LoadJsonFile();
             }
         }
-       
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
         private bool IsFileRead=false;
         public event EventHandler<PassedArgs> PassEvent;
         public DataSourceType DatasourceType { get; set; }= DataSourceType.Json;

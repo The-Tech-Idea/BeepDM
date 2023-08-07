@@ -329,9 +329,10 @@ namespace TheTechIdea.Beep.FileManager
             return ds;
 
         }
-        public Tuple<IErrorsInfo,RootFolder> CreateProject(string folderpath)
+        public Tuple<IErrorsInfo,RootFolder> CreateProject(string folderpath, ProjectFolderType folderType = ProjectFolderType.Files)
         {
             RootFolder projectFolder = new RootFolder();
+            projectFolder.FolderType=folderType;
             projectFolder.Folders = new List<Folder>();
             try
             {
@@ -379,8 +380,9 @@ namespace TheTechIdea.Beep.FileManager
                 if (conn != null)
                 {
                     FFile files1 = new FFile(file);
+                    files1.GuidID= conn.GuidID;
                     folder.Files.Add(files1);
-                    string filename = Path.GetFileName(file);
+                    
                     DMEEditor.ConfigEditor.AddDataConnection(conn);
                 }
                
@@ -403,6 +405,7 @@ namespace TheTechIdea.Beep.FileManager
             Folder folder=new Folder(path);
             folder.Folders = new List<Folder>();
             folder.Name = new DirectoryInfo(path).Name;
+            folder.Url = path;
             IEnumerable<string> files = Directory.EnumerateFiles(path);
             foreach (string file in files)
             {
@@ -411,6 +414,7 @@ namespace TheTechIdea.Beep.FileManager
                 if (conn != null)
                 {
                     FFile files1 = new FFile(file);
+                    files1.GuidID = conn.GuidID;
                     folder.Files.Add(files1);
                    
                     DMEEditor.ConfigEditor.AddDataConnection(conn);
@@ -445,6 +449,7 @@ namespace TheTechIdea.Beep.FileManager
                 if(conn != null)
                 {
                     FFile files1 = new FFile(file);
+                    files1.GuidID = conn.GuidID;
                     folder.Files.Add(files1);
                  
                     DMEEditor.ConfigEditor.AddDataConnection(conn);

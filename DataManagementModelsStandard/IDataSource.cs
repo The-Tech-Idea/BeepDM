@@ -9,7 +9,6 @@ using TheTechIdea.Beep;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Report;
-using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
@@ -17,6 +16,7 @@ namespace TheTechIdea
 {
     public interface IDataSource:IDisposable
     {
+         string GuidID { get; set; }
         event EventHandler<PassedArgs> PassEvent;
         DataSourceType DatasourceType { get; set; }
         DatasourceCategory Category { get; set; }

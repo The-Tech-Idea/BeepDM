@@ -252,8 +252,258 @@ namespace TheTechIdea.Beep
                     }
                 }
             }
+            if (ds1 != null)
+            {
+                ds1.GuidID = ds1.Dataconnection.ConnectionProp.GuidID;
+            }
             return ds1 ;
         }
+        /// <summary>
+        /// Open DataSource and add it list of DataSources , if the samename exist in connections list
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
+        public ConnectionState OpenDataSourceUsingGuidID(string guidID)
+        {
+            try
+            {
+                ds1 = DataSources.Where(f => f.GuidID.Equals(guidID, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                if (ds1 == null)
+                {
+                    GetDataSourceUsingGuidID(guidID);
+
+                }
+                if (ds1 != null)
+                {
+                    return ds1.Openconnection();
+                }
+                else
+                {
+                    AddLogMessage("Fail", $"Could not Open DataSource Connection ", DateTime.Now, 0, guidID, Errors.Failed);
+                    return ConnectionState.Broken;
+                }
+
+            }
+            catch (Exception ex)
+            {
+
+                AddLogMessage("Fail", $"Could not Open DataSource Connection {ex.Message}", DateTime.Now, 0, guidID, Errors.Failed);
+                return ConnectionState.Broken;
+            }
+
+        }
+        /// <summary>
+        /// Close DataSource
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
+        public bool CloseDataSourceUsingGuidID(string guidID)
+        {
+            try
+            {
+                ConnectionState st = ConnectionState.Closed;
+                IDataSource ds1 = GetDataSourceUsingGuidID(guidID);
+                if (ds1 != null)
+                {
+                    st = ds1.Dataconnection.CloseConn();
+                }
+                else
+                {
+                    return false;
+                }
+                if (st == ConnectionState.Open)
+                {
+                    return true;
+                }
+                else
+                    return false;
+
+            }
+            catch (Exception ex)
+            {
+
+                AddLogMessage("Fail", $"Could not close DataSource Connection {ex.Message}", DateTime.Now, 0, guidID, Errors.Failed);
+                return false;
+            }
+        }
+        /// <summary>
+        /// Get Existing DataSource Created and exist in List of DataSources
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
+        public IDataSource GetDataSourceUsingGuidID(string guidID)
+        {
+            if (guidID == null)
+            {
+                return null;
+            }
+            else
+            {
+                if (ds1 != null)
+                {
+                    if (guidID.Equals(ds1.GuidID, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        return ds1;
+                    }
+                }
+
+                try
+                {
+                    ds1 = DataSources.Where(f => f.GuidID.Equals(guidID, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                }
+                catch (Exception ex)
+                {
+                    AddLogMessage(ex.Message, "Could not Open Datasource ", DateTime.Now, -1, "", Errors.Failed);
+                };
+                if (ds1 == null) //|| ds1.ConnectionStatus==ConnectionState.Closed
+                {
+                    try
+                    {
+                        ds1 = CreateNewDataSourceConnectionUsingGuidID(guidID);
+                        if (ds1 != null)
+                        {
+                            if (ds1.Entities.Count == 0 && !ds1.Dataconnection.ConnectionProp.IsInMemory)
+                            {
+
+                                if (ConfigEditor.LoadDataSourceEntitiesValues(ds1.GuidID) != null)
+                                {
+                                    ds1.Entities = ConfigEditor.LoadDataSourceEntitiesValues(ds1.GuidID).Entities;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            AddLogMessage("Fail", $"Error in Opening Connection ({ErrorObject.Message})", DateTime.Now, -1, "", Errors.Failed);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        AddLogMessage("Fail", $"Error in Opening Connection ({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
+                        return null;
+                    }
+                }
+            }
+            if (ds1 != null)
+            {
+                ds1.GuidID = guidID;
+            }
+            return ds1;
+        }
+        /// <summary>
+        /// Check DataSource Exist in List
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
+        public bool CheckDataSourceExistUsingGuidID(string guidID)
+        {
+            try
+            {
+                if (DataSources.Count > 0)
+                {
+                    return DataSources.Any(x => x.GuidID.Equals(guidID, StringComparison.InvariantCultureIgnoreCase));
+                }
+                else
+                    return false;
+
+
+
+                // AddLogMessage("Success", "Added Database Connection", DateTime.Now, 0, null, Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                return false;
+
+                AddLogMessage("Beep", $"Could not check Datasource Exist {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+            };
+
+        }
+        /// <summary>
+        /// Remove DataSource from List
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
+        public bool RemoveDataDourceUsingGuidID(string guidID)
+        {
+            try
+            {
+                IDataSource ds = DataSources.Where(x => x.GuidID.Equals(guidID, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                if (ds != null)
+                {
+                    if (ds.Dataconnection.DataSourceDriver.CreateLocal)
+                    {
+                            int x=ConfigEditor.DataConnections.FindIndex(x => x.GuidID.Equals(guidID, StringComparison.InvariantCultureIgnoreCase));
+                        if(x>=0)
+                        {
+                            ConfigEditor.DataConnections.Remove(ConfigEditor.DataConnections[x]);
+                        }
+                    }
+                    DataSources.Remove(ds);
+                }
+                else
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+                ErrorObject.Flag = Errors.Failed;
+                return false;
+            };
+        }
+        /// <summary>
+        /// Get DataSource Assembly and Class Handling Class
+        /// </summary>
+        /// <param name="DatasourceName"></param>
+        /// <returns></returns>
+        public AssemblyClassDefinition GetDataSourceClassUsingGuidID(string guidID)
+        {
+            AssemblyClassDefinition retval = null;
+            try
+            {
+                ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.GuidID.Equals(guidID, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
+                if (cn == null || driversConfig == null)
+                {
+                    AddLogMessage("Fail", "Could not get Datasource class ", DateTime.Now, -1, "", Errors.Failed);
+                }
+                else
+                {
+                    retval = ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).FirstOrDefault();
+                }
+            }
+            catch (Exception ex)
+            {
+                string mes = "";
+                AddLogMessage(ex.Message, "Could not get Datasource class " + mes, DateTime.Now, -1, mes, Errors.Failed);
+                return null;
+            };
+            return retval;
+        }
+        /// <summary>
+        /// Create New Datasource and add to the List
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
+        public IDataSource CreateNewDataSourceConnectionUsingGuidID(string guidID)
+        {
+            ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.GuidID.Equals(guidID, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+            ErrorObject.Flag = Errors.Ok;
+            if (cn != null)
+            {
+                return CreateNewDataSourceConnection(cn, guidID);
+            }
+            else
+            {
+                AddLogMessage("Failure", "Error occured in  DataSource Creation " + guidID, DateTime.Now, 0, null, Errors.Ok);
+                return null;
+            }
+        }
+      
         /// <summary>
         /// Get DataSource Assembly and Class Handling Class
         /// </summary>
@@ -409,40 +659,6 @@ namespace TheTechIdea.Beep
             }
         }
         /// <summary>
-        /// Remove DataSource from List
-        /// </summary>
-        /// <param name="pdatasourcename"></param>
-        /// <returns></returns>
-        public bool RemoveDataDource(string pdatasourcename)
-        {
-            try
-            {
-                IDataSource ds = DataSources.Where(x => x.DatasourceName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                if (ds != null)
-                {
-                    if (ds.Dataconnection.DataSourceDriver.CreateLocal)
-                    {
-                        ConfigEditor.RemoveDataSourceEntitiesValues(ds.DatasourceName);
-                    }
-                    DataSources.Remove(ds);
-                }
-                else
-                {
-                    ErrorObject.Flag = Errors.Failed;
-                    return false;
-                }
-                
-                return true;
-            }
-            catch (Exception ex)
-            {
-                ErrorObject.Ex = ex;
-                ErrorObject.Message = ex.Message;
-                ErrorObject.Flag = Errors.Failed;
-                return false;
-            };
-        }
-        /// <summary>
         /// Get Entity Structure from DataSource
         /// </summary>
         /// <param name="entityname"></param>
@@ -493,6 +709,40 @@ namespace TheTechIdea.Beep
                 AddLogMessage("Beep", $"Could not check Datasource Exist {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
             };
           
+        }
+        /// <summary>
+        /// Remove DataSource from List
+        /// </summary>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
+        public bool RemoveDataDource(string pdatasourcename)
+        {
+            try
+            {
+                IDataSource ds = DataSources.Where(x => x.DatasourceName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                if (ds != null)
+                {
+                    if (ds.Dataconnection.DataSourceDriver.CreateLocal)
+                    {
+                        ConfigEditor.RemoveDataSourceEntitiesValues(ds.DatasourceName);
+                    }
+                    DataSources.Remove(ds);
+                }
+                else
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+                ErrorObject.Flag = Errors.Failed;
+                return false;
+            };
         }
         /// <summary>
         /// Raise the Public and Global event

@@ -15,7 +15,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class UnitofWork<T> : IUnitofWork<T> where T : Entity, INotifyPropertyChanged
+    public class UnitofWork<T> : IUnitofWork<T> where T:  Entity, INotifyPropertyChanged, new()
     {
         public bool IsInListMode { get; set; } = false;
         public UnitofWork(IDMEEditor dMEEditor, bool isInListMode, ObservableBindingList<T> ts,string primarykey)
@@ -26,7 +26,16 @@ namespace TheTechIdea.Beep.Editor
             init();
             Units = ts;
             PrimaryKey = primarykey;
-            getPrimaryKey(ts.FirstOrDefault());
+            if (ts == null)
+            {
+                T doc=new();
+                getPrimaryKey(doc);
+            }
+            else
+            {
+                getPrimaryKey(ts.FirstOrDefault());
+            }
+            
             _suppressNotification = false;
         }
         private bool _suppressNotification = false;
