@@ -657,7 +657,7 @@ namespace TheTechIdea.Util
 			string path = Path.Combine(ExePath, "Config.json");
 			JsonLoader.Serialize(path, Config);
 		}
-		public CategoryFolder AddFolderCategory(string pfoldername, string prootname, string pparentname)
+		public CategoryFolder AddFolderCategory(string pfoldername, string prootname, string pparentname,string parentguidid, bool isparentFolder = false, bool isparentRoot = true, bool isphysical = false)
 		{
 			try
 			{
@@ -665,6 +665,11 @@ namespace TheTechIdea.Util
 				x.FolderName = pfoldername;
 				x.RootName = prootname;
 				x.ParentName = pparentname;
+				x.ParentGuidID= parentguidid;
+				x.IsParentFolder= isparentFolder;
+				x.IsParentRoot= isparentRoot;
+				x.IsPhysicalFolder= isparentRoot;
+				x.IsPhysicalFolder=	isphysical;
 				CategoryFolders.Add(x);
 				SaveCategoryFoldersValues();
 				return x;
@@ -674,14 +679,21 @@ namespace TheTechIdea.Util
 
 				return null;
 			}
-
-
-		}
-		public bool RemoveFolderCategory(string pfoldername, string prootname)
+ 		}
+		public bool RemoveFolderCategory(string pfoldername, string prootname, string parentguidid)
 		{
 			try
 			{
-				CategoryFolder x = CategoryFolders.Where(y => y.FolderName.Equals(pfoldername,StringComparison.InvariantCultureIgnoreCase) && y.RootName.Equals( prootname,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+
+                CategoryFolder x = CategoryFolders.Where(y => y.FolderName.Equals(pfoldername,StringComparison.InvariantCultureIgnoreCase) && y.RootName.Equals( prootname,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+				if (x == null)
+				{
+                    x = CategoryFolders.Where(y => y.FolderName.Equals(pfoldername, StringComparison.InvariantCultureIgnoreCase) && y.ParentGuidID.Equals(parentguidid, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                }
+				if(x == null) {
+					return false;
+				}
+
 				CategoryFolders.Remove(x);
 				SaveCategoryFoldersValues();
 				return true;

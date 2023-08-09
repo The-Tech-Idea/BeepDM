@@ -108,8 +108,8 @@ namespace TheTechIdea.Util
         // void LoadMapsValues();
         List<ConnectionDriversConfig> LoadConnectionDriversDefinition();
         void SaveConnectionDriversDefinitions();
-        CategoryFolder AddFolderCategory(string pfoldername, string prootname, string pparentname);
-        bool RemoveFolderCategory(string pfoldername, string prootname);
+        CategoryFolder AddFolderCategory(string pfoldername, string prootname, string pparentname, string parentguidid, bool isparentFolder = false, bool isparentRoot = true, bool isphysical = false);
+        bool RemoveFolderCategory(string pfoldername, string prootname, string parentguidid);
         void LoadCategoryFoldersValues();
         void SaveCategoryFoldersValues();
         void SaveFucntion2Function();

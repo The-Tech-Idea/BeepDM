@@ -147,7 +147,12 @@ namespace TheTechIdea.Util
             get { return _guidid; }
             set { SetProperty(ref _guidid, value); }
         }
-
+        private string _parentguidid;
+        public string ParentGuidID
+        {
+            get { return _parentguidid; }
+            set { SetProperty(ref _parentguidid, value); }
+        }
         private string _foldername;
         public string FolderName
         {
@@ -181,6 +186,12 @@ namespace TheTechIdea.Util
         {
             get { return _isparentroot; }
             set { SetProperty(ref _isparentroot, value); }
+        }
+        private bool _isparentFolder;
+        public bool IsParentFolder
+        {
+            get { return _isparentFolder; }
+            set { SetProperty(ref _isparentFolder, value); }
         }
 
         private bool _isphysicalfolder;
