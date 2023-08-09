@@ -83,11 +83,14 @@ namespace TheTechIdea.Util
         List<ConnectionProperties> LoadDataConnectionsValues();
         void SaveDataconnectionsValues();
         bool DataConnectionExist(string ConnectionName);
+        bool DataConnectionExist(ConnectionProperties cn);
+        bool DataConnectionGuidExist(string GuidID);
 
         bool AddDataConnection(ConnectionProperties cn);
         bool RemoveDataConnection(string pname);
         bool RemoveConnByName(string pname);
         bool RemoveConnByID(int ID);
+        bool RemoveConnByGuidID(string GuidID);
         bool UpdateDataConnection(ConnectionProperties ls, string category);
         List<ConnectionDriversConfig> LoadConnectionDriversConfigValues();
         void SaveConnectionDriversConfigValues();

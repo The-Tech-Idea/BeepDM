@@ -452,9 +452,27 @@ namespace TheTechIdea.Util
 			return Mappings;
 		
 		}
-		#endregion
-		#region "Data Connections L/S"
-		public void SaveDataconnectionsValues()
+        #endregion
+        #region "Data Connections L/S"
+       public bool DataConnectionExist(ConnectionProperties cn)
+		{
+            if (DataConnections == null)
+            {
+                DataConnections = new List<ConnectionProperties>();
+				return false;
+            }
+            return DataConnections != null ? DataConnections.Any(x => Path.Combine(x.FilePath,x.FileName).Equals(Path.Combine(cn.FilePath, cn.FileName), StringComparison.InvariantCultureIgnoreCase)) : false;
+        }
+		public bool DataConnectionGuidExist(string GuidID)
+		{
+            if (DataConnections == null)
+            {
+                DataConnections = new List<ConnectionProperties>();
+                return false;
+            }
+            return DataConnections != null ? DataConnections.Any(x => x.GuidID.Equals(GuidID, StringComparison.InvariantCultureIgnoreCase)) : false;
+        }
+        public void SaveDataconnectionsValues()
 		{
 			string path = Path.Combine(ConfigPath, "DataConnections.json");
 			JsonLoader.Serialize(path, DataConnections);
@@ -467,6 +485,7 @@ namespace TheTechIdea.Util
             if (DataConnections == null)
             {
                 DataConnections = new List<ConnectionProperties>();
+				return DataConnections;
 
             }
             return DataConnections;
@@ -476,6 +495,7 @@ namespace TheTechIdea.Util
             if (DataConnections == null)
             {
                 DataConnections = new List<ConnectionProperties>();
+				return false;
 
             }
             return DataConnections!=null? DataConnections.Any(x => x.ConnectionName.Equals(ConnectionName, StringComparison.InvariantCultureIgnoreCase)) : false;
@@ -530,37 +550,23 @@ namespace TheTechIdea.Util
 		{
 
 			try
-			{
-				int idx = DataConnections.FindIndex(0, p => p.ID == conn.ID);
+            {
+                if (DataConnections == null)
+                {
+                    DataConnections = new List<ConnectionProperties>();
+
+                }
+                int idx = DataConnections.FindIndex(0, p => p.ID == conn.ID);
+				if(idx < 0)
+				{
+                    idx = DataConnections.FindIndex(x => x.GuidID.Equals(conn.GuidID, StringComparison.InvariantCultureIgnoreCase));
+                }
 				if (idx == -1)
 				{
                     DataConnections.Add(conn);
                 }else
 					DataConnections[idx] = conn;
-                //var cnlist = DataConnections.Where(x => x.Category.ToString().Equals(category,StringComparison.InvariantCultureIgnoreCase)).ToList();
-                //foreach (ConnectionProperties dt in cnlist)
-                //{
-                //	ConnectionProperties dc = ls.Where(x => x.ConnectionName.Equals(dt.ConnectionName,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                //	if (dc == null)
-
-                //	{
-                //		DataConnections.Remove(dt);
-                //	}
-                //}
-                //foreach (ConnectionProperties item in ls)
-                //{
-                //	ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.Equals(item.ConnectionName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                //	if (dc != null)
-                //	{
-                //		dc = item;
-                //	}
-                //	else
-                //	{
-                //		DataConnections.Add(item);
-                //	}
-                //}
-
-
+                
             }
 			catch (Exception )
 			{
@@ -571,24 +577,52 @@ namespace TheTechIdea.Util
 		}
 		public bool RemoveConnByName(string pname)
 		{
+            if (DataConnections == null)
+            {
+                DataConnections = new List<ConnectionProperties>();
+                return false;
 
-			int i = DataConnections.FindIndex(x => x.ConnectionName.Equals(pname, StringComparison.InvariantCultureIgnoreCase));
+            }
+            int i = DataConnections.FindIndex(x => x.ConnectionName.Equals(pname, StringComparison.InvariantCultureIgnoreCase));
 
 			return DataConnections.Remove(DataConnections[i]);
 		}
 		public bool RemoveConnByID(int ID)
 		{
+            if (DataConnections == null)
+            {
+                DataConnections = new List<ConnectionProperties>();
+                return false;
 
-			int i = DataConnections.FindIndex(x => x.ID == ID);
+            }
+            int i = DataConnections.FindIndex(x => x.ID == ID);
 
 			return DataConnections.Remove(DataConnections[i]);
 		}
-		public bool RemoveDataConnection(string pname)
+        public bool RemoveConnByGuidID(string GuidID)
+		{
+            if (DataConnections == null)
+            {
+                DataConnections = new List<ConnectionProperties>();
+                return false;
+
+            }
+			int i = DataConnections.FindIndex(x => x.GuidID.Equals(GuidID, StringComparison.InvariantCultureIgnoreCase));
+            return DataConnections.Remove(DataConnections[i]);
+        }
+
+        public bool RemoveDataConnection(string pname)
 		{
 
 			try
 			{
-				ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.Equals(pname, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                if (DataConnections == null)
+                {
+                    DataConnections = new List<ConnectionProperties>();
+                    return false;
+
+                }
+                ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.Equals(pname, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
 				if (dc != null)
 				{
 					DataConnections.Remove(dc);
