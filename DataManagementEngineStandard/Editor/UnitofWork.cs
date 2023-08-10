@@ -26,7 +26,7 @@ namespace TheTechIdea.Beep.Editor
             init();
             Units = ts;
             PrimaryKey = primarykey;
-            if (ts == null)
+            if (ts == null || ts.Count==0)
             {
                 T doc=new();
                 getPrimaryKey(doc);

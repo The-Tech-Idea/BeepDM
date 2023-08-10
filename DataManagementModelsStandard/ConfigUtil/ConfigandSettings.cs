@@ -20,6 +20,7 @@ namespace TheTechIdea.Util
         public ConfigandSettings()
         {
             GuidID = Guid.NewGuid().ToString();
+           Folders = new List<StorageFolders>();
         }
         public string ID { get; set; }
         public string GuidID { get; set; }
@@ -41,7 +42,10 @@ namespace TheTechIdea.Util
         public string OtherDLLPath { get; set; }
         public string DefaultReportWriter { get; set; }
         public string ProjectsPath { get; set; }
-        public List<StorageFolders> Folders { get; set; } = new List<StorageFolders>();
+        public string SharedPath { get; set; }
+        public string PrivatePath { get; set; }
+        public string GlobalPath { get; set; }
+        public List<StorageFolders> Folders { get; set; }
         
     }
     public class StorageFolders

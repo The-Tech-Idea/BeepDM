@@ -680,7 +680,26 @@ namespace TheTechIdea.Util
 				return null;
 			}
  		}
-		public bool RemoveFolderCategory(string pfoldername, string prootname, string parentguidid)
+        public CategoryFolder AddFolderCategory(string pfoldername, string prootname, string pparentname)
+        {
+            try
+            {
+                CategoryFolder x = new CategoryFolder();
+                x.FolderName = pfoldername;
+                x.RootName = prootname;
+                x.ParentName = pparentname;
+             
+                CategoryFolders.Add(x);
+                SaveCategoryFoldersValues();
+                return x;
+            }
+            catch (Exception)
+            {
+
+                return null;
+            }
+        }
+        public bool RemoveFolderCategory(string pfoldername, string prootname, string parentguidid)
 		{
 			try
 			{
