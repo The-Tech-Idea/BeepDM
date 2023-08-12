@@ -33,6 +33,20 @@ namespace TheTechIdea.Beep.FileManager
                 return null;
             };
         }
+        public bool IsFileValid(string filename)
+        {
+            bool retval=false;
+            string ext = Path.GetExtension(filename).Replace(".", "").ToLower();
+            List<ConnectionDriversConfig> clss = DMEEditor.ConfigEditor.DataDriversClasses.Where(p => p.extensionstoHandle != null).ToList();
+            if (clss != null)
+            {
+                IEnumerable<string> extensionslist = clss.Select(p => p.extensionstoHandle);
+                string extstring = string.Join(",", extensionslist);
+                List<string> exts = extstring.Split(',').Distinct().ToList();
+                retval = exts.Contains(ext);
+            }
+            return retval;
+        }
         public string CreateFileExtensionString()
         {
             List<ConnectionDriversConfig> clss = DMEEditor.ConfigEditor.DataDriversClasses.Where(p => p.extensionstoHandle != null).ToList();
@@ -103,7 +117,7 @@ namespace TheTechIdea.Beep.FileManager
                 foreach (string file in filenames)
                 {
                     {
-                        if (!File.Exists(file))
+                        if (File.Exists(file))
                         {
                             ConnectionProperties c = CreateFileDataConnection(file);
                             if (c != null)
