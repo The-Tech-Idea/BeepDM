@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
@@ -64,5 +65,34 @@ namespace TheTechIdea.Beep
         object GetFieldValueFromObject(string fieldname, object sourceobj);
         IErrorsInfo SetFieldValueFromObject(string fieldname, object sourceobj,object value);
         List<T> GetTypedList<T>(List<object> ls);
+
+        List<ConnectionProperties> LoadFiles(string[] filenames);
+
+        bool IsFileValid(string filename);
+
+        string CreateFileExtensionString();
+
+        string CreateFileExtensionString(string extens);
+
+        List<ConnectionProperties> LoadFiles(string directoryname, string extens);
+
+        List<ConnectionProperties> CreateFileConnections(string[] filenames);
+
+        ConnectionProperties CreateFileDataConnection(string file);
+
+        ConnectionDriversConfig GetConnectionDrivers(string ext);
+
+
+        IDataSource CreateDataSource(string filepath);
+
+        Tuple<IErrorsInfo, RootFolder> CreateProject(string folderpath, ProjectFolderType folderType = ProjectFolderType.Files);
+
+
+         Folder CreateFolderStructure(Folder folder, string path);
+
+        Folder CreateFolderStructure(string path);
+        
+        RootFolder CreateFolderStructure(string path, ProjectFolderType folderType = ProjectFolderType.Files);
+       
     }
 }

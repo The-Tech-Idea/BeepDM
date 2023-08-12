@@ -6,7 +6,7 @@ using TheTechIdea.Beep;
 
 namespace TheTechIdea
 {
-    public interface IDM_Addin:IDisposable
+    public interface IDM_Addin
     {
         string ParentName { get; set; }
         string ObjectName { get; set; } 
