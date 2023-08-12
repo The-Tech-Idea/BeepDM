@@ -1,13 +1,12 @@
 ﻿using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
 using System;
-using System.Data;
 using TheTechIdea.Util;
 using TheTechIdea.Beep;
 
 namespace TheTechIdea
 {
-    public interface IDM_Addin
+    public interface IDM_Addin:IDisposable
     {
         string ParentName { get; set; }
         string ObjectName { get; set; } 
