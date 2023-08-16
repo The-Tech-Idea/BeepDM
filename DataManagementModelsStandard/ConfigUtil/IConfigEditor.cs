@@ -5,16 +5,11 @@ using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Report;
-
 using TheTechIdea.Beep.DataBase;
-
 using TheTechIdea.Beep;
-using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.ConfigUtil;
-
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Beep.AppManager;
-using System.IO;
 using TheTechIdea.Beep.FileManager;
 using DataManagementModels.ConfigUtil;
 using DataManagementModels.DriversConfigurations;
@@ -24,6 +19,7 @@ namespace TheTechIdea.Util
 {
     public interface IConfigEditor: IDisposable
     {
+        BeepConfigType ConfigType { get; set; }
         bool IsLoaded { get; }
         ConfigandSettings Config { get; set; }
         string ConfigPath { get; set; }
@@ -85,7 +81,6 @@ namespace TheTechIdea.Util
         bool DataConnectionExist(string ConnectionName);
         bool DataConnectionExist(ConnectionProperties cn);
         bool DataConnectionGuidExist(string GuidID);
-
         bool AddDataConnection(ConnectionProperties cn);
         bool RemoveDataConnection(string pname);
         bool RemoveConnByName(string pname);

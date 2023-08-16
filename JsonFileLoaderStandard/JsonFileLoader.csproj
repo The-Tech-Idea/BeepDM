@@ -21,7 +21,6 @@
   <ItemGroup>
     <Compile Include="..\JsonFileLoader\CustomContractResolver.cs" Link="CustomContractResolver.cs" />
     <Compile Include="..\JsonFileLoader\JsonFieldsCollector.cs" Link="JsonFieldsCollector.cs" />
-    <Compile Include="..\JsonFileLoader\JsonLoader.cs" Link="JsonLoader.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,8 +32,8 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="1.0.200" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.79" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="1.0.202" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.80" />
   </ItemGroup>
 
 </Project>

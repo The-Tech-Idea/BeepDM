@@ -45,6 +45,9 @@ namespace TheTechIdea.Util
         public string SharedPath { get; set; }
         public string PrivatePath { get; set; }
         public string GlobalPath { get; set; }
+        public string ReportPath { get; set; }
+        public string DataSourcesPath { get; set; }
+        public string LoaderExtensionsPath { get; set; }
         public List<StorageFolders> Folders { get; set; }
         
     }

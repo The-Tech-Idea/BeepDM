@@ -213,7 +213,7 @@ namespace TheTechIdea.Tools
             SendMessege(progress, token, "Getting FrameWork Extensions");
             GetExtensionScanners(progress, token);
 
-            SendMessege(progress, token, "Getting Connection Drivers Classes");
+            SendMessege(progress, token, "Getting Drivers Classes");
             foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver).Select(x => x.FolderPath))
                 {
                     try
@@ -242,7 +242,36 @@ namespace TheTechIdea.Tools
                     }
 
                 }
-            if(ConfigEditor.ConfigType!= BeepConfigType.DataConnector)
+            SendMessege(progress, token, "Getting Data Sources Classes");
+            foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.DataSources).Select(x => x.FolderPath))
+            {
+                try
+                {
+                    LoadAssembly(p, FolderFileTypes.DataSources);
+
+
+                }
+                catch (FileLoadException loadEx)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    res = "The Assembly has already been loaded" + loadEx.Message;
+                    // MessageBox.Show("The Assembly has already been loaded" + loadEx.Message, "Simple ODM", MessageBoxButtons.OK);
+                } // The Assembly has already been loaded.
+                catch (BadImageFormatException imgEx)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    // MessageBox.Show(imgEx.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly.
+                    res = imgEx.Message;
+                }
+                catch (Exception ex)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    // MessageBox.Show(ex.Message, "Simple ODM", MessageBoxButtons.OK);  // If a BadImageFormatException exception is thrown, the file is not an assembly
+                    res = ex.Message;
+                }
+
+            }
+            if (ConfigEditor.ConfigType!= BeepConfigType.DataConnector)
             {
                 SendMessege(progress, token, "Getting Project and Addin Classes");
                 foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath))
@@ -304,13 +333,22 @@ namespace TheTechIdea.Tools
             // Get Driver from Loaded Assembly
             SendMessege(progress, token, "Scanning Classes For Drivers");
             foreach (assemblies_rep item in Assemblies.Where(c=>c.FileTypes==FolderFileTypes.ConnectionDriver).ToList())
-                {
+            {
                    // AddLogMessage("Start", $"Started Processing Drivers  {item.DllName}", DateTime.Now, -1, item.DllName, Errors.Ok);
                     GetDrivers(item.DllLib);
                    // AddLogMessage("End", $"Started Processing Drivers  {item.DllName}", DateTime.Now, -1, item.DllName, Errors.Ok);
-                }
-            SendMessege(progress, token, "Scanning Classes For Addins");
-            foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.Addin).Select(x => x.FolderPath))
+            }
+            SendMessege(progress, token, "Scanning Classes For DataSources");
+            foreach (assemblies_rep item in Assemblies.Where(c => c.FileTypes == FolderFileTypes.DataSources).ToList())
+            {
+                // Get DataBase Implementation Classes
+                ScanAssemblyForDataSources(item.DllLib);
+                
+            }
+            if (ConfigEditor.ConfigType != BeepConfigType.DataConnector)
+            {
+                SendMessege(progress, token, "Scanning Classes For Addins");
+                foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.Addin).Select(x => x.FolderPath))
                 {
                     try
                     {
@@ -337,34 +375,37 @@ namespace TheTechIdea.Tools
                     }
 
                 }
-            // Scan Addin Assemblies
-            //-------------------------------
-            // Scan Project Class Assemblies
-            SendMessege(progress, token, "Scanning Classes For Project's and Addin's");
-            foreach (assemblies_rep s in Assemblies.Where(x => x.FileTypes == FolderFileTypes.ProjectClass || x.FileTypes == FolderFileTypes.Addin))
+                // Scan Addin Assemblies
+                //-------------------------------
+                // Scan Project Class Assemblies
+                SendMessege(progress, token, "Scanning Classes For Project's and Addin's");
+                foreach (assemblies_rep s in Assemblies.Where(x => x.FileTypes == FolderFileTypes.ProjectClass || x.FileTypes == FolderFileTypes.Addin))
                 {
                     try
                     {
                         ////DMEEditor.AddLogMessage("Start", $"Started Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
                         ScanAssembly(s.DllLib);
-                      //  Utilfunction.FunctionHierarchy = GetAddinObjects(s.DllLib);
-                     //   //DMEEditor.AddLogMessage("End", $"Ended Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
+                        //  Utilfunction.FunctionHierarchy = GetAddinObjects(s.DllLib);
+                        //   //DMEEditor.AddLogMessage("End", $"Ended Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
 
                     }
                     catch (Exception ex)
                     {
                         ErrorObject.Flag = Errors.Failed;
-                      //  //DMEEditor.AddLogMessage("Fail", $"Could not Process DLL {s.DllName}", DateTime.Now, -1,s.DllName, Errors.Failed);
+                        //  //DMEEditor.AddLogMessage("Fail", $"Could not Process DLL {s.DllName}", DateTime.Now, -1,s.DllName, Errors.Failed);
                     }
 
                 }
-
+            }
             //------------------------------
             SendMessege(progress, token, "Adding Default Engine Drivers");
             AddEngineDefaultDrivers();
             SendMessege(progress, token, "Organizing Drivers");
             CheckDriverAlreadyExistinList();
-            Utilfunction.FunctionHierarchy = GetAddinObjectsFromTree();
+            if (ConfigEditor.ConfigType != BeepConfigType.DataConnector)
+            {
+                Utilfunction.FunctionHierarchy = GetAddinObjectsFromTree();
+            }
             return ErrorObject;
         }
         /// <summary>
@@ -611,6 +652,65 @@ namespace TheTechIdea.Tools
         }
         #endregion
         #region "Class Extractors"
+        private bool ScanAssemblyForDataSources(Assembly asm)
+        {
+            Type[] t;
+            //  Console.WriteLine(asm.FullName);
+            try
+            {
+                try
+                {
+                    t = asm.GetTypes();
+                }
+                catch (Exception ex2)
+                {
+                    //DMEEditor.AddLogMessage("Failed", $"Could not get types for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
+                    try
+                    {
+                        //DMEEditor.AddLogMessage("Try", $"Trying to get exported types for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Ok);
+                        t = asm.GetExportedTypes();
+                    }
+                    catch (Exception ex3)
+                    {
+                        t = null;
+                        //DMEEditor.AddLogMessage("Failed", $"Could not get types for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
+                    }
+
+                }
+
+                if (t != null)
+                {
+                    foreach (var mytype in t) //asm.DefinedTypes
+                    {
+
+                        TypeInfo type = mytype.GetTypeInfo();
+                        string[] p = asm.FullName.Split(new char[] { ',' });
+                        p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
+                        
+                        //-------------------------------------------------------
+                        // Get DataBase Implementation Classes
+                        if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
+                        {
+
+                            AssemblyClassDefinition xcls = GetAssemblyClassDefinition(type, "IDataSource");
+                            DataSourcesClasses.Add(xcls);
+                            ConfigEditor.DataSourcesClasses.Add(xcls);
+                        }
+                  
+                    }
+                    ScanExtensions(asm);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                //DMEEditor.AddLogMessage("Failed", $"Could not get Any types for {asm.GetName().ToString()}" , DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
+            };
+
+            return true;
+
+
+        }
         private bool ScanAssembly(Assembly asm)
         {
             Type[] t;
@@ -1058,25 +1158,11 @@ namespace TheTechIdea.Tools
                 {
                     ConfigEditor.DataDriversClasses.Add(dr);
                 }
-                //}else
-                //{
-
-                //    founddr.ConnectionString = dr.ConnectionString;
-                //    founddr.DatasourceType = dr.DatasourceType ;
-                //    founddr.classHandler = dr.classHandler;
-                //     founddr.iconname = dr.iconname ;
-                //     founddr.DatasourceCategory = dr.DatasourceCategory;
-                //     founddr.classHandler = dr.classHandler;
-                //     founddr.ADOType = dr.ADOType;
-                //     founddr.CreateLocal = dr.CreateLocal;
-                //    founddr.AdapterType = dr.AdapterType;
-                //}
             }
         }
         private bool GetADOTypeDrivers(Assembly asm)
         {
             ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
-
             bool retval;
             string[] p;
             Type[] t;
@@ -1089,7 +1175,6 @@ namespace TheTechIdea.Tools
                 }
                 else
                 {
-
                     //t1 = asm.GetTypes().Where(typeof(IDbDataAdapter).IsAssignableFrom).ToList() ;
                     //t1.AddRange(asm.GetTypes().Where(typeof(IDataConnection).IsAssignableFrom).ToList());
                     //t1.AddRange(asm.GetTypes().Where(e=>e.BaseType.ToString().Contains("DbCommandBuilder")).ToList());
@@ -1103,10 +1188,8 @@ namespace TheTechIdea.Tools
                     t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbDataReader))).ToList());
                     t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbParameter))).ToList());
                     t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbTransaction))).ToList());
-
                     t = t1.ToArray();
                 }
-
                // Console.WriteLine(asm.FullName);
                 foreach (var mytype in t)
                 {
@@ -1134,9 +1217,6 @@ namespace TheTechIdea.Tools
                             // Get DataBase Drivers
                             if (type.ImplementedInterfaces.Contains(typeof(IDbDataAdapter)) )
                             {
-                                //Logger.WriteLog($" NameSpaces {type.Namespace} ");
-                                //IDataAdapter uc = (IDataAdapter)Activator.CreateInstance(type);
-
                                 driversConfig.version = p[1];
                                 driversConfig.AdapterType = type.FullName;
                                 driversConfig.PackageName = p[0];
@@ -1147,10 +1227,6 @@ namespace TheTechIdea.Tools
                                 {
                                     DataDriversConfig.Add(driversConfig);
                                 }
-
-
-
-
                             }
                             if (type.BaseType.ToString().Contains("DbCommandBuilder"))
                             {
@@ -1165,12 +1241,9 @@ namespace TheTechIdea.Tools
                                 {
                                     DataDriversConfig.Add(driversConfig);
                                 }
-
-                                //  }
                             }
                             if (type.ImplementedInterfaces.Contains(typeof(IDbConnection))|| typeof(DbConnection).IsAssignableFrom(type))
                             {
-
                                 driversConfig.DbConnectionType = type.FullName;
                                 driversConfig.PackageName = p[0];
                                 driversConfig.DriverClass = p[0];
@@ -1181,13 +1254,9 @@ namespace TheTechIdea.Tools
                                 {
                                     DataDriversConfig.Add(driversConfig);
                                 }
-
-                                //}
                             }
                             if (type.ImplementedInterfaces.Contains(typeof(IDbTransaction)) || typeof(DbTransaction).IsAssignableFrom(type))
                             {
-
-
                                 driversConfig.PackageName = p[0];
                                 driversConfig.DriverClass = p[0];
                                 driversConfig.version = p[1];
@@ -1197,12 +1266,8 @@ namespace TheTechIdea.Tools
                                 {
                                     DataDriversConfig.Add(driversConfig);
                                 }
-
-                                // }
                             }
                         }
-                       
-                        //-----------------------------------------  ------------------
                     }
                     catch (Exception ex)
                     {
@@ -1221,12 +1286,7 @@ namespace TheTechIdea.Tools
                     if (driversConfig == null)
                     {
                         driversConfig = new ConnectionDriversConfig();
-                        // recexist = false;
                     }
-                    //else
-                    //{
-                    //   // recexist = true;
-                    //}
                     driversConfig.version = p[1];
                     driversConfig.PackageName = p[0];
                     driversConfig.DriverClass = p[0];
@@ -1266,10 +1326,8 @@ namespace TheTechIdea.Tools
             ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
             try
             {
-              
                 foreach (ConnectionDriversConfig item in  ConfigEditor.DriverDefinitionsConfig)
                 {
-
                     driversConfig = DataDriversConfig.Where(c => c.PackageName == item.PackageName).FirstOrDefault();
                     if (driversConfig == null)
                     {
@@ -1281,23 +1339,13 @@ namespace TheTechIdea.Tools
                         driversConfig.parameter1 = item.parameter1;
                         driversConfig.parameter2 = item.parameter2;
                         driversConfig.parameter3 = item.parameter3;
-                      
                         DataDriversConfig.Add(driversConfig);
                     }
-                   
                 }
-              
-                //-----------------------------------------------------------
             }
             catch (Exception ex)
             {
-
-            //    DMEEditor.Logger.WriteLog($"error in creating addin {ex.Message} ");
-               
             }
-
-
-
         }
         public List<ConnectionDriversConfig> GetDrivers(Assembly asm)
         {
@@ -1309,49 +1357,21 @@ namespace TheTechIdea.Tools
                 }
                 
             }
-            catch (ReflectionTypeLoadException ex1)
+            catch (Exception ex1)
             {
-                ////DMEEditor.AddLogMessage("Failed", $"Showing Details for  {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
-                //StringBuilder sb = new StringBuilder();
-                //foreach (Exception exSub in ex1.LoaderExceptions)
-                //{
-                //    sb.AppendLine(exSub.Message);
-                //    FileNotFoundException exFileNotFound = exSub as FileNotFoundException;
-                //    if (exFileNotFound != null)
-                //    {
-                //        if (!string.IsNullOrEmpty(exFileNotFound.FusionLog))
-                //        {
-                //            sb.AppendLine("Fusion Log:");
-                //            sb.AppendLine(exFileNotFound.FusionLog);
-                //        }
-                //    }
-                //    sb.AppendLine();
-                //}
-                //string errorMessage = sb.ToString();
-                //DMEEditor.AddLogMessage("Failed", $"Could not get Any types for {asm.GetName().ToString()} \n {errorMessage}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
-
-                
+ 
             }
-
-
             return DataDriversConfig;
-
-
         }
         public List<string> CreateFileExtensionString()
         {
             List<AssemblyClassDefinition> cls = DataSourcesClasses.Where(o => o.classProperties != null).ToList();
-           
-
             IEnumerable<string> extensionslist = cls.Where(o => o.classProperties.Category == DatasourceCategory.FILE).Select(p => p.classProperties.FileType);
             string extstring = string.Join(",", extensionslist);
             return extstring.Split(',').ToList() ;
-           
-          
         }
         public bool AddEngineDefaultDrivers()
         {
-
             try
             {
                 ConnectionDriversConfig DataviewDriver = new ConnectionDriversConfig();
@@ -1367,7 +1387,6 @@ namespace TheTechIdea.Tools
                 List<AssemblyClassDefinition> cls = DataSourcesClasses.Where(o => o.classProperties != null).ToList().Where(p => p.classProperties.Category == DatasourceCategory.FILE).ToList(); 
                 foreach (AssemblyClassDefinition item in cls)
                 {
-                   
                     foreach (string extension in item.classProperties.FileType.Split(',').ToList())
                     {
                         ConnectionDriversConfig TXTFileDriver = new ConnectionDriversConfig();
@@ -1386,20 +1405,15 @@ namespace TheTechIdea.Tools
                         TXTFileDriver.version = "1";
                         DataDriversConfig.Add(TXTFileDriver);
                     }
-                  
                 }
-              
-
-                return true;
+                 return true;
             }
             catch (Exception ex)
             {
                 string mes = "";
-              //  DMEEditor.AddLogMessage(ex.Message, "Could not Add Driver" + mes, DateTime.Now, -1, mes, Errors.Failed);
                 return false;
             };
         }
-
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

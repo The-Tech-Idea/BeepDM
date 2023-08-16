@@ -5,7 +5,7 @@
     <RootNamespace>TheTechIdea.Beep</RootNamespace>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.AssemblyLoader</PackageId>
-	  <Version>1.0.12</Version>
+	  <Version>1.0.14</Version>
     <Authors>The Tech Idea</Authors>
     <Product>TheTechIdea.Beep.AssemblyLoader</Product>
     <Description>Aseembly Loader for Data Management Engine</Description>
@@ -51,9 +51,6 @@
 	<Target Name="CopyPackage" AfterTargets="Pack">
 		<Copy SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\LocalNugetFiles" />
 	</Target>
-  <ItemGroup>
-    <Compile Include="..\Assembly_helpers\AssemblyHandler.cs" Link="AssemblyHandler.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\InstallationScripts\LogoGFx\128\SimpleODM.png">
@@ -63,7 +60,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.79" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.80" />
   </ItemGroup>
 
 </Project>

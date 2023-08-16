@@ -26,7 +26,7 @@ namespace TheTechIdea.Util
 	{
         private bool disposedValue;
 
-        public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader,string folderpath=null, string containerfolder = null)
+        public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader,string folderpath=null, string containerfolder = null,BeepConfigType configType= BeepConfigType.Application)
 		{
 			Logger = logger;
 			ErrorObject = per;
@@ -42,56 +42,61 @@ namespace TheTechIdea.Util
 				ExePath = Path.Combine(ExePath, containerfolder);
 			}
 			ContainerName = ExePath;
+			ConfigType= configType;
 			Init();
 		}
-		public bool IsLoaded => IsLocationSaved();
-		public string ContainerName { get; set; } 
-		public IErrorsInfo ErrorObject { get; set; }
-		public IJsonLoader JsonLoader { get; set; }
-		public ConfigandSettings Config { get; set; } = new ConfigandSettings();
-		public IDMLogger Logger { get; set; }
-		public List<string> Databasetypes { get; set; }
-		public List<QuerySqlRepo> QueryList { get; set; } = new List<QuerySqlRepo>();
-		public List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; } = new List<ConnectionDriversConfig>();
-		public List<ConnectionProperties> DataConnections { get; set; } = new List<ConnectionProperties>(); //DataSourceConnectionConfig
-		public List<WorkFlow> WorkFlows { get; set; } = new List<WorkFlow>();
-		public List<CategoryFolder> CategoryFolders { get; set; } = new List<CategoryFolder>();
-		public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
-		public List<AssemblyClassDefinition> GlobalFunctions { get; set; } = new List<AssemblyClassDefinition>();
-		public List<AssemblyClassDefinition> AppWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
-		public List<AssemblyClassDefinition> AppComponents { get; set; } = new List<AssemblyClassDefinition>();
-		public List<AssemblyClassDefinition> ReportWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
-		public List<AssemblyClassDefinition> PrintManagers { get; set; }=new List<AssemblyClassDefinition>();
-		public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
-        public List<AssemblyClassDefinition> WorkFlowActions { get; set; }=new List<AssemblyClassDefinition> { };
-        public List<AssemblyClassDefinition> WorkFlowEditors { get; set; }=new List<AssemblyClassDefinition>();
-        public List<AssemblyClassDefinition> WorkFlowSteps { get; set; }=new	List<AssemblyClassDefinition>();
+        #region "Properties"
+        public BeepConfigType ConfigType { get; set; } = BeepConfigType.Application;
+        public bool IsLoaded => IsLocationSaved();
+        public string ContainerName { get; set; }
+        public IErrorsInfo ErrorObject { get; set; }
+        public IJsonLoader JsonLoader { get; set; }
+        public ConfigandSettings Config { get; set; } = new ConfigandSettings();
+        public IDMLogger Logger { get; set; }
+        public List<string> Databasetypes { get; set; }
+        public List<QuerySqlRepo> QueryList { get; set; } = new List<QuerySqlRepo>();
+        public List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; } = new List<ConnectionDriversConfig>();
+        public List<ConnectionProperties> DataConnections { get; set; } = new List<ConnectionProperties>(); //DataSourceConnectionConfig
+        public List<WorkFlow> WorkFlows { get; set; } = new List<WorkFlow>();
+        public List<CategoryFolder> CategoryFolders { get; set; } = new List<CategoryFolder>();
+        public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> GlobalFunctions { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> AppWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> AppComponents { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> ReportWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> PrintManagers { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> WorkFlowActions { get; set; } = new List<AssemblyClassDefinition> { };
+        public List<AssemblyClassDefinition> WorkFlowEditors { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> WorkFlowSteps { get; set; } = new List<AssemblyClassDefinition>();
         public List<AssemblyClassDefinition> WorkFlowStepEditors { get; set; } = new List<AssemblyClassDefinition>();
         public List<AssemblyClassDefinition> FunctionExtensions { get; set; } = new List<AssemblyClassDefinition>();
         public List<AssemblyClassDefinition> Addins { get; set; } = new List<AssemblyClassDefinition>();
         public List<AssemblyClassDefinition> Others { get; set; } = new List<AssemblyClassDefinition>();
         public List<AssemblyClassDefinition> Rules { get; set; } = new List<AssemblyClassDefinition>();
         public List<AddinTreeStructure> AddinTreeStructure { get; set; } = new List<AddinTreeStructure>();
-		public List<Function2FunctionAction> Function2Functions { get; set; } = new List<Function2FunctionAction>();
-		public List<ObjectTypes> objectTypes { get; set; } = new List<ObjectTypes>();
-		public List<Event> Events { get; set; } = new List<Event>();
-		public List<AppTemplate> ReportsDefinition { get; set; } = new List<AppTemplate>();
-		public List<ReportsList> Reportslist { get; set; } = new List<ReportsList>();
-		public List<ReportsList> AIScriptslist { get; set; } = new List<ReportsList>();
-		public List<CompositeLayer> CompositeQueryLayers { get; set; } = new List<CompositeLayer>();
-		public List<EntityStructure> EntityCreateObjects { get; set; } = new List<EntityStructure>();
-		public List<DatatypeMapping> DataTypesMap { get; set; } = new List<DatatypeMapping>();
-	//	public List<DataSourceFieldProperties> AppfieldProperties { get; set; } = new List<DataSourceFieldProperties>();
-		public Dictionary<string, string> Entities { get; set; } = new Dictionary<string, string>();
-	//	public List<ETLScriptHDR> Scripts { get; set; } = new List<ETLScriptHDR>();
-	//	public List<ETLScriptHDR> SyncedDataSources { get; set; } = new List<ETLScriptHDR>();
-		public List<ConnectionDriversConfig> DataDriversClasses { get; set; } = new List<ConnectionDriversConfig>();
+        public List<Function2FunctionAction> Function2Functions { get; set; } = new List<Function2FunctionAction>();
+        public List<ObjectTypes> objectTypes { get; set; } = new List<ObjectTypes>();
+        public List<Event> Events { get; set; } = new List<Event>();
+        public List<AppTemplate> ReportsDefinition { get; set; } = new List<AppTemplate>();
+        public List<ReportsList> Reportslist { get; set; } = new List<ReportsList>();
+        public List<ReportsList> AIScriptslist { get; set; } = new List<ReportsList>();
+        public List<CompositeLayer> CompositeQueryLayers { get; set; } = new List<CompositeLayer>();
+        public List<EntityStructure> EntityCreateObjects { get; set; } = new List<EntityStructure>();
+        public List<DatatypeMapping> DataTypesMap { get; set; } = new List<DatatypeMapping>();
+        //	public List<DataSourceFieldProperties> AppfieldProperties { get; set; } = new List<DataSourceFieldProperties>();
+        public Dictionary<string, string> Entities { get; set; } = new Dictionary<string, string>();
+        //	public List<ETLScriptHDR> Scripts { get; set; } = new List<ETLScriptHDR>();
+        //	public List<ETLScriptHDR> SyncedDataSources { get; set; } = new List<ETLScriptHDR>();
+        public List<ConnectionDriversConfig> DataDriversClasses { get; set; } = new List<ConnectionDriversConfig>();
         public List<RootFolder> Projects { get; set; } = new List<RootFolder>();
         public string ExePath { get; set; } // System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location); //System.Reflection.Assembly.GetExecutingAssembly().Location
-		public string ConfigPath { get; set; } 
-		public List<Assembly> LoadedAssemblies { get; set; } = new List<Assembly>();
-		#region "Scripts and logs L/S"
-		public void SaveScriptsValues(ETLScriptHDR Scripts) 
+        public string ConfigPath { get; set; }
+        public List<Assembly> LoadedAssemblies { get; set; } = new List<Assembly>();
+        #endregion "Properties"
+
+        #region "Scripts and logs L/S"
+        public void SaveScriptsValues(ETLScriptHDR Scripts) 
 		{
 			string path = Path.Combine(Config.ScriptsPath, "Scripts.json");
 			JsonLoader.Serialize(path, Scripts);
@@ -1258,7 +1263,7 @@ namespace TheTechIdea.Util
 			
 				if (Config != null)
                 {
-				
+					// Check if Application Folder Changed
 					if (!Config.ExePath.Equals(exedir,StringComparison.InvariantCultureIgnoreCase))
 					{
 						Config = new ConfigandSettings();
@@ -1267,10 +1272,9 @@ namespace TheTechIdea.Util
                         {
                             var dirName = new DirectoryInfo(fold.FolderPath).Name;
                             folders.Add(new StorageFolders(Path.Combine(ContainerName, dirName), fold.FolderFilesType));
-                            //fold.FolderPath = Path.Combine(containerpath, dirName);
+                            
                         }
 						Config.ExePath = exedir;
-
 						Config.Folders = folders;
                     }
                 }
@@ -1279,94 +1283,114 @@ namespace TheTechIdea.Util
 					Config = new ConfigandSettings();
 					Config.ExePath = ContainerName;
 				}
-				//Config.SystemEntryFormName = @"Frm_MainDisplayForm";
-				//Check Folders exist
+                Config.ExePath = ContainerName;
+                //Check Folders exist
+                if (ConfigType!= BeepConfigType.DataConnector)
+				{
+                    CreateDirConfig(Path.Combine(ContainerName, "Addin"), FolderFileTypes.Addin);
+                    CreateDirConfig(Path.Combine(ContainerName, "DataFiles"), FolderFileTypes.DataFiles);
+                    CreateDirConfig(Path.Combine(ContainerName, "DataViews"), FolderFileTypes.DataView);
+                    CreateDirConfig(Path.Combine(ContainerName, "ProjectData"), FolderFileTypes.ProjectData);
+                    CreateDirConfig(Path.Combine(ContainerName, "ProjectClasses"), FolderFileTypes.ProjectClass);
+                    CreateDirConfig(Path.Combine(ContainerName, "GFX"), FolderFileTypes.GFX);
+                    CreateDirConfig(Path.Combine(ContainerName, "OtherDll"), FolderFileTypes.OtherDLL);
+                    CreateDirConfig(Path.Combine(ContainerName, "Entities"), FolderFileTypes.Entities);
+                    CreateDirConfig(Path.Combine(ContainerName, "Mapping"), FolderFileTypes.Mapping);
+                    CreateDirConfig(Path.Combine(ContainerName, "WorkFlow"), FolderFileTypes.WorkFlows);
+                    CreateDirConfig(Path.Combine(ContainerName, "Scripts"), FolderFileTypes.Scripts);
+                    CreateDirConfig(Path.Combine(ContainerName, "Scripts\\Logs"), FolderFileTypes.ScriptsLogs);
+                    CreateDirConfig(Path.Combine(ContainerName, "AI"), FolderFileTypes.Scripts);
+                    CreateDirConfig(Path.Combine(ContainerName, "Reports"), FolderFileTypes.Reports);
+                    if (Config.ConfigPath == null)
+                    {
+                        Config.ConfigPath = Path.Combine(ContainerName, "Config");
+
+                    }
+                    if (ConfigPath == null)
+                    {
+                        ConfigPath = Config.ConfigPath;
+
+                    }
+                    if (Config.ScriptsPath == null)
+                    {
+                        Config.ScriptsPath = Path.Combine(ContainerName, "Scripts");
+
+                    }
+                    if (Config.ScriptsLogsPath == null)
+                    {
+                        Config.ScriptsLogsPath = Path.Combine(ContainerName, "Scripts\\Logs");
+
+                    }
+                    if (Config.ProjectDataPath == null)
+                    {
+                        Config.ProjectDataPath = Path.Combine(ContainerName, "ProjectData");
+
+                    }
+                    if (Config.DataViewPath == null)
+                    {
+                        Config.DataViewPath = Path.Combine(ContainerName, "DataViews");
+
+                    }
+                    if (Config.DataFilePath == null)
+                    {
+                        Config.DataFilePath = Path.Combine(ContainerName, "DataFiles");
+
+                    }
+                    if (Config.AddinPath == null)
+                    {
+                        Config.AddinPath = Path.Combine(ContainerName, "Addin");
+
+                    }
+                    if (Config.ClassPath == null)
+                    {
+                        Config.ClassPath = Path.Combine(ContainerName, "ProjectClasses");
+
+                    }
+                    if (Config.EntitiesPath == null)
+                    {
+                        Config.EntitiesPath = Path.Combine(ContainerName, "Entities");
+
+                    }
+                    if (Config.GFXPath == null)
+                    {
+                        Config.GFXPath = Path.Combine(ContainerName, "GFX");
+
+                    }
+                    if (Config.MappingPath == null)
+                    {
+                        Config.MappingPath = Path.Combine(ContainerName, "Mapping");
+
+                    }
+                    if (Config.OtherDLLPath == null)
+                    {
+                        Config.OtherDLLPath = Path.Combine(ContainerName, "OtherDll");
+
+                    }
+                    if (Config.WorkFlowPath == null)
+                    {
+                        Config.WorkFlowPath = Path.Combine(ContainerName, "WorkFlow");
+
+                    }
+                }
 				CreateDirConfig(Path.Combine(ContainerName, "Config"), FolderFileTypes.Config);
-				CreateDirConfig(Path.Combine(ContainerName, "Addin"), FolderFileTypes.Addin);
-				CreateDirConfig(Path.Combine(ContainerName, "DataFiles"), FolderFileTypes.DataFiles);
-				CreateDirConfig(Path.Combine(ContainerName, "DataViews"), FolderFileTypes.DataView);
-				CreateDirConfig(Path.Combine(ContainerName, "ProjectData"), FolderFileTypes.ProjectData);
-				CreateDirConfig(Path.Combine(ContainerName, "ProjectClasses"), FolderFileTypes.ProjectClass);
 				CreateDirConfig(Path.Combine(ContainerName, "ConnectionDrivers"), FolderFileTypes.ConnectionDriver);
-				CreateDirConfig(Path.Combine(ContainerName, "GFX"), FolderFileTypes.GFX);
-				CreateDirConfig(Path.Combine(ContainerName, "OtherDll"), FolderFileTypes.OtherDLL);
-				CreateDirConfig(Path.Combine(ContainerName, "Entities"), FolderFileTypes.Entities);
-				CreateDirConfig(Path.Combine(ContainerName, "Mapping"), FolderFileTypes.Mapping);
-				CreateDirConfig(Path.Combine(ContainerName, "WorkFlow"), FolderFileTypes.WorkFlows);
-				CreateDirConfig(Path.Combine(ContainerName, "Scripts"), FolderFileTypes.Scripts);
-				CreateDirConfig(Path.Combine(ContainerName, "Scripts\\Logs"), FolderFileTypes.ScriptsLogs);
-				CreateDirConfig(Path.Combine(ContainerName, "AI"), FolderFileTypes.Scripts);
-				CreateDirConfig(Path.Combine(ContainerName, "Reports"), FolderFileTypes.Reports);
-				
-				Config.ExePath = ContainerName;
-				if (Config.ConfigPath == null)
-				{
-					Config.ConfigPath = Path.Combine(ContainerName, "Config");
+                CreateDirConfig(Path.Combine(ContainerName, "DataSources"), FolderFileTypes.DataSources);
+                CreateDirConfig(Path.Combine(ContainerName, "LoadingExtensions"), FolderFileTypes.LoaderExtensions);
 
-				}
-				if (ConfigPath == null)
-				{
-					ConfigPath = Config.ConfigPath;
 
-				}
-				if (Config.ScriptsPath == null)
-				{
-					Config.ScriptsPath = Path.Combine(ContainerName, "Scripts");
-
-				}
-				if (Config.ScriptsLogsPath == null)
-				{
-					Config.ScriptsLogsPath = Path.Combine(ContainerName, "Scripts\\Logs");
-
-				}
-				if (Config.ProjectDataPath == null)
-				{
-					Config.ProjectDataPath = Path.Combine(ContainerName, "ProjectData");
-
-				}
-				if (Config.DataViewPath == null)
-				{
-					Config.DataViewPath = Path.Combine(ContainerName, "DataViews");
-
-				}
-				if (Config.DataFilePath == null)
-				{
-					Config.DataFilePath = Path.Combine(ContainerName, "DataFiles");
-
-				}
-				if (Config.AddinPath == null)
-				{
-					Config.AddinPath = Path.Combine(ContainerName, "Addin");
-
-				}
-				if (Config.ClassPath == null)
-				{
-					Config.ClassPath = Path.Combine(ContainerName, "ProjectClasses");
-
-				}
-				if (Config.EntitiesPath == null)
-				{
-					Config.EntitiesPath = Path.Combine(ContainerName, "Entities");
-
-				}
-				if (Config.GFXPath == null)
-				{
-					Config.GFXPath = Path.Combine(ContainerName, "GFX");
-
-				}
-				if (Config.MappingPath == null)
-				{
-					Config.MappingPath = Path.Combine(ContainerName, "Mapping");
-
-				}
-				if (Config.OtherDLLPath == null)
-				{
-					Config.OtherDLLPath = Path.Combine(ContainerName, "OtherDll");
-
-				}
-                if (Config.WorkFlowPath == null)
+                if (Config.ConfigPath == null)
                 {
-                    Config.WorkFlowPath = Path.Combine(ContainerName, "WorkFlow");
+                    Config.ConfigPath = Path.Combine(ContainerName, "Config");
+
+                }
+                if (ConfigPath == null)
+                {
+                    ConfigPath = Config.ConfigPath;
+
+                }
+                if (Config.LoaderExtensionsPath == null)
+                {
+                    Config.LoaderExtensionsPath = Path.Combine(ContainerName, "LoadingExtensions");
 
                 }
                 if (Config.ConnectionDriversPath == null)
@@ -1374,7 +1398,12 @@ namespace TheTechIdea.Util
 					Config.ConnectionDriversPath = Path.Combine(ContainerName, "ConnectionDrivers");
 
 				}
-				SaveConfigValues();
+                if (Config.DataSourcesPath == null)
+                {
+                    Config.DataSourcesPath = Path.Combine(ContainerName, "DataSources");
+
+                }
+                SaveConfigValues();
 			}
 
 			catch (Exception ex)
