@@ -34,7 +34,9 @@ namespace TheTechIdea.Beep.Editor
         public EntityDataMap_DTL CurrentMappingDTL { get; set; }
         public EntityDataMap Mapping { get; set; }
         public IDMEEditor DMEEditor { get; }
-        public List<DefaultValue> Defaults { get; set; } = new List<DefaultValue>();
+        public List<DefaultValue> SourceDefaults { get; set; } = new List<DefaultValue>();
+        public List<DefaultValue> DestDefaults { get; set; } = new List<DefaultValue>();
+        public List<IWorkFlowRule> Rules { get; set; }=new List<IWorkFlowRule>();
         bool IsEntitychanged = false;
         public DataImportManager(IDMEEditor dMEEditor)
         {
@@ -74,7 +76,7 @@ namespace TheTechIdea.Beep.Editor
                     DestDataSourceName = destDataSourceName; DestEntityName = destEntityName;
                     if (DestData.ConnectionStatus == ConnectionState.Open)
                     {
-                        Defaults = DMEEditor.Getdefaults(destDataSourceName);
+                        DestDefaults = DMEEditor.Getdefaults(destDataSourceName);
                         DestEntityStructure = (EntityStructure)DestData.GetEntityStructure(destEntityName, false).Clone();
                     }
                     else DMEEditor.AddLogMessage("Beep", $"Error Could open  Destination Datasource {destDataSourceName} ", DateTime.Now, 0, null, Errors.Failed);

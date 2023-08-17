@@ -25,7 +25,6 @@ namespace TheTechIdea.Util
 	public class ConfigEditor : IConfigEditor
 	{
         private bool disposedValue;
-
         public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader,string folderpath=null, string containerfolder = null,BeepConfigType configType= BeepConfigType.Application)
 		{
 			Logger = logger;
@@ -94,7 +93,6 @@ namespace TheTechIdea.Util
         public string ConfigPath { get; set; }
         public List<Assembly> LoadedAssemblies { get; set; } = new List<Assembly>();
         #endregion "Properties"
-
         #region "Scripts and logs L/S"
         public void SaveScriptsValues(ETLScriptHDR Scripts) 
 		{
@@ -1068,7 +1066,6 @@ namespace TheTechIdea.Util
 			return DataTypesMap;
 		}
 		#endregion
-		
 		#region "Init Values"
 		private IErrorsInfo InitConnectionConfigDrivers()
 		{
@@ -1536,7 +1533,6 @@ namespace TheTechIdea.Util
             return DMEEditor.ErrorObject;
         }
         #endregion"Defaults"
-
         //----------------------------------------------------------------------------------------------
         public IErrorsInfo Init()
 		{
@@ -1577,7 +1573,6 @@ namespace TheTechIdea.Util
 			}
 			return ErrorObject;
 		}
-
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -1632,7 +1627,6 @@ namespace TheTechIdea.Util
         //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         //     Dispose(disposing: false);
         // }
-
         public void Dispose()
         {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
