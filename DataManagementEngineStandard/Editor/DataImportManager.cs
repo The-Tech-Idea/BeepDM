@@ -34,10 +34,10 @@ namespace TheTechIdea.Beep.Editor
         public EntityDataMap_DTL CurrentMappingDTL { get; set; }
         public EntityDataMap Mapping { get; set; }
         public IDMEEditor DMEEditor { get; }
+        bool IsEntitychanged = false;
         public List<DefaultValue> SourceDefaults { get; set; } = new List<DefaultValue>();
         public List<DefaultValue> DestDefaults { get; set; } = new List<DefaultValue>();
         public List<IWorkFlowRule> Rules { get; set; }=new List<IWorkFlowRule>();
-        bool IsEntitychanged = false;
         public DataImportManager(IDMEEditor dMEEditor)
         {
             DMEEditor = dMEEditor;
