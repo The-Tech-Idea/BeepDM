@@ -3,8 +3,8 @@ using System;
 using TheTechIdea.Util;
 using System.Data;
 using System.IO;
-using TheTechIdea.Beep.Connections;
 using DataManagementModels.DriversConfigurations;
+using TheTechIdea.Beep.Helpers;
 
 namespace TheTechIdea.Beep.DataBase
 {
@@ -82,7 +82,7 @@ namespace TheTechIdea.Beep.DataBase
             //    }
             //}
            
-             return  UtilConnections.ReplaceValueFromConnectionString(DataSourceDriver, ConnectionProp, DMEEditor);
+             return  ConnectionHelper.ReplaceValueFromConnectionString(DataSourceDriver, ConnectionProp, DMEEditor);
         }
         public virtual ConnectionState OpenConnection()
         {

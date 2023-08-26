@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TheTechIdea.Beep.DataBase
+namespace TheTechIdea.Beep.Helpers
 {
     public static class RDBMSHelper
     {

@@ -9,8 +9,9 @@ using TheTechIdea.Util;
 using TheTechIdea.Beep.DataBase;
 using System.IO;
 using System.Data;
-using TheTechIdea.Beep.Connections;
+
 using DataManagementModels.DriversConfigurations;
+using TheTechIdea.Beep.Helpers;
 
 namespace TheTechIdea.Beep.FileManager
 {
@@ -70,7 +71,7 @@ namespace TheTechIdea.Beep.FileManager
             //    rep = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
             //}
             
-            return UtilConnections.ReplaceValueFromConnectionString(DataSourceDriver,ConnectionProp,DMEEditor);
+            return ConnectionHelper.ReplaceValueFromConnectionString(DataSourceDriver,ConnectionProp,DMEEditor);
         }
         private ConnectionState OpenConn()
         {

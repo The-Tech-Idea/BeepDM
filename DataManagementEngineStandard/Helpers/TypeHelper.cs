@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-namespace TheTechIdea.Beep.Editor
+
+namespace TheTechIdea.Beep.Helpers
 {
     public static class TypeHelper
     {
@@ -19,7 +20,7 @@ namespace TheTechIdea.Beep.Editor
         /// </returns>
         public static object GetInstance(this Type type)
         {
-            return GetInstance<TypeToIgnore>(type, null);
+            return type.GetInstance<TypeToIgnore>(null);
         }
 
         /// <summary>
@@ -42,7 +43,7 @@ namespace TheTechIdea.Beep.Editor
             this Type type,
             TArg argument)
         {
-            return GetInstance<TArg, TypeToIgnore>(type, argument, null);
+            return type.GetInstance<TArg, TypeToIgnore>(argument, null);
         }
 
         /// <summary>
@@ -72,8 +73,8 @@ namespace TheTechIdea.Beep.Editor
             TArg1 argument1,
             TArg2 argument2)
         {
-            return GetInstance<TArg1, TArg2, TypeToIgnore>(
-                type, argument1, argument2, null);
+            return type.GetInstance<TArg1, TArg2, TypeToIgnore>(
+argument1, argument2, null);
         }
 
         /// <summary>
