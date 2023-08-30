@@ -973,19 +973,21 @@ namespace TheTechIdea.Beep.DataBase
                             }
                         }
 
-                        EntityStructure exist = Entities.Where(d => d.EntityName.Equals(fnd.EntityName,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                        if (exist == null)
+                     //   EntityStructure exist = Entities.Where(d => d.EntityName.Equals(fnd.EntityName,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                        int idx = Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase));
+                        if (idx==-1)
                         {
                             Entities.Add(fnd);
                         }
                         else
                         {
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Created = true;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Editable = false;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Drawn = true;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Fields = fnd.Fields;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].Relations = fnd.Relations;
-                            Entities[Entities.FindIndex(o => o.EntityName.Equals(fnd.EntityName, StringComparison.InvariantCultureIgnoreCase))].PrimaryKeys = fnd.PrimaryKeys;
+                           
+                            Entities[idx].Created = true;
+                            Entities[idx].Editable = false;
+                            Entities[idx].Drawn = true;
+                            Entities[idx].Fields = fnd.Fields;
+                            Entities[idx].Relations = fnd.Relations;
+                            Entities[idx].PrimaryKeys = fnd.PrimaryKeys;
     
                         }
                     }
