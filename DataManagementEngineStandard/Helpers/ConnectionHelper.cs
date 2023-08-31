@@ -138,8 +138,281 @@ namespace TheTechIdea.Beep.Helpers
             configs.Add(CreateOracleConfig());
             configs.Add(CreateDuckDBConfig());
             configs.Add(CreateOracleManagedDataAccessConfig());
+            configs.Add(CreateRealmConfig());
+            configs.Add(CreateSnowFlakeConfig());
+            configs.Add(CreateHadoopConfig());
+            configs.Add(CreateRedisConfig());
+            configs.Add(CreateKafkaConfig());
+            configs.Add(CreateOPCConfig());
+            configs.Add(CreateDB2Config());
+            configs.Add(CreateCouchDBConfig());
+            configs.Add(CreateVistaDBConfig());
+            configs.Add(CreateCouchbaseConfig());
+            configs.Add(CreateFirebaseConfig());
+            configs.Add(CreateRealmConfig());
+
 
             return configs;
+        }
+        public static ConnectionDriversConfig CreateSnowFlakeConfig()
+        {
+            return new ConnectionDriversConfig
+            {
+                GuidID = "snowflake-guid",
+                PackageName = "SnowFlake",
+                DriverClass = "SnowFlake",
+                version = "4.10.2.0",
+                dllname = "SnowFlake.dll",
+                AdapterType = "SnowFlake.SnowFlakeDataAdapter",
+                DbConnectionType = "SnowFlake.SnowFlakeConnection",
+                ConnectionString = "Account=your-account;Warehouse=your-warehouse;Database=your-database;User=your-user;Password=your-password;",
+                iconname = "snowflake.ico",
+                classHandler = "SnowFlakeDataSource",
+                ADOType = false,
+                CreateLocal = false,
+                InMemory = false,
+                Favourite = false,
+                DatasourceCategory = DatasourceCategory.NOSQL,
+                DatasourceType = DataSourceType.SnowFlake,
+                IsMissing = false
+            };
+        }
+        public static ConnectionDriversConfig CreateHadoopConfig()
+        {
+            return new ConnectionDriversConfig
+            {
+                GuidID = "hadoop-guid",
+                PackageName = "Hadoop",
+                DriverClass = "Hadoop",
+                version = "3.3.0.0",
+                dllname = "Hadoop.dll",
+                AdapterType = "Hadoop.HadoopDataAdapter",
+                DbConnectionType = "Hadoop.HadoopConnection",
+                ConnectionString = "Server=your-hadoop-server;Port=your-port;",
+                iconname = "hadoop.ico",
+                classHandler = "HadoopDataSource",
+                ADOType = false,
+                CreateLocal = false,
+                InMemory = false,
+                Favourite = false,
+                DatasourceCategory = DatasourceCategory.NOSQL,
+                DatasourceType = DataSourceType.Hadoop,
+                IsMissing = false
+            };
+        }
+        public static ConnectionDriversConfig CreateRedisConfig()
+        {
+            return new ConnectionDriversConfig
+            {
+                GuidID = "redis-guid",
+                PackageName = "StackExchange.Redis",
+                DriverClass = "StackExchange.Redis",
+                version = "2.2.4.0",
+                dllname = "StackExchange.Redis.dll",
+                AdapterType = "StackExchange.Redis.RedisDataAdapter",
+                DbConnectionType = "StackExchange.Redis.RedisConnection",
+                ConnectionString = "Configuration=your-redis-server:port;",
+                iconname = "redis.ico",
+                classHandler = "RedisDataSource",
+                ADOType = false,
+                CreateLocal = false,
+                InMemory = false,
+                Favourite = false,
+                DatasourceCategory = DatasourceCategory.INMEMORY,
+                DatasourceType = DataSourceType.Redis,
+                IsMissing = false
+            };
+        }
+        public static ConnectionDriversConfig CreateKafkaConfig()
+        {
+            return new ConnectionDriversConfig
+            {
+                GuidID = "kafka-guid",
+                PackageName = "Kafka",
+                DriverClass = "Kafka",
+                version = "2.8.0.0",
+                dllname = "Kafka.dll",
+                AdapterType = "Kafka.KafkaDataAdapter",
+                DbConnectionType = "Kafka.KafkaConnection",
+                ConnectionString = "BrokerList=your-broker-list;ClientId=your-client-id;",
+                iconname = "kafka.ico",
+                classHandler = "KafkaDataSource",
+                ADOType = false,
+                CreateLocal = false,
+                InMemory = false,
+                Favourite = false,
+                DatasourceCategory = DatasourceCategory.STREAM,
+                DatasourceType = DataSourceType.Kafka,
+                IsMissing = false
+            };
+        }
+        public static ConnectionDriversConfig CreateOPCConfig()
+        {
+            return new ConnectionDriversConfig
+            {
+                GuidID = "opc-guid",
+                PackageName = "OPC",
+                DriverClass = "OPC",
+                version = "2.0.0.0",
+                dllname = "OPC.dll",
+                AdapterType = "OPC.OPCDataAdapter",
+                CommandBuilderType = "OPC.OPCCommandBuilder",
+                DbConnectionType = "OPC.OPCConnection",
+                ConnectionString = "Server=your-opc-server;Port=your-port;Node=your-node;",
+                iconname = "opc.ico",
+                classHandler = "OPCDataSource",
+                ADOType = false,
+                CreateLocal = false,
+                InMemory = false,
+                Favourite = false,
+                DatasourceCategory = DatasourceCategory.OTHER,
+                DatasourceType = DataSourceType.OPC,
+                IsMissing = false
+            };
+        }
+        public static ConnectionDriversConfig CreateDB2Config()
+        {
+            return new ConnectionDriversConfig
+            {
+                GuidID = "db2-guid",
+                PackageName = "IBM.Data.DB2",
+                DriverClass = "IBM.Data.DB2",
+                version = "11.5.0.0",
+                dllname = "IBM.Data.DB2.dll",
+                AdapterType = "IBM.Data.DB2.DB2DataAdapter",
+                CommandBuilderType = "IBM.Data.DB2.DB2CommandBuilder",
+                DbConnectionType = "IBM.Data.DB2.DB2Connection",
+                ConnectionString = "Database=your-database;Server=your-server;UserID=your-userid;Password=your-password;",
+                iconname = "db2.ico",
+                classHandler = "DB2DataSource",
+                ADOType = true,
+                CreateLocal = false,
+                InMemory = false,
+                Favourite = false,
+                DatasourceCategory = DatasourceCategory.RDBMS,
+                DatasourceType = DataSourceType.DB2,
+                IsMissing = false
+            };
+        }
+        public static ConnectionDriversConfig CreateCouchDBConfig()
+        {
+            return new ConnectionDriversConfig
+            {
+                GuidID = "couchdb-guid",
+                PackageName = "CouchDB",
+                DriverClass = "CouchDB",
+                version = "3.1.0.0",
+                dllname = "CouchDB.dll",
+                AdapterType = "CouchDB.CouchDBDataAdapter",
+                CommandBuilderType = "CouchDB.CouchDBCommandBuilder",
+                DbConnectionType = "CouchDB.CouchDBConnection",
+                ConnectionString = "Server=your-server;Port=your-port;Database=your-database;",
+                iconname = "couchdb.ico",
+                classHandler = "CouchDBDataSource",
+                ADOType = false,
+                CreateLocal = false,
+                InMemory = false,
+                Favourite = false,
+                DatasourceCategory = DatasourceCategory.NOSQL,
+                DatasourceType = DataSourceType.CouchDB,
+                IsMissing = false
+            };
+        }
+        public static ConnectionDriversConfig CreateVistaDBConfig()
+        {
+            return new ConnectionDriversConfig
+            {
+                GuidID = "vistadb-guid",
+                PackageName = "VistaDB",
+                DriverClass = "VistaDB",
+                version = "5.7.0.0",
+                dllname = "VistaDB.dll",
+                AdapterType = "VistaDB.VistaDBDataAdapter",
+                CommandBuilderType = "VistaDB.VistaDBCommandBuilder",
+                DbConnectionType = "VistaDB.VistaDBConnection",
+                ConnectionString = "Data Source=your-database-file.vdb5;",
+                iconname = "vistadb.ico",
+                classHandler = "VistaDBDataSource",
+                ADOType = true,
+                CreateLocal = false,
+                InMemory = false,
+                Favourite = true,
+                DatasourceCategory = DatasourceCategory.RDBMS,
+                DatasourceType = DataSourceType.VistaDB,
+                IsMissing = false
+            };
+        }
+        public static ConnectionDriversConfig CreateCouchbaseConfig()
+        {
+            return new ConnectionDriversConfig
+            {
+                GuidID = "couchbase-guid",
+                PackageName = "Couchbase",
+                DriverClass = "Couchbase",
+                version = "3.0.0.0",
+                dllname = "Couchbase.dll",
+                AdapterType = "Couchbase.CouchbaseDataAdapter",
+                CommandBuilderType = "Couchbase.CouchbaseCommandBuilder",
+                DbConnectionType = "Couchbase.CouchbaseConnection",
+                ConnectionString = "Server=your-server;Bucket=your-bucket;Username=your-username;Password=your-password;",
+                iconname = "couchbase.ico",
+                classHandler = "CouchbaseDataSource",
+                ADOType = false,
+                CreateLocal = false,
+                InMemory = false,
+                Favourite = true,
+                DatasourceCategory = DatasourceCategory.NOSQL,
+                DatasourceType = DataSourceType.Couchbase,
+                IsMissing = false
+            };
+        }
+        public static ConnectionDriversConfig CreateFirebaseConfig()
+        {
+            return new ConnectionDriversConfig
+            {
+                GuidID = "firebase-guid",
+                PackageName = "Firebase",
+                DriverClass = "Firebase",
+                version = "7.0.0.0",
+                dllname = "Firebase.dll",
+                AdapterType = "Firebase.FirebaseDataAdapter",
+                CommandBuilderType = "Firebase.FirebaseCommandBuilder",
+                DbConnectionType = "Firebase.FirebaseConnection",
+                ConnectionString = "ApiKey=your-api-key;DatabaseURL=your-database-url",
+                iconname = "firebase.ico",
+                classHandler = "FirebaseDataSource",
+                ADOType = false,
+                CreateLocal = false,
+                InMemory = false,
+                Favourite = true,
+                DatasourceCategory = DatasourceCategory.NOSQL,
+                DatasourceType = DataSourceType.Firebase,
+                IsMissing = false
+            };
+        }
+        public static ConnectionDriversConfig CreateRealmConfig()
+        {
+            return new ConnectionDriversConfig
+            {
+                GuidID = "realm-guid",
+                PackageName = "Realm",
+                DriverClass = "Realm",
+                version = "5.0.0.0",
+                dllname = "Realm.dll",
+                AdapterType = "Realm.RealmDataAdapter",
+                CommandBuilderType = "Realm.RealmCommandBuilder",
+                DbConnectionType = "Realm.RealmConnection",
+                ConnectionString = "Path={database}",
+                iconname = "realm.ico",
+                classHandler = "RealmDataSource",
+                ADOType = false,
+                CreateLocal = false,
+                InMemory = false,
+                Favourite = true,
+                DatasourceCategory = DatasourceCategory.NOSQL, // Assuming appropriate enum value
+                DatasourceType = DataSourceType.RealIM, // Assuming appropriate enum value
+                IsMissing = false
+            };
         }
         public static ConnectionDriversConfig CreatePostgreConfig()
         {
