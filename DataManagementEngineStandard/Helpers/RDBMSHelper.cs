@@ -1,11 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace TheTechIdea.Beep.Helpers
 {
     public static class RDBMSHelper
     {
+        
+
+        public static bool IsSqlStatementValid(string sqlStatement)
+        {
+            // List of common SQL keywords
+            string[] keywords = { "SELECT", "INSERT", "UPDATE", "DELETE", "ALTER", "CREATE", "DROP" };
+
+            // Check if any keyword is present in the string
+            foreach (string keyword in keywords)
+            {
+                if (Regex.IsMatch(sqlStatement, $@"\b{keyword}\b", RegexOptions.IgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static string GeneratePrimaryKeyQuery(string rdbms, string tableName, string primaryKey, string type)
         {
             string query = "";
