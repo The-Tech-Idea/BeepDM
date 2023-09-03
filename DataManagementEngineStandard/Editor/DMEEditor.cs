@@ -21,6 +21,7 @@ using TheTechIdea.Beep.Tools;
 using DataManagementModels.DriversConfigurations;
 using DataManagementModels.ConfigUtil;
 using TheTechIdea.Beep.Helpers;
+using TheTechIdea.Beep.Connections;
 
 namespace TheTechIdea.Beep
 {
@@ -592,6 +593,10 @@ namespace TheTechIdea.Beep
                 }
                 else
                 {
+                    if (ds.Dataconnection == null)
+                    {
+                        ds.Dataconnection = new DefaulDataConnection();
+                    }
                     ds.Dataconnection.ConnectionProp = cn;
                     ds.Dataconnection.DataSourceDriver = driversConfig;
                     DataSources.Add(ds);
@@ -639,6 +644,10 @@ namespace TheTechIdea.Beep
             {
                 if (ds != null)
                 {
+                    if (ds.Dataconnection == null)
+                    {
+                        ds.Dataconnection = new DefaulDataConnection();
+                    }
                     ds.Dataconnection.ConnectionProp = dataConnection;
                     ds.Dataconnection.DataSourceDriver = package;
                     ds.Dataconnection.ReplaceValueFromConnectionString();

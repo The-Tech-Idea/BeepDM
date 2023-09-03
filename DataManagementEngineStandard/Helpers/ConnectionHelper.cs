@@ -265,7 +265,7 @@ namespace TheTechIdea.Beep.Helpers
                 CreateLocal = false,
                 InMemory = false,
                 Favourite = false,
-                DatasourceCategory = DatasourceCategory.OTHER,
+                DatasourceCategory = DatasourceCategory.WEBAPI,
                 DatasourceType = DataSourceType.OPC,
                 IsMissing = false
             };
@@ -404,7 +404,7 @@ namespace TheTechIdea.Beep.Helpers
                 DbConnectionType = "Realm.RealmConnection",
                 ConnectionString = "Path={database}",
                 iconname = "realm.ico",
-                classHandler = "RealmDataSource",
+                classHandler = "RealMDataSource",
                 ADOType = false,
                 CreateLocal = false,
                 InMemory = false,
@@ -494,6 +494,7 @@ namespace TheTechIdea.Beep.Helpers
                 parameter1 = "Database",
                 parameter2 = "DatabaseConfiguration",
                 iconname = "couchbase.ico",
+                classHandler="CouchbaseLiteDatasource",
                 ADOType = false,
                 CreateLocal = false,
                 InMemory = false,
