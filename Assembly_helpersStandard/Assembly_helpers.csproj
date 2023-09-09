@@ -60,7 +60,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.80" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.81" />
   </ItemGroup>
 
 </Project>
