@@ -293,27 +293,27 @@ namespace TheTechIdea.Beep.Helpers
         {
             return new List<DatatypeMapping>
     {
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "String", DataSourceName = "CouchDB", NetDataType = "System.String", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Number", DataSourceName = "CouchDB", NetDataType = "System.Double", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Boolean", DataSourceName = "CouchDB", NetDataType = "System.Boolean", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Array", DataSourceName = "CouchDB", NetDataType = "System.Collections.Generic.List<object>", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Object", DataSourceName = "CouchDB", NetDataType = "System.Collections.Generic.Dictionary<string, object>", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Null", DataSourceName = "CouchDB", NetDataType = "System.Object", Fav = false }
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "String", DataSourceName = "CouchDBDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Number", DataSourceName = "CouchDBDataSource", NetDataType = "System.Double", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Boolean", DataSourceName = "CouchDBDataSource", NetDataType = "System.Boolean", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Array", DataSourceName = "CouchDBDataSource", NetDataType = "System.Collections.Generic.List<object>", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Object", DataSourceName = "CouchDBDataSource", NetDataType = "System.Collections.Generic.Dictionary<string, object>", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Null", DataSourceName = "CouchDBDataSource", NetDataType = "System.Object", Fav = false }
     };
         }
         public static List<DatatypeMapping> GetFirebaseDataTypeMappings()
         {
             return new List<DatatypeMapping>
     {
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Boolean", DataSourceName = "Firebase", NetDataType = "System.Boolean", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Number", DataSourceName = "Firebase", NetDataType = "System.Double", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "String", DataSourceName = "Firebase", NetDataType = "System.String", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Map", DataSourceName = "Firebase", NetDataType = "System.Collections.Generic.Dictionary<string, object>", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Array", DataSourceName = "Firebase", NetDataType = "System.Collections.Generic.List<object>", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Timestamp", DataSourceName = "Firebase", NetDataType = "System.DateTime", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Geopoint", DataSourceName = "Firebase", NetDataType = "GeopointCustomType", Fav = false }, // Replace GeopointCustomType with whatever .NET type you're using to represent a Geopoint
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Reference", DataSourceName = "Firebase", NetDataType = "DocumentReferenceCustomType", Fav = false }, // Replace DocumentReferenceCustomType with whatever .NET type you're using to represent a Document Reference
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Null", DataSourceName = "Firebase", NetDataType = "System.Object", Fav = false }
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Boolean", DataSourceName = "FirebaseDataSource", NetDataType = "System.Boolean", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Number", DataSourceName = "FirebaseDataSource", NetDataType = "System.Double", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "String", DataSourceName = "FirebaseDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Map", DataSourceName = "FirebaseDataSource", NetDataType = "System.Collections.Generic.Dictionary<string, object>", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Array", DataSourceName = "FirebaseDataSource", NetDataType = "System.Collections.Generic.List<object>", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Timestamp", DataSourceName = "FirebaseDataSource", NetDataType = "System.DateTime", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Geopoint", DataSourceName = "FirebaseDataSource", NetDataType = "GeopointCustomType", Fav = false }, // Replace GeopointCustomType with whatever .NET type you're using to represent a Geopoint
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Reference", DataSourceName = "FirebaseDataSource", NetDataType = "DocumentReferenceCustomType", Fav = false }, // Replace DocumentReferenceCustomType with whatever .NET type you're using to represent a Document Reference
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Null", DataSourceName = "FirebaseDataSource", NetDataType = "System.Object", Fav = false }
     };
         }
         public static List<DatatypeMapping> GenerateOracleDataTypesMapping()
@@ -790,30 +790,30 @@ namespace TheTechIdea.Beep.Helpers
         {
             return new List<DatatypeMapping>
     {
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "BYTEINT", DataSourceName = "Teradata", NetDataType = "System.SByte", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "SMALLINT", DataSourceName = "Teradata", NetDataType = "System.Int16", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "INTEGER", DataSourceName = "Teradata", NetDataType = "System.Int32", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "BIGINT", DataSourceName = "Teradata", NetDataType = "System.Int64", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "DECIMAL", DataSourceName = "Teradata", NetDataType = "System.Decimal", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "FLOAT", DataSourceName = "Teradata", NetDataType = "System.Double", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "CHAR", DataSourceName = "Teradata", NetDataType = "System.Char", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "VARCHAR", DataSourceName = "Teradata", NetDataType = "System.String", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "DATE", DataSourceName = "Teradata", NetDataType = "System.DateTime", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "TIME", DataSourceName = "Teradata", NetDataType = "System.TimeSpan", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "TIMESTAMP", DataSourceName = "Teradata", NetDataType = "System.DateTime", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "BYTE", DataSourceName = "Teradata", NetDataType = "System.Byte[]", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "BYTEINT", DataSourceName = "TeradataDataSource", NetDataType = "System.SByte", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "SMALLINT", DataSourceName = "TeradataDataSource", NetDataType = "System.Int16", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "INTEGER", DataSourceName = "TeradataDataSource", NetDataType = "System.Int32", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "BIGINT", DataSourceName = "TeradataDataSource", NetDataType = "System.Int64", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "DECIMAL", DataSourceName = "TeradataDataSource", NetDataType = "System.Decimal", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "FLOAT", DataSourceName = "TeradataDataSource", NetDataType = "System.Double", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "CHAR", DataSourceName = "TeradataDataSource", NetDataType = "System.Char", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "VARCHAR", DataSourceName = "TeradataDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "DATE", DataSourceName = "TeradataDataSource", NetDataType = "System.DateTime", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "TIME", DataSourceName = "TeradataDataSource", NetDataType = "System.TimeSpan", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "TIMESTAMP", DataSourceName = "TeradataDataSource", NetDataType = "System.DateTime", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "BYTE", DataSourceName = "TeradataDataSource", NetDataType = "System.Byte[]", Fav = false },
     };
         }
         public static List<DatatypeMapping> GetArangoDBDataTypeMappings()
         {
             return new List<DatatypeMapping>
     {
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Boolean", DataSourceName = "ArangoDB", NetDataType = "System.Boolean", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Number", DataSourceName = "ArangoDB", NetDataType = "System.Double", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "String", DataSourceName = "ArangoDB", NetDataType = "System.String", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Object", DataSourceName = "ArangoDB", NetDataType = "System.Object", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Array", DataSourceName = "ArangoDB", NetDataType = "System.Collections.Generic.List<object>", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Null", DataSourceName = "ArangoDB", NetDataType = "System.Object", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Boolean", DataSourceName = "ArangoDBDataSource", NetDataType = "System.Boolean", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Number", DataSourceName = "ArangoDBDataSource", NetDataType = "System.Double", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "String", DataSourceName = "ArangoDBDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Object", DataSourceName = "ArangoDBDataSource", NetDataType = "System.Object", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Array", DataSourceName = "ArangoDBDataSource", NetDataType = "System.Collections.Generic.List<object>", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Null", DataSourceName = "ArangoDBDataSource", NetDataType = "System.Object", Fav = false },
     };
         }
     }
