@@ -18,6 +18,7 @@ namespace TheTechIdea.Beep.Editor
     public class UnitofWork<T> : IUnitofWork<T> where T:  Entity, INotifyPropertyChanged, new()
     {
         public bool IsInListMode { get; set; } = false;
+        private bool IsPrimaryKeyString = false;
         public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, string primarykey)
         {
             _suppressNotification = true;
@@ -185,7 +186,14 @@ namespace TheTechIdea.Beep.Editor
                 {
                     PKProperty = doc.GetType().GetProperty(PrimaryKey);
                 }
-               
+               if(PKProperty != null)
+                {
+                    if(PKProperty.PropertyType == typeof(string))
+                    {
+                        IsPrimaryKeyString = true;
+                    }else
+                        IsPrimaryKeyString=false; 
+                }
 
             }
         }

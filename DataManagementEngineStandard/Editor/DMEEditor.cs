@@ -564,6 +564,11 @@ namespace TheTechIdea.Beep
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
             ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
+            if (driversConfig == null)
+            {
+                AddLogMessage("Fail", $"Error Coud not find Data Source Connector/Driver", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                return null;
+            }
             if (ConfigEditor.DataSourcesClasses.Any(x => x.className != null && x.className.Equals(driversConfig.classHandler,StringComparison.InvariantCultureIgnoreCase)))
             {
                 string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className != null && x.className.Equals(driversConfig.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;

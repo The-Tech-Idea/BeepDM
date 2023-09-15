@@ -1,6 +1,8 @@
 ﻿using DataManagementModels.DriversConfigurations;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using TheTechIdea.Util;
 
@@ -8,6 +10,35 @@ namespace TheTechIdea.Beep.Helpers
 {
     public static class ConnectionHelper
     {
+        public static ConnectionDriversConfig LinkConnection2Drivers(IConnectionProperties cn, IConfigEditor configEditor)
+        {
+
+            string vr = cn.DriverVersion;
+            string pk = cn.DriverName;
+            ConnectionDriversConfig retval = configEditor.DataDriversClasses.Where(c => c.PackageName.Equals(pk, StringComparison.InvariantCultureIgnoreCase) && c.version == vr).FirstOrDefault();
+            if (retval == null)
+            {
+                retval = configEditor.DataDriversClasses.Where(c => c.PackageName.Equals(pk, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                if (retval == null)
+                {
+                    retval = configEditor.DataDriversClasses.Where(c => c.DatasourceType==cn.DatabaseType).FirstOrDefault();
+                    if(retval == null)
+                    {
+                        if (cn.Category == DatasourceCategory.FILE)
+                        {
+                            List<ConnectionDriversConfig> clss = configEditor.DataDriversClasses.Where(p => p.extensionstoHandle != null).ToList();
+                            string ext = Path.GetExtension(cn.FileName).Replace(".", "");
+                            retval = clss.Where(c => c.extensionstoHandle.Contains(ext)).FirstOrDefault();
+                        }
+                    }
+                   
+                }
+
+            }
+            return retval;
+
+
+        }
         public static string ReplaceValueFromConnectionString(ConnectionDriversConfig DataSourceDriver, IConnectionProperties ConnectionProp, IDMEEditor DMEEditor)
         {
             bool IsConnectionString = false;
@@ -130,14 +161,10 @@ namespace TheTechIdea.Beep.Helpers
             configs.Add(CreateMySqlConnectorConfig());
             configs.Add(CreateSqlServerConfig());
             configs.Add(CreateSqlCompactConfig());
-            configs.Add(CreateDataViewConfig());
-            configs.Add(CreateCSVDataSourceConfig());
-            configs.Add(CreateJsonDataSourceConfig());
             configs.Add(CreateTxtXlsCSVFileSourceConfig());
             configs.Add(CreateLiteDBDataSourceConfig());
             configs.Add(CreateOracleConfig());
             configs.Add(CreateDuckDBConfig());
-            configs.Add(CreateOracleManagedDataAccessConfig());
             configs.Add(CreateRealmConfig());
             configs.Add(CreateSnowFlakeConfig());
             configs.Add(CreateHadoopConfig());
@@ -472,13 +499,14 @@ namespace TheTechIdea.Beep.Helpers
                 AdapterType = "IDatabase",
                 CommandBuilderType = "ISubscriber",
                 DbConnectionType = "ConnectionMultiplexer",
+                classHandler = "StackExchangeRedisDatasource",
                 iconname = "couchdb.ico",
                 ADOType = false,
                 CreateLocal = false,
                 InMemory = false,
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS, // Assuming appropriate enum value
-                DatasourceType = DataSourceType.Oracle, // Assuming appropriate enum value
+                DatasourceType = DataSourceType.Redis, // Assuming appropriate enum value
                 IsMissing = false
             };
         }
@@ -500,7 +528,7 @@ namespace TheTechIdea.Beep.Helpers
                 InMemory = false,
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS, // Assuming appropriate enum value
-                DatasourceType = DataSourceType.Oracle, // Assuming appropriate enum value
+                DatasourceType = DataSourceType.Couchbase, // Assuming appropriate enum value
                 IsMissing = false
             };
         }
@@ -515,13 +543,14 @@ namespace TheTechIdea.Beep.Helpers
                 dllname = "Elasticsearch.Net.dll",
                 parameter1 = "ElasticLowLevelClient",
                 parameter2 = "ConnectionConfiguration",
+                classHandler = "ElasticsearchDatasource",
                 iconname = "elasticsearch.ico",
                 ADOType = false,
                 CreateLocal = false,
                 InMemory = false,
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS, // Assuming appropriate enum value
-                DatasourceType = DataSourceType.Oracle, // Assuming appropriate enum value
+                DatasourceType = DataSourceType.ElasticSearch, // Assuming appropriate enum value
                 IsMissing = false
             };
         }
@@ -632,12 +661,13 @@ namespace TheTechIdea.Beep.Helpers
                 DbConnectionType = "Cassandra.Data.CqlConnection",
                 DbTransactionType = "Cassandra.Data.CqlBatchTransaction",
                 iconname = "Cassandra.ico",
+                classHandler = "CassandraDataSource",
                 ADOType = true,
                 CreateLocal = false,
                 InMemory = false,
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS, // Assuming appropriate enum value
-                DatasourceType = DataSourceType.Oracle, // Assuming appropriate enum value
+                DatasourceType = DataSourceType.Cassandra, // Assuming appropriate enum value
                 IsMissing = false
             };
         }
@@ -896,30 +926,6 @@ namespace TheTechIdea.Beep.Helpers
                 version = "0.8.1.0"
             };
         }
-        public static ConnectionDriversConfig CreateOracleManagedDataAccessConfig()
-        {
-            return new ConnectionDriversConfig
-            {
-                GuidID = "11574c31-a4a3-4156-ab97-32ecb28391c8",
-                PackageName = "Oracle.ManagedDataAccess",
-                DriverClass = "Oracle.ManagedDataAccess",
-                version = "3.1.21.1",
-                dllname = "Oracle.ManagedDataAccess.dll",
-                AdapterType = "Oracle.ManagedDataAccess.Client.OracleDataAdapter",
-                CommandBuilderType = "Oracle.ManagedDataAccess.Client.OracleCommandBuilder",
-                DbConnectionType = "Oracle.ManagedDataAccess.Client.OracleConnection",
-                DbTransactionType = "Oracle.ManagedDataAccess.Client.OracleTransaction",
-                ConnectionString = "Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST={Host})(PORT={Port}))(CONNECT_DATA=(SID={Database})));User Id ={UserID}; Password = {Password}; ",
-                iconname = "oracle.ico",
-                classHandler = "OracleDataSource",
-                ADOType = true,
-                CreateLocal = false,
-                InMemory = false,
-                Favourite = false,
-                DatasourceCategory = DatasourceCategory.RDBMS, // Assuming appropriate enum value
-                DatasourceType = DataSourceType.Oracle, // Assuming appropriate enum value
-                IsMissing = false
-            };
-        }
+       
     }
 }
