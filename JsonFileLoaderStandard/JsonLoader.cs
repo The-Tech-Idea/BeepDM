@@ -10,7 +10,7 @@ namespace TheTechIdea.Util
 {
     public class JsonLoader : IJsonLoader
     {
-        public JsonFieldsCollector fieldsCollector { get; set; }
+       
         public JsonLoader()
         {
 

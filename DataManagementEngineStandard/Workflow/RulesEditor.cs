@@ -56,7 +56,6 @@ namespace TheTechIdea.Beep.Workflow
                 if(r != null)
                 {
                     AssemblyClassDefinition assemblydef = (AssemblyClassDefinition)DMEEditor.ConfigEditor.Rules.Where(x => x.classProperties.Name.Equals(r.Rulename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                    //dynamic fc = DMEEditor.assemblyHandler.CreateInstanceFromString(assemblydef.type.ToString(), new object[] { DMEEditor, this });
                     var fc = Activator.CreateInstance(assemblydef.type, new object[] { DMEEditor });
                     IWorkFlowRule rule = (IWorkFlowRule)fc;
                   

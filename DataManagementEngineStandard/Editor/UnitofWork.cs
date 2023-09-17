@@ -18,6 +18,55 @@ namespace TheTechIdea.Beep.Editor
     public class UnitofWork<T> : IUnitofWork<T> where T:  Entity, INotifyPropertyChanged, new()
     {
         public bool IsInListMode { get; set; } = false;
+        private bool IsPrimaryKeyString = false;
+        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, string primarykey)
+        {
+            _suppressNotification = true;
+            DMEEditor = dMEEditor;
+            DatasourceName = datasourceName;
+            EntityName = entityName;
+            if (OpenDataSource())
+            {
+                init();
+            }
+            PrimaryKey = primarykey;
+            if (Units == null || Units.Count == 0)
+            {
+                T doc = new();
+                getPrimaryKey(doc);
+            }
+            else
+            {
+                getPrimaryKey(Units.FirstOrDefault());
+            }
+            _suppressNotification = false;
+        }
+        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure, string primarykey)
+        {
+            _suppressNotification = true;
+            DMEEditor = dMEEditor;
+            DatasourceName = datasourceName;
+            EntityName = entityName;
+            EntityStructure = entityStructure;
+            PrimaryKey = entityStructure.PrimaryKeys.FirstOrDefault().fieldname;
+            if (OpenDataSource())
+            {
+                init();
+
+            }
+            PrimaryKey = primarykey;
+            if (Units == null || Units.Count == 0)
+            {
+                T doc = new();
+                getPrimaryKey(doc);
+            }
+            else
+            {
+                getPrimaryKey(Units.FirstOrDefault());
+            }
+
+            _suppressNotification = false;
+        }
         public UnitofWork(IDMEEditor dMEEditor, bool isInListMode, ObservableBindingList<T> ts,string primarykey)
         {
             _suppressNotification = true;
@@ -44,33 +93,7 @@ namespace TheTechIdea.Beep.Editor
         private Dictionary<int, EntityState> _entityStates=new Dictionary<int, EntityState>();
         private Dictionary<T, EntityState> _deletedentities=new Dictionary<T, EntityState>();
         protected virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName)
-        {
-            _suppressNotification=true;
-            DMEEditor = dMEEditor;
-            DatasourceName = datasourceName;
-            EntityName = entityName;
-            if (OpenDataSource())
-            {
-                init();
-            }
-            _suppressNotification = false;
-        }
-        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure)
-        {
-            _suppressNotification = true;
-            DMEEditor = dMEEditor;
-            DatasourceName = datasourceName;
-            EntityName = entityName;
-            EntityStructure = entityStructure;
-            PrimaryKey = entityStructure.PrimaryKeys.FirstOrDefault().fieldname;
-            if (OpenDataSource())
-            {
-                init();
-              
-            }
-            _suppressNotification = false;
-        }
+       
         private ObservableBindingList<T> _units;
         public ObservableBindingList<T> Units
         {
@@ -163,7 +186,14 @@ namespace TheTechIdea.Beep.Editor
                 {
                     PKProperty = doc.GetType().GetProperty(PrimaryKey);
                 }
-               
+               if(PKProperty != null)
+                {
+                    if(PKProperty.PropertyType == typeof(string))
+                    {
+                        IsPrimaryKeyString = true;
+                    }else
+                        IsPrimaryKeyString=false; 
+                }
 
             }
         }

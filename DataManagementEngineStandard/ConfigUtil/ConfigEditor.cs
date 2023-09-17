@@ -1,6 +1,4 @@
-﻿
-
-using DataManagementModels.ConfigUtil;
+﻿using DataManagementModels.ConfigUtil;
 using DataManagementModels.DriversConfigurations;
 using System;
 using System.Collections.Generic;
@@ -93,6 +91,32 @@ namespace TheTechIdea.Util
         public string ConfigPath { get; set; }
         public List<Assembly> LoadedAssemblies { get; set; } = new List<Assembly>();
         #endregion "Properties"
+        #region "Drivers"
+        public int AddDriver(ConnectionDriversConfig dr)
+        {
+			
+            ConnectionDriversConfig founddr = null;
+			if (DataDriversClasses.Count == 0)
+			{
+                DataDriversClasses.Add(dr);
+				return 0;
+            }
+            int idx = DataDriversClasses.FindIndex(c => c.PackageName.Equals(dr.PackageName, StringComparison.InvariantCultureIgnoreCase) && c.version == dr.version);
+            if (idx >= 0)
+            {
+				return idx;
+
+            }
+            idx = DataDriversClasses.FindIndex(c => c.PackageName.Equals(dr.PackageName,StringComparison.InvariantCultureIgnoreCase));
+            if (idx>-1)
+            {
+               founddr= DataDriversClasses[idx];
+			   founddr.version= dr.version;
+				return idx;
+            }
+			return -1;
+        }
+        #endregion "Drivers"
         #region "Scripts and logs L/S"
         public void SaveScriptsValues(ETLScriptHDR Scripts) 
 		{

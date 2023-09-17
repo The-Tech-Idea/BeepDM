@@ -18,10 +18,10 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class EntityUnitofWork:IEntityUnitofWork
+    public class EntityUnitofWork : IEntityUnitofWork
     {
         public bool IsInListMode { get; set; } = false;
-        public EntityUnitofWork(bool isInListMode,ObservableBindingList<Entity> ts)
+        public EntityUnitofWork(bool isInListMode, ObservableBindingList<Entity> ts)
         {
 
             IsInListMode = isInListMode;
@@ -86,7 +86,7 @@ namespace TheTechIdea.Beep.Editor
         }
 
         public string DatasourceName { get; set; }
-        public string  Sequencer { get; set; }
+        public string Sequencer { get; set; }
         public List<Entity> DeletedUnits { get; set; } = new List<Entity>();
         public Dictionary<int, string> InsertedKeys { get; set; } = new Dictionary<int, string>();
         public Dictionary<int, string> UpdatedKeys { get; set; } = new Dictionary<int, string>();
@@ -308,7 +308,7 @@ namespace TheTechIdea.Beep.Editor
         }
         public virtual async Task<ObservableBindingList<Entity>> Get(List<AppFilter> filters)
         {
-            
+
             if (!IsInListMode)
             {
                 clearunits();
@@ -320,7 +320,7 @@ namespace TheTechIdea.Beep.Editor
         }
         public virtual async Task<ObservableBindingList<Entity>> Get()
         {
-            
+
             if (!IsInListMode)
             {
                 clearunits();
@@ -340,7 +340,7 @@ namespace TheTechIdea.Beep.Editor
             }
             try
             {
-               
+
                 List<Entity> list = new List<Entity>();
                 if (retval is DataTable)
                 {
@@ -568,7 +568,7 @@ namespace TheTechIdea.Beep.Editor
 
             return retval;
         }
-        public virtual Entity Get( int key)
+        public virtual Entity Get(int key)
         {
             return Units[key];
         }
@@ -625,7 +625,7 @@ namespace TheTechIdea.Beep.Editor
         private bool OpenDataSource()
         {
             bool retval = true;
-            if(IsInListMode)
+            if (IsInListMode)
             {
                 return true;
             }
@@ -740,5 +740,5 @@ namespace TheTechIdea.Beep.Editor
         //}
     }
 
-  
+
 }

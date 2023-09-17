@@ -37,7 +37,7 @@ namespace TheTechIdea.Util
         Vertica, DataBricks, AzureCloud,
         HTML, SQL, INI, Log, PDF, Doc, Docx, PPT, PPTX,
         YAML, Markdown,
-        Feather, TFRecord, RecordIO, LibSVM, GraphML, DICOM, LAS
+        Feather, TFRecord, RecordIO, LibSVM, GraphML, DICOM, LAS, Cassandra
     }
 
     public enum DatasourceCategory

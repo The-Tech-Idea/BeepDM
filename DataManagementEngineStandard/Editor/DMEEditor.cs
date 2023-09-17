@@ -21,6 +21,7 @@ using TheTechIdea.Beep.Tools;
 using DataManagementModels.DriversConfigurations;
 using DataManagementModels.ConfigUtil;
 using TheTechIdea.Beep.Helpers;
+using TheTechIdea.Beep.Connections;
 
 namespace TheTechIdea.Beep
 {
@@ -563,6 +564,11 @@ namespace TheTechIdea.Beep
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
             ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
+            if (driversConfig == null)
+            {
+                AddLogMessage("Fail", $"Error Coud not find Data Source Connector/Driver", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                return null;
+            }
             if (ConfigEditor.DataSourcesClasses.Any(x => x.className != null && x.className.Equals(driversConfig.classHandler,StringComparison.InvariantCultureIgnoreCase)))
             {
                 string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className != null && x.className.Equals(driversConfig.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
@@ -592,6 +598,10 @@ namespace TheTechIdea.Beep
                 }
                 else
                 {
+                    if (ds.Dataconnection == null)
+                    {
+                        ds.Dataconnection = new DefaulDataConnection();
+                    }
                     ds.Dataconnection.ConnectionProp = cn;
                     ds.Dataconnection.DataSourceDriver = driversConfig;
                     DataSources.Add(ds);
@@ -639,6 +649,10 @@ namespace TheTechIdea.Beep
             {
                 if (ds != null)
                 {
+                    if (ds.Dataconnection == null)
+                    {
+                        ds.Dataconnection = new DefaulDataConnection();
+                    }
                     ds.Dataconnection.ConnectionProp = dataConnection;
                     ds.Dataconnection.DataSourceDriver = package;
                     ds.Dataconnection.ReplaceValueFromConnectionString();
