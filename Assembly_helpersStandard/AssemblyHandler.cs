@@ -773,28 +773,28 @@ namespace TheTechIdea.Tools
                         {
                             AssemblyClassDefinition cls=GetAssemblyClassDefinition(type, "IDM_Addin");
                             ConfigEditor.Addins.Add(cls);
-                            if (type.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
-                            {
-                                AddinTreeStructure xcls = new AddinTreeStructure();
-                                xcls.className = type.Name;
-                                xcls.dllname = type.Module.Name;
-                                xcls.PackageName = type.FullName;
-                                xcls.Order = cls.Order;
+                            //if (type.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
+                            //{
+                            //    AddinTreeStructure xcls = new AddinTreeStructure();
+                            //    xcls.className = type.Name;
+                            //    xcls.dllname = type.Module.Name;
+                            //    xcls.PackageName = type.FullName;
+                            //    xcls.Order = cls.Order;
                                 
-                                if (cls.VisSchema != null)
-                                {
-                                    xcls.className = type.Name;
-                                    xcls.dllname = type.Module.Name;
-                                    xcls.PackageName = type.FullName;
-                                    xcls.Order = cls.Order;
-                                    xcls.Imagename = cls.VisSchema.IconImageName;
-                                    xcls.RootName = cls.VisSchema.RootNodeName;
-                                    xcls.NodeName = cls.VisSchema.BranchText;
-                                    xcls.ObjectType = type.Name;
-                                }
+                            //    if (cls.VisSchema != null)
+                            //    {
+                            //        xcls.className = type.Name;
+                            //        xcls.dllname = type.Module.Name;
+                            //        xcls.PackageName = type.FullName;
+                            //        xcls.Order = cls.Order;
+                            //        xcls.Imagename = cls.VisSchema.IconImageName;
+                            //        xcls.RootName = cls.VisSchema.RootNodeName;
+                            //        xcls.NodeName = cls.VisSchema.BranchText;
+                            //        xcls.ObjectType = type.Name;
+                            //    }
                               
-                                ConfigEditor.AddinTreeStructure.Add(xcls);
-                            }
+                            //    ConfigEditor.AddinTreeStructure.Add(xcls);
+                            //}
                         }
                         if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowStep)))
                         {
@@ -874,7 +874,28 @@ namespace TheTechIdea.Tools
                 xcls.RootName = xcls.classProperties.misc;
             }
             xcls.VisSchema = (AddinVisSchema)type.GetCustomAttribute(typeof(AddinVisSchema), false);
-          
+            if (type.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
+            {
+                AddinTreeStructure AddinTree = new AddinTreeStructure();
+                AddinTree.className = type.Name;
+                AddinTree.dllname = type.Module.Name;
+                AddinTree.PackageName = type.FullName;
+                AddinTree.Order = xcls.Order;
+
+                if (xcls.VisSchema != null)
+                {
+                    AddinTree.className = type.Name;
+                    AddinTree.dllname = type.Module.Name;
+                    AddinTree.PackageName = type.FullName;
+                    AddinTree.Order = xcls.Order;
+                    AddinTree.Imagename = xcls.VisSchema.IconImageName;
+                    AddinTree.RootName = xcls.VisSchema.RootNodeName;
+                    AddinTree.NodeName = xcls.VisSchema.BranchText;
+                    AddinTree.ObjectType = type.Name;
+                }
+
+                ConfigEditor.AddinTreeStructure.Add(AddinTree);
+            }
             foreach (MethodInfo methods in type.GetMethods()
                          .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
                           .ToArray())
