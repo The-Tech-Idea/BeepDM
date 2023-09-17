@@ -14,6 +14,7 @@ using TheTechIdea.Beep.Editor;
 using DataManagementModels.DriversConfigurations;
 using TheTechIdea.Beep.Report;
 using System.Data.SqlTypes;
+using TheTechIdea.Beep.Helpers;
 
 namespace TheTechIdea.Beep.DataBase
 {
@@ -792,21 +793,23 @@ namespace TheTechIdea.Beep.DataBase
             return (Task<object>)GetEntity(EntityName, Filter);
         }
         #endregion
+        #region "Get Entity Structure"
         public virtual EntityStructure GetEntityStructure(string EntityName, bool refresh = false)
         {
             EntityStructure retval = new EntityStructure();
+           
             if (Entities.Count == 0)
             {
                 GetEntitesList();
             }
-            EntityStructure fnd = Entities.Where(d => d.EntityName.Equals(EntityName,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-            if (fnd == null)
-            {
-                List<EntityStructure> ls = Entities.Where(d => !string.IsNullOrEmpty(d.OriginalEntityName)).ToList();
-                fnd = ls.Where(d => d.OriginalEntityName.Equals(EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-            }
+            retval = Entities.Where(d => d.EntityName.Equals(EntityName,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+            //if (retval == null)
+            //{
+            //    List<EntityStructure> ls = Entities.Where(d => !string.IsNullOrEmpty(d.OriginalEntityName)).ToList();
+            //    retval = ls.Where(d => d.OriginalEntityName.Equals(EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+            //}
             
-            if (fnd == null)
+            if (retval == null)
             {
                 refresh = true;
                 retval.DataSourceID = DatasourceName;
@@ -814,7 +817,7 @@ namespace TheTechIdea.Beep.DataBase
                 retval.DatasourceEntityName = EntityName;
                 retval.Caption = EntityName;
               
-                if (EntityName.ToUpper().Contains("SELECT") || EntityName.ToUpper().Contains("WHERE"))
+                if (RDBMSHelper.IsSqlStatementValid(EntityName))
                 {
                     retval.Viewtype = ViewType.Query;
                     retval.CustomBuildQuery = EntityName;
@@ -824,10 +827,11 @@ namespace TheTechIdea.Beep.DataBase
                     retval.Viewtype = ViewType.Table;
                     retval.CustomBuildQuery = null;
                 }
-            
-            } else
+
+            }
+            else
             {
-                retval = fnd;
+                refresh = false;
             }
 
 
@@ -841,14 +845,14 @@ namespace TheTechIdea.Beep.DataBase
             {
                 fnd.DatasourceEntityName = fnd.EntityName;
             }
-            if (fnd.Created == false && fnd.Viewtype!= ViewType.Table)
-            {
-                fnd.Created = false;
-                fnd.Drawn = false;
-                fnd.Editable = true;
-                return fnd;
+            //if (fnd.Created == false && fnd.Viewtype!= ViewType.Table)
+            //{
+            //    fnd.Created = false;
+            //    fnd.Drawn = false;
+            //    fnd.Editable = true;
+            //    return fnd;
 
-            }
+            //}
             if (refresh)
                 {
                     if (!fnd.EntityName.Equals(fnd.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(fnd.DatasourceEntityName))
@@ -993,7 +997,73 @@ namespace TheTechIdea.Beep.DataBase
             }
           return fnd;
         }
-        public  virtual IErrorsInfo CreateEntities(List<EntityStructure> entities)
+        public EntityStructure GetEntityStructureForQuery(DbConnection connection, string query)
+        {
+            EntityStructure entityStructure = new EntityStructure();
+            // Assuming entityStructure properties are appropriately set
+
+            DataTable schemaTable = new DataTable();
+            using (DbCommand cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = query;
+                using (DbDataReader reader = cmd.ExecuteReader(CommandBehavior.SchemaOnly))
+                {
+                    schemaTable = reader.GetSchemaTable();
+                }
+            }
+
+            // Now you can map schema information to your EntityStructure or EntityField instances
+            // ...
+           
+            return GetEntityStructure(schemaTable);
+        }
+        private EntityStructure GetEntityStructure(DataTable schemaTable)
+        {
+            EntityStructure entityStructure = new EntityStructure();
+            string columnNameKey = "COLUMN_NAME";
+            string dataTypeKey = "DATA_TYPE";
+            string maxLengthKey = "CHARACTER_MAXIMUM_LENGTH";
+            string numericPrecisionKey = "NUMERIC_PRECISION";
+            string numericScaleKey = "NUMERIC_SCALE";
+            string isNullableKey = "IS_NULLABLE";
+            string isAutoIncrementKey = "AUTOINCREMENT";
+            string isKeyKey = "PRIMARY_KEY";
+            string isUniqueKey = "UNIQUE";
+            // Add more keys for other properties
+
+            foreach (DataRow row in schemaTable.Rows)
+            {
+                EntityField field = new EntityField();
+                field.fieldname = row[columnNameKey].ToString();
+                field.fieldtype = row[dataTypeKey].ToString();
+                field.Size1 = Convert.ToInt32(row[maxLengthKey]);
+                field.NumericPrecision = Convert.ToInt16(row[numericPrecisionKey]);
+                field.NumericScale = Convert.ToInt16(row[numericScaleKey]);
+                field.AllowDBNull = row[isNullableKey].ToString() == "YES";
+                field.IsAutoIncrement = row[isAutoIncrementKey].ToString() == "YES";
+                field.IsKey = row[isKeyKey].ToString() == "YES";
+                field.IsUnique = row[isUniqueKey].ToString() == "YES";
+                // Map other schema properties to the EntityField instance
+                // ...
+
+                entityStructure.Fields.Add(field);
+            }
+            return entityStructure;
+        }
+        public EntityStructure GetEntityStructure(DbConnection connection, string tableName)
+        {
+            EntityStructure entityStructure = new EntityStructure();
+            entityStructure.EntityName = tableName;
+
+            DataTable schemaTable = connection.GetSchema("Columns", new[] { null, null, tableName, null });
+
+          
+         
+
+            return GetEntityStructure(schemaTable);
+        }
+        #endregion "Get Entity Structure"
+        public virtual IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
             try
             {
@@ -1950,14 +2020,6 @@ namespace TheTechIdea.Beep.DataBase
                 {
                     TableName = Dataconnection.ConnectionProp.SchemaName + "." + TableName;
                 }
-                //if (entityStructure != null)
-                //{
-                //    if (!string.IsNullOrEmpty(entityStructure.SchemaOrOwnerOrDatabase))
-                //    {
-                //        TableName = entityStructure.SchemaOrOwnerOrDatabase + "." + TableName;
-                //    }
-                //}
-                
                 cmd.CommandText = "Select * from " + TableName.ToLower();// + " where 1=2";
                 reader = cmd.ExecuteReader(CommandBehavior.KeyInfo);
 
