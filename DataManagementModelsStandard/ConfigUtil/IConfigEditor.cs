@@ -65,6 +65,7 @@ namespace TheTechIdea.Util
         List<RootFolder> Projects { get; set; }
         List<DatatypeMapping> ReadDataTypeFile(string filename = "DataTypeMapping");
         void WriteDataTypeFile(string filename = "DataTypeMapping");
+        int AddDriver(ConnectionDriversConfig dr);
         string GetSql(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType);
         List<string> GetSqlList(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType);
         string GetSqlFromCustomQuery(Sqlcommandtype CmdType, string TableName, string customquery, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType);

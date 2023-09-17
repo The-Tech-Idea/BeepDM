@@ -1147,17 +1147,18 @@ namespace TheTechIdea.Tools
             
             foreach (ConnectionDriversConfig dr in DataDriversConfig)
             {
-                ConnectionDriversConfig founddr = null;
-                int idx = ConfigEditor.DataDriversClasses.FindIndex(c => c.PackageName == dr.PackageName && c.version == dr.version);
-                if(idx >=0)
-                {
-                     founddr = ConfigEditor.DataDriversClasses[idx];
+                //ConnectionDriversConfig founddr = null;
+                //int idx = ConfigEditor.DataDriversClasses.FindIndex(c => c.PackageName == dr.PackageName && c.version == dr.version);
+                //if(idx >=0)
+                //{
+                //     founddr = ConfigEditor.DataDriversClasses[idx];
 
-                }
-                if (founddr == null)
-                {
-                    ConfigEditor.DataDriversClasses.Add(dr);
-                }
+                //}
+                //if (founddr == null)
+                //{
+                //    ConfigEditor.DataDriversClasses.Add(dr);
+                //}
+                ConfigEditor.AddDriver(dr);
             }
         }
         private bool GetADOTypeDrivers(Assembly asm)
