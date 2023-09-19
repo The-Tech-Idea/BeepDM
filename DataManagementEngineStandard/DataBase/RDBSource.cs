@@ -811,6 +811,7 @@ namespace TheTechIdea.Beep.DataBase
             
             if (retval == null)
             {
+                retval = new EntityStructure();
                 refresh = true;
                 retval.DataSourceID = DatasourceName;
                 retval.EntityName = EntityName;

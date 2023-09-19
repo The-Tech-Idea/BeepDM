@@ -1,11 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
+using System.Text.RegularExpressions;
 using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Helpers
 {
     public static class RDBMSHelper
     {
+        public static bool IsSqlStatementValid(string sqlString)
+        {
+            if (sqlString == null)
+            {
+                return false;
+            }
+            // List of SQL keywords
+            string[] sqlKeywords = {
+            "SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP",
+            "FROM", "WHERE", "JOIN", "ON", "AND", "OR", "NOT", "IN", "LIKE"
+            // Add more keywords as needed
+        };
+
+            // Create a regular expression pattern to match SQL keywords
+            string pattern = @"\b(" + string.Join("|", sqlKeywords) + @")\b";
+
+            // Use Regex to find matches
+            MatchCollection matches = Regex.Matches(sqlString, pattern, RegexOptions.IgnoreCase);
+
+            // If any keywords are found, return true
+            return matches.Count > 0;
+        }
         public static string GeneratePrimaryKeyQuery(string rdbms, string tableName, string primaryKey, string type)
         {
             string query = "";

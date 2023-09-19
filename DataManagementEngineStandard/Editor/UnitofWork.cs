@@ -24,6 +24,7 @@ namespace TheTechIdea.Beep.Editor
             _suppressNotification = true;
             DMEEditor = dMEEditor;
             DatasourceName = datasourceName;
+            EntityStructure = new EntityStructure();
             EntityName = entityName;
             if (OpenDataSource())
             {
@@ -72,6 +73,7 @@ namespace TheTechIdea.Beep.Editor
             _suppressNotification = true;
             DMEEditor = dMEEditor;
             IsInListMode = isInListMode;
+            EntityStructure = new EntityStructure();
             init();
             Units = ts;
             PrimaryKey = primarykey;
@@ -184,7 +186,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 if (PKProperty == null)
                 {
-                    PKProperty = doc.GetType().GetProperty(PrimaryKey);
+                    PKProperty = doc.GetType().GetProperty(PrimaryKey.ToUpper());
                 }
                if(PKProperty != null)
                 {
@@ -558,7 +560,7 @@ namespace TheTechIdea.Beep.Editor
         }
         public virtual async Task<ObservableBindingList<T>> Get()
         {
-           
+            _suppressNotification = true;
             if (!IsInListMode)
             {
                 clearunits();
@@ -566,13 +568,16 @@ namespace TheTechIdea.Beep.Editor
 
                 GetDataInUnits(retval);
             }
+            _suppressNotification = false;
             return await Task.FromResult(Units);
         }
         private bool GetDataInUnits(object retval)
         {
+            _suppressNotification = true;
             reset();
             if (retval == null)
             {
+                _suppressNotification = false;
                 DMEEditor.AddLogMessage("Beep", $"No Data Found", DateTime.Now, 0, null, Errors.Failed);
                 return false;
             }
@@ -595,16 +600,20 @@ namespace TheTechIdea.Beep.Editor
                 {
                     Units.Add(item);
                 }
+                _suppressNotification = false;
                 return true;
             }
             catch (Exception ex)
             {
+                _suppressNotification = false;
                 DMEEditor.AddLogMessage("Beep", $"Error Converting Data to Units {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
                 return false;
             }
+           
         }
         private void clearunits()
         {
+            _suppressNotification = true;
             if (Units != null)
             {
                 Units.Clear();
@@ -619,10 +628,12 @@ namespace TheTechIdea.Beep.Editor
             DeletedUnits.Clear();
             _entityStates = new Dictionary<int, EntityState>();
             _deletedentities = new Dictionary<T, EntityState>();
+            _suppressNotification = false;
         }
         public virtual async Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token)
         {
-            if(!IsInListMode)
+            _suppressNotification = true;
+            if (!IsInListMode)
             {
                 return DMEEditor.ErrorObject;
             }
@@ -682,16 +693,18 @@ namespace TheTechIdea.Beep.Editor
                 args.Messege = $"Ended Saving Changes";
                 args.ParameterString1 = $"Ended Saving Changes";
                 progress.Report(args);
+                _suppressNotification = false;
             }
             catch (Exception ex)
             {
+                _suppressNotification = false;
                 args.Messege = $"Error Saving Changes {ex.Message}";
                 args.ParameterString1 = $"Error Saving Changes {ex.Message}";
                 progress.Report(args);
                 errorsInfo.Ex = ex;
                 DMEEditor.AddLogMessage("UnitofWork", $"Saving and Commiting Changes error {ex.Message}", DateTime.Now, args.ParameterInt1, ex.Message, Errors.Failed);
             }
-
+            _suppressNotification = false;
             return await Task.FromResult<IErrorsInfo>(errorsInfo);
         }
         private async Task<IErrorsInfo> UpdateAsync(T doc)
