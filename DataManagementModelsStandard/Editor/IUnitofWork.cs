@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
@@ -49,5 +50,18 @@ namespace TheTechIdea.Beep.Editor
         int GetSeq(string SeqName);
         T Read(string id);
         void Update(string id, T entity);
+
+        event EventHandler<UnitofWorkParams> PreInsert;
+        event EventHandler<UnitofWorkParams> PreUpdate;
+        event EventHandler<UnitofWorkParams> PreQuery;
+        event EventHandler<UnitofWorkParams> PostQuery;
+        event EventHandler<UnitofWorkParams> PostInsert;
+        event EventHandler<UnitofWorkParams> PostUpdate;
+       
+    }
+    public class UnitofWorkParams : PassedArgs
+    {
+        public bool Cancel { get; set; } = false;
+
     }
 }

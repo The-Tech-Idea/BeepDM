@@ -13,12 +13,19 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Util;
 
+
 namespace TheTechIdea.Beep.Editor
 {
     public class UnitofWork<T> : IUnitofWork<T> where T:  Entity, INotifyPropertyChanged, new()
     {
         public bool IsInListMode { get; set; } = false;
         private bool IsPrimaryKeyString = false;
+        public event EventHandler<UnitofWorkParams> PreInsert;
+        public event EventHandler<UnitofWorkParams> PreUpdate;
+        public event EventHandler<UnitofWorkParams> PreQuery;
+        public event EventHandler<UnitofWorkParams> PostQuery;
+        public event EventHandler<UnitofWorkParams> PostInsert;
+        public event EventHandler<UnitofWorkParams> PostUpdate;
         public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, string primarykey)
         {
             _suppressNotification = true;
@@ -725,6 +732,12 @@ namespace TheTechIdea.Beep.Editor
         private async Task<IErrorsInfo> InsertAsync(T doc)
         {
             if (!IsRequirmentsValidated())
+            {
+                return DMEEditor.ErrorObject;
+            }
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false };
+            PreInsert?.Invoke(this,ps );
+            if (ps.Cancel)
             {
                 return DMEEditor.ErrorObject;
             }
