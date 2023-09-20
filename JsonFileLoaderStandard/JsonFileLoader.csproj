@@ -28,8 +28,8 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="1.0.217" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.83" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="1.0.221" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.85" />
   </ItemGroup>
 
 </Project>
