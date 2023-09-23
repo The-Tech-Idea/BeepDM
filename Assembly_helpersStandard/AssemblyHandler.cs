@@ -942,7 +942,7 @@ namespace TheTechIdea.Tools
                          
                 if (progress != null)
                 {
-                    PassedArgs ps = new PassedArgs { EventType = "Update", ParameterString1=messege, ParameterString2 = ErrorObject.Message };
+                    PassedArgs ps = new PassedArgs { EventType = "Update", Messege=messege, ErrorCode = ErrorObject.Message };
                     progress.Report(ps);
                 }
            
