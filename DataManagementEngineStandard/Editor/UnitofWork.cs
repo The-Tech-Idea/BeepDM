@@ -193,7 +193,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 if (PKProperty == null)
                 {
-                    PKProperty = doc.GetType().GetProperty(PrimaryKey.ToUpper());
+                    PKProperty = doc.GetType().GetProperty(PrimaryKey, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
                 }
                if(PKProperty != null)
                 {
@@ -784,7 +784,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 if (Guidproperty == null)
                 {
-                    Guidproperty = doc.GetType().GetProperty(GuidKey);
+                    Guidproperty = doc.GetType().GetProperty(GuidKey, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
                 }
                 Guidproperty.SetValue(Guid.NewGuid().ToString(), null);
 
