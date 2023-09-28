@@ -399,6 +399,10 @@ private int _id;
             DisplayField = false;
 
         }
+        public EntityField Clone()
+        {
+            return this.Clone();
+        }
     }
 
     public class EntityParameters : Entity

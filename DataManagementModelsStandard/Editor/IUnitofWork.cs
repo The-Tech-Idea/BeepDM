@@ -62,6 +62,7 @@ namespace TheTechIdea.Beep.Editor
     public class UnitofWorkParams : PassedArgs
     {
         public bool Cancel { get; set; } = false;
+        public object Record { get; set; }
 
     }
 }
