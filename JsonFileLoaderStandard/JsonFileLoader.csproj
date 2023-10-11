@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	  <TargetFrameworks>net48;netstandard2.0;net6.0;net7.0</TargetFrameworks>
+	  <TargetFrameworks>net4.8;netstandard2.0;net6.0;net7.0</TargetFrameworks>
     <PackageId>TheTechIdea.Beep.JsonLoader</PackageId>
 	<Version>1.0.5</Version>
     <Authors>The Tech Idea</Authors>
