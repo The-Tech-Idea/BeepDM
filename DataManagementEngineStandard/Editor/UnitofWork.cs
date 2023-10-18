@@ -28,6 +28,7 @@ namespace TheTechIdea.Beep.Editor
         public event EventHandler<UnitofWorkParams> PostUpdate;
         public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, string primarykey)
         {
+            IsInListMode = false;
             _suppressNotification = true;
             DMEEditor = dMEEditor;
             DatasourceName = datasourceName;
@@ -51,6 +52,7 @@ namespace TheTechIdea.Beep.Editor
         }
         public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure, string primarykey)
         {
+            IsInListMode = false;
             _suppressNotification = true;
             DMEEditor = dMEEditor;
             DatasourceName = datasourceName;
@@ -109,16 +111,17 @@ namespace TheTechIdea.Beep.Editor
             get { return _units; }
             set
             {
-                if (_units != null)
-                {
-                    _units.CollectionChanged -= Units_CollectionChanged;
-                    foreach (var item in _units)
-                    {
-                        item.PropertyChanged -= ItemPropertyChangedHandler;
-                    }
-                   
-                }
                 clearunits();
+                //if (_units != null)
+                //{
+                //    _units.CollectionChanged -= Units_CollectionChanged;
+                //    foreach (var item in _units)
+                //    {
+                //        item.PropertyChanged -= ItemPropertyChangedHandler;
+                //    }
+                   
+                //}
+               
                 _units = value;
 
                 if (_units != null)
@@ -369,7 +372,7 @@ namespace TheTechIdea.Beep.Editor
                     foreach (T item in e.NewItems)
                     {
                         keysidx++;
-                        InsertedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
+                        InsertedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
                        // item.PropertyChanged += ItemPropertyChangedHandler;
                     }
                     break;
@@ -377,7 +380,7 @@ namespace TheTechIdea.Beep.Editor
                     foreach (T item in e.OldItems)
                     {
                         keysidx++;
-                        DeletedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
+                        DeletedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
@@ -416,15 +419,15 @@ namespace TheTechIdea.Beep.Editor
             T item = (T)sender;
             if (item != null)
             {
-                if (InsertedKeys.ContainsValue((string)PKProperty.GetValue(item, null)))
+                if (InsertedKeys.ContainsValue(Convert.ToString(PKProperty.GetValue(item, null))))
                 {
                     return;
                 }
             }
-            if (!UpdatedKeys.Any(p => p.Value.Equals((string)PKProperty.GetValue(item, null))))
+            if (!UpdatedKeys.Any(p => p.Value.Equals(Convert.ToString(PKProperty.GetValue(item, null)))))
             {
                 keysidx++;
-                UpdatedKeys.Add(keysidx, (string)PKProperty.GetValue(item, null));
+                UpdatedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
             }
         }
         private ObservableBindingList<T> FilterCollection(ObservableBindingList<T> originalCollection, List<AppFilter> filters)
@@ -570,7 +573,7 @@ namespace TheTechIdea.Beep.Editor
             _suppressNotification = true;
             if (!IsInListMode)
             {
-                clearunits();
+               
                 var retval = DataSource.GetEntity(EntityName, null);
 
                 GetDataInUnits(retval);
@@ -580,8 +583,9 @@ namespace TheTechIdea.Beep.Editor
         }
         private bool GetDataInUnits(object retval)
         {
-            _suppressNotification = true;
+            
             reset();
+            _suppressNotification = true;
             if (retval == null)
             {
                 _suppressNotification = false;
@@ -603,10 +607,19 @@ namespace TheTechIdea.Beep.Editor
                     list = (List<T>)retval;
 
                 }
+                _suppressNotification = true;
+                
                 foreach (var item in list)
                 {
                     Units.Add(item);
+                 
+
                 }
+                foreach (var item in _units)
+                {
+                    item.PropertyChanged += ItemPropertyChangedHandler;
+                }
+                _units.CollectionChanged += Units_CollectionChanged;
                 _suppressNotification = false;
                 return true;
             }
@@ -637,10 +650,11 @@ namespace TheTechIdea.Beep.Editor
             _deletedentities = new Dictionary<T, EntityState>();
             _suppressNotification = false;
         }
+      
         public virtual async Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token)
         {
             _suppressNotification = true;
-            if (!IsInListMode)
+            if (IsInListMode)
             {
                 return DMEEditor.ErrorObject;
             }
@@ -653,28 +667,38 @@ namespace TheTechIdea.Beep.Editor
             progress.Report(args);
             try
             {
-                foreach (int t in GetAddedEntities())
+                if (GetAddedEntities() != null)
                 {
-                    args.ParameterInt1 = x;
+                    foreach (int t in GetAddedEntities())
+                    {
+                        args.ParameterInt1 = x;
 
-                    progress.Report(args);
-                    errorsInfo = await InsertAsync(Units[t]);
-                    x++;
+                        progress.Report(args);
+                        errorsInfo = await InsertAsync(Units[t]);
+                        x++;
+                    }
                 }
-                foreach (int t in GetModifiedEntities())
+                if (GetModifiedEntities()!=null)
                 {
-                    args.ParameterInt1 = x;
-                    progress.Report(args);
-                    errorsInfo = await UpdateAsync(Units[t]);
-                    x++;
+                    foreach (int t in GetModifiedEntities())
+                    {
+                        args.ParameterInt1 = x;
+                        progress.Report(args);
+                        errorsInfo = await UpdateAsync(Units[t]);
+                        x++;
+                    }
                 }
-                foreach (T t in GetDeletedEntities())
+                if (GetDeletedEntities() != null)
                 {
-                    args.ParameterInt1 = x;
-                    progress.Report(args);
-                    errorsInfo = await DeleteAsync(t);
-                    x++;
+                    foreach (T t in GetDeletedEntities())
+                    {
+                        args.ParameterInt1 = x;
+                        progress.Report(args);
+                        errorsInfo = await DeleteAsync(t);
+                        x++;
+                    }
                 }
+              
 
                 //foreach (var t in InsertedKeys)
                 //{
@@ -928,7 +952,14 @@ namespace TheTechIdea.Beep.Editor
                 DMEEditor.AddLogMessage("Beep", $"Error Opening DataSource in UnitofWork {DatasourceName}", DateTime.Now, -1, DatasourceName, Errors.Failed);
                 retval = false;
             }
-            EntityStructure = DataSource.GetEntityStructure(EntityName, false);
+            if (EntityStructure == null)
+            {
+                EntityStructure = DataSource.GetEntityStructure(EntityName, false);
+                if (EntityStructure.PrimaryKeys.Count == 0)
+                {
+                    EntityStructure.PrimaryKeys.Add(new EntityField() { fieldname = PrimaryKey, EntityName = EntityStructure.EntityName });
+                }
+            }
             if (EntityStructure == null)
             {
                 DMEEditor.AddLogMessage("Beep", $"Error Entity Not Found in UnitofWork {EntityName}", DateTime.Now, -1, EntityName, Errors.Failed);
@@ -936,6 +967,7 @@ namespace TheTechIdea.Beep.Editor
             }
             if (EntityStructure.PrimaryKeys.Count == 0)
             {
+                
                 DMEEditor.AddLogMessage("Beep", $"Error Entity dont have a primary key in UnitofWork {EntityName}", DateTime.Now, -1, EntityName, Errors.Failed);
                 retval = false;
 
