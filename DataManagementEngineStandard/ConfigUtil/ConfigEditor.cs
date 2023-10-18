@@ -94,7 +94,14 @@ namespace TheTechIdea.Util
         #region "Drivers"
         public int AddDriver(ConnectionDriversConfig dr)
         {
-			
+			if (dr == null)
+			{
+                return -1;
+            }
+            if (string.IsNullOrEmpty(dr.PackageName))
+            {
+                return -1;
+            }
             ConnectionDriversConfig founddr = null;
 			if (DataDriversClasses.Count == 0)
 			{
@@ -114,7 +121,7 @@ namespace TheTechIdea.Util
 			   founddr.version= dr.version;
 				return idx;
             }
-			return -1;
+            return -1;
         }
         #endregion "Drivers"
         #region "Scripts and logs L/S"

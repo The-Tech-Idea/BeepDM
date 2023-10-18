@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Util;
 
@@ -20,6 +21,7 @@ namespace TheTechIdea.Beep.Editor
     {
         public bool IsInListMode { get; set; } = false;
         private bool IsPrimaryKeyString = false;
+        private bool Ivalidated = false;
         public event EventHandler<UnitofWorkParams> PreInsert;
         public event EventHandler<UnitofWorkParams> PreUpdate;
         public event EventHandler<UnitofWorkParams> PreQuery;
@@ -32,7 +34,7 @@ namespace TheTechIdea.Beep.Editor
             _suppressNotification = true;
             DMEEditor = dMEEditor;
             DatasourceName = datasourceName;
-            EntityStructure = new EntityStructure();
+          //  EntityStructure = new EntityStructure();
             EntityName = entityName;
             if (OpenDataSource())
             {
@@ -128,11 +130,12 @@ namespace TheTechIdea.Beep.Editor
                 {
                     
                     _units.CollectionChanged += Units_CollectionChanged;
+                  
                     foreach (var item in _units)
                     {
-                        item.PropertyChanged += ItemPropertyChangedHandler;
+                        item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
                     }
-                   
+
                 }
             }
         }
@@ -145,10 +148,7 @@ namespace TheTechIdea.Beep.Editor
                 if (_filteredunits != null)
                 {
                     _filteredunits.CollectionChanged -= Units_CollectionChanged;
-                    foreach (var item in _filteredunits)
-                    {
-                        item.PropertyChanged -= ItemPropertyChangedHandler;
-                    }
+                  
 
                 }
                 if (_filteredunits == null)
@@ -163,9 +163,10 @@ namespace TheTechIdea.Beep.Editor
                 {
 
                     _filteredunits.CollectionChanged += Units_CollectionChanged;
+                   // _filteredunits.PropertyChanged += ItemPropertyChangedHandler;
                     foreach (var item in _filteredunits)
                     {
-                        item.PropertyChanged += ItemPropertyChangedHandler;
+                        item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
                     }
 
                 }
@@ -189,7 +190,26 @@ namespace TheTechIdea.Beep.Editor
         PropertyInfo Guidproperty = null;
         int keysidx;
         private bool disposedValue;
-
+        #region "Misc Methods"
+        private void clearunits()
+        {
+            _suppressNotification = true;
+            if (Units != null)
+            {
+                Units.Clear();
+            }
+            if (FilteredUnits != null)
+            {
+                FilteredUnits.Clear();
+            }
+            DeletedKeys.Clear();
+            InsertedKeys.Clear();
+            InsertedKeys.Clear();
+            DeletedUnits.Clear();
+            _entityStates = new Dictionary<int, EntityState>();
+            _deletedentities = new Dictionary<T, EntityState>();
+            _suppressNotification = false;
+        }
         private void getPrimaryKey(T doc)
         {
             if (!string.IsNullOrEmpty(PrimaryKey))
@@ -198,13 +218,14 @@ namespace TheTechIdea.Beep.Editor
                 {
                     PKProperty = doc.GetType().GetProperty(PrimaryKey, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
                 }
-               if(PKProperty != null)
+                if (PKProperty != null)
                 {
-                    if(PKProperty.PropertyType == typeof(string))
+                    if (PKProperty.PropertyType == typeof(string))
                     {
                         IsPrimaryKeyString = true;
-                    }else
-                        IsPrimaryKeyString=false; 
+                    }
+                    else
+                        IsPrimaryKeyString = false;
                 }
 
             }
@@ -231,10 +252,32 @@ namespace TheTechIdea.Beep.Editor
             keysidx = 0;
             if (!IsInListMode)
             {
-                EntityType = DataSource.GetEntityType(EntityName);
+                if (EntityType != null)
+                {
+                    EntityType = DataSource.GetEntityType(EntityName);
+                }
+
             }
-           
+
         }
+        public void SetIDValue(T entity, object value)
+        {
+            if (!Validateall())
+            {
+                return;
+            }
+
+            var propertyInfo = entity.GetType().GetProperty(PrimaryKey, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+            if (propertyInfo == null)
+            {
+                throw new ArgumentException($"Property '{PrimaryKey}' not found on '{entity.GetType().Name}'");
+            }
+
+            // If you want to handle type mismatch more gracefully, you should add some checks here.
+            propertyInfo.SetValue(entity, Convert.ChangeType(value, propertyInfo.PropertyType), null);
+        }
+
         public object GetIDValue(T entity)
         {
             if (!Validateall())
@@ -273,6 +316,101 @@ namespace TheTechIdea.Beep.Editor
             return index;
 
         }
+        #endregion
+        #region "CRUD Operations"
+        private async Task<IErrorsInfo> UpdateAsync(T doc)
+        {
+            if (!IsRequirmentsValidated())
+            {
+                return DMEEditor.ErrorObject;
+            }
+            if (doc == null)
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Message = "Object is null";
+                return DMEEditor.ErrorObject;
+            }
+            IErrorsInfo retval = await UpdateDoc(doc);
+            return DMEEditor.ErrorObject;
+        }
+        private async Task<IErrorsInfo> InsertAsync(T doc)
+        {
+            if (!IsRequirmentsValidated())
+            {
+                return DMEEditor.ErrorObject;
+            }
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false };
+            PreInsert?.Invoke(this, ps);
+            if (ps.Cancel)
+            {
+                return DMEEditor.ErrorObject;
+            }
+            if (doc == null)
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Message = "Object is null";
+                return DMEEditor.ErrorObject;
+            }
+            var entityidx = DocExistByKey(doc);
+            if (entityidx == -1)
+            {
+
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Message = "Object exist";
+                return DMEEditor.ErrorObject;
+            }
+            IErrorsInfo retval = await InsertDoc(doc);
+            return DMEEditor.ErrorObject;
+        }
+        private async Task<IErrorsInfo> DeleteAsync(T doc)
+        {
+            if (!IsRequirmentsValidated())
+            {
+                return DMEEditor.ErrorObject;
+            }
+            if (doc == null)
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Message = "Object is null";
+                return DMEEditor.ErrorObject;
+            }
+            IErrorsInfo retval = await DeleteDoc(doc);
+
+            return DMEEditor.ErrorObject;
+        }
+        private Task<IErrorsInfo> InsertDoc(T doc)
+        {
+
+            string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
+            string cname = classnames[classnames.Count() - 1];
+
+            if (!string.IsNullOrEmpty(GuidKey))
+            {
+                if (Guidproperty == null)
+                {
+                    Guidproperty = doc.GetType().GetProperty(GuidKey, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                }
+                Guidproperty.SetValue(Guid.NewGuid().ToString(), null);
+
+            }
+            IErrorsInfo retval = DataSource.InsertEntity(cname, doc);
+
+            return Task.FromResult<IErrorsInfo>(retval);
+        }
+        private Task<IErrorsInfo> UpdateDoc(T doc)
+        {
+            string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
+            string cname = classnames[classnames.Count() - 1];
+            IErrorsInfo retval = DataSource.UpdateEntity(cname, doc);
+            return Task.FromResult<IErrorsInfo>(retval);
+        }
+        private Task<IErrorsInfo> DeleteDoc(T doc)
+        {
+            string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
+            string cname = classnames[classnames.Count() - 1];
+            IErrorsInfo retval = DataSource.DeleteEntity(cname, doc);
+            return Task.FromResult<IErrorsInfo>(retval);
+        }
         public void Create(T entity)
         {
             if (!Validateall())
@@ -283,7 +421,7 @@ namespace TheTechIdea.Beep.Editor
             int index = Getindex(entity);
             _entityStates.Add(index, EntityState.Added);
             // Subscribe to PropertyChanged event
-           // entity.PropertyChanged += ItemPropertyChangedHandler;
+            entity.PropertyChanged += ItemPropertyChangedHandler;
         }
         public T Read(string id)
         {
@@ -309,16 +447,16 @@ namespace TheTechIdea.Beep.Editor
                     {
                         if (_entityStates[index] != EntityState.Added)
                         {
-                            _entityStates[index]= EntityState.Modified;
+                            _entityStates[index] = EntityState.Modified;
                         }
                     }
                     else
                     {
                         _entityStates.Add(index, EntityState.Modified);
                     }
-                  
+
                 }
-                
+
             }
         }
         public void Delete(string id)
@@ -336,6 +474,148 @@ namespace TheTechIdea.Beep.Editor
                 //entity.PropertyChanged += ItemPropertyChangedHandler;
             }
         }
+        #endregion
+        #region "Get Methods"
+        public virtual async Task<ObservableBindingList<T>> Get(List<AppFilter> filters)
+        {
+            if (!IsInListMode)
+            {
+                clearunits();
+                var retval = DataSource.GetEntity(EntityName, filters);
+
+                GetDataInUnits(retval);
+
+            }
+            else
+            {
+                if (filters != null && Units != null)
+                {
+                    if (Units.Count > 0)
+                    {
+                        _suppressNotification = true;
+                        foreach (var filter in filters)
+                        {
+
+                            FilteredUnits = FilterCollection(Units, filters);
+                            //FilteredUnits = new ObservableBindingList<T>();
+                            //if (t != null)
+                            //{
+                            //    foreach (var item in t)
+                            //    {
+                            //        FilteredUnits.Add(item);
+                            //    }
+                            //}
+
+
+                        }
+                        _suppressNotification = false;
+                        return await Task.FromResult(FilteredUnits);
+
+                    }
+
+                }
+            }
+            return await Task.FromResult(Units);
+
+
+
+        }
+        public virtual async Task<ObservableBindingList<T>> Get()
+        {
+            _suppressNotification = true;
+            if (!IsInListMode)
+            {
+
+                var retval = DataSource.GetEntity(EntityName, null);
+
+                GetDataInUnits(retval);
+            }
+            _suppressNotification = false;
+            return await Task.FromResult(Units);
+        }
+        public virtual T Get(int key)
+        {
+            return Units[key];
+        }
+        public virtual T Get(string PrimaryKeyid)
+        {
+
+            var retval = Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(p, null).ToString() == PrimaryKeyid);
+            return retval;
+        }
+        private bool GetDataInUnits(object retval)
+        {
+
+            reset();
+            _suppressNotification = true;
+            if (retval == null)
+            {
+                _suppressNotification = false;
+                DMEEditor.AddLogMessage("Beep", $"No Data Found", DateTime.Now, 0, null, Errors.Failed);
+                return false;
+            }
+            try
+            {
+
+                List<T> list = new List<T>();
+                if (retval is DataTable)
+                {
+                    DataTable dataTable = (DataTable)retval;
+                    //Units
+                    list = DMEEditor.Utilfunction.ConvertDataTable<T>(dataTable);
+                }
+                if (retval is IList)
+                {
+                    list = (List<T>)retval;
+
+                }
+                _suppressNotification = true;
+
+                foreach (var item in list)
+                {
+                    item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
+                    SetIDValue(item, 1);
+                    Units.Add(item);
+
+                }
+                _units.CollectionChanged += Units_CollectionChanged;
+                // Units =new ObservableBindingList<T>(list);
+                _suppressNotification = false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _suppressNotification = false;
+                DMEEditor.AddLogMessage("Beep", $"Error Converting Data to Units {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return false;
+            }
+
+        }
+        #endregion
+        #region "Find Methods"
+        public virtual int FindDocIdx(T doc)
+        {
+            int retval = -1;
+
+            retval = Units.IndexOf(doc);
+
+            return retval;
+        }
+        public virtual int DocExistByKey(T doc)
+        {
+            int retval = Units.IndexOf(Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(doc, null).Equals(doc.GetType().GetProperty(PrimaryKey).GetValue(doc, null))));
+            return retval;
+        }
+        public virtual int DocExist(T doc)
+        {
+            int retval = -1;
+
+            retval = Units.IndexOf(doc);
+
+            return retval;
+        }
+        #endregion
+        #region "Entity Management"
         public IEnumerable<int> GetAddedEntities()
         {
             if (!Validateall())
@@ -373,7 +653,7 @@ namespace TheTechIdea.Beep.Editor
                     {
                         keysidx++;
                         InsertedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
-                       // item.PropertyChanged += ItemPropertyChangedHandler;
+                        // item.PropertyChanged += ItemPropertyChangedHandler;
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
@@ -503,9 +783,9 @@ namespace TheTechIdea.Beep.Editor
                 {
                     convertedValue = Convert.ChangeType(value, propertyType);
                 }
-                
+
                 var constant = Expression.Constant(convertedValue, propertyType);
-            //    DMEEditor.AddLogMessage("Beep", $"Property type: {property.Type}. Constant type: {constant.Type}", DateTime.Now, 0, null, Errors.Ok);
+                //    DMEEditor.AddLogMessage("Beep", $"Property type: {property.Type}. Constant type: {constant.Type}", DateTime.Now, 0, null, Errors.Ok);
                 var equality = Expression.Equal(property, constant);
                 var lambda = Expression.Lambda<Func<T, bool>>(equality, parameter);
 
@@ -518,139 +798,14 @@ namespace TheTechIdea.Beep.Editor
             }
             catch (Exception ex)
             {
-                
-               DMEEditor.AddLogMessage("Beep", $"Error in Filtering Data {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+
+                DMEEditor.AddLogMessage("Beep", $"Error in Filtering Data {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
                 return null;
             }
-         
-        }
-        public virtual async Task<ObservableBindingList<T>> Get(List<AppFilter> filters)
-        {
-            if (!IsInListMode)
-            {
-                clearunits();
-                var retval = DataSource.GetEntity(EntityName, filters);
-
-                GetDataInUnits(retval);
-              
-            }
-            else
-            {
-                if(filters!=null && Units!=null )
-                {
-                    if (Units.Count > 0)
-                    {
-                        _suppressNotification = true;
-                        foreach (var filter in filters)
-                        {
-
-                            FilteredUnits = FilterCollection(Units, filters);
-                            //FilteredUnits = new ObservableBindingList<T>();
-                            //if (t != null)
-                            //{
-                            //    foreach (var item in t)
-                            //    {
-                            //        FilteredUnits.Add(item);
-                            //    }
-                            //}
-                           
-                         
-                        }
-                        _suppressNotification = false;
-                        return await Task.FromResult(FilteredUnits);
-                       
-                    }
-                    
-                }
-            }
-            return await Task.FromResult(Units);
-
-
 
         }
-        public virtual async Task<ObservableBindingList<T>> Get()
-        {
-            _suppressNotification = true;
-            if (!IsInListMode)
-            {
-               
-                var retval = DataSource.GetEntity(EntityName, null);
+        #endregion
 
-                GetDataInUnits(retval);
-            }
-            _suppressNotification = false;
-            return await Task.FromResult(Units);
-        }
-        private bool GetDataInUnits(object retval)
-        {
-            
-            reset();
-            _suppressNotification = true;
-            if (retval == null)
-            {
-                _suppressNotification = false;
-                DMEEditor.AddLogMessage("Beep", $"No Data Found", DateTime.Now, 0, null, Errors.Failed);
-                return false;
-            }
-            try
-            {
-               
-                List<T> list = new List<T>();
-                if (retval is DataTable)
-                {
-                    DataTable dataTable = (DataTable)retval;
-                    //Units
-                    list = DMEEditor.Utilfunction.ConvertDataTable<T>(dataTable);
-                }
-                if (retval is IList)
-                {
-                    list = (List<T>)retval;
-
-                }
-                _suppressNotification = true;
-                
-                foreach (var item in list)
-                {
-                    Units.Add(item);
-                 
-
-                }
-                foreach (var item in _units)
-                {
-                    item.PropertyChanged += ItemPropertyChangedHandler;
-                }
-                _units.CollectionChanged += Units_CollectionChanged;
-                _suppressNotification = false;
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _suppressNotification = false;
-                DMEEditor.AddLogMessage("Beep", $"Error Converting Data to Units {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-                return false;
-            }
-           
-        }
-        private void clearunits()
-        {
-            _suppressNotification = true;
-            if (Units != null)
-            {
-                Units.Clear();
-            }
-            if (FilteredUnits != null)
-            {
-                FilteredUnits.Clear();
-            }
-            DeletedKeys.Clear();
-            InsertedKeys.Clear();
-            InsertedKeys.Clear();
-            DeletedUnits.Clear();
-            _entityStates = new Dictionary<int, EntityState>();
-            _deletedentities = new Dictionary<T, EntityState>();
-            _suppressNotification = false;
-        }
-      
         public virtual async Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token)
         {
             _suppressNotification = true;
@@ -738,149 +893,10 @@ namespace TheTechIdea.Beep.Editor
             _suppressNotification = false;
             return await Task.FromResult<IErrorsInfo>(errorsInfo);
         }
-        private async Task<IErrorsInfo> UpdateAsync(T doc)
-        {
-            if (!IsRequirmentsValidated())
-            {
-                return DMEEditor.ErrorObject;
-            }
-            if (doc == null)
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = "Object is null";
-                return DMEEditor.ErrorObject;
-            }
-            IErrorsInfo retval = await UpdateDoc(doc);
-            return DMEEditor.ErrorObject;
-        }
-        private async Task<IErrorsInfo> InsertAsync(T doc)
-        {
-            if (!IsRequirmentsValidated())
-            {
-                return DMEEditor.ErrorObject;
-            }
-            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false };
-            PreInsert?.Invoke(this,ps );
-            if (ps.Cancel)
-            {
-                return DMEEditor.ErrorObject;
-            }
-            if (doc == null)
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = "Object is null";
-                return DMEEditor.ErrorObject;
-            }
-            var entityidx = DocExistByKey(doc);
-            if (entityidx == -1)
-            {
-
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = "Object exist";
-                return DMEEditor.ErrorObject;
-            }
-            IErrorsInfo retval = await InsertDoc(doc);
-            return DMEEditor.ErrorObject;
-        }
-        private async Task<IErrorsInfo> DeleteAsync(T doc)
-        {
-            if (!IsRequirmentsValidated())
-            {
-                return DMEEditor.ErrorObject;
-            }
-            if (doc == null)
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = "Object is null";
-                return DMEEditor.ErrorObject;
-            }
-            IErrorsInfo retval = await DeleteDoc(doc);
-
-            return DMEEditor.ErrorObject;
-        }
-        private Task<IErrorsInfo> InsertDoc(T doc)
-        {
-           
-            string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
-            string cname = classnames[classnames.Count() - 1];
-           
-            if (!string.IsNullOrEmpty(GuidKey))
-            {
-                if (Guidproperty == null)
-                {
-                    Guidproperty = doc.GetType().GetProperty(GuidKey, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-                }
-                Guidproperty.SetValue(Guid.NewGuid().ToString(), null);
-
-            }
-            IErrorsInfo retval = DataSource.InsertEntity(cname, doc);
-
-            return Task.FromResult<IErrorsInfo>(retval);
-        }
-        private Task<IErrorsInfo> UpdateDoc(T doc)
-        {
-            string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
-            string cname = classnames[classnames.Count() - 1];
-            IErrorsInfo retval = DataSource.UpdateEntity(cname, doc);
-            return Task.FromResult<IErrorsInfo>(retval);
-        }
-        private Task<IErrorsInfo> DeleteDoc(T doc)
-        {
-            string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
-            string cname = classnames[classnames.Count() - 1];
-            IErrorsInfo retval = DataSource.DeleteEntity(cname, doc);
-            return Task.FromResult<IErrorsInfo>(retval);
-        }
         public virtual int GetSeq(string SeqName)
         {
             int retval = -1;
-            if (DataSource.Category == DatasourceCategory.RDBMS && DataSource.DatasourceType == DataSourceType.Oracle)
-            {
-                string querystring = $"select {SeqName}.nextval from dual";
-                string schname = DataSource.Dataconnection.ConnectionProp.SchemaName;
-                string userid = DataSource.Dataconnection.ConnectionProp.UserID;
-                if (schname != null)
-                {
-                    if (!schname.Equals(userid, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        querystring = $"select {schname}.{SeqName}.nextval from dual";
-                    }
-                    else
-                        querystring = $"select {SeqName}.nextval from dual";
-                }
-                retval = (int)DataSource.RunQuery(querystring);
-            }
-            return retval;
-        }
-        public virtual int FindDocIdx(T doc)
-        {
-            int retval = -1;
-
-            retval = Units.IndexOf(doc);
-
-            return retval;
-        }
-        public virtual T Get(int key)
-        {
-            return Units[key];
-        }
-        public virtual T Get(string PrimaryKeyid)
-        {
-
-            var retval = Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(p, null).ToString() == PrimaryKeyid);
-            return retval;
-        }
-        public virtual int DocExistByKey(T doc)
-        {
-            int retval = Units.IndexOf(Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(doc, null).Equals(doc.GetType().GetProperty(PrimaryKey).GetValue(doc, null))));
-            return retval;
-        }
-        public virtual int DocExist(T doc)
-        {
-            int retval = -1;
-
-            retval = Units.IndexOf(doc);
-
+            
             return retval;
         }
         public virtual int GetPrimaryKeySequence(T doc)
@@ -942,6 +958,10 @@ namespace TheTechIdea.Beep.Editor
         }
         private bool Validateall()
         {
+            if (Ivalidated)
+            {
+                return true;
+            }
             bool retval = true;
             if(IsInListMode)
             {
@@ -955,11 +975,21 @@ namespace TheTechIdea.Beep.Editor
             if (EntityStructure == null)
             {
                 EntityStructure = DataSource.GetEntityStructure(EntityName, false);
+                
+            }
+            if (EntityStructure != null)
+            {
                 if (EntityStructure.PrimaryKeys.Count == 0)
                 {
-                    EntityStructure.PrimaryKeys.Add(new EntityField() { fieldname = PrimaryKey, EntityName = EntityStructure.EntityName });
+                    if (!string.IsNullOrEmpty(PrimaryKey))
+                    {
+                        EntityStructure.PrimaryKeys.Add(new EntityField() { fieldname = PrimaryKey, EntityName = EntityStructure.EntityName });
+                    }
+
                 }
+
             }
+            
             if (EntityStructure == null)
             {
                 DMEEditor.AddLogMessage("Beep", $"Error Entity Not Found in UnitofWork {EntityName}", DateTime.Now, -1, EntityName, Errors.Failed);
@@ -972,6 +1002,7 @@ namespace TheTechIdea.Beep.Editor
                 retval = false;
 
             }
+            Ivalidated = true;
             return retval;
         }
 
