@@ -243,6 +243,7 @@ namespace TheTechIdea.Beep.Editor
             Units = new ObservableBindingList<T>();
             Units.CollectionChanged -= Units_CollectionChanged;
             Units.CollectionChanged += Units_CollectionChanged;
+            Units.ListChanged += Units_ListChanged;
             DeletedUnits = new List<T>();
             InsertedKeys = new Dictionary<int, string>();
             UpdatedKeys = new Dictionary<int, string>();
@@ -260,6 +261,9 @@ namespace TheTechIdea.Beep.Editor
             }
 
         }
+
+        
+
         public void SetIDValue(T entity, object value)
         {
             if (!Validateall())
@@ -527,8 +531,15 @@ namespace TheTechIdea.Beep.Editor
             {
 
                 var retval = DataSource.GetEntity(EntityName, null);
-
-                GetDataInUnits(retval);
+                try
+                {
+                    GetDataInUnits(retval);
+                }
+                catch (Exception ex)
+                {
+                    DMEEditor.AddLogMessage("Beep",$" Unit of Work Could not get Data in units {ex.Message} ", DateTime.Now, -1, null, Errors.Failed); 
+                }
+              
             }
             _suppressNotification = false;
             return await Task.FromResult(Units);
@@ -558,28 +569,33 @@ namespace TheTechIdea.Beep.Editor
             {
 
                 List<T> list = new List<T>();
-                if (retval is DataTable)
-                {
-                    DataTable dataTable = (DataTable)retval;
-                    //Units
-                    list = DMEEditor.Utilfunction.ConvertDataTable<T>(dataTable);
-                }
+                _suppressNotification = true;
                 if (retval is IList)
                 {
                     list = (List<T>)retval;
+                    
+
+                    foreach (var item in list)
+                    {
+                   //     item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
+                      //  SetIDValue(item, 1);
+                        Units.Add(item);
+
+                    }
+                    _units.CollectionChanged += Units_CollectionChanged;
+                    // Units =new ObservableBindingList<T>(list);
+                   
 
                 }
-                _suppressNotification = true;
-
-                foreach (var item in list)
+                else
                 {
-                    item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
-                    SetIDValue(item, 1);
-                    Units.Add(item);
-
+                    if (retval is DataTable)
+                    {
+                        DataTable dataTable = (DataTable)retval;
+                        //Units
+                        _units = DMEEditor.Utilfunction.ConvertDataTableToObservableBindingList<T>(dataTable);
+                    }
                 }
-                _units.CollectionChanged += Units_CollectionChanged;
-                // Units =new ObservableBindingList<T>(list);
                 _suppressNotification = false;
                 return true;
             }
@@ -639,6 +655,22 @@ namespace TheTechIdea.Beep.Editor
                 return null;
             }
             return _deletedentities.Where(x => x.Value == EntityState.Deleted).Select(x => x.Key);
+        }
+        private void Units_ListChanged(object sender, ListChangedEventArgs e)
+        {
+            if (e.ListChangedType == ListChangedType.ItemChanged)
+            {
+                if (_suppressNotification)
+                {
+                    return;
+                }
+                T item = _units[e.NewIndex];
+                if (!UpdatedKeys.Any(p => p.Value.Equals(Convert.ToString(PKProperty.GetValue(item, null)))))
+                {
+                    keysidx++;
+                    UpdatedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
+                }
+            }
         }
         private void Units_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {

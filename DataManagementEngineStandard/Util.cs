@@ -1,4 +1,5 @@
 ﻿using DataManagementModels.DriversConfigurations;
+using DataManagementModels.Editor;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -185,6 +186,18 @@ namespace TheTechIdea.Beep
             //compile it
             ObjectActivator<T> compiled = (ObjectActivator<T>)lambda.Compile();
             return compiled;
+        }
+        public ObservableBindingList<T> ConvertDataTableToObservableBindingList<T>(DataTable dt) where T : INotifyPropertyChanged
+        {
+            ObservableBindingList<T> list = new ObservableBindingList<T>();
+
+            foreach (DataRow row in dt.Rows)
+            {
+                T item = GetItem<T>(row);
+                list.Add(item);
+            }
+
+            return list;
         }
         public List<T> ConvertDataTable<T>(DataTable dt)
         {

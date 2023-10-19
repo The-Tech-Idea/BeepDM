@@ -1,8 +1,10 @@
 ﻿using DataManagementModels.DriversConfigurations;
+using DataManagementModels.Editor;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.FileManager;
@@ -24,7 +26,9 @@ namespace TheTechIdea.Beep
         List<string> Namespacelist { get; set; }
         List<ParentChildObject> FunctionHierarchy { get; set; }
         List<T> ConvertDataTable<T>(DataTable dt);
-        DataTable CreateDataTableVer1(object[] array);
+        ObservableBindingList<T> ConvertDataTableToObservableBindingList<T>(DataTable dt) where T : INotifyPropertyChanged;
+
+       DataTable CreateDataTableVer1(object[] array);
         DataTable CreateDataTableVer2(object[] arr);
         DataTable CreateDataTableFromFile(string strFilePath);
         string GetRelativePath(string fromPath, string toPath);
