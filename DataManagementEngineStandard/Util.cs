@@ -14,6 +14,7 @@ using System.Net;
 using System.Reflection;
 using System.Xml.Serialization;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
@@ -187,7 +188,7 @@ namespace TheTechIdea.Beep
             ObjectActivator<T> compiled = (ObjectActivator<T>)lambda.Compile();
             return compiled;
         }
-        public ObservableBindingList<T> ConvertDataTableToObservableBindingList<T>(DataTable dt) where T : INotifyPropertyChanged
+        public ObservableBindingList<T> ConvertDataTableToObservableBindingList<T>(DataTable dt) where T : Entity
         {
             ObservableBindingList<T> list = new ObservableBindingList<T>();
 

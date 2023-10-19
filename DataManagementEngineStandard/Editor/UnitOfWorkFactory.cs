@@ -51,14 +51,6 @@ namespace TheTechIdea.Beep.Editor
             return unitOfWork;
         }
 
-        public static EntityUnitofWork GetEntityUnitofWork(string entityName, string dataSourceName, IDMEEditor DMEEditor, string primeryKey=null,string sequencer=null,string guidkey=null)
-        {
-            EntityUnitofWork entityUnitofWork = null;
-            entityUnitofWork=new EntityUnitofWork(DMEEditor, entityName, dataSourceName);
-            entityUnitofWork.PrimaryKey = primeryKey;
-            entityUnitofWork.Sequencer= sequencer;
-            entityUnitofWork.GuidKey= guidkey;
-            return entityUnitofWork;
-        }
+      
     }
 }

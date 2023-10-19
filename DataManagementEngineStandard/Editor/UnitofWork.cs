@@ -10,127 +10,30 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Util;
 
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class UnitofWork<T> : IUnitofWork<T> where T:  Entity, INotifyPropertyChanged, new()
+    public class UnitofWork<T> : IUnitofWork<T> where T:  Entity, new()
     {
-        public bool IsInListMode { get; set; } = false;
-        private bool IsPrimaryKeyString = false;
-        private bool Ivalidated = false;
-        public event EventHandler<UnitofWorkParams> PreInsert;
-        public event EventHandler<UnitofWorkParams> PreUpdate;
-        public event EventHandler<UnitofWorkParams> PreQuery;
-        public event EventHandler<UnitofWorkParams> PostQuery;
-        public event EventHandler<UnitofWorkParams> PostInsert;
-        public event EventHandler<UnitofWorkParams> PostUpdate;
-        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, string primarykey)
-        {
-            IsInListMode = false;
-            _suppressNotification = true;
-            DMEEditor = dMEEditor;
-            DatasourceName = datasourceName;
-          //  EntityStructure = new EntityStructure();
-            EntityName = entityName;
-            if (OpenDataSource())
-            {
-                init();
-            }
-            PrimaryKey = primarykey;
-            if (Units == null || Units.Count == 0)
-            {
-                T doc = new();
-                getPrimaryKey(doc);
-            }
-            else
-            {
-                getPrimaryKey(Units.FirstOrDefault());
-            }
-            _suppressNotification = false;
-        }
-        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure, string primarykey)
-        {
-            IsInListMode = false;
-            _suppressNotification = true;
-            DMEEditor = dMEEditor;
-            DatasourceName = datasourceName;
-            EntityName = entityName;
-            EntityStructure = entityStructure;
-            PrimaryKey = entityStructure.PrimaryKeys.FirstOrDefault().fieldname;
-            if (OpenDataSource())
-            {
-                init();
-
-            }
-            PrimaryKey = primarykey;
-            if (Units == null || Units.Count == 0)
-            {
-                T doc = new();
-                getPrimaryKey(doc);
-            }
-            else
-            {
-                getPrimaryKey(Units.FirstOrDefault());
-            }
-
-            _suppressNotification = false;
-        }
-        public UnitofWork(IDMEEditor dMEEditor, bool isInListMode, ObservableBindingList<T> ts,string primarykey)
-        {
-            _suppressNotification = true;
-            DMEEditor = dMEEditor;
-            IsInListMode = isInListMode;
-            EntityStructure = new EntityStructure();
-            init();
-            Units = ts;
-            PrimaryKey = primarykey;
-            if (ts == null || ts.Count==0)
-            {
-                T doc=new();
-                getPrimaryKey(doc);
-            }
-            else
-            {
-                getPrimaryKey(ts.FirstOrDefault());
-            }
-            
-            _suppressNotification = false;
-        }
         private bool _suppressNotification = false;
         CancellationTokenSource tokenSource;
         CancellationToken token;
-        private Dictionary<int, EntityState> _entityStates=new Dictionary<int, EntityState>();
-        private Dictionary<T, EntityState> _deletedentities=new Dictionary<T, EntityState>();
-        protected virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-       
+        private bool IsPrimaryKeyString = false;
+        private bool Ivalidated = false;
+
+        #region "Collections"
         private ObservableBindingList<T> _units;
         public ObservableBindingList<T> Units
         {
             get { return _units; }
             set
             {
-                clearunits();
-                //if (_units != null)
-                //{
-                //    _units.CollectionChanged -= Units_CollectionChanged;
-                //    foreach (var item in _units)
-                //    {
-                //        item.PropertyChanged -= ItemPropertyChangedHandler;
-                //    }
-                   
-                //}
-               
                 _units = value;
-
                 if (_units != null)
                 {
-                    
-                    _units.CollectionChanged += Units_CollectionChanged;
-                  
                     foreach (var item in _units)
                     {
                         item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
@@ -145,33 +48,26 @@ namespace TheTechIdea.Beep.Editor
             get { return _filteredunits; }
             set
             {
-                if (_filteredunits != null)
-                {
-                    _filteredunits.CollectionChanged -= Units_CollectionChanged;
-                  
-
-                }
-                if (_filteredunits == null)
-                {
-                    _filteredunits = new ObservableBindingList<T>();
-                }
-                else
-                    _filteredunits.Clear();
                 _filteredunits = value;
 
                 if (_filteredunits != null)
                 {
-
-                    _filteredunits.CollectionChanged += Units_CollectionChanged;
-                   // _filteredunits.PropertyChanged += ItemPropertyChangedHandler;
                     foreach (var item in _filteredunits)
                     {
                         item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
+
                     }
 
                 }
             }
         }
+        #endregion
+        #region "Properties"
+        public bool IsInListMode { get; set; } = false;
+        private Dictionary<int, EntityState> _entityStates = new Dictionary<int, EntityState>();
+        private Dictionary<T, EntityState> _deletedentities = new Dictionary<T, EntityState>();
+        protected virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+
         public string Sequencer { get; set; }
         public string DatasourceName { get; set; }
         public List<T> DeletedUnits { get; set; } = new List<T>();
@@ -190,6 +86,91 @@ namespace TheTechIdea.Beep.Editor
         PropertyInfo Guidproperty = null;
         int keysidx;
         private bool disposedValue;
+        #endregion
+        #region "Constructors"
+        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, string primarykey)
+        {
+            IsInListMode = false;
+            _suppressNotification = true;
+            DMEEditor = dMEEditor;
+            DatasourceName = datasourceName;
+            PrimaryKey = primarykey;
+            //  EntityStructure = new EntityStructure();
+            EntityName = entityName;
+            if (OpenDataSource())
+            {
+                init();
+            }
+            if (Units == null || Units.Count == 0)
+            {
+                T doc = new();
+                getPrimaryKey(doc);
+            }
+            else
+            {
+                getPrimaryKey(Units.FirstOrDefault());
+            }
+            
+            _suppressNotification = false;
+        }
+        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure, string primarykey)
+        {
+            IsInListMode = false;
+            _suppressNotification = true;
+            DMEEditor = dMEEditor;
+            DatasourceName = datasourceName;
+            EntityName = entityName;
+            EntityStructure = entityStructure;
+            PrimaryKey = primarykey;
+            if (OpenDataSource())
+            {
+                init();
+
+            }
+            PrimaryKey = primarykey;
+            if (Units == null || Units.Count == 0)
+            {
+                T doc = new();
+                getPrimaryKey(doc);
+            }
+            else
+            {
+                getPrimaryKey(Units.FirstOrDefault());
+            }
+         
+            _suppressNotification = false;
+        }
+        public UnitofWork(IDMEEditor dMEEditor, bool isInListMode, ObservableBindingList<T> ts, string primarykey)
+        {
+            _suppressNotification = true;
+            DMEEditor = dMEEditor;
+            IsInListMode = isInListMode;
+            EntityStructure = new EntityStructure();
+            init();
+            Units = ts;
+            PrimaryKey = primarykey;
+            if (ts == null || ts.Count == 0)
+            {
+                T doc = new();
+                getPrimaryKey(doc);
+            }
+            else
+            {
+                getPrimaryKey(ts.FirstOrDefault());
+            }
+           
+            _suppressNotification = false;
+        }
+        
+        #endregion "Constructors"
+        #region "Events"
+        public event EventHandler<UnitofWorkParams> PreInsert;
+        public event EventHandler<UnitofWorkParams> PreUpdate;
+        public event EventHandler<UnitofWorkParams> PreQuery;
+        public event EventHandler<UnitofWorkParams> PostQuery;
+        public event EventHandler<UnitofWorkParams> PostInsert;
+        public event EventHandler<UnitofWorkParams> PostUpdate;
+        #endregion
         #region "Misc Methods"
         private void clearunits()
         {
@@ -241,8 +222,17 @@ namespace TheTechIdea.Beep.Editor
         private void reset()
         {
             Units = new ObservableBindingList<T>();
+            _filteredunits=new ObservableBindingList<T>();
+            _filteredunits.CollectionChanged -= Units_CollectionChanged;
+            _filteredunits.CollectionChanged += Units_CollectionChanged;
+            Units.CurrentChanged -= Units_CurrentChanged;
+            Units.CurrentChanged += Units_CurrentChanged;
+            _filteredunits.CurrentChanged -= Units_CurrentChanged;
+            _filteredunits.CurrentChanged += Units_CurrentChanged;
+            _units.CollectionChanged += Units_CollectionChanged;
             Units.CollectionChanged -= Units_CollectionChanged;
             Units.CollectionChanged += Units_CollectionChanged;
+            Units.ListChanged -= Units_ListChanged;
             Units.ListChanged += Units_ListChanged;
             DeletedUnits = new List<T>();
             InsertedKeys = new Dictionary<int, string>();
@@ -262,7 +252,10 @@ namespace TheTechIdea.Beep.Editor
 
         }
 
-        
+        private void Units_CurrentChanged(object sender, EventArgs e)
+        {
+            
+        }
 
         public void SetIDValue(T entity, object value)
         {
@@ -281,7 +274,6 @@ namespace TheTechIdea.Beep.Editor
             // If you want to handle type mismatch more gracefully, you should add some checks here.
             propertyInfo.SetValue(entity, Convert.ChangeType(value, propertyInfo.PropertyType), null);
         }
-
         public object GetIDValue(T entity)
         {
             if (!Validateall())
@@ -573,16 +565,16 @@ namespace TheTechIdea.Beep.Editor
                 if (retval is IList)
                 {
                     list = (List<T>)retval;
-                    
 
-                    foreach (var item in list)
-                    {
-                   //     item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
-                      //  SetIDValue(item, 1);
-                        Units.Add(item);
+                    Units = new ObservableBindingList<T>(list);
+                    //foreach (var item in list)
+                    //{
+                    //    item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
+                    //    //  SetIDValue(item, 1);
+                    //    _units.Add(item);
 
-                    }
-                    _units.CollectionChanged += Units_CollectionChanged;
+                    //}
+                    //_units.CollectionChanged += Units_CollectionChanged;
                     // Units =new ObservableBindingList<T>(list);
                    
 
@@ -593,7 +585,7 @@ namespace TheTechIdea.Beep.Editor
                     {
                         DataTable dataTable = (DataTable)retval;
                         //Units
-                        _units = DMEEditor.Utilfunction.ConvertDataTableToObservableBindingList<T>(dataTable);
+                        Units = new ObservableBindingList<T>(DMEEditor.Utilfunction.ConvertDataTable<T>(dataTable));
                     }
                 }
                 _suppressNotification = false;
@@ -837,7 +829,6 @@ namespace TheTechIdea.Beep.Editor
 
         }
         #endregion
-
         public virtual async Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token)
         {
             _suppressNotification = true;
@@ -1037,7 +1028,6 @@ namespace TheTechIdea.Beep.Editor
             Ivalidated = true;
             return retval;
         }
-
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

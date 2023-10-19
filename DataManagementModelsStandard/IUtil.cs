@@ -4,9 +4,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Data;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Logger;
@@ -26,7 +26,7 @@ namespace TheTechIdea.Beep
         List<string> Namespacelist { get; set; }
         List<ParentChildObject> FunctionHierarchy { get; set; }
         List<T> ConvertDataTable<T>(DataTable dt);
-        ObservableBindingList<T> ConvertDataTableToObservableBindingList<T>(DataTable dt) where T : INotifyPropertyChanged;
+        ObservableBindingList<T> ConvertDataTableToObservableBindingList<T>(DataTable dt) where T : Entity;
 
        DataTable CreateDataTableVer1(object[] array);
         DataTable CreateDataTableVer2(object[] arr);

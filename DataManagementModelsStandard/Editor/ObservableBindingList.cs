@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Collections.ObjectModel;
 
 namespace DataManagementModels.Editor
 {
@@ -210,21 +211,29 @@ namespace DataManagementModels.Editor
             OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
         }
         #endregion
+        private void HookupCollectionChangedEvent()
+        {
+            
+        }
         public ObservableBindingList() : base()
         {
+            HookupCollectionChangedEvent();
             // Initialize the list with no items and subscribe to AddingNew event.
             AddingNew += ObservableBindingList_AddingNew;
         }
         public ObservableBindingList(IEnumerable<T> enumerable) : base()
         {
+
+            foreach (T item in enumerable)
+                item.PropertyChanged += Item_PropertyChanged;
             AddingNew += ObservableBindingList_AddingNew;
         }
         public ObservableBindingList(IList<T> list) : base(list)
         {
-            foreach (var item in list)
-            {
+            foreach (T item in list)
                 item.PropertyChanged += Item_PropertyChanged;
-            }
+
+            HookupCollectionChangedEvent();
 
             AddingNew += ObservableBindingList_AddingNew;
         }
