@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Dynamic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.DataBase;
@@ -52,6 +49,8 @@ namespace TheTechIdea
         IErrorsInfo Commit(PassedArgs args);
         object GetEntity(string EntityName, List<AppFilter> filter);
         Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter);
+        Task<double> GetScalarAsync(string query);
+        double GetScalar(string query);
         string ColumnDelimiter { get; set; }
         string ParameterDelimiter { get; set; }
         ConnectionState Openconnection();

@@ -77,6 +77,44 @@ namespace TheTechIdea.Beep.DataBase
             return ConnectionStatus;
         }
         #region "Repo Methods"
+        public virtual Task<double> GetScalarAsync(string query)
+        {
+            return Task.Run(()=>GetScalar(query));
+        }
+        public virtual double GetScalar(string query)
+        {
+            ErrorObject.Flag = Errors.Ok;
+
+            try
+            {
+                // Assuming you have a database connection and command objects.
+              
+                    using (var command =GetDataCommand())
+                    {
+                        command.CommandText = query;
+                        using (IDataReader reader = command.ExecuteReader())
+                        {
+                        if (reader.Read())
+                        {
+                            var result = reader.GetDecimal(0); // Assuming the result is a decimal value
+                            return Convert.ToDouble(result);
+                        }
+                    }
+                }
+                
+
+                // If the query executed successfully but didn't return a valid double, you can handle it here.
+                // You might want to log an error or throw an exception as needed.
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Error in executing scalar query ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+            }
+
+            // Return a default value or throw an exception if the query failed.
+            return 0.0; // You can change this default value as needed.
+        }
+
         public virtual IErrorsInfo ExecuteSql(string sql)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -139,60 +177,7 @@ namespace TheTechIdea.Beep.DataBase
             }
 
         }
-        private IDbCommand CreateCommandParameters(IDbCommand  command, DataRow r,EntityStructure DataStruct)
-        {
-            command.Parameters.Clear();
-            
-            foreach (EntityField item in DataStruct.Fields.OrderBy(o => o.fieldname))
-            {
-
-                if (!command.Parameters.Contains("p_" + Regex.Replace(item.fieldname, @"\s+", "_")))
-                {
-                    IDbDataParameter parameter = command.CreateParameter();
-                    //if (!item.fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase) && !item.fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
-                    //{
-                    //    if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
-                    //    {
-                    //        parameter.Value = Convert.ToDecimal(null);
-                    //    }
-                    //    else
-                    //    {
-                    //        parameter.Value = r[item.fieldname];
-                    //    }
-                    //}
-                    //else
-                        if (item.fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
-                        {
-
-                            parameter.Value = DBNull.Value;
-                            parameter.DbType = DbType.DateTime;
-                        }
-                        else
-                        {
-                            parameter.DbType = DbType.DateTime;
-                            try
-                            {
-                                parameter.Value = DateTime.Parse(r[item.fieldname].ToString());
-                            }
-                            catch (FormatException formatex)
-                            {
-
-                                parameter.Value = SqlDateTime.Null;
-                            }
-                        }
-                    }
-                    else
-                        parameter.Value = r[item.fieldname];
-                    parameter.ParameterName = "p_" + Regex.Replace(item.fieldname, @"\s+", "_");
-                    //   parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
-                    command.Parameters.Add(parameter);
-                }
-
-            }
-            return command;
-        }
+        
         public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
             if (recEntity != EntityName)
@@ -386,7 +371,114 @@ namespace TheTechIdea.Beep.DataBase
             }
             return DMEEditor.ErrorObject;
         }
+        private IDbCommand CreateCommandParameters(IDbCommand command, DataRow r, EntityStructure DataStruct)
+        {
+            command.Parameters.Clear();
 
+            foreach (EntityField item in DataStruct.Fields.OrderBy(o => o.fieldname))
+            {
+
+                if (!command.Parameters.Contains("p_" + Regex.Replace(item.fieldname, @"\s+", "_")))
+                {
+                    IDbDataParameter parameter = command.CreateParameter();
+                    //if (!item.fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase) && !item.fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
+                    //{
+                    //    if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
+                    //    {
+                    //        parameter.Value = Convert.ToDecimal(null);
+                    //    }
+                    //    else
+                    //    {
+                    //        parameter.Value = r[item.fieldname];
+                    //    }
+                    //}
+                    //else
+                    if (item.fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
+                        {
+
+                            parameter.Value = DBNull.Value;
+                            parameter.DbType = DbType.DateTime;
+                        }
+                        else
+                        {
+                            parameter.DbType = DbType.DateTime;
+                            try
+                            {
+                                parameter.Value = DateTime.Parse(r[item.fieldname].ToString());
+                            }
+                            catch (FormatException formatex)
+                            {
+
+                                parameter.Value = SqlDateTime.Null;
+                            }
+                        }
+                    }
+                    else
+                        parameter.Value = r[item.fieldname];
+                    parameter.ParameterName = "p_" + Regex.Replace(item.fieldname, @"\s+", "_");
+                    //   parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
+                    command.Parameters.Add(parameter);
+                }
+
+            }
+            return command;
+        }
+        private IDbCommand CreateDeleteCommandParameters(IDbCommand command, DataRow r, EntityStructure DataStruct)
+        {
+            command.Parameters.Clear();
+
+            foreach (EntityField item in DataStruct.PrimaryKeys.OrderBy(o => o.fieldname))
+            {
+
+                if (!command.Parameters.Contains("p_" + Regex.Replace(item.fieldname, @"\s+", "_")))
+                {
+                    IDbDataParameter parameter = command.CreateParameter();
+                    //if (!item.fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase) && !item.fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
+                    //{
+                    //    if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
+                    //    {
+                    //        parameter.Value = Convert.ToDecimal(null);
+                    //    }
+                    //    else
+                    //    {
+                    //        parameter.Value = r[item.fieldname];
+                    //    }
+                    //}
+                    //else
+                    if (item.fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        if (r[item.fieldname] == DBNull.Value || r[item.fieldname].ToString() == "")
+                        {
+
+                            parameter.Value = DBNull.Value;
+                            parameter.DbType = DbType.DateTime;
+                        }
+                        else
+                        {
+                            parameter.DbType = DbType.DateTime;
+                            try
+                            {
+                                parameter.Value = DateTime.Parse(r[item.fieldname].ToString());
+                            }
+                            catch (FormatException formatex)
+                            {
+
+                                parameter.Value = SqlDateTime.Null;
+                            }
+                        }
+                    }
+                    else
+                        parameter.Value = r[item.fieldname];
+                    parameter.ParameterName = "p_" + Regex.Replace(item.fieldname, @"\s+", "_");
+                    //   parameter.DbType = TypeToDbType(tb.Columns[item.fieldname].DataType);
+                    command.Parameters.Add(parameter);
+                }
+
+            }
+            return command;
+        }
         public virtual IErrorsInfo Commit(PassedArgs args)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -486,10 +578,11 @@ namespace TheTechIdea.Beep.DataBase
             try
             {
                 string updatestring = GetDeleteString(EntityName, DataStruct);
+                command = GetDataCommand();
                 command.Transaction = sqlTran;
                 command.CommandText = updatestring;
 
-                command = CreateCommandParameters(command, dr, DataStruct);
+                command = CreateDeleteCommandParameters(command, dr, DataStruct);
                 int rowsUpdated = command.ExecuteNonQuery();
                 if (rowsUpdated > 0)
                 {
@@ -1768,8 +1861,7 @@ namespace TheTechIdea.Beep.DataBase
         public virtual string GetDeleteString(string EntityName,  EntityStructure DataStruct)
         {
 
-            List<EntityField> SourceEntityFields = new List<EntityField>();
-            List<EntityField> DestEntityFields = new List<EntityField>();
+          
             string Updatestr = @"Delete from " + EntityName + "  ";
             Updatestr = GetTableName(Updatestr.ToLower());
             int i = DataStruct.Fields.Count();
@@ -1827,14 +1919,9 @@ namespace TheTechIdea.Beep.DataBase
             if (Dataconnection.ConnectionStatus == ConnectionState.Open)
             {
                 return RDBMSConnection.DbConn.Query<T>(sql).AsList<T>();
-
             }
             else
                 return null;
-
-
-
-            
         }
         public virtual Task SaveData<T>(string sql, T parameters)
         {

@@ -440,8 +440,44 @@ namespace TheTechIdea.Beep.FileManager
                 return null;
             }
         }
-     
+
         #endregion
+        public virtual Task<double> GetScalarAsync(string query)
+        {
+            return Task.Run(() => GetScalar(query));
+        }
+        public virtual double GetScalar(string query)
+        {
+            ErrorObject.Flag = Errors.Ok;
+
+            try
+            {
+                // Assuming you have a database connection and command objects.
+
+                //using (var command = GetDataCommand())
+                //{
+                //    command.CommandText = query;
+                //    var result = command.ExecuteScalar();
+
+                //    // Check if the result is not null and can be converted to a double.
+                //    if (result != null && double.TryParse(result.ToString(), out double value))
+                //    {
+                //        return value;
+                //    }
+                //}
+
+
+                // If the query executed successfully but didn't return a valid double, you can handle it here.
+                // You might want to log an error or throw an exception as needed.
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Error in executing scalar query ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+            }
+
+            // Return a default value or throw an exception if the query failed.
+            return 0.0; // You can change this default value as needed.
+        }
         public int GetEntityIdx(string entityName)
         {
             return 0;

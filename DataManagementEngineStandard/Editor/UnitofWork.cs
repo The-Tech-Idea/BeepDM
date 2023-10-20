@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Util;
 
@@ -23,6 +24,7 @@ namespace TheTechIdea.Beep.Editor
         CancellationToken token;
         private bool IsPrimaryKeyString = false;
         private bool Ivalidated = false;
+        private bool IsNewRecord = false;
 
         #region "Collections"
         private ObservableBindingList<T> _units;
@@ -38,7 +40,7 @@ namespace TheTechIdea.Beep.Editor
                     {
                         item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
                     }
-
+                    _units.CollectionChanged += Units_CollectionChanged;
                 }
             }
         }
@@ -57,10 +59,12 @@ namespace TheTechIdea.Beep.Editor
                         item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
 
                     }
-
+                    _filteredunits.CollectionChanged += Units_CollectionChanged;
                 }
             }
         }
+
+        
         #endregion
         #region "Properties"
         public bool IsInListMode { get; set; } = false;
@@ -470,6 +474,127 @@ namespace TheTechIdea.Beep.Editor
                 //entity.PropertyChanged += ItemPropertyChangedHandler;
             }
         }
+        public virtual async Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token)
+        {
+            _suppressNotification = true;
+            if (IsInListMode)
+            {
+                return DMEEditor.ErrorObject;
+            }
+            PassedArgs args = new PassedArgs();
+            IErrorsInfo errorsInfo = new ErrorsInfo();
+            int x = 1;
+            args.ParameterInt1 = InsertedKeys.Count + UpdatedKeys.Count + DeletedKeys.Count;
+            args.ParameterString1 = $"Started Saving Changes {args.ParameterInt1}";
+            args.Messege = $"Started Saving Changes {args.ParameterInt1}";
+            progress.Report(args);
+            try
+            {
+                if (GetAddedEntities() != null)
+                {
+                    foreach (int t in GetAddedEntities())
+                    {
+                        args.ParameterInt1 = x;
+
+                        progress.Report(args);
+                        int r = Getindex(t.ToString());
+                        errorsInfo = await InsertAsync(Units[t]);
+                        x++;
+                    }
+                }
+                if (GetModifiedEntities() != null)
+                {
+                    foreach (int t in GetModifiedEntities())
+                    {
+                        args.ParameterInt1 = x;
+                        progress.Report(args);
+                        int r = Getindex(t.ToString());
+                        errorsInfo = await UpdateAsync(Units[t]);
+                        x++;
+                    }
+                }
+                if (GetDeletedEntities() != null)
+                {
+                    foreach (T t in GetDeletedEntities())
+                    {
+                        args.ParameterInt1 = x;
+                        progress.Report(args);
+                       // int r = Getindex(t.ToString());
+                        errorsInfo = await DeleteAsync(t);
+                        x++;
+                    }
+                }
+
+
+                //foreach (var t in InsertedKeys)
+                //{
+                //    args.ParameterInt1 = x;
+                //    progress.Report(args);
+                //    errorsInfo = await InsertAsync(Units[t.Value]);
+                //    x++;
+                //}
+                //foreach (var t in UpdatedKeys)
+                //{
+                //    args.ParameterInt1 = x;
+                //    progress.Report(args);
+                //    errorsInfo = await UpdateAsync(Units[t.Value]);
+                //    x++;
+                //}
+                //foreach (var t in DeletedKeys)
+                //{
+                //    args.ParameterInt1 = x;
+                //    progress.Report(args);
+                //    errorsInfo = await DeleteAsync(Units[t.Value]);
+                //    x++;
+                //}
+                args.Messege = $"Ended Saving Changes";
+                args.ParameterString1 = $"Ended Saving Changes";
+                progress.Report(args);
+                _suppressNotification = false;
+            }
+            catch (Exception ex)
+            {
+                _suppressNotification = false;
+                args.Messege = $"Error Saving Changes {ex.Message}";
+                args.ParameterString1 = $"Error Saving Changes {ex.Message}";
+                progress.Report(args);
+                errorsInfo.Ex = ex;
+                DMEEditor.AddLogMessage("UnitofWork", $"Saving and Commiting Changes error {ex.Message}", DateTime.Now, args.ParameterInt1, ex.Message, Errors.Failed);
+            }
+            _suppressNotification = false;
+            return await Task.FromResult<IErrorsInfo>(errorsInfo);
+        }
+        public virtual int GetSeq(string SeqName) 
+        {
+            int retval = -1;
+            if(DataSource.Category== DatasourceCategory.RDBMS)
+            {
+                string str = RDBMSHelper.GenerateFetchNextSequenceValueQuery(DataSource.DatasourceType, SeqName);
+                if (!string.IsNullOrEmpty(str))
+                {
+                    var r= DataSource.GetScalar(str);
+                     if(r!=null)
+                    {
+                        retval = (int)r;
+                    }
+                    
+                }
+            }
+            return retval;
+        }
+        public virtual int GetPrimaryKeySequence(T doc)
+        {
+            int retval = -1;
+            if (DataSource.Category == DatasourceCategory.RDBMS && !string.IsNullOrEmpty(Sequencer))
+            {
+                retval = GetSeq(Sequencer);
+                if(retval > 0)
+                {
+                    SetIDValue(doc, retval);
+                }
+            }
+            return retval;
+        }
         #endregion
         #region "Get Methods"
         public virtual async Task<ObservableBindingList<T>> Get(List<AppFilter> filters)
@@ -630,7 +755,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 return null;
             }
-            return _entityStates.Where(x => x.Value != EntityState.Added).Select(x => x.Key);
+            return _entityStates.Where(x => x.Value == EntityState.Added).Select(x => x.Key);
         }
         public IEnumerable<int> GetModifiedEntities()
         {
@@ -638,7 +763,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 return null;
             }
-            return _entityStates.Where(x => x.Value != EntityState.Modified).Select(x => x.Key);
+            return _entityStates.Where(x => x.Value == EntityState.Modified).Select(x => x.Key);
         }
         public IEnumerable<T> GetDeletedEntities()
         {
@@ -673,18 +798,29 @@ namespace TheTechIdea.Beep.Editor
             switch (e.Action)
             {
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
+                    IsNewRecord = true;
                     foreach (T item in e.NewItems)
                     {
+                       
                         keysidx++;
-                        InsertedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
-                        // item.PropertyChanged += ItemPropertyChangedHandler;
+                        item.PropertyChanged += ItemPropertyChangedHandler;
+                        GetPrimaryKeySequence(item);
+                        if (!InsertedKeys.ContainsValue(Convert.ToString(PKProperty.GetValue(item, null))))
+                        {
+                            InsertedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
+                            _entityStates.Add(e.NewStartingIndex, EntityState.Added);
+                        }
+                        
                     }
+                    IsNewRecord=false;
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
                     foreach (T item in e.OldItems)
                     {
                         keysidx++;
                         DeletedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
+                        _entityStates.Add(e.OldStartingIndex, EntityState.Deleted);
+                        _deletedentities.Add(item, EntityState.Deleted);
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
@@ -716,7 +852,7 @@ namespace TheTechIdea.Beep.Editor
         }
         private void ItemPropertyChangedHandler(object sender, PropertyChangedEventArgs e)
         {
-            if (_suppressNotification)
+            if (_suppressNotification || IsNewRecord )
             {
                 return;
             }
@@ -725,6 +861,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 if (InsertedKeys.ContainsValue(Convert.ToString(PKProperty.GetValue(item, null))))
                 {
+                    
                     return;
                 }
             }
@@ -732,6 +869,8 @@ namespace TheTechIdea.Beep.Editor
             {
                 keysidx++;
                 UpdatedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
+                int x= Getindex(item);
+                _entityStates.Add(x, EntityState.Modified);
             }
         }
         private ObservableBindingList<T> FilterCollection(ObservableBindingList<T> originalCollection, List<AppFilter> filters)
@@ -829,108 +968,7 @@ namespace TheTechIdea.Beep.Editor
 
         }
         #endregion
-        public virtual async Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token)
-        {
-            _suppressNotification = true;
-            if (IsInListMode)
-            {
-                return DMEEditor.ErrorObject;
-            }
-            PassedArgs args = new PassedArgs();
-            IErrorsInfo errorsInfo = new ErrorsInfo();
-            int x = 1;
-            args.ParameterInt1 = InsertedKeys.Count + UpdatedKeys.Count + DeletedKeys.Count;
-            args.ParameterString1 = $"Started Saving Changes {args.ParameterInt1}";
-            args.Messege = $"Started Saving Changes {args.ParameterInt1}";
-            progress.Report(args);
-            try
-            {
-                if (GetAddedEntities() != null)
-                {
-                    foreach (int t in GetAddedEntities())
-                    {
-                        args.ParameterInt1 = x;
-
-                        progress.Report(args);
-                        errorsInfo = await InsertAsync(Units[t]);
-                        x++;
-                    }
-                }
-                if (GetModifiedEntities()!=null)
-                {
-                    foreach (int t in GetModifiedEntities())
-                    {
-                        args.ParameterInt1 = x;
-                        progress.Report(args);
-                        errorsInfo = await UpdateAsync(Units[t]);
-                        x++;
-                    }
-                }
-                if (GetDeletedEntities() != null)
-                {
-                    foreach (T t in GetDeletedEntities())
-                    {
-                        args.ParameterInt1 = x;
-                        progress.Report(args);
-                        errorsInfo = await DeleteAsync(t);
-                        x++;
-                    }
-                }
-              
-
-                //foreach (var t in InsertedKeys)
-                //{
-                //    args.ParameterInt1 = x;
-                //    progress.Report(args);
-                //    errorsInfo = await InsertAsync(Units[t.Value]);
-                //    x++;
-                //}
-                //foreach (var t in UpdatedKeys)
-                //{
-                //    args.ParameterInt1 = x;
-                //    progress.Report(args);
-                //    errorsInfo = await UpdateAsync(Units[t.Value]);
-                //    x++;
-                //}
-                //foreach (var t in DeletedKeys)
-                //{
-                //    args.ParameterInt1 = x;
-                //    progress.Report(args);
-                //    errorsInfo = await DeleteAsync(Units[t.Value]);
-                //    x++;
-                //}
-                args.Messege = $"Ended Saving Changes";
-                args.ParameterString1 = $"Ended Saving Changes";
-                progress.Report(args);
-                _suppressNotification = false;
-            }
-            catch (Exception ex)
-            {
-                _suppressNotification = false;
-                args.Messege = $"Error Saving Changes {ex.Message}";
-                args.ParameterString1 = $"Error Saving Changes {ex.Message}";
-                progress.Report(args);
-                errorsInfo.Ex = ex;
-                DMEEditor.AddLogMessage("UnitofWork", $"Saving and Commiting Changes error {ex.Message}", DateTime.Now, args.ParameterInt1, ex.Message, Errors.Failed);
-            }
-            _suppressNotification = false;
-            return await Task.FromResult<IErrorsInfo>(errorsInfo);
-        }
-        public virtual int GetSeq(string SeqName)
-        {
-            int retval = -1;
-            
-            return retval;
-        }
-        public virtual int GetPrimaryKeySequence(T doc)
-        {
-            int retval = -1;
-            if (DataSource.Category == DatasourceCategory.RDBMS)
-            {
-                retval = GetSeq(PrimaryKey);
-            }
-            return retval;
-        }
+     
         private bool IsRequirmentsValidated()
         {
             bool retval = true;
