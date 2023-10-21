@@ -227,17 +227,26 @@ namespace TheTechIdea.Beep
                         {
                             value = pro.PropertyType.IsValueType ? Activator.CreateInstance(pro.PropertyType) : null;
                         }
-
-                        // If the property is of type char and the value is a string with a length of 1, convert the string to char
                         else if (pro.PropertyType == typeof(char) && value is string str && str.Length == 1)
                         {
                             value = str[0];
                         }
-
-                        // If the property is of enum type, parse the string value as an enum
                         else if (pro.PropertyType.IsEnum && value is string enumString)
                         {
                             value = Enum.Parse(pro.PropertyType, enumString);
+                        }
+                        else if (IsNumericType(pro.PropertyType) && value != null)
+                        {
+                            try
+                            {
+                                // Convert the value to the property type if it's a numeric type
+                                value = Convert.ChangeType(value, pro.PropertyType);
+                            }
+                            catch (InvalidCastException ex)
+                            {
+                                // Handle the exception here (e.g., log it or throw a custom exception)
+                                throw new InvalidCastException($"Cannot convert value to {pro.PropertyType}: {ex.Message}");
+                            }
                         }
 
                         pro.SetValue(obj, value, null);
@@ -247,7 +256,15 @@ namespace TheTechIdea.Beep
             return obj;
         }
 
-
+        private static bool IsNumericType(Type type)
+        {
+            return type == typeof(byte) || type == typeof(sbyte) ||
+                   type == typeof(short) || type == typeof(ushort) ||
+                   type == typeof(int) || type == typeof(uint) ||
+                   type == typeof(long) || type == typeof(ulong) ||
+                   type == typeof(float) || type == typeof(double) ||
+                   type == typeof(decimal);
+        }
         public ObservableCollection<T> ConvertToObservableCollection<T>(List<T> list)
         {
             var observableCollection = new ObservableCollection<T>(list);

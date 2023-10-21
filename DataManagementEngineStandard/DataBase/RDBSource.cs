@@ -512,6 +512,7 @@ namespace TheTechIdea.Beep.DataBase
             dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, UploadDataRow, DataStruct);
             try
             {
+                command = GetDataCommand();
                 string updatestring = GetUpdateString(EntityName,  DataStruct);
                 command.CommandText = updatestring;
                 command = CreateCommandParameters(command,dr, DataStruct);
@@ -663,7 +664,7 @@ namespace TheTechIdea.Beep.DataBase
             try
             {
                 updatestring = GetInsertString(EntityName, DataStruct);
-
+                command = GetDataCommand();
 
                 command.CommandText = updatestring;
                 command = CreateCommandParameters(command, dr, DataStruct);

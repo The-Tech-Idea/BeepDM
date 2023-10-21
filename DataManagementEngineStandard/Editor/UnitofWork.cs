@@ -169,6 +169,7 @@ namespace TheTechIdea.Beep.Editor
         #endregion "Constructors"
         #region "Events"
         public event EventHandler<UnitofWorkParams> PreInsert;
+        public event EventHandler<UnitofWorkParams> PostCreate;
         public event EventHandler<UnitofWorkParams> PreUpdate;
         public event EventHandler<UnitofWorkParams> PreQuery;
         public event EventHandler<UnitofWorkParams> PostQuery;
@@ -324,6 +325,12 @@ namespace TheTechIdea.Beep.Editor
             {
                 return DMEEditor.ErrorObject;
             }
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false };
+            PreUpdate?.Invoke(doc, ps);
+            if (ps.Cancel)
+            {
+                return DMEEditor.ErrorObject;
+            }
             if (doc == null)
             {
                 DMEEditor.ErrorObject.Flag = Errors.Failed;
@@ -340,7 +347,7 @@ namespace TheTechIdea.Beep.Editor
                 return DMEEditor.ErrorObject;
             }
             UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false };
-            PreInsert?.Invoke(this, ps);
+            PreInsert?.Invoke(doc, ps);
             if (ps.Cancel)
             {
                 return DMEEditor.ErrorObject;
@@ -801,16 +808,19 @@ namespace TheTechIdea.Beep.Editor
                     IsNewRecord = true;
                     foreach (T item in e.NewItems)
                     {
-                       
-                        keysidx++;
-                        item.PropertyChanged += ItemPropertyChangedHandler;
-                        GetPrimaryKeySequence(item);
-                        if (!InsertedKeys.ContainsValue(Convert.ToString(PKProperty.GetValue(item, null))))
+                        UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false };
+                        PostCreate?.Invoke(item, ps);
+                        if (!ps.Cancel)
                         {
-                            InsertedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
-                            _entityStates.Add(e.NewStartingIndex, EntityState.Added);
+                            keysidx++;
+                            item.PropertyChanged += ItemPropertyChangedHandler;
+                            GetPrimaryKeySequence(item);
+                            if (!InsertedKeys.ContainsValue(Convert.ToString(PKProperty.GetValue(item, null))))
+                            {
+                                InsertedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
+                                _entityStates.Add(e.NewStartingIndex, EntityState.Added);
+                            }
                         }
-                        
                     }
                     IsNewRecord=false;
                     break;
