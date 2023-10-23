@@ -33,7 +33,18 @@ namespace TheTechIdea.Beep.Editor
             get { return _units; }
             set
             {
-                _units = value;
+                if (_units != value) // Check if it's a new collection
+                {
+                    if (_units != null)
+                    {
+                        foreach (var item in _units)
+                        {
+                            item.PropertyChanged -= ItemPropertyChangedHandler; // Remove previous event handlers
+                        }
+                        _units.CollectionChanged -= Units_CollectionChanged;
+                    }
+                }
+                    _units = value;
                 if (_units != null)
                 {
                     foreach (var item in _units)
@@ -50,6 +61,17 @@ namespace TheTechIdea.Beep.Editor
             get { return _filteredunits; }
             set
             {
+                if (_filteredunits != value) // Check if it's a new collection
+                {
+                    if (_filteredunits != null)
+                    {
+                        foreach (var item in _filteredunits)
+                        {
+                            item.PropertyChanged -= ItemPropertyChangedHandler; // Remove previous event handlers
+                        }
+                        _filteredunits.CollectionChanged -= Units_CollectionChanged;
+                    }
+                }
                 _filteredunits = value;
 
                 if (_filteredunits != null)
@@ -179,14 +201,18 @@ namespace TheTechIdea.Beep.Editor
         #region "Misc Methods"
         private void clearunits()
         {
+            if (_suppressNotification)
+            {
+                return;
+            }
             _suppressNotification = true;
             if (Units != null)
             {
-                Units.Clear();
+                _units.Clear();
             }
             if (FilteredUnits != null)
             {
-                FilteredUnits.Clear();
+                _units.Clear();
             }
             DeletedKeys.Clear();
             InsertedKeys.Clear();
@@ -259,7 +285,10 @@ namespace TheTechIdea.Beep.Editor
 
         private void Units_CurrentChanged(object sender, EventArgs e)
         {
-            
+            if (_suppressNotification)
+            {
+                return;
+            }
         }
 
         public void SetIDValue(T entity, object value)
@@ -608,7 +637,7 @@ namespace TheTechIdea.Beep.Editor
         {
             if (!IsInListMode)
             {
-                clearunits();
+                //clearunits();
                 var retval = DataSource.GetEntity(EntityName, filters);
 
                 GetDataInUnits(retval);
@@ -782,6 +811,10 @@ namespace TheTechIdea.Beep.Editor
         }
         private void Units_ListChanged(object sender, ListChangedEventArgs e)
         {
+            if (_suppressNotification)
+            {
+                return;
+            }
             if (e.ListChangedType == ListChangedType.ItemChanged)
             {
                 if (_suppressNotification)
