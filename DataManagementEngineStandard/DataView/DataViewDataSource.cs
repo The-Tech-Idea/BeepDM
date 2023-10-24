@@ -419,8 +419,8 @@ namespace TheTechIdea.Beep.DataView
             {
                 if (ds.Category == DatasourceCategory.RDBMS)
                 {
-                    RDBSource rdb = (RDBSource)ds;
-                    return rdb.GetEntityforeignkeys(entityname, SchemaName);
+                    
+                    return ds.GetEntityforeignkeys(entityname, SchemaName);
                 }
                 else
                 {

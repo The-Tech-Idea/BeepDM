@@ -17,7 +17,7 @@ using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
-using static Dapper.SqlMapper;
+
 
 
 namespace TheTechIdea.Beep.Json

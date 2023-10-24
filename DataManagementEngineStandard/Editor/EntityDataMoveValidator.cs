@@ -169,12 +169,12 @@ namespace TheTechIdea.Beep
                 {
                     if (DataSource.Category == DatasourceCategory.RDBMS)
                     {
-                        RDBSource ds = (RDBSource)DataSource;
-                        if (ds != null && record != null)
+                        
+                        if (DataSource != null && record != null)
                         {
-                            if (ds.Openconnection() == System.Data.ConnectionState.Open)
+                            if (DataSource.Openconnection() == System.Data.ConnectionState.Open)
                             {
-                                Entity = ds.GetEntityStructure(Entity.EntityName, false);
+                                Entity = DataSource.GetEntityStructure(Entity.EntityName, false);
                                 if (Entity != null)
                                 {
                                     List<RelationShipKeys> rels = Entity.Relations.Where(p => p.EntityColumnID == fieldname).ToList();
@@ -184,12 +184,12 @@ namespace TheTechIdea.Beep
                                         {
                                             if (int.TryParse(strval, out intval))
                                             {
-                                                cnt = (int)ds.RunQuery($"select count(*)  from {rel.RelatedEntityID} where {rel.RelatedEntityColumnID}={intval}");
+                                                cnt = (int)DataSource.RunQuery($"select count(*)  from {rel.RelatedEntityID} where {rel.RelatedEntityColumnID}={intval}");
                                             }
                                             else
                                             {
 
-                                                cnt = (int)ds.RunQuery($"select count(*)  from {rel.RelatedEntityID} where {rel.RelatedEntityColumnID}='{strval}'");
+                                                cnt = (int)DataSource.RunQuery($"select count(*)  from {rel.RelatedEntityID} where {rel.RelatedEntityColumnID}='{strval}'");
                                             }
                                             if (cnt == 0)
                                             {

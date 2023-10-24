@@ -413,9 +413,10 @@ namespace TheTechIdea.Beep
             }
             catch (Exception ex)
             {
-                return false;
+               
 
                 AddLogMessage("Beep", $"Could not check Datasource Exist {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+                return false;
             };
 
         }
@@ -451,9 +452,7 @@ namespace TheTechIdea.Beep
             }
             catch (Exception ex)
             {
-                ErrorObject.Ex = ex;
-                ErrorObject.Message = ex.Message;
-                ErrorObject.Flag = Errors.Failed;
+                AddLogMessage("Beep", $"Could not remove Datasource  {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
                 return false;
             };
         }
@@ -719,9 +718,10 @@ namespace TheTechIdea.Beep
             }
             catch (Exception ex)
             {
-                return false;
+               
                
                 AddLogMessage("Beep", $"Could not check Datasource Exist {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+                return false;
             };
           
         }
@@ -753,9 +753,7 @@ namespace TheTechIdea.Beep
             }
             catch (Exception ex)
             {
-                ErrorObject.Ex = ex;
-                ErrorObject.Message = ex.Message;
-                ErrorObject.Flag = Errors.Failed;
+                AddLogMessage("Beep", $"Could not remove Datasource  {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
                 return false;
             };
         }
