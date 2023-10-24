@@ -13,7 +13,7 @@ namespace TheTechIdea.Beep.DataView
     public interface IDataViewDataSource
     {
         
-         string GuidID { get; set; }
+        string GuidID { get; set; }
         DatasourceCategory Category { get; set; }
         string ColumnDelimiter { get; set; }
         string CompositeLayerDataSourceID { get; set; }
