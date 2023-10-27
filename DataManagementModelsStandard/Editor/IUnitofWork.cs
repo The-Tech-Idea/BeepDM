@@ -30,6 +30,7 @@ namespace TheTechIdea.Beep.Editor
         ObservableBindingList<T> Units { get; set; }
         Dictionary<int, string> UpdatedKeys { get; set; }
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
+        Task<IErrorsInfo> Commit();
         void Create(T entity);
         void Delete(string id);
         int DocExist(T doc);
@@ -57,11 +58,17 @@ namespace TheTechIdea.Beep.Editor
         event EventHandler<UnitofWorkParams> PostQuery;
         event EventHandler<UnitofWorkParams> PostInsert;
         event EventHandler<UnitofWorkParams> PostUpdate;
-       
+        event EventHandler<UnitofWorkParams> PostEdit;
+        event EventHandler<UnitofWorkParams> PreDelete;
+        event EventHandler<UnitofWorkParams> PostCreate;
+
     }
     public class UnitofWorkParams : PassedArgs
     {
         public bool Cancel { get; set; } = false;
+        public string PropertyName { get; set; }
+        public string PropertyValue { get; set; }
+        public string EntityName { get; set; }
         public object Record { get; set; }
 
     }

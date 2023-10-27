@@ -92,6 +92,7 @@ namespace TheTechIdea.Beep.Editor
         public bool IsInListMode { get; set; } = false;
         private Dictionary<int, EntityState> _entityStates = new Dictionary<int, EntityState>();
         private Dictionary<T, EntityState> _deletedentities = new Dictionary<T, EntityState>();
+        Stack<Tuple<T, int>> undoDeleteStack = new Stack<Tuple<T, int>>();
         protected virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
 
         public string Sequencer { get; set; }
@@ -109,6 +110,7 @@ namespace TheTechIdea.Beep.Editor
         public string PrimaryKey { get { return _primarykey; } set { _primarykey = value; } }
         public string GuidKey { get; set; }
         PropertyInfo PKProperty = null;
+        PropertyInfo CurrentProperty = null;
         PropertyInfo Guidproperty = null;
         int keysidx;
         private bool disposedValue;
@@ -192,6 +194,8 @@ namespace TheTechIdea.Beep.Editor
         #region "Events"
         public event EventHandler<UnitofWorkParams> PreInsert;
         public event EventHandler<UnitofWorkParams> PostCreate;
+        public event EventHandler<UnitofWorkParams> PostEdit;
+        public event EventHandler<UnitofWorkParams> PreDelete;
         public event EventHandler<UnitofWorkParams> PreUpdate;
         public event EventHandler<UnitofWorkParams> PreQuery;
         public event EventHandler<UnitofWorkParams> PostQuery;
@@ -585,6 +589,7 @@ namespace TheTechIdea.Beep.Editor
                 //}
                 args.Messege = $"Ended Saving Changes";
                 args.ParameterString1 = $"Ended Saving Changes";
+                args.ErrorCode = "END";
                 progress.Report(args);
                 _suppressNotification = false;
             }
@@ -594,6 +599,66 @@ namespace TheTechIdea.Beep.Editor
                 args.Messege = $"Error Saving Changes {ex.Message}";
                 args.ParameterString1 = $"Error Saving Changes {ex.Message}";
                 progress.Report(args);
+                errorsInfo.Ex = ex;
+                DMEEditor.AddLogMessage("UnitofWork", $"Saving and Commiting Changes error {ex.Message}", DateTime.Now, args.ParameterInt1, ex.Message, Errors.Failed);
+            }
+            _suppressNotification = false;
+            return await Task.FromResult<IErrorsInfo>(errorsInfo);
+        }
+        public virtual async Task<IErrorsInfo> Commit()
+        {
+            _suppressNotification = true;
+            if (IsInListMode)
+            {
+                return DMEEditor.ErrorObject;
+            }
+            PassedArgs args = new PassedArgs();
+            IErrorsInfo errorsInfo = new ErrorsInfo();
+            int x = 1;
+           
+            try
+            {
+                if (GetAddedEntities() != null)
+                {
+                    foreach (int t in GetAddedEntities())
+                    {
+                      
+
+                       
+                        int r = Getindex(t.ToString());
+                        errorsInfo = await InsertAsync(Units[t]);
+                        x++;
+                    }
+                }
+                if (GetModifiedEntities() != null)
+                {
+                    foreach (int t in GetModifiedEntities())
+                    {
+                       
+                        int r = Getindex(t.ToString());
+                        errorsInfo = await UpdateAsync(Units[t]);
+                        x++;
+                    }
+                }
+                if (GetDeletedEntities() != null)
+                {
+                    foreach (T t in GetDeletedEntities())
+                    {
+                       
+                        // int r = Getindex(t.ToString());
+                        errorsInfo = await DeleteAsync(t);
+                        x++;
+                    }
+                }
+
+
+           
+                _suppressNotification = false;
+            }
+            catch (Exception ex)
+            {
+                _suppressNotification = false;
+             
                 errorsInfo.Ex = ex;
                 DMEEditor.AddLogMessage("UnitofWork", $"Saving and Commiting Changes error {ex.Message}", DateTime.Now, args.ParameterInt1, ex.Message, Errors.Failed);
             }
@@ -860,10 +925,18 @@ namespace TheTechIdea.Beep.Editor
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
                     foreach (T item in e.OldItems)
                     {
-                        keysidx++;
-                        DeletedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
-                        _entityStates.Add(e.OldStartingIndex, EntityState.Deleted);
-                        _deletedentities.Add(item, EntityState.Deleted);
+                        UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false };
+                        PreDelete?.Invoke(item, ps);
+                        if (!ps.Cancel)
+                        {
+                            undoDeleteStack.Push(new Tuple<T, int>(item, e.OldStartingIndex));
+                            keysidx++;
+                            DeletedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
+                            _entityStates.Add(e.OldStartingIndex, EntityState.Deleted);
+                            _deletedentities.Add(item, EntityState.Deleted);
+                        }
+                        else
+                            UndoDelete(item,e.OldStartingIndex);
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
@@ -915,6 +988,10 @@ namespace TheTechIdea.Beep.Editor
                 int x= Getindex(item);
                 _entityStates.Add(x, EntityState.Modified);
             }
+            CurrentProperty = item.GetType().GetProperty(e.PropertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false,PropertyName=e.PropertyName,PropertyValue= Convert.ToString(CurrentProperty.GetValue(item, null))};
+            PostEdit?.Invoke(item, ps);
+
         }
         private ObservableBindingList<T> FilterCollection(ObservableBindingList<T> originalCollection, List<AppFilter> filters)
         {
@@ -1010,8 +1087,33 @@ namespace TheTechIdea.Beep.Editor
             }
 
         }
+        private void UndoDelete(T itemToReinsert, int indexToReinsertAt)
+        {
+            // Insert the item back into the list at the original index
+            // Assuming 'YourList' is the list from which items were deleted
+            Units.Insert(indexToReinsertAt, itemToReinsert);
+
+            // Optionally, remove any state or keys related to the deleted item
+            // (like undoing changes to DeletedKeys, _entityStates, etc.)
+        }
+        // Function to undo a delete operation
+        public void UndoDelete()
+        {
+            if (undoDeleteStack.Count > 0)
+            {
+                var undoItem = undoDeleteStack.Pop();
+                T itemToReinsert = undoItem.Item1;
+                int indexToReinsertAt = undoItem.Item2;
+
+                // Insert the item back into the list at the original index
+                // Assuming 'YourList' is the list from which items were deleted
+                Units.Insert(indexToReinsertAt, itemToReinsert);
+
+                // Optionally, remove any state or keys related to the deleted item
+                // (like undoing changes to DeletedKeys, _entityStates, etc.)
+            }
+        }
         #endregion
-     
         private bool IsRequirmentsValidated()
         {
             bool retval = true;
@@ -1123,87 +1225,19 @@ namespace TheTechIdea.Beep.Editor
                 disposedValue = true;
             }
         }
-
         // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
         // ~UnitofWork()
         // {
         //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         //     Dispose(disposing: false);
         // }
-
         public void Dispose()
         {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
-        //public static ObservableBindingList<T1> ConvertDataTableToObservable<T1>(DataTable table) where T1 : class, new()
-        //{
-        //    try
-        //    {
-        //        ObservableBindingList<T1> list = new ObservableBindingList<T1>();
-
-        //        foreach (var row in table.AsEnumerable())
-        //        {
-        //            T1 obj = new T1();
-
-        //            foreach (var prop in obj.GetType().GetProperties())
-        //            {
-        //                try
-        //                {
-        //                    PropertyInfo propertyInfo = obj.GetType().GetProperty(prop.Name);
-        //                    propertyInfo.SetValue(obj, Convert.ChangeType(row[prop.Name], propertyInfo.PropertyType), null);
-        //                }
-        //                catch
-        //                {
-        //                    continue;
-        //                }
-        //            }
-
-        //            list.Add(obj);
-        //        }
-
-        //        return list;
-        //    }
-        //    catch
-        //    {
-        //        return null;
-        //    }
-        //}
-        //public static ObservableBindingList<T1> ConvertList2Observable<T1>(IList table) where T1 : class, new()
-        //{
-        //    try
-        //    {
-        //        ObservableBindingList<T1> list = new ObservableBindingList<T1>();
-
-        //        foreach (var row in table)
-        //        {
-        //            T1 obj = new T1();
-
-        //            foreach (var prop in obj.GetType().GetProperties())
-        //            {
-        //                try
-        //                {
-        //                    PropertyInfo propertyInfo = obj.GetType().GetProperty(prop.Name);
-        //                    var vl = propertyInfo.GetValue(row, null);
-        //                    propertyInfo.SetValue(obj, Convert.ChangeType(vl, propertyInfo.PropertyType), null);
-        //                }
-        //                catch
-        //                {
-        //                    continue;
-        //                }
-        //            }
-
-        //            list.Add(obj);
-        //        }
-
-        //        return list;
-        //    }
-        //    catch
-        //    {
-        //        return null;
-        //    }
-        //}
+        
     }
     public enum EntityState
     {
