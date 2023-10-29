@@ -258,17 +258,7 @@ namespace TheTechIdea.Beep.Editor
         {
             Units = new ObservableBindingList<T>();
             _filteredunits=new ObservableBindingList<T>();
-            _filteredunits.CollectionChanged -= Units_CollectionChanged;
-            _filteredunits.CollectionChanged += Units_CollectionChanged;
-            Units.CurrentChanged -= Units_CurrentChanged;
-            Units.CurrentChanged += Units_CurrentChanged;
-            _filteredunits.CurrentChanged -= Units_CurrentChanged;
-            _filteredunits.CurrentChanged += Units_CurrentChanged;
-            _units.CollectionChanged += Units_CollectionChanged;
-            Units.CollectionChanged -= Units_CollectionChanged;
-            Units.CollectionChanged += Units_CollectionChanged;
-            Units.ListChanged -= Units_ListChanged;
-            Units.ListChanged += Units_ListChanged;
+           
             DeletedUnits = new List<T>();
             InsertedKeys = new Dictionary<int, string>();
             UpdatedKeys = new Dictionary<int, string>();
