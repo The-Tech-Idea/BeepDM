@@ -448,8 +448,8 @@ namespace TheTechIdea.Beep.Editor
                 return;
             }
             Units.Add(entity);
-            int index = Getindex(entity);
-            _entityStates.Add(index, EntityState.Added);
+           // int index = Getindex(entity);
+        //    _entityStates.Add(index, EntityState.Added);
             // Subscribe to PropertyChanged event
             entity.PropertyChanged += ItemPropertyChangedHandler;
         }
