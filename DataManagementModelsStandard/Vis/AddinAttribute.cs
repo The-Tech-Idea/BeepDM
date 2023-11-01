@@ -29,6 +29,7 @@ namespace TheTechIdea.Beep.Vis
         public bool DefaultCreate { get; set; }
         public string Description { get; set; }
       
+        public bool IsHomePage { get; set; }
 
 
     }

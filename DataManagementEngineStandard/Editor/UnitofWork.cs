@@ -922,7 +922,7 @@ namespace TheTechIdea.Beep.Editor
                             undoDeleteStack.Push(new Tuple<T, int>(item, e.OldStartingIndex));
                             keysidx++;
                             DeletedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
-                            _entityStates.Add(e.OldStartingIndex, EntityState.Deleted);
+                            //_entityStates.Add(e.OldStartingIndex, EntityState.Deleted);
                             _deletedentities.Add(item, EntityState.Deleted);
                         }
                         else
