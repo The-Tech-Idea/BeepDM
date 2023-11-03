@@ -25,14 +25,34 @@ namespace TheTechIdea.Beep.Editor
         private bool IsPrimaryKeyString = false;
         private bool Ivalidated = false;
         private bool IsNewRecord = false;
-
+        private bool IsFilterOn = false;
         #region "Collections"
+        private ObservableBindingList<T> Tempunits;
         private ObservableBindingList<T> _units;
         public ObservableBindingList<T> Units
         {
-            get { return _units; }
+            get
+            {
+                if (IsFilterOn)
+                {
+                    return _filteredunits;
+                }
+                return _units; 
+            
+            }
             set
             {
+                if (_filteredunits != value) // Check if it's a new collection
+                {
+                    if (_filteredunits != null)
+                    {
+                        foreach (var item in _filteredunits)
+                        {
+                            item.PropertyChanged -= ItemPropertyChangedHandler; // Remove previous event handlers
+                        }
+                        _filteredunits.CollectionChanged -= Units_CollectionChanged;
+                    }
+                }
                 if (_units != value) // Check if it's a new collection
                 {
                     if (_units != null)
@@ -203,29 +223,40 @@ namespace TheTechIdea.Beep.Editor
         public event EventHandler<UnitofWorkParams> PostUpdate;
         #endregion
         #region "Misc Methods"
-        private void clearunits()
+        public void Clear()
         {
-            if (_suppressNotification)
-            {
-                return;
-            }
+           
             _suppressNotification = true;
+            IsFilterOn = false;
             if (Units != null)
             {
                 _units.Clear();
-            }
+            }else
+            Units=new ObservableBindingList<T> ();
             if (FilteredUnits != null)
             {
-                _units.Clear();
-            }
-            DeletedKeys.Clear();
-            InsertedKeys.Clear();
-            InsertedKeys.Clear();
-            DeletedUnits.Clear();
+                FilteredUnits.Clear();
+            }else
+                _filteredunits=new ObservableBindingList<T> ();
+            keysidx = 0;
+
+            DeletedUnits = new List<T>();
+            InsertedKeys = new Dictionary<int, string>();
+            UpdatedKeys = new Dictionary<int, string>();
+            DeletedKeys = new Dictionary<int, string>();
             _entityStates = new Dictionary<int, EntityState>();
             _deletedentities = new Dictionary<T, EntityState>();
+            if (!IsInListMode)
+            {
+                if (EntityType != null)
+                {
+                    EntityType = DataSource.GetEntityType(EntityName);
+                }
+
+            }
             _suppressNotification = false;
         }
+      
         private void getPrimaryKey(T doc)
         {
             if (!string.IsNullOrEmpty(PrimaryKey))
@@ -252,30 +283,9 @@ namespace TheTechIdea.Beep.Editor
             {
                 return;
             }
-            reset();
+             Clear();
         }
-        private void reset()
-        {
-            Units = new ObservableBindingList<T>();
-            _filteredunits=new ObservableBindingList<T>();
-           
-            DeletedUnits = new List<T>();
-            InsertedKeys = new Dictionary<int, string>();
-            UpdatedKeys = new Dictionary<int, string>();
-            DeletedKeys = new Dictionary<int, string>();
-            _entityStates = new Dictionary<int, EntityState>();
-            _deletedentities = new Dictionary<T, EntityState>();
-            keysidx = 0;
-            if (!IsInListMode)
-            {
-                if (EntityType != null)
-                {
-                    EntityType = DataSource.GetEntityType(EntityName);
-                }
-
-            }
-
-        }
+     
 
         private void Units_CurrentChanged(object sender, EventArgs e)
         {
@@ -344,6 +354,7 @@ namespace TheTechIdea.Beep.Editor
         #region "CRUD Operations"
         private async Task<IErrorsInfo> UpdateAsync(T doc)
         {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
             if (!IsRequirmentsValidated())
             {
                 return DMEEditor.ErrorObject;
@@ -365,6 +376,7 @@ namespace TheTechIdea.Beep.Editor
         }
         private async Task<IErrorsInfo> InsertAsync(T doc)
         {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
             if (!IsRequirmentsValidated())
             {
                 return DMEEditor.ErrorObject;
@@ -381,19 +393,20 @@ namespace TheTechIdea.Beep.Editor
                 DMEEditor.ErrorObject.Message = "Object is null";
                 return DMEEditor.ErrorObject;
             }
-            var entityidx = DocExistByKey(doc);
-            if (entityidx == -1)
-            {
+         //   var entityidx = DocExistByKey(doc);
+            //if (entityidx == -1)
+            //{
 
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = "Object exist";
-                return DMEEditor.ErrorObject;
-            }
+            //    DMEEditor.ErrorObject.Flag = Errors.Failed;
+            //    DMEEditor.ErrorObject.Message = "Object exist";
+            //    return DMEEditor.ErrorObject;
+            //}
             IErrorsInfo retval = await InsertDoc(doc);
             return DMEEditor.ErrorObject;
         }
         private async Task<IErrorsInfo> DeleteAsync(T doc)
         {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
             if (!IsRequirmentsValidated())
             {
                 return DMEEditor.ErrorObject;
@@ -527,8 +540,12 @@ namespace TheTechIdea.Beep.Editor
                         args.ParameterInt1 = x;
 
                         progress.Report(args);
-                        int r = Getindex(t.ToString());
+                      //  int r = Getindex(t.ToString());
                         errorsInfo = await InsertAsync(Units[t]);
+                        if (errorsInfo.Flag == Errors.Ok)
+                        {
+                            _entityStates.Remove(t);
+                        }
                         x++;
                     }
                 }
@@ -538,8 +555,12 @@ namespace TheTechIdea.Beep.Editor
                     {
                         args.ParameterInt1 = x;
                         progress.Report(args);
-                        int r = Getindex(t.ToString());
+                      //  int r = Getindex(t.ToString());
                         errorsInfo = await UpdateAsync(Units[t]);
+                        if (errorsInfo.Flag == Errors.Ok)
+                        {
+                            _entityStates.Remove(t);
+                        }
                         x++;
                     }
                 }
@@ -551,6 +572,10 @@ namespace TheTechIdea.Beep.Editor
                         progress.Report(args);
                        // int r = Getindex(t.ToString());
                         errorsInfo = await DeleteAsync(t);
+                        if (errorsInfo.Flag == Errors.Ok)
+                        {
+                            _deletedentities.Remove(t);
+                        }
                         x++;
                     }
                 }
@@ -612,11 +637,12 @@ namespace TheTechIdea.Beep.Editor
                 {
                     foreach (int t in GetAddedEntities())
                     {
-                      
-
-                       
-                        int r = Getindex(t.ToString());
+                      //  int r = Getindex(t.ToString());
                         errorsInfo = await InsertAsync(Units[t]);
+                        if (errorsInfo.Flag == Errors.Ok)
+                        {
+                            _entityStates.Remove(t);
+                        }
                         x++;
                     }
                 }
@@ -625,8 +651,12 @@ namespace TheTechIdea.Beep.Editor
                     foreach (int t in GetModifiedEntities())
                     {
                        
-                        int r = Getindex(t.ToString());
+                    //    int r = Getindex(t.ToString());
                         errorsInfo = await UpdateAsync(Units[t]);
+                        if(errorsInfo.Flag== Errors.Ok)
+                        {
+                            _entityStates.Remove(t);
+                        }
                         x++;
                     }
                 }
@@ -637,6 +667,10 @@ namespace TheTechIdea.Beep.Editor
                        
                         // int r = Getindex(t.ToString());
                         errorsInfo = await DeleteAsync(t);
+                        if (errorsInfo.Flag == Errors.Ok)
+                        {
+                            _deletedentities.Remove(t);
+                        }
                         x++;
                     }
                 }
@@ -690,6 +724,14 @@ namespace TheTechIdea.Beep.Editor
         #region "Get Methods"
         public virtual async Task<ObservableBindingList<T>> Get(List<AppFilter> filters)
         {
+            if (filters == null)
+            {
+                IsFilterOn=false;
+                return Units;
+            }
+            else
+                IsFilterOn = true;
+
             if (!IsInListMode)
             {
                 //clearunits();
@@ -700,26 +742,12 @@ namespace TheTechIdea.Beep.Editor
             }
             else
             {
-                if (filters != null && Units != null)
+                if (filters != null && _units != null)
                 {
-                    if (Units.Count > 0)
+                    if (_units.Count > 0)
                     {
                         _suppressNotification = true;
-                        foreach (var filter in filters)
-                        {
-
-                            FilteredUnits = FilterCollection(Units, filters);
-                            //FilteredUnits = new ObservableBindingList<T>();
-                            //if (t != null)
-                            //{
-                            //    foreach (var item in t)
-                            //    {
-                            //        FilteredUnits.Add(item);
-                            //    }
-                            //}
-
-
-                        }
+                        FilteredUnits = FilterCollection(Units, filters);
                         _suppressNotification = false;
                         return await Task.FromResult(FilteredUnits);
 
@@ -735,6 +763,7 @@ namespace TheTechIdea.Beep.Editor
         public virtual async Task<ObservableBindingList<T>> Get()
         {
             _suppressNotification = true;
+            IsFilterOn = false;
             if (!IsInListMode)
             {
 
@@ -765,7 +794,7 @@ namespace TheTechIdea.Beep.Editor
         private bool GetDataInUnits(object retval)
         {
 
-            reset();
+            Clear();
             _suppressNotification = true;
             if (retval == null)
             {
@@ -949,7 +978,7 @@ namespace TheTechIdea.Beep.Editor
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
-                    clearunits();
+                    Clear();
                     break;
                 default:
                     break;

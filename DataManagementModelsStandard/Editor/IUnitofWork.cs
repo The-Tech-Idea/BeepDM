@@ -14,6 +14,7 @@ namespace TheTechIdea.Beep.Editor
 {
     public interface IUnitofWork<T>: IDisposable where T : Entity
     {
+        void Clear();
         bool IsInListMode { get; set; }
         IDataSource DataSource { get; set; }
         string DatasourceName { get; set; }
