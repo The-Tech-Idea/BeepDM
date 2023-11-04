@@ -372,7 +372,7 @@ namespace TheTechIdea.Beep.Editor
                 return DMEEditor.ErrorObject;
             }
             IErrorsInfo retval = await UpdateDoc(doc);
-            return DMEEditor.ErrorObject;
+            return retval;
         }
         private async Task<IErrorsInfo> InsertAsync(T doc)
         {
@@ -402,7 +402,7 @@ namespace TheTechIdea.Beep.Editor
             //    return DMEEditor.ErrorObject;
             //}
             IErrorsInfo retval = await InsertDoc(doc);
-            return DMEEditor.ErrorObject;
+            return retval;
         }
         private async Task<IErrorsInfo> DeleteAsync(T doc)
         {
@@ -419,7 +419,7 @@ namespace TheTechIdea.Beep.Editor
             }
             IErrorsInfo retval = await DeleteDoc(doc);
 
-            return DMEEditor.ErrorObject;
+            return retval;
         }
         private Task<IErrorsInfo> InsertDoc(T doc)
         {
@@ -544,6 +544,7 @@ namespace TheTechIdea.Beep.Editor
                         errorsInfo = await InsertAsync(Units[t]);
                         if (errorsInfo.Flag == Errors.Ok)
                         {
+                            InsertedKeys.Remove(t);
                             _entityStates.Remove(t);
                         }
                         x++;
@@ -559,6 +560,7 @@ namespace TheTechIdea.Beep.Editor
                         errorsInfo = await UpdateAsync(Units[t]);
                         if (errorsInfo.Flag == Errors.Ok)
                         {
+                            UpdatedKeys.Remove(t);
                             _entityStates.Remove(t);
                         }
                         x++;
@@ -574,10 +576,13 @@ namespace TheTechIdea.Beep.Editor
                         errorsInfo = await DeleteAsync(t);
                         if (errorsInfo.Flag == Errors.Ok)
                         {
+
                             _deletedentities.Remove(t);
                         }
                         x++;
                     }
+                    DeletedKeys.Clear();
+                    undoDeleteStack.Clear();
                 }
 
 
@@ -641,6 +646,7 @@ namespace TheTechIdea.Beep.Editor
                         errorsInfo = await InsertAsync(Units[t]);
                         if (errorsInfo.Flag == Errors.Ok)
                         {
+                            InsertedKeys.Remove(t);
                             _entityStates.Remove(t);
                         }
                         x++;
@@ -655,6 +661,7 @@ namespace TheTechIdea.Beep.Editor
                         errorsInfo = await UpdateAsync(Units[t]);
                         if(errorsInfo.Flag== Errors.Ok)
                         {
+                            UpdatedKeys.Remove(t);
                             _entityStates.Remove(t);
                         }
                         x++;
@@ -669,10 +676,13 @@ namespace TheTechIdea.Beep.Editor
                         errorsInfo = await DeleteAsync(t);
                         if (errorsInfo.Flag == Errors.Ok)
                         {
+                            
                             _deletedentities.Remove(t);
                         }
                         x++;
                     }
+                    DeletedKeys.Clear();
+                    undoDeleteStack.Clear();
                 }
 
 
