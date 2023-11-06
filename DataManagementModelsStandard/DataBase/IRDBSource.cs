@@ -14,7 +14,7 @@ namespace TheTechIdea.Beep.DataBase
        // object GetEntity(string EntityName, string QueryString);
        // DataTable RunQuery(string qrystr);
        // IErrorsInfo ExecuteSql(string sql);
-        DataTable GetTableSchema(string TableName);
+        DataTable GetTableSchema(string TableName,bool Isquery);
         IDataReader GetDataReader(string querystring);
         List<ChildRelation> GetTablesFKColumnList(string tablename, string SchemaName, string Filterparamters);
         string CreateAutoNumber(EntityField f);
