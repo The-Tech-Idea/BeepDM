@@ -146,8 +146,7 @@ namespace TheTechIdea.Tools
             // look through assembly list
             Assembly currentAssem = Assembly.GetExecutingAssembly();
             Assembly rootassembly = Assembly.GetEntryAssembly();
-           
-            
+         
             try
             {
                 ScanAssembly(currentAssem);
@@ -177,18 +176,14 @@ namespace TheTechIdea.Tools
                     try
                     {
                         ScanAssembly(item);
-                  //     Utilfunction.FunctionHierarchy = GetAddinObjects(item);
+                        GetDrivers(item);
                     }
                     catch (Exception ex)
                     {
 
                         //DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
                     }
-
                 }
-           
-
-
             return ErrorObject;
 
         }
@@ -773,28 +768,6 @@ namespace TheTechIdea.Tools
                         {
                             AssemblyClassDefinition cls=GetAssemblyClassDefinition(type, "IDM_Addin");
                             ConfigEditor.Addins.Add(cls);
-                            //if (type.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
-                            //{
-                            //    AddinTreeStructure xcls = new AddinTreeStructure();
-                            //    xcls.className = type.Name;
-                            //    xcls.dllname = type.Module.Name;
-                            //    xcls.PackageName = type.FullName;
-                            //    xcls.Order = cls.Order;
-                                
-                            //    if (cls.VisSchema != null)
-                            //    {
-                            //        xcls.className = type.Name;
-                            //        xcls.dllname = type.Module.Name;
-                            //        xcls.PackageName = type.FullName;
-                            //        xcls.Order = cls.Order;
-                            //        xcls.Imagename = cls.VisSchema.IconImageName;
-                            //        xcls.RootName = cls.VisSchema.RootNodeName;
-                            //        xcls.NodeName = cls.VisSchema.BranchText;
-                            //        xcls.ObjectType = type.Name;
-                            //    }
-                              
-                            //    ConfigEditor.AddinTreeStructure.Add(xcls);
-                            //}
                         }
                         if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowStep)))
                         {
@@ -902,22 +875,28 @@ namespace TheTechIdea.Tools
             {
 
                 CommandAttribute methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
-                MethodsClass x = new MethodsClass();
-                x.Caption = methodAttribute.Caption;
-                x.Name = methodAttribute.Name;
-                x.Info = methods;
-                x.Hidden = methodAttribute.Hidden;
-                x.Click = methodAttribute.Click;
-                x.DoubleClick = methodAttribute.DoubleClick;
-                x.iconimage = methodAttribute.iconimage;
-                x.PointType = methodAttribute.PointType;
-                x.Category = methodAttribute.Category;
-                x.DatasourceType=methodAttribute.DatasourceType;
-                x.ClassType = methodAttribute.ClassType;
-                x.misc = methodAttribute.misc;
-                x.ObjectType = methodAttribute.ObjectType;
-                x.Showin= methodAttribute.Showin;
-                xcls.Methods.Add(x);
+                if (methodAttribute != null)
+                {
+                    MethodsClass x = new MethodsClass();
+                    x.AddinAttr = xcls.classProperties;
+                    x.CommandAttr = methodAttribute;
+                    x.Caption = methodAttribute.Caption;
+                    x.Name = methodAttribute.Name;
+                    x.Info = methods;
+                    x.Hidden = methodAttribute.Hidden;
+                    x.Click = methodAttribute.Click;
+                    x.DoubleClick = methodAttribute.DoubleClick;
+                    x.iconimage = methodAttribute.iconimage;
+                    x.PointType = methodAttribute.PointType;
+                    x.Category = methodAttribute.Category;
+                    x.DatasourceType = methodAttribute.DatasourceType;
+                    x.ClassType = methodAttribute.ClassType;
+                    x.misc = methodAttribute.misc;
+                    x.ObjectType = methodAttribute.ObjectType;
+                    x.Showin = methodAttribute.Showin;
+                    xcls.Methods.Add(x);
+                }
+               
 
             }
             if (type.ImplementedInterfaces.Contains(typeof(IOrder)))

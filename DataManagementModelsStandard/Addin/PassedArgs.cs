@@ -8,6 +8,7 @@ namespace TheTechIdea
 {
     public interface IPassedArgs
     {
+        string Args { get; set; }
         IDM_Addin Addin { get; set; }
         string AddinName { get; set; }
         string AddinType { get; set; }
@@ -45,6 +46,7 @@ namespace TheTechIdea
     public class PassedArgs : IPassedArgs
 
     {
+        public string Args { get; set; }=string.Empty;
         public IDataSource DataSource { get; set; }
         public List<ObjectItem> Objects { get; set; } = new List<ObjectItem>();
         public IDM_Addin Addin { get; set; }

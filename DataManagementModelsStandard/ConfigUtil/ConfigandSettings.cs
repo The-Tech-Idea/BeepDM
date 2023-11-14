@@ -121,6 +121,8 @@ namespace TheTechIdea.Util
         public DatasourceCategory Category { get; set; } = DatasourceCategory.NONE;
         public DataSourceType DatasourceType { get; set; } = DataSourceType.NONE;
         public ShowinType Showin { get; set; } = ShowinType.Both;
+        public AddinAttribute AddinAttr { get; set; }
+        public CommandAttribute CommandAttr { get; set; }
     }
 
   
