@@ -6,7 +6,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.DataManagementEngine</PackageId>
     <Authors>The Tech Idea</Authors>
-    <Version>1.0.303</Version>
+    <Version>1.0.304</Version>
 	  <LangVersion>latest</LangVersion>
     <Product>TheTechIdea.Beep.DataManagementEngine</Product>
     <Description>Data Management Library</Description>
@@ -83,6 +83,7 @@
 		<Copy SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\LocalNugetFiles" />
 	</Target>
 	<ItemGroup>
+	  <Compile Remove="CodeDom\CodeDomCompiler.cs" />
 	  <Compile Remove="Workflow\Actions\CopyData.cs" />
 	  <Compile Remove="Workflow\Actions\CopyEntities.cs" />
 	  <Compile Remove="Workflow\Actions\CopyEntity.cs" />
@@ -105,6 +106,7 @@
     <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="CodeDom\" />
     <Folder Include="Workflow\Actions\" />
   </ItemGroup>
   <ItemGroup>

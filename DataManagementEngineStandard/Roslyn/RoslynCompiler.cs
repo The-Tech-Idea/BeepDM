@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Linq;
 using TheTechIdea.Beep.Editor;
 using System.Text;
+using TheTechIdea.Util;
 
 
 namespace TheTechIdea.Beep.Roslyn
