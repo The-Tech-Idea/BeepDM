@@ -29,7 +29,7 @@ namespace TheTechIdea.Util
             //myObject = Activator.CreateInstance(myType);
             EntityStructure ent=new EntityStructure() { Fields=MyFields,EntityName= typename };
             string cls = ConvertPOCOClassToEntity(DMEEditor,  ent,  typenamespace);
-            Tuple<Type, Assembly> retval = RoslynCompiler.CompileAndGetClassType(typename,cls);
+            Tuple<Type, Assembly> retval = RoslynCompiler.CompileClassTypeandAssembly(typename,cls);
             //myType = CreateTypeFromCode(cls, typenamespace+"."+ typename);
             // Type type = CreateTypeFromCode(cls,  typename); ;
             myType=retval.Item1;

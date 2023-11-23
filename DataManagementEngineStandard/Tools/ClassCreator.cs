@@ -233,7 +233,7 @@ namespace TheTechIdea.Beep.Tools
         public void GenerateCSharpCode(string fileName)
         {
 
-            if (!RoslynCompiler.CompileFromFile(fileName))
+            if (!RoslynCompiler.CompileFile(fileName))
             {
                 DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, TheTechIdea.Util.Errors.Failed);
             }

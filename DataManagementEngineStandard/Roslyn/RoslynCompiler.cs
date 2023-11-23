@@ -133,7 +133,7 @@ namespace TheTechIdea.Beep.Roslyn
                 return true;
             }
         }
-        public  static bool CompileCodeFromStrings(IEnumerable<string> sourceCodes, string outputFile)
+        public  static bool CompileCodeFromStringsToDLL(IEnumerable<string> sourceCodes, string outputFile)
         {
             // List to hold the syntax trees
             var syntaxTrees = new List<SyntaxTree>();
@@ -192,7 +192,7 @@ namespace TheTechIdea.Beep.Roslyn
                 return true;
             }
         }
-        public static Tuple<Type, Assembly> CompileAndGetClassType(string classname, string code)
+        public static Tuple<Type, Assembly> CompileClassTypeandAssembly(string classname, string code)
         {
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
 
@@ -239,7 +239,7 @@ namespace TheTechIdea.Beep.Roslyn
                 }
             }
         }
-        public static Type CompileCreateDLLAndGetClassType(string filepath, string classname, string code)
+        public static Type CompileGetClassType(string filepath, string classname, string code)
         {
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
 
@@ -279,53 +279,6 @@ namespace TheTechIdea.Beep.Roslyn
                 return assembly.GetTypes().FirstOrDefault(p => p.Name.Contains(classname));  // Gets first type. Adjust this if you need to get a specific type.
             }
         }
-        private static bool CompileToDLL(IEnumerable<SyntaxTree> syntaxTrees, string outputFile)
-        {
-            // Set up assembly references
-            var references = new List<MetadataReference>
-    {
-        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-        MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
-        // Add other necessary references
-    };
-
-            // Define compilation options
-            var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithOptimizationLevel(OptimizationLevel.Release)
-                .WithPlatform(Platform.AnyCpu);
-
-            // Create a compilation
-            var compilation = CSharpCompilation.Create(
-                Path.GetFileNameWithoutExtension(outputFile),
-                syntaxTrees,
-                references,
-                compilationOptions);
-
-            // Emit the compilation to a DLL
-            EmitResult result;
-            using (var outputStream = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
-            {
-                result = compilation.Emit(outputStream);
-            }
-
-            // Handle and display errors
-            if (!result.Success)
-            {
-                foreach (var diagnostic in result.Diagnostics)
-                {
-                    if (diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
-                    {
-                        Console.WriteLine(diagnostic.ToString());
-                    }
-                }
-                return false;
-            }
-            else
-            {
-                Console.WriteLine($"Compilation successful! Assembly generated at '{outputFile}'");
-                return true;
-            }
-        }
         public static bool CompileClassFromFileToDLL(string filePath, string outputFile)
         {
             string sourceCode = File.ReadAllText(filePath);
@@ -337,7 +290,7 @@ namespace TheTechIdea.Beep.Roslyn
             var syntaxTree = CSharpSyntaxTree.ParseText(sourceCode);
             return CompileToDLL(new[] { syntaxTree }, outputFile);
         }
-        public static bool CompileFilesIntoDll(IEnumerable<string> filePaths, string outputFile)
+        public static bool CompileFiles(IEnumerable<string> filePaths)
         {
             // List to hold the syntax trees
             var syntaxTrees = new List<SyntaxTree>();
@@ -349,60 +302,12 @@ namespace TheTechIdea.Beep.Roslyn
                 var syntaxTree = CSharpSyntaxTree.ParseText(fileContent);
                 syntaxTrees.Add(syntaxTree);
             }
-
             // Set up assembly references
             var references = new List<MetadataReference>
     {
         MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
         MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
-        // Add additional necessary references as needed
-    };
-
-            // Define compilation options
-            var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithOptimizationLevel(OptimizationLevel.Release)
-                .WithPlatform(Platform.AnyCpu);
-
-            // Create a compilation
-            var compilation = CSharpCompilation.Create(
-                Path.GetFileNameWithoutExtension(outputFile),
-                syntaxTrees,
-                references,
-                compilationOptions);
-
-            // Emit the compilation to a DLL
-            EmitResult result;
-            using (var outputStream = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
-            {
-                result = compilation.Emit(outputStream);
-            }
-
-            // Handle and display errors
-            if (!result.Success)
-            {
-                foreach (var diagnostic in result.Diagnostics)
-                {
-                    if (diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
-                    {
-                        Console.WriteLine(diagnostic.ToString());
-                    }
-                }
-                return false;
-            }
-            else
-            {
-                Console.WriteLine($"Compilation successful! Assembly generated at '{outputFile}'");
-                return true;
-            }
-        }
-        public static bool Compile(IEnumerable<SyntaxTree> syntaxTrees)
-        {
-            // Set up assembly references
-            var references = new List<MetadataReference>
-    {
-        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-        MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
-        // Add additional necessary references as needed
+        // Add other necessary references as needed
     };
 
             // Define compilation options
@@ -418,102 +323,46 @@ namespace TheTechIdea.Beep.Roslyn
                 compilationOptions);
 
             // Emit the compilation to an in-memory assembly
-            EmitResult result;
             using (var ms = new MemoryStream())
             {
-                result = compilation.Emit(ms);
+                EmitResult result = compilation.Emit(ms);
                 if (result.Success)
                 {
                     ms.Seek(0, SeekOrigin.Begin);
                     Assembly.Load(ms.ToArray());
+                    return true;
                 }
-            }
-
-            // Handle and display errors
-            if (!result.Success)
-            {
-                foreach (var diagnostic in result.Diagnostics)
+                else
                 {
-                    if (diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
+                    // Handle and display errors
+                    foreach (var diagnostic in result.Diagnostics)
                     {
-                        Console.WriteLine(diagnostic.ToString());
+                        if (diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
+                        {
+                            Console.WriteLine(diagnostic.ToString());
+                        }
                     }
+                    return false;
                 }
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("Compilation successful! The assembly has been loaded in memory.");
-                return true;
             }
         }
+        
         // Compile from file path
-        public static bool CompileFromFile(string filePath)
+        public static bool CompileFile(string filePath)
         {
             string sourceCode = File.ReadAllText(filePath);
-            return CompileFromSource(sourceCode);
+            return CompileSource(sourceCode);
         }
 
         // Compile from source code string
-        public static bool CompileFromSource(string sourceCode)
+        public static bool CompileSource(string sourceCode)
         {
             var syntaxTree = CSharpSyntaxTree.ParseText(sourceCode);
             return CompileInMemory(new[] { syntaxTree });
         }
 
         // In-memory compilation
-        private static bool CompileInMemory(IEnumerable<SyntaxTree> syntaxTrees)
-        {
-            // Set up assembly references
-            var references = new List<MetadataReference>
-    {
-        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-        MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
-        // Add other necessary references
-    };
-
-            // Define compilation options
-            var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithOptimizationLevel(OptimizationLevel.Release)
-                .WithPlatform(Platform.AnyCpu);
-
-            // Create a compilation
-            var compilation = CSharpCompilation.Create(
-                "InMemoryAssembly",
-                syntaxTrees,
-                references,
-                compilationOptions);
-
-            // Emit the compilation to an in-memory assembly
-            EmitResult result;
-            using (var ms = new MemoryStream())
-            {
-                result = compilation.Emit(ms);
-                if (result.Success)
-                {
-                    ms.Seek(0, SeekOrigin.Begin);
-                    Assembly.Load(ms.ToArray());
-                }
-            }
-
-            // Handle and display errors
-            if (!result.Success)
-            {
-                foreach (var diagnostic in result.Diagnostics)
-                {
-                    if (diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
-                    {
-                        Console.WriteLine(diagnostic.ToString());
-                    }
-                }
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("Compilation successful! The assembly has been loaded in memory.");
-                return true;
-            }
-        }
+       
         public static Assembly CreateAssembly(IDMEEditor DMEEditor, string code)
         {
             try
@@ -571,6 +420,217 @@ namespace TheTechIdea.Beep.Roslyn
             {
                 DMEEditor.AddLogMessage("Error", $"Error compiling code: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
                 return null;
+            }
+        }
+        public static Assembly CreateAssembly( string code)
+        {
+            try
+            {
+                // Parse the code into a syntax tree
+                var syntaxTree = CSharpSyntaxTree.ParseText(code);
+
+                // Set up assembly references
+                // The list of necessary references might need to be adjusted based on your code's requirements
+                var references = new List<MetadataReference>
+        {
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
+            // Additional references can be added here
+        };
+
+                // Define compilation options
+                var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                    .WithOptimizationLevel(OptimizationLevel.Release)
+                    .WithPlatform(Platform.AnyCpu);
+
+                // Create a compilation
+                var compilation = CSharpCompilation.Create(
+                    "InMemoryAssembly",
+                    new[] { syntaxTree },
+                    references,
+                    compilationOptions);
+
+                // Emit the compilation to an in-memory assembly
+                Assembly assembly;
+                using (var ms = new MemoryStream())
+                {
+                    EmitResult result = compilation.Emit(ms);
+                    if (!result.Success)
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        foreach (var diagnostic in result.Diagnostics)
+                        {
+                            if (diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
+                            {
+                                sb.AppendLine(diagnostic.ToString());
+                               // DMEEditor.AddLogMessage("Error", diagnostic.ToString(), DateTime.Now, 0, null, Errors.Failed);
+                            }
+                        }
+                        throw new InvalidOperationException(sb.ToString());
+                    }
+
+                    ms.Seek(0, SeekOrigin.Begin);
+                    assembly = Assembly.Load(ms.ToArray());
+                }
+
+                return assembly;
+            }
+            catch (Exception ex)
+            {
+                //DMEEditor.AddLogMessage("Error", $"Error compiling code: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+        }
+
+        private static bool CompileToDLL(IEnumerable<SyntaxTree> syntaxTrees, string outputFile)
+        {
+            // Set up assembly references
+            var references = new List<MetadataReference>
+    {
+        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
+        // Add other necessary references
+    };
+
+            // Define compilation options
+            var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithOptimizationLevel(OptimizationLevel.Release)
+                .WithPlatform(Platform.AnyCpu);
+
+            // Create a compilation
+            var compilation = CSharpCompilation.Create(
+                Path.GetFileNameWithoutExtension(outputFile),
+                syntaxTrees,
+                references,
+                compilationOptions);
+
+            // Emit the compilation to a DLL
+            EmitResult result;
+            using (var outputStream = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
+            {
+                result = compilation.Emit(outputStream);
+            }
+
+            // Handle and display errors
+            if (!result.Success)
+            {
+                foreach (var diagnostic in result.Diagnostics)
+                {
+                    if (diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
+                    {
+                        Console.WriteLine(diagnostic.ToString());
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                Console.WriteLine($"Compilation successful! Assembly generated at '{outputFile}'");
+                return true;
+            }
+        }
+        private static bool CompileInMemory(IEnumerable<SyntaxTree> syntaxTrees)
+        {
+            // Set up assembly references
+            var references = new List<MetadataReference>
+    {
+        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
+        // Add other necessary references
+    };
+
+            // Define compilation options
+            var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithOptimizationLevel(OptimizationLevel.Release)
+                .WithPlatform(Platform.AnyCpu);
+
+            // Create a compilation
+            var compilation = CSharpCompilation.Create(
+                "InMemoryAssembly",
+                syntaxTrees,
+                references,
+                compilationOptions);
+
+            // Emit the compilation to an in-memory assembly
+            EmitResult result;
+            using (var ms = new MemoryStream())
+            {
+                result = compilation.Emit(ms);
+                if (result.Success)
+                {
+                    ms.Seek(0, SeekOrigin.Begin);
+                    Assembly.Load(ms.ToArray());
+                }
+            }
+
+            // Handle and display errors
+            if (!result.Success)
+            {
+                foreach (var diagnostic in result.Diagnostics)
+                {
+                    if (diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
+                    {
+                        Console.WriteLine(diagnostic.ToString());
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                Console.WriteLine("Compilation successful! The assembly has been loaded in memory.");
+                return true;
+            }
+        }
+        private static bool Compile(IEnumerable<SyntaxTree> syntaxTrees)
+        {
+            // Set up assembly references
+            var references = new List<MetadataReference>
+    {
+        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
+        // Add additional necessary references as needed
+    };
+
+            // Define compilation options
+            var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithOptimizationLevel(OptimizationLevel.Release)
+                .WithPlatform(Platform.AnyCpu);
+
+            // Create a compilation
+            var compilation = CSharpCompilation.Create(
+                "InMemoryAssembly",
+                syntaxTrees,
+                references,
+                compilationOptions);
+
+            // Emit the compilation to an in-memory assembly
+            EmitResult result;
+            using (var ms = new MemoryStream())
+            {
+                result = compilation.Emit(ms);
+                if (result.Success)
+                {
+                    ms.Seek(0, SeekOrigin.Begin);
+                    Assembly.Load(ms.ToArray());
+                }
+            }
+
+            // Handle and display errors
+            if (!result.Success)
+            {
+                foreach (var diagnostic in result.Diagnostics)
+                {
+                    if (diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
+                    {
+                        Console.WriteLine(diagnostic.ToString());
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                Console.WriteLine("Compilation successful! The assembly has been loaded in memory.");
+                return true;
             }
         }
 
