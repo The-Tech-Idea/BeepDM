@@ -12,6 +12,7 @@ using System.Threading;
 using TheTechIdea.Util;
 using System.Linq;
 using System.Text.RegularExpressions;
+using TheTechIdea.Beep.Roslyn;
 
 namespace TheTechIdea.Beep.Tools
 {
@@ -21,25 +22,29 @@ namespace TheTechIdea.Beep.Tools
         public string outputpath { get; set; }
 
         public IDMEEditor DMEEditor { get; set; }
-        private CodeCompileUnit targetUnit;
-        private CodeTypeDeclaration targetClass;
+        //private CodeCompileUnit targetUnit;
+        //private CodeTypeDeclaration targetClass;
 
-        private CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
-        private CodeGeneratorOptions options = new CodeGeneratorOptions();
+        //private CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
+        //private CodeGeneratorOptions options = new CodeGeneratorOptions();
        public ClassCreator(IDMEEditor pDMEEditor)
         {
             DMEEditor = pDMEEditor;
         }
         public void CompileClassFromText(string SourceString, string output)
         {
-            List<string> retval = CompileCode(provider, new List<string>() { SourceString }, output);
-            if (retval.Count > 0)
-            {
-                for (int i = 0; i < retval.Count - 1; i++)
-                {
-                    DMEEditor.AddLogMessage("Beep Class Creator", retval[i], DateTime.Now, i, null, TheTechIdea.Util.Errors.Failed);
-                }
+            //List<string> retval = CompileCode(provider, new List<string>() { SourceString }, output);
+            //if (retval.Count > 0)
+            //{
+            //    for (int i = 0; i < retval.Count - 1; i++)
+            //    {
+            //        DMEEditor.AddLogMessage("Beep Class Creator", retval[i], DateTime.Now, i, null, TheTechIdea.Util.Errors.Failed);
+            //    }
 
+            //}
+            if (!RoslynCompiler.CompileClassFromStringToDLL(SourceString, output))
+            {
+                DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, TheTechIdea.Util.Errors.Failed);
             }
 
         }
@@ -47,7 +52,7 @@ namespace TheTechIdea.Beep.Tools
         {
 
             List<string> listofpaths = new List<string>();
-            options.BracingStyle = "C";
+            //options.BracingStyle = "C";
             int i = 1;
             int total = entities.Count;
             try
@@ -85,8 +90,8 @@ namespace TheTechIdea.Beep.Tools
                     outputpath = Assembly.GetEntryAssembly().Location + "\\";
                 }
 
-                CSharpCodeProvider codeProvider = new CSharpCodeProvider();
-                System.CodeDom.Compiler.CompilerParameters parameters = new CompilerParameters();
+                //CSharpCodeProvider codeProvider = new CSharpCodeProvider();
+                //System.CodeDom.Compiler.CompilerParameters parameters = new CompilerParameters();
                 if (progress != null)
                 {
                     PassedArgs ps = new PassedArgs { ParameterString1 = "Creating DLL", EventType = "Update", ParameterInt1 = i, ParameterInt2 = total };
@@ -94,26 +99,30 @@ namespace TheTechIdea.Beep.Tools
 
                 }
                 string ret = "ok";
-                List<string> retval = CompileCode(provider, listofpaths, Path.Combine(outputpath, dllname + ".dll"));
-                if (progress != null)
+                //List<string> retval = CompileCode(provider, listofpaths, Path.Combine(outputpath, dllname + ".dll"));
+                if (!RoslynCompiler.CompileCodeToDLL(listofpaths, Path.Combine(outputpath, dllname + ".dll")))
                 {
-                    if (retval.Count > 0)
-                    {
-                        if (retval[0] == "ok")
-                        {
-                            PassedArgs ps = new PassedArgs { ParameterString1 = "Finished Creating DLL", EventType = "Finish", ParameterInt1 = i, ParameterInt2 = total };
-                            progress.Report(ps);
-                        }
-                        else
-                        {
-                            ret = $"Error in Creating DLL {outputFileName}";
-                            PassedArgs ps = new PassedArgs { Objects = new List<ObjectItem> { new ObjectItem { Name = "Errors", obj = retval } }, ParameterString1 = "Error in Creating DLL", EventType = "Fail", ParameterInt1 = i, ParameterInt2 = total };
-                            progress.Report(ps);
-                        }
-                    }
-
-
+                    DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, TheTechIdea.Util.Errors.Failed);
                 }
+                //if (progress != null)
+                //{
+                //    if (listofpaths.Count > 0)
+                //    {
+                //        if (retval[0] == "ok")
+                //        {
+                //            PassedArgs ps = new PassedArgs { ParameterString1 = "Finished Creating DLL", EventType = "Finish", ParameterInt1 = i, ParameterInt2 = total };
+                //            progress.Report(ps);
+                //        }
+                //        else
+                //        {
+                //            ret = $"Error in Creating DLL {outputFileName}";
+                //            PassedArgs ps = new PassedArgs { Objects = new List<ObjectItem> { new ObjectItem { Name = "Errors", obj = retval } }, ParameterString1 = "Error in Creating DLL", EventType = "Fail", ParameterInt1 = i, ParameterInt2 = total };
+                //            progress.Report(ps);
+                //        }
+                //    }
+
+
+                //}
                 return ret;
             }
             catch (Exception ex)
@@ -127,7 +136,7 @@ namespace TheTechIdea.Beep.Tools
         {
 
             List<string> listofpaths = new List<string>();
-            options.BracingStyle = "C";
+         //   options.BracingStyle = "C";
             int i = 1;
             int total = Directory.GetFiles(filepath, "*.cs").Count();
             try
@@ -165,8 +174,8 @@ namespace TheTechIdea.Beep.Tools
                     outputpath = Assembly.GetEntryAssembly().Location + "\\";
                 }
 
-                CSharpCodeProvider codeProvider = new CSharpCodeProvider();
-                System.CodeDom.Compiler.CompilerParameters parameters = new CompilerParameters();
+                //CSharpCodeProvider codeProvider = new CSharpCodeProvider();
+                //System.CodeDom.Compiler.CompilerParameters parameters = new CompilerParameters();
                 if (progress != null)
                 {
                     PassedArgs ps = new PassedArgs { ParameterString1 = "Creating DLL", EventType = "Update", ParameterInt1 = i, ParameterInt2 = total };
@@ -174,25 +183,29 @@ namespace TheTechIdea.Beep.Tools
 
                 }
                 string ret = "ok";
-                List<string> retval = CompileCode(provider, listofpaths, Path.Combine(outputpath, dllname + ".dll"));
-                if (progress != null)
+                //List<string> retval = CompileCode(provider, listofpaths, Path.Combine(outputpath, dllname + ".dll"));
+                //if (progress != null)
+                //{
+                //    if (retval.Count > 0)
+                //    {
+                //        if (retval[0] == "ok")
+                //        {
+                //            PassedArgs ps = new PassedArgs { ParameterString1 = "Finished Creating DLL", EventType = "Finish", ParameterInt1 = i, ParameterInt2 = total };
+                //            progress.Report(ps);
+                //        }
+                //        else
+                //        {
+                //            ret = $"Error in Creating DLL {outputFileName}";
+                //            PassedArgs ps = new PassedArgs { Objects = new List<ObjectItem> { new ObjectItem { Name = "Errors", obj = retval } }, ParameterString1 = "Error in Creating DLL", EventType = "Fail", ParameterInt1 = i, ParameterInt2 = total };
+                //            progress.Report(ps);
+                //        }
+                //    }
+
+
+                //}
+                if (!RoslynCompiler.CompileCodeToDLL(listofpaths, Path.Combine(outputpath, dllname + ".dll")))
                 {
-                    if (retval.Count > 0)
-                    {
-                        if (retval[0] == "ok")
-                        {
-                            PassedArgs ps = new PassedArgs { ParameterString1 = "Finished Creating DLL", EventType = "Finish", ParameterInt1 = i, ParameterInt2 = total };
-                            progress.Report(ps);
-                        }
-                        else
-                        {
-                            ret = $"Error in Creating DLL {outputFileName}";
-                            PassedArgs ps = new PassedArgs { Objects = new List<ObjectItem> { new ObjectItem { Name = "Errors", obj = retval } }, ParameterString1 = "Error in Creating DLL", EventType = "Fail", ParameterInt1 = i, ParameterInt2 = total };
-                            progress.Report(ps);
-                        }
-                    }
-
-
+                    DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, TheTechIdea.Util.Errors.Failed);
                 }
                 return ret;
             }
@@ -220,11 +233,9 @@ namespace TheTechIdea.Beep.Tools
         public void GenerateCSharpCode(string fileName)
         {
 
-            using (StreamWriter sourceWriter = new StreamWriter(fileName))
+            if (!RoslynCompiler.CompileFromFile(fileName))
             {
-                provider.GenerateCodeFromCompileUnit(
-                    targetUnit, sourceWriter, options);
-
+                DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, TheTechIdea.Util.Errors.Failed);
             }
         }
         #region "Create Classes"
@@ -403,332 +414,7 @@ namespace TheTechIdea.Beep.Tools
         #endregion
         #region "CodeDom Code"
 
-        //public void AddFields(EntityField fld)
-        //{
-        //    CodeMemberField widthValueField = new CodeMemberField();
-        //    widthValueField.Attributes = MemberAttributes.Private;
-        //    widthValueField.Name = fld.fieldname + "Value";
-        //    widthValueField.Type = new CodeTypeReference(Type.GetType(fld.fieldtype));
-        //    //widthValueField.Comments.Add(new CodeCommentStatement(
-        //    //    "The width of the object."));
-        //    targetClass.Members.Add(widthValueField);
-        //}
-        //public void AddProperties(EntityField fld)
-        //{
-        //    // Declare the read-only Width property.
-        //    CodeTypeDeclaration newType = new CodeTypeDeclaration(fld.fieldtype);
-        //    CodeSnippetTypeMember snippet = new CodeSnippetTypeMember();
-        //    // snippet.Comments.Add(new CodeCommentStatement(" Generated by DeepDM property", true));
-        //    string fldtype = Type.GetType(fld.fieldtype).ToString();
-        //    if (fld.fieldtype.ToLower().Contains("decimal") || fld.fieldtype.ToLower().Contains("datetime"))
-        //    {
-        //        fldtype = fldtype + "?";
-        //    }
-        //    snippet.Text = "public " + fldtype + " " + fld.fieldname + "  { get; set; }";
-        //    targetClass.Members.Add(snippet);
-
-
-
-        //}
-        //public void AddConstructor()
-        //{
-        //    // Declare the constructor
-        //    CodeConstructor constructor = new CodeConstructor();
-        //    constructor.Attributes =
-        //        MemberAttributes.Public | MemberAttributes.Final;
-
-        //    targetClass.Members.Add(constructor);
-        //}
-        public bool CompileCode(CodeDomProvider provider,
-             String sourceFile,
-             String exeFile)
-        {
-
-            CompilerParameters cp = new CompilerParameters();
-
-            // Generate an executable instead of
-            // a class library.
-            cp.GenerateExecutable = false;
-
-            // Set the assembly file name to generate.
-            cp.OutputAssembly = exeFile;
-
-            // Generate debug information.
-            cp.IncludeDebugInformation = false;
-
-            // Add an assembly reference.
-            cp.ReferencedAssemblies.Add("System.dll");
-
-            // Save the assembly as a physical file.
-            cp.GenerateInMemory = false;
-
-            // Set the level at which the compiler
-            // should start displaying warnings.
-            cp.WarningLevel = 3;
-
-            // Set whether to treat all warnings as errors.
-            cp.TreatWarningsAsErrors = false;
-
-            // Set compiler argument to optimize output.
-            cp.CompilerOptions = "/optimize";
-
-            // Set a temporary files collection.
-            // The TempFileCollection stores the temporary files
-            // generated during a build in the current directory,
-            // and does not delete them after compilation.
-            cp.TempFiles = new TempFileCollection(".", true);
-
-            //if (provider.Supports(GeneratorSupport.EntryPointMethod))
-            //{
-            //    // Specify the class that contains
-            //    // the main method of the executable.
-            //    cp.MainClass = "Samples.Class1";
-            //}
-
-            if (Directory.Exists("Resources"))
-            {
-                if (provider.Supports(GeneratorSupport.Resources))
-                {
-                    // Set the embedded resource file of the assembly.
-                    // This is useful for culture-neutral resources,
-                    // or default (fallback) resources.
-                    cp.EmbeddedResources.Add("Resources\\Default.resources");
-
-                    // Set the linked resource reference files of the assembly.
-                    // These resources are included in separate assembly files,
-                    // typically localized for a specific language and culture.
-                    cp.LinkedResources.Add("Resources\\nb-no.resources");
-                }
-            }
-
-            // Invoke compilation.
-            CompilerResults cr = provider.CompileAssemblyFromFile(cp, sourceFile);
-
-            if (cr.Errors.Count > 0)
-            {
-                // Display compilation errors.
-                Console.WriteLine("Errors building {0} into {1}",
-                    sourceFile, cr.PathToAssembly);
-                foreach (CompilerError ce in cr.Errors)
-                {
-                    Console.WriteLine("  {0}", ce.ToString());
-                    Console.WriteLine();
-                }
-            }
-            else
-            {
-                Console.WriteLine("Source {0} built into {1} successfully.",
-                    sourceFile, cr.PathToAssembly);
-                Console.WriteLine("{0} temporary files created during the compilation.",
-                    cp.TempFiles.Count.ToString());
-            }
-
-            // Return the results of compilation.
-            if (cr.Errors.Count > 0)
-            {
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
-        public List<string> CompileCode(CodeDomProvider provider,
-           List<string> sourceFiles,
-           String exeFile)
-        {
-            List<string> retval = new List<string>();
-            CompilerParameters cp = new CompilerParameters();
-
-            // Generate an executable instead of
-            // a class library.
-            cp.GenerateExecutable = false;
-
-            // Set the assembly file name to generate.
-            cp.OutputAssembly = exeFile;
-
-            // Generate debug information.
-            cp.IncludeDebugInformation = false;
-
-            // Add an assembly reference.
-            //  cp.ReferencedAssemblies.Add("System.dll");
-
-            // Save the assembly as a physical file.
-            cp.GenerateInMemory = false;
-
-            // Set the level at which the compiler
-            // should start displaying warnings.
-            cp.WarningLevel = 3;
-
-            // Set whether to treat all warnings as errors.
-            cp.TreatWarningsAsErrors = false;
-
-            // Set compiler argument to optimize output.
-            cp.CompilerOptions = "/optimize";
-
-            // Set a temporary files collection.
-            // The TempFileCollection stores the temporary files
-            // generated during a build in the current directory,
-            // and does not delete them after compilation.
-            cp.TempFiles = new TempFileCollection(".", true);
-
-            //if (provider.Supports(GeneratorSupport.EntryPointMethod))
-            //{
-            //    // Specify the class that contains
-            //    // the main method of the executable.
-            //    cp.MainClass = "Samples.Class1";
-            //}
-
-            if (Directory.Exists("Resources"))
-            {
-                if (provider.Supports(GeneratorSupport.Resources))
-                {
-                    // Set the embedded resource file of the assembly.
-                    // This is useful for culture-neutral resources,
-                    // or default (fallback) resources.
-                    cp.EmbeddedResources.Add("Resources\\Default.resources");
-
-                    // Set the linked resource reference files of the assembly.
-                    // These resources are included in separate assembly files,
-                    // typically localized for a specific language and culture.
-                    cp.LinkedResources.Add("Resources\\nb-no.resources");
-                }
-            }
-
-            // Invoke compilation.
-            CompilerResults cr = provider.CompileAssemblyFromFile(cp, sourceFiles.ToArray());
-
-            if (cr.Errors.Count > 0)
-            {
-                // Display compilation errors.
-                Console.WriteLine("Errors building {0} into {1}",
-                    exeFile, cr.PathToAssembly);
-                retval.Add($"Errors building {exeFile} into {cr.PathToAssembly}");
-                foreach (CompilerError ce in cr.Errors)
-                {
-                    Console.WriteLine("  {0}", ce.ToString());
-                    retval.Add(ce.ToString());
-                    Console.WriteLine();
-                }
-            }
-            else
-            {
-                retval.Add("ok");
-                Console.WriteLine("Source {0} built into {1} successfully.",
-                    exeFile, cr.PathToAssembly);
-                Console.WriteLine("{0} temporary files created during the compilation.",
-                    cp.TempFiles.Count.ToString());
-            }
-
-            //// Return the results of compilation.
-            //if (cr.Errors.Count > 0)
-            //{
-            //    return false;
-            //}
-            //else
-            //{
-            //    return true;
-            //}
-            return retval;
-        }
-        public List<string> CompileCodeFromStrings(CodeDomProvider provider,
-          List<string> sourceFiles,
-          String exeFile)
-        {
-            List<string> retval = new List<string>();
-            CompilerParameters cp = new CompilerParameters();
-
-            // Generate an executable instead of
-            // a class library.
-            cp.GenerateExecutable = false;
-
-            // Set the assembly file name to generate.
-            cp.OutputAssembly = exeFile;
-
-            // Generate debug information.
-            cp.IncludeDebugInformation = false;
-
-            // Add an assembly reference.
-            //  cp.ReferencedAssemblies.Add("System.dll");
-
-            // Save the assembly as a physical file.
-            cp.GenerateInMemory = false;
-
-            // Set the level at which the compiler
-            // should start displaying warnings.
-            cp.WarningLevel = 3;
-
-            // Set whether to treat all warnings as errors.
-            cp.TreatWarningsAsErrors = false;
-
-            // Set compiler argument to optimize output.
-            cp.CompilerOptions = "/optimize";
-
-            // Set a temporary files collection.
-            // The TempFileCollection stores the temporary files
-            // generated during a build in the current directory,
-            // and does not delete them after compilation.
-            cp.TempFiles = new TempFileCollection(".", true);
-
-            //if (provider.Supports(GeneratorSupport.EntryPointMethod))
-            //{
-            //    // Specify the class that contains
-            //    // the main method of the executable.
-            //    cp.MainClass = "Samples.Class1";
-            //}
-
-            if (Directory.Exists("Resources"))
-            {
-                if (provider.Supports(GeneratorSupport.Resources))
-                {
-                    // Set the embedded resource file of the assembly.
-                    // This is useful for culture-neutral resources,
-                    // or default (fallback) resources.
-                    cp.EmbeddedResources.Add("Resources\\Default.resources");
-
-                    // Set the linked resource reference files of the assembly.
-                    // These resources are included in separate assembly files,
-                    // typically localized for a specific language and culture.
-                    cp.LinkedResources.Add("Resources\\nb-no.resources");
-                }
-            }
-
-            // Invoke compilation.
-            CompilerResults cr = provider.CompileAssemblyFromSource(cp, sourceFiles.ToArray());
-
-            if (cr.Errors.Count > 0)
-            {
-                // Display compilation errors.
-                Console.WriteLine("Errors building {0} into {1}",
-                    exeFile, cr.PathToAssembly);
-                retval.Add($"Errors building {exeFile} into {cr.PathToAssembly}");
-                foreach (CompilerError ce in cr.Errors)
-                {
-                    Console.WriteLine("  {0}", ce.ToString());
-                    retval.Add(ce.ToString());
-                    Console.WriteLine();
-                }
-            }
-            else
-            {
-                retval.Add("ok");
-                Console.WriteLine("Source {0} built into {1} successfully.",
-                    exeFile, cr.PathToAssembly);
-                Console.WriteLine("{0} temporary files created during the compilation.",
-                    cp.TempFiles.Count.ToString());
-            }
-
-            //// Return the results of compilation.
-            //if (cr.Errors.Count > 0)
-            //{
-            //    return false;
-            //}
-            //else
-            //{
-            //    return true;
-            //}
-            return retval;
-        }
+      
         #endregion
     }
 }

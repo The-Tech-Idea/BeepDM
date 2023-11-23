@@ -1,17 +1,12 @@
-﻿
-using Microsoft.CSharp;
-using System;
-using System.CodeDom.Compiler;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Text;
-using System.Text.RegularExpressions;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Beep.Tools;
+using TheTechIdea.Beep.Roslyn;
 
 namespace TheTechIdea.Util
 {
@@ -34,7 +29,7 @@ namespace TheTechIdea.Util
             //myObject = Activator.CreateInstance(myType);
             EntityStructure ent=new EntityStructure() { Fields=MyFields,EntityName= typename };
             string cls = ConvertPOCOClassToEntity(DMEEditor,  ent,  typenamespace);
-            Tuple<Type, Assembly> retval = RoslynFunctions.CompileAndGetClassType(typename,cls);
+            Tuple<Type, Assembly> retval = RoslynCompiler.CompileAndGetClassType(typename,cls);
             //myType = CreateTypeFromCode(cls, typenamespace+"."+ typename);
             // Type type = CreateTypeFromCode(cls,  typename); ;
             myType=retval.Item1;
@@ -52,40 +47,7 @@ namespace TheTechIdea.Util
             return myObject;
 
         }
-        private static TypeBuilder GetTypeBuilderForEntity(string libname, string typenamespace, string typename)
-        {
-            var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(libname), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder mb = ab.DefineDynamicModule(libname);
-            TypeBuilder tb = mb.DefineType(typename, TypeAttributes.Public |
-                TypeAttributes.Class |
-                TypeAttributes.AutoClass |
-                TypeAttributes.AnsiClass |
-                TypeAttributes.BeforeFieldInit |
-                TypeAttributes.AutoLayout,
-                typeof(Entity));
-
-            // Implementing OnPropertyChanged method
-            MethodBuilder OnPropertyChangedMethod = tb.DefineMethod("OnPropertyChanged",
-                MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual |
-                MethodAttributes.Final,
-                null,
-                new[] { typeof(string) });
-            ILGenerator gen = OnPropertyChangedMethod.GetILGenerator();
-            // Add the method implementation logic here
-            gen.Emit(OpCodes.Ret);
-
-            // Implementing SetProperty method
-            MethodBuilder SetPropertyMethod = tb.DefineMethod("SetProperty",
-                MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual |
-                MethodAttributes.Final,
-                null,
-                new Type[] { typeof(object).MakeByRefType(), typeof(object), typeof(string) });
-            gen = SetPropertyMethod.GetILGenerator();
-            // Add the method implementation logic here
-            gen.Emit(OpCodes.Ret);
-
-            return tb;
-        }
+       
         private static Type CompileResultType(string libname, string typenamespace, string typename, List<EntityField> MyFields)
         {
             tb = GetTypeBuilder(libname, typenamespace, typename);
@@ -162,46 +124,46 @@ namespace TheTechIdea.Util
             propertyBuilder.SetGetMethod(getPropMthdBldr);
             propertyBuilder.SetSetMethod(setPropMthdBldr);
         }
-        public static Assembly CreateAssembly(IDMEEditor DMEEditor, string code)
-        {
-            Assembly assembly = null;
-            try
-            {
-                CSharpCodeProvider provider = new CSharpCodeProvider();
-                CompilerParameters parameters = new CompilerParameters();
-                // Reference to System.Drawing library
-                parameters.ReferencedAssemblies.Add("System.dll"); //netstandard.dll
-                //var assemblies = DMEEditor.ConfigEditor.LoadedAssemblies.Where(p => p.FullName.Contains("Microsoft.ML") || p.FullName.Contains("netstandard"));
-                //var assemblyLocations = assemblies.Select(a => a.Location).ToList();
-                //parameters.ReferencedAssemblies.AddRange(assemblyLocations.ToArray());
+        //public static Assembly CreateAssembly(IDMEEditor DMEEditor, string code)
+        //{
+        //    Assembly assembly = null;
+        //    try
+        //    {
+        //        CSharpCodeProvider provider = new CSharpCodeProvider();
+        //        CompilerParameters parameters = new CompilerParameters();
+        //        // Reference to System.Drawing library
+        //        parameters.ReferencedAssemblies.Add("System.dll"); //netstandard.dll
+        //        //var assemblies = DMEEditor.ConfigEditor.LoadedAssemblies.Where(p => p.FullName.Contains("Microsoft.ML") || p.FullName.Contains("netstandard"));
+        //        //var assemblyLocations = assemblies.Select(a => a.Location).ToList();
+        //        //parameters.ReferencedAssemblies.AddRange(assemblyLocations.ToArray());
 
-                // True - memory generation, false - external file generation
-                parameters.GenerateInMemory = true;
-                // True - exe file generation, false - dll file generation
-                parameters.GenerateExecutable = false;
+        //        // True - memory generation, false - external file generation
+        //        parameters.GenerateInMemory = true;
+        //        // True - exe file generation, false - dll file generation
+        //        parameters.GenerateExecutable = false;
 
-                CompilerResults results = provider.CompileAssemblyFromSource(parameters, code);
-                if (results.Errors.HasErrors)
-                {
-                    StringBuilder sb = new StringBuilder();
+        //        CompilerResults results = provider.CompileAssemblyFromSource(parameters, code);
+        //        if (results.Errors.HasErrors)
+        //        {
+        //            StringBuilder sb = new StringBuilder();
 
-                    foreach (CompilerError error in results.Errors)
-                    {
-                        sb.AppendLine(String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText));
-                        DMEEditor.AddLogMessage("Beep ML.NET", String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText), DateTime.Now, 0, null, Errors.Failed);
-                    }
+        //            foreach (CompilerError error in results.Errors)
+        //            {
+        //                sb.AppendLine(String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText));
+        //                DMEEditor.AddLogMessage("Beep ML.NET", String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText), DateTime.Now, 0, null, Errors.Failed);
+        //            }
 
-                    throw new InvalidOperationException(sb.ToString());
-                }
-                assembly = results.CompiledAssembly;
-                //DMEEditor.ConfigEditor.LoadedAssemblies.Add(results.CompiledAssembly);
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Beep ML.NET", $" Error Compiling Code {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return assembly;
-        }
+        //            throw new InvalidOperationException(sb.ToString());
+        //        }
+        //        assembly = results.CompiledAssembly;
+        //        //DMEEditor.ConfigEditor.LoadedAssemblies.Add(results.CompiledAssembly);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        DMEEditor.AddLogMessage("Beep ML.NET", $" Error Compiling Code {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+        //    }
+        //    return assembly;
+        //}
         public static Type CreateTypeFromCode(IDMEEditor DMEEditor, string code, string outputtypename)
         {
             Type OutputType = null;
@@ -209,7 +171,8 @@ namespace TheTechIdea.Util
             try
             {
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
-                assembly = CreateAssembly(DMEEditor, code);
+            //    assembly = CreateAssembly(DMEEditor, code);
+                 assembly=RoslynCompiler.CreateAssembly(DMEEditor, code);
                 OutputType = assembly.GetType(outputtypename);
 
             }
@@ -225,65 +188,8 @@ namespace TheTechIdea.Util
             
             return DMEEditor.classCreator.CreatEntityClass(entityStructure, usingtxt, null, null, typenamespace, false);
         }
-        public static Assembly CreateAssemblyFromCode(string code)
-        {
-            Assembly assembly = null;
-            try
-            {
-                CSharpCodeProvider provider = new CSharpCodeProvider();
-                CompilerParameters parameters = new CompilerParameters();
-                // Reference to System.Drawing library
-                parameters.ReferencedAssemblies.Add("System.dll"); //netstandard.dll
-                parameters.ReferencedAssemblies.Add("DataManagementEngine.dll");
-                parameters.ReferencedAssemblies.Add("DataManagementModels.dll");
-                //var assemblies = DMEEditor.ConfigEditor.LoadedAssemblies.Where(p => p.FullName.Contains("Microsoft.ML") || p.FullName.Contains("netstandard"));
-                //var assemblyLocations = assemblies.Select(a => a.Location).ToList();
-                //parameters.ReferencedAssemblies.AddRange(assemblyLocations.ToArray());
-
-                // True - memory generation, false - external file generation
-                parameters.GenerateInMemory = true;
-                // True - exe file generation, false - dll file generation
-                parameters.GenerateExecutable = false;
-
-                CompilerResults results = provider.CompileAssemblyFromSource(parameters, code);
-                if (results.Errors.HasErrors)
-                {
-                    StringBuilder sb = new StringBuilder();
-
-                    foreach (CompilerError error in results.Errors)
-                    {
-                        sb.AppendLine(String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText));
-            //            DMEEditor.AddLogMessage("Beep ML.NET", String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText), DateTime.Now, 0, null, Errors.Failed);
-                    }
-
-                    throw new InvalidOperationException(sb.ToString());
-                }
-                assembly = results.CompiledAssembly;
-                //DMEEditor.ConfigEditor.LoadedAssemblies.Add(results.CompiledAssembly);
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Beep ML.NET", $" Error Compiling Code {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return assembly;
-        }
-        public static Type CreateTypeFromCode(string code, string outputtypename)
-        {
-            Type OutputType = null;
-            Assembly assembly = null;
-            try
-            {
-          //      DMEEditor.ErrorObject.Flag = Errors.Ok;
-                assembly = CreateAssemblyFromCode(code);
-                OutputType = assembly.GetType(outputtypename);
-
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Beep ML.NET", $" Error Compiling Code {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return OutputType;
-        }
+       
+      
     }
 }
 
