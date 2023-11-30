@@ -41,6 +41,7 @@ namespace TheTechIdea
         string Messege { get; set; }
         string ErrorCode { get; set; }
         bool IsError { get; set; }
+        bool Cancel { get; set; }
     }
 
     public class PassedArgs : IPassedArgs
@@ -78,6 +79,7 @@ namespace TheTechIdea
         public string Messege { get; set; }
         public string ErrorCode { get; set; }
         public bool IsError { get; set; }
+        public bool Cancel { get; set; }
         public int Id { get; set; }
         public PassedArgs()
         {
