@@ -21,5 +21,6 @@ namespace TheTechIdea.Beep.Vis
         public DataSourceType DatasourceType { get; set; } = DataSourceType.NONE;
         public ShowinType Showin { get; set; } = ShowinType.Both;
         public bool IsLeftAligned { get; set; } = true;
+        public int Order { get; set; }=0;
     }
 }
