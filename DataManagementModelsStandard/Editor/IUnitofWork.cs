@@ -1,9 +1,6 @@
 ﻿using DataManagementModels.Editor;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
@@ -16,6 +13,7 @@ namespace TheTechIdea.Beep.Editor
     {
         void Clear();
         bool IsInListMode { get; set; }
+        bool IsDirty { get; }
         IDataSource DataSource { get; set; }
         string DatasourceName { get; set; }
         Dictionary<int, string> DeletedKeys { get; set; }
@@ -33,7 +31,11 @@ namespace TheTechIdea.Beep.Editor
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         Task<IErrorsInfo> Commit();
         void Create(T entity);
-        void Delete(string id);
+        ErrorsInfo Delete(string id);
+        ErrorsInfo Delete(T doc);
+        ErrorsInfo Update(T entity);
+        ErrorsInfo Update(string id, T entity);
+        
         int DocExist(T doc);
         int DocExistByKey(T doc);
         int FindDocIdx(T doc);
@@ -51,7 +53,7 @@ namespace TheTechIdea.Beep.Editor
         int GetPrimaryKeySequence(T doc);
         int GetSeq(string SeqName);
         T Read(string id);
-        void Update(string id, T entity);
+       
 
         event EventHandler<UnitofWorkParams> PreInsert;
         event EventHandler<UnitofWorkParams> PreUpdate;

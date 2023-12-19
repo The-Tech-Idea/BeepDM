@@ -17,7 +17,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class UnitofWork<T> : IUnitofWork<T> where T:  Entity, new()
+    public class UnitofWork<T> :  IUnitofWork<T> where T:  Entity, new() 
     {
         private bool _suppressNotification = false;
         CancellationTokenSource tokenSource;
@@ -26,55 +26,64 @@ namespace TheTechIdea.Beep.Editor
         private bool Ivalidated = false;
         private bool IsNewRecord = false;
         private bool IsFilterOn = false;
-        #region "Collections"
-        private ObservableBindingList<T> Tempunits;
-        private ObservableBindingList<T> _units;
-        public ObservableBindingList<T> Units
+        public bool IsDirty { get { return GetIsDirty(); } }
+        #region "Inotify"
+       
+
+        protected virtual void OnPropertyChanged(string propertyName)
         {
-            get
-            {
-                if (IsFilterOn)
-                {
-                    return _filteredunits;
-                }
-                return _units; 
-            
-            }
-            set
-            {
-                if (_filteredunits != value) // Check if it's a new collection
-                {
-                    if (_filteredunits != null)
-                    {
-                        foreach (var item in _filteredunits)
-                        {
-                            item.PropertyChanged -= ItemPropertyChangedHandler; // Remove previous event handlers
-                        }
-                        _filteredunits.CollectionChanged -= Units_CollectionChanged;
-                    }
-                }
-                if (_units != value) // Check if it's a new collection
-                {
-                    if (_units != null)
-                    {
-                        foreach (var item in _units)
-                        {
-                            item.PropertyChanged -= ItemPropertyChangedHandler; // Remove previous event handlers
-                        }
-                        _units.CollectionChanged -= Units_CollectionChanged;
-                    }
-                }
-                    _units = value;
-                if (_units != null)
-                {
-                    foreach (var item in _units)
-                    {
-                        item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
-                    }
-                    _units.CollectionChanged += Units_CollectionChanged;
-                }
-            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+        
+    #endregion
+    #region "Collections"
+    private ObservableBindingList<T> Tempunits;
+        private ObservableBindingList<T> _units;
+        //public ObservableBindingList<T> Units
+        //{
+        //    get
+        //    {
+        //        if (IsFilterOn)
+        //        {
+        //            return _filteredunits;
+        //        }
+        //        return _units; 
+            
+        //    }
+        //    set
+        //    {
+               
+        //        if (_units != value) // Check if it's a new collection
+        //        {
+        //            if (_units != null)
+        //            {
+        //                foreach (var item in _units)
+        //                {
+        //                    item.PropertyChanged -= ItemPropertyChangedHandler; // Remove previous event handlers
+        //                }
+        //                _units.CollectionChanged -= Units_CollectionChanged;
+        //            }
+        //            if (_filteredunits != null)
+        //            {
+        //                foreach (var item in _filteredunits)
+        //                {
+        //                    item.PropertyChanged -= ItemPropertyChangedHandler; // Remove previous event handlers
+        //                }
+        //                _filteredunits.CollectionChanged -= Units_CollectionChanged;
+        //                _filteredunits=new ObservableBindingList<T> ();
+        //            }
+        //        }
+        //         _units = value;
+        //        if (_units != null)
+        //        {
+        //            foreach (var item in _units)
+        //            {
+        //                item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
+        //            }
+        //            _units.CollectionChanged += Units_CollectionChanged;
+        //        }
+        //    }
+        //}
         private ObservableBindingList<T> _filteredunits;
         public ObservableBindingList<T> FilteredUnits
         {
@@ -106,7 +115,54 @@ namespace TheTechIdea.Beep.Editor
             }
         }
 
-        
+        public ObservableBindingList<T> Units
+        {
+            get
+            {
+                return IsFilterOn ? _filteredunits : _units;
+            }
+            set
+            {
+                SetUnits(value);
+            }
+        }
+
+        private void SetUnits(ObservableBindingList<T> value)
+        {
+            if (_units != value)
+            {
+                DetachHandlers(_units);
+                _units = value;
+                AttachHandlers(_units);
+                // You might want to update _filteredunits based on new _units here
+                OnPropertyChanged(nameof(Units)); // Notify UI of change
+            }
+        }
+
+        private void DetachHandlers(ObservableBindingList<T> collection)
+        {
+            if (collection != null)
+            {
+                foreach (var item in collection)
+                {
+                    item.PropertyChanged -= ItemPropertyChangedHandler;
+                }
+                collection.CollectionChanged -= Units_CollectionChanged;
+            }
+        }
+
+        private void AttachHandlers(ObservableBindingList<T> collection)
+        {
+            if (collection != null)
+            {
+                foreach (var item in collection)
+                {
+                    item.PropertyChanged += ItemPropertyChangedHandler;
+                }
+                collection.CollectionChanged += Units_CollectionChanged;
+            }
+        }
+
         #endregion
         #region "Properties"
         public bool IsInListMode { get; set; } = false;
@@ -454,6 +510,7 @@ namespace TheTechIdea.Beep.Editor
             IErrorsInfo retval = DataSource.DeleteEntity(cname, doc);
             return Task.FromResult<IErrorsInfo>(retval);
         }
+      
         public void Create(T entity)
         {
             if (!Validateall())
@@ -474,11 +531,82 @@ namespace TheTechIdea.Beep.Editor
             }
             return Units[Getindex(id)];
         }
-        public void Update(string id, T entity)
+        public ErrorsInfo Delete(T entity)
         {
+            ErrorsInfo errorsInfo = new ErrorsInfo();
             if (!Validateall())
             {
-                return;
+                errorsInfo.Message = "Validation Failed";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+            var index = Getindex(entity);
+            if (index >= 0)
+            {
+                Units[index] = entity;
+                Units.RemoveAt(index);  
+                errorsInfo.Message = "Delete Done";
+                errorsInfo.Flag = Errors.Ok;
+                return errorsInfo;
+            }
+            else
+            {
+                errorsInfo.Message = "Object not found";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+        }
+        public ErrorsInfo Update( T entity)
+        {
+            ErrorsInfo errorsInfo = new ErrorsInfo();
+            if (!Validateall())
+            {
+                errorsInfo.Message = "Validation Failed";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+            var index = DocExistByKey(entity);
+            if (index >= 0)
+            {
+                Units[index] = entity;
+                if (_entityStates.Count > 0)
+                {
+                    if (_entityStates.ContainsKey(index))
+                    {
+                        if (_entityStates[index] != EntityState.Added)
+                        {
+                            _entityStates[index] = EntityState.Modified;
+                        }
+                        errorsInfo.Message = "Update Done";
+                        errorsInfo.Flag = Errors.Ok;
+                        return errorsInfo;
+                    }
+                }
+                else
+                {
+                    _entityStates.Add(index, EntityState.Modified);
+
+                }
+
+                errorsInfo.Message = "Update Done";
+                errorsInfo.Flag = Errors.Ok;
+                return errorsInfo;
+            }
+            else
+            {
+                errorsInfo.Message = "Object not found";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+        }
+        public ErrorsInfo Update(string id, T entity)
+        {
+            ErrorsInfo errorsInfo = new ErrorsInfo();
+            if (!Validateall())
+            {
+                errorsInfo.Message = "Validation Failed";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
             }
             var index = Getindex(id);
             if (index >= 0)
@@ -492,29 +620,49 @@ namespace TheTechIdea.Beep.Editor
                         {
                             _entityStates[index] = EntityState.Modified;
                         }
+                        errorsInfo.Message = "Update Done";
+                        errorsInfo.Flag = Errors.Ok;
+                        return errorsInfo;
                     }
-                    else
-                    {
-                        _entityStates.Add(index, EntityState.Modified);
-                    }
-
                 }
-
+                else
+                {
+                    _entityStates.Add(index, EntityState.Modified);
+                }
+                errorsInfo.Message = "Update Done";
+                errorsInfo.Flag = Errors.Ok;
+                return errorsInfo;
+            }
+            else
+            {
+                errorsInfo.Message = "Object not found";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
             }
         }
-        public void Delete(string id)
+        public ErrorsInfo Delete(string id)
         {
+            ErrorsInfo errorsInfo = new ErrorsInfo();
             if (!Validateall())
             {
-                return;
+                errorsInfo.Message = "Validation Failed";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
             }
             var index = Getindex(id);
 
             if (index >= 0)
             {
                 Units.RemoveAt(index);
-                _entityStates[index] = EntityState.Deleted;
-                //entity.PropertyChanged += ItemPropertyChangedHandler;
+                errorsInfo.Message = "Delete Done";
+                errorsInfo.Flag = Errors.Ok;
+                return errorsInfo;
+            }
+            else
+            {
+                errorsInfo.Message = "Object not found";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
             }
         }
         public virtual async Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token)
@@ -822,17 +970,6 @@ namespace TheTechIdea.Beep.Editor
                     list = (List<T>)retval;
 
                     Units = new ObservableBindingList<T>(list);
-                    //foreach (var item in list)
-                    //{
-                    //    item.PropertyChanged += ItemPropertyChangedHandler; // Make sure you attach this
-                    //    //  SetIDValue(item, 1);
-                    //    _units.Add(item);
-
-                    //}
-                    //_units.CollectionChanged += Units_CollectionChanged;
-                    // Units =new ObservableBindingList<T>(list);
-                   
-
                 }
                 else
                 {
@@ -879,6 +1016,18 @@ namespace TheTechIdea.Beep.Editor
         }
         #endregion
         #region "Entity Management"
+        public bool GetIsDirty()
+        {
+            if (!Validateall())
+            {
+                return false;
+            }
+            if (InsertedKeys.Count > 0 || UpdatedKeys.Count > 0 || DeletedKeys.Count > 0)
+            {
+                return true;
+            }
+            return false;
+        }
         public IEnumerable<int> GetAddedEntities()
         {
             if (!Validateall())

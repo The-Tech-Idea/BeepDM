@@ -10,6 +10,15 @@ namespace DataManagementModels.Editor
 {
     public class ObservableBindingList<T> : BindingList<T>, INotifyCollectionChanged where T : INotifyPropertyChanged
     {
+
+        protected override object AddNewCore()
+        {
+            var newItem = Activator.CreateInstance<T>();
+            Add(newItem);
+            return newItem;
+        }
+
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
         {
@@ -211,32 +220,57 @@ namespace DataManagementModels.Editor
             OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
         }
         #endregion
-        private void HookupCollectionChangedEvent()
-        {
-            
-        }
+       
         public ObservableBindingList() : base()
         {
-            HookupCollectionChangedEvent();
-            // Initialize the list with no items and subscribe to AddingNew event.
+                        // Initialize the list with no items and subscribe to AddingNew event.
             AddingNew += ObservableBindingList_AddingNew;
+            this.AllowNew=true;
+            this.AllowEdit=true;
+            this.AllowRemove=true;
         }
-        public ObservableBindingList(IEnumerable<T> enumerable) : base()
+        //public ObservableBindingList(IEnumerable<T> enumerable) : base()
+        //{
+
+        //    foreach (T item in enumerable)
+        //        item.PropertyChanged += Item_PropertyChanged;
+        //    AddingNew += ObservableBindingList_AddingNew;
+        //}
+        //public ObservableBindingList(IList<T> list) : base(list)
+        //{
+        //    foreach (T item in list)
+        //        item.PropertyChanged += Item_PropertyChanged;
+
+        //    HookupCollectionChangedEvent();
+
+        //    AddingNew += ObservableBindingList_AddingNew;
+        //}
+        public ObservableBindingList(IEnumerable<T> enumerable) : base(enumerable.ToList())
         {
-
-            foreach (T item in enumerable)
+            foreach (var item in this)
+            {
                 item.PropertyChanged += Item_PropertyChanged;
+            }
             AddingNew += ObservableBindingList_AddingNew;
+            this.AllowNew = true;
+            this.AllowEdit = true;
+            this.AllowRemove = true;
         }
-        public ObservableBindingList(IList<T> list) : base(list)
+
+        public ObservableBindingList(IList<T> list) : base(new List<T>(list))
         {
-            foreach (T item in list)
+            foreach (var item in this)
+            {
                 item.PropertyChanged += Item_PropertyChanged;
-
-            HookupCollectionChangedEvent();
+            }
+            
 
             AddingNew += ObservableBindingList_AddingNew;
+            this.AllowNew = true;
+            this.AllowEdit = true;
+            this.AllowRemove = true;
         }
+
         void ObservableBindingList_AddingNew(object sender, AddingNewEventArgs e)
         {
             if (e.NewObject is T item)
