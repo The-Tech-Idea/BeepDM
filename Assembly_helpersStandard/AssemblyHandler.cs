@@ -21,25 +21,65 @@ using TypeInfo = System.Reflection.TypeInfo;
 
 namespace TheTechIdea.Tools
 {
+    /// <summary>
+    /// Handles assembly-related operations such as loading, scanning for extensions, and managing driver configurations.
+    /// </summary>
     public class AssemblyHandler : IAssemblyHandler
     {
-        ParentChildObject a;
-        public AppDomain CurrentDomain { get; set; }
-
+        private ParentChildObject a;
         private string Name { get; set; }
         private string Descr { get; set; }
-        // public IDMEEditor DMEEditor { get; set; }
-        public IErrorsInfo ErrorObject { get; set; }
-        public IDMLogger Logger { get; set; }
-        public IUtil Utilfunction { get; set; }
-        public IConfigEditor ConfigEditor { get; set; }
         private List<Type> LoaderExtensions { get; set; } = new List<Type>();
-        public List<AssemblyClassDefinition> LoaderExtensionClasses { get; set; } = new List<AssemblyClassDefinition>();
-        public List<assemblies_rep> Assemblies { get; set; } = new List<assemblies_rep>();
-        public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
         private List<ConnectionDriversConfig> DataDriversConfig = new List<ConnectionDriversConfig>();
         private bool disposedValue;
 
+        /// <summary>
+        /// Gets or sets the current domain in which the assembly is executed.
+        /// </summary>
+        public AppDomain CurrentDomain { get; set; }
+
+        /// <summary>
+        /// Error handling object.
+        /// </summary>
+        public IErrorsInfo ErrorObject { get; set; }
+
+        /// <summary>
+        /// Logging interface for tracking activities and errors.
+        /// </summary>
+        public IDMLogger Logger { get; set; }
+
+        /// <summary>
+        /// Utility functions for assembly handling.
+        /// </summary>
+        public IUtil Utilfunction { get; set; }
+
+        /// <summary>
+        /// Interface for configuration editing.
+        /// </summary>
+        public IConfigEditor ConfigEditor { get; set; }
+
+        /// <summary>
+        /// List of classes that extend the loader functionality.
+        /// </summary>
+        public List<AssemblyClassDefinition> LoaderExtensionClasses { get; set; } = new List<AssemblyClassDefinition>();
+
+        /// <summary>
+        /// List of assemblies loaded or referenced.
+        /// </summary>
+        public List<assemblies_rep> Assemblies { get; set; } = new List<assemblies_rep>();
+
+        /// <summary>
+        /// List of classes that represent data sources.
+        /// </summary>
+        public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
+
+        /// <summary>
+        /// Constructor for AssemblyHandler, initializes necessary properties.
+        /// </summary>
+        /// <param name="pConfigEditor">Configuration editor.</param>
+        /// <param name="pErrorObject">Error handling object.</param>
+        /// <param name="pLogger">Logging interface.</param>
+        /// <param name="pUtilfunction">Utility functions.</param>
         public AssemblyHandler(IConfigEditor pConfigEditor, IErrorsInfo pErrorObject, IDMLogger pLogger, IUtil pUtilfunction)
         {
 
