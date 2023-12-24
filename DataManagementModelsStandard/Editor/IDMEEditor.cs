@@ -23,6 +23,8 @@ namespace TheTechIdea.Beep
         IProgress<PassedArgs> progress { get; set; }
         bool ContainerMode { get; set; }
         string ContainerName { get; set; }
+        string EntityName { get; set; }
+        string DataSourceName { get; set; }
         IETL ETL { get; set; }
         IErrorsInfo ErrorObject { get; set; }
         IDMLogger Logger { get; set; }
@@ -34,7 +36,7 @@ namespace TheTechIdea.Beep
         IAssemblyHandler assemblyHandler { get; set; }
         BindingList<ILogAndError> Loganderrors { get; set; }
         IPassedArgs Passedarguments { get; set; }
-      //  ETLScriptHDR Script { get; set; }
+
         IDataSource GetDataSource(string pdatasourcename);
         IDataSource CreateNewDataSourceConnection(ConnectionProperties cn, string pdatasourcename);
         IDataSource CreateLocalDataSourceConnection(ConnectionProperties dataConnection, string pdatasourcename, string ClassDBHandlerName);

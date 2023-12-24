@@ -11,7 +11,6 @@ using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Workflow;
 using System.ComponentModel;
 using TheTechIdea.Beep.Logger;
-using System.IO;
 using TheTechIdea.Tools;
 using static TheTechIdea.Beep.Util;
 using TheTechIdea.Beep.Report;
@@ -92,7 +91,8 @@ namespace TheTechIdea.Beep
         /// Global Event Handler to handle events  in class
         /// </summary>
         public event EventHandler<PassedArgs> PassEvent;
-      
+        public string EntityName { get; set; }
+        public  string DataSourceName { get; set; }
         IDataSource ds1;
         /// <summary>
         /// Function to Add Log Message 

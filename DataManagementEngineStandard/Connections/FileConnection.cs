@@ -37,40 +37,6 @@ namespace TheTechIdea.Beep.FileManager
         }
         public string ReplaceValueFromConnectionString()
         {
-            //string rep = "";
-            //if (!string.IsNullOrEmpty(DataSourceDriver.ConnectionString) && string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString))
-            //{
-            //    ConnectionProp.ConnectionString = DataSourceDriver.ConnectionString;
-            //} 
-            //if (string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString) == false)
-            //{
-
-            //    rep = DataSourceDriver.ConnectionString.Replace("{Host}", ConnectionProp.Host);
-            //    rep = rep.Replace("{UserID}", ConnectionProp.UserID);
-
-            //    rep = rep.Replace("{Password}", ConnectionProp.Password);
-            //    rep = rep.Replace("{DataBase}", ConnectionProp.Database);
-            //    rep = rep.Replace("{Port}", ConnectionProp.Port.ToString());
-
-            //}
-            //if (ConnectionProp.FilePath.StartsWith(".") || ConnectionProp.FilePath.Equals("/") || ConnectionProp.FilePath.Equals("\\"))
-            //{
-            //    ConnectionProp.FilePath = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
-            //}
-            //if (!string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString))
-            //{
-            //    rep = DataSourceDriver.ConnectionString.Replace("{File}", Path.Combine(ConnectionProp.FilePath,ConnectionProp.FileName));
-            //}
-            //if (!string.IsNullOrWhiteSpace(ConnectionProp.Url))
-            //{
-            //    rep = DataSourceDriver.ConnectionString.Replace("{Url}", ConnectionProp.Url);
-            
-            //}
-            //if (string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString) && !string.IsNullOrEmpty(ConnectionProp.FilePath) && !string.IsNullOrEmpty(ConnectionProp.FileName))
-            //{
-            //    rep = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
-            //}
-            
             return ConnectionHelper.ReplaceValueFromConnectionString(DataSourceDriver,ConnectionProp,DMEEditor);
         }
         private ConnectionState OpenConn()
@@ -106,12 +72,12 @@ namespace TheTechIdea.Beep.FileManager
 
         public ConnectionState OpenConnection(DataSourceType dbtype, string host, int port, string database, string userid, string password, string parameters)
         {
-            throw new NotImplementedException();
+            return ConnectionStatus;
         }
 
         public ConnectionState OpenConnection(DataSourceType dbtype, string connectionstring)
         {
-            throw new NotImplementedException();
+            return ConnectionStatus;
         }
         public virtual ConnectionState CloseConn()
         {

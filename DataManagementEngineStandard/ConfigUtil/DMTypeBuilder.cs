@@ -124,46 +124,7 @@ namespace TheTechIdea.Util
             propertyBuilder.SetGetMethod(getPropMthdBldr);
             propertyBuilder.SetSetMethod(setPropMthdBldr);
         }
-        //public static Assembly CreateAssembly(IDMEEditor DMEEditor, string code)
-        //{
-        //    Assembly assembly = null;
-        //    try
-        //    {
-        //        CSharpCodeProvider provider = new CSharpCodeProvider();
-        //        CompilerParameters parameters = new CompilerParameters();
-        //        // Reference to System.Drawing library
-        //        parameters.ReferencedAssemblies.Add("System.dll"); //netstandard.dll
-        //        //var assemblies = DMEEditor.ConfigEditor.LoadedAssemblies.Where(p => p.FullName.Contains("Microsoft.ML") || p.FullName.Contains("netstandard"));
-        //        //var assemblyLocations = assemblies.Select(a => a.Location).ToList();
-        //        //parameters.ReferencedAssemblies.AddRange(assemblyLocations.ToArray());
-
-        //        // True - memory generation, false - external file generation
-        //        parameters.GenerateInMemory = true;
-        //        // True - exe file generation, false - dll file generation
-        //        parameters.GenerateExecutable = false;
-
-        //        CompilerResults results = provider.CompileAssemblyFromSource(parameters, code);
-        //        if (results.Errors.HasErrors)
-        //        {
-        //            StringBuilder sb = new StringBuilder();
-
-        //            foreach (CompilerError error in results.Errors)
-        //            {
-        //                sb.AppendLine(String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText));
-        //                DMEEditor.AddLogMessage("Beep ML.NET", String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText), DateTime.Now, 0, null, Errors.Failed);
-        //            }
-
-        //            throw new InvalidOperationException(sb.ToString());
-        //        }
-        //        assembly = results.CompiledAssembly;
-        //        //DMEEditor.ConfigEditor.LoadedAssemblies.Add(results.CompiledAssembly);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        DMEEditor.AddLogMessage("Beep ML.NET", $" Error Compiling Code {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-        //    }
-        //    return assembly;
-        //}
+   
         public static Type CreateTypeFromCode(IDMEEditor DMEEditor, string code, string outputtypename)
         {
             Type OutputType = null;

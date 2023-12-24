@@ -1,11 +1,7 @@
 ﻿using DataManagementModels.DriversConfigurations;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
@@ -94,12 +90,12 @@ namespace TheTechIdea.Beep.DataView
 
         public ConnectionState OpenConnection(DataSourceType dbtype, string host, int port, string database, string userid, string password, string parameters)
         {
-            throw new NotImplementedException();
+            return ConnectionStatus;
         }
 
         public ConnectionState OpenConnection(DataSourceType dbtype, string connectionstring)
         {
-            throw new NotImplementedException();
+            return ConnectionStatus;
         }
         public virtual ConnectionState CloseConn()
         {
