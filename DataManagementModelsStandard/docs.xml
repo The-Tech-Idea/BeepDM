@@ -1,0 +1,555 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>DataManagementModels</name>
+    </assembly>
+    <members>
+        <member name="T:TheTechIdea.Beep.Addin.AddinVisSchema">
+            <summary>
+            Attribute class to define the visualization schema for add-ins within the system.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.RootNodeName">
+            <summary>
+            Gets or sets the root node name in the visualization schema.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.CatgoryName">
+            <summary>
+            Gets or sets the category name for the add-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.AddinName">
+            <summary>
+            Gets or sets the name of the add-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.Order">
+            <summary>
+            Gets or sets the display order of the add-in in the visualization schema.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.ID">
+            <summary>
+            Gets or sets the identifier for the add-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.Name">
+            <summary>
+            Gets or sets the name of the add-in's visualization branch.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.BranchText">
+            <summary>
+            Gets or sets the text displayed on the branch.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.Level">
+            <summary>
+            Gets or sets the level of the branch in the visualization schema.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.BranchType">
+            <summary>
+            Gets or sets the type of the branch, defined by the EnumPointType enum.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.BranchID">
+            <summary>
+            Gets or sets the identifier for the branch.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.IconImageName">
+            <summary>
+            Gets or sets the name of the icon image associated with the branch.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.BranchStatus">
+            <summary>
+            Gets or sets the status of the branch.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.ParentBranchID">
+            <summary>
+            Gets or sets the identifier of the parent branch, if applicable.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.BranchDescription">
+            <summary>
+            Gets or sets a description for the branch.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.BranchClass">
+            <summary>
+            Gets or sets the class associated with the branch. Defaults to "ADDIN".
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Vis.AddinAttribute">
+            <summary>
+            Attribute class to define metadata for add-ins within the system.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.Name">
+            <summary>
+            Gets or sets the unique name of the add-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.Caption">
+            <summary>
+            Gets or sets the caption or title for the add-in, usually for display purposes.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.Hidden">
+            <summary>
+            Gets or sets a value indicating whether the add-in is hidden in the UI. Defaults to false.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.iconimage">
+            <summary>
+            Gets or sets the path or identifier for the icon image of the add-in. Defaults to null.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.ObjectType">
+            <summary>
+            Gets or sets the type of object the add-in is associated with.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.ClassType">
+            <summary>
+            Gets or sets the class type of the add-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.key">
+            <summary>
+            Gets or sets a unique integer key to identify the add-in. Defaults to -1.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.misc">
+            <summary>
+            Gets or sets additional miscellaneous data associated with the add-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.parentkey">
+            <summary>
+            Gets or sets an integer key identifying the parent of this add-in, if applicable. Defaults to -1.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.menu">
+            <summary>
+            Gets or sets the name of the menu or menu item the add-in is associated with.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.order">
+            <summary>
+            Gets or sets the display order of the add-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.displayType">
+            <summary>
+            Gets or sets the display type of the add-in, defined by the DisplayType enum.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.addinType">
+            <summary>
+            Gets or sets the add-in type, defined by the AddinType enum.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.Showin">
+            <summary>
+            Gets or sets where the add-in should be shown, defined by the ShowinType enum.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.Category">
+            <summary>
+            Gets or sets the data source category, defined by the DatasourceCategory enum. Defaults to NONE.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.DatasourceType">
+            <summary>
+            Gets or sets the data source type, defined by the DataSourceType enum. Defaults to NONE.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.FileType">
+            <summary>
+            Gets or sets the file type or data format the add-in is associated with.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.returndataTypename">
+            <summary>
+            Gets or sets the type name of the data returned by the add-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.DefaultCreate">
+            <summary>
+            Gets or sets a value indicating whether the add-in should be created by default.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.Description">
+            <summary>
+            Gets or sets a detailed description of the add-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.IsHomePage">
+            <summary>
+            Gets or sets a value indicating whether the add-in represents a home page or primary interface component.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Vis.CommandAttribute">
+            <summary>
+            Attribute class to define metadata for commands within the system.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.Name">
+            <summary>
+            Gets or sets the unique name of the command.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.Caption">
+            <summary>
+            Gets or sets the caption or title for the command, usually for display purposes.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.Hidden">
+            <summary>
+            Gets or sets a value indicating whether the command is hidden in the UI. Defaults to false.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.Click">
+            <summary>
+            Gets or sets a value indicating whether the command is triggered on a single click. Defaults to false.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.DoubleClick">
+            <summary>
+            Gets or sets a value indicating whether the command is triggered on a double click. Defaults to false.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.iconimage">
+            <summary>
+            Gets or sets the path or identifier for the icon image of the command. Defaults to null.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.PointType">
+            <summary>
+            Gets or sets the point type for the command, defined by the EnumPointType enum.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.ObjectType">
+            <summary>
+            Gets or sets the type of object the command is associated with.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.ClassType">
+            <summary>
+            Gets or sets the class type of the command.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.misc">
+            <summary>
+            Gets or sets additional miscellaneous data associated with the command.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.Category">
+            <summary>
+            Gets or sets the data source category, defined by the DatasourceCategory enum. Defaults to NONE.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.DatasourceType">
+            <summary>
+            Gets or sets the data source type, defined by the DataSourceType enum. Defaults to NONE.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.Showin">
+            <summary>
+            Gets or sets where the command should be shown, defined by the ShowinType enum. Defaults to Both.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.IsLeftAligned">
+            <summary>
+            Gets or sets a value indicating whether the command is left-aligned in the UI. Defaults to true.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.Order">
+            <summary>
+            Gets or sets the display order of the command. Defaults to 0.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.ColumnDelimiter">
+            <summary>
+            Gets or sets the delimiter used to separate columns in queries or data representations.
+            This property is particularly useful for formatting data for certain types of data sources
+            or for parsing query results.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.ParameterDelimiter">
+            <summary>
+            Gets or sets the delimiter used for parameters in SQL queries.
+            This property allows for customization of the parameter syntax in queries,
+            which can be essential for compatibility with different types of data sources.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.GuidID">
+            <summary>
+            Gets or sets the unique identifier for the data source.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.IDataSource.PassEvent">
+            <summary>
+            Occurs when a specific action or event is passed.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.DatasourceType">
+            <summary>
+            Gets or sets the type of the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.Category">
+            <summary>
+            Gets or sets the category of the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.Dataconnection">
+            <summary>
+            Gets or sets the data connection interface.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.DatasourceName">
+            <summary>
+            Gets or sets the name of the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.ErrorObject">
+            <summary>
+            Gets or sets the error handling object.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.Id">
+            <summary>
+            Gets or sets a secondary identifier for the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.Logger">
+            <summary>
+            Gets or sets the logger for data management activities.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.EntitiesNames">
+            <summary>
+            Gets or sets the list of entity names in the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.Entities">
+            <summary>
+            Gets or sets the list of entity structures.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.DMEEditor">
+            <summary>
+            Gets or sets the data manipulation and exploration editor.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.IDataSource.ConnectionStatus">
+            <summary>
+            Gets or sets the current connection status.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.GetEntitesList">
+            <summary>
+            Retrieves a list of entity names from the data source.
+            </summary>
+            <returns>List of entity names.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.RunQuery(System.String)">
+            <summary>
+            Executes a query and returns the results.
+            </summary>
+            <param name="qrystr">The query string to be executed.</param>
+            <returns>The result of the query execution.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.ExecuteSql(System.String)">
+            <summary>
+            Executes a SQL command and returns any errors encountered.
+            </summary>
+            <param name="sql">The SQL command to be executed.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.CreateEntityAs(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Creates a new entity based on the provided structure.
+            </summary>
+            <param name="entity">The structure of the entity to be created.</param>
+            <returns>True if creation is successful, false otherwise.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.GetEntityType(System.String)">
+            <summary>
+            Retrieves the type of the specified entity.
+            </summary>
+            <param name="EntityName">The name of the entity.</param>
+            <returns>The type of the entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.CheckEntityExist(System.String)">
+            <summary>
+            Checks if the specified entity exists in the data source.
+            </summary>
+            <param name="EntityName">The name of the entity to check.</param>
+            <returns>True if the entity exists, false otherwise.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.GetEntityIdx(System.String)">
+            <summary>
+            Retrieves the index of a given entity.
+            </summary>
+            <param name="entityName">The name of the entity.</param>
+            <returns>The index of the entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.GetChildTablesList(System.String,System.String,System.String)">
+            <summary>
+            Gets a list of child tables related to a specified table.
+            </summary>
+            <param name="tablename">The name of the table.</param>
+            <param name="SchemaName">The name of the schema.</param>
+            <param name="Filterparamters">Filter parameters for the child tables.</param>
+            <returns>List of child relations.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.GetEntityforeignkeys(System.String,System.String)">
+            <summary>
+            Retrieves foreign keys for a specified entity.
+            </summary>
+            <param name="entityname">The name of the entity.</param>
+            <param name="SchemaName">The schema name.</param>
+            <returns>List of relationship keys.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.GetEntityStructure(System.String,System.Boolean)">
+            <summary>
+            Obtains the structure of a specified entity.
+            </summary>
+            <param name="EntityName">The name of the entity.</param>
+            <param name="refresh">Whether to refresh the entity structure.</param>
+            <returns>The structure of the entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.GetEntityStructure(TheTechIdea.Beep.DataBase.EntityStructure,System.Boolean)">
+            <summary>
+            Overloaded method to get the structure of an entity.
+            </summary>
+            <param name="fnd">The entity structure to find.</param>
+            <param name="refresh">Whether to refresh the entity structure.</param>
+            <returns>The structure of the entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.RunScript(TheTechIdea.Beep.Editor.ETLScriptDet)">
+            <summary>
+            Executes a provided script and returns any errors.
+            </summary>
+            <param name="dDLScripts">The script to be executed.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.GetCreateEntityScript(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Generates scripts for creating entities.
+            </summary>
+            <param name="entities">List of entities to generate scripts for.</param>
+            <returns>List of ETL script details.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.CreateEntities(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Creates multiple entities and returns any errors.
+            </summary>
+            <param name="entities">List of entities to be created.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.UpdateEntities(System.String,System.Object,System.IProgress{TheTechIdea.PassedArgs})">
+            <summary>
+            Updates specified entities with the provided data.
+            </summary>
+            <param name="EntityName">The name of the entity to update.</param>
+            <param name="UploadData">The data to update the entity with.</param>
+            <param name="progress">Progress reporting object.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.UpdateEntity(System.String,System.Object)">
+            <summary>
+            Updates a single entity with the provided data row.
+            </summary>
+            <param name="EntityName">The name of the entity to update.</param>
+            <param name="UploadDataRow">The data row for the update.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.DeleteEntity(System.String,System.Object)">
+            <summary>
+            Deletes an entity based on the provided data row.
+            </summary>
+            <param name="EntityName">The name of the entity to delete.</param>
+            <param name="UploadDataRow">The data row that specifies the entity to delete.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.InsertEntity(System.String,System.Object)">
+            <summary>
+            Inserts a new entity with the provided data.
+            </summary>
+            <param name="EntityName">The name of the entity to insert.</param>
+            <param name="InsertedData">The data for the new entity.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.BeginTransaction(TheTechIdea.PassedArgs)">
+            <summary>
+            Begins a database transaction.
+            </summary>
+            <param name="args">Arguments related to the transaction.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.EndTransaction(TheTechIdea.PassedArgs)">
+            <summary>
+            Ends a database transaction.
+            </summary>
+            <param name="args">Arguments related to the transaction.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.Commit(TheTechIdea.PassedArgs)">
+            <summary>
+            Commits the current database transaction.
+            </summary>
+            <param name="args">Arguments related to the transaction.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.GetEntity(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Retrieves an entity based on the provided name and filters.
+            </summary>
+            <param name="EntityName">The name of the entity to retrieve.</param>
+            <param name="filter">The filters to apply on the entity retrieval.</param>
+            <returns>The requested entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.GetEntityAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Asynchronously retrieves an entity based on the provided name and filters.
+            </summary>
+            <param name="EntityName">The name of the entity to retrieve.</param>
+            <param name="Filter">The filters to apply on the entity retrieval.</param>
+            <returns>A task that represents the asynchronous operation. The task result contains the requested entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.GetScalarAsync(System.String)">
+            <summary>
+            Asynchronously retrieves a scalar value based on the provided query.
+            </summary>
+            <param name="query">The query to execute.</param>
+            <returns>A task that represents the asynchronous operation. The task result contains the scalar value.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.GetScalar(System.String)">
+            <summary>
+            Retrieves a scalar value based on the provided query.
+            </summary>
+            <param name="query">The query to execute.</param>
+            <returns>The scalar value from the query.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.Openconnection">
+            <summary>
+            Opens a connection to the data source.
+            </summary>
+            <returns>The state of the connection after attempting to open it.</returns>
+        </member>
+        <member name="M:TheTechIdea.IDataSource.Closeconnection">
+            <summary>
+            Closes the connection to the data source.
+            </summary>
+            <returns>The state of the connection after attempting to close it.</returns>
+        </member>
+    </members>
+</doc>

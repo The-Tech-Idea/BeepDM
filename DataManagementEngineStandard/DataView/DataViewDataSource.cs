@@ -12,42 +12,91 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.DataView
 {
-    public class DataViewDataSource : IDataViewDataSource, IDataSource,IDMDataView
+    /// <summary>
+    /// Represents a data source for a data view.
+    /// </summary>
+    public class DataViewDataSource : IDataViewDataSource, IDataSource, IDMDataView
     {
+        /// <summary>
+        /// Event that is raised when a specific event is passed.
+        /// </summary>
         public event EventHandler<PassedArgs> PassEvent;
-        public DataSourceType DatasourceType { get ; set ; }
-        public DatasourceCategory Category { get ; set ; }
-        public IDataConnection Dataconnection { get ; set ; }
-        public string DatasourceName { get ; set ; }
-        public IErrorsInfo ErrorObject { get ; set ; }
+        /// <summary>Gets or sets the type of the data source.</summary>
+        /// <value>The type of the data source.</value>
+        public DataSourceType DatasourceType { get; set; }
+        /// <summary>Gets or sets the category of the datasource.</summary>
+        /// <value>The category of the datasource.</value>
+        public DatasourceCategory Category { get; set; }
+        /// <summary>Gets or sets the data connection.</summary>
+        /// <value>The data connection.</value>
+        public IDataConnection Dataconnection { get; set; }
+        /// <summary>Gets or sets the name of the data source.</summary>
+        /// <value>The name of the data source.</value>
+        public string DatasourceName { get; set; }
+        /// <summary>Gets or sets the error object.</summary>
+        /// <value>The error object.</value>
+        public IErrorsInfo ErrorObject { get; set; }
+        /// <summary>Gets or sets the ID.</summary>
+        /// <value>The ID.</value>
         public string Id { get; set; }
+        /// <summary>Gets or sets the ID.</summary>
+        /// <value>The ID.</value>
         public int ID { get; set; }
+        /// <summary>Gets or sets the GUID ID.</summary>
+        /// <value>The GUID ID.</value>
         public string GuidID { get; set; } = Guid.NewGuid().ToString();
-        public IDMLogger Logger { get ; set ; }
+        /// <summary>Gets or sets the logger for the current object.</summary>
+        /// <value>The logger.</value>
+        public IDMLogger Logger { get; set; }
+        /// <summary>Gets or sets the list of entity names.</summary>
+        /// <value>The list of entity names.</value>
         public List<string> EntitiesNames { get; set; } = new List<string>();
-        public IDMEEditor DMEEditor { get ; set ; }
-        public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; } set { }  }
-        public DataTable SourceEntityData { get ; set ; }
+        /// <summary>Gets or sets the DME editor.</summary>
+        /// <value>The DME editor.</value>
+        public IDMEEditor DMEEditor { get; set; }
+        /// <summary>Gets or sets the current connection status.</summary>
+        /// <value>The current connection status.</value>
+        public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; } set { } }
+        /// <summary>Gets or sets the source entity data.</summary>
+        /// <value>The source entity data.</value>
+        public DataTable SourceEntityData { get; set; }
+        /// <summary>Gets or sets the data view for the IDM.</summary>
+        /// <value>The data view for the IDM.</value>
         public IDMDataView DataView { get; set; } = new DMDataView();
+        /// <summary>Gets or sets the column delimiter used in data processing.</summary>
+        /// <value>The column delimiter.</value>
+        /// <remarks>The default value is "''".</remarks>
         public virtual string ColumnDelimiter { get; set; } = "''";
+        /// <summary>Gets or sets the delimiter used for separating parameters.</summary>
+        /// <value>The parameter delimiter.</value>
         public virtual string ParameterDelimiter { get; set; } = ":";
-        public List<EntityStructure> Entities { get 
+        /// <summary>Gets or sets the list of entity structures.</summary>
+        /// <value>The list of entity structures.</value>
+        public List<EntityStructure> Entities
+        {
+            get
             {
                 if (DataView != null)
                 {
-                   
+
                     return DataView.Entities;
-                }else
+                }
+                else
                 {
                     return new List<EntityStructure>();
                 }
-               
-            } set 
+
+            }
+            set
             {
                 DataView.Entities = value;
-            } 
             }
-        public string ViewName { get ; set ; }
+        }
+        /// <summary>Gets or sets the name of the view.</summary>
+        /// <value>The name of the view.</value>
+        public string ViewName { get; set; }
+        /// <summary>Gets or sets the ID of the view.</summary>
+        /// <value>The ID of the view.</value>
         public int ViewID
         {
             get
@@ -60,13 +109,14 @@ namespace TheTechIdea.Beep.DataView
                 {
                     return -1;
                 }
-               
+
             }
             set
             {
                 DataView.ViewID = value;
             }
         }
+        /// <summary>The type of view.</summary>
         public ViewType Viewtype
         {
             get
@@ -86,9 +136,17 @@ namespace TheTechIdea.Beep.DataView
             }
         }
 
-        public  bool Editable { get ; set ; }
-        public string EntityDataSourceID { get ; set ; }
+        /// <summary>Gets or sets a value indicating whether the object is editable.</summary>
+        /// <value><c>true</c> if the object is editable; otherwise, <c>false</c>.</value>
+        public bool Editable { get; set; }
+        /// <summary>Gets or sets the ID of the entity data source.</summary>
+        /// <value>The ID of the entity data source.</value>
+        public string EntityDataSourceID { get; set; }
+        /// <summary>Gets or sets the ID of the composite layer data source.</summary>
+        /// <value>The ID of the composite layer data source.</value>
         public string CompositeLayerDataSourceID { get; set; }
+        /// <summary>Gets or sets the ID of the data source for the DataView.</summary>
+        /// <value>The ID of the data source.</value>
         public string DataViewDataSourceID
         {
             get
@@ -100,6 +158,11 @@ namespace TheTechIdea.Beep.DataView
                 DataView.DataViewDataSourceID = value;
             }
         }
+        /// <summary>The Vendor ID (VID) of a device.</summary>
+        /// <remarks>
+        /// The Vendor ID (VID) is a unique identifier assigned to a device manufacturer by the USB Implementers Forum (USB-IF).
+        /// It is used to identify the manufacturer of a USB device.
+        /// </remarks>
         public string VID
         {
             get
@@ -112,7 +175,7 @@ namespace TheTechIdea.Beep.DataView
                 {
                     return null;
                 }
-                
+
             }
             set
             {
@@ -124,8 +187,16 @@ namespace TheTechIdea.Beep.DataView
         public bool FileLoaded { get; set; } = false;
         int EntityIndex { get; set; } = 0;
         IDataSource ds;
-    
-        public DataViewDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType pDatasourceType , IErrorsInfo per)
+
+        /// <summary>
+        /// Initializes a new instance of the DataViewDataSource class.
+        /// </summary>
+        /// <param name="datasourcename">The name of the data source.</param>
+        /// <param name="logger">The logger object used for logging.</param>
+        /// <param name="pDMEEditor">The DME editor object.</param>
+        /// <param name="pDatasourceType">The type of the data source.</param>
+        /// <param name="per">The error information object.</param>
+        public DataViewDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType pDatasourceType, IErrorsInfo per)
         {
             DatasourceName = datasourcename;
             Logger = logger;
@@ -137,14 +208,14 @@ namespace TheTechIdea.Beep.DataView
             {
                 Logger = logger,
                 ErrorObject = ErrorObject,
-                DMEEditor=DMEEditor
+                DMEEditor = DMEEditor
             };
             string filename = Path.GetFileName(datasourcename);
             List<ConnectionProperties> cnlist = DMEEditor.ConfigEditor.DataConnections.Where(p => p.FileName != null && p.Category == DatasourceCategory.VIEWS).ToList();
             string filepath; //= DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.DataView).FirstOrDefault().FolderPath;
             if (cnlist.Where(c => c.FileName.Equals(filename, StringComparison.InvariantCultureIgnoreCase)).Any())
             {
-                Dataconnection.ConnectionProp = cnlist.Where(c => c.FileName.Equals(filename,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                Dataconnection.ConnectionProp = cnlist.Where(c => c.FileName.Equals(filename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 filepath = Dataconnection.ConnectionProp.FilePath;
 
 
@@ -165,8 +236,13 @@ namespace TheTechIdea.Beep.DataView
 
             }
             DataViewFile = Path.Combine(filepath, filename);
-        
+
         }
+        /// <summary>
+        /// Begins a transaction with the specified arguments.
+        /// </summary>
+        /// <param name="args">The arguments passed to the transaction.</param>
+        /// <returns>An object that provides information about any errors that occurred during the transaction.</returns>
         public virtual IErrorsInfo BeginTransaction(PassedArgs args)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -182,6 +258,9 @@ namespace TheTechIdea.Beep.DataView
             return DMEEditor.ErrorObject;
         }
 
+        /// <summary>Ends a transaction and returns information about any errors that occurred.</summary>
+        /// <param name="args">The arguments passed to the transaction.</param>
+        /// <returns>An object containing information about any errors that occurred during the transaction.</returns>
         public virtual IErrorsInfo EndTransaction(PassedArgs args)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -197,6 +276,9 @@ namespace TheTechIdea.Beep.DataView
             return DMEEditor.ErrorObject;
         }
 
+        /// <summary>Commits the changes made with the provided arguments.</summary>
+        /// <param name="args">The arguments containing the changes to be committed.</param>
+        /// <returns>An object implementing the IErrorsInfo interface that provides information about any errors that occurred during the commit process.</returns>
         public virtual IErrorsInfo Commit(PassedArgs args)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -211,6 +293,8 @@ namespace TheTechIdea.Beep.DataView
             }
             return DMEEditor.ErrorObject;
         }
+        /// <summary>Returns a list of entities.</summary>
+        /// <returns>A list of entities.</returns>
         public List<string> GetEntitesList()
         {
             ErrorObject.Flag = Errors.Ok;
@@ -220,7 +304,7 @@ namespace TheTechIdea.Beep.DataView
                 if (DataView.Entities.Count <= 2)
                 {
                     LoadView();
-                   
+
                     if (DataView.VID == null)
                     {
                         VID = Guid.NewGuid().ToString();
@@ -236,20 +320,26 @@ namespace TheTechIdea.Beep.DataView
                         retval.Add(i.EntityName);
                     }
                     else
-                        retval.Add(i.Caption); 
+                        retval.Add(i.Caption);
                 }
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("Fail", $"Error in getting entity Data from ({ ex.Message})", DateTime.Now, -1, "", Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"Error in getting entity Data from ({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
             }
             EntitiesNames = retval;
             return retval;
         }
+        /// <summary>Retrieves a scalar value asynchronously based on the provided query.</summary>
+        /// <param name="query">The query used to retrieve the scalar value.</param>
+        /// <returns>A task representing the asynchronous operation. The task result is the scalar value.</returns>
         public virtual Task<double> GetScalarAsync(string query)
         {
             return Task.Run(() => GetScalar(query));
         }
+        /// <summary>Gets the scalar value from a given query.</summary>
+        /// <param name="query">The query to retrieve the scalar value.</param>
+        /// <returns>The scalar value obtained from the query.</returns>
         public virtual double GetScalar(string query)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -282,13 +372,17 @@ namespace TheTechIdea.Beep.DataView
             // Return a default value or throw an exception if the query failed.
             return 0.0; // You can change this default value as needed.
         }
+        /// <summary>Retrieves an entity based on the specified entity name and filter.</summary>
+        /// <param name="EntityName">The name of the entity to retrieve.</param>
+        /// <param name="filter">A list of filters to apply to the entity.</param>
+        /// <returns>The retrieved entity.</returns>
         public object GetEntity(string EntityName, List<AppFilter> filter)
         {
             object retval = null;
             IDataSource ds = GetDataSourceObject(EntityName);
             if (ds != null)
             {
-                if(ds.ConnectionStatus== ConnectionState.Open)
+                if (ds.ConnectionStatus == ConnectionState.Open)
                 {
                     EntityStructure ent = GetEntityStructure(EntityName);
                     if (ent != null)
@@ -313,13 +407,19 @@ namespace TheTechIdea.Beep.DataView
             }
             return retval;
         }
+        /// <summary>Returns the index of an entity in the entity list.</summary>
+        /// <param name="entityid">The ID of the entity.</param>
+        /// <returns>The index of the entity in the entity list.</returns>
         public int EntityListIndex(int entityid)
         {
             return DataView.Entities.FindIndex(a => a.Id == entityid);
         }
-        public int EntityListIndex( string entityname)
+        /// <summary>Returns the index of an entity in the entity list.</summary>
+        /// <param name="entityname">The name of the entity.</param>
+        /// <returns>The index of the entity in the entity list.</returns>
+        public int EntityListIndex(string entityname)
         {
-            int retval= Entities.FindIndex(a => a.DatasourceEntityName.Equals(entityname, StringComparison.InvariantCultureIgnoreCase));
+            int retval = Entities.FindIndex(a => a.DatasourceEntityName.Equals(entityname, StringComparison.InvariantCultureIgnoreCase));
             if (retval == -1)
             {
                 retval = Entities.FindIndex(a => a.EntityName.Equals(entityname, StringComparison.InvariantCultureIgnoreCase));
@@ -332,6 +432,10 @@ namespace TheTechIdea.Beep.DataView
             }
             return retval;
         }
+        /// <summary>Retrieves the structure of an entity.</summary>
+        /// <param name="EntityName">The name of the entity.</param>
+        /// <param name="refresh">Optional. Specifies whether to refresh the structure. Default is false.</param>
+        /// <returns>The structure of the entity.</returns>
         public EntityStructure GetEntityStructure(string EntityName, bool refresh = false)
         {
             try
@@ -339,36 +443,39 @@ namespace TheTechIdea.Beep.DataView
                 EntityStructure r = new EntityStructure();
                 EntityStructure dh = (EntityStructure)Entities[EntityListIndex(EntityName)].Clone();
                 if (refresh)
+                {
+
+                    switch (dh.Viewtype)
                     {
-                       
-                            switch (dh.Viewtype)
-                            {
-                                case ViewType.Table:
-                                case ViewType.Query:
-                                case ViewType.File:
-                                case ViewType.Url:
-                                    r = (EntityStructure)GetDataSourceObject(dh.EntityName).GetEntityStructure(dh, refresh).Clone();
-                                    dh.Fields = r.Fields;
-                                    dh.Relations = r.Relations;
-                                    dh.PrimaryKeys = r.PrimaryKeys;
-                                    break;
-                                case ViewType.Code:
-                                default:
-                                    break;
-                            }
+                        case ViewType.Table:
+                        case ViewType.Query:
+                        case ViewType.File:
+                        case ViewType.Url:
+                            r = (EntityStructure)GetDataSourceObject(dh.EntityName).GetEntityStructure(dh, refresh).Clone();
+                            dh.Fields = r.Fields;
+                            dh.Relations = r.Relations;
+                            dh.PrimaryKeys = r.PrimaryKeys;
+                            break;
+                        case ViewType.Code:
+                        default:
+                            break;
                     }
-                    else
-                    {
-                        return dh;
-                    }   
+                }
+                else
+                {
+                    return dh;
+                }
                 return dh;
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("Fail", $"Error getting entity structure {EntityName} ({ ex.Message})", DateTime.Now, -1, "", Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"Error getting entity structure {EntityName} ({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
             }
             return null;
         }
+        /// <summary>Gets the type of an entity based on its name.</summary>
+        /// <param name="entityname">The name of the entity.</param>
+        /// <returns>The type of the entity.</returns>
         public Type GetEntityType(string entityname)
         {
             EntityStructure dh = Entities[EntityListIndex(entityname)];
@@ -376,7 +483,7 @@ namespace TheTechIdea.Beep.DataView
             switch (dh.Viewtype)
             {
                 case ViewType.Table:
-                    retval=GetDataSourceObject(entityname).GetEntityType(entityname);
+                    retval = GetDataSourceObject(entityname).GetEntityType(entityname);
                     break;
                 case ViewType.Query:
 
@@ -388,30 +495,39 @@ namespace TheTechIdea.Beep.DataView
 
 
                 default:
-                   
-                    DMTypeBuilder.CreateNewObject(DMEEditor, entityname, entityname,dh.Fields);
-                    retval= DMTypeBuilder.myType;
+
+                    DMTypeBuilder.CreateNewObject(DMEEditor, entityname, entityname, dh.Fields);
+                    retval = DMTypeBuilder.myType;
                     break;
             }
             return retval;
         }
+        /// <summary>Retrieves a list of child tables for a given parent table.</summary>
+        /// <param name="tablename">The name of the parent table.</param>
+        /// <param name="SchemaName">The name of the schema containing the parent table.</param>
+        /// <param name="Filterparamters">Additional filter parameters to refine the search.</param>
+        /// <returns>A list of ChildRelation objects representing the child tables.</returns>
         public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
             EntityStructure dh = Entities[EntityListIndex(tablename)];
-           
+
             switch (dh.Viewtype)
             {
                 case ViewType.Table:
-                    return GetDataSourceObject(tablename).GetChildTablesList(tablename, SchemaName, Filterparamters);                  
+                    return GetDataSourceObject(tablename).GetChildTablesList(tablename, SchemaName, Filterparamters);
                 case ViewType.Query:
                 case ViewType.Code:
                 case ViewType.File:
                 case ViewType.Url:
                 default:
-                    return null;   
+                    return null;
             }
-            
+
         }
+        /// <summary>Retrieves the foreign keys of an entity.</summary>
+        /// <param name="entityname">The name of the entity.</param>
+        /// <param name="SchemaName">The name of the schema.</param>
+        /// <returns>A list of RelationShipKeys representing the foreign keys of the entity.</returns>
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             IDataSource ds = GetDataSourceObject(entityname);
@@ -419,7 +535,7 @@ namespace TheTechIdea.Beep.DataView
             {
                 if (ds.Category == DatasourceCategory.RDBMS)
                 {
-                    
+
                     return ds.GetEntityforeignkeys(entityname, SchemaName);
                 }
                 else
@@ -432,14 +548,20 @@ namespace TheTechIdea.Beep.DataView
                 DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
                 return null;
             }
- 
+
         }
+        /// <summary>Executes the given SQL statement.</summary>
+        /// <param name="sql">The SQL statement to execute.</param>
+        /// <returns>An object containing information about any errors that occurred during execution.</returns>
         public IErrorsInfo ExecuteSql(string sql)
         {
-            DMEEditor.AddLogMessage("Beep", $"DataView DataSource {DatasourceName}  Method  {System.Reflection.MethodBase.GetCurrentMethod().Name } Not Implemented", DateTime.Now, 0, null, Errors.Ok);
+            DMEEditor.AddLogMessage("Beep", $"DataView DataSource {DatasourceName}  Method  {System.Reflection.MethodBase.GetCurrentMethod().Name} Not Implemented", DateTime.Now, 0, null, Errors.Ok);
             return DMEEditor.ErrorObject;
 
         }
+        /// <summary>Creates an entity using the provided entity structure.</summary>
+        /// <param name="entity">The structure of the entity to be created.</param>
+        /// <returns>True if the entity was successfully created, false otherwise.</returns>
         public bool CreateEntityAs(EntityStructure entity)
         {
             try
@@ -454,30 +576,37 @@ namespace TheTechIdea.Beep.DataView
                 DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
                 return false;
             }
-            
+
         }
+        /// <summary>Checks if an entity with the given name exists.</summary>
+        /// <param name="entityname">The name of the entity to check.</param>
+        /// <returns>True if the entity exists, false otherwise.</returns>
         public bool CheckEntityExist(string entityname)
         {
-            if (Entities.Any(x=> x.EntityName.Equals(entityname, StringComparison.InvariantCultureIgnoreCase)))
+            if (Entities.Any(x => x.EntityName.Equals(entityname, StringComparison.InvariantCultureIgnoreCase)))
             {
                 return true;
-            }else
+            }
+            else
             {
                 return false;
             }
         }
+        /// <summary>Gets the data source object for a given entity name.</summary>
+        /// <param name="entityname">The name of the entity.</param>
+        /// <returns>The data source object associated with the given entity name.</returns>
         private IDataSource GetDataSourceObject(string entityname)
         {
             IDataSource retval;
             EntityStructure dh = Entities.Where(x => string.Equals(x.EntityName, entityname, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-            if (dh==null)
+            if (dh == null)
             {
                 retval = DMEEditor.GetDataSource(DataView.EntityDataSourceID);
-               
+
             }
             else
             {
-                retval= DMEEditor.GetDataSource(dh.DataSourceID);
+                retval = DMEEditor.GetDataSource(dh.DataSourceID);
             }
             if (retval != null)
             {
@@ -486,38 +615,66 @@ namespace TheTechIdea.Beep.DataView
             }
             return retval;
         }
+        /// <summary>Opens a connection to a database.</summary>
+        /// <returns>The state of the connection.</returns>
         public ConnectionState Openconnection()
         {
-            ConnectionStatus= Dataconnection.OpenConnection();
-            if (ConnectionStatus== ConnectionState.Open)
+            ConnectionStatus = Dataconnection.OpenConnection();
+            if (ConnectionStatus == ConnectionState.Open)
             {
                 LoadView();
             }
             return ConnectionStatus;
         }
+        /// <summary>Closes the connection and returns the current state of the connection.</summary>
+        /// <returns>The current state of the connection after closing.</returns>
         public ConnectionState Closeconnection()
         {
             return ConnectionStatus;
         }
 
-        public object RunQuery( string qrystr)
+        /// <summary>Executes a query and returns the result.</summary>
+        /// <param name="qrystr">The query string to execute.</param>
+        /// <returns>The result of the query execution.</returns>
+        public object RunQuery(string qrystr)
         {
-            DMEEditor.AddLogMessage("Beep", $"DataView DataSource {DatasourceName}  Method  {System.Reflection.MethodBase.GetCurrentMethod().Name } Not Implemented", DateTime.Now, 0, null, Errors.Ok);
+            DMEEditor.AddLogMessage("Beep", $"DataView DataSource {DatasourceName}  Method  {System.Reflection.MethodBase.GetCurrentMethod().Name} Not Implemented", DateTime.Now, 0, null, Errors.Ok);
             return DMEEditor.ErrorObject;
 
         }
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData,IProgress<PassedArgs> progress)
+        /// <summary>Updates entities in the system.</summary>
+        /// <param name="EntityName">The name of the entity to update.</param>
+        /// <param name="UploadData">The data to upload for updating the entities.</param>
+        /// <param name="progress">An object used to report progress during the update process.</param>
+        /// <returns>An object containing information about any errors that occurred during the update.</returns>
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
-            return GetDataSourceObject(EntityName).UpdateEntities(EntityName, UploadData,progress);
+            return GetDataSourceObject(EntityName).UpdateEntities(EntityName, UploadData, progress);
         }
+        /// <summary>Updates an entity with the provided data.</summary>
+        /// <param name="EntityName">The name of the entity to update.</param>
+        /// <param name="UploadDataRow">The data to update the entity with.</param>
+        /// <returns>An object containing information about any errors that occurred during the update.</returns>
         public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
             return GetDataSourceObject(EntityName).UpdateEntity(EntityName, UploadDataRow);
         }
+        /// <summary>Deletes an entity from the specified entity name and data row.</summary>
+        /// <param name="EntityName">The name of the entity to delete.</param>
+        /// <param name="DeletedDataRow">The data row representing the entity to delete.</param>
+        /// <returns>An object containing information about any errors that occurred during the deletion process.</returns>
         public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
         {
             return GetDataSourceObject(EntityName).DeleteEntity(EntityName, DeletedDataRow);
         }
+        /// <summary>Gets the structure of an entity.</summary>
+        /// <param name="fnd">The entity structure to retrieve.</param>
+        /// <param name="refresh">Optional. Specifies whether to refresh the entity structure.</param>
+        /// <returns>The structure of the specified entity.</returns>
+        /// <remarks>
+        /// If the entity structure is of type Table, it retrieves the entity structure from the data source object.
+        /// If the entity structure is of type Query, Code, File, or Url, it returns the entity structure from the Entities collection.
+        /// </remarks>
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
             switch (fnd.Viewtype)
@@ -526,12 +683,15 @@ namespace TheTechIdea.Beep.DataView
                     return GetDataSourceObject(fnd.EntityName).GetEntityStructure(fnd, refresh);
                 case ViewType.Query:
                 case ViewType.Code:
-                case ViewType.File:                  
-                case ViewType.Url:  
+                case ViewType.File:
+                case ViewType.Url:
                 default:
-                    return Entities[EntityListIndex(fnd.EntityName)];    
+                    return Entities[EntityListIndex(fnd.EntityName)];
             }
         }
+        /// <summary>Runs an ETL script.</summary>
+        /// <param name="dDLScripts">The ETL script to run.</param>
+        /// <returns>An object containing information about any errors that occurred during script execution.</returns>
         public IErrorsInfo RunScript(ETLScriptDet dDLScripts)
         {
             if (ds.ConnectionStatus == ConnectionState.Open)
@@ -544,13 +704,19 @@ namespace TheTechIdea.Beep.DataView
                 DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
                 return null;
             }
-           
+
         }
+        /// <summary>Creates entities based on the provided list of entity structures.</summary>
+        /// <param name="entities">A list of entity structures.</param>
+        /// <returns>An object that contains information about any errors that occurred during the creation process.</returns>
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
             Entities.AddRange(entities);
             return DMEEditor.ErrorObject;
         }
+        /// <summary>Generates a list of ETL script details for creating entities.</summary>
+        /// <param name="entities">Optional. A list of entity structures. If provided, the script details will be generated for these entities only. If not provided, script details will be generated for all entities.</param>
+        /// <returns>A list of ETL script details for creating entities.</returns>
         public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
             List<ETLScriptDet> ls = new List<ETLScriptDet>();
@@ -570,12 +736,16 @@ namespace TheTechIdea.Beep.DataView
             }
             return ls;
         }
+        /// <summary>Inserts an entity into the database.</summary>
+        /// <param name="EntityName">The name of the entity.</param>
+        /// <param name="InsertedData">The data to be inserted.</param>
+        /// <returns>An object containing information about any errors that occurred during the insertion process.</returns>
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
             IDataSource ds = GetDataSourceObject(EntityName);
             if (ds.ConnectionStatus == ConnectionState.Open)
             {
-               
+
                 return ds.InsertEntity(EntityName, InsertedData);
             }
             else
@@ -584,6 +754,10 @@ namespace TheTechIdea.Beep.DataView
                 return null;
             }
         }
+        /// <summary>Retrieves an entity asynchronously.</summary>
+        /// <param name="EntityName">The name of the entity to retrieve.</param>
+        /// <param name="Filter">A list of filters to apply to the entity.</param>
+        /// <returns>A task representing the asynchronous operation. The result is the retrieved entity.</returns>
         public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             return (Task<object>)GetEntity(EntityName, Filter);
@@ -591,6 +765,9 @@ namespace TheTechIdea.Beep.DataView
         #region "DataView Methods"
 
         #region "View Generating Methods"
+        /// <summary>Removes an entity with the specified ID.</summary>
+        /// <param name="EntityID">The ID of the entity to remove.</param>
+        /// <returns>An object containing information about any errors that occurred during the removal process.</returns>
         public IErrorsInfo RemoveEntity(int EntityID)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -615,6 +792,9 @@ namespace TheTechIdea.Beep.DataView
 
             return DMEEditor.ErrorObject;
         }
+        /// <summary>Removes child entities associated with a parent entity.</summary>
+        /// <param name="EntityID">The ID of the parent entity.</param>
+        /// <returns>An object containing information about any errors that occurred during the removal process.</returns>
         public IErrorsInfo RemoveChildEntities(int EntityID)
         {
 
@@ -644,6 +824,15 @@ namespace TheTechIdea.Beep.DataView
             return DMEEditor.ErrorObject;
         }
 
+        /// <summary>
+        /// Generates a view from a table using the specified parameters.
+        /// </summary>
+        /// <param name="viewname">The name of the view to be generated.</param>
+        /// <param name="SourceConnection">The data source connection object.</param>
+        /// <param name="tablename">The name of the table to generate the view from.</param>
+        /// <param name="SchemaName">The name of the schema containing the table.</param>
+        /// <param name="Filterparamters">The filter parameters to be applied to the view.</param>
+        /// <returns>The number of rows affected by the view generation process.</returns>
         public int GenerateViewFromTable(string viewname, IDataSource SourceConnection, string tablename, string SchemaName, string Filterparamters)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -667,6 +856,14 @@ namespace TheTechIdea.Beep.DataView
             return retval;
 
         }
+        /// <summary>
+        /// Generates a data view based on the provided data source, table name, schema name, and filter parameters.
+        /// </summary>
+        /// <param name="conn">The data source to generate the data view from.</param>
+        /// <param name="tablename">The name of the table to generate the data view for.</param>
+        /// <param name="SchemaName">The name of the schema to generate the data view for.</param>
+        /// <param name="Filterparamters">The filter parameters to apply to the data view.</param>
+        /// <returns>An integer representing the result of the data view generation.</returns>
         public int GenerateDataView(IDataSource conn, string tablename, string SchemaName, string Filterparamters)
         {
             //int maxcnt;
@@ -722,6 +919,10 @@ namespace TheTechIdea.Beep.DataView
             return maintab.Id;
 
         }
+        /// <summary>Generates a data view based on the specified view name and connection name.</summary>
+        /// <param name="ViewName">The name of the view.</param>
+        /// <param name="ConnectionName">The name of the connection.</param>
+        /// <returns>The generated data view.</returns>
         public IDMDataView GenerateView(string ViewName, string ConnectionName)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -753,6 +954,15 @@ namespace TheTechIdea.Beep.DataView
             }
             return retval;
         }
+        /// <summary>
+        /// Generates a data view for a child node based on the provided parameters.
+        /// </summary>
+        /// <param name="conn">The data source connection.</param>
+        /// <param name="pid">The parent ID.</param>
+        /// <param name="tablename">The name of the table.</param>
+        /// <param name="SchemaName">The name of the schema.</param>
+        /// <param name="Filterparamters">The filter parameters.</param>
+        /// <returns>An object representing the generated data view.</returns>
         public IErrorsInfo GenerateDataViewForChildNode(IDataSource conn, int pid, string tablename, string SchemaName, string Filterparamters)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -761,7 +971,7 @@ namespace TheTechIdea.Beep.DataView
             {
 
                 EntityStructure pd = DataView.Entities.Where(c => c.Id == pid).FirstOrDefault();
-                if (pd.Viewtype== ViewType.Table ) 
+                if (pd.Viewtype == ViewType.Table)
                 {
                     List<ChildRelation> ds = conn.GetChildTablesList(tablename, conn.Dataconnection.ConnectionProp.SchemaName, Filterparamters);
                     if (ds != null)
@@ -787,9 +997,9 @@ namespace TheTechIdea.Beep.DataView
                     }
                     DMEEditor.AddLogMessage("Success", $"Getting Child from DataSource", DateTime.Now, 0, null, Errors.Ok);
                 }
-               
 
-              
+
+
             }
             catch (Exception ex)
             {
@@ -800,6 +1010,14 @@ namespace TheTechIdea.Beep.DataView
 
             return DMEEditor.ErrorObject;
         }
+        /// <summary>Adds an entity as a child to a specified parent table.</summary>
+        /// <param name="conn">The data source connection.</param>
+        /// <param name="tablename">The name of the table to add the entity to.</param>
+        /// <param name="SchemaName">The schema name of the table.</param>
+        /// <param name="Filterparamters">The filter parameters to apply.</param>
+        /// <param name="viewindex">The index of the view.</param>
+        /// <param name="ParentTableIndex">The index of the parent table.</param>
+        /// <returns>The index of the added entity.</returns>
         public int AddEntityAsChild(IDataSource conn, string tablename, string SchemaName, string Filterparamters, int viewindex, int ParentTableIndex)
         {
 
@@ -836,9 +1054,15 @@ namespace TheTechIdea.Beep.DataView
                     foreach (ChildRelation r in ds)
                     {
                         EntityStructure a;
-                        a = SetupEntityInView(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id,conn.DatasourceName);
+                        a = SetupEntityInView(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id, conn.DatasourceName);
 
                     }
+                    /// <summary>Adds an entity to a data view.</summary>
+                    /// <param name="conn">The data source connection.</param>
+                    /// <param name="tablename">The name of the table.</param>
+                    /// <param name="SchemaName">The name of the schema.</param>
+                    /// <param name="Filterparamters">The filter parameters.</param>
+                    /// <returns>The number of entities added to the data view.</returns>
 
                 }
 
@@ -847,6 +1071,12 @@ namespace TheTechIdea.Beep.DataView
             return maintab.Id;
 
         }
+        /// <summary>Adds an entity to a data view.</summary>
+        /// <param name="conn">The data source connection.</param>
+        /// <param name="tablename">The name of the table.</param>
+        /// <param name="SchemaName">The name of the schema.</param>
+        /// <param name="Filterparamters">The filter parameters.</param>
+        /// <returns>The number of entities added to the data view.</returns>
         public int AddEntitytoDataView(IDataSource conn, string tablename, string SchemaName, string Filterparamters)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -917,7 +1147,7 @@ namespace TheTechIdea.Beep.DataView
 
                         maintab.Viewtype = ViewType.Table;
                         break;
-                        
+
                 }
 
                 DataView.Entities.Add(maintab);
@@ -957,6 +1187,9 @@ namespace TheTechIdea.Beep.DataView
 
 
         }
+        /// <summary>Adds an entity to the data view.</summary>
+        /// <param name="maintab">The entity structure to add.</param>
+        /// <returns>The index of the added entity in the data view.</returns>
         public int AddEntitytoDataView(EntityStructure maintab)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -975,7 +1208,7 @@ namespace TheTechIdea.Beep.DataView
                 //--- check entity already exist , if it does change Entity Name
                 if (CheckEntityExist(maintab.DatasourceEntityName))
                 {
-                   if(maintab.ParentId == 0)
+                    if (maintab.ParentId == 0)
                     {
                         int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase)).Count() + 1;
                         if (cnt > 0)
@@ -988,9 +1221,9 @@ namespace TheTechIdea.Beep.DataView
                             List<EntityStructure> lsSameDB = new List<EntityStructure>();
                             lsSameDB.AddRange(ls.Where(p => p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase) && p.ParentId == 0).AsEnumerable());
                             List<EntityStructure> lsDiffDB = new List<EntityStructure>();
-                            lsDiffDB.AddRange(ls.Where(p => !p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase) && p.ParentId==0).AsEnumerable());
-                            k=lsDiffDB.Count();
-                            y= lsSameDB.Count();
+                            lsDiffDB.AddRange(ls.Where(p => !p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase) && p.ParentId == 0).AsEnumerable());
+                            k = lsDiffDB.Count();
+                            y = lsSameDB.Count();
                             if (k > 0)
                             {
                                 maintab.Caption = maintab.DatasourceEntityName + $"_{maintab.DataSourceID}_" + k;
@@ -1035,9 +1268,10 @@ namespace TheTechIdea.Beep.DataView
                             //}
 
                         }
-                     
-                        
-                    }else
+
+
+                    }
+                    else
                     {
                         IEntityStructure parententity = Entities[EntityListIndex(maintab.ParentId)];
                         if (parententity != null)
@@ -1045,19 +1279,19 @@ namespace TheTechIdea.Beep.DataView
                             maintab.Caption = parententity.DatasourceEntityName + $"_{maintab.EntityName}s";
                         }
                     }
-                   
-                   
-                  
+
+
+
                 }
                 maintab.OriginalEntityName = maintab.DatasourceEntityName;
                 DataView.Entities.Add(maintab);
                 EntitiesNames.Add(maintab.EntityName);
                 IDataSource entityds = DMEEditor.GetDataSource(maintab.DataSourceID);
-                if (entityds != null && entityds.Category== DatasourceCategory.RDBMS)
+                if (entityds != null && entityds.Category == DatasourceCategory.RDBMS)
                 {
                     List<ChildRelation> ds = entityds.GetChildTablesList(maintab.DatasourceEntityName, entityds.Dataconnection.ConnectionProp.SchemaName, null);
-                   if(DMEEditor.ErrorObject.Flag== Errors.Ok)
-                   {
+                    if (DMEEditor.ErrorObject.Flag == Errors.Ok)
+                    {
                         if (ds != null && ds.Count > 0)
                         {
                             // var tb = ds.Tables[0];
@@ -1072,12 +1306,13 @@ namespace TheTechIdea.Beep.DataView
                                     a = SetupEntityInView(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id, entityds.DatasourceName);
                                 }
                             }
-                        }else
+                        }
+                        else
                         {
                             DMEEditor.ErrorObject.Flag = Errors.Ok;
                         }
                     }
-                  
+
                 }
 
                 return maintab.Id;
@@ -1089,6 +1324,9 @@ namespace TheTechIdea.Beep.DataView
         }
         #endregion  "View Generating Methods"
         #region "Misc and Util Methods"
+        /// <summary>Returns the icon associated with a specific view type.</summary>
+        /// <param name="v">The view type.</param>
+        /// <returns>The icon associated with the view type.</returns>
         public string GeticonForViewType(ViewType v)
         {
             string iconname = "entity.ico";
@@ -1114,10 +1352,21 @@ namespace TheTechIdea.Beep.DataView
             }
             return iconname;
         }
-        private EntityStructure SetupEntityInView(IDMDataView v, List<EntityStructure> Rootnamespacelist, string childtable, string parenttable, string childcolumn, string parentcolumn, int pid,string Datasourcename)
+        /// <summary>
+        /// Sets up the entity structure in a data view.
+        /// </summary>
+        /// <param name="v">The data view.</param>
+        /// <param name="Rootnamespacelist">The list of root namespaces.</param>
+        /// <param name="childtable">The name of the child table.</param>
+        /// <param name="parenttable">The name of the parent table.</param>
+        /// <param name="childcolumn">The name of the child column.</param>
+        /// <param name="parentcolumn">The name of the parent column.</param>
+        /// <param name="pid">The parent ID.</param>
+        /// <param name="Datasourcename">The name of the data source.</param>
+        private EntityStructure SetupEntityInView(IDMDataView v, List<EntityStructure> Rootnamespacelist, string childtable, string parenttable, string childcolumn, string parentcolumn, int pid, string Datasourcename)
         {
 
-            EntityStructure a=null;
+            EntityStructure a = null;
             int pkid = NextHearId();
             IDataSource ds = DMEEditor.GetDataSource(Datasourcename);
             string schemaname = "";
@@ -1137,7 +1386,7 @@ namespace TheTechIdea.Beep.DataView
 
                     a = (EntityStructure)ds.GetEntityStructure(childtable, true).Clone();
                     a.ParentId = pid;
-                    a.Caption= $"{parenttable}_{childtable}s";
+                    a.Caption = $"{parenttable}_{childtable}s";
                     a.Id = NextHearId();
                     Rootnamespacelist.Add(a);
 
@@ -1146,15 +1395,18 @@ namespace TheTechIdea.Beep.DataView
                 else
                 {
                     a = Rootnamespacelist.Where(f => f.ParentId == pid && f.EntityName.Equals(childtable, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault(); //f.Id == childtable &&
-                                                                                                                                                                 //  a.DataSourceID = DatasourceName;
+                                                                                                                                                                          //  a.DataSourceID = DatasourceName;
                     a.DatasourceEntityName = childtable;
                     a.Relations.Add(new RelationShipKeys { EntityColumnID = childcolumn.ToUpper(), RelatedEntityColumnID = parentcolumn.ToUpper(), RelatedEntityID = parenttable.ToUpper() });
 
                 }
             }
-         
+
             return a;
         }
+        /// <summary>Retrieves the structure of an entity.</summary>
+        /// <param name="entityname">The name of the entity.</param>
+        /// <returns>The structure of the specified entity.</returns>
         public EntityStructure GetEntity(string entityname)
         {
             EntityStructure retval = null;
@@ -1173,12 +1425,14 @@ namespace TheTechIdea.Beep.DataView
 
             return retval;
         }
+        /// <summary>Generates the next unique hear ID.</summary>
+        /// <returns>An integer representing the next hear ID.</returns>
         public int NextHearId()
         {
 
             if (DataView.Entities != null)
             {
-                if (DataView.Entities.Count >0)
+                if (DataView.Entities.Count > 0)
                 {
                     if (DataView.Entities.Max(p => p.Id) > EntityIndex)
                     {
@@ -1189,13 +1443,16 @@ namespace TheTechIdea.Beep.DataView
                 {
                     EntityIndex = 0;
                 }
-                
+
             }
 
             return EntityIndex += 1;
         }
         #endregion "Misc and Util Methods"
         #region "Dataset and entity Structure Methods"
+        /// <summary>Retrieves a list of data sets for a given view.</summary>
+        /// <param name="viewname">The name of the view.</param>
+        /// <returns>A list of data sets associated with the specified view.</returns>
         public List<DataSet> GetDataSetForView(string viewname)
         {
             List<DataSet> retval = new List<DataSet>();
@@ -1242,6 +1499,9 @@ namespace TheTechIdea.Beep.DataView
             DMEEditor.ConfigEditor.SaveDataconnectionsValues();
             return retval;
         }
+        /// <summary>Creates a DataTable from an EntityStructure.</summary>
+        /// <param name="e">The EntityStructure object.</param>
+        /// <returns>A DataTable representing the structure of the entity.</returns>
         private DataTable CreateTableFromEntityStructure(EntityStructure e)
         {
             DataTable dt = new DataTable(e.EntityName);
@@ -1264,6 +1524,15 @@ namespace TheTechIdea.Beep.DataView
             };
             return dt;
         }
+        /// <summary>
+        /// Retrieves the child tables for a given dataset and parent table.
+        /// </summary>
+        /// <param name="ds">The data source.</param>
+        /// <param name="dataset">The dataset to retrieve child tables for.</param>
+        /// <param name="parenttb">The parent table.</param>
+        /// <param name="ls">The list of child tables.</param>
+        /// <param name="parentid">The ID of the parent table.</param>
+        /// <returns>An instance of IErrorsInfo representing the child tables.</returns>
         private IErrorsInfo GetChildTablesForDataset(IDataSource ds, ref DataSet dataset, EntityStructure parenttb, List<EntityStructure> ls, int parentid)
         {
 
@@ -1337,10 +1606,12 @@ namespace TheTechIdea.Beep.DataView
         }
         #endregion "Dataset and entity Structure Methods"
         #region Read/write Views to file
+        /// <summary>Writes the content of a DataView to a file.</summary>
+        /// <param name="filename">The name of the file to write to.</param>
         public void WriteDataViewFile(string filename)
         {
             string path;
-            if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.FilePath)|| !string.IsNullOrWhiteSpace(Dataconnection.ConnectionProp.FilePath))
+            if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.FilePath) || !string.IsNullOrWhiteSpace(Dataconnection.ConnectionProp.FilePath))
             {
                 path = Path.Combine(Dataconnection.ConnectionProp.FilePath, $"{filename}");
             }
@@ -1348,17 +1619,23 @@ namespace TheTechIdea.Beep.DataView
             {
                 path = Path.Combine(DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.DataView).FirstOrDefault().FolderPath, $"{filename}");
             }
-             
+
             DMEEditor.ConfigEditor.JsonLoader.Serialize(path, DataView);
 
         }
 
+        /// <summary>Writes a DataView file to the specified path and filename.</summary>
+        /// <param name="path">The path where the file will be written.</param>
+        /// <param name="filename">The name of the file.</param>
         public void WriteDataViewFile(string path, string filename)
         {
             string name = Path.Combine(path, $"{filename}");
             DMEEditor.ConfigEditor.JsonLoader.Serialize(name, DataView);
 
         }
+        /// <summary>Reads a data view file from the specified path and filename.</summary>
+        /// <param name="pathandfilename">The path and filename of the data view file.</param>
+        /// <returns>The IDMDataView object representing the data view file.</returns>
         public IDMDataView ReadDataViewFile(string pathandfilename)
         {
             // String JSONtxt = File.ReadAllText(pathandfilename);
@@ -1366,12 +1643,14 @@ namespace TheTechIdea.Beep.DataView
 
 
         }
-      
+
+        /// <summary>Loads a view and returns information about any errors that occurred.</summary>
+        /// <returns>An object containing information about any errors that occurred during the view loading process.</returns>
         public IErrorsInfo LoadView()
         {
             try
             {
-                
+
                 if (Dataconnection.ConnectionStatus == ConnectionState.Open)
                 {
                     DataView = ReadDataViewFile(DataViewFile);
@@ -1394,6 +1673,9 @@ namespace TheTechIdea.Beep.DataView
 
         }
 
+        /// <summary>Returns the index of the specified entity.</summary>
+        /// <param name="entityName">The name of the entity.</param>
+        /// <returns>The index of the entity.</returns>
         public int GetEntityIdx(string entityName)
         {
             throw new NotImplementedException();

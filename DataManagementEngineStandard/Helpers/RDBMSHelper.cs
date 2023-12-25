@@ -5,8 +5,18 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Helpers
 {
+    /// <summary>
+    /// Helper class for interacting with a Relational Database Management System (RDBMS).
+    /// </summary>
     public static class RDBMSHelper
     {
+        /// <summary>Checks if a given SQL statement is valid.</summary>
+        /// <param name="sqlString">The SQL statement to be validated.</param>
+        /// <returns>True if the SQL statement is valid, false otherwise.</returns>
+        /// <remarks>
+        /// The method checks if the SQL statement contains any of the common SQL keywords such as SELECT, INSERT, UPDATE, DELETE, etc.
+        /// It uses a regular expression pattern to match the keywords in a case-insensitive manner.
+        /// </remarks>
         public static bool IsSqlStatementValid(string sqlString)
         {
             if (sqlString == null)
@@ -18,7 +28,7 @@ namespace TheTechIdea.Beep.Helpers
             "SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP",
             "FROM", "WHERE", "JOIN", "ON", "AND", "OR", "NOT", "IN", "LIKE"
             // Add more keywords as needed
-        };
+            };
 
             // Create a regular expression pattern to match SQL keywords
             string pattern = @"\b(" + string.Join("|", sqlKeywords) + @")\b";
@@ -29,6 +39,13 @@ namespace TheTechIdea.Beep.Helpers
             // If any keywords are found, return true
             return matches.Count > 0;
         }
+        /// <summary>Generates a SQL query to add a primary key to a table in a specific RDBMS.</summary>
+        /// <param name="rdbms">The type of RDBMS.</param>
+        /// <param name="tableName">The name of the table.</param>
+        /// <param name="primaryKey">The name of the primary key column.</param>
+        /// <param name="type">The data type of the primary key column.</param>
+        /// <returns>A SQL query to add a primary key to the specified table in the specified RDBMS.</returns>
+        /// <exception cref="ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
         public static string GeneratePrimaryKeyQuery(DataSourceType rdbms, string tableName, string primaryKey, string type)
         {
             string query = "";
@@ -68,6 +85,11 @@ namespace TheTechIdea.Beep.Helpers
 
             return query;
         }
+        /// <summary>Generates a query to fetch the next value from a sequence in a specific database.</summary>
+        /// <param name="rdbms">The type of the database.</param>
+        /// <param name="sequenceName">The name of the sequence.</param>
+        /// <returns>A query string to fetch the next value from the specified sequence in the given database.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when the sequence name is null or empty.</exception>
         public static string GenerateFetchNextSequenceValueQuery(DataSourceType rdbms, string sequenceName)
         {
             if (string.IsNullOrEmpty(sequenceName))
@@ -101,6 +123,11 @@ namespace TheTechIdea.Beep.Helpers
 
             return query;
         }
+        /// <summary>Generates a query to fetch the last inserted identity value based on the specified RDBMS.</summary>
+        /// <param name="rdbms">The type of RDBMS.</param>
+        /// <param name="sequenceName">The name of the sequence or generator (optional for some RDBMS).</param>
+        /// <returns>A query string to fetch the last inserted identity value.</returns>
+        /// <exception cref="ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
         public static string GenerateFetchLastIdentityQuery(DataSourceType rdbms, string sequenceName = "")
         {
             string query = "";
@@ -152,6 +179,15 @@ namespace TheTechIdea.Beep.Helpers
 
             return query;
         }
+        /// <summary>Generates a query to drop a primary key constraint from a table.</summary>
+        /// <param name="rdbms">The type of the database management system.</param>
+        /// <param name="tableName">The name of the table.</param>
+        /// <param name="constraintName">The name of the primary key constraint.</param>
+        /// <returns>A query to drop the primary key constraint.</returns>
+        /// <remarks>
+        /// For SQL Server and PostgreSQL, the query will be in the form "ALTER TABLE [tableName] DROP CONSTRAINT [constraintName]".
+        /// For MySQL, Oracle, and DB2, the query will be in the form "ALTER TABLE [tableName] DROP PRIMARY KEY".
+        /// For Firebird, the
         public static string GenerateDropPrimaryKeyQuery(DataSourceType rdbms, string tableName, string constraintName)
         {
             string query = "";
@@ -191,6 +227,16 @@ namespace TheTechIdea.Beep.Helpers
 
             return query;
         }
+        /// <summary>Generates a SQL query to drop a foreign key constraint in a specified RDBMS.</summary>
+        /// <param name="rdbms">The type of RDBMS.</param>
+        /// <param name="tableName">The name of the table.</param>
+        /// <param name="constraintName">The name of the foreign key constraint.</param>
+        /// <returns>A SQL query to drop the specified foreign key constraint.</returns>
+        /// <remarks>
+        /// The generated query varies depending on the RDBMS:
+        /// - For SQL Server, the query is: ALTER TABLE {tableName} DROP CONSTRAINT {constraintName}
+        /// - For MySQL, the query is: ALTER TABLE {tableName} DROP FOREIGN KEY {constraintName}
+        ///
         public static string GenerateDropForeignKeyQuery(DataSourceType rdbms, string tableName, string constraintName)
         {
             string query = "";
@@ -230,6 +276,16 @@ namespace TheTechIdea.Beep.Helpers
 
             return query;
         }
+        /// <summary>Generates a query to disable a foreign key constraint in a specific RDBMS.</summary>
+        /// <param name="rdbms">The type of RDBMS.</param>
+        /// <param name="tableName">The name of the table.</param>
+        /// <param name="constraintName">The name of the foreign key constraint.</param>
+        /// <returns>A query to disable the specified foreign key constraint.</returns>
+        /// <remarks>
+        /// The generated query depends on the type of RDBMS specified. The following RDBMS are supported:
+        /// - SqlServer: ALTER TABLE {tableName} NOCHECK CONSTRAINT {constraintName}
+        /// - Oracle: ALTER TABLE {tableName} DISABLE CONSTRAINT {constraintName}
+        /// - Post
         public static string GenerateDisableForeignKeyQuery(DataSourceType rdbms, string tableName, string constraintName)
         {
             string query = "";
@@ -269,6 +325,12 @@ namespace TheTechIdea.Beep.Helpers
 
             return query;
         }
+        /// <summary>Generates a query to enable a foreign key constraint in a specific RDBMS.</summary>
+        /// <param name="rdbms">The type of RDBMS.</param>
+        /// <param name="tableName">The name of the table.</param>
+        /// <param name="constraintName">The name of the foreign key constraint.</param>
+        /// <returns>A query to enable the specified foreign key constraint.</returns>
+        /// <exception cref="ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
         public static string GenerateEnableForeignKeyQuery(DataSourceType rdbms, string tableName, string constraintName)
         {
             string query = "";
@@ -309,6 +371,8 @@ namespace TheTechIdea.Beep.Helpers
 
             return query;
         }
+        /// <summary>Creates a list of QuerySqlRepo objects.</summary>
+        /// <returns>A list of QuerySqlRepo objects.</returns>
         public static List<QuerySqlRepo> CreateQuerySqlRepos()
         {
             return new List<QuerySqlRepo>

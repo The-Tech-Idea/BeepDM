@@ -6,7 +6,10 @@ using TheTechIdea.Beep;
 
 namespace TheTechIdea
 {
-    public interface IDM_Addin
+    /// <summary>
+    /// Represents an add-in in the Beep system.
+    /// </summary>
+  public interface IDM_Addin
     {
         string ParentName { get; set; }
         string ObjectName { get; set; } 

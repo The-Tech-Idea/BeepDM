@@ -4,7 +4,8 @@ using System.Text;
 
 namespace TheTechIdea.Beep.Addin
 {
-   public  interface IFunctionExtension
+   /// <summary>Represents an extension for a function.</summary>
+ public  interface IFunctionExtension
     {
         IDMEEditor DMEEditor { get; set; }
         IPassedArgs Passedargs { get; set; }

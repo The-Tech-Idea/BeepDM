@@ -10,6 +10,10 @@ namespace TheTechIdea.Beep.Helpers
 {
     public static class ConnectionHelper
     {
+        /// <summary>Links a connection to its corresponding drivers in the configuration editor.</summary>
+        /// <param name="cn">The connection properties.</param>
+        /// <param name="configEditor">The configuration editor.</param>
+        /// <returns>The connection drivers configuration.</returns>
         public static ConnectionDriversConfig LinkConnection2Drivers(IConnectionProperties cn, IConfigEditor configEditor)
         {
 
@@ -21,8 +25,8 @@ namespace TheTechIdea.Beep.Helpers
                 retval = configEditor.DataDriversClasses.Where(c => c.PackageName.Equals(pk, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 if (retval == null)
                 {
-                    retval = configEditor.DataDriversClasses.Where(c => c.DatasourceType==cn.DatabaseType).FirstOrDefault();
-                    if(retval == null)
+                    retval = configEditor.DataDriversClasses.Where(c => c.DatasourceType == cn.DatabaseType).FirstOrDefault();
+                    if (retval == null)
                     {
                         if (cn.Category == DatasourceCategory.FILE)
                         {
@@ -31,7 +35,7 @@ namespace TheTechIdea.Beep.Helpers
                             retval = clss.Where(c => c.extensionstoHandle.Contains(ext)).FirstOrDefault();
                         }
                     }
-                   
+
                 }
 
             }
@@ -39,6 +43,11 @@ namespace TheTechIdea.Beep.Helpers
 
 
         }
+        /// <summary>Replaces a value in a connection string based on the provided parameters.</summary>
+        /// <param name="DataSourceDriver">The driver configuration for the data source.</param>
+        /// <param name="ConnectionProp">The connection properties.</param>
+        /// <param name="DMEEditor">The DME editor.</param>
+        /// <returns>The modified connection string.</returns>
         public static string ReplaceValueFromConnectionString(ConnectionDriversConfig DataSourceDriver, IConnectionProperties ConnectionProp, IDMEEditor DMEEditor)
         {
             bool IsConnectionString = false;
@@ -143,6 +152,8 @@ namespace TheTechIdea.Beep.Helpers
             rep = input;
             return rep;
         }
+        /// <summary>Returns a list of all connection configurations.</summary>
+        /// <returns>A list of ConnectionDriversConfig objects representing different connection configurations.</returns>
         public static List<ConnectionDriversConfig> GetAllConnectionConfigs()
         {
             List<ConnectionDriversConfig> configs = new List<ConnectionDriversConfig>();
@@ -181,6 +192,8 @@ namespace TheTechIdea.Beep.Helpers
 
             return configs;
         }
+        /// <summary>Creates a configuration object for SnowFlake connection drivers.</summary>
+        /// <returns>A ConnectionDriversConfig object with the specified properties.</returns>
         public static ConnectionDriversConfig CreateSnowFlakeConfig()
         {
             return new ConnectionDriversConfig
@@ -204,6 +217,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for Hadoop connection drivers.</summary>
+        /// <returns>A ConnectionDriversConfig object representing the Hadoop configuration.</returns>
         public static ConnectionDriversConfig CreateHadoopConfig()
         {
             return new ConnectionDriversConfig
@@ -227,6 +242,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for Redis connection drivers.</summary>
+        /// <returns>A ConnectionDriversConfig object with the specified properties.</returns>
         public static ConnectionDriversConfig CreateRedisConfig()
         {
             return new ConnectionDriversConfig
@@ -250,6 +267,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for Kafka connection drivers.</summary>
+        /// <returns>A ConnectionDriversConfig object with Kafka-specific configuration.</returns>
         public static ConnectionDriversConfig CreateKafkaConfig()
         {
             return new ConnectionDriversConfig
@@ -273,6 +292,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for OPC connection drivers.</summary>
+        /// <returns>A ConnectionDriversConfig object representing the OPC configuration.</returns>
         public static ConnectionDriversConfig CreateOPCConfig()
         {
             return new ConnectionDriversConfig
@@ -297,6 +318,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for connecting to a DB2 database.</summary>
+        /// <returns>A ConnectionDriversConfig object with the DB2 configuration settings.</returns>
         public static ConnectionDriversConfig CreateDB2Config()
         {
             return new ConnectionDriversConfig
@@ -321,6 +344,10 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>
+        /// Creates a configuration object for connecting to CouchDB.
+        /// </summary>
+        /// <returns>A configuration object for connecting to CouchDB.</returns>
         public static ConnectionDriversConfig CreateCouchDBConfig()
         {
             return new ConnectionDriversConfig
@@ -345,6 +372,10 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>
+        /// Creates a configuration object for VistaDB connection drivers.
+        /// </summary>
+        /// <returns>A configuration object for VistaDB connection drivers.</returns>
         public static ConnectionDriversConfig CreateVistaDBConfig()
         {
             return new ConnectionDriversConfig
@@ -369,6 +400,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for connecting to Couchbase.</summary>
+        /// <returns>A configuration object for connecting to Couchbase.</returns>
         public static ConnectionDriversConfig CreateCouchbaseConfig()
         {
             return new ConnectionDriversConfig
@@ -393,6 +426,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for Firebase connection drivers.</summary>
+        /// <returns>A configuration object for Firebase connection drivers.</returns>
         public static ConnectionDriversConfig CreateFirebaseConfig()
         {
             return new ConnectionDriversConfig
@@ -417,6 +452,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for connecting to a Realm database.</summary>
+        /// <returns>A configuration object for connecting to a Realm database.</returns>
         public static ConnectionDriversConfig CreateRealmConfig()
         {
             return new ConnectionDriversConfig
@@ -441,6 +478,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for connecting to a PostgreSQL database.</summary>
+        /// <returns>A configuration object for connecting to a PostgreSQL database.</returns>
         public static ConnectionDriversConfig CreatePostgreConfig()
         {
             return new ConnectionDriversConfig
@@ -465,6 +504,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for MongoDB connection drivers.</summary>
+        /// <returns>A configuration object for MongoDB connection drivers.</returns>
         public static ConnectionDriversConfig CreateMongoDBConfig()
         {
             return new ConnectionDriversConfig
@@ -487,6 +528,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for StackExchange.Redis.</summary>
+        /// <returns>A configuration object for StackExchange.Redis.</returns>
         public static ConnectionDriversConfig CreateStackExchangeRedisConfig()
         {
             return new ConnectionDriversConfig
@@ -510,6 +553,10 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>
+        /// Creates a configuration object for connecting to Couchbase Lite.
+        /// </summary>
+        /// <returns>A configuration object for connecting to Couchbase Lite.</returns>
         public static ConnectionDriversConfig CreateCouchbaseLiteConfig()
         {
             return new ConnectionDriversConfig
@@ -522,7 +569,7 @@ namespace TheTechIdea.Beep.Helpers
                 parameter1 = "Database",
                 parameter2 = "DatabaseConfiguration",
                 iconname = "couchbase.png",
-                classHandler="CouchbaseLiteDatasource",
+                classHandler = "CouchbaseLiteDatasource",
                 ADOType = false,
                 CreateLocal = false,
                 InMemory = false,
@@ -532,6 +579,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for Elasticsearch connection drivers.</summary>
+        /// <returns>A configuration object for Elasticsearch connection drivers.</returns>
         public static ConnectionDriversConfig CreateElasticsearchConfig()
         {
             return new ConnectionDriversConfig
@@ -554,6 +603,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for SQLite connection drivers.</summary>
+        /// <returns>A configuration object for SQLite connection drivers.</returns>
         public static ConnectionDriversConfig CreateSQLiteConfig()
         {
             return new ConnectionDriversConfig
@@ -579,6 +630,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for RavenDB connection drivers.</summary>
+        /// <returns>A configuration object for RavenDB connection drivers.</returns>
         public static ConnectionDriversConfig CreateRavenDBConfig()
         {
             return new ConnectionDriversConfig
@@ -602,6 +655,10 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>
+        /// Creates a configuration object for a CSV file reader connection driver.
+        /// </summary>
+        /// <returns>A configuration object for a CSV file reader connection driver.</returns>
         public static ConnectionDriversConfig CreateCSVFileReaderConfig()
         {
             return new ConnectionDriversConfig
@@ -623,6 +680,10 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>
+        /// Creates a configuration object for Firebird database connection drivers.
+        /// </summary>
+        /// <returns>A configuration object for Firebird database connection drivers.</returns>
         public static ConnectionDriversConfig CreateFirebirdConfig()
         {
             return new ConnectionDriversConfig
@@ -648,6 +709,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for Cassandra connection drivers.</summary>
+        /// <returns>A configuration object for Cassandra connection drivers.</returns>
         public static ConnectionDriversConfig CreateCassandraConfig()
         {
             return new ConnectionDriversConfig
@@ -671,6 +734,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for connecting to a MySQL database.</summary>
+        /// <returns>A configuration object for connecting to a MySQL database.</returns>
         public static ConnectionDriversConfig CreateMySqlConfig()
         {
             return new ConnectionDriversConfig
@@ -696,6 +761,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for MySqlConnector.</summary>
+        /// <returns>A configuration object for MySqlConnector.</returns>
         public static ConnectionDriversConfig CreateMySqlConnectorConfig()
         {
             return new ConnectionDriversConfig
@@ -721,6 +788,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for connecting to a SQL Server database.</summary>
+        /// <returns>A configuration object for connecting to a SQL Server database.</returns>
         public static ConnectionDriversConfig CreateSqlServerConfig()
         {
             return new ConnectionDriversConfig
@@ -746,6 +815,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for SQL Compact connection drivers.</summary>
+        /// <returns>A configuration object for SQL Compact connection drivers.</returns>
         public static ConnectionDriversConfig CreateSqlCompactConfig()
         {
             return new ConnectionDriversConfig
@@ -771,6 +842,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for connection drivers.</summary>
+        /// <returns>A configuration object for connection drivers.</returns>
         public static ConnectionDriversConfig CreateDataViewConfig()
         {
             return new ConnectionDriversConfig
@@ -792,6 +865,10 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>
+        /// Creates a configuration object for a CSV data source.
+        /// </summary>
+        /// <returns>A configuration object for a CSV data source.</returns>
         public static ConnectionDriversConfig CreateCSVDataSourceConfig()
         {
             return new ConnectionDriversConfig
@@ -814,6 +891,10 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>
+        /// Creates a configuration object for a JSON data source connection driver.
+        /// </summary>
+        /// <returns>A configuration object for a JSON data source connection driver.</returns>
         public static ConnectionDriversConfig CreateJsonDataSourceConfig()
         {
             return new ConnectionDriversConfig
@@ -836,6 +917,10 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>
+        /// Creates a configuration object for a text, xls, or csv file data source.
+        /// </summary>
+        /// <returns>A ConnectionDriversConfig object representing the configuration for the file data source.</returns>
         public static ConnectionDriversConfig CreateTxtXlsCSVFileSourceConfig()
         {
             return new ConnectionDriversConfig
@@ -858,6 +943,10 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>
+        /// Creates a configuration object for a LiteDB data source connection driver.
+        /// </summary>
+        /// <returns>A configuration object for a LiteDB data source connection driver.</returns>
         public static ConnectionDriversConfig CreateLiteDBDataSourceConfig()
         {
             return new ConnectionDriversConfig
@@ -879,6 +968,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for Oracle database connection drivers.</summary>
+        /// <returns>A configuration object for Oracle database connection drivers.</returns>
         public static ConnectionDriversConfig CreateOracleConfig()
         {
             return new ConnectionDriversConfig
@@ -903,6 +994,8 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
+        /// <summary>Creates a configuration object for DuckDB connection drivers.</summary>
+        /// <returns>A configuration object for DuckDB connection drivers.</returns>
         public static ConnectionDriversConfig CreateDuckDBConfig()
         {
             return new ConnectionDriversConfig
@@ -926,6 +1019,6 @@ namespace TheTechIdea.Beep.Helpers
                 version = "0.8.1.0"
             };
         }
-       
+
     }
 }

@@ -9,6 +9,9 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.DataBase
 {
+    /// <summary>
+    /// Represents a view for displaying and interacting with DataView  data.
+    /// </summary>
     public class DMDataView : IDMDataView
     {
         public List<EntityStructure> Entities { get; set; }=new List<EntityStructure>();

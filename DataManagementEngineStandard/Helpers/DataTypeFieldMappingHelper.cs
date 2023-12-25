@@ -8,22 +8,67 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Helpers
 {
+    /// <summary>
+    /// Helper class for mapping data types to field names.
+    /// </summary>
     public static class DataTypeFieldMappingHelper
     {
-        public static string NetDataTypeDef1 = "byte,sbyte,int,uint,short,ushort,long,ulong,float,double,char,bool,object,string,decimal,DateTime";
+        /// <summary>
+        /// A string representing a collection of .NET data types.
+        /// </summary>
+        public static string NetDataTypeDef1 = "byte, sbyte, int, uint, short, ushort, long, ulong, float, double, char, bool, object, string, decimal, DateTime";
+
+        /// <summary>
+        /// A string representing a list of .NET data types.
+        /// </summary>
+        /// <remarks>
+        /// The string contains a comma-separated list of .NET data types, including:
+        /// - System.Byte[]
+        /// - System.SByte[]
+        /// - System.Byte
+        /// - System.SByte
+        /// - System.Int32
+        /// - System.UInt32
+        /// - System.Int16
+        /// - System.UInt16
+        /// - System.Int64
+        /// - System.UInt64
+        /// - System.Single
+        /// - System.Double
+        /// - System.Char
+        /// - System.Boolean
+        /// - System.Object
+        /// - System.String
+        /// - System.Decimal
+        /// - System.DateTime
+        /// - System.TimeSpan
+        /// - System.DateTimeOffset
         public static string NetDataTypeDef2 = ",System.Byte[],System.SByte[],System.Byte,System.SByte,System.Int32,System.UInt32,System.Int16,System.UInt16,System.Int64,System.UInt64,System.Single,System.Double,System.Char,System.Boolean,System.Object,System.String,System.Decimal,System.DateTime,System.TimeSpan,System.DateTimeOffset,System.Guid,System.Xml";
+        /// <summary>Returns an array of .NET data types.</summary>
+        /// <returns>An array of .NET data types.</returns>
         public static string[] GetNetDataTypes()
         {
             string[] a = NetDataTypeDef1.Split(',');
             Array.Sort(a);
             return a;
         }
+        /// <summary>Returns an array of .NET data types.</summary>
+        /// <returns>An array of .NET data types.</returns>
         public static string[] GetNetDataTypes2()
         {
             string[] a = NetDataTypeDef2.Split(',');
             Array.Sort(a);
             return a;
         }
+        /// <summary>Gets the datatype mapping for a given class name, field type, entity field, and DME editor.</summary>
+        /// <param name="className">The name of the class.</param>
+        /// <param name="fieldType">The type of the field.</param>
+        /// <param name="fld">The entity field.</param>
+        /// <param name="DMEEditor">The DME editor.</param>
+        /// <returns>The datatype mapping for the given parameters.</returns>
+        /// <remarks>
+        /// This method retrieves the datatype mapping from the DME editor's configuration for a specific class name and field type.
+        /// If the entity field has a size greater than zero, it checks if there is a datatype mapping with the same
         public static DatatypeMapping GetDataTypeMappingForString(string className, string fieldType, EntityField fld, IDMEEditor DMEEditor)
         {
             DatatypeMapping dt = DMEEditor.ConfigEditor.DataTypesMap
@@ -47,7 +92,12 @@ namespace TheTechIdea.Beep.Helpers
 
             return dt;
         }
-        public static string GetDataType(string DSname, EntityField fld,IDMEEditor DMEEditor)
+        /// <summary>Gets the data type of a field in a specific data source.</summary>
+        /// <param name="DSname">The name of the data source.</param>
+        /// <param name="fld">The field for which to retrieve the data type.</param>
+        /// <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
+        /// <returns>The data type of the specified field.</returns>
+        public static string GetDataType(string DSname, EntityField fld, IDMEEditor DMEEditor)
         {
             string retval = null;
             IDataSource ds;
@@ -180,6 +230,11 @@ namespace TheTechIdea.Beep.Helpers
             };
             return retval;
         }
+        /// <summary>Gets the field type without conversion.</summary>
+        /// <param name="DSname">The name of the data source.</param>
+        /// <param name="fld">The entity field.</param>
+        /// <param name="DMEEditor">The DME editor.</param>
+        /// <returns>The field type without conversion.</returns>
         public static string GetFieldTypeWoConversion(string DSname, EntityField fld, IDMEEditor DMEEditor)
         {
             string retval = null;
@@ -256,9 +311,11 @@ namespace TheTechIdea.Beep.Helpers
             };
             return retval;
         }
+        /// <summary>Returns a list of datatype mappings.</summary>
+        /// <returns>A list of datatype mappings.</returns>
         public static List<DatatypeMapping> GetMappings()
         {
-             List<DatatypeMapping> ls = new List<DatatypeMapping>();
+            List<DatatypeMapping> ls = new List<DatatypeMapping>();
             ls.AddRange(GenerateOracleDataTypesMapping());
             ls.AddRange(GenerateSqlServerDataTypesMapping());
             ls.AddRange(GenerateSQLiteDataTypesMapping());
@@ -272,7 +329,7 @@ namespace TheTechIdea.Beep.Helpers
             ls.AddRange(GetMongoDBDataTypeMappings());
             ls.AddRange(GetCassandraDataTypeMappings());
             ls.AddRange(GetRedisDataTypeMappings());
-            ls.AddRange(GetDynamoDBDataTypeMappings()); 
+            ls.AddRange(GetDynamoDBDataTypeMappings());
             ls.AddRange(GetInfluxDBDataTypeMappings());
             ls.AddRange(GetSybaseDataTypeMappings());
             ls.AddRange(GetHBaseDataTypeMappings());
@@ -287,8 +344,10 @@ namespace TheTechIdea.Beep.Helpers
             ls.AddRange(GetFirebaseDataTypeMappings());
 
             return ls;
-            
+
         }
+        /// <summary>Returns a list of datatype mappings for CouchDB.</summary>
+        /// <returns>A list of datatype mappings for CouchDB.</returns>
         public static List<DatatypeMapping> GetCouchDBDataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -301,6 +360,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Null", DataSourceName = "CouchDBDataSource", NetDataType = "System.Object", Fav = false }
     };
         }
+        /// <summary>Returns a list of Firebase data type mappings.</summary>
+        /// <returns>A list of DatatypeMapping objects representing the mappings between Firebase data types and .NET data types.</returns>
         public static List<DatatypeMapping> GetFirebaseDataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -316,6 +377,10 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Null", DataSourceName = "FirebaseDataSource", NetDataType = "System.Object", Fav = false }
     };
         }
+        /// <summary>
+        /// Generates a list of datatype mappings for Oracle database.
+        /// </summary>
+        /// <returns>A list of datatype mappings for Oracle database.</returns>
         public static List<DatatypeMapping> GenerateOracleDataTypesMapping()
         {
             return new List<DatatypeMapping>
@@ -342,6 +407,10 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "dfac1056-5c99-40ef-b76d-b60ec95eb777", DataType = "NCLOB", DataSourceName = "OracleDataSource", NetDataType = "System.String", Fav = false },
         };
         }
+        /// <summary>
+        /// Generates a list of datatype mappings for SQLite.
+        /// </summary>
+        /// <returns>A list of datatype mappings for SQLite.</returns>
         public static List<DatatypeMapping> GenerateSQLiteDataTypesMapping()
         {
             return new List<DatatypeMapping>
@@ -367,6 +436,10 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "9295b8a4-ce98-42eb-bd97-a56ba1313cd5", DataType = "INTEGER", DataSourceName = "SQLiteDataSource", NetDataType = "System.UInt64", Fav = false },
         };
         }
+        /// <summary>
+        /// Generates a list of datatype mappings between SQL Server data types and corresponding .NET data types.
+        /// </summary>
+        /// <returns>A list of datatype mappings.</returns>
         public static List<DatatypeMapping> GenerateSqlServerDataTypesMapping()
         {
             List<DatatypeMapping> mappings = new List<DatatypeMapping>
@@ -398,6 +471,10 @@ namespace TheTechIdea.Beep.Helpers
 
             return mappings;
         }
+        /// <summary>
+        /// Generates a list of datatype mappings for SQL Server Compact Edition.
+        /// </summary>
+        /// <returns>A list of datatype mappings for SQL Server Compact Edition.</returns>
         public static List<DatatypeMapping> GenerateSqlCompactDataTypesMapping()
         {
             return new List<DatatypeMapping>
@@ -427,6 +504,8 @@ namespace TheTechIdea.Beep.Helpers
 };
 
         }
+        /// <summary>Returns a list of datatype mappings for PostgreSQL.</summary>
+        /// <returns>A list of datatype mappings for PostgreSQL.</returns>
         public static List<DatatypeMapping> GetPostgreDataTypesMapping()
         {
             return new List<DatatypeMapping>
@@ -451,6 +530,8 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "e1efb191-fdb1-443e-a969-8492a45b6744", DataType = "bytea", DataSourceName = "PostgreDataSource", NetDataType = "System.Byte[]", Fav = false }
         };
         }
+        /// <summary>Returns a list of datatype mappings between MySQL and .NET data types.</summary>
+        /// <returns>A list of datatype mappings.</returns>
         public static List<DatatypeMapping> GetMySqlDataTypesMapping()
         {
             return new List<DatatypeMapping>
@@ -478,6 +559,8 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "e4b66269-b72d-492a-80c5-31d61a455ff7", DataType = "LONGBLOB", DataSourceName = "MySQLDataSource", NetDataType = "System.Byte[]", Fav = false }
         };
         }
+        /// <summary>Returns a list of datatype mappings for Firebird database.</summary>
+        /// <returns>A list of datatype mappings for Firebird database.</returns>
         public static List<DatatypeMapping> GetFireBirdDataTypesMapping()
         {
             return new List<DatatypeMapping>
@@ -503,6 +586,8 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "28dd3198-4a74-4d4c-a078-65a62ca605cf", DataType = "TEXT", DataSourceName = "FireBirdDataSource", NetDataType = "System.String", Fav = false }
         };
         }
+        /// <summary>Returns a list of LiteDB data type mappings.</summary>
+        /// <returns>A list of DatatypeMapping objects representing the mappings between LiteDB data types and their corresponding .NET data types.</returns>
         public static List<DatatypeMapping> GetLiteDBDataTypesMapping()
         {
             return new List<DatatypeMapping>
@@ -519,9 +604,11 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "7b99280e-9912-4c87-87b5-be571ea98555", DataType = "DateTime", DataSourceName = "LiteDBDataSource", Fav = false }
         };
         }
+        /// <summary>Returns a list of datatype mappings for DuckDB.</summary>
+        /// <returns>A list of datatype mappings for DuckDB.</returns>
         public static List<DatatypeMapping> GetDuckDBDataTypesMapping()
         {
-            return  new List<DatatypeMapping>
+            return new List<DatatypeMapping>
             {
             new DatatypeMapping { ID = 0, GuidID = "dda45fdb-d6e6-4f34-8b70-04ce2cf8ed46", DataType = "BOOLEAN", DataSourceName = "DuckDBDataSource", NetDataType = "System.Boolean", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "8e8c7dd3-8104-4b94-83b9-d8f0ffa815ab", DataType = "TINYINT", DataSourceName = "DuckDBDataSource", NetDataType = "System.Byte", Fav = false },
@@ -546,6 +633,8 @@ namespace TheTechIdea.Beep.Helpers
             };
 
         }
+        /// <summary>Returns a list of datatype mappings for DB2.</summary>
+        /// <returns>A list of datatype mappings for DB2.</returns>
         public static List<DatatypeMapping> GetDB2DataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -565,6 +654,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "BLOB", DataSourceName = "DB2DataSource", NetDataType = "System.Byte[]", Fav = false },
     };
         }
+        /// <summary>Returns a list of MongoDB data type mappings.</summary>
+        /// <returns>A list of DataTypeMapping objects representing the mappings between .NET data types and MongoDB data types.</returns>
         public static List<DatatypeMapping> GetMongoDBDataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -583,6 +674,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Document", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonDocument", Fav = false }
     };
         }
+        /// <summary>Returns a list of mappings between .NET data types and Cassandra data types.</summary>
+        /// <returns>A list of <see cref="DatatypeMapping"/> objects representing the mappings.</returns>
         public static List<DatatypeMapping> GetCassandraDataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -603,6 +696,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "set", DataSourceName = "CassandraDataSource", NetDataType = "System.Collections.Generic.HashSet<>", Fav = false }
     };
         }
+        /// <summary>Returns a list of Redis data type mappings.</summary>
+        /// <returns>A list of Redis data type mappings.</returns>
         public static List<DatatypeMapping> GetRedisDataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -617,6 +712,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "geospatial index", DataSourceName = "RedisDataSource", NetDataType = "System.Object", Fav = false }
     };
         }
+        /// <summary>Returns a list of Couchbase data type mappings.</summary>
+        /// <returns>A list of Couchbase data type mappings.</returns>
         public static List<DatatypeMapping> GetCouchbaseDataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -631,6 +728,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "DateTime", DataSourceName = "CouchbaseDataSource", NetDataType = "System.DateTime", Fav = false }
     };
         }
+        /// <summary>Returns a list of DynamoDB data type mappings.</summary>
+        /// <returns>A list of DynamoDB data type mappings.</returns>
         public static List<DatatypeMapping> GetDynamoDBDataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -646,6 +745,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Binary Set", DataSourceName = "DynamoDBDataSource", NetDataType = "System.Collections.Generic.HashSet<byte[]>", Fav = false }
     };
         }
+        /// <summary>Returns a list of datatype mappings for InfluxDB.</summary>
+        /// <returns>A list of datatype mappings for InfluxDB.</returns>
         public static List<DatatypeMapping> GetInfluxDBDataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -657,6 +758,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Timestamp", DataSourceName = "InfluxDBDataSource", NetDataType = "System.DateTime", Fav = false }
     };
         }
+        /// <summary>Returns a list of datatype mappings for Sybase database.</summary>
+        /// <returns>A list of datatype mappings for Sybase database.</returns>
         public static List<DatatypeMapping> GetSybaseDataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -684,6 +787,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "TIMESTAMP", DataSourceName = "SybaseDataSource", NetDataType = "System.Byte[]", Fav = false }
     };
         }
+        /// <summary>Returns a list of HBase data type mappings.</summary>
+        /// <returns>A list of DatatypeMapping objects representing the mappings between HBase data types and .NET data types.</returns>
         public static List<DatatypeMapping> GetHBaseDataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -698,6 +803,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Binary", DataSourceName = "HBaseDataSource", NetDataType = "System.Byte[]", Fav = false }
     };
         }
+        /// <summary>Returns a list of datatype mappings for CockroachDB.</summary>
+        /// <returns>A list of datatype mappings for CockroachDB.</returns>
         public static List<DatatypeMapping> GetCockroachDBDataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -722,6 +829,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "TIME", DataSourceName = "CockroachDBDataSource", NetDataType = "System.TimeSpan", Fav = false }
     };
         }
+        /// <summary>Returns a list of datatype mappings for Berkeley DB.</summary>
+        /// <returns>A list of datatype mappings for Berkeley DB.</returns>
         public static List<DatatypeMapping> GetBerkeleyDBDataTypesMapping()
         {
             return new List<DatatypeMapping>
@@ -734,6 +843,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "IntValue", DataSourceName = "BerkeleyDBDataSource", NetDataType = "System.Int32", Fav = false }
     };
         }
+        /// <summary>Returns a list of Snowflake data type mappings.</summary>
+        /// <returns>A list of DatatypeMapping objects representing the mappings between Snowflake data types and their corresponding .NET data types.</returns>
         public static List<DatatypeMapping> GetSnowflakeDataTypesMapping()
         {
             return new List<DatatypeMapping>
@@ -753,6 +864,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "MONEY", DataSourceName = "SnowflakeDataSource", NetDataType = "System.Decimal", Fav = false }
     };
         }
+        /// <summary>Returns a list of Azure Cosmos DB data type mappings.</summary>
+        /// <returns>A list of DatatypeMapping objects representing the mappings between Azure Cosmos DB data types and .NET data types.</returns>
         public static List<DatatypeMapping> GetAzureCosmosDBDataTypesMapping()
         {
             return new List<DatatypeMapping>
@@ -766,6 +879,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "DateTime", DataSourceName = "AzureCosmosDB", NetDataType = "System.DateTime", Fav = false }
     };
         }
+        /// <summary>Returns a list of datatype mappings for Vertica database.</summary>
+        /// <returns>A list of datatype mappings for Vertica database.</returns>
         public static List<DatatypeMapping> GetVerticaDataTypesMapping()
         {
             return new List<DatatypeMapping>
@@ -786,6 +901,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "UUID", DataSourceName = "VerticaDataSource", NetDataType = "System.Guid", Fav = false }
     };
         }
+        /// <summary>Returns a list of Teradata data type mappings.</summary>
+        /// <returns>A list of Teradata data type mappings.</returns>
         public static List<DatatypeMapping> GetTeradataDataTypeMappings()
         {
             return new List<DatatypeMapping>
@@ -804,6 +921,8 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "BYTE", DataSourceName = "TeradataDataSource", NetDataType = "System.Byte[]", Fav = false },
     };
         }
+        /// <summary>Returns a list of datatype mappings for ArangoDB.</summary>
+        /// <returns>A list of datatype mappings for ArangoDB.</returns>
         public static List<DatatypeMapping> GetArangoDBDataTypeMappings()
         {
             return new List<DatatypeMapping>

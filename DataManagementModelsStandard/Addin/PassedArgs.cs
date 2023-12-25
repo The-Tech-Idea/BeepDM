@@ -1,11 +1,12 @@
-﻿
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using TheTechIdea.Beep.DataBase;
 
 namespace TheTechIdea
 {
+    /// <summary>
+    /// Represents the arguments passed to a method or event.
+    /// </summary>
     public interface IPassedArgs
     {
         string Args { get; set; }
@@ -44,10 +45,13 @@ namespace TheTechIdea
         bool Cancel { get; set; }
     }
 
+    /// <summary>
+    /// Represents the arguments passed to a method or event.
+    /// </summary>
     public class PassedArgs : IPassedArgs
 
     {
-        public string Args { get; set; }=string.Empty;
+        public string Args { get; set; } = string.Empty;
         public IDataSource DataSource { get; set; }
         public List<ObjectItem> Objects { get; set; } = new List<ObjectItem>();
         public IDM_Addin Addin { get; set; }
@@ -86,6 +90,7 @@ namespace TheTechIdea
 
         }
     }
+    /// <summary>Represents an item in an object collection.</summary>
     public class ObjectItem
     {
         public Object obj { get; set; }

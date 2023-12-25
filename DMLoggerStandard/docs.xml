@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>DMLogger</name>
+    </assembly>
+    <members>
+        <member name="T:TheTechIdea.Logger.DMLogger">
+            <summary>
+            Provides logging functionalities for the application.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Logger.DMLogger.Onevent">
+            <summary>
+            Occurs when a log event is triggered.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Logger.DMLogger.LogEvent">
+            <summary>
+            Represents the method that will handle a log event.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Logger.DMLogger.PropertyChanged">
+            <summary>
+            Occurs when a property value changes.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Logger.DMLogger.#ctor">
+            <summary>
+            Initializes a new instance of the DMLogger class, setting up the logger configurations.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Logger.DMLogger.WriteLog(System.String)">
+            <summary>
+            Writes a log message.
+            </summary>
+            <param name="info">The information to log.</param>
+        </member>
+        <member name="M:TheTechIdea.Logger.DMLogger.OnPropertyChanged(System.String)">
+            <summary>
+            Invokes the PropertyChanged event.
+            </summary>
+            <param name="propertyName">The name of the property that changed.</param>
+        </member>
+        <member name="M:TheTechIdea.Logger.DMLogger.StartLog">
+            <summary>
+            Starts logging.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Logger.DMLogger.StopLog">
+            <summary>
+            Stops logging.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Logger.DMLogger.PauseLog">
+            <summary>
+            Pauses logging.
+            </summary>
+        </member>
+    </members>
+</doc>

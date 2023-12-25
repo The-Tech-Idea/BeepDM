@@ -91,8 +91,12 @@ namespace TheTechIdea.Tools
             DataSourcesClasses = new List<AssemblyClassDefinition>();
             CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
         }
-        
+
         #region "Loaders"
+        /// <summary>
+        /// Scans and initializes loader extensions within a given assembly representation.
+        /// </summary>
+        /// <param name="assembly">The assemblies_rep object representing the assembly to be scanned.</param>
         private void ScanExtensions(assemblies_rep assembly)
         {
             foreach (Type item in LoaderExtensions)
@@ -111,6 +115,10 @@ namespace TheTechIdea.Tools
                 }
             }
         }
+        /// <summary>
+        /// Scans and initializes loader extensions within a given .NET Assembly object.
+        /// </summary>
+        /// <param name="assembly">The Assembly object to be scanned.</param>
         private void ScanExtensions(Assembly assembly)
         {
             foreach (Type item in LoaderExtensions)
@@ -129,6 +137,12 @@ namespace TheTechIdea.Tools
                 }
             }
         }
+        /// <summary>
+        /// Loads assemblies from a specified path and scans them for extension scanners, 
+        /// reporting progress through IProgress.
+        /// </summary>
+        /// <param name="progress">The progress reporting mechanism.</param>
+        /// <param name="token">The token to monitor for cancellation requests.</param>
         public void GetExtensionScanners(IProgress<PassedArgs> progress, CancellationToken token)
         {
            
@@ -180,6 +194,10 @@ namespace TheTechIdea.Tools
 
             
         }
+        /// <summary>
+        /// Scans the current executing assembly and the root assembly for built-in classes.
+        /// </summary>
+        /// <returns>Returns an IErrorsInfo object indicating the success or failure of the operation.</returns>
         public IErrorsInfo GetBuiltinClasses()
         {
           //  DMEEditor.ErrorObject.Flag = Errors.Ok;
@@ -487,6 +505,13 @@ namespace TheTechIdea.Tools
         }
         #endregion "Loaders"
         #region "Class ordering"
+        /// <summary>
+        /// Rearranges or adds a new addin object to the function hierarchy.
+        /// </summary>
+        /// <param name="p">The ID of the addin object.</param>
+        /// <param name="parentid">The parent ID of the addin object. Null if it's a root object.</param>
+        /// <param name="Objt">The type of the object.</param>
+        /// <returns>Returns a new or existing ParentChildObject based on the input parameters.</returns>
         public ParentChildObject RearrangeAddin(string p, string parentid, string Objt)
         {
 
@@ -523,6 +548,11 @@ namespace TheTechIdea.Tools
 
             return a;
         }
+        /// <summary>
+        /// Retrieves addin objects from the specified assembly and organizes them into a hierarchical structure.
+        /// </summary>
+        /// <param name="asm">The assembly to scan for addin objects.</param>
+        /// <returns>A list of ParentChildObjects representing the hierarchical structure of addins.</returns>
         public List<ParentChildObject> GetAddinObjects(Assembly asm)
         {
             IDM_Addin addin = null;
@@ -605,6 +635,10 @@ namespace TheTechIdea.Tools
              ConfigEditor.SaveAddinTreeStructure();
             return Utilfunction.FunctionHierarchy;
         }
+        /// <summary>
+        /// Retrieves addin objects from the addin tree structure defined in the configuration editor.
+        /// </summary>
+        /// <returns>A list of ParentChildObjects representing the addins organized in a hierarchical structure.</returns>
         public List<ParentChildObject> GetAddinObjectsFromTree( )
         {
             IDM_Addin addin = null;
@@ -688,6 +722,11 @@ namespace TheTechIdea.Tools
         }
         #endregion
         #region "Class Extractors"
+        // <summary>
+        /// Scans an assembly to identify and extract data source implementations.
+        /// </summary>
+        /// <param name="asm">The assembly to scan for data source types.</param>
+        /// <returns>Returns true if the scanning is successful, otherwise false.</returns>
         private bool ScanAssemblyForDataSources(Assembly asm)
         {
             Type[] t;
@@ -747,6 +786,11 @@ namespace TheTechIdea.Tools
 
 
         }
+        /// <summary>
+        /// Scans an assembly to identify various implementations like data sources, loader extensions, workflow actions, and more.
+        /// </summary>
+        /// <param name="asm">The assembly to scan.</param>
+        /// <returns>Returns true if the scanning is successful, otherwise false.</returns>
         private bool ScanAssembly(Assembly asm)
         {
             Type[] t;
@@ -858,6 +902,12 @@ namespace TheTechIdea.Tools
            
            
         }
+        /// <summary>
+        /// Gets the definition of a class within an assembly, including metadata and methods.
+        /// </summary>
+        /// <param name="type">TypeInfo object of the class.</param>
+        /// <param name="typename">The name of the type being defined.</param>
+        /// <returns>Returns an AssemblyClassDefinition object containing class details.</returns>
         public AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type,string typename)
         {
           
@@ -957,6 +1007,12 @@ namespace TheTechIdea.Tools
         }
         #endregion "Class Extractors"
         #region "Helpers"
+        /// <summary>
+        /// Sends a progress update message.
+        /// </summary>
+        /// <param name="progress">The progress reporter to report the message.</param>
+        /// <param name="token">A cancellation token for the task.</param>
+        /// <param name="messege">The message to be sent. Default is null.</param>
         private void SendMessege(IProgress<PassedArgs> progress, CancellationToken token,  string messege = null)
         {
                          
@@ -967,6 +1023,12 @@ namespace TheTechIdea.Tools
                 }
            
         }
+        /// <summary>
+        /// Creates an instance of a class from its type name.
+        /// </summary>
+        /// <param name="typeName">The fully qualified name of the type.</param>
+        /// <param name="args">Arguments for the type constructor.</param>
+        /// <returns>An instance of the specified type or null if the type cannot be created.</returns>
         public object CreateInstanceFromString(string typeName, params object[] args)
         {
             object instance = null;
@@ -988,6 +1050,13 @@ namespace TheTechIdea.Tools
 
             return instance;
         }
+        /// <summary>
+        /// Creates an instance of a class from its type name within a specific assembly.
+        /// </summary>
+        /// <param name="dll">The name of the DLL containing the type.</param>
+        /// <param name="typeName">The fully qualified name of the type.</param>
+        /// <param name="args">Arguments for the type constructor.</param>
+        /// <returns>An instance of the specified type or null if the type cannot be created.</returns>
         public object CreateInstanceFromString(string dll,string typeName, params object[] args)
         {
             object instance = null;
@@ -1018,6 +1087,12 @@ namespace TheTechIdea.Tools
 
             return instance;
         }
+        /// <summary>
+        /// Handles the assembly resolution for the current application domain.
+        /// </summary>
+        /// <param name="sender">The sender of the event.</param>
+        /// <param name="args">Arguments related to the assembly resolve event.</param>
+        /// <returns>The resolved assembly or null if the assembly cannot be resolved.</returns>
         private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
             // Ignore missing resources
@@ -1075,6 +1150,11 @@ namespace TheTechIdea.Tools
             return null;
 
         }
+        /// <summary>
+        /// Creates an instance of a type specified by a fully qualified name.
+        /// </summary>
+        /// <param name="strFullyQualifiedName">The fully qualified name of the type.</param>
+        /// <returns>An instance of the specified type or null if the type cannot be instantiated.</returns>
         public object GetInstance(string strFullyQualifiedName)
         {
             Type type = GetType(strFullyQualifiedName);
@@ -1083,6 +1163,11 @@ namespace TheTechIdea.Tools
            
             return null;
         }
+        /// <summary>
+        /// Retrieves a type by its fully qualified name.
+        /// </summary>
+        /// <param name="strFullyQualifiedName">The fully qualified name of the type.</param>
+        /// <returns>The type corresponding to the name, or null if it cannot be found.</returns>
         public Type GetType(string strFullyQualifiedName)
         {
             string[] assemblynamespace = strFullyQualifiedName.Split('.');
@@ -1159,6 +1244,13 @@ namespace TheTechIdea.Tools
 
                 return null;
         }
+        // <summary>
+        /// Executes a method on an object instance using reflection.
+        /// </summary>
+        /// <param name="ObjInstance">The object instance on which to invoke the method.</param>
+        /// <param name="FullClassName">The full name of the class containing the method.</param>
+        /// <param name="MethodName">The name of the method to run.</param>
+        /// <returns>True if the method runs successfully, false otherwise.</returns>
         public bool RunMethod(object ObjInstance, string FullClassName, string MethodName)
         {
 
@@ -1182,26 +1274,22 @@ namespace TheTechIdea.Tools
         }
         #endregion "Helpers"
         #region "Connection Drivers Loaders"
-
+        /// <summary>
+        /// Checks and updates the list of driver configurations to ensure no duplicates exist.
+        /// </summary>
         public void CheckDriverAlreadyExistinList()
         {
             
             foreach (ConnectionDriversConfig dr in DataDriversConfig)
             {
-                //ConnectionDriversConfig founddr = null;
-                //int idx = ConfigEditor.DataDriversClasses.FindIndex(c => c.PackageName == dr.PackageName && c.version == dr.version);
-                //if(idx >=0)
-                //{
-                //     founddr = ConfigEditor.DataDriversClasses[idx];
-
-                //}
-                //if (founddr == null)
-                //{
-                //    ConfigEditor.DataDriversClasses.Add(dr);
-                //}
                 ConfigEditor.AddDriver(dr);
             }
         }
+        /// <summary>
+        /// Extracts and configures ADO.NET type driver information from an assembly.
+        /// </summary>
+        /// <param name="asm">The assembly to scan for ADO.NET drivers.</param>
+        /// <returns>True if drivers are successfully extracted, false otherwise.</returns>
         private bool GetADOTypeDrivers(Assembly asm)
         {
             ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
@@ -1363,6 +1451,9 @@ namespace TheTechIdea.Tools
             }
             return retval;
         }
+        /// <summary>
+        /// Configures non-ADO.NET type driver information based on predefined driver definitions.
+        /// </summary>
         private void GetNonADODrivers()
         {
             ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
@@ -1389,6 +1480,11 @@ namespace TheTechIdea.Tools
             {
             }
         }
+        /// <summary>
+        /// Retrieves a list of driver configurations from an assembly.
+        /// </summary>
+        /// <param name="asm">The assembly to scan for drivers.</param>
+        /// <returns>A list of driver configurations.</returns>
         public List<ConnectionDriversConfig> GetDrivers(Assembly asm)
         {
             try
@@ -1405,6 +1501,10 @@ namespace TheTechIdea.Tools
             }
             return DataDriversConfig;
         }
+        /// <summary>
+        /// Creates a list of file extensions supported by the data sources.
+        /// </summary>
+        /// <returns>A list of file extension strings.</returns>
         public List<string> CreateFileExtensionString()
         {
             List<AssemblyClassDefinition> cls = DataSourcesClasses.Where(o => o.classProperties != null).ToList();
@@ -1412,6 +1512,10 @@ namespace TheTechIdea.Tools
             string extstring = string.Join(",", extensionslist);
             return extstring.Split(',').ToList() ;
         }
+        /// <summary>
+        /// Adds default engine drivers to the driver configurations.
+        /// </summary>
+        /// <returns>True if default drivers are successfully added, false otherwise.</returns>
         public bool AddEngineDefaultDrivers()
         {
             try
@@ -1456,6 +1560,10 @@ namespace TheTechIdea.Tools
                 return false;
             };
         }
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        /// <param name="disposing">Indicates whether the method call comes from a Dispose method (its value is true) or from a finalizer (its value is false).</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -1483,7 +1591,9 @@ namespace TheTechIdea.Tools
         //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         //     Dispose(disposing: false);
         // }
-
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
         public void Dispose()
         {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method

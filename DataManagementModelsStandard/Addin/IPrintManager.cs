@@ -9,7 +9,8 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Addin
 {
-    public interface IPrintManager
+    /// <summary>Interface for managing printing functionality.</summary>
+     public interface IPrintManager
     {
         IDMEEditor DMEEditor { get; set; }
         IErrorsInfo PrintTable(DataTable dataTable);

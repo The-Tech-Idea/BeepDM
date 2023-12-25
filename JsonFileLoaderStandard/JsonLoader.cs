@@ -7,22 +7,41 @@ using System.IO;
 using TheTechIdea.Beep.ConfigUtil;
 
 namespace TheTechIdea.Util
-{
+{/// <summary>
+/// Provides methods for serializing objects to JSON and deserializing JSON to objects.
+/// </summary>
     public class JsonLoader : IJsonLoader
     {
-       
+        /// <summary>
+        /// Initializes a new instance of the JsonLoader class.
+        /// </summary>
         public JsonLoader()
         {
 
         }
+        /// <summary>
+        /// Serializes the specified object to a JSON string.
+        /// </summary>
+        /// <param name="obj">The object to serialize.</param>
+        /// <returns>A JSON string representation of the object.</returns>
         public string SerializeObject(object obj)
         {
             return JsonConvert.SerializeObject(obj);
         }
+        /// <summary>
+        /// Deserializes the JSON string to an object.
+        /// </summary>
+        /// <param name="jsonstring">The JSON string to deserialize.</param>
+        /// <returns>The deserialized object.</returns>
         public object DeserializeObject(string jsonstring)
         {
             return JsonConvert.DeserializeObject(jsonstring);
         }
+        /// <summary>
+        /// Deserializes the JSON string to an object.
+        /// </summary>
+        /// <param name="filename">The file name for JSON string to deserialize.</param>
+        /// <returns>The deserialized object.</returns>
         public List<T> DeserializeObject<T>(string filename)
         {
             var settings = new JsonSerializerSettings
@@ -49,6 +68,11 @@ namespace TheTechIdea.Util
             }
 
         }
+        /// <summary>
+        /// Deserializes the JSON string to an object.
+        /// </summary>
+        /// <param name="jsonstring">The JSON string to deserialize.</param>
+        /// <returns>The deserialized object.</returns>
         public List<T> DeserializeObjectFromjsonString<T>(string jsonString)
         {
             var settings = new JsonSerializerSettings
@@ -66,6 +90,11 @@ namespace TheTechIdea.Util
            
 
         }
+        /// <summary>
+        /// Deserializes single Object from string.
+        /// </summary>
+        /// <param name="jsonstring">The JSON string to deserialize.</param>
+        /// <returns>The deserialized object.</returns>
         public T DeserializeSingleObjectFromjsonString<T>(string jsonString)
         {
             var settings = new JsonSerializerSettings
@@ -83,6 +112,11 @@ namespace TheTechIdea.Util
 
 
         }
+        /// <summary>
+        /// Deserializes single Object from file.
+        /// </summary>
+        /// <param name="filename">The file that contain JSON string to deserialize.</param>
+        /// <returns>The deserialized object.</returns>
         public T DeserializeSingleObject<T>(string filename)
         {
             var settings = new JsonSerializerSettings
@@ -115,6 +149,12 @@ namespace TheTechIdea.Util
 
             return default(T);
         }
+        /// <summary>
+        /// Serializes file to object .
+        /// </summary>
+        /// <param name="filename">The file  to serialize.</param>
+        /// <param name="obj">The object to serialize.</param>
+        /// <returns>A object.</returns>
         public void Serialize(string filename, object t)
         {
 
@@ -138,6 +178,11 @@ namespace TheTechIdea.Util
                
             }
         }
+        /// <summary>
+        /// Deserializes  Object from file.
+        /// </summary>
+        /// <param name="stringobject">The JSON string to deserialize.</param>
+        /// <returns>The deserialized object.</returns>
         public object DeserializeObjectString<T>(string stringobject)
         {
             var settings = new JsonSerializerSettings
@@ -153,7 +198,12 @@ namespace TheTechIdea.Util
             };
             return JsonConvert.DeserializeObject<object>(stringobject, settings);
         }
-        public  DataTable JsonToDataTable(string jsonString)
+        /// <summary>
+        /// Convert Json to DataTable.
+        /// </summary>
+        /// <param name="jsonString">The JSON string to Convert.</param>
+        /// <returns>The DataTable object.</returns>
+        public DataTable JsonToDataTable(string jsonString)
         {
             DataTable dt = null;
             DataSet ds= ConverttoDataset(jsonString);
@@ -169,6 +219,11 @@ namespace TheTechIdea.Util
            
             return dt;
         }
+        /// <summary>
+        /// Convert Json to DataSet.
+        /// </summary>
+        /// <param name="jsonString">The JSON string to Convert.</param>
+        /// <returns>The DataSet object.</returns>
         public DataSet ConverttoDataset(string jsonString)
         {
           
@@ -216,6 +271,11 @@ namespace TheTechIdea.Util
             dataSet.Tables.Add(dataTable);
             return dataSet;
         }
+        /// <summary>
+        /// Check Json Token Type.
+        /// </summary>
+        /// <param name="obj">The JSON JToken to Check.</param>
+        /// <returns>The string type name .</returns>
         public string CheckJsonType(JToken obj)
         {
           

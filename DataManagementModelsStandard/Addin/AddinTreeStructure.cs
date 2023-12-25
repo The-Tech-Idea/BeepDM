@@ -4,6 +4,7 @@ using System.Text;
 
 namespace TheTechIdea.Beep.Addin
 {
+    /// <summary>Represents the structure of an add-in tree node.</summary>
     public class AddinTreeStructure
     {
         public AddinTreeStructure()

@@ -1,0 +1,5 @@
+{
+    "docify.commentService.sidePanelReviewMode": true,
+    "docify.translateService.programmingLanguage": "c_sharp",
+    "docify.translateService.docstringFormat": "Doxygen"
+}

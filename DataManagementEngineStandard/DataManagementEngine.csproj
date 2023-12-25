@@ -18,6 +18,9 @@
     <UserSecretsId>73e1a0d4-e787-46f6-9485-f23ff98f8835</UserSecretsId>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	  <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
+	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
+	  <DocumentationFile>docs.xml</DocumentationFile>
     
 	
   </PropertyGroup>

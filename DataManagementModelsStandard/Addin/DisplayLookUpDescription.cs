@@ -4,6 +4,7 @@ using System.Text;
 
 namespace TheTechIdea.Beep.Addin
 {
+    /// <summary>Represents a lookup description for display purposes.</summary>
     public class DisplayLookUpDescription
     {
         public DisplayLookUpDescription()
@@ -12,7 +13,7 @@ namespace TheTechIdea.Beep.Addin
         }
         public string Description { get; set; }
         public string DisplayName { get; set; }
-       
+
         public string KeyID { get; set; }
     }
 }
