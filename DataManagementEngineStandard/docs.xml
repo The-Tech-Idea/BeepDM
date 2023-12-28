@@ -894,7 +894,659 @@
             The line number of the malformed line.
             </summary>
         </member>
-        <!-- Badly formed XML comment ignored for member "T:TheTechIdea.Beep.Editor.ETL" -->
+        <member name="T:TheTechIdea.Beep.DataView.DataViewConnection">
+            <summary>
+            Represents a connection to a data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewConnection.InMemory">
+            <summary>
+            Gets or sets a value indicating whether the connection is in memory.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewConnection.ConnectionProp">
+            <summary>Gets or sets the connection properties.</summary>
+            <value>The connection properties.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewConnection.DataSourceDriver">
+            <summary>Gets or sets the configuration for the data source driver.</summary>
+            <value>The configuration for the data source driver.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewConnection.ConnectionStatus">
+            <summary>Gets or sets the current connection status.</summary>
+            <value>The current connection status.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewConnection.DMEEditor">
+            <summary>Gets or sets the DME editor.</summary>
+            <value>The DME editor.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewConnection.ID">
+            <summary>Gets or sets the ID.</summary>
+            <value>The ID.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewConnection.GuidID">
+            <summary>Gets or sets the GUID ID.</summary>
+            <value>The GUID ID.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewConnection.Logger">
+            <summary>Gets or sets the logger for the current object.</summary>
+            <value>The logger.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewConnection.ErrorObject">
+            <summary>Gets or sets the error object.</summary>
+            <value>The error object.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewConnection.DbConn">
+            <summary>Gets or sets the database connection.</summary>
+            <value>The database connection.</value>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewConnection.OpenConnection">
+            <summary>Opens a connection to a database.</summary>
+            <returns>The state of the connection after opening.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewConnection.ReplaceValueFromConnectionString">
+            <summary>Replaces a specific value in a connection string.</summary>
+            <returns>The modified connection string.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewConnection.OpenConn">
+            <summary>Opens a connection to the database.</summary>
+            <returns>The connection state after opening the connection.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewConnection.OpenConnection(TheTechIdea.Util.DataSourceType,System.String,System.Int32,System.String,System.String,System.String,System.String)">
+            <summary>Opens a connection to a database.</summary>
+            <param name="dbtype">The type of the database.</param>
+            <param name="host">The host name or IP address of the database server.</param>
+            <param name="port">The port number of the database server.</param>
+            <param name="database">The name of the database.</param>
+            <param name="userid">The user ID for authentication.</param>
+            <param name="password">The password for authentication.</param>
+            <param name="parameters">Additional parameters for the connection.</param>
+            <returns>The connection state after opening the connection.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewConnection.OpenConnection(TheTechIdea.Util.DataSourceType,System.String)">
+            <summary>Opens a connection to a database.</summary>
+            <param name="dbtype">The type of the database.</param>
+            <param name="connectionstring">The connection string for the database.</param>
+            <returns>The state of the connection.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewConnection.CloseConn">
+            <summary>Closes the connection to the database.</summary>
+            <returns>The current state of the connection after closing.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataView.DataViewDataSource">
+            <summary>
+            Represents a data source for a data view.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.DataView.DataViewDataSource.PassEvent">
+            <summary>
+            Event that is raised when a specific event is passed.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.DatasourceType">
+            <summary>Gets or sets the type of the data source.</summary>
+            <value>The type of the data source.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.Category">
+            <summary>Gets or sets the category of the datasource.</summary>
+            <value>The category of the datasource.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.Dataconnection">
+            <summary>Gets or sets the data connection.</summary>
+            <value>The data connection.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.DatasourceName">
+            <summary>Gets or sets the name of the data source.</summary>
+            <value>The name of the data source.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.ErrorObject">
+            <summary>Gets or sets the error object.</summary>
+            <value>The error object.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.Id">
+            <summary>Gets or sets the ID.</summary>
+            <value>The ID.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.ID">
+            <summary>Gets or sets the ID.</summary>
+            <value>The ID.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.GuidID">
+            <summary>Gets or sets the GUID ID.</summary>
+            <value>The GUID ID.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.Logger">
+            <summary>Gets or sets the logger for the current object.</summary>
+            <value>The logger.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.EntitiesNames">
+            <summary>Gets or sets the list of entity names.</summary>
+            <value>The list of entity names.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.DMEEditor">
+            <summary>Gets or sets the DME editor.</summary>
+            <value>The DME editor.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.ConnectionStatus">
+            <summary>Gets or sets the current connection status.</summary>
+            <value>The current connection status.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.SourceEntityData">
+            <summary>Gets or sets the source entity data.</summary>
+            <value>The source entity data.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.DataView">
+            <summary>Gets or sets the data view for the IDM.</summary>
+            <value>The data view for the IDM.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.ColumnDelimiter">
+            <summary>Gets or sets the column delimiter used in data processing.</summary>
+            <value>The column delimiter.</value>
+            <remarks>The default value is "''".</remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.ParameterDelimiter">
+            <summary>Gets or sets the delimiter used for separating parameters.</summary>
+            <value>The parameter delimiter.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.Entities">
+            <summary>Gets or sets the list of entity structures.</summary>
+            <value>The list of entity structures.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.ViewName">
+            <summary>Gets or sets the name of the view.</summary>
+            <value>The name of the view.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.ViewID">
+            <summary>Gets or sets the ID of the view.</summary>
+            <value>The ID of the view.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.Viewtype">
+            <summary>The type of view.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.Editable">
+            <summary>Gets or sets a value indicating whether the object is editable.</summary>
+            <value><c>true</c> if the object is editable; otherwise, <c>false</c>.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.EntityDataSourceID">
+            <summary>Gets or sets the ID of the entity data source.</summary>
+            <value>The ID of the entity data source.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.CompositeLayerDataSourceID">
+            <summary>Gets or sets the ID of the composite layer data source.</summary>
+            <value>The ID of the composite layer data source.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.DataViewDataSourceID">
+            <summary>Gets or sets the ID of the data source for the DataView.</summary>
+            <value>The ID of the data source.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DataViewDataSource.VID">
+            <summary>The Vendor ID (VID) of a device.</summary>
+            <remarks>
+            The Vendor ID (VID) is a unique identifier assigned to a device manufacturer by the USB Implementers Forum (USB-IF).
+            It is used to identify the manufacturer of a USB device.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.#ctor(System.String,TheTechIdea.Logger.IDMLogger,TheTechIdea.Beep.IDMEEditor,TheTechIdea.Util.DataSourceType,TheTechIdea.Util.IErrorsInfo)">
+            <summary>
+            Initializes a new instance of the DataViewDataSource class.
+            </summary>
+            <param name="datasourcename">The name of the data source.</param>
+            <param name="logger">The logger object used for logging.</param>
+            <param name="pDMEEditor">The DME editor object.</param>
+            <param name="pDatasourceType">The type of the data source.</param>
+            <param name="per">The error information object.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.BeginTransaction(TheTechIdea.PassedArgs)">
+            <summary>
+            Begins a transaction with the specified arguments.
+            </summary>
+            <param name="args">The arguments passed to the transaction.</param>
+            <returns>An object that provides information about any errors that occurred during the transaction.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.EndTransaction(TheTechIdea.PassedArgs)">
+            <summary>Ends a transaction and returns information about any errors that occurred.</summary>
+            <param name="args">The arguments passed to the transaction.</param>
+            <returns>An object containing information about any errors that occurred during the transaction.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.Commit(TheTechIdea.PassedArgs)">
+            <summary>Commits the changes made with the provided arguments.</summary>
+            <param name="args">The arguments containing the changes to be committed.</param>
+            <returns>An object implementing the IErrorsInfo interface that provides information about any errors that occurred during the commit process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetEntitesList">
+            <summary>Returns a list of entities.</summary>
+            <returns>A list of entities.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetScalarAsync(System.String)">
+            <summary>Retrieves a scalar value asynchronously based on the provided query.</summary>
+            <param name="query">The query used to retrieve the scalar value.</param>
+            <returns>A task representing the asynchronous operation. The task result is the scalar value.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetScalar(System.String)">
+            <summary>Gets the scalar value from a given query.</summary>
+            <param name="query">The query to retrieve the scalar value.</param>
+            <returns>The scalar value obtained from the query.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetEntity(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>Retrieves an entity based on the specified entity name and filter.</summary>
+            <param name="EntityName">The name of the entity to retrieve.</param>
+            <param name="filter">A list of filters to apply to the entity.</param>
+            <returns>The retrieved entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.EntityListIndex(System.Int32)">
+            <summary>Returns the index of an entity in the entity list.</summary>
+            <param name="entityid">The ID of the entity.</param>
+            <returns>The index of the entity in the entity list.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.EntityListIndex(System.String)">
+            <summary>Returns the index of an entity in the entity list.</summary>
+            <param name="entityname">The name of the entity.</param>
+            <returns>The index of the entity in the entity list.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetEntityStructure(System.String,System.Boolean)">
+            <summary>Retrieves the structure of an entity.</summary>
+            <param name="EntityName">The name of the entity.</param>
+            <param name="refresh">Optional. Specifies whether to refresh the structure. Default is false.</param>
+            <returns>The structure of the entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetEntityType(System.String)">
+            <summary>Gets the type of an entity based on its name.</summary>
+            <param name="entityname">The name of the entity.</param>
+            <returns>The type of the entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetChildTablesList(System.String,System.String,System.String)">
+            <summary>Retrieves a list of child tables for a given parent table.</summary>
+            <param name="tablename">The name of the parent table.</param>
+            <param name="SchemaName">The name of the schema containing the parent table.</param>
+            <param name="Filterparamters">Additional filter parameters to refine the search.</param>
+            <returns>A list of ChildRelation objects representing the child tables.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetEntityforeignkeys(System.String,System.String)">
+            <summary>Retrieves the foreign keys of an entity.</summary>
+            <param name="entityname">The name of the entity.</param>
+            <param name="SchemaName">The name of the schema.</param>
+            <returns>A list of RelationShipKeys representing the foreign keys of the entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.ExecuteSql(System.String)">
+            <summary>Executes the given SQL statement.</summary>
+            <param name="sql">The SQL statement to execute.</param>
+            <returns>An object containing information about any errors that occurred during execution.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.CreateEntityAs(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>Creates an entity using the provided entity structure.</summary>
+            <param name="entity">The structure of the entity to be created.</param>
+            <returns>True if the entity was successfully created, false otherwise.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.CheckEntityExist(System.String)">
+            <summary>Checks if an entity with the given name exists.</summary>
+            <param name="entityname">The name of the entity to check.</param>
+            <returns>True if the entity exists, false otherwise.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetDataSourceObject(System.String)">
+            <summary>Gets the data source object for a given entity name.</summary>
+            <param name="entityname">The name of the entity.</param>
+            <returns>The data source object associated with the given entity name.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.Openconnection">
+            <summary>Opens a connection to a database.</summary>
+            <returns>The state of the connection.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.Closeconnection">
+            <summary>Closes the connection and returns the current state of the connection.</summary>
+            <returns>The current state of the connection after closing.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.RunQuery(System.String)">
+            <summary>Executes a query and returns the result.</summary>
+            <param name="qrystr">The query string to execute.</param>
+            <returns>The result of the query execution.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.UpdateEntities(System.String,System.Object,System.IProgress{TheTechIdea.PassedArgs})">
+            <summary>Updates entities in the system.</summary>
+            <param name="EntityName">The name of the entity to update.</param>
+            <param name="UploadData">The data to upload for updating the entities.</param>
+            <param name="progress">An object used to report progress during the update process.</param>
+            <returns>An object containing information about any errors that occurred during the update.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.UpdateEntity(System.String,System.Object)">
+            <summary>Updates an entity with the provided data.</summary>
+            <param name="EntityName">The name of the entity to update.</param>
+            <param name="UploadDataRow">The data to update the entity with.</param>
+            <returns>An object containing information about any errors that occurred during the update.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.DeleteEntity(System.String,System.Object)">
+            <summary>Deletes an entity from the specified entity name and data row.</summary>
+            <param name="EntityName">The name of the entity to delete.</param>
+            <param name="DeletedDataRow">The data row representing the entity to delete.</param>
+            <returns>An object containing information about any errors that occurred during the deletion process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetEntityStructure(TheTechIdea.Beep.DataBase.EntityStructure,System.Boolean)">
+            <summary>Gets the structure of an entity.</summary>
+            <param name="fnd">The entity structure to retrieve.</param>
+            <param name="refresh">Optional. Specifies whether to refresh the entity structure.</param>
+            <returns>The structure of the specified entity.</returns>
+            <remarks>
+            If the entity structure is of type Table, it retrieves the entity structure from the data source object.
+            If the entity structure is of type Query, Code, File, or Url, it returns the entity structure from the Entities collection.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.RunScript(TheTechIdea.Beep.Editor.ETLScriptDet)">
+            <summary>Runs an ETL script.</summary>
+            <param name="dDLScripts">The ETL script to run.</param>
+            <returns>An object containing information about any errors that occurred during script execution.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.CreateEntities(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>Creates entities based on the provided list of entity structures.</summary>
+            <param name="entities">A list of entity structures.</param>
+            <returns>An object that contains information about any errors that occurred during the creation process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetCreateEntityScript(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>Generates a list of ETL script details for creating entities.</summary>
+            <param name="entities">Optional. A list of entity structures. If provided, the script details will be generated for these entities only. If not provided, script details will be generated for all entities.</param>
+            <returns>A list of ETL script details for creating entities.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.InsertEntity(System.String,System.Object)">
+            <summary>Inserts an entity into the database.</summary>
+            <param name="EntityName">The name of the entity.</param>
+            <param name="InsertedData">The data to be inserted.</param>
+            <returns>An object containing information about any errors that occurred during the insertion process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetEntityAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>Retrieves an entity asynchronously.</summary>
+            <param name="EntityName">The name of the entity to retrieve.</param>
+            <param name="Filter">A list of filters to apply to the entity.</param>
+            <returns>A task representing the asynchronous operation. The result is the retrieved entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.RemoveEntity(System.Int32)">
+            <summary>Removes an entity with the specified ID.</summary>
+            <param name="EntityID">The ID of the entity to remove.</param>
+            <returns>An object containing information about any errors that occurred during the removal process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.RemoveChildEntities(System.Int32)">
+            <summary>Removes child entities associated with a parent entity.</summary>
+            <param name="EntityID">The ID of the parent entity.</param>
+            <returns>An object containing information about any errors that occurred during the removal process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GenerateViewFromTable(System.String,TheTechIdea.IDataSource,System.String,System.String,System.String)">
+            <summary>
+            Generates a view from a table using the specified parameters.
+            </summary>
+            <param name="viewname">The name of the view to be generated.</param>
+            <param name="SourceConnection">The data source connection object.</param>
+            <param name="tablename">The name of the table to generate the view from.</param>
+            <param name="SchemaName">The name of the schema containing the table.</param>
+            <param name="Filterparamters">The filter parameters to be applied to the view.</param>
+            <returns>The number of rows affected by the view generation process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GenerateDataView(TheTechIdea.IDataSource,System.String,System.String,System.String)">
+            <summary>
+            Generates a data view based on the provided data source, table name, schema name, and filter parameters.
+            </summary>
+            <param name="conn">The data source to generate the data view from.</param>
+            <param name="tablename">The name of the table to generate the data view for.</param>
+            <param name="SchemaName">The name of the schema to generate the data view for.</param>
+            <param name="Filterparamters">The filter parameters to apply to the data view.</param>
+            <returns>An integer representing the result of the data view generation.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GenerateView(System.String,System.String)">
+            <summary>Generates a data view based on the specified view name and connection name.</summary>
+            <param name="ViewName">The name of the view.</param>
+            <param name="ConnectionName">The name of the connection.</param>
+            <returns>The generated data view.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GenerateDataViewForChildNode(TheTechIdea.IDataSource,System.Int32,System.String,System.String,System.String)">
+            <summary>
+            Generates a data view for a child node based on the provided parameters.
+            </summary>
+            <param name="conn">The data source connection.</param>
+            <param name="pid">The parent ID.</param>
+            <param name="tablename">The name of the table.</param>
+            <param name="SchemaName">The name of the schema.</param>
+            <param name="Filterparamters">The filter parameters.</param>
+            <returns>An object representing the generated data view.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.AddEntityAsChild(TheTechIdea.IDataSource,System.String,System.String,System.String,System.Int32,System.Int32)">
+            <summary>Adds an entity as a child to a specified parent table.</summary>
+            <param name="conn">The data source connection.</param>
+            <param name="tablename">The name of the table to add the entity to.</param>
+            <param name="SchemaName">The schema name of the table.</param>
+            <param name="Filterparamters">The filter parameters to apply.</param>
+            <param name="viewindex">The index of the view.</param>
+            <param name="ParentTableIndex">The index of the parent table.</param>
+            <returns>The index of the added entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.AddEntitytoDataView(TheTechIdea.IDataSource,System.String,System.String,System.String)">
+            <summary>Adds an entity to a data view.</summary>
+            <param name="conn">The data source connection.</param>
+            <param name="tablename">The name of the table.</param>
+            <param name="SchemaName">The name of the schema.</param>
+            <param name="Filterparamters">The filter parameters.</param>
+            <returns>The number of entities added to the data view.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.AddEntitytoDataView(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>Adds an entity to the data view.</summary>
+            <param name="maintab">The entity structure to add.</param>
+            <returns>The index of the added entity in the data view.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GeticonForViewType(TheTechIdea.Util.ViewType)">
+            <summary>Returns the icon associated with a specific view type.</summary>
+            <param name="v">The view type.</param>
+            <returns>The icon associated with the view type.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.SetupEntityInView(TheTechIdea.Beep.DataBase.IDMDataView,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.String,System.String,System.Int32,System.String)">
+            <summary>
+            Sets up the entity structure in a data view.
+            </summary>
+            <param name="v">The data view.</param>
+            <param name="Rootnamespacelist">The list of root namespaces.</param>
+            <param name="childtable">The name of the child table.</param>
+            <param name="parenttable">The name of the parent table.</param>
+            <param name="childcolumn">The name of the child column.</param>
+            <param name="parentcolumn">The name of the parent column.</param>
+            <param name="pid">The parent ID.</param>
+            <param name="Datasourcename">The name of the data source.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetEntity(System.String)">
+            <summary>Retrieves the structure of an entity.</summary>
+            <param name="entityname">The name of the entity.</param>
+            <returns>The structure of the specified entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.NextHearId">
+            <summary>Generates the next unique hear ID.</summary>
+            <returns>An integer representing the next hear ID.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetDataSetForView(System.String)">
+            <summary>Retrieves a list of data sets for a given view.</summary>
+            <param name="viewname">The name of the view.</param>
+            <returns>A list of data sets associated with the specified view.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.CreateTableFromEntityStructure(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>Creates a DataTable from an EntityStructure.</summary>
+            <param name="e">The EntityStructure object.</param>
+            <returns>A DataTable representing the structure of the entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetChildTablesForDataset(TheTechIdea.IDataSource,System.Data.DataSet@,TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.Int32)">
+            <summary>
+            Retrieves the child tables for a given dataset and parent table.
+            </summary>
+            <param name="ds">The data source.</param>
+            <param name="dataset">The dataset to retrieve child tables for.</param>
+            <param name="parenttb">The parent table.</param>
+            <param name="ls">The list of child tables.</param>
+            <param name="parentid">The ID of the parent table.</param>
+            <returns>An instance of IErrorsInfo representing the child tables.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.WriteDataViewFile(System.String)">
+            <summary>Writes the content of a DataView to a file.</summary>
+            <param name="filename">The name of the file to write to.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.WriteDataViewFile(System.String,System.String)">
+            <summary>Writes a DataView file to the specified path and filename.</summary>
+            <param name="path">The path where the file will be written.</param>
+            <param name="filename">The name of the file.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.ReadDataViewFile(System.String)">
+            <summary>Reads a data view file from the specified path and filename.</summary>
+            <param name="pathandfilename">The path and filename of the data view file.</param>
+            <returns>The IDMDataView object representing the data view file.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.LoadView">
+            <summary>Loads a view and returns information about any errors that occurred.</summary>
+            <returns>An object containing information about any errors that occurred during the view loading process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetEntityIdx(System.String)">
+            <summary>Returns the index of the specified entity.</summary>
+            <param name="entityName">The name of the entity.</param>
+            <returns>The index of the entity.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.DataImportManager">
+            <summary>
+            Represents a data import manager that handles importing data from a source entity to a destination entity.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.SourceEntityName">
+            <summary>
+            Gets or sets the name of the source entity.
+            </summary>
+            <summary>Gets or sets the name of the source entity.</summary>
+            <value>The name of the source entity.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.DestEntityName">
+            <summary>Gets or sets the destination entity name.</summary>
+            <value>The destination entity name.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.SourceDataSourceName">
+            <summary>Gets or sets the name of the data source for the source.</summary>
+            <value>The name of the data source.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.DestDataSourceName">
+            <summary>Gets or sets the destination data source name.</summary>
+            <value>The destination data source name.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.SourceEntityStructure">
+            <summary>Gets or sets the source entity structure.</summary>
+            <value>The source entity structure.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.DestEntityStructure">
+            <summary>Gets or sets the destination entity structure.</summary>
+            <value>The destination entity structure.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.SourceData">
+            <summary>Gets or sets the source data for the object.</summary>
+            <value>The source data.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.DestData">
+            <summary>Gets or sets the destination data source.</summary>
+            <value>The destination data source.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.DefaultValueType">
+            <summary>Gets or sets the default value type.</summary>
+            <value>The default value type.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.SrcunitofWork">
+            <summary>Gets or sets the unit of work for the source entity.</summary>
+            <value>The unit of work for the source entity.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.DstunitofWork">
+            <summary>Gets or sets the unit of work for the destination entity.</summary>
+            <value>The unit of work for the destination entity.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.MappingunitofWork">
+            <summary>Gets or sets the unit of work for mapping entity data.</summary>
+            <value>The unit of work for mapping entity data.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.CurrentMappingDTL">
+            <summary>Gets or sets the current mapping data transfer layer (DTL) entity data map.</summary>
+            <value>The current mapping DTL entity data map.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.Mapping">
+            <summary>Gets or sets the mapping of entity data.</summary>
+            <value>The mapping of entity data.</value>
+            <summary>Gets or sets the mapping of entity data.</summary>
+            <value>The mapping of entity data.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.DMEEditor">
+            <summary>Gets the DME editor.</summary>
+            <value>The DME editor.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.SourceDefaults">
+            <summary>Gets or sets the list of default values for the source.</summary>
+            <value>The list of default values for the source.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.DestDefaults">
+            <summary>Gets or sets the list of default values for the destination.</summary>
+            <value>The list of default values for the destination.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataImportManager.Rules">
+            <summary>Gets or sets the list of workflow rules.</summary>
+            <value>The list of workflow rules.</value>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.#ctor(TheTechIdea.Beep.IDMEEditor)">
+            <summary>Initializes a new instance of the DataImportManager class.</summary>
+            <param name="dMEEditor">The IDMEEditor instance used for data import.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.#ctor(TheTechIdea.Beep.IDMEEditor,System.String,System.String)">
+            <summary>Initializes a new instance of the DataImportManager class.</summary>
+            <param name="dMEEditor">The IDMEEditor instance used for data import.</param>
+            <param name="destEntityName">The name of the destination entity.</param>
+            <param name="destDataSourceName">The name of the destination data source.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.#ctor(TheTechIdea.Beep.IDMEEditor,System.String,System.String,System.String,System.String)">
+            <summary>Initializes a new instance of the DataImportManager class.</summary>
+            <param name="dMEEditor">The IDMEEditor instance used for data import.</param>
+            <param name="destEntityName">The name of the destination entity.</param>
+            <param name="destDataSourceName">The name of the destination data source.</param>
+            <param name="srcEntityName">The name of the source entity.</param>
+            <param name="srcDataSourceName">The name of the source data source.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.LoadDestEntityStructure(System.String,System.String)">
+            <summary>Loads the structure of the destination entity.</summary>
+            <param name="destEntityName">The name of the destination entity.</param>
+            <param name="destDataSourceName">The name of the destination data source.</param>
+            <returns>An object containing information about any errors that occurred during the loading process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.LoadSourceEntityStructure(System.String,System.String)">
+            <summary>Loads the structure of a source entity from a data source.</summary>
+            <param name="srcEntityName">The name of the source entity.</param>
+            <param name="srcDataSourceName">The name of the data source.</param>
+            <returns>An object containing information about the structure of the source entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.LoadMapping(System.String,System.String)">
+            <summary>Loads the mapping for a destination entity and data source.</summary>
+            <param name="destEntityName">The name of the destination entity.</param>
+            <param name="destDataSourceName">The name of the destination data source.</param>
+            <returns>An object containing information about any errors that occurred during the loading process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.LoadMapping">
+            <summary>Loads the mapping information.</summary>
+            <returns>An object that contains information about any errors that occurred during the loading process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.SaveMapping">
+            <summary>Saves the mapping and returns information about any errors that occurred.</summary>
+            <returns>An object containing information about any errors that occurred during the mapping save process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.GetIsEntityChanges(System.String,System.String)">
+            <summary>Determines if there are any changes between two entity names.</summary>
+            <param name="sourceentityname">The name of the source entity.</param>
+            <param name="destentityname">The name of the destination entity.</param>
+            <returns>True if there are any changes between the two entity names, false otherwise.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.RunImport(System.IProgress{TheTechIdea.IPassedArgs},System.Threading.CancellationToken)">
+            <summary>Runs the import process.</summary>
+            <param name="progress">An object that reports the progress of the import process.</param>
+            <param name="token">A cancellation token that can be used to cancel the import process.</param>
+            <returns>An object that contains information about any errors that occurred during the import process.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.StopTask">
+            <summary>Stops the execution of the task.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.Update">
+            <summary>Updates the state of the object.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ETL">
+            <summary>
+            Represents an Extract, Transform, Load (ETL) process.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.ETL.#ctor(TheTechIdea.Beep.IDMEEditor)">
             <summary>
             Initializes a new instance of the ETL class.
@@ -1074,10 +1726,6 @@
         <member name="P:TheTechIdea.Beep.Editor.UnitofWork`1.IsDirty">
             <summary>Gets a value indicating whether the object is dirty.</summary>
             <returns>True if the object is dirty; otherwise, false.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.OnPropertyChanged(System.String)">
-            <summary>Raises the PropertyChanged event.</summary>
-            <param name="propertyName">The name of the property that has changed.</param>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.UnitofWork`1.Tempunits">
             <summary>A private observable binding list of type T.</summary>
@@ -1455,6 +2103,25 @@
             <summary>Validates all necessary conditions before performing an operation.</summary>
             <returns>True if all conditions are valid, otherwise false.</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UnitOfWorkFactory">
+            <summary>A factory class for creating and retrieving instances of UnitOfWork.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UnitOfWorkFactory.CreateUnitOfWork(System.Type,TheTechIdea.Beep.IDMEEditor,System.String)">
+            <summary>Creates a new instance of UnitOfWork for the specified entity type.</summary>
+            <param name="entityType">The type of the entity.</param>
+            <param name="dmeEditor">The IDMEEditor instance.</param>
+            <param name="datasourceName">The name of the data source.</param>
+            <returns>A new instance of UnitOfWork.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UnitOfWorkFactory.GetUnitOfWork(System.String,System.String,TheTechIdea.Beep.IDMEEditor)">
+            <summary>Gets a unit of work for a specified entity.</summary>
+            <param name="entityName">The name of the entity.</param>
+            <param name="dataSourceName">The name of the data source.</param>
+            <param name="DMEEditor">The DMEEditor instance.</param>
+            <returns>A unit of work object for the specified entity.</returns>
+            <exception cref="T:System.ArgumentException">Thrown when the entity name is invalid.</exception>
+            <exception cref="T:System.InvalidOperationException">Thrown when the CreateUnitOfWork method is not found or when the unit of work cannot be created.</exception>
+        </member>
         <member name="T:TheTechIdea.Beep.DMEEditor">
             <summary>
             Data Management Enterprize Editor (DMEEditor)
@@ -1702,6 +2369,144 @@
             </summary>
             <param name="args"></param>
             <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "T:TheTechIdea.Beep.EntityDataMoveValidator" -->
+        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.CanInsertRecord(TheTechIdea.Beep.IDMEEditor,TheTechIdea.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.Object,System.String,System.String)">
+            <summary>
+            Checks if a record can be inserted into a data source for a specific entity.
+            </summary>
+            <param name="DMEEditor">The IDMEEditor instance.</param>
+            <param name="DataSource">The IDataSource instance.</param>
+            <param name="Entity">The EntityStructure instance.</param>
+            <param name="record">The record to be inserted.</param>
+            <param name="entityname">The name of the entity.</param>
+            <param name="datasource">The name of the data source.</param>
+            <returns>A list of validation messages indicating whether the record can be inserted or not.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.CanInsertRecord(TheTechIdea.Beep.IDMEEditor,TheTechIdea.IDataSource,System.Object,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>Checks if a record can be inserted into a data source.</summary>
+            <param name="DMEEditor">The IDMEEditor instance.</param>
+            <param name="DataSource">The data source.</param>
+            <param name="record">The record to be inserted.</param>
+            <param name="Entity">The entity structure.</param>
+            <returns>A list of validation messages indicating if the record can be inserted.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.TrueifNotNull(System.Object)">
+            <summary>
+            Checks if the given object is not null.
+            </summary>
+            <param name="fldval">The object to be checked.</param>
+            <returns>True if the object is not null, otherwise false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.TrueifNotUnique(TheTechIdea.Beep.IDMEEditor,TheTechIdea.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.Object,System.String,System.Object)">
+            <summary>
+            Checks if a field value is not unique within a given entity and data source.
+            </summary>
+            <param name="DMEEditor">The IDMEEditor instance.</param>
+            <param name="DataSource">The IDataSource instance.</param>
+            <param name="Entity">The EntityStructure instance.</param>
+            <param name="record">The record object.</param>
+            <param name="fieldname">The name of the field to check.</param>
+            <param name="fldval">The value of the field to check.</param>
+            <returns>True if the field value is not unique, otherwise false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.TrueifParentExist(TheTechIdea.Beep.IDMEEditor,TheTechIdea.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.Object,System.String,System.Object)">
+            <summary>
+            Checks if the parent entity exists in the data source based on the provided parameters.
+            </summary>
+            <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
+            <param name="DataSource">The data source to check for the parent entity.</param>
+            <param name="Entity">The structure of the entity.</param>
+            <param name="record">The record object.</param>
+            <param name="fieldname">The name of the field.</param>
+            <param name="fldval">The value of the field.</param>
+            <returns>True if the parent entity exists, otherwise false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.TrueifEntityExist(TheTechIdea.Beep.IDMEEditor,TheTechIdea.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>Checks if an entity exists in a data source.</summary>
+            <param name="DMEEditor">The IDMEEditor instance.</param>
+            <param name="DataSource">The data source to check.</param>
+            <param name="Entity">The entity structure to check.</param>
+            <returns>True if the entity exists in the data source, false otherwise.</returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "T:TheTechIdea.Beep.Mapping.MappingManager" -->
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Creates an entity map for a given DME editor, destination entity structure, source entity name, and source data source name.
+            </summary>
+            <param name="DMEEditor">The DME editor instance.</param>
+            <param name="destent">The destination entity structure.</param>
+            <param name="SourceEntityName">The name of the source entity.</param>
+            <param name="SourceDataSourceName">The name of the source data source.</param>
+            <returns>A tuple containing the errors information and the entity data map.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.IDMEEditor,System.String,System.String,System.String,System.String)">
+            <summary>
+            Creates an entity map for data migration between two entities.
+            </summary>
+            <param name="DMEEditor">The IDMEEditor instance used for data migration.</param>
+            <param name="SourceEntityName">The name of the source entity.</param>
+            <param name="SourceDataSourceName">The name of the source data source.</param>
+            <param name="DestEntityName">The name of the destination entity.</param>
+            <param name="DestDataSourceName">The name of the destination data source.</param>
+            <returns>A tuple containing the errors information and the entity data map.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.IDMEEditor,System.String,System.String)">
+            <summary>
+            Creates an entity map using the specified DME editor, destination entity name, and destination data source name.
+            </summary>
+            <param name="DMEEditor">The DME editor used to create the entity map.</param>
+            <param name="DestEntityName">The name of the destination entity.</param>
+            <param name="DestDataSourceName">The name of the destination data source.</param>
+            <returns>A tuple containing the errors information and the entity data map.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntitytoMappedEntities(TheTechIdea.Beep.IDMEEditor,System.String,System.String,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>Adds an entity to the mapped entities in the specified DME editor.</summary>
+            <param name="DMEEditor">The IDMEEditor instance.</param>
+            <param name="SourceDataSourceName">The name of the source data source.</param>
+            <param name="SourceEntityName">The name of the source entity.</param>
+            <param name="destent">The destination entity structure.</param>
+            <returns>The updated EntityDataMap_DTL object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntitytoMappedEntities(TheTechIdea.Beep.IDMEEditor,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL,System.String,System.String,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>Adds an entity to the mapped entities in the EntityDataMap_DTL.</summary>
+            <param name="DMEEditor">The IDMEEditor instance.</param>
+            <param name="det">The EntityDataMap_DTL instance.</param>
+            <param name="SourceDataSourceName">The name of the source data source.</param>
+            <param name="SourceEntityName">The name of the source entity.</param>
+            <param name="destent">The destination entity structure.</param>
+            <returns>The updated EntityDataMap_DTL instance.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntitytoMappedEntities(TheTechIdea.Beep.IDMEEditor,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>Adds an entity to the mapped entities in the EntityDataMap_DTL.</summary>
+            <param name="DMEEditor">The IDMEEditor instance.</param>
+            <param name="det">The EntityDataMap_DTL instance.</param>
+            <param name="srcent">The source entity structure.</param>
+            <param name="destent">The destination entity structure.</param>
+            <returns>The updated EntityDataMap_DTL instance with the added entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntitytoMappedEntities(TheTechIdea.Beep.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>Adds an entity to the mapped entities in the IDMEEditor.</summary>
+            <param name="DMEEditor">The IDMEEditor instance.</param>
+            <param name="srcent">The source entity structure.</param>
+            <param name="destent">The destination entity structure.</param>
+            <returns>The updated EntityDataMap_DTL object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.MapEntityFields(TheTechIdea.Beep.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)">
+            <summary>
+            Maps the fields of a source entity to a destination entity using a data map.
+            </summary>
+            <param name="DMEEditor">The IDMEEditor instance used for mapping.</param>
+            <param name="srcent">The source entity structure.</param>
+            <param name="datamap">The data map used for mapping.</param>
+            <returns>A list of Mapping_rep_fields representing the mapped fields.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CheckifMappingEntityExist(TheTechIdea.Beep.IDMEEditor,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap)">
+            <summary>Checks if a mapping entity exists.</summary>
+            <param name="DMEEditor">The IDMEEditor instance.</param>
+            <param name="entityname">The name of the entity.</param>
+            <param name="entityDataMap">The EntityDataMap instance.</param>
+            <returns>An integer value indicating if the mapping entity exists.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.LinkConnection2Drivers(TheTechIdea.Util.IConnectionProperties,TheTechIdea.Util.IConfigEditor)">
             <summary>Links a connection to its corresponding drivers in the configuration editor.</summary>
@@ -2019,6 +2824,49 @@
         <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetArangoDBDataTypeMappings">
             <summary>Returns a list of datatype mappings for ArangoDB.</summary>
             <returns>A list of datatype mappings for ArangoDB.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.DataTypesHelper">
+            <summary>
+            Helper class for mapping data types to field names.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.#ctor(TheTechIdea.Beep.IDMEEditor)">
+            <summary>Initializes a new instance of the DataTypesHelper class.</summary>
+            <param name="pDMEEditor">The IDMEEditor instance to be associated with the helper.</param>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.DataTypesHelper.DMEEditor">
+            <summary>Gets or sets the DME editor.</summary>
+            <value>The DME editor.</value>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.DataTypesHelper.mapping">
+            <summary>Gets or sets the list of datatype mappings.</summary>
+            <value>The list of datatype mappings.</value>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.GetDataClasses">
+            <summary>Gets a list of data classes from the configuration editor.</summary>
+            <returns>A list of data classes.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.GetDataType(System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>Gets the data type of a field in a specific data source.</summary>
+            <param name="DSname">The name of the data source.</param>
+            <param name="fld">The field for which to retrieve the data type.</param>
+            <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
+            <returns>The data type of the specified field.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.GetFieldTypeWoConversion(System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>Gets the field type without conversion.</summary>
+            <param name="DSname">The name of the data source.</param>
+            <param name="fld">The entity field.</param>
+            <param name="DMEEditor">The DME editor.</param>
+            <returns>The field type without conversion.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.GetNetDataTypes">
+            <summary>Returns an array of .NET data types.</summary>
+            <returns>An array of .NET data types.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.GetNetDataTypes2">
+            <summary>Returns an array of .NET data types.</summary>
+            <returns>An array of .NET data types.</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Helpers.RDBMSHelper">
             <summary>

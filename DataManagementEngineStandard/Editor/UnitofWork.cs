@@ -50,12 +50,12 @@ namespace TheTechIdea.Beep.Editor
         #region "Inotify"
 
 
-        /// <summary>Raises the PropertyChanged event.</summary>
-        /// <param name="propertyName">The name of the property that has changed.</param>
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        ///// <summary>Raises the PropertyChanged event.</summary>
+        ///// <param name="propertyName">The name of the property that has changed.</param>
+        //protected virtual void OnPropertyChanged(string propertyName)
+        //{
+        //    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        //}
 
         #endregion
         #region "Collections"
@@ -133,7 +133,7 @@ namespace TheTechIdea.Beep.Editor
                 DetachHandlers(_units);
                 _units = value;
                 AttachHandlers(_units);
-                OnPropertyChanged(nameof(Units));
+                //OnPropertyChanged(nameof(Units));
             }
         }
 
@@ -1143,7 +1143,7 @@ namespace TheTechIdea.Beep.Editor
                     {
                         DataTable dataTable = (DataTable)retval;
                         //Units
-                        Units = new ObservableBindingList<T>(DMEEditor.Utilfunction.ConvertDataTable<T>(dataTable));
+                        Units = new ObservableBindingList<T>(dataTable); //DMEEditor.Utilfunction.ConvertDataTable<T>();
                     }
                 }
                 _suppressNotification = false;

@@ -5,6 +5,8 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Collections.ObjectModel;
+using System.Data;
+using System.Reflection;
 
 namespace DataManagementModels.Editor
 {
@@ -229,48 +231,107 @@ namespace DataManagementModels.Editor
             this.AllowEdit=true;
             this.AllowRemove=true;
         }
-        //public ObservableBindingList(IEnumerable<T> enumerable) : base()
-        //{
-
-        //    foreach (T item in enumerable)
-        //        item.PropertyChanged += Item_PropertyChanged;
-        //    AddingNew += ObservableBindingList_AddingNew;
-        //}
-        //public ObservableBindingList(IList<T> list) : base(list)
-        //{
-        //    foreach (T item in list)
-        //        item.PropertyChanged += Item_PropertyChanged;
-
-        //    HookupCollectionChangedEvent();
-
-        //    AddingNew += ObservableBindingList_AddingNew;
-        //}
-        public ObservableBindingList(IEnumerable<T> enumerable) : base(enumerable.ToList())
+        public ObservableBindingList(IEnumerable<T> enumerable) : base()
         {
-            foreach (var item in this)
-            {
+
+            foreach (T item in enumerable)
                 item.PropertyChanged += Item_PropertyChanged;
-            }
             AddingNew += ObservableBindingList_AddingNew;
-            this.AllowNew = true;
-            this.AllowEdit = true;
-            this.AllowRemove = true;
         }
-
-        public ObservableBindingList(IList<T> list) : base(new List<T>(list))
+        public ObservableBindingList(IList<T> list) : base(list)
         {
-            foreach (var item in this)
-            {
+            foreach (T item in list)
                 item.PropertyChanged += Item_PropertyChanged;
-            }
-            
+
+          //  HookupCollectionChangedEvent();
 
             AddingNew += ObservableBindingList_AddingNew;
             this.AllowNew = true;
             this.AllowEdit = true;
             this.AllowRemove = true;
         }
+        public ObservableBindingList(DataTable dataTable) : base( )
+        {
+            //if (dataTable == null)
+            //{
+            //    throw new ArgumentNullException(nameof(dataTable));
+            //}
 
+            foreach (DataRow row in dataTable.Rows)
+            {
+                T item = GetItem<T>(row);
+                if (item != null)
+                {
+                    item.PropertyChanged += Item_PropertyChanged;
+                    this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
+                }
+            }
+
+            AddingNew += ObservableBindingList_AddingNew;
+            this.AllowNew = true;
+            this.AllowEdit = true;
+            this.AllowRemove = true;
+        }
+
+        // Your existing GetItem<T> method remains unchanged.
+
+        #region "Util Methods"
+        private T GetItem<T>(DataRow dr)
+        {
+            Type temp = typeof(T);
+            T obj = Activator.CreateInstance<T>();
+
+            foreach (DataColumn column in dr.Table.Columns)
+            {
+                foreach (PropertyInfo pro in temp.GetProperties())
+                {
+                    if (pro.Name == column.ColumnName)
+                    {
+                        var value = dr[column.ColumnName];
+
+                        if (value == DBNull.Value)
+                        {
+                            value = pro.PropertyType.IsValueType ? Activator.CreateInstance(pro.PropertyType) : null;
+                        }
+                        else if (pro.PropertyType == typeof(char) && value is string str && str.Length == 1)
+                        {
+                            value = str[0];
+                        }
+                        else if (pro.PropertyType.IsEnum && value is string enumString)
+                        {
+                            value = Enum.Parse(pro.PropertyType, enumString);
+                        }
+                        else if (IsNumericType(pro.PropertyType) && value != null)
+                        {
+                            try
+                            {
+                                // Convert the value to the property type if it's a numeric type
+                                value = Convert.ChangeType(value, pro.PropertyType);
+                            }
+                            catch (InvalidCastException ex)
+                            {
+                                // Handle the exception here (e.g., log it or throw a custom exception)
+                                throw new InvalidCastException($"Cannot convert value to {pro.PropertyType}: {ex.Message}");
+                            }
+                        }
+
+                        pro.SetValue(obj, value, null);
+                    }
+                }
+            }
+            return obj;
+        }
+
+        private static bool IsNumericType(Type type)
+        {
+            return type == typeof(byte) || type == typeof(sbyte) ||
+                   type == typeof(short) || type == typeof(ushort) ||
+                   type == typeof(int) || type == typeof(uint) ||
+                   type == typeof(long) || type == typeof(ulong) ||
+                   type == typeof(float) || type == typeof(double) ||
+                   type == typeof(decimal);
+        }
+        #endregion
         void ObservableBindingList_AddingNew(object sender, AddingNewEventArgs e)
         {
             if (e.NewObject is T item)

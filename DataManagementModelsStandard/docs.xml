@@ -4,6 +4,18 @@
         <name>DataManagementModels</name>
     </assembly>
     <members>
+        <member name="T:TheTechIdea.Beep.Addin.AddinTreeStructure">
+            <summary>Represents the structure of an add-in tree node.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Addin.DisplayLookUpDescription">
+            <summary>Represents a lookup description for display purposes.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Addin.IFunctionExtension">
+            <summary>Represents an extension for a function.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Addin.IPrintManager">
+            <summary>Interface for managing printing functionality.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Addin.AddinVisSchema">
             <summary>
             Attribute class to define the visualization schema for add-ins within the system.
@@ -82,6 +94,11 @@
         <member name="P:TheTechIdea.Beep.Addin.AddinVisSchema.BranchClass">
             <summary>
             Gets or sets the class associated with the branch. Defaults to "ADDIN".
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.DMDataView">
+            <summary>
+            Represents a view for displaying and interacting with DataView  data.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Vis.AddinAttribute">
@@ -273,6 +290,24 @@
             <summary>
             Gets or sets the display order of the command. Defaults to 0.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.IDM_Addin">
+            <summary>
+            Represents an add-in in the Beep system.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.IPassedArgs">
+            <summary>
+            Represents the arguments passed to a method or event.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.PassedArgs">
+            <summary>
+            Represents the arguments passed to a method or event.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.ObjectItem">
+            <summary>Represents an item in an object collection.</summary>
         </member>
         <member name="P:TheTechIdea.IDataSource.ColumnDelimiter">
             <summary>
