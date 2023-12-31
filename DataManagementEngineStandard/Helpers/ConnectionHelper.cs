@@ -188,7 +188,8 @@ namespace TheTechIdea.Beep.Helpers
             configs.Add(CreateCouchbaseConfig());
             configs.Add(CreateFirebaseConfig());
             configs.Add(CreateRealmConfig());
-
+            configs.Add(CreateDataViewConfig());
+            
 
             return configs;
         }

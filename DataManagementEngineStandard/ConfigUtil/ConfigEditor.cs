@@ -2052,7 +2052,7 @@ namespace TheTechIdea.Util
 				InitConnectionConfigDrivers();
 				InitDataSourceConfigDrivers();
 				InitDatabaseTypes();
-				InitQueryList();
+		//		InitQueryList();
 				InitSqlquerytypes();
 				InitDataConnections();
 				LoadFucntion2Function();

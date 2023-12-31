@@ -199,7 +199,37 @@ private int _id;
         get { return _guidid; }
         set { SetProperty(ref _guidid, value); }
     }
-    public EntityStructure()
+        private bool _isLoaded = false;
+        public bool IsLoaded
+        {
+            get { return _isLoaded; }
+            set { SetProperty(ref _isLoaded, value); }
+        }
+
+
+        private bool _isSaved = false;
+        public bool IsSaved
+        {
+            get { return _isSaved; }
+            set { SetProperty(ref _isSaved, value); }
+        }
+
+
+        private bool _isSynced = false;
+        public bool IsSynced
+        {
+            get { return _isSynced; }
+            set { SetProperty(ref _isSynced, value); }
+        }
+
+
+        private bool _isCreated = false;
+        public bool IsCreated
+        {
+            get { return _isCreated; }
+            set { SetProperty(ref _isCreated, value); }
+        }
+        public EntityStructure()
     {
         init();
 
@@ -500,6 +530,12 @@ private int _id;
             get { return _guidid; }
             set { SetProperty(ref _guidid, value); }
         }
+
+     
+
+      
+
+
         public EntityParameters()
         {
             GuidID = Guid.NewGuid().ToString();

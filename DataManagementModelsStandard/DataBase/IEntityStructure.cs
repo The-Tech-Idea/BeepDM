@@ -34,5 +34,9 @@ namespace TheTechIdea.Beep.DataBase
         ViewType Viewtype { get; set; }
         int StartRow { get; set; }
         int EndRow { get; set; }
+        bool IsLoaded { get; set; }
+        bool IsSaved { get; set; }
+        bool IsSynced { get; set; }
+        bool IsCreated { get; set; }
     }
 }

@@ -177,13 +177,7 @@ namespace TheTechIdea.Util
         }
         public List<WebApiHeader> Headers { get; set; } = new List<WebApiHeader>();
 
-        private bool _compositelayer;
-        public bool CompositeLayer
-        {
-            get { return _compositelayer; }
-            set { SetProperty(ref _compositelayer, value); }
-        }  
-
+       
         private string _compositelayername;
         public string CompositeLayerName
         {
