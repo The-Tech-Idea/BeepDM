@@ -1199,10 +1199,28 @@ namespace TheTechIdea.Beep.Editor
             {
                 return false;
             }
-            if (InsertedKeys.Count > 0 || UpdatedKeys.Count > 0 || DeletedKeys.Count > 0)
+            if (InsertedKeys != null)
             {
-                return true;
+                if (InsertedKeys.Count > 0 )
+                {
+                    return true;
+                }
             }
+            if (UpdatedKeys != null)
+            {
+                if ( UpdatedKeys.Count > 0 )
+                {
+                    return true;
+                }
+            }
+            if(DeletedKeys != null)
+            {
+                if (DeletedKeys.Count > 0)
+                {
+                    return true;
+                }
+            }
+            
             return false;
         }
         /// <summary>Returns a collection of all the added entities.</summary>
