@@ -27,6 +27,7 @@ namespace TheTechIdea.Beep.DataBase
         IErrorsInfo BeginTransaction(PassedArgs args);
         IErrorsInfo EndTransaction(PassedArgs args);
         IErrorsInfo Commit(PassedArgs args);
+        string GetListofEntitiesSql { get; set; }
 
 
     }
