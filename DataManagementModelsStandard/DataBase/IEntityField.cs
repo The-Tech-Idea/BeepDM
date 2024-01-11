@@ -25,6 +25,7 @@ namespace TheTechIdea.Beep.DataBase
         int Size2 { get; set; }
         bool Checked { get; set; }
         bool DisplayField { get; set; }
+        bool IsIdentity { get; set; }   
         // string statusdescription { get; set; }
     }
 }

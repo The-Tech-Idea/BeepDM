@@ -177,7 +177,8 @@ namespace TheTechIdea.Beep.Editor
         private Dictionary<T, EntityState> _deletedentities = new Dictionary<T, EntityState>();
         Stack<Tuple<T, int>> undoDeleteStack = new Stack<Tuple<T, int>>();
         protected virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-
+        public bool IsIdentity { get; set; }= false;
+      
         public string Sequencer { get; set; }
         public string DatasourceName { get; set; }
         public List<T> DeletedUnits { get; set; } = new List<T>();
@@ -489,6 +490,19 @@ namespace TheTechIdea.Beep.Editor
             int index = Units.IndexOf(entity);
             return index;
 
+        }
+        /// <summary>Returns the Last identity of the specified entity in the list of units.</summary>
+        /// <param name="entity">The entity to find the Idnetity of.</param>
+        /// <returns>The Identity of the entity in the list of units. Returns -1 if the list is not valid.</returns>
+        public double GetLastIdentity()
+        {
+            double identity = -1;
+            
+            if (IsIdentity)
+            {
+                identity =DataSource.GetScalar(RDBMSHelper.GenerateFetchLastIdentityQuery(DataSource.DatasourceType));
+            }
+            return identity;
         }
         #endregion
         #region "CRUD Operations"

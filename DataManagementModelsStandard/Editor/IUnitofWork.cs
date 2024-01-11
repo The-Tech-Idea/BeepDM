@@ -40,7 +40,8 @@ namespace TheTechIdea.Beep.Editor
         int DocExistByKey(T doc);
         int FindDocIdx(T doc);
         T Get(string PrimaryKeyid);
-       
+        bool IsIdentity { get; set; }
+        double GetLastIdentity();
         IEnumerable<int> GetAddedEntities();
         Task<ObservableBindingList<T>> Get();
         Task<ObservableBindingList<T>> Get(List<AppFilter> filters);

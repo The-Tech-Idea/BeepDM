@@ -1847,6 +1847,11 @@
             <param name="entity">The entity to find the index of.</param>
             <returns>The index of the entity in the list of units. Returns -1 if the list is not valid.</returns>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.GetLastIdentity">
+            <summary>Returns the Last identity of the specified entity in the list of units.</summary>
+            <param name="entity">The entity to find the Idnetity of.</param>
+            <returns>The Identity of the entity in the list of units. Returns -1 if the list is not valid.</returns>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.UpdateAsync(`0)">
             <summary>Updates a document asynchronously.</summary>
             <param name="doc">The document to be updated.</param>

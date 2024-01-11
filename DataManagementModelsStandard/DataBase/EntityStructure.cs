@@ -229,6 +229,13 @@ private int _id;
             get { return _isCreated; }
             set { SetProperty(ref _isCreated, value); }
         }
+
+        private bool _IsIdentity = false;
+        public bool IsIdentity
+        {
+            get { return _IsIdentity; }
+            set { SetProperty(ref _IsIdentity, value); }
+        }
         public EntityStructure()
     {
         init();
@@ -404,8 +411,19 @@ private int _id;
             get { return _valueretrievedfromparent; }
             set { SetProperty(ref _valueretrievedfromparent, value); }
         }
-        public bool DisplayField { get; set; }
-
+        
+        private bool _DisplayField = false;
+        public bool DisplayField
+        {
+            get { return _DisplayField; }
+            set { SetProperty(ref _DisplayField, value); }
+        }
+        private bool _IsIdentity = false;
+        public bool IsIdentity
+        {
+            get { return _IsIdentity; }
+            set { SetProperty(ref _IsIdentity, value); }
+        }
 
         private string _entityname;
         public string EntityName

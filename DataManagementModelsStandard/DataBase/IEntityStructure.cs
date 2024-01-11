@@ -38,5 +38,6 @@ namespace TheTechIdea.Beep.DataBase
         bool IsSaved { get; set; }
         bool IsSynced { get; set; }
         bool IsCreated { get; set; }
+        bool IsIdentity { get; set; }
     }
 }
