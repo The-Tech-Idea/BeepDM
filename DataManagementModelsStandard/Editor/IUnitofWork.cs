@@ -30,6 +30,7 @@ namespace TheTechIdea.Beep.Editor
         Dictionary<int, string> UpdatedKeys { get; set; }
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         Task<IErrorsInfo> Commit();
+        Task<IErrorsInfo> Rollback();
         void Create(T entity);
         ErrorsInfo Delete(string id);
         ErrorsInfo Delete(T doc);

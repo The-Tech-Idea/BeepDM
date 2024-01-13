@@ -133,6 +133,7 @@ namespace TheTechIdea.Beep.Editor
                 DetachHandlers(_units);
                 _units = value;
                 AttachHandlers(_units);
+                Tempunits = value;
                 //OnPropertyChanged(nameof(Units));
             }
         }
@@ -1032,6 +1033,20 @@ namespace TheTechIdea.Beep.Editor
                 }
             }
             return retval;
+        }
+        public Task<IErrorsInfo> Rollback()
+        {
+            try
+            {
+                Clear();
+                Units = Tempunits;
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep",$" Unit of Work Could not Rollback {ex.Message} ", DateTime.Now, -1, null, Errors.Failed);   
+                
+            }
+            return Task.FromResult<IErrorsInfo>(DMEEditor.ErrorObject);
         }
         #endregion
         #region "Get Methods"
