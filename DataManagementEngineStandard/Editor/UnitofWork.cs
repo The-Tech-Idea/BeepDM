@@ -1004,9 +1004,13 @@ namespace TheTechIdea.Beep.Editor
                 if (!string.IsNullOrEmpty(str))
                 {
                     var r = DataSource.GetScalar(str);
-                    if (r != null)
+                    if (DMEEditor.ErrorObject.Flag == Errors.Ok || r<=0)
                     {
-                        retval = (int)r;
+                        if (r != null)
+                        {
+                            retval = (int)r;
+                        }
+
                     }
 
                 }
@@ -1050,6 +1054,53 @@ namespace TheTechIdea.Beep.Editor
         }
         #endregion
         #region "Get Methods"
+        /// <summary>
+        /// Retrieves a list of items based on the specified filters.
+        /// </summary>
+        /// <param name="filters">The list of filters to apply.</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation.
+        /// The task result contains the list of items that match the filters.
+        /// </returns>
+        public virtual async Task<ObservableBindingList<T>> GetQuery(string query)
+        {
+            if (query == null)
+            {
+                IsFilterOn = false;
+                return Units;
+            }
+            else
+                IsFilterOn = true;
+
+            if (!IsInListMode)
+            {
+                //clearunits();
+                
+                var retval = DataSource.GetEntity(query,null);
+
+                GetDataInUnits(retval);
+
+            }
+            else
+            {
+                if (query != null && _units != null)
+                {
+                    if (_units.Count > 0)
+                    {
+                        _suppressNotification = true;
+                        FilteredUnits = FilterCollection(Units, null);
+                        _suppressNotification = false;
+                        return await Task.FromResult(FilteredUnits);
+
+                    }
+
+                }
+            }
+            return await Task.FromResult(Units);
+
+
+
+        }
         /// <summary>
         /// Retrieves a list of items based on the specified filters.
         /// </summary>

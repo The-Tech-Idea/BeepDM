@@ -44,6 +44,7 @@ namespace TheTechIdea.Beep.Editor
         bool IsIdentity { get; set; }
         double GetLastIdentity();
         IEnumerable<int> GetAddedEntities();
+        Task<ObservableBindingList<T>> GetQuery(string query);
         Task<ObservableBindingList<T>> Get();
         Task<ObservableBindingList<T>> Get(List<AppFilter> filters);
         IEnumerable<T> GetDeletedEntities();

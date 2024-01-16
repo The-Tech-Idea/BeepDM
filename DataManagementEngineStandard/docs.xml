@@ -1961,6 +1961,16 @@
             If the sequence value is greater than 0, it sets the ID value of the document to the sequence value.
             </remarks>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.GetQuery(System.String)">
+            <summary>
+            Retrieves a list of items based on the specified filters.
+            </summary>
+            <param name="filters">The list of filters to apply.</param>
+            <returns>
+            A task that represents the asynchronous operation.
+            The task result contains the list of items that match the filters.
+            </returns>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Get(System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
             <summary>
             Retrieves a list of items based on the specified filters.
