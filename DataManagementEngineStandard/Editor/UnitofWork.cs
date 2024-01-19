@@ -841,11 +841,16 @@ namespace TheTechIdea.Beep.Editor
 
                         progress.Report(args);
                         //  int r = Getindex(t.ToString());
-                        errorsInfo = await InsertAsync(Units[t]);
-                        if (errorsInfo.Flag == Errors.Ok)
+                        IErrorsInfo errorsInfo1 = await InsertAsync(Units[t]);
+                        if (errorsInfo1.Flag == Errors.Ok)
                         {
                             InsertedKeys.Remove(t);
                             _entityStates.Remove(t);
+                        }
+                        else
+                        {
+                            errorsInfo.Flag = Errors.Failed;
+                            errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
                         }
                         x++;
                     }
@@ -857,11 +862,16 @@ namespace TheTechIdea.Beep.Editor
                         args.ParameterInt1 = x;
                         progress.Report(args);
                         //  int r = Getindex(t.ToString());
-                        errorsInfo = await UpdateAsync(Units[t]);
-                        if (errorsInfo.Flag == Errors.Ok)
+                        IErrorsInfo errorsInfo1 = await UpdateAsync(Units[t]);
+                        if (errorsInfo1.Flag == Errors.Ok)
                         {
                             UpdatedKeys.Remove(t);
                             _entityStates.Remove(t);
+                        }
+                        else
+                        {
+                            errorsInfo.Flag = Errors.Failed;
+                            errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
                         }
                         x++;
                     }
@@ -873,11 +883,16 @@ namespace TheTechIdea.Beep.Editor
                         args.ParameterInt1 = x;
                         progress.Report(args);
                         // int r = Getindex(t.ToString());
-                        errorsInfo = await DeleteAsync(t);
-                        if (errorsInfo.Flag == Errors.Ok)
+                        IErrorsInfo errorsInfo1 = await DeleteAsync(t);
+                        if (errorsInfo1.Flag == Errors.Ok)
                         {
 
                             _deletedentities.Remove(t);
+                        }
+                        else
+                        {
+                            errorsInfo.Flag = Errors.Failed;
+                            errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
                         }
                         x++;
                     }
@@ -894,6 +909,7 @@ namespace TheTechIdea.Beep.Editor
             }
             catch (Exception ex)
             {
+                errorsInfo.Flag = Errors.Failed;
                 _suppressNotification = false;
                 args.Messege = $"Error Saving Changes {ex.Message}";
                 args.ParameterString1 = $"Error Saving Changes {ex.Message}";
@@ -930,11 +946,20 @@ namespace TheTechIdea.Beep.Editor
                     foreach (int t in GetAddedEntities())
                     {
                         //  int r = Getindex(t.ToString());
-                        errorsInfo = await InsertAsync(Units[t]);
-                        if (errorsInfo.Flag == Errors.Ok)
+                        IErrorsInfo errorsInfo1 = await InsertAsync(Units[t]);
+                        if (errorsInfo1.Flag == Errors.Ok)
                         {
+                            if (IsIdentity)
+                            {
+                                SetIDValue(Units[t], GetLastIdentity());
+                            }
                             InsertedKeys.Remove(t);
                             _entityStates.Remove(t);
+                        }
+                        else
+                        {
+                            errorsInfo.Flag = Errors.Failed;
+                            errorsInfo.Message= errorsInfo.Message+ "."+errorsInfo1.Ex.Message;
                         }
                         x++;
                     }
@@ -945,11 +970,16 @@ namespace TheTechIdea.Beep.Editor
                     {
 
                         //    int r = Getindex(t.ToString());
-                        errorsInfo = await UpdateAsync(Units[t]);
-                        if (errorsInfo.Flag == Errors.Ok)
+                        IErrorsInfo errorsInfo1 = await UpdateAsync(Units[t]);
+                        if (errorsInfo1.Flag == Errors.Ok)
                         {
                             UpdatedKeys.Remove(t);
                             _entityStates.Remove(t);
+                        }
+                        else
+                        {
+                            errorsInfo.Flag = Errors.Failed;
+                            errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
                         }
                         x++;
                     }
@@ -960,26 +990,28 @@ namespace TheTechIdea.Beep.Editor
                     {
 
                         // int r = Getindex(t.ToString());
-                        errorsInfo = await DeleteAsync(t);
-                        if (errorsInfo.Flag == Errors.Ok)
+                        IErrorsInfo errorsInfo1 = await DeleteAsync(t);
+                        if (errorsInfo1.Flag == Errors.Ok)
                         {
 
                             _deletedentities.Remove(t);
+                        }
+                        else
+                        {
+                            errorsInfo.Flag = Errors.Failed;
+                            errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
                         }
                         x++;
                     }
                     DeletedKeys.Clear();
                     undoDeleteStack.Clear();
                 }
-
-
-
                 _suppressNotification = false;
             }
             catch (Exception ex)
             {
                 _suppressNotification = false;
-
+                errorsInfo.Flag = Errors.Failed;
                 errorsInfo.Ex = ex;
                 DMEEditor.AddLogMessage("UnitofWork", $"Saving and Commiting Changes error {ex.Message}", DateTime.Now, args.ParameterInt1, ex.Message, Errors.Failed);
             }
@@ -1399,7 +1431,10 @@ namespace TheTechIdea.Beep.Editor
                         {
                             keysidx++;
                             item.PropertyChanged += ItemPropertyChangedHandler;
-                            GetPrimaryKeySequence(item);
+                            if (!IsIdentity)
+                            {
+                                GetPrimaryKeySequence(item);
+                            }
                             if (!InsertedKeys.ContainsValue(Convert.ToString(PKProperty.GetValue(item, null))))
                             {
                                 InsertedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
