@@ -1219,7 +1219,11 @@ namespace TheTechIdea.Beep.Editor
         /// <returns>An object of type T that matches the provided primary key, or null if no match is found.</returns>
         public virtual T Get(string PrimaryKeyid)
         {
-
+            if(Units == null || Units.Count==0)
+            {
+                Get(new List<AppFilter>() { new AppFilter() { FieldName = PrimaryKey, Operator = "=", FilterValue = PrimaryKeyid } });
+            }
+            
             var retval = Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(p, null).ToString() == PrimaryKeyid);
             return retval;
         }
