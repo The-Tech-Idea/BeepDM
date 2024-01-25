@@ -953,7 +953,8 @@ namespace TheTechIdea.Beep.Editor
                             {
                                 SetIDValue(Units[t], GetLastIdentity());
                             }
-                            InsertedKeys.Remove(t);
+                            var key= InsertedKeys.Where(x => x.Value == GetIDValue(Units[t]).ToString()).FirstOrDefault().Key;
+                            InsertedKeys.Remove(key);
                             _entityStates.Remove(t);
                         }
                         else
@@ -973,7 +974,8 @@ namespace TheTechIdea.Beep.Editor
                         IErrorsInfo errorsInfo1 = await UpdateAsync(Units[t]);
                         if (errorsInfo1.Flag == Errors.Ok)
                         {
-                            UpdatedKeys.Remove(t);
+                            var key = InsertedKeys.Where(x => x.Value == GetIDValue(Units[t]).ToString()).FirstOrDefault().Key;
+                            UpdatedKeys.Remove(key);
                             _entityStates.Remove(t);
                         }
                         else
