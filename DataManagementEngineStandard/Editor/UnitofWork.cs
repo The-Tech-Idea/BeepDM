@@ -974,7 +974,7 @@ namespace TheTechIdea.Beep.Editor
                         IErrorsInfo errorsInfo1 = await UpdateAsync(Units[t]);
                         if (errorsInfo1.Flag == Errors.Ok)
                         {
-                            var key = InsertedKeys.Where(x => x.Value == GetIDValue(Units[t]).ToString()).FirstOrDefault().Key;
+                            var key = UpdatedKeys.Where(x => x.Value == GetIDValue(Units[t]).ToString()).FirstOrDefault().Key;
                             UpdatedKeys.Remove(key);
                             _entityStates.Remove(t);
                         }
