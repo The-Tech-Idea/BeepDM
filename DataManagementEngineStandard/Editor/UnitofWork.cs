@@ -673,6 +673,25 @@ namespace TheTechIdea.Beep.Editor
             {
                 Units[index] = entity;
                 Units.RemoveAt(index);
+                if (_entityStates.Count > 0)
+                {
+                    if (_entityStates.ContainsKey(index))
+                    {
+                        if (InsertedKeys.ContainsValue(Convert.ToString(PKProperty.GetValue(entity, null))))
+                        {
+                            var idx = InsertedKeys.FirstOrDefault(x => x.Value == Convert.ToString(PKProperty.GetValue(entity, null)));
+                            if (idx.Value.Length > 0)
+                            {
+                                InsertedKeys.Remove(idx.Key);
+                            }
+                   
+                            _entityStates.Remove(index);
+                        }
+                        errorsInfo.Message = "Update Done";
+                        errorsInfo.Flag = Errors.Ok;
+                        return errorsInfo;
+                    }
+                }
                 errorsInfo.Message = "Delete Done";
                 errorsInfo.Flag = Errors.Ok;
                 return errorsInfo;
