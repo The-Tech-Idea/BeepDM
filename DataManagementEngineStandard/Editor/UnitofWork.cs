@@ -668,7 +668,9 @@ namespace TheTechIdea.Beep.Editor
                 errorsInfo.Flag = Errors.Failed;
                 return errorsInfo;
             }
+            var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
             var index = Getindex(entity);
+           
             if (index >= 0)
             {
                 Units[index] = entity;
@@ -679,15 +681,32 @@ namespace TheTechIdea.Beep.Editor
                     {
                         if (InsertedKeys.ContainsValue(Convert.ToString(PKProperty.GetValue(entity, null))))
                         {
-                            var idx = InsertedKeys.FirstOrDefault(x => x.Value == Convert.ToString(PKProperty.GetValue(entity, null)));
-                            if (idx.Value.Length > 0)
+
+                            // Attempt to remove the entity from InsertedKeys and UpdatedKeys.
+                            var insertedKey = InsertedKeys.FirstOrDefault(kvp => kvp.Value == entityKeyAsString);
+                            if (!default(KeyValuePair<int, string>).Equals(insertedKey))
                             {
-                                InsertedKeys.Remove(idx.Key);
+                                InsertedKeys.Remove(insertedKey.Key);
                             }
-                   
-                            _entityStates.Remove(index);
+
+                            var updatedKey = UpdatedKeys.FirstOrDefault(kvp => kvp.Value == entityKeyAsString);
+                            if (!default(KeyValuePair<int, string>).Equals(updatedKey))
+                            {
+                                UpdatedKeys.Remove(updatedKey.Key);
+                            }
+
+                            // Remove the entity's state from _entityStates if present.
+                            if (_entityStates.ContainsKey(index))
+                            {
+                                _entityStates.Remove(index);
+                            }
+                            else
+                            {
+                                // If the entity was added and then deleted before committing, its state might be under a different key.
+                                // Additional logic might be required to handle this case.
+                            }
                         }
-                        errorsInfo.Message = "Update Done";
+                        errorsInfo.Message = "Delete Done";
                         errorsInfo.Flag = Errors.Ok;
                         return errorsInfo;
                     }
@@ -820,7 +839,35 @@ namespace TheTechIdea.Beep.Editor
 
             if (index >= 0)
             {
+                // Assuming ID is the value used in InsertedKeys and UpdatedKeys
+                // Remove the entity from Units
+                T entity = Units[index];
                 Units.RemoveAt(index);
+
+                // Remove references from InsertedKeys and UpdatedKeys
+                var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
+                var insertedKey = InsertedKeys.FirstOrDefault(kvp => kvp.Value == entityKeyAsString);
+                if (!default(KeyValuePair<int, string>).Equals(insertedKey))
+                {
+                    InsertedKeys.Remove(insertedKey.Key);
+                }
+
+                var updatedKey = UpdatedKeys.FirstOrDefault(kvp => kvp.Value == entityKeyAsString);
+                if (!default(KeyValuePair<int, string>).Equals(updatedKey))
+                {
+                    UpdatedKeys.Remove(updatedKey.Key);
+                }
+
+                // Remove the entity's state from _entityStates
+                if (_entityStates.ContainsKey(index))
+                {
+                    _entityStates.Remove(index);
+                }
+                else
+                {
+                    // Handle cases where the index might not directly map due to previous deletions or additions
+                    // Additional logic may be required if your index in _entityStates doesn't align with Units index
+                }
                 errorsInfo.Message = "Delete Done";
                 errorsInfo.Flag = Errors.Ok;
                 return errorsInfo;
@@ -869,7 +916,11 @@ namespace TheTechIdea.Beep.Editor
                         else
                         {
                             errorsInfo.Flag = Errors.Failed;
-                            errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
+                            if (errorsInfo1.Ex != null)
+                            {
+                                errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
+
+                            }
                         }
                         x++;
                     }
@@ -890,7 +941,11 @@ namespace TheTechIdea.Beep.Editor
                         else
                         {
                             errorsInfo.Flag = Errors.Failed;
-                            errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
+                            if (errorsInfo1.Ex != null)
+                            {
+                                errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
+
+                            }
                         }
                         x++;
                     }
@@ -911,7 +966,11 @@ namespace TheTechIdea.Beep.Editor
                         else
                         {
                             errorsInfo.Flag = Errors.Failed;
-                            errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
+                            if (errorsInfo1.Ex != null)
+                            {
+                                errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
+
+                            }
                         }
                         x++;
                     }
@@ -1000,29 +1059,47 @@ namespace TheTechIdea.Beep.Editor
                         else
                         {
                             errorsInfo.Flag = Errors.Failed;
-                            errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
+                            if (errorsInfo1.Ex != null)
+                            {
+                                errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
+
+                            }
                         }
                         x++;
                     }
                 }
                 if (GetDeletedEntities() != null)
                 {
-                    foreach (T t in GetDeletedEntities())
+                    foreach (T entity in GetDeletedEntities())
                     {
 
-                        // int r = Getindex(t.ToString());
-                        IErrorsInfo errorsInfo1 = await DeleteAsync(t);
-                        if (errorsInfo1.Flag == Errors.Ok)
+                        if (_deletedentities.TryGetValue(entity, out EntityState state))
                         {
+                            // Skip calling DeleteAsync for entities that were added but not yet saved to the database
+                            if (state == EntityState.Added)
+                            {
+                                // Since the entity was never persisted, we can remove it directly
+                                _deletedentities.Remove(entity);
+                                continue; // Move to the next entity
+                            }
 
-                            _deletedentities.Remove(t);
+                            // Proceed with async deletion for entities that were persisted (either modified or initially persisted then marked for deletion)
+                            IErrorsInfo errorsInfo1 = await DeleteAsync(entity);
+                            if (errorsInfo1.Flag == Errors.Ok)
+                            {
+                                // Successfully deleted from the database, remove from _deletedentities
+                                _deletedentities.Remove(entity);
+                            }
+                            else
+                            {
+                                // If deletion failed, handle accordingly
+                                errorsInfo.Flag = Errors.Failed;
+                                if (errorsInfo1.Ex != null)
+                                {
+                                    errorsInfo.Message += "." + errorsInfo1.Ex.Message;
+                                }
+                            }
                         }
-                        else
-                        {
-                            errorsInfo.Flag = Errors.Failed;
-                            errorsInfo.Message = errorsInfo.Message + "." + errorsInfo1.Ex.Message;
-                        }
-                        x++;
                     }
                     DeletedKeys.Clear();
                     undoDeleteStack.Clear();
@@ -1428,10 +1505,11 @@ namespace TheTechIdea.Beep.Editor
                     return;
                 }
                 T item = _units[e.NewIndex];
-                if (!UpdatedKeys.Any(p => p.Value.Equals(Convert.ToString(PKProperty.GetValue(item, null)))))
+                var entityKeyAsString = Convert.ToString(PKProperty.GetValue(item, null));
+                if (!UpdatedKeys.Any(p => p.Value.Equals(entityKeyAsString)))
                 {
                     keysidx++;
-                    UpdatedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
+                    UpdatedKeys.Add(keysidx, Convert.ToString(entityKeyAsString));
                 }
             }
         }
@@ -1478,9 +1556,21 @@ namespace TheTechIdea.Beep.Editor
                         {
                             undoDeleteStack.Push(new Tuple<T, int>(item, e.OldStartingIndex));
                             keysidx++;
-                            DeletedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
-                            //_entityStates.Add(e.OldStartingIndex, EntityState.Deleted);
-                            _deletedentities.Add(item, EntityState.Deleted);
+                            var entityKeyAsString = Convert.ToString(PKProperty.GetValue(item, null));
+                            DeletedKeys.Add(keysidx, entityKeyAsString);
+                            EntityState state= EntityState.Deleted;
+                            var insertedKey = InsertedKeys.FirstOrDefault(kvp => kvp.Value == entityKeyAsString);
+                            if (!default(KeyValuePair<int, string>).Equals(insertedKey))
+                            {
+                                state= EntityState.Added;
+                            }
+
+                            var updatedKey = UpdatedKeys.FirstOrDefault(kvp => kvp.Value == entityKeyAsString);
+                            if (!default(KeyValuePair<int, string>).Equals(updatedKey))
+                            {
+                                state= EntityState.Modified;
+                            }
+                            _deletedentities.Add(item, state);
                         }
                         else
                             UndoDelete(item, e.OldStartingIndex);
