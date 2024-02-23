@@ -17,7 +17,7 @@ using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using TypeInfo = System.Reflection.TypeInfo;
-
+using Microsoft.Extensions.DependencyModel;
 
 namespace TheTechIdea.Tools
 {
@@ -72,6 +72,7 @@ namespace TheTechIdea.Tools
         /// List of classes that represent data sources.
         /// </summary>
         public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
+        public List<Assembly> LoadedAssemblies { get; private set; } = new List<Assembly>();
 
         /// <summary>
         /// Constructor for AssemblyHandler, initializes necessary properties.
@@ -90,6 +91,10 @@ namespace TheTechIdea.Tools
             CurrentDomain = AppDomain.CurrentDomain;
             DataSourcesClasses = new List<AssemblyClassDefinition>();
             CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            LoadedAssemblies = DependencyContext.Default.RuntimeLibraries
+    .SelectMany(library => library.GetDefaultAssemblyNames(DependencyContext.Default))
+    .Select(Assembly.Load)
+    .ToList();
         }
 
         #region "Loaders"
@@ -208,8 +213,12 @@ namespace TheTechIdea.Tools
          
             try
             {
-                ScanAssembly(currentAssem);
-             //  Utilfunction.FunctionHierarchy = GetAddinObjects(currentAssem);
+                if (!currentAssem.FullName.StartsWith("System") && !currentAssem.FullName.StartsWith("Microsoft"))
+                {
+                    ScanAssembly(currentAssem);
+                    GetDrivers(currentAssem);
+                }
+                //  Utilfunction.FunctionHierarchy = GetAddinObjects(currentAssem);
             }
             catch (Exception ex)
             {
@@ -228,14 +237,20 @@ namespace TheTechIdea.Tools
 
                // DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var assemblies = LoadedAssemblies;
             
                 foreach (Assembly item in assemblies)
                 {
                     try
                     {
+                    // Filter out system assemblies or non-NuGet assemblies if necessary
+                    // For example, you might check the assembly's name, location, etc.
+                    if (!item.FullName.StartsWith("System") && !item.FullName.StartsWith("Microsoft"))
+                    {
                         ScanAssembly(item);
                         GetDrivers(item);
+                    }
+                 ;
                     }
                     catch (Exception ex)
                     {
