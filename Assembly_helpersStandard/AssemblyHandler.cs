@@ -124,16 +124,50 @@ namespace TheTechIdea.Tools
         /// Scans and initializes loader extensions within a given .NET Assembly object.
         /// </summary>
         /// <param name="assembly">The Assembly object to be scanned.</param>
-        private void ScanExtensions(Assembly assembly)
+        private void ScanExtensions()
         {
             foreach (Type item in LoaderExtensions)
             {
                 try
                 {
                     ILoaderExtention cls = (ILoaderExtention)Activator.CreateInstance(item, new object[] { this });
+                    foreach (Assembly assembly1 in LoadedAssemblies)
+                    {
+                        try
+                        {
+                            // Filter out system assemblies or non-NuGet assemblies if necessary
+                            // For example, you might check the assembly's name, location, etc.
+                            if (!item.FullName.StartsWith("System") && !item.FullName.StartsWith("Microsoft"))
+                            {
+                                cls.Scan(assembly1);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
 
+                            //DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
+                        }
+                    }
+
+                 
+
+                }
+                catch (Exception)
+                {
+
+
+                }
+            }
+        }
+        private void ScanExtension(Assembly assembly)
+        {
+            foreach (Type item in LoaderExtensions)
+            {
+                try
+                {
+                    ILoaderExtention cls = (ILoaderExtention)Activator.CreateInstance(item, new object[] { this });
                     cls.Scan(assembly);
-
+                    
                 }
                 catch (Exception)
                 {
@@ -155,10 +189,6 @@ namespace TheTechIdea.Tools
                 {
                    
                     LoadAssembly(Path.Combine(ConfigEditor.ExePath,"LoadingExtensions"), FolderFileTypes.LoaderExtensions);
-
-                   
-
-
                 }
                 catch (FileLoadException loadEx)
                 {
@@ -205,8 +235,28 @@ namespace TheTechIdea.Tools
         /// <returns>Returns an IErrorsInfo object indicating the success or failure of the operation.</returns>
         public IErrorsInfo GetBuiltinClasses()
         {
-          //  DMEEditor.ErrorObject.Flag = Errors.Ok;
-           
+            //  DMEEditor.ErrorObject.Flag = Errors.Ok;
+            var assemblies = LoadedAssemblies;
+
+            foreach (Assembly item in assemblies)
+            {
+                try
+                {
+                    // Filter out system assemblies or non-NuGet assemblies if necessary
+                    // For example, you might check the assembly's name, location, etc.
+                    if (!item.FullName.StartsWith("System") && !item.FullName.StartsWith("Microsoft"))
+                    {
+                        ScanAssembly(item);
+                        GetDrivers(item);
+                    }
+             ;
+                }
+                catch (Exception ex)
+                {
+
+                    //DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
+                }
+            }
             // look through assembly list
             Assembly currentAssem = Assembly.GetExecutingAssembly();
             Assembly rootassembly = Assembly.GetEntryAssembly();
@@ -237,27 +287,7 @@ namespace TheTechIdea.Tools
 
                // DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
             }
-            var assemblies = LoadedAssemblies;
-            
-                foreach (Assembly item in assemblies)
-                {
-                    try
-                    {
-                    // Filter out system assemblies or non-NuGet assemblies if necessary
-                    // For example, you might check the assembly's name, location, etc.
-                    if (!item.FullName.StartsWith("System") && !item.FullName.StartsWith("Microsoft"))
-                    {
-                        ScanAssembly(item);
-                        GetDrivers(item);
-                    }
-                 ;
-                    }
-                    catch (Exception ex)
-                    {
-
-                        //DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
-                    }
-                }
+          
             return ErrorObject;
 
         }
@@ -471,6 +501,26 @@ namespace TheTechIdea.Tools
             AddEngineDefaultDrivers();
             SendMessege(progress, token, "Organizing Drivers");
             CheckDriverAlreadyExistinList();
+            SendMessege(progress, token, "Scanning Extensions");
+            ScanExtensions();
+            SendMessege(progress, token, "Scanning Folders  For Extension Project's and Addin's");
+            foreach (assemblies_rep s in Assemblies.Where(x => x.FileTypes == FolderFileTypes.ProjectClass || x.FileTypes == FolderFileTypes.Addin))
+            {
+                try
+                {
+                    ////DMEEditor.AddLogMessage("Start", $"Started Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
+                    ScanExtension(s.DllLib);
+                    //  Utilfunction.FunctionHierarchy = GetAddinObjects(s.DllLib);
+                    //   //DMEEditor.AddLogMessage("End", $"Ended Processing DLL {s.DllName}", DateTime.Now, -1, s.DllName, Errors.Ok);
+
+                }
+                catch (Exception ex)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    //  //DMEEditor.AddLogMessage("Fail", $"Could not Process DLL {s.DllName}", DateTime.Now, -1,s.DllName, Errors.Failed);
+                }
+
+            }
             if (ConfigEditor.ConfigType != BeepConfigType.DataConnector)
             {
                 Utilfunction.FunctionHierarchy = GetAddinObjectsFromTree();
@@ -788,7 +838,7 @@ namespace TheTechIdea.Tools
                         }
                   
                     }
-                    ScanExtensions(asm);
+                    //ScanExtension(asm);
                 }
 
             }
@@ -904,7 +954,7 @@ namespace TheTechIdea.Tools
                         } 
                        
                     }
-                        ScanExtensions(asm);
+                      
                     }
 
                 }
