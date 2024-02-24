@@ -1470,10 +1470,10 @@ namespace TheTechIdea.Beep
 
 
                 };
-                if (f.FilePath.Contains(DME.ConfigEditor.ExePath))
-                {
-                    f.FilePath = f.FilePath.Replace(DME.ConfigEditor.ExePath, ".\\");
-                }
+                //if (f.FilePath.Contains(DME.ConfigEditor.ExePath))
+                //{
+                //    f.FilePath = f.FilePath.Replace(DME.ConfigEditor.ExePath, ".\\");
+                //}
 
 
                 ConnectionDriversConfig c = GetConnectionDrivers(ext);
