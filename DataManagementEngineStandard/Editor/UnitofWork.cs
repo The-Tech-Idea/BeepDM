@@ -1534,10 +1534,14 @@ namespace TheTechIdea.Beep.Editor
                         {
                             keysidx++;
                             item.PropertyChanged += ItemPropertyChangedHandler;
-                            if (!IsIdentity)
+                            if(!IsInListMode)
                             {
-                                GetPrimaryKeySequence(item);
+                                if (!IsIdentity)
+                                {
+                                    GetPrimaryKeySequence(item);
+                                }
                             }
+  
                             if (!InsertedKeys.ContainsValue(Convert.ToString(PKProperty.GetValue(item, null))))
                             {
                                 InsertedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
