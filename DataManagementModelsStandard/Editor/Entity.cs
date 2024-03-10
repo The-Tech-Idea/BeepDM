@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class Entity : INotifyPropertyChanged
+    public class Entity : INotifyPropertyChanged, IEntity
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -20,7 +20,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 field = value;
                 OnPropertyChanged(propertyName);
-           }
+            }
         }
     }
 }
