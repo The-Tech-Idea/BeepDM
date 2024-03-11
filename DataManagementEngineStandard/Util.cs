@@ -40,6 +40,28 @@ namespace TheTechIdea.Beep
             ConfigEditor = pConfigEditor;
 
         }
+        public IBindingList ConvertDataTableToObservableList(DataTable dataTable, Type type)
+        {
+            var listType = typeof(ObservableBindingList<>).MakeGenericType(new Type[] { type });
+            var list = (IBindingList)Activator.CreateInstance(listType);
+
+            foreach (DataRow row in dataTable.Rows)
+            {
+                var item = Activator.CreateInstance(type);
+                foreach (DataColumn column in dataTable.Columns)
+                {
+                    PropertyInfo property = item.GetType().GetProperty(column.ColumnName);
+                    if (property != null && row[column] != DBNull.Value)
+                    {
+                        property.SetValue(item, Convert.ChangeType(row[column], property.PropertyType), null);
+                    }
+                }
+                listType.GetMethod("Add").Invoke(list, new object[] { item });
+            }
+
+            return list;
+        }
+
         public T CreateInstance<T>(params object[] paramArray)
         {
             return (T)Activator.CreateInstance(typeof(T), args: paramArray);

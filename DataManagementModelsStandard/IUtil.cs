@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
@@ -27,7 +28,7 @@ namespace TheTechIdea.Beep
         List<ParentChildObject> FunctionHierarchy { get; set; }
         List<T> ConvertDataTable<T>(DataTable dt);
         ObservableBindingList<T> ConvertDataTableToObservableBindingList<T>(DataTable dt) where T : Entity;
-
+        IBindingList ConvertDataTableToObservableList(DataTable dataTable, Type type);
        DataTable CreateDataTableVer1(object[] array);
         DataTable CreateDataTableVer2(object[] arr);
         DataTable CreateDataTableFromFile(string strFilePath);
