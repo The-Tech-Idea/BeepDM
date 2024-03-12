@@ -313,12 +313,12 @@ namespace TheTechIdea.Beep.Tools
                     EntityField fld = entity.Fields[i];
                     if (string.IsNullOrEmpty(template))
                     {
-                        str += $"public {fld.fieldtype} {fld.fieldname}" + Environment.NewLine;
+                        str += $"public {fld.fieldtype}? {fld.fieldname}" + Environment.NewLine;
                     }
                     else
                     {
                         string extractedtemplate = template.Replace(":FIELDNAME", fld.fieldname);
-                        extractedtemplate = extractedtemplate.Replace(":FIELDTYPE", fld.fieldtype);
+                        extractedtemplate = extractedtemplate.Replace(":FIELDTYPE", fld.fieldtype+"?");
                         str += extractedtemplate + Environment.NewLine;
                     }
 

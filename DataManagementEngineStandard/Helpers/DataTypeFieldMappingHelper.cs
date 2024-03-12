@@ -405,6 +405,141 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "468fe152-227c-47a0-a3a0-ac675eaa8b49", DataType = "TIMESTAMP WITH LOCAL TIME ZONE", DataSourceName = "OracleDataSource", NetDataType = "System.DateTime", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "d45036a5-17b2-495e-b8b0-d0a2e46ea9a2", DataType = "UROWID", DataSourceName = "OracleDataSource", NetDataType = "System.String", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "dfac1056-5c99-40ef-b76d-b60ec95eb777", DataType = "NCLOB", DataSourceName = "OracleDataSource", NetDataType = "System.String", Fav = false },
+
+             // Float mapping (as previously discussed)
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(), // Provide a unique GUID
+            DataType = "FLOAT",
+            DataSourceName = "OracleDataSource",
+            NetDataType = "System.Double", // or System.Double based on the precision you require
+            Fav = false
+        },
+
+        // Additional mappings
+
+        // INTEGER (Oracle's INTEGER is a synonym for NUMBER(38), can be safely mapped to C# int or long based on the size)
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "INTEGER",
+            DataSourceName = "OracleDataSource",
+            NetDataType = "System.Int32", // or System.Int64 if you expect large values
+            Fav = false
+        },
+
+        // SMALLINT
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "SMALLINT",
+            DataSourceName = "OracleDataSource",
+            NetDataType = "System.Int16",
+            Fav = false
+        },
+
+        // REAL
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "REAL",
+            DataSourceName = "OracleDataSource",
+            NetDataType = "System.Single",
+            Fav = false
+        },
+
+        // DOUBLE PRECISION
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "DOUBLE PRECISION",
+            DataSourceName = "OracleDataSource",
+            NetDataType = "System.Double",
+            Fav = false
+        },
+
+        // BINARY_FLOAT
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "BINARY_FLOAT",
+            DataSourceName = "OracleDataSource",
+            NetDataType = "System.Single",
+            Fav = false
+        },
+
+        // BINARY_DOUBLE
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "BINARY_DOUBLE",
+            DataSourceName = "OracleDataSource",
+            NetDataType = "System.Double",
+            Fav = false
+        },
+
+        // VARCHAR2
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "VARCHAR2",
+            DataSourceName = "OracleDataSource",
+            NetDataType = "System.String",
+            Fav = false
+        },
+
+        // NVARCHAR2
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "NVARCHAR2",
+            DataSourceName = "OracleDataSource",
+            NetDataType = "System.String",
+            Fav = false
+        },
+
+        // DATE (Oracle DATE includes time as well)
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "DATE",
+            DataSourceName = "OracleDataSource",
+            NetDataType = "System.DateTime",
+            Fav = false
+        },
+
+        // TIMESTAMP WITH TIME ZONE
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "TIMESTAMP WITH TIME ZONE",
+            DataSourceName = "OracleDataSource",
+            NetDataType = "System.DateTimeOffset",
+            Fav = false
+        },
+
+        // XMLTYPE
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "XMLTYPE",
+            DataSourceName = "OracleDataSource",
+            NetDataType = "System.String", // Or another data type that can handle XML content
+            Fav = false
+        },
+
         };
         }
         /// <summary>
@@ -466,7 +601,95 @@ namespace TheTechIdea.Beep.Helpers
                 new DatatypeMapping { ID = 20, GuidID = Guid.NewGuid().ToString(), DataType = "tinyint", DataSourceName = "SQLServerDataSource", NetDataType = "System.Byte", Fav = false },
                 new DatatypeMapping { ID = 21, GuidID = Guid.NewGuid().ToString(), DataType = "varbinary", DataSourceName = "SQLServerDataSource", NetDataType = "System.Byte[]", Fav = false },
                 new DatatypeMapping { ID = 22, GuidID = Guid.NewGuid().ToString(), DataType = "varchar", DataSourceName = "SQLServerDataSource", NetDataType = "System.String", Fav = false },
-                new DatatypeMapping { ID = 23, GuidID = Guid.NewGuid().ToString(), DataType = "xml", DataSourceName = "SQLServerDataSource", NetDataType = "System.Xml.XmlDocument", Fav = false }
+                new DatatypeMapping { ID = 23, GuidID = Guid.NewGuid().ToString(), DataType = "xml", DataSourceName = "SQLServerDataSource", NetDataType = "System.Xml.XmlDocument", Fav = false },
+                // smallmoney
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "smallmoney",
+            DataSourceName = "SQLServerDataSource",
+            NetDataType = "System.Decimal",
+            Fav = false
+        },
+
+        // datetimeoffset
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "datetimeoffset",
+            DataSourceName = "SQLServerDataSource",
+            NetDataType = "System.DateTimeOffset",
+            Fav = false
+        },
+
+        // time
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "time",
+            DataSourceName = "SQLServerDataSource",
+            NetDataType = "System.TimeSpan",
+            Fav = false
+        },
+
+        // uniqueidentifier
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "uniqueidentifier",
+            DataSourceName = "SQLServerDataSource",
+            NetDataType = "System.Guid",
+            Fav = false
+        },
+
+        // sql_variant (can be complex to handle as it can store multiple data types)
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "sql_variant",
+            DataSourceName = "SQLServerDataSource",
+            NetDataType = "System.Object",
+            Fav = false
+        },
+
+        // geography
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "geography",
+            DataSourceName = "SQLServerDataSource",
+            NetDataType = "Microsoft.SqlServer.Types.SqlGeography",
+            Fav = false
+        },
+
+        // geometry
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "geometry",
+            DataSourceName = "SQLServerDataSource",
+            NetDataType = "Microsoft.SqlServer.Types.SqlGeometry",
+            Fav = false
+        },
+
+        // hierarchyid
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "hierarchyid",
+            DataSourceName = "SQLServerDataSource",
+            NetDataType = "Microsoft.SqlServer.Types.SqlHierarchyId",
+            Fav = false
+        }
+
             };
 
             return mappings;
@@ -527,7 +750,22 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "2bf31711-81df-4076-85e3-48270dca1b33", DataType = "varchar(N)", DataSourceName = "PostgreDataSource", NetDataType = "System.String", Fav = true },
             new DatatypeMapping { ID = 0, GuidID = "a756ee8d-af4c-44c8-8308-f38e7d5a3a6d", DataType = "timestamp", DataSourceName = "PostgreDataSource", NetDataType = "System.DateTime", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "a7329dde-29ad-40f0-93a6-dc4830131543", DataType = "double precision", DataSourceName = "PostgreDataSource", NetDataType = "System.TimeSpan", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "e1efb191-fdb1-443e-a969-8492a45b6744", DataType = "bytea", DataSourceName = "PostgreDataSource", NetDataType = "System.Byte[]", Fav = false }
+            new DatatypeMapping { ID = 0, GuidID = "e1efb191-fdb1-443e-a969-8492a45b6744", DataType = "bytea", DataSourceName = "PostgreDataSource", NetDataType = "System.Byte[]", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "text", DataSourceName = "PostgreDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "bytea", DataSourceName = "PostgreDataSource", NetDataType = "System.Byte[]", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "timestamp without time zone", DataSourceName = "PostgreDataSource", NetDataType = "System.DateTime", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "timestamp with time zone", DataSourceName = "PostgreDataSource", NetDataType = "System.DateTimeOffset", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "interval", DataSourceName = "PostgreDataSource", NetDataType = "System.TimeSpan", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "json", DataSourceName = "PostgreDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "jsonb", DataSourceName = "PostgreDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "cidr", DataSourceName = "PostgreDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "inet", DataSourceName = "PostgreDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "macaddr", DataSourceName = "PostgreDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "tsvector", DataSourceName = "PostgreDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "tsquery", DataSourceName = "PostgreDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "xml", DataSourceName = "PostgreDataSource", NetDataType = "System.Xml.Linq.XElement", Fav = false },
+        // Add more mappings as needed
+
         };
         }
         /// <summary>Returns a list of datatype mappings between MySQL and .NET data types.</summary>
@@ -556,7 +794,18 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "6825dddb-4459-4c2f-b3b3-fe750d1988e0", DataType = "TINYBLOB", DataSourceName = "MySQLDataSource", NetDataType = "System.Byte[]", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "78627e34-63b8-4ab2-b31c-84f28256b481", DataType = "BLOB", DataSourceName = "MySQLDataSource", NetDataType = "System.Byte[]", Fav = true },
             new DatatypeMapping { ID = 0, GuidID = "8bc228bc-301f-40c5-a8a6-5ca44c83a5e5", DataType = "MEDIUMBLOB", DataSourceName = "MySQLDataSource", NetDataType = "System.Byte[]", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "e4b66269-b72d-492a-80c5-31d61a455ff7", DataType = "LONGBLOB", DataSourceName = "MySQLDataSource", NetDataType = "System.Byte[]", Fav = false }
+            new DatatypeMapping { ID = 0, GuidID = "e4b66269-b72d-492a-80c5-31d61a455ff7", DataType = "LONGBLOB", DataSourceName = "MySQLDataSource", NetDataType = "System.Byte[]", Fav = false },
+             // Additional mappings
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "tinytext", DataSourceName = "MySQLDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "mediumtext", DataSourceName = "MySQLDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "longtext", DataSourceName = "MySQLDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "enum", DataSourceName = "MySQLDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "set", DataSourceName = "MySQLDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "date", DataSourceName = "MySQLDataSource", NetDataType = "System.DateTime", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "time", DataSourceName = "MySQLDataSource", NetDataType = "System.TimeSpan", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "year", DataSourceName = "MySQLDataSource", NetDataType = "System.Int32", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "json", DataSourceName = "MySQLDataSource", NetDataType = "System.String", Fav = false },
+        // Add more mappings as needed
         };
         }
         /// <summary>Returns a list of datatype mappings for Firebird database.</summary>
@@ -583,7 +832,16 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "86dd903d-0ef3-40de-9f2a-3b4536fd2b79", DataType = "timestamp", DataSourceName = "FireBirdDataSource", NetDataType = "System.DateTime", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "c5c155d3-af68-4c59-8afc-860ddcbe5888", DataType = "double precision", DataSourceName = "FireBirdDataSource", NetDataType = "System.TimeSpan", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "a77ff872-fbf9-4e0d-b1f5-50fc2c6036bb", DataType = "BLOB", DataSourceName = "FireBirdDataSource", NetDataType = "System.Byte[]", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "28dd3198-4a74-4d4c-a078-65a62ca605cf", DataType = "TEXT", DataSourceName = "FireBirdDataSource", NetDataType = "System.String", Fav = false }
+            new DatatypeMapping { ID = 0, GuidID = "28dd3198-4a74-4d4c-a078-65a62ca605cf", DataType = "TEXT", DataSourceName = "FireBirdDataSource", NetDataType = "System.String", Fav = false },
+             // Additional mappings
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "VARCHAR", DataSourceName = "FireBirdDataSource", NetDataType = "System.String", Fav = true },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "DATE", DataSourceName = "FireBirdDataSource", NetDataType = "System.DateTime", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "TIME", DataSourceName = "FireBirdDataSource", NetDataType = "System.TimeSpan", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "NUMERIC", DataSourceName = "FireBirdDataSource", NetDataType = "System.Decimal", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "DECIMAL", DataSourceName = "FireBirdDataSource", NetDataType = "System.Decimal", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "BLOB SUB_TYPE TEXT", DataSourceName = "FireBirdDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "BLOB SUB_TYPE BINARY", DataSourceName = "FireBirdDataSource", NetDataType = "System.Byte[]", Fav = false },
+        // Add more mappings as needed
         };
         }
         /// <summary>Returns a list of LiteDB data type mappings.</summary>
@@ -652,6 +910,16 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "TIME", DataSourceName = "DB2DataSource", NetDataType = "System.DateTime", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "TIMESTAMP", DataSourceName = "DB2DataSource", NetDataType = "System.DateTime", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "BLOB", DataSourceName = "DB2DataSource", NetDataType = "System.Byte[]", Fav = false },
+         // Additional mappings
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "GRAPHIC", DataSourceName = "DB2DataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "VARGRAPHIC", DataSourceName = "DB2DataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "DBCLOB", DataSourceName = "DB2DataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "DECFLOAT", DataSourceName = "DB2DataSource", NetDataType = "System.Decimal", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "NUMERIC", DataSourceName = "DB2DataSource", NetDataType = "System.Decimal", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "XML", DataSourceName = "DB2DataSource", NetDataType = "System.Xml.Linq.XElement", Fav = false },
+        // You might need to handle XML data type specifically depending on your use case
+        // Add more mappings as needed
+
     };
         }
         /// <summary>Returns a list of MongoDB data type mappings.</summary>
@@ -671,7 +939,17 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Binary", DataSourceName = "MongoDBDataSource", NetDataType = "System.Byte[]", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Null", DataSourceName = "MongoDBDataSource", NetDataType = "System.DBNull", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "RegularExpression", DataSourceName = "MongoDBDataSource", NetDataType = "System.Text.RegularExpressions.Regex", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Document", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonDocument", Fav = false }
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Document", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonDocument", Fav = false },
+          // Additional mappings
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Decimal128", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.Decimal128", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "JavaScript", DataSourceName = "MongoDBDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "JavaScriptWithScope", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonJavaScriptWithScope", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "MaxKey", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonMaxKey", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "MinKey", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonMinKey", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "ObjectId", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.ObjectId", Fav = true },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Symbol", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonSymbol", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Timestamp", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonTimestamp", Fav = false },
+
     };
         }
         /// <summary>Returns a list of mappings between .NET data types and Cassandra data types.</summary>
@@ -693,7 +971,17 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "varint", DataSourceName = "CassandraDataSource", NetDataType = "System.Numerics.BigInteger", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "list", DataSourceName = "CassandraDataSource", NetDataType = "System.Collections.Generic.List<>", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "map", DataSourceName = "CassandraDataSource", NetDataType = "System.Collections.Generic.Dictionary<,>", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "set", DataSourceName = "CassandraDataSource", NetDataType = "System.Collections.Generic.HashSet<>", Fav = false }
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "set", DataSourceName = "CassandraDataSource", NetDataType = "System.Collections.Generic.HashSet<>", Fav = false },
+         // Additional mappings
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "blob", DataSourceName = "CassandraDataSource", NetDataType = "System.Byte[]", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "counter", DataSourceName = "CassandraDataSource", NetDataType = "System.Int64", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "date", DataSourceName = "CassandraDataSource", NetDataType = "System.DateTime", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "inet", DataSourceName = "CassandraDataSource", NetDataType = "System.Net.IPAddress", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "smallint", DataSourceName = "CassandraDataSource", NetDataType = "System.Int16", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "time", DataSourceName = "CassandraDataSource", NetDataType = "System.TimeSpan", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "tinyint", DataSourceName = "CassandraDataSource", NetDataType = "System.Byte", Fav = false },
+
+
     };
         }
         /// <summary>Returns a list of Redis data type mappings.</summary>
@@ -709,8 +997,9 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "hash", DataSourceName = "RedisDataSource", NetDataType = "System.Collections.Generic.Dictionary<System.String, System.String>", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "bitmap", DataSourceName = "RedisDataSource", NetDataType = "System.Collections.BitArray", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "hyperloglog", DataSourceName = "RedisDataSource", NetDataType = "System.Object", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "geospatial index", DataSourceName = "RedisDataSource", NetDataType = "System.Object", Fav = false }
-    };
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "geospatial index", DataSourceName = "RedisDataSource", NetDataType = "System.Object", Fav = false },
+          new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "string", DataSourceName = "RedisDataSource", NetDataType = "System.String", Fav = false }
+            };
         }
         /// <summary>Returns a list of Couchbase data type mappings.</summary>
         /// <returns>A list of Couchbase data type mappings.</returns>
@@ -718,13 +1007,13 @@ namespace TheTechIdea.Beep.Helpers
         {
             return new List<DatatypeMapping>
     {
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "JSON Document", DataSourceName = "CouchbaseDataSource", NetDataType = "Newtonsoft.Json.Linq.JObject", Fav = false },
+       new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "JSON Document", DataSourceName = "CouchbaseDataSource", NetDataType = "Newtonsoft.Json.Linq.JObject", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "String", DataSourceName = "CouchbaseDataSource", NetDataType = "System.String", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Integer", DataSourceName = "CouchbaseDataSource", NetDataType = "System.Int32", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Double", DataSourceName = "CouchbaseDataSource", NetDataType = "System.Double", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Boolean", DataSourceName = "CouchbaseDataSource", NetDataType = "System.Boolean", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Array", DataSourceName = "CouchbaseDataSource", NetDataType = "System.Collections.Generic.List<dynamic>", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Object", DataSourceName = "CouchbaseDataSource", NetDataType = "System.Object", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Object", DataSourceName = "CouchbaseDataSource", NetDataType = "System.Dynamic.ExpandoObject", Fav = false }, // More specific type for dynamic objects
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "DateTime", DataSourceName = "CouchbaseDataSource", NetDataType = "System.DateTime", Fav = false }
     };
         }
