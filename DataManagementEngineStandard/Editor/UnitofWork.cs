@@ -1218,7 +1218,7 @@ namespace TheTechIdea.Beep.Editor
                     if (_units.Count > 0)
                     {
                         _suppressNotification = true;
-                        FilteredUnits = FilterCollection(Units, null);
+                        FilteredUnits = FilterCollection(_units, null);
                         _suppressNotification = false;
                         return await Task.FromResult(FilteredUnits);
 
@@ -1264,7 +1264,7 @@ namespace TheTechIdea.Beep.Editor
                     if (_units.Count > 0)
                     {
                         _suppressNotification = true;
-                        FilteredUnits = FilterCollection(Units, filters);
+                        FilteredUnits = FilterCollection(_units, filters);
                         _suppressNotification = false;
                         return await Task.FromResult(FilteredUnits);
 
