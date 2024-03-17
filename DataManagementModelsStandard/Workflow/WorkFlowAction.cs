@@ -11,9 +11,11 @@ namespace TheTechIdea.Beep.Workflow
     {
         public WorkFlowAction()
         {
-
+            Id=new Guid().ToString();
         }
-
+     
+        public string ActionTypeName { get; set; }
+        public string Code { get; set; }
         public IDMEEditor DMEEditor { get ; set ; }
         public IWorkFlowAction PrevAction { get ; set ; }
         public List<IWorkFlowAction> NextAction { get ; set ; }
@@ -28,9 +30,9 @@ namespace TheTechIdea.Beep.Workflow
         public string FullName { get  ; set  ; }
         public string Description { get  ; set  ; }
 
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowActionStarted;
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowActionEnded;
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowActionRunning;
+        public event EventHandler<WorkFlowEventArgs> WorkFlowActionStarted;
+        public event EventHandler<WorkFlowEventArgs> WorkFlowActionEnded;
+        public event EventHandler<WorkFlowEventArgs> WorkFlowActionRunning;
 
         public PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token)
         {

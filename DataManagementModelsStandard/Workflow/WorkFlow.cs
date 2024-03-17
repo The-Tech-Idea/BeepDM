@@ -24,8 +24,8 @@ namespace TheTechIdea.Beep.Workflow
         public string GuidID { get; set; } = Guid.NewGuid().ToString();
         public List<WorkFlow_Run_Result> workFlow_Run_Results { get; set; }=new List<WorkFlow_Run_Result>();
 
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowStarted;
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowEnded;
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowRunning;
+        public event EventHandler<WorkFlowEventArgs> WorkFlowStarted;
+        public event EventHandler<WorkFlowEventArgs> WorkFlowEnded;
+        public event EventHandler<WorkFlowEventArgs> WorkFlowRunning;
     }
 }

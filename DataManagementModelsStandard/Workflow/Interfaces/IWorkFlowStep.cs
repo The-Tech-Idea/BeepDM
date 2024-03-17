@@ -12,9 +12,9 @@ namespace TheTechIdea.Beep.Workflow
 {
     public interface IWorkFlowStep
     {
-        event EventHandler<IWorkFlowEventArgs> WorkFlowStepStarted;
-        event EventHandler<IWorkFlowEventArgs> WorkFlowStepEnded;
-        event EventHandler<IWorkFlowEventArgs> WorkFlowStepRunning;
+        event EventHandler<WorkFlowEventArgs> WorkFlowStepStarted;
+        event EventHandler<WorkFlowEventArgs> WorkFlowStepEnded;
+        event EventHandler<WorkFlowEventArgs> WorkFlowStepRunning;
 
         int Seq { get; set; }
         string Description { get; set; }
@@ -26,11 +26,13 @@ namespace TheTechIdea.Beep.Workflow
         List<IWorkFlowAction> Actions { get; set; }
         List<IPassedArgs> InParameters { get; set; }
         List<IPassedArgs> OutParameters { get; set; }
+        string StepType { get; set; }
+        string Code { get; set; }
         bool IsFinish { get; set; }
         bool IsRunning { get; set; }
 
     }
-    public class IWorkFlowEventArgs :PassedArgs
+    public class WorkFlowEventArgs :PassedArgs
     {
         public IWorkFlowStep FlowStep { get; set; }
         public IWorkFlowAction FlowAction { get; set; }

@@ -7,9 +7,9 @@ namespace TheTechIdea.Beep.Workflow
 {
     public interface IWorkFlowRule
     {
-        event EventHandler<IWorkFlowEventArgs> WorkFlowRuleStarted;
-        event EventHandler<IWorkFlowEventArgs> WorkFlowRuleEnded;
-        event EventHandler<IWorkFlowEventArgs> WorkFlowRuleRunning;
+        event EventHandler<WorkFlowEventArgs> WorkFlowRuleStarted;
+        event EventHandler<WorkFlowEventArgs> WorkFlowRuleEnded;
+        event EventHandler<WorkFlowEventArgs> WorkFlowRuleRunning;
         IDMEEditor DMEEditor { get; set; }
         string RuleName { get; set; }
         string Rule { get; set; }

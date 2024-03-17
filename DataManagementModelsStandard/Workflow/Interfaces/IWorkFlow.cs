@@ -9,9 +9,9 @@ namespace TheTechIdea.Beep.Workflow
 {
     public interface IWorkFlow
     {
-        event EventHandler<IWorkFlowEventArgs> WorkFlowStarted;
-        event EventHandler<IWorkFlowEventArgs> WorkFlowEnded;
-        event EventHandler<IWorkFlowEventArgs> WorkFlowRunning;
+        event EventHandler<WorkFlowEventArgs> WorkFlowStarted;
+        event EventHandler<WorkFlowEventArgs> WorkFlowEnded;
+        event EventHandler<WorkFlowEventArgs> WorkFlowRunning;
         List<IWorkFlowStep> Datasteps { get; set; }
         List<string>        DataSources { get; set; }
         string              WorkSpaceDatabase { get; set; }

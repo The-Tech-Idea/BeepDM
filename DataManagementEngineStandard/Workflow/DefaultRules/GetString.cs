@@ -25,9 +25,9 @@ namespace TheTechIdea.Beep.Workflow.DefaultRules
         public string Rule { get; set; } = "String";
         private List<string> _Tokens = new List<string>();
 
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowRuleStarted;
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowRuleEnded;
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowRuleRunning;
+        public event EventHandler<WorkFlowEventArgs> WorkFlowRuleStarted;
+        public event EventHandler<WorkFlowEventArgs> WorkFlowRuleEnded;
+        public event EventHandler<WorkFlowEventArgs> WorkFlowRuleRunning;
 
         public PassedArgs ExecuteRule(PassedArgs args, IRuleStructure rule)
         {

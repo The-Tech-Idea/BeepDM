@@ -16,6 +16,7 @@ namespace TheTechIdea.Beep.Workflow
             OutParameters = new List<IPassedArgs>();
             Rules = new List<IWorkFlowRule>();
             NextStep = new List<IWorkFlowStep>();
+            ID= Guid.NewGuid().ToString();
         }
         public int Seq { get; set; }
         public string Description { get; set; }
@@ -29,9 +30,11 @@ namespace TheTechIdea.Beep.Workflow
         public List<IPassedArgs> InParameters { get; set; } 
         public List<IPassedArgs> OutParameters { get; set; } 
         public List<IWorkFlowRule> Rules { get; set ; }
+        public string StepType { get; set; }
+        public string Code { get; set; }
 
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowStepStarted;
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowStepEnded;
-        public event EventHandler<IWorkFlowEventArgs> WorkFlowStepRunning;
+        public event EventHandler<WorkFlowEventArgs> WorkFlowStepStarted;
+        public event EventHandler<WorkFlowEventArgs> WorkFlowStepEnded;
+        public event EventHandler<WorkFlowEventArgs> WorkFlowStepRunning;
     }
 }

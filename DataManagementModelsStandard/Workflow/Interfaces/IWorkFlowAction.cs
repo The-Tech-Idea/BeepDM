@@ -15,13 +15,16 @@ namespace TheTechIdea.Beep.Workflow
         List<IPassedArgs> InParameters { get; set; }
         List<IPassedArgs> OutParameters { get; set; }
         List<IWorkFlowRule> Rules { get; set; } 
+        string Id { get; set; }
+        string ActionTypeName { get; set; }
+        string Code { get; set; }
         bool IsFinish { get; set; }
         bool IsRunning { get; set; }
         string ClassName { get; set; }
         string Name { get; set; }
-        event EventHandler<IWorkFlowEventArgs> WorkFlowActionStarted;
-        event EventHandler<IWorkFlowEventArgs> WorkFlowActionEnded;
-        event EventHandler<IWorkFlowEventArgs> WorkFlowActionRunning;
+        event EventHandler<WorkFlowEventArgs> WorkFlowActionStarted;
+        event EventHandler<WorkFlowEventArgs> WorkFlowActionEnded;
+        event EventHandler<WorkFlowEventArgs> WorkFlowActionRunning;
 
 
         PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token);
