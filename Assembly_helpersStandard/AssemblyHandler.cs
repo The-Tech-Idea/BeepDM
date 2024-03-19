@@ -94,6 +94,7 @@ namespace TheTechIdea.Tools
             LoadedAssemblies = DependencyContext.Default.RuntimeLibraries
     .SelectMany(library => library.GetDefaultAssemblyNames(DependencyContext.Default))
     .Select(Assembly.Load)
+    .Where(assembly => !assembly.FullName.StartsWith("System") && !assembly.FullName.StartsWith("Microsoft"))
     .ToList();
         }
 
@@ -246,6 +247,7 @@ namespace TheTechIdea.Tools
                     // For example, you might check the assembly's name, location, etc.
                     if (!item.FullName.StartsWith("System") && !item.FullName.StartsWith("Microsoft"))
                     {
+                        Assemblies.Add(new assemblies_rep(item, "", item.FullName, FolderFileTypes.Builtin));
                         ScanAssembly(item);
                         GetDrivers(item);
                     }
