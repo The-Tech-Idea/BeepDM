@@ -39,10 +39,10 @@ namespace TheTechIdea.Beep.Vis
         /// </summary>
         public string iconimage { get; set; } = null;
 
-        /// <summary>
+        /// <summary>   
         /// Gets or sets the point type for the command, defined by the EnumPointType enum.
         /// </summary>
-        public EnumPointType PointType { get; set; }
+        public EnumPointType PointType { get; set; } = EnumPointType.Global;
 
         /// <summary>
         /// Gets or sets the type of object the command is associated with.

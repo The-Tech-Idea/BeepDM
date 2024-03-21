@@ -113,6 +113,10 @@ namespace TheTechIdea.Beep.Vis
         /// Gets or sets a value indicating whether the add-in represents a home page or primary interface component.
         /// </summary>
         public bool IsHomePage { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public EnumPointType BranchType { get; set; }= EnumPointType.Global;
     }
 
 }

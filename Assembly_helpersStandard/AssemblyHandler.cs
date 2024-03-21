@@ -1001,75 +1001,98 @@ namespace TheTechIdea.Tools
             if (xcls.classProperties != null)
             {
                 xcls.Order = xcls.classProperties.order;
-
+                
                 xcls.RootName = xcls.classProperties.misc;
-            }
-            xcls.VisSchema = (AddinVisSchema)type.GetCustomAttribute(typeof(AddinVisSchema), false);
-            if (type.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
-            {
-                AddinTreeStructure AddinTree = new AddinTreeStructure();
-                AddinTree.className = type.Name;
-                AddinTree.dllname = type.Module.Name;
-                AddinTree.PackageName = type.FullName;
-                AddinTree.Order = xcls.Order;
-
-                if (xcls.VisSchema != null)
-                {
-                    AddinTree.className = type.Name;
-                    AddinTree.dllname = type.Module.Name;
-                    AddinTree.PackageName = type.FullName;
-                    AddinTree.Order = xcls.Order;
-                    AddinTree.Imagename = xcls.VisSchema.IconImageName;
-                    AddinTree.RootName = xcls.VisSchema.RootNodeName;
-                    AddinTree.NodeName = xcls.VisSchema.BranchText;
-                    AddinTree.ObjectType = type.Name;
-                }
-
-                ConfigEditor.AddinTreeStructure.Add(AddinTree);
-            }
-            foreach (MethodInfo methods in type.GetMethods()
-                         .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
-                          .ToArray())
-            {
-
-                CommandAttribute methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
-                if (methodAttribute != null)
-                {
-                    MethodsClass x = new MethodsClass();
-                    x.AddinAttr = xcls.classProperties;
-                    x.CommandAttr = methodAttribute;
-                    x.Caption = methodAttribute.Caption;
-                    x.Name = methodAttribute.Name;
-                    x.Info = methods;
-                    x.Hidden = methodAttribute.Hidden;
-                    x.Click = methodAttribute.Click;
-                    x.DoubleClick = methodAttribute.DoubleClick;
-                    x.iconimage = methodAttribute.iconimage;
-                    x.PointType = methodAttribute.PointType;
-                    x.Category = methodAttribute.Category;
-                    x.DatasourceType = methodAttribute.DatasourceType;
-                    x.ClassType = methodAttribute.ClassType;
-                    x.misc = methodAttribute.misc;
-                    x.ObjectType = methodAttribute.ObjectType;
-                    x.Showin = methodAttribute.Showin;
-                    xcls.Methods.Add(x);
-                }
-               
-
-            }
-            if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
-            {
                 try
                 {
-                    IOrder cls = (IOrder)Activator.CreateInstance(type);
-                    xcls.Order = cls.Order;
-                    cls = null;
-                }
-                catch (Exception)
-                {
+                    xcls.VisSchema = (AddinVisSchema)type.GetCustomAttribute(typeof(AddinVisSchema), false);
+                    if (xcls.VisSchema != null)
+                    {
+                        if (type.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
+                        {
+                            AddinTreeStructure AddinTree = new AddinTreeStructure();
+                            AddinTree.className = type.Name;
+                            AddinTree.dllname = type.Module.Name;
+                            AddinTree.PackageName = type.FullName;
+                            AddinTree.Order = xcls.Order;
+                            if (xcls.VisSchema != null)
+                            {
+                                AddinTree.className = type.Name;
+                                AddinTree.dllname = type.Module.Name;
+                                AddinTree.PackageName = type.FullName;
+                                AddinTree.Order = xcls.Order;
+                                AddinTree.Imagename = xcls.VisSchema.IconImageName;
+                                AddinTree.RootName = xcls.VisSchema.RootNodeName;
+                                AddinTree.NodeName = xcls.VisSchema.BranchText;
+                                AddinTree.ObjectType = type.Name;
+                            }
+                            ConfigEditor.AddinTreeStructure.Add(AddinTree);
+                        }
+                    }
 
                 }
+                catch (Exception ex)
+                {
+                }
+
+                foreach (MethodInfo methods in type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public)
+                             .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), true).Length > 0)
+                              .ToArray())
+                {
+
+                    CommandAttribute methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
+                    if (methodAttribute != null)
+                    {
+                        MethodsClass x = new MethodsClass();
+              
+                        x.CommandAttr = methodAttribute;
+                        x.Caption = methodAttribute.Caption;
+                        x.Name = methodAttribute.Name;
+                        x.Info = methods;
+                        x.Hidden = methodAttribute.Hidden;
+                        x.Click = methodAttribute.Click;
+                        x.DoubleClick = methodAttribute.DoubleClick;
+                        x.iconimage = methodAttribute.iconimage;
+                        if (xcls.classProperties != null)
+                        {
+                            x.AddinAttr = xcls.classProperties;
+                            if (xcls.classProperties.BranchType != methodAttribute.PointType)
+                            {
+                                x.PointType = xcls.classProperties.BranchType;
+                            }
+                            else
+                                x.PointType = methodAttribute.PointType;
+                        }
+                        else
+                            x.PointType = methodAttribute.PointType;
+
+
+                        x.Category = methodAttribute.Category;
+                        x.DatasourceType = methodAttribute.DatasourceType;
+                        x.ClassType = methodAttribute.ClassType;
+                        x.misc = methodAttribute.misc;
+                        x.ObjectType = methodAttribute.ObjectType;
+                        x.Showin = methodAttribute.Showin;
+                        xcls.Methods.Add(x);
+                    }
+
+
+                }
+                if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
+                {
+                    try
+                    {
+                        IOrder cls = (IOrder)Activator.CreateInstance(type);
+                        xcls.Order = cls.Order;
+                        cls = null;
+                    }
+                    catch (Exception)
+                    {
+
+                    }
+                }
             }
+      
             return xcls;
         }
         #endregion "Class Extractors"

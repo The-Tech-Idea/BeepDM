@@ -211,6 +211,11 @@
             Gets or sets a value indicating whether the add-in represents a home page or primary interface component.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.BranchType">
+            <summary>
+            
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Vis.CommandAttribute">
             <summary>
             Attribute class to define metadata for commands within the system.
@@ -247,7 +252,7 @@
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.PointType">
-            <summary>
+            <summary>   
             Gets or sets the point type for the command, defined by the EnumPointType enum.
             </summary>
         </member>
