@@ -281,8 +281,11 @@ namespace TheTechIdea.Beep.Editor
             _suppressNotification = true;
             DMEEditor = dMEEditor;
             IsInListMode = isInListMode;
-            EntityStructure = new EntityStructure();
             init();
+            EntityStructure = new EntityStructure();
+            EntityStructure.Fields = new List<EntityField>();
+            EntityStructure = DMEEditor.Utilfunction.GetEntityStructureFromList<T>(ts.ToList());
+         
             Units = ts;
             PrimaryKey = primarykey;
             if (ts == null || ts.Count == 0)

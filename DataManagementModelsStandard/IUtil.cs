@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
+using System.Linq;
+using System.Reflection;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.FileManager;
@@ -17,6 +19,10 @@ namespace TheTechIdea.Beep
 {
     public interface IUtil
     {
+        EntityStructure GetEntityStructureFromType<T>();
+        
+        EntityStructure GetEntityStructureFromList<T>(List<T> list);
+       
         ObservableCollection<T> ConvertToObservableCollection<T>(List<T> list);
         List<string> Classlist { get; set; }
       //  Dictionary<Type, DbType> typeMap { get; set; }

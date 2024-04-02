@@ -921,6 +921,70 @@ namespace TheTechIdea.Beep
             return type.MakeGenericType(parameters);
             // return listType.MakeGenericType(types);
         }
+        public EntityStructure GetEntityStructureFromType<T>()
+        {
+            EntityStructure entity = new EntityStructure();
+            Type entityType = typeof(T);
+
+            if (entity.Fields.Count == 0)
+            {
+                // Iterate over the properties of the type to create fields
+                foreach (PropertyInfo propInfo in entityType.GetProperties())
+                {
+                    EntityField field = new EntityField
+                    {
+                        fieldname = propInfo.Name,
+                        fieldtype = propInfo.PropertyType.FullName
+                    };
+
+                    // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
+                    // might not be directly available or applicable for every property type.
+                    // You'll need to set these based on the specific needs or defaults.
+
+                    if (field.IsKey)
+                    {
+                        entity.PrimaryKeys.Add(field);
+                    }
+
+                    entity.Fields.Add(field);
+                }
+            }
+
+            return entity;
+        }
+        public EntityStructure GetEntityStructureFromList<T>(List<T> list)
+        {
+            EntityStructure entity = new EntityStructure();
+
+            // Check if the list is empty. If it's empty, we can still get the structure from the type T.
+            if (list == null || !list.Any())
+            {
+                return GetEntityStructureFromType<T>();
+            }
+
+            // Get the type of the items in the list
+            Type itemType = typeof(T);
+
+            // Iterate over the properties of the type to create fields
+            foreach (PropertyInfo propInfo in itemType.GetProperties())
+            {
+                EntityField field = new EntityField
+                {
+                    fieldname = propInfo.Name,
+                    fieldtype = propInfo.PropertyType.ToString(),
+                    // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
+                    // might need to be inferred or set to default values as they are not directly available from PropertyInfo
+                };
+
+                // Additional logic to determine if the field is a key, etc.
+                // This might involve custom attributes or conventions
+
+                entity.Fields.Add(field);
+            }
+
+            return entity;
+        }
+
         public EntityStructure GetEntityStructureFromListorTable(  dynamic retval)
         {
             EntityStructure entity = new EntityStructure();
