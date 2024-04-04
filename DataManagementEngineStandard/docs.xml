@@ -1602,7 +1602,7 @@
             <param name="token">The cancellation token to cancel the operation.</param>
             <exception cref="T:System.ArgumentNullException">Thrown when Srcds is null.</exception>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ETL.GetCreateEntityScript(TheTechIdea.IDataSource,System.Collections.Generic.List{System.String},System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.ETL.GetCreateEntityScript(TheTechIdea.IDataSource,System.Collections.Generic.List{System.String},System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean)">
             <summary>Generates a list of ETL script details for creating entities from a data source.</summary>
             <param name="ds">The data source to retrieve entities from.</param>
             <param name="entities">The list of entities to create scripts for.</param>
@@ -1618,7 +1618,7 @@
             <param name="scriptType">The type of DDL script.</param>
             <returns>An ETLScriptDet object representing the generated script.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ETL.GetCreateEntityScript(TheTechIdea.IDataSource,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.ETL.GetCreateEntityScript(TheTechIdea.IDataSource,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean)">
             <summary>Generates a list of ETL script details for creating entities.</summary>
             <param name="Dest">The destination data source.</param>
             <param name="entities">The list of entity structures.</param>

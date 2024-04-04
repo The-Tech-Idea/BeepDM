@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Util;
 
@@ -31,6 +32,8 @@ namespace TheTechIdea.Beep.Editor
         public bool IsDataCopied { get; set; }=false ;
         public bool Failed { get; set; } = false;
         public bool Active { get; set; } = false;
+        public bool CopyData { get; set; }= false;
+        public List<AppFilter> FilterConditions { get; set; }=new List<AppFilter>();
         public IErrorsInfo errorsInfo { get; set; }=new ErrorsInfo();
         public DDLScriptType scriptType { get; set; }=new DDLScriptType();
         public EntityDataMap_DTL Mapping { get; set; }

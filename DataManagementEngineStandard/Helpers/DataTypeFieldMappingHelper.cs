@@ -887,6 +887,9 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "e3e0b246-46bf-452b-a56c-1724c1e6f1c4", DataType = "UTINYINT", DataSourceName = "DuckDBDataSource", NetDataType = "System.UInt16", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "29f78f94-4295-4c55-aa26-1371d2d07a67", DataType = "UTINYINT", DataSourceName = "DuckDBDataSource", NetDataType = "System.UInt32", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "e72647f9-2e3f-46a6-a044-5a33b4b9d3e6", DataType = "UTINYINT", DataSourceName = "DuckDBDataSource", NetDataType = "System.UInt64", Fav = false },
+             new DatatypeMapping { ID = 0, GuidID = "eec16db7-652f-4eb4-8638-4237595f87be", DataType = "VARCHAR", DataSourceName = "DuckDBDataSource", NetDataType = "System.String", Fav = false },
+            new DatatypeMapping { ID = 3, GuidID =Guid.NewGuid().ToString(), DataType = "TEXT", DataSourceName = "DuckDBDataSource", NetDataType = "System.String", Fav = true },
+           new DatatypeMapping { ID = 4, GuidID =Guid.NewGuid().ToString(), DataType = "FLOAT", DataSourceName = "DuckDBDataSource", NetDataType = "System.Single", Fav = true },
             new DatatypeMapping { ID = 0, GuidID = "08c661ba-0247-466b-9984-0ccb4f3eda89", DataType = "VARCHAR", DataSourceName = "DuckDBDataSource", NetDataType = "System.Xml", Fav = false }
             };
 

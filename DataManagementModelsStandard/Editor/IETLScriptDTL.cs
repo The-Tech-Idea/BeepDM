@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Util;
 
@@ -19,6 +20,8 @@ namespace TheTechIdea.Beep.Editor
          string destinationDatasourceEntityName { get; set; }
         string errormessage { get; set; }
         bool Active { get; set; }
+        bool CopyData { get; set; } 
+        List<AppFilter> FilterConditions { get; set; }  
         IErrorsInfo errorsInfo { get; set; }
         DDLScriptType scriptType { get; set; }
         EntityDataMap_DTL Mapping { get; set; }

@@ -256,7 +256,10 @@ namespace TheTechIdea.Util
 					   where a.Sqltype == CmdType
 					   select a.Sql).FirstOrDefault();
 
-
+			if(ret == null)
+			{
+                return "";
+            }
 			return String.Format(ret, TableName, SchemaName, Filterparamters); ;
 
 		}
