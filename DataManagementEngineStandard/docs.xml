@@ -1662,7 +1662,7 @@
             <param name="token">The cancellation token to cancel the operation.</param>
             <returns>An object containing information about any errors that occurred during the execution of the child script.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ETL.RunCreateScript(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.ETL.RunCreateScript(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean,System.Boolean)">
             <summary>Runs a create script and updates data.</summary>
             <param name="progress">An object that reports the progress of the operation.</param>
             <param name="token">A cancellation token that can be used to cancel the operation.</param>
@@ -1684,7 +1684,7 @@
             </remarks>
         </member>
         <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.CreateImportScript(TheTechIdea.Beep.Workflow.Mapping.EntityDataMap,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)" -->
-        <member name="M:TheTechIdea.Beep.Editor.ETL.RunImportScript(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.ETL.RunImportScript(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean)">
             <summary>Runs an import script and returns information about any errors that occurred.</summary>
             <param name="progress">An object that reports the progress of the import script.</param>
             <param name="token">A cancellation token that can be used to cancel the import script.</param>

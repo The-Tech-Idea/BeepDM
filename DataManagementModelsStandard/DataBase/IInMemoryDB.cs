@@ -14,7 +14,8 @@ namespace DataManagementModels.DataBase
         bool IsLoaded { get; set; }
         bool IsSaved { get; set; }
         bool IsSynced { get; set; }
-
+    
+      
         ETLScriptHDR CreateScript { get; set; }
          event EventHandler<PassedArgs> OnLoadData;
          event EventHandler<PassedArgs> OnLoadStructure;
@@ -24,6 +25,8 @@ namespace DataManagementModels.DataBase
         string GetConnectionString();
         IErrorsInfo SaveStructure();
         IErrorsInfo LoadStructure(Progress<PassedArgs> progress, CancellationToken token, bool copydata = false);
+        bool IsStructureCreated { get; set; }
+        IErrorsInfo CreateStructure(Progress<PassedArgs> progress, CancellationToken token);
         IErrorsInfo LoadData(Progress<PassedArgs> progress,CancellationToken token);
         IErrorsInfo SyncData(Progress<PassedArgs> progress, CancellationToken token);
         List<EntityStructure> InMemoryStructures { get; set; }

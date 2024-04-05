@@ -554,7 +554,7 @@ namespace TheTechIdea.Beep.Editor
         /// <remarks>
         /// This method runs a create script and updates data. It connects to the specified data sources, performs the necessary operations, and reports progress using the provided progress object. If the operation is cancelled using the provided cancellation token, the method will stop and return the current error information.
         /// </remarks>
-        public async Task<IErrorsInfo> RunCreateScript(IProgress<PassedArgs> progress, CancellationToken token, bool copydata = true)
+        public async Task<IErrorsInfo> RunCreateScript(IProgress<PassedArgs> progress, CancellationToken token, bool copydata = true, bool useEntityStructure = true)
         {
             #region "Update Data code "
 
@@ -578,6 +578,7 @@ namespace TheTechIdea.Beep.Editor
             errorcount = 0;
             stoprun = false;
             bool CreateSuccess ;
+            EntityStructure entitystr;
             foreach (ETLScriptDet sc in DMEEditor.ETL.Script.ScriptDTL.OrderBy(p => p.ID))
             {
                 CreateSuccess = false;
@@ -606,13 +607,22 @@ namespace TheTechIdea.Beep.Editor
                                 case DDLScriptType.CreateEntity:
                                     if (sc.scriptType == DDLScriptType.CreateEntity)
                                     {
-                                        EntityStructure entitystr = (EntityStructure)srcds.GetEntityStructure(sc.sourceDatasourceEntityName, false).Clone();
+                                        if (!useEntityStructure || sc.SourceEntity == null)
+                                        {
+                                            entitystr = (EntityStructure)srcds.GetEntityStructure(sc.sourceDatasourceEntityName, false).Clone();
+                                        }
+                                        else
+                                        {
+                                            entitystr=sc.SourceEntity;
+                                        }
+                                        
                                         if (sc.sourceDatasourceEntityName != sc.destinationentityname)
                                         {
                                             entitystr.EntityName = sc.destinationentityname;
                                             entitystr.DatasourceEntityName = sc.destinationentityname;
                                             entitystr.OriginalEntityName = sc.destinationentityname;
                                         }
+                                       
                                         SendMessege(progress, token, entitystr, sc, $"Creating Entity  {entitystr.EntityName} ");
                                         bool retval = destds.CreateEntityAs(entitystr); // t.Result;
                                         if (retval)
@@ -888,7 +898,7 @@ namespace TheTechIdea.Beep.Editor
         /// <param name="progress">An object that reports the progress of the import script.</param>
         /// <param name="token">A cancellation token that can be used to cancel the import script.</param>
         /// <returns>An object containing information about any errors that occurred during the import script.</returns>
-        public async Task<IErrorsInfo> RunImportScript(IProgress<PassedArgs> progress, CancellationToken token)
+        public async Task<IErrorsInfo> RunImportScript(IProgress<PassedArgs> progress, CancellationToken token,bool useEntityStructure = true)
         {
             IDataSource destds = null;
             IDataSource srcds = null;
@@ -896,6 +906,7 @@ namespace TheTechIdea.Beep.Editor
             CurrentScriptRecord = 0;
             errorcount = 0;
             stoprun = false;
+            EntityStructure entitystr;
             CurrentScriptRecord += 1;
             LoadDataLogs = new List<LoadDataLogResult>();
             ETLScriptDet sc = DMEEditor.ETL.Script.ScriptDTL.First();
@@ -918,8 +929,16 @@ namespace TheTechIdea.Beep.Editor
                             if (sc.scriptType == DDLScriptType.CopyData)
                             {
                                 CurrrentDBDefaults = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == destds.DatasourceName)].DatasourceDefaults;
+                                if (!useEntityStructure || sc.SourceEntity == null)
+                                {
+                                    entitystr = (EntityStructure)srcds.GetEntityStructure(sc.sourceDatasourceEntityName, false).Clone();
+                                }
+                                else
+                                {
+                                    entitystr = sc.SourceEntity;
+                                }
 
-                                EntityStructure entitystr = (EntityStructure)srcds.GetEntityStructure(sc.sourceDatasourceEntityName, false).Clone();
+                              
 
                                 sc.errormessage = DMEEditor.ErrorObject.Message;
                                

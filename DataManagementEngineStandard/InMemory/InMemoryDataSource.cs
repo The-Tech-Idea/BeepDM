@@ -15,29 +15,30 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.InMemory
 {
-    public class InMemoryDataSource :IDataSource, IInMemoryDB,IDisposable
+    public class InMemoryDataSource : IDataSource, IInMemoryDB, IDisposable
     {
-      
+
         #region "InMemoryDataSource Properties"
-        public bool IsCreated { get; set; }=false;
-        public bool IsLoaded { get; set; }= false;
-        public bool IsSaved { get; set; }=  false;
-        public bool IsSynced { get; set; }= false;
-        public ETLScriptHDR CreateScript { get; set; } =new ETLScriptHDR    ();
-        public List<EntityStructure> InMemoryStructures { get; set; }=new List<EntityStructure> ();
-        public string ColumnDelimiter { get  ; set  ; }
-        public string ParameterDelimiter { get  ; set  ; }
-        public string GuidID { get  ; set  ; }
+        public bool IsStructureCreated { get; set; } = false;
+        public bool IsCreated { get; set; } = false;
+        public bool IsLoaded { get; set; } = false;
+        public bool IsSaved { get; set; } = false;
+        public bool IsSynced { get; set; } = false;
+        public ETLScriptHDR CreateScript { get; set; } = new ETLScriptHDR();
+        public List<EntityStructure> InMemoryStructures { get; set; } = new List<EntityStructure>();
+        public string ColumnDelimiter { get; set; }
+        public string ParameterDelimiter { get; set; }
+        public string GuidID { get; set; }
         public DataSourceType DatasourceType { get; set; } = DataSourceType.NONE;
         public DatasourceCategory Category { get; set; } = DatasourceCategory.INMEMORY;
-        public IDataConnection Dataconnection { get  ; set  ; }
-        public string DatasourceName { get  ; set  ; }
-        public IErrorsInfo ErrorObject { get  ; set  ; }
-        public string Id { get  ; set  ; }
-        public IDMLogger Logger { get  ; set  ; }
-        public List<string> EntitiesNames { get  ; set  ; }=new List<string>    (); 
-        public List<EntityStructure> Entities { get  ; set  ; }= new List<EntityStructure>();   
-        public IDMEEditor DMEEditor { get  ; set  ; }
+        public IDataConnection Dataconnection { get; set; }
+        public string DatasourceName { get; set; }
+        public IErrorsInfo ErrorObject { get; set; }
+        public string Id { get; set; }
+        public IDMLogger Logger { get; set; }
+        public List<string> EntitiesNames { get; set; } = new List<string>();
+        public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
+        public IDMEEditor DMEEditor { get; set; }
         public ConnectionState ConnectionStatus { get; set; } = ConnectionState.Closed;
         public static string BeepDataPath { get; private set; }
         public static string InMemoryPath { get; private set; }
@@ -51,20 +52,41 @@ namespace TheTechIdea.Beep.InMemory
         {
             return Dataconnection.ConnectionProp.ConnectionString;
         }
+        public IErrorsInfo CreateStructure(Progress<PassedArgs> progress, CancellationToken token)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                if (IsStructureCreated)
+                {
+                    DMEEditor.ETL.Script = CreateScript;
+                    DMEEditor.ETL.Script.LastRunDateTime = System.DateTime.Now;
 
+                    Task.Run(() => { DMEEditor.ETL.RunCreateScript(progress, token, true, true); });
+                    IsStructureCreated = true;
+
+                }
+            }
+            catch (Exception ex)
+            {
+                IsStructureCreated = false;
+                DMEEditor.AddLogMessage("Beep", $"Could not Load InMemory Structure for {DatasourceName}- {ex.Message}", System.DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
+        }
         public virtual IErrorsInfo LoadData(Progress<PassedArgs> progress, CancellationToken token)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
             {
-                if (Isfoldercreated &&  IsCreated)
+                if (Isfoldercreated && IsCreated)
                 {
                     DMEEditor.ETL.Script = CreateScript;
                     DMEEditor.ETL.Script.LastRunDateTime = System.DateTime.Now;
                     DMEEditor.ETL.RunImportScript(DMEEditor.progress, token);
                     IsLoaded = true;
                 }
-                
+
             }
             catch (Exception ex)
             {
@@ -74,7 +96,7 @@ namespace TheTechIdea.Beep.InMemory
             return DMEEditor.ErrorObject;
         }
 
-        public virtual IErrorsInfo LoadStructure(Progress<PassedArgs> progress, CancellationToken token,bool copydata=false)
+        public virtual IErrorsInfo LoadStructure(Progress<PassedArgs> progress, CancellationToken token, bool copydata = false)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
@@ -86,49 +108,62 @@ namespace TheTechIdea.Beep.InMemory
                     Entities = new List<EntityStructure>();
                     EntitiesNames = new List<string>();
 
-                    if (File.Exists(InMemoryStructuresfilepath))
-                    {
-                        InMemoryStructures = DMEEditor.ConfigEditor.JsonLoader.DeserializeObject<EntityStructure>(InMemoryStructuresfilepath);
-                    }
+
                     if (File.Exists(Filepath))
                     {
                         CreateScript = DMEEditor.ConfigEditor.JsonLoader.DeserializeSingleObject<ETLScriptHDR>(Filepath);
-                        DMEEditor.ETL.Script = CreateScript;
-                        DMEEditor.ETL.Script.LastRunDateTime = System.DateTime.Now;
-                        DMEEditor.ETL.RunCreateScript(DMEEditor.progress, token,copydata);
+                        if (CreateScript == null)
+                        {
+                            CreateScript = new ETLScriptHDR();
+                        }
+                        else
+                        {
+
+                            IsStructureCreated = false;
+                        }
+                    }
+                    else
+                    {
 
                     }
+
+                    SaveStructure();
+                    OnLoadStructure?.Invoke(this, (PassedArgs)DMEEditor.Passedarguments);
                 }
             }
             catch (Exception ex)
             {
+                IsStructureCreated = false;
                 DMEEditor.AddLogMessage("Beep", $"Could not Load InMemory Structure for {DatasourceName}- {ex.Message}", System.DateTime.Now, 0, null, Errors.Failed);
             }
             return DMEEditor.ErrorObject;
         }
+
         public virtual IErrorsInfo SaveStructure()
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
             {
+                CancellationTokenSource token = new CancellationTokenSource();
+                var progress = new Progress<PassedArgs>(percent => { });
+                // GetEntitesList();
+                InMemoryStructures = Entities;
                 if (InMemoryStructures.Count > 0 && Isfoldercreated)
                 {
-                    CancellationTokenSource token = new CancellationTokenSource();
-                    var progress = new Progress<PassedArgs>(percent => { });
-                    if (InMemoryStructures.Count > 0 && Isfoldercreated)
+                    if (CreateScript.ScriptDTL.Count == 0)
                     {
-                        if (CreateScript.ScriptDTL.Count == 0)
+                        CreateScript = new ETLScriptHDR();
+                        CreateScript.ScriptDTL.AddRange(DMEEditor.ETL.GetCreateEntityScript(this, Entities, progress, token.Token, true));
+                        foreach (var item in CreateScript.ScriptDTL)
                         {
-                            CreateScript = new ETLScriptHDR();
-                            CreateScript.ScriptDTL.AddRange(DMEEditor.ETL.GetCreateEntityScript(this, Entities, progress, token.Token, true));
-                            foreach (var item in CreateScript.ScriptDTL)
-                            {
-                                item.CopyDataScripts.AddRange(DMEEditor.ETL.GetCopyDataEntityScript(this, Entities, progress, token.Token));
-                            }
+                            item.CopyDataScripts.AddRange(DMEEditor.ETL.GetCopyDataEntityScript(this, new List<EntityStructure>() { item.SourceEntity }, progress, token.Token));
                         }
                     }
-                        DMEEditor.ConfigEditor.JsonLoader.Serialize(Filepath, CreateScript);
+
+
+                    DMEEditor.ConfigEditor.JsonLoader.Serialize(Filepath, CreateScript);
                     DMEEditor.ConfigEditor.JsonLoader.Serialize(InMemoryStructuresfilepath, InMemoryStructures);
+                    OnSaveStructure?.Invoke(this, (PassedArgs)DMEEditor.Passedarguments);
                 }
 
             }
