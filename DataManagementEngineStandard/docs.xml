@@ -1662,7 +1662,7 @@
             <param name="token">The cancellation token to cancel the operation.</param>
             <returns>An object containing information about any errors that occurred during the execution of the child script.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ETL.RunCreateScript(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.ETL.RunCreateScript(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean)">
             <summary>Runs a create script and updates data.</summary>
             <param name="progress">An object that reports the progress of the operation.</param>
             <param name="token">A cancellation token that can be used to cancel the operation.</param>

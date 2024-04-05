@@ -28,7 +28,7 @@ namespace TheTechIdea.Beep.Editor
         public string sourceEntityName { get; set; }
         public string errormessage { get; set; }
         public string script { get; set; }
-        public IErrorsInfo errorsInfo { get; set; }
+       
 
 
     }

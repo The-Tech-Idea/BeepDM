@@ -180,7 +180,7 @@ namespace TheTechIdea.Beep.Editor
                     copyscript.IsDataCopied = false;
                     copyscript.Failed = false;
                     copyscript.errormessage = "";
-                    copyscript.errorsInfo = new ErrorsInfo();
+                  
                     copyscript.Active = true;
                     copyscript.Mapping = new EntityDataMap_DTL();
                     copyscript.Tracking = new List<SyncErrorsandTracking>();
@@ -529,7 +529,7 @@ namespace TheTechIdea.Beep.Editor
 
                                 await Task.Run(() =>
                                 {
-                                    sc.errorsInfo = RunCopyEntityScript(sc, srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname, progress, token, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
+                                    DMEEditor.ErrorObject = RunCopyEntityScript(sc, srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname, progress, token, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
 
                                 });
                                 SendMessege(progress, token, null, sc, $"Error in Coping Data for Entity  {sc.destinationentityname}"); ;
@@ -554,7 +554,7 @@ namespace TheTechIdea.Beep.Editor
         /// <remarks>
         /// This method runs a create script and updates data. It connects to the specified data sources, performs the necessary operations, and reports progress using the provided progress object. If the operation is cancelled using the provided cancellation token, the method will stop and return the current error information.
         /// </remarks>
-        public async Task<IErrorsInfo> RunCreateScript(IProgress<PassedArgs> progress, CancellationToken token)
+        public async Task<IErrorsInfo> RunCreateScript(IProgress<PassedArgs> progress, CancellationToken token, bool copydata = true)
         {
             #region "Update Data code "
 
@@ -663,7 +663,7 @@ namespace TheTechIdea.Beep.Editor
 
                                         await Task.Run(() =>
                                         {
-                                            sc.errorsInfo = RunCopyEntityScript(sc, srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname, progress, token, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
+                                            DMEEditor.ErrorObject = RunCopyEntityScript(sc, srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname, progress, token, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
 
                                         });
                                         SendMessege(progress, token, null, sc, $"Finished in Coping Data for Entity  {sc.destinationentityname}"); ;
@@ -922,7 +922,7 @@ namespace TheTechIdea.Beep.Editor
                                 EntityStructure entitystr = (EntityStructure)srcds.GetEntityStructure(sc.sourceDatasourceEntityName, false).Clone();
 
                                 sc.errormessage = DMEEditor.ErrorObject.Message;
-                                sc.errorsInfo = DMEEditor.ErrorObject;
+                               
                                 sc.Active = false;
                                 SendMessege(progress, token, null, sc, "Starting Import Entities Script");
 
@@ -1053,7 +1053,7 @@ namespace TheTechIdea.Beep.Editor
                 SyncErrorsandTracking tr = new SyncErrorsandTracking();
                 errorcount++;
                 tr.errormessage = DMEEditor.ErrorObject.Message;
-                tr.errorsInfo = DMEEditor.ErrorObject;
+                
                 tr.rundate = DateTime.Now;
                 tr.sourceEntityName = refentity == null ? null : refentity.EntityName;
                 tr.currenrecordindex = CurrentScriptRecord;

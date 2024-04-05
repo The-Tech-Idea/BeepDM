@@ -3,7 +3,7 @@
   <PropertyGroup>
 	  <TargetFrameworks>netstandard2.0;net6.0;net7.0;net8.0</TargetFrameworks>
     <PackageId>TheTechIdea.Beep.JsonLoader</PackageId>
-	<Version>1.0.8</Version>
+	<Version>1.0.9</Version>
     <Authors>The Tech Idea</Authors>
     <Product>TheTechIdea.Beep.JsonLoader</Product>
     <Description>Component to for Loading and Saving Configuration files in Data Management Engine</Description>
@@ -31,8 +31,8 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="1.0.364" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.127" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="1.0.372" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.130" />
   </ItemGroup>
 
 </Project>

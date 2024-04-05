@@ -34,7 +34,6 @@ namespace TheTechIdea.Beep.Editor
         public bool Active { get; set; } = false;
         public bool CopyData { get; set; }= false;
         public List<AppFilter> FilterConditions { get; set; }=new List<AppFilter>();
-        public IErrorsInfo errorsInfo { get; set; }=new ErrorsInfo();
         public DDLScriptType scriptType { get; set; }=new DDLScriptType();
         public EntityDataMap_DTL Mapping { get; set; }
         public List<SyncErrorsandTracking> Tracking { get; set; } = new List<SyncErrorsandTracking>();

@@ -34,7 +34,7 @@ namespace TheTechIdea.Beep.Editor
         IErrorsInfo CopyEntitiesData(IDataSource sourceds, IDataSource destds, List<ETLScriptDet> scripts, IProgress<PassedArgs> progress, CancellationToken token, bool CreateMissingEntity = true, EntityDataMap_DTL map_DTL = null);
         List<ETLScriptDet> GetCreateEntityScript(IDataSource Dest, List<EntityStructure> entities, IProgress<PassedArgs> progress, CancellationToken token, bool copydata = false);
         List<ETLScriptDet> GetCreateEntityScript(IDataSource ds, List<string> entities, IProgress<PassedArgs> progress, CancellationToken token, bool copydata = false);
-        Task<IErrorsInfo> RunCreateScript(IProgress<PassedArgs> progress, CancellationToken token);
+        Task<IErrorsInfo> RunCreateScript(IProgress<PassedArgs> progress, CancellationToken token, bool copydata = true);
         List<ETLScriptDet> GetCopyDataEntityScript(IDataSource Dest, List<EntityStructure> entities, IProgress<PassedArgs> progress, CancellationToken token);
         IErrorsInfo CreateImportScript(EntityDataMap mapping, EntityDataMap_DTL SelectedMapping);
         Task<IErrorsInfo> RunImportScript(IProgress<PassedArgs> progress, CancellationToken token);
