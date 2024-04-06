@@ -634,7 +634,7 @@ namespace TheTechIdea.Beep.Editor
                                             if (sc.CopyDataScripts.Count > 0 && sc.CopyData && sc.IsCreated)
                                             {
                                                 SendMessege(progress, token, entitystr, sc, $"Started  Coping Data From {entitystr.EntityName} ");
-                                                await RunChildScriptAsync(sc, srcds, destds, progress, token);
+                                                var t=await RunChildScriptAsync(sc, srcds, destds, progress, token);
                                                 CreateSuccess = true;
                                             }
                                         }
