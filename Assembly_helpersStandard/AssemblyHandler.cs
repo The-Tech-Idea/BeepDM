@@ -1053,17 +1053,17 @@ namespace TheTechIdea.Tools
                         x.Click = methodAttribute.Click;
                         x.DoubleClick = methodAttribute.DoubleClick;
                         x.iconimage = methodAttribute.iconimage;
-                        if (xcls.classProperties != null)
-                        {
-                            x.AddinAttr = xcls.classProperties;
-                            if (xcls.classProperties.BranchType != methodAttribute.PointType)
-                            {
-                                x.PointType = xcls.classProperties.BranchType;
-                            }
-                            else
-                                x.PointType = methodAttribute.PointType;
-                        }
-                        else
+                        //if (xcls.classProperties != null)
+                        //{
+                        //    x.AddinAttr = xcls.classProperties;
+                        //    if (xcls.classProperties.BranchType != methodAttribute.PointType)
+                        //    {
+                        //        x.PointType = xcls.classProperties.BranchType;
+                        //    }
+                        //    else
+                        //        x.PointType = methodAttribute.PointType;
+                        //}
+                        //else
                             x.PointType = methodAttribute.PointType;
 
 
