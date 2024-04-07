@@ -161,17 +161,27 @@ namespace TheTechIdea.Util
         /// <returns>A object.</returns>
         public void Serialize(string filename, object t)
         {
-
-            using (StreamWriter file = File.CreateText(filename))
+            JsonSerializer serializer = new JsonSerializer() {
+                NullValueHandling = NullValueHandling.Include,
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                //CheckAdditionalContent=true,
+                //TypeNameHandling = TypeNameHandling.All,
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+              
+            };
+            serializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+            
+            using (StreamWriter file = new StreamWriter(filename))
             {
                 try
                 {
-                    JsonSerializer serializer = new JsonSerializer();
-                    serializer.NullValueHandling = NullValueHandling.Ignore;
-                    serializer.MissingMemberHandling = MissingMemberHandling.Ignore;
-                    serializer.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-                    serializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-                    serializer.Serialize(file, t);
+                    // JsonSerializer serializer = new JsonSerializer();
+                    using (JsonWriter writer = new JsonTextWriter(file))
+                    {
+                        serializer.Serialize(writer, t);
+                        // {"ExpiryDate":new Date(1230375600000),"Price":0}
+                    }
+                   
                 }
                 catch (Exception ex)
                 {
@@ -320,7 +330,7 @@ namespace TheTechIdea.Util
         {
             return new JsonSerializerSettings
             {
-                NullValueHandling = NullValueHandling.Ignore,
+                NullValueHandling = NullValueHandling.Include,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 //CheckAdditionalContent=true,
                 //TypeNameHandling = TypeNameHandling.All,

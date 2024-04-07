@@ -48,9 +48,14 @@ namespace TheTechIdea.Util
             Tuple<Type, Assembly> retval = RoslynCompiler.CompileClassTypeandAssembly(typename,cls);
             //myType = CreateTypeFromCode(cls, typenamespace+"."+ typename);
             // Type type = CreateTypeFromCode(cls,  typename); ;
-            myType=retval.Item1;
-             myObject = Activator.CreateInstance(myType);
+            if (retval!= null)
+            {
+                myType = retval.Item1;
+                myObject = Activator.CreateInstance(myType);
 
+
+
+            }
 
             return myObject;
 

@@ -1055,64 +1055,52 @@ namespace TheTechIdea.Beep
         public List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype)
         {
             List<object> retval = new List<object>();
-            if (dt.Rows.Count > 0)
+
+            foreach (DataRow dr in dt.Rows)
             {
-                foreach (DataRow dr in dt.Rows)
+                var entityInstance = Activator.CreateInstance(enttype);
+                foreach (EntityField col in ent.Fields)
                 {
-                    var ti = Activator.CreateInstance(enttype);
-                    foreach (EntityField col in ent.Fields)
+                    PropertyInfo propertyInfo = entityInstance.GetType().GetProperty(col.fieldname);
+                    if (propertyInfo != null && dr[col.fieldname] != DBNull.Value)
                     {
                         try
                         {
-                            System.Reflection.PropertyInfo PropAInfo = ti.GetType().GetProperty(col.fieldname);
-                            if (dr[col.fieldname] == System.DBNull.Value)
-                            {
-                                switch (col.fieldtype)
-                                {
-                                    case "System.string":
-                                        break;
-                                    case "System.DateTime":
-                                        break;
-
-                                }
-
-                                PropAInfo.SetValue(ti, null, null);
-                            }
-                            else
-                            {
-
-                              //  TrySetProperty<enttype>(ti, dr[col.fieldname], null);
-                                PropAInfo.SetValue(ti, dr[col.fieldname], null);
-                            }
+                            object value = Convert.ChangeType(dr[col.fieldname], propertyInfo.PropertyType);
+                            propertyInfo.SetValue(entityInstance, value);
                         }
                         catch (Exception ex)
                         {
-
-
+                            // Log the exception or handle it accordingly
+                            // Consider how you want to handle the case where the conversion fails
                         }
-                        // TrySetProperty<enttype>(ti, dr[col.fieldname], null);
-
-
                     }
-                    retval.Add(ti);
+                    else if (propertyInfo != null)
+                    {
+                        // If it's DBNull, but the property exists, set the property to its default value
+                        var defaultValue = propertyInfo.PropertyType.IsValueType ? Activator.CreateInstance(propertyInfo.PropertyType) : null;
+                        propertyInfo.SetValue(entityInstance, defaultValue);
+                    }
                 }
+                retval.Add(entityInstance);
             }
-            else
+
+            // If DataTable is empty, add a default instance with null properties
+            if (dt.Rows.Count == 0)
             {
-                var ti = Activator.CreateInstance(enttype);
+                var entityInstance = Activator.CreateInstance(enttype);
                 foreach (EntityField col in ent.Fields)
                 {
-                   
-                        System.Reflection.PropertyInfo PropAInfo = ti.GetType().GetProperty(col.fieldname);
-                        PropAInfo.SetValue(ti, null, null);
- 
-
-
+                    PropertyInfo propertyInfo = entityInstance.GetType().GetProperty(col.fieldname);
+                    if (propertyInfo != null)
+                    {
+                        var defaultValue = propertyInfo.PropertyType.IsValueType ? Activator.CreateInstance(propertyInfo.PropertyType) : null;
+                        propertyInfo.SetValue(entityInstance, defaultValue);
+                    }
                 }
-                retval.Add(ti);
+                retval.Add(entityInstance);
             }
-         
-          
+
             return retval;
         }
         public DataRow ConvertItemClassToDataRow(EntityStructure ent)
@@ -1224,6 +1212,7 @@ namespace TheTechIdea.Beep
         public DataRow GetDataRowFromobject(string EntityName, Type enttype,object UploadDataRow, EntityStructure DataStruct)
         {
             DataRow dr=null ;
+            dynamic result = null;
               var ti = Activator.CreateInstance(enttype);
             // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
             if (UploadDataRow.GetType().FullName == "System.Data.DataRowView")
@@ -1242,13 +1231,26 @@ namespace TheTechIdea.Beep
                 dr = ConvertItemClassToDataRow(DataStruct);
                 foreach (EntityField col in DataStruct.Fields)
                 {
-                    System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname);
+                    try
+                    {
+                        System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname);
 
-                    //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
-                    //{
-                    System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
-                    dynamic result = GetPropAInfo.GetValue(UploadDataRow);
+                        //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
+                        //{
+                        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                        if (GetPropAInfo != null && PropAInfo !=null)
+                        {
+                            result = GetPropAInfo.GetValue(UploadDataRow);
 
+
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+
+                        result = System.DBNull.Value;
+                    }
+                   
                     if (result == null)
                     {
                         result = System.DBNull.Value;

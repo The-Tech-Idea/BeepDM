@@ -107,8 +107,8 @@ namespace TheTechIdea.Beep
         {
             if (Logger != null)
             {
-                LogAndError log = new LogAndError(pLogType, pLogMessage, pLogData, pRecordID, pMiscData);
-                Loganderrors.Add(log);
+              //  LogAndError log = new LogAndError(pLogType, pLogMessage, pLogData, pRecordID, pMiscData);
+             //   Loganderrors.Add(log);
                 string errmsg = pLogType + "," + pLogMessage;
                 ErrorObject.Flag = pFlag;
                 ErrorObject.Message = errmsg;
@@ -123,8 +123,8 @@ namespace TheTechIdea.Beep
         {
             if (Logger != null)
             {
-                LogAndError log = new LogAndError("Beep", pLogMessage,DateTime.Now, 0, null);
-                Loganderrors.Add(log);
+              //  LogAndError log = new LogAndError("Beep", pLogMessage,DateTime.Now, 0, null);
+              //  Loganderrors.Add(log);
                 string errmsg = "Beep" + "," + pLogMessage;
                 ErrorObject.Flag =  Errors.Ok;
                 ErrorObject.Message = errmsg;
