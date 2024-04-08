@@ -97,6 +97,50 @@ namespace TheTechIdea.Beep.Helpers
         /// <param name="fld">The field for which to retrieve the data type.</param>
         /// <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
         /// <returns>The data type of the specified field.</returns>
+        public static string GetDataType(string DSname, string providerfldtype, IDMEEditor DMEEditor)
+        {
+            string retval = null;
+            IDataSource ds;
+            try
+            {
+                if (DSname != null)
+                {
+                    ds = DMEEditor.GetDataSource(DSname);
+                    if (DMEEditor.ConfigEditor.DataTypesMap == null)
+                    {
+                        DMEEditor.ConfigEditor.ReadDataTypeFile();
+                    
+                    }
+                    if (providerfldtype.Contains('('))
+                    {
+                        providerfldtype = providerfldtype.Substring(0, providerfldtype.IndexOf('('));
+
+                    }
+                    DatatypeMapping datatypeMapping= DataTypeFieldMappingHelper.GetDuckDBDataTypesMapping().FirstOrDefault(MappingType => MappingType.DataType == providerfldtype);
+                    if(datatypeMapping != null)
+                    {
+                        retval = datatypeMapping.NetDataType;
+                    }
+                    else
+                    {
+                        
+                        retval = null;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                string mes = "";
+                retval = null;
+                DMEEditor.AddLogMessage(ex.Message, "Could not Convert Field Type to Provider Type " + mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return retval;
+        }
+        /// <summary>Gets the data type of a field in a specific data source.</summary>
+        /// <param name="DSname">The name of the data source.</param>
+        /// <param name="fld">The field for which to retrieve the data type.</param>
+        /// <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
+        /// <returns>The data type of the specified field.</returns>
         public static string GetDataType(string DSname, EntityField fld, IDMEEditor DMEEditor)
         {
             string retval = null;
@@ -871,7 +915,7 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "dda45fdb-d6e6-4f34-8b70-04ce2cf8ed46", DataType = "BOOLEAN", DataSourceName = "DuckDBDataSource", NetDataType = "System.Boolean", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "8e8c7dd3-8104-4b94-83b9-d8f0ffa815ab", DataType = "TINYINT", DataSourceName = "DuckDBDataSource", NetDataType = "System.Byte", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "65188632-bfd4-4845-91c9-685fca0126bb", DataType = "BLOB", DataSourceName = "DuckDBDataSource", NetDataType = "System.Byte[]", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "eec16db7-652f-4eb4-8638-4237595f87be", DataType = "VARCHAR", DataSourceName = "DuckDBDataSource", NetDataType = "System.Char", Fav = false },
+            new DatatypeMapping { ID = 0, GuidID = "eec16db7-652f-4eb4-8638-4237595f87be", DataType = "CHAR", DataSourceName = "DuckDBDataSource", NetDataType = "System.Char", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "7c90542c-9627-4be6-9a88-85a2971684b3", DataType = "TIMESTAMP", DataSourceName = "DuckDBDataSource", NetDataType = "System.DateTime", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "93a6e1af-f633-408d-8b42-fdf6249e734c", DataType = "DECIMAL", DataSourceName = "DuckDBDataSource", NetDataType = "System.Decimal", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "cf14597f-c353-47b2-9b0d-abdca99e9576", DataType = "DOUBLE", DataSourceName = "DuckDBDataSource", NetDataType = "System.Double", Fav = false },
@@ -881,13 +925,12 @@ namespace TheTechIdea.Beep.Helpers
             new DatatypeMapping { ID = 0, GuidID = "1da0e8db-0cc1-4a12-95a4-debb63f12c38", DataType = "BIGINT", DataSourceName = "DuckDBDataSource", NetDataType = "System.Int64", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "11aa1eba-ac25-4b86-ac80-2a0c76200f39", DataType = "BLOB", DataSourceName = "DuckDBDataSource", NetDataType = "System.Object", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "9842130c-a655-46b8-9840-40ed3808d51d", DataType = "UTINYINT", DataSourceName = "DuckDBDataSource", NetDataType = "System.SByte", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "dff6fbef-1c7b-4730-a37f-aae5d73d9738", DataType = "BLOB", DataSourceName = "DuckDBDataSource", NetDataType = "System.SByte[]", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "5b56a4d4-38e8-4c8f-85b1-c4073efd8c42", DataType = "REAL", DataSourceName = "DuckDBDataSource", NetDataType = "System.Single", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "b6890f86-c0be-4b72-8411-13bda33e6e49", DataType = "INTERVAL", DataSourceName = "DuckDBDataSource", NetDataType = "System.TimeSpan", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "e3e0b246-46bf-452b-a56c-1724c1e6f1c4", DataType = "UTINYINT", DataSourceName = "DuckDBDataSource", NetDataType = "System.UInt16", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "29f78f94-4295-4c55-aa26-1371d2d07a67", DataType = "UTINYINT", DataSourceName = "DuckDBDataSource", NetDataType = "System.UInt32", Fav = false },
             new DatatypeMapping { ID = 0, GuidID = "e72647f9-2e3f-46a6-a044-5a33b4b9d3e6", DataType = "UTINYINT", DataSourceName = "DuckDBDataSource", NetDataType = "System.UInt64", Fav = false },
-             new DatatypeMapping { ID = 0, GuidID = "eec16db7-652f-4eb4-8638-4237595f87be", DataType = "VARCHAR", DataSourceName = "DuckDBDataSource", NetDataType = "System.String", Fav = false },
+             new DatatypeMapping { ID = 0, GuidID = "eec16db7-652f-4eb4-8638-4237595f87be", DataType = "VARCHAR", DataSourceName = "DuckDBDataSource", NetDataType = "System.String", Fav = true },
             new DatatypeMapping { ID = 3, GuidID =Guid.NewGuid().ToString(), DataType = "TEXT", DataSourceName = "DuckDBDataSource", NetDataType = "System.String", Fav = true },
            new DatatypeMapping { ID = 4, GuidID =Guid.NewGuid().ToString(), DataType = "FLOAT", DataSourceName = "DuckDBDataSource", NetDataType = "System.Single", Fav = true },
             new DatatypeMapping { ID = 0, GuidID = "08c661ba-0247-466b-9984-0ccb4f3eda89", DataType = "VARCHAR", DataSourceName = "DuckDBDataSource", NetDataType = "System.Xml", Fav = false }

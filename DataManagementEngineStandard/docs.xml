@@ -2706,6 +2706,13 @@
             <returns>An array of .NET data types.</returns>
         </member>
         <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataTypeMappingForString(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.IDMEEditor)" -->
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataType(System.String,System.String,TheTechIdea.Beep.IDMEEditor)">
+            <summary>Gets the data type of a field in a specific data source.</summary>
+            <param name="DSname">The name of the data source.</param>
+            <param name="fld">The field for which to retrieve the data type.</param>
+            <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
+            <returns>The data type of the specified field.</returns>
+        </member>
         <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataType(System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.IDMEEditor)">
             <summary>Gets the data type of a field in a specific data source.</summary>
             <param name="DSname">The name of the data source.</param>
