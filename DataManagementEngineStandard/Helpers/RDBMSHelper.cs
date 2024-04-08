@@ -417,6 +417,10 @@ namespace TheTechIdea.Beep.Helpers
         new QuerySqlRepo(DataSourceType.SqlLite, "PRAGMA table_info({0})", Sqlcommandtype.getPKforTable),
         // (Additional SQLite queries for FK, Child Table, Parent Table)
 
+        // DuckDB
+         new QuerySqlRepo(DataSourceType.DuckDB, "SELECT * FROM {0} {2}", Sqlcommandtype.getTable),
+        new QuerySqlRepo(DataSourceType.DuckDB, "SELECT name FROM sqlite_master WHERE type='table'", Sqlcommandtype.getlistoftables),
+        new QuerySqlRepo(DataSourceType.DuckDB, "PRAGMA table_info('{0}');", Sqlcommandtype.getPKforTable),
        // DB2
         new QuerySqlRepo(DataSourceType.DB2, "SELECT * FROM {0} {2}", Sqlcommandtype.getTable),
         new QuerySqlRepo(DataSourceType.DB2, "SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = CURRENT SCHEMA", Sqlcommandtype.getlistoftables),
@@ -424,6 +428,73 @@ namespace TheTechIdea.Beep.Helpers
         new QuerySqlRepo(DataSourceType.DB2, "SELECT FK_COLNAMES AS child_column, PK_COLNAMES AS parent_column, PK_TBNAME AS parent_table FROM SYSIBM.SQLFOREIGNKEYS WHERE FK_TBNAME = '{0}'", Sqlcommandtype.getFKforTable),
         new QuerySqlRepo(DataSourceType.DB2, "SELECT FK_TBNAME AS child_table FROM SYSIBM.SQLFOREIGNKEYS WHERE PK_TBNAME = '{0}'", Sqlcommandtype.getChildTable),
         new QuerySqlRepo(DataSourceType.DB2, "SELECT PK_TBNAME AS parent_table FROM SYSIBM.SQLFOREIGNKEYS WHERE FK_TBNAME = '{0}'", Sqlcommandtype.getParentTable),
+
+        new QuerySqlRepo(DataSourceType.MongoDB, "db.{0}.find({})", Sqlcommandtype.getTable), // Get all documents from a collection
+        new QuerySqlRepo(DataSourceType.MongoDB, "db.getCollectionNames()", Sqlcommandtype.getlistoftables), // Get all collection names
+// MongoDB does not have traditional PK or FK, but you can specify queries to get specific indexed fields or relationships if defined
+        new QuerySqlRepo(DataSourceType.Redis, "GET {0}", Sqlcommandtype.getTable), // Get the value of a key
+    // There's no direct equivalent of tables or foreign keys in Redis
+    new QuerySqlRepo(DataSourceType.Cassandra, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Get all rows from a table
+new QuerySqlRepo(DataSourceType.Cassandra, "SELECT table_name FROM system_schema.tables WHERE keyspace_name = 'YourKeyspaceName'", Sqlcommandtype.getlistoftables), // Get list of tables
+new QuerySqlRepo(DataSourceType.Cassandra, "SELECT column_name FROM system_schema.columns WHERE table_name = '{0}' AND keyspace_name = 'YourKeyspaceName' AND kind = 'partition_key'", Sqlcommandtype.getPKforTable), // Get PK for a table
+// Cassandra does not support foreign keys like relational databases
+new QuerySqlRepo(DataSourceType.FireBird, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Get all rows from a table
+new QuerySqlRepo(DataSourceType.FireBird, "SELECT RDB$RELATION_NAME FROM RDB$RELATIONS WHERE RDB$SYSTEM_FLAG = 0", Sqlcommandtype.getlistoftables), // Get list of tables
+new QuerySqlRepo(DataSourceType.FireBird, "SELECT RDB$INDEX_SEGMENTS.RDB$FIELD_NAME FROM RDB$INDEX_SEGMENTS JOIN RDB$RELATION_CONSTRAINTS ON RDB$INDEX_SEGMENTS.RDB$INDEX_NAME = RDB$RELATION_CONSTRAINTS.RDB$INDEX_NAME WHERE RDB$RELATION_CONSTRAINTS.RDB$RELATION_NAME = '{0}' AND RDB$RELATION_CONSTRAINTS.RDB$CONSTRAINT_TYPE = 'PRIMARY KEY'", Sqlcommandtype.getPKforTable), // Get PK for a table
+new QuerySqlRepo(DataSourceType.Couchbase, "SELECT * FROM `{0}`", Sqlcommandtype.getTable), // Get all documents from a bucket
+new QuerySqlRepo(DataSourceType.Couchbase, "SELECT name FROM system:keyspaces", Sqlcommandtype.getlistoftables), // Get list of keyspaces/buckets
+// Couchbase doesn't use traditional PKs or FKs; keys are usually part of the document structure
+new QuerySqlRepo(DataSourceType.Hana, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Get all rows from a table
+new QuerySqlRepo(DataSourceType.Hana, "SELECT TABLE_NAME FROM TABLES WHERE SCHEMA_NAME = 'YOUR_SCHEMA_NAME'", Sqlcommandtype.getlistoftables), // Get list of tables
+new QuerySqlRepo(DataSourceType.Hana, "SELECT COLUMN_NAME FROM CONSTRAINTS WHERE TABLE_NAME = '{0}' AND SCHEMA_NAME = 'YOUR_SCHEMA_NAME' AND IS_PRIMARY_KEY = 'TRUE'", Sqlcommandtype.getPKforTable), // Get PK for a table
+new QuerySqlRepo(DataSourceType.Vertica, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Get all rows from a table
+new QuerySqlRepo(DataSourceType.Vertica, "SELECT table_name FROM v_catalog.tables WHERE table_schema = 'YOUR_SCHEMA_NAME'", Sqlcommandtype.getlistoftables), // Get list of tables
+new QuerySqlRepo(DataSourceType.Vertica, "SELECT column_name FROM v_catalog.primary_keys WHERE table_name = '{0}' AND table_schema = 'YOUR_SCHEMA_NAME'", Sqlcommandtype.getPKforTable), // Get PK for a table
+new QuerySqlRepo(DataSourceType.TerraData, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Get all rows from a table
+new QuerySqlRepo(DataSourceType.TerraData, "SELECT TableName FROM DBC.TablesV WHERE TableKind = 'T' AND DatabaseName = 'YOUR_DATABASE_NAME'", Sqlcommandtype.getlistoftables), // Get list of tables
+new QuerySqlRepo(DataSourceType.TerraData, "SELECT ColumnName FROM DBC.IndicesV WHERE TableName = '{0}' AND DatabaseName = 'YOUR_DATABASE_NAME' AND IndexType = 'P'", Sqlcommandtype.getPKforTable), // Get PK for a table
+new QuerySqlRepo(DataSourceType.AzureCloud, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Get all rows from a table
+new QuerySqlRepo(DataSourceType.AzureCloud, "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'", Sqlcommandtype.getlistoftables), // Get list of tables
+new QuerySqlRepo(DataSourceType.AzureCloud, "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE OBJECTPROPERTY(OBJECT_ID(CONSTRAINT_SCHEMA + '.' + CONSTRAINT_NAME), 'IsPrimaryKey') = 1 AND TABLE_NAME = '{0}'", Sqlcommandtype.getPKforTable), // Get PK for a table
+new QuerySqlRepo(DataSourceType.GoogleBigQuery, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Get all rows from a table
+new QuerySqlRepo(DataSourceType.GoogleBigQuery, "SELECT table_name FROM `YOUR_DATASET.INFORMATION_SCHEMA.TABLES`", Sqlcommandtype.getlistoftables), // Get list of tables
+// BigQuery does not have a traditional concept of primary keys, but you can query the schema to find fields that might act as a key
+new QuerySqlRepo(DataSourceType.SnowFlake, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Get all rows from a table
+new QuerySqlRepo(DataSourceType.SnowFlake, "SHOW TABLES IN SCHEMA YOUR_SCHEMA", Sqlcommandtype.getlistoftables), // Get list of tables
+new QuerySqlRepo(DataSourceType.SnowFlake, "DESC TABLE {0}", Sqlcommandtype.getPKforTable), // Describe table to get details, including potential primary keys
+new QuerySqlRepo(DataSourceType.ElasticSearch, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Executes a search query that, by default, retrieves the first 1000 documents.
+// Elasticsearch doesn't have the concept of tables or primary/foreign keys in the traditional sense.
+new QuerySqlRepo(DataSourceType.Cassandra, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Get all rows from a table
+new QuerySqlRepo(DataSourceType.Cassandra, "SELECT table_name FROM system_schema.tables WHERE keyspace_name = 'YourKeyspaceName'", Sqlcommandtype.getlistoftables), // Get list of tables
+new QuerySqlRepo(DataSourceType.Cassandra, "SELECT column_name FROM system_schema.columns WHERE table_name = '{0}' AND keyspace_name = 'YourKeyspaceName' AND kind = 'partition_key'", Sqlcommandtype.getPKforTable), // Get primary key column
+new QuerySqlRepo(DataSourceType.CouchDB, "SELECT * FROM {0}", Sqlcommandtype.getTable), // This is a conceptual example; actual querying in CouchDB is done through views and not SQL.
+// CouchDB doesn't have a concept of tables in the same way SQL databases do. It stores JSON documents directly.
+
+new QuerySqlRepo(DataSourceType.Neo4j, "MATCH (n) RETURN n", Sqlcommandtype.getTable), // Get all nodes
+// Neo4j does not use tables, so there's no direct equivalent to getting a list of tables or primary/foreign keys.
+new QuerySqlRepo(DataSourceType.InfluxDB, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Query data from a measurement
+new QuerySqlRepo(DataSourceType.InfluxDB, "SHOW MEASUREMENTS", Sqlcommandtype.getlistoftables), // Get list of measurements (similar to tables)
+new QuerySqlRepo(DataSourceType.DynamoDB, "Scan {0}", Sqlcommandtype.getTable), // Scan operation (be mindful of performance and cost)
+new QuerySqlRepo(DataSourceType.TimeScale, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Get all rows from a hypertable
+new QuerySqlRepo(DataSourceType.TimeScale, "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'", Sqlcommandtype.getlistoftables), // Get list of tables (hypertables)
+new QuerySqlRepo(DataSourceType.TimeScale, "SELECT a.attname FROM pg_index i JOIN pg_attribute a ON a.attnum = ANY(i.indkey) WHERE i.indrelid = '{0}'::regclass AND i.indisprimary", Sqlcommandtype.getPKforTable), // Get PK for a table
+new QuerySqlRepo(DataSourceType.Cockroach, "SELECT * FROM {0}", Sqlcommandtype.getTable), // Get all rows from a table
+new QuerySqlRepo(DataSourceType.Cockroach, "SHOW TABLES", Sqlcommandtype.getlistoftables), // Get list of tables
+new QuerySqlRepo(DataSourceType.Cockroach, "SELECT column_name FROM information_schema.columns WHERE table_name = '{0}' AND is_nullable = 'NO'", Sqlcommandtype.getPKforTable), // Get PK for a table (simplified)
+new QuerySqlRepo(DataSourceType.Kafka, "LIST TOPICS", Sqlcommandtype.getlistoftables), // Conceptual command to list topics
+new QuerySqlRepo(DataSourceType.OPC, "READ NODE", Sqlcommandtype.getTable), // Conceptual command to read data from an OPC node
+// OPC doesn't have "tables" or SQL. Interaction is typically via OPC-specific protocols and APIs.
+
+// Kafka doesn't have "tables" in the traditional sense, nor does it support SQL out-of-the-box. Interaction is typically done via an API.
+
+
+
+// DynamoDB doesn't have tables in the traditional sense; it has tables but they are not relational.
+// No direct equivalent to get list of tables or PK/FK.
+
+// InfluxDB does not have the concept of primary/foreign keys.
+
+
      // (Additional DB2 queries for FK, Child Table, Parent Table)
         // ... (You can add similar entries for MySQL, PostgreSQL, SQLite, and DB2)
     };

@@ -20,6 +20,10 @@ namespace DataManagementModels.DataBase
          event EventHandler<PassedArgs> OnLoadData;
          event EventHandler<PassedArgs> OnLoadStructure;
          event EventHandler<PassedArgs> OnSaveStructure;
+        event EventHandler<PassedArgs> OnCreateStructure;
+        event EventHandler<PassedArgs> OnRefreshData;
+        event EventHandler<PassedArgs> OnRefreshDataEntity;
+         
          event EventHandler<PassedArgs> OnSyncData;
         IErrorsInfo OpenDatabaseInMemory(string databasename);
         string GetConnectionString();
@@ -29,6 +33,9 @@ namespace DataManagementModels.DataBase
         IErrorsInfo CreateStructure(Progress<PassedArgs> progress, CancellationToken token);
         IErrorsInfo LoadData(Progress<PassedArgs> progress,CancellationToken token);
         IErrorsInfo SyncData(Progress<PassedArgs> progress, CancellationToken token);
+        IErrorsInfo SyncData(string entityname, Progress<PassedArgs> progress, CancellationToken token);
+        IErrorsInfo RefreshData(Progress<PassedArgs> progress, CancellationToken token);
+        IErrorsInfo RefreshData(string entityname,Progress<PassedArgs> progress, CancellationToken token);
         List<EntityStructure> InMemoryStructures { get; set; }
 
     }

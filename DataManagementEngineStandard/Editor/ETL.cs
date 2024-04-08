@@ -577,11 +577,11 @@ namespace TheTechIdea.Beep.Editor
             CurrentScriptRecord = 0;
             errorcount = 0;
             stoprun = false;
-            bool CreateSuccess ;
+            bool CreateSuccess;
             EntityStructure entitystr;
             foreach (ETLScriptDet sc in DMEEditor.ETL.Script.ScriptDTL.OrderBy(p => p.ID))
             {
-                CreateSuccess = false;
+                CreateSuccess = true;
                 destds = DMEEditor.GetDataSource(sc.destinationdatasourcename);
                 srcds = DMEEditor.GetDataSource(sc.sourcedatasourcename);
                 CurrentScriptRecord += 1;
@@ -720,8 +720,7 @@ namespace TheTechIdea.Beep.Editor
                         IRDBSource rDB = (IRDBSource)destds;
                         rDB.DisableFKConstraints(destEntitystructure);
                     }
-                    if (destds.CheckEntityExist(destentity))
-                    {
+                   
                         object srcTb;
                         string querystring = null;
                         List<AppFilter> filters = null;
@@ -778,17 +777,14 @@ namespace TheTechIdea.Beep.Editor
                             {
                                 i++;
                                 DMEEditor.ErrorObject = InsertEntity(destds, destEntitystructure, destentity, map_DTL, r, progress, token); ;
-                                SendMessege(progress, token, null, sc, $"Data Inserted for {destEntitystructure.EntityName} Record {i}"); ;
+                               // SendMessege(progress, token, null, sc, $"Data Inserted for {destEntitystructure.EntityName} Record {i}"); ;
                                 token.ThrowIfCancellationRequested();
 
                             }
                         }
 
-                    }
-                    else
-                    {
-                        DMEEditor.AddLogMessage("Copy Data", $"Error Could not Copy Entity Date {srcentity} on {sourceds.DatasourceName} to {srcentity} on {destds.DatasourceName} ", DateTime.Now, 0, null, Errors.Failed);
-                    }
+                   
+                
                     if (destds.Category == DatasourceCategory.RDBMS)
                     {
                         IRDBSource rDB = (IRDBSource)destds;
@@ -1041,7 +1037,7 @@ namespace TheTechIdea.Beep.Editor
                     }
                 }
                 CurrentScriptRecord += 1;
-                SendMessege(progress, token, destEntitystructure, null, $"Inserting Record {CurrentScriptRecord} ");
+              //  SendMessege(progress, token, destEntitystructure, null, $"Inserting Record {CurrentScriptRecord} ");
                 DMEEditor.ErrorObject = destds.InsertEntity(destEntitystructure.EntityName, retval);
                 token.ThrowIfCancellationRequested();
 

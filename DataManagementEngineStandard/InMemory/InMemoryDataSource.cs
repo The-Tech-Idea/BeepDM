@@ -191,6 +191,9 @@ namespace TheTechIdea.Beep.InMemory
         public event EventHandler<PassedArgs> OnSaveStructure;
         public event EventHandler<PassedArgs> OnSyncData;
         public event EventHandler<PassedArgs> PassEvent;
+        public event EventHandler<PassedArgs> OnCreateStructure;
+        public event EventHandler<PassedArgs> OnRefreshData;
+        public event EventHandler<PassedArgs> OnRefreshDataEntity;
         #endregion
         #region "Dispose"
         private bool disposedValue;
@@ -418,6 +421,21 @@ namespace TheTechIdea.Beep.InMemory
            
                 
            
+        }
+
+        public IErrorsInfo SyncData(string entityname, Progress<PassedArgs> progress, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IErrorsInfo RefreshData(Progress<PassedArgs> progress, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IErrorsInfo RefreshData(string entityname, Progress<PassedArgs> progress, CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
         #endregion
 
