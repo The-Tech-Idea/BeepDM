@@ -2052,11 +2052,11 @@ namespace TheTechIdea.Util
 			try
 			{
 				InitConfig();
-				InitConnectionConfigDrivers();
-				InitDataSourceConfigDrivers();
-				InitDatabaseTypes();
+			//	InitConnectionConfigDrivers();
+			//	InitDataSourceConfigDrivers();
+			//	InitDatabaseTypes();
 		//		InitQueryList();
-				InitSqlquerytypes();
+			//	InitSqlquerytypes();
 				InitDataConnections();
 				LoadFucntion2Function();
 				LoadEvents();
@@ -2067,7 +2067,7 @@ namespace TheTechIdea.Util
 				ReadWork();
 				LoadObjectTypes();
 				//	LoadMappingSchema();
-				ReadDataTypeFile();
+				//ReadDataTypeFile();
 				ReadProjects();
 				//ReadSyncDataSource();
 				InitMapping();
