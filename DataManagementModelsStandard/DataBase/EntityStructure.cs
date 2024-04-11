@@ -17,8 +17,13 @@ private int _id;
         get { return _id; }
         set { SetProperty(ref _id, value); }
     }
-
-    private string _entityname;
+        private string _path;
+        public string EntityPath
+        {
+            get { return _path; }
+            set { SetProperty(ref _path, value); }
+        }
+        private string _entityname;
     public string EntityName
     {
         get { return _entityname; }

@@ -1,6 +1,7 @@
 ﻿using System;
 
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Util;
 
 namespace DataManagementModels.ConfigUtil
 {
@@ -17,7 +18,18 @@ namespace DataManagementModels.ConfigUtil
             get { return _id; }
             set { SetProperty(ref _id, value); }
         }
-
+        private AddinType _fromType;
+        public AddinType FromType
+        {
+            get { return _fromType; }
+            set { SetProperty(ref _fromType, value); }
+        }
+        private AddinType _toType;
+        public AddinType ToType
+        {
+            get { return _toType; }
+            set { SetProperty(ref _toType, value); }
+        }
         private string _guidid;
         public string GuidID
         {

@@ -16,6 +16,7 @@ using System.Xml.Serialization;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.FileManager;
+using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Logger;
@@ -1877,6 +1878,89 @@ namespace TheTechIdea.Beep
             rootFolder.Folders.Add(folder);
             return rootFolder;
 
+        }
+        public static System.Data.DataView ApplyAppFilters(DataTable records, List<AppFilter> filters)
+        {
+            System.Data.DataView filteredRecords = new System.Data.DataView(records);
+
+            // Apply each filter from the list
+            foreach (AppFilter filter in filters)
+            {
+                string filterExpression = GenerateFilterExpression(filter);
+                filteredRecords.RowFilter += (filteredRecords.RowFilter.Length > 0 ? " AND " : "") + filterExpression;
+            }
+
+            return filteredRecords;
+        }
+        public static IEnumerable<DataRow> ApplyAppFiltersNoDataView(DataTable records, List<AppFilter> filters)
+        {
+            IEnumerable<DataRow> filteredRows = records.AsEnumerable();
+
+            // Apply each filter from the list
+            foreach (AppFilter filter in filters)
+            {
+                filteredRows = filteredRows.Where(row => GenerateFilterExpression(row, filter));
+            }
+
+            return filteredRows;
+        }
+        public static string GenerateFilterExpression(AppFilter filter)
+        {
+            switch (filter.Operator)
+            {
+                case "equals":
+                case "=":
+                    return $"{filter.FieldName} = '{filter.FilterValue}'";
+                case "contains":
+                    return $"{filter.FieldName} LIKE '%{filter.FilterValue}%'";
+                case ">":
+                    return $"{filter.FieldName} > '{filter.FilterValue}'";
+                case "<":
+                    return $"{filter.FieldName} < '{filter.FilterValue}'";
+                case ">=":
+                    return $"{filter.FieldName} >= '{filter.FilterValue}'";
+                case "<=":
+                    return $"{filter.FieldName} <= '{filter.FilterValue}'";
+                case "<>":
+                case "!=":
+                    return $"{filter.FieldName} <> '{filter.FilterValue}'";
+                case "between":
+                    return $"{filter.FieldName} >= '{filter.FilterValue}' AND {filter.FieldName} <= '{filter.FilterValue1}'";
+                default:
+                    throw new ArgumentException($"Invalid filter operator: {filter.Operator}");
+            }
+        }
+        public static bool GenerateFilterExpression(DataRow record, AppFilter filter)
+        {
+            var fieldValue = record[filter.FieldName];
+
+            switch (filter.Operator)
+            {
+                case "equals":
+                case "=":
+                    return fieldValue.Equals(filter.FilterValue);
+                case "contains":
+                    return fieldValue.ToString().Contains(filter.FilterValue);
+                case ">":
+                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) > 0;
+                case "<":
+                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) < 0;
+                case ">=":
+                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) >= 0;
+                case "<=":
+                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) <= 0;
+                case "<>":
+                case "!=":
+                    return !fieldValue.Equals(filter.FilterValue);
+                case "between":
+                    var value1 = filter.FilterValue;
+                    var value2 = filter.FilterValue1;
+
+                    return Comparer.Default.Compare(fieldValue, value1) >= 0 &&
+                           Comparer.Default.Compare(fieldValue, value2) <= 0;
+                default:
+                    throw new ArgumentException($"Invalid filter operator: {filter.Operator}");
+            }
         }
         #endregion
     }

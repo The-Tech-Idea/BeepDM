@@ -187,6 +187,7 @@ namespace TheTechIdea.Beep.Helpers
             configs.Add(CreateCouchbaseConfig());
             configs.Add(CreateFirebaseConfig());
             configs.Add(CreateDataViewConfig());
+            configs.Add(CreateJsonDataSourceConfig());
             
 
             return configs;

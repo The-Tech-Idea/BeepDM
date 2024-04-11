@@ -6,8 +6,8 @@ namespace TheTechIdea.Beep.DataBase
 {
     public interface IEntityStructure
     {
-        
-         string GuidID { get; set; }
+        string EntityPath { get;set; }
+        string GuidID { get; set; }
         bool Created { get; set; }
         string CustomBuildQuery { get; set; }
         DataSourceType DatabaseType { get; set; }

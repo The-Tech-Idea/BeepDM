@@ -1,16 +1,13 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text.RegularExpressions;
+using System.Text;
 using System.Threading.Tasks;
-using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.FileManager;
@@ -18,11 +15,9 @@ using TheTechIdea.Beep.Report;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
 
-
-
 namespace TheTechIdea.Beep.Json
 {
-    public class JsonDataSource : IDataSource
+    public class JsonDataSource : IDataSource, IDisposable
     {
         public JsonDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
         {
@@ -30,193 +25,180 @@ namespace TheTechIdea.Beep.Json
             Logger = logger;
             ErrorObject = per;
             DMEEditor = pDMEEditor;
-            DatasourceType =  DataSourceType.Json;
+            DatasourceType = DataSourceType.Json;
             Dataconnection = new FileConnection(DMEEditor)
             {
                 Logger = logger,
                 ErrorObject = ErrorObject,
 
             };
-            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName.Equals(datasourcename,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName.Equals(datasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             FileName = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
             if (File.Exists(FileName))
             {
-                LoadJsonFile();
+                ReadJson(FileName);
             }
         }
-        public string GuidID { get; set; } = Guid.NewGuid().ToString();
-        private bool IsFileRead=false;
-        public event EventHandler<PassedArgs> PassEvent;
-        public DataSourceType DatasourceType { get; set; }= DataSourceType.Json;
+        #region "Properties"
+        private bool disposedValue;
+        private JObject _rootJsonObject = null;
+        private string  jsonContent=null;
+        private string lastentityname;
+
+        public string ColumnDelimiter { get; set; }
+        public string ParameterDelimiter { get; set; }
+        public string GuidID { get; set; }
+        public DataSourceType DatasourceType { get; set; } = DataSourceType.Json;
         public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;
         public IDataConnection Dataconnection { get; set; }
         public string DatasourceName { get; set; }
         public IErrorsInfo ErrorObject { get; set; }
         public string Id { get; set; }
         public IDMLogger Logger { get; set; }
-        public List<string> EntitiesNames { get; set; }
-        public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
+        public List<string> EntitiesNames { get; set; }=new List<string>();
+        public List<EntityStructure> Entities { get; set; }=new List<EntityStructure>();
         public IDMEEditor DMEEditor { get; set; }
-        public List<object> Records { get; set; }
-        public DataSet Dataset { get;set; } = new DataSet();
-        public ConnectionState ConnectionStatus { get; set; } = ConnectionState.Closed;
-        public bool HeaderExist { get; set; }
-        public virtual string ColumnDelimiter { get; set; } = "''";
-        public virtual string ParameterDelimiter { get; set; } = ":";
-        string FileName;
-        string jsonData  ;
-        JArray jArray ;
+        public ConnectionState ConnectionStatus { get; set; }= ConnectionState.Closed;
+        public string FileName { get; private set; }
+        public bool ObjectsCreated { get; private set; }
+        public EntityStructure DataStruct { get; private set; }
 
-        #region "DataSource Methods"
-        public virtual Task<double> GetScalarAsync(string query)
+        private Type enttype;
+
+        public event EventHandler<PassedArgs> PassEvent;
+        #endregion
+
+
+        public IErrorsInfo BeginTransaction(PassedArgs args)
         {
-            return Task.Run(() => GetScalar(query));
+            throw new NotImplementedException();
         }
-        public virtual double GetScalar(string query)
-        {
-            ErrorObject.Flag = Errors.Ok;
 
-            try
-            {
-                // Assuming you have a database connection and command objects.
-
-                //using (var command = GetDataCommand())
-                //{
-                //    command.CommandText = query;
-                //    var result = command.ExecuteScalar();
-
-                //    // Check if the result is not null and can be converted to a double.
-                //    if (result != null && double.TryParse(result.ToString(), out double value))
-                //    {
-                //        return value;
-                //    }
-                //}
-
-
-                // If the query executed successfully but didn't return a valid double, you can handle it here.
-                // You might want to log an error or throw an exception as needed.
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Fail", $"Error in executing scalar query ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
-            }
-
-            // Return a default value or throw an exception if the query failed.
-            return 0.0; // You can change this default value as needed.
-        }
-        public int GetEntityIdx(string entityName)
-        {
-            int i = -1;
-            if (Entities.Count > 0)
-            {
-                i = Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase));
-                if (i < 0)
-                {
-                    i = Entities.FindIndex(p => p.DatasourceEntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase));
-                }
-                else
-                    if (i < 0)
-                {
-                    i = Entities.FindIndex(p => p.OriginalEntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase));
-                }
-                return i;
-            }
-            else
-            {
-                return -1;
-            }
-
-
-        }
-        public ConnectionState Openconnection()
-        {
-            ConnectionStatus = Dataconnection.OpenConnection();
-
-            if (ConnectionStatus == ConnectionState.Open)
-            {
-                if (DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName) == null)
-                {
-
-                    if (GetFileState() == ConnectionState.Open && !IsFileRead)
-                    {
-                        Getfields();
-                    }
-                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
-                }
-                else
-                {
-                    Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
-                };
-
-            }
-
-            return ConnectionStatus;
-        }
-        public ConnectionState Closeconnection()
-        {
-            SaveJsonFile();
-            return ConnectionStatus = ConnectionState.Closed;
-        }
         public bool CheckEntityExist(string EntityName)
         {
-            bool retval = false;
-            if (GetFileState() == ConnectionState.Open)
-            {
-                if (Entities != null)
-                {
-                    if (Entities.Where(x => string.Equals(x.EntityName, EntityName, StringComparison.InvariantCultureIgnoreCase)).Count() > 0)
-                    {
-                        retval = true;
-                    }
-                    else
-                        retval = false;
-
-                }
-
-            }
-
-            return retval;
+            return Entities.Any(e => e.EntityName == EntityName);
         }
-        public bool CreateEntityAs(EntityStructure entity)
+
+        public ConnectionState Closeconnection()
+        {
+            SaveJson(FileName);
+            return ConnectionState.Closed;
+        }
+
+        public IErrorsInfo Commit(PassedArgs args)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
             try
             {
-                if (Entities != null)
+               foreach (EntityStructure entity in entities)
                 {
-                    if (Entities.Count > 0)
+                    if (!CreateEntityAs(entity))
                     {
-                        if (!CheckEntityExist(entity.EntityName))
-                        {
-                            Type entype = DMEEditor.Utilfunction.GetEntityType(DMEEditor, entity.EntityName, entity.Fields);
-                            if (entype == null) return false;
-                            if (entity.Fields != null)
-                            {
-                                DataTable tb = new DataTable(entity.EntityName);
-                                foreach (EntityField col in entity.Fields)
-                                {
-                                    DataColumn co = tb.Columns.Add(col.fieldname);
-                                    co.DataType = Type.GetType(col.fieldtype);
-
-                                }
-                                Dataset.Tables.Add(tb);
-                            }
-                            Entities.Add(entity);
-                            EntitiesNames.Add(entity.EntityName);
-                            DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
-                        }
-                        else
-                            DMEEditor.AddLogMessage("Beep", $"Could not Add Entity {entity.EntityName} is Exist already", DateTime.Now, 0, null, Errors.Failed);
+                        return new ErrorsInfo { Message = $"Failed to create entity: {entity.EntityName}", Flag = Errors.Failed };
                     }
                 }
-
-                return true;
+                return new ErrorsInfo { Message = "Entities created successfully.", Flag = Errors.Ok };
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("Beep", $"Could not Add Entity {entity.EntityName}- {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+
+                return new ErrorsInfo { Message = $"Failed to create entity: {ex.Message}", Flag = Errors.Failed };
+            }
+        }
+
+        public bool CreateEntityAs(EntityStructure entity)
+        {
+            // Access the root JSON object.
+            JObject rootJson = GetRootJsonObject();
+            if (rootJson == null)
+            {
+                // Root JSON object not available, can't create the entity.
                 return false;
             }
 
+            // Check if the entity already exists.
+            if (rootJson.SelectToken(entity.EntityName) != null)
+            {
+                // Entity already exists, can't create a new one with the same name.
+                return false;
+            }
+
+            // Create a new JArray or JObject based on your needs.
+            JArray newArray = new JArray();
+            // JObject newObject = new JObject(); // Uncomment if you want to create a JObject instead.
+
+            // Add the new array or object to the root.
+            rootJson.Add(new JProperty(entity.EntityName, newArray));
+
+            // Optionally, update the EntityStructure to reflect the new entity's details.
+            entity.EntityPath = $"$.{entity.EntityName}";
+            Entities.Add(entity);
+
+           
+
+            return true;
+        }
+
+        public IErrorsInfo DeleteEntity(string EntityName, object criteria)
+        {
+            var entityStructure = Entities.FirstOrDefault(e => e.EntityName == EntityName);
+            if (entityStructure == null)
+            {
+                return new ErrorsInfo { Message = "Entity not found.", Flag = Errors.Failed };
+            }
+
+            // Access the root JSON object.
+            JObject rootJson = GetRootJsonObject();
+            if (rootJson == null)
+            {
+                return new ErrorsInfo { Message = "Root JSON object is not available.", Flag = Errors.Failed };
+            }
+
+            // Use the path to select the specific part of the JSON.
+            JToken entityToken = rootJson.SelectToken(entityStructure.EntityPath);
+            if (entityToken == null)
+            {
+                return new ErrorsInfo { Message = "Entity path not found.", Flag = Errors.Failed };
+            }
+
+            try
+            {
+                if (entityToken is JArray entityArray)
+                {
+                    // For arrays, remove the item that matches the criteria.
+                    // This assumes the criteria is an object with properties that should match the item to be removed.
+                    var itemToRemove = entityArray.FirstOrDefault(item => item.MatchesCriteria(criteria));
+                    if (itemToRemove != null)
+                    {
+                        itemToRemove.Remove();
+                        return new ErrorsInfo { Message = "Item removed successfully.", Flag = Errors.Ok };
+                    }
+
+                }
+                else
+                {
+                    // For a single object, you can simply remove it or set it to null.
+                    // The exact behavior depends on your application's needs.
+                    entityToken.Remove();
+                    return new ErrorsInfo { Message = "Entity removed successfully.", Flag = Errors.Ok };
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ErrorsInfo { Message = $"Error deleting entity: {ex.Message}", Flag = Errors.Failed };
+            }
+
+            return new ErrorsInfo { Message = "No matching item found to remove.", Flag = Errors.Failed };
+        }
+
+        // Helper method to check if a JSON token matches the deletion criteria.
+        public IErrorsInfo EndTransaction(PassedArgs args)
+        {
+            throw new NotImplementedException();
         }
         public IErrorsInfo ExecuteSql(string sql)
         {
@@ -226,1575 +208,344 @@ namespace TheTechIdea.Beep.Json
         {
             throw new NotImplementedException();
         }
-        public DataSet GetChildTablesListFromCustomQuery(string tablename, string customquery)
+        public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
             throw new NotImplementedException();
         }
         public List<string> GetEntitesList()
         {
-            ErrorObject.Flag = Errors.Ok;
-            try
+            if (Entities.Count > 0)
             {
-                if (GetFileState() == ConnectionState.Open && !IsFileRead)
-                {
-                    Getfields();
-                }
-            }
-            catch (Exception ex)
+                return Entities.Select(e => e.EntityName).ToList();
+            }else
             {
-                Logger.WriteLog($"Unsuccessfully Retrieve Entites list {ex.Message}");
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-            }
-            return EntitiesNames;
-        }
-        public async Task<object> GetEntityDataAsync(string entityname, string filterstr)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
-                return await Task.Run(() => GetEntity(entityname, new List<AppFilter>() { }));
-            }
-            catch (Exception ex)
-            {
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting File Data ({ex.Message}) ");
                 return null;
             }
+            
         }
-        public object GetEntity(string EntityName, List<AppFilter> filter)
+
+        public object GetEntity(string entityName, List<AppFilter> filter)
         {
-            ErrorObject.Flag = Errors.Ok;
-
-            try
+            var entityStructure = Entities.FirstOrDefault(e => e.EntityName == entityName);
+            if (entityStructure == null)
             {
-               // IEnumerable<DataRow> filteredRecords;
-                DataTable tb = new DataTable();
-                bool FilterExist = false;
-                string qrystr = "";
-                EntityStructure entity = GetEntityStructure(EntityName);
+                return new List<object>();  // Or throw an appropriate exception
+            }
 
-                int fromline = entity.StartRow;
-                int toline = entity.EndRow;
-                if (GetFileState() == ConnectionState.Open)
+            JObject rootJson = GetRootJsonObject();
+            if (rootJson == null)
+            {
+                return new List<object>();  // Or throw an appropriate exception if the root JSON object is not set.
+            }
+
+            JToken token = rootJson.SelectToken(entityStructure.EntityPath);
+            List<object> resultList = new List<object>();
+
+            if (token is JArray arrayToken)
+            {
+                foreach (var item in arrayToken.Children<JObject>())
                 {
-                    if (Entities != null)
+                    dynamic record = new ExpandoObject();
+                    var recordDictionary = (IDictionary<string, object>)record;
+                    foreach (var property in item.Properties())
                     {
-                        if (Entities.Count() == 0)
-                        {
-                            GetEntitesList();
-                        }
-
+                        recordDictionary[property.Name] = property.Value.ToObject<object>();
                     }
-
-                    //if (filter != null)
-                    //{
-                    //    if (filter.Count > 0)
-                    //    {
-                    //        AppFilter fromlinefilter = filter.FirstOrDefault(p => p.FieldName.Equals("FromLine", StringComparison.InvariantCultureIgnoreCase));
-                    //        if (fromlinefilter != null)
-                    //        {
-                    //            fromline = Convert.ToInt32(fromlinefilter.FilterValue);
-                    //        }
-                    //        AppFilter Tolinefilter = filter.FirstOrDefault(p => p.FieldName.Equals("ToLine", StringComparison.InvariantCultureIgnoreCase));
-                    //        if (fromlinefilter != null)
-                    //        {
-                    //            toline = Convert.ToInt32(fromlinefilter.FilterValue);
-                    //        }
-                    //    }
-                    //}
-                    int idx = -1;
-                    idx=EntitiesNames.IndexOf(EntityName);
-                    tb= ReadEntityFromDataSet(idx);
-                    //Records= (List<object>)DMEEditor.ConfigEditor.JsonLoader.DeserializeObject(EntityName);
-                    //if (Entities.Count > -1)
-                    //{
-                    //    if (filter != null)
-                    //    {
-                    //        if (filter.Any(p => !string.IsNullOrEmpty(p.FilterValue) && !string.IsNullOrWhiteSpace(p.FilterValue) && !string.IsNullOrEmpty(p.Operator) && !string.IsNullOrWhiteSpace(p.FieldName)))
-                    //        {
-                    //            FilterExist=true;
-                    //            filteredRecords = ApplyAppFiltersNoDataView(tb, filter);
-                    //        }
-                    //    }
-                    //}
+                    // Apply any filters to the record here if necessary
+                    UpdateEntityStructureWithMissingFields(item, entityStructure);
+                    resultList.Add(record);
                 }
-                //if (!FilterExist)
-                //{
-                //    filteredRecords = tb. ;
-                //}
-                return tb;
             }
-            catch (Exception ex)
+            else if (token is JObject objectToken)
             {
-
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                Logger.WriteLog($"Error in getting File Data ({ex.Message}) ");
-                return null;
+                dynamic record = new ExpandoObject();
+                var recordDictionary = (IDictionary<string, object>)record;
+                foreach (var property in objectToken.Properties())
+                {
+                    recordDictionary[property.Name] = property.Value.ToObject<object>();
+                }
+                UpdateEntityStructureWithMissingFields((JObject)token, entityStructure);
+                // Apply any filters to the record here if necessary
+                resultList.Add(record);
             }
+
+            return resultList;
         }
-        public System.Data.DataView ApplyAppFilters(DataTable records, List<AppFilter> filters)
+
+        public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
-            System.Data.DataView filteredRecords = new System.Data.DataView(records);
-
-            // Apply each filter from the list
-            foreach (AppFilter filter in filters)
-            {
-                string filterExpression = GenerateFilterExpression(filter);
-                filteredRecords.RowFilter += (filteredRecords.RowFilter.Length > 0 ? " AND " : "") + filterExpression;
-            }
-
-            return filteredRecords;
+           return Task.FromResult(GetEntity(EntityName, Filter));
         }
-        public IEnumerable<DataRow> ApplyAppFiltersNoDataView(DataTable records, List<AppFilter> filters)
-        {
-            IEnumerable<DataRow> filteredRows = records.AsEnumerable();
-
-            // Apply each filter from the list
-            foreach (AppFilter filter in filters)
-            {
-                filteredRows = filteredRows.Where(row => GenerateFilterExpression(row, filter));
-            }
-
-            return filteredRows;
-        }
-
-        public string GenerateFilterExpression(AppFilter filter)
-        {
-            switch (filter.Operator)
-            {
-                case "equals":
-                case "=":
-                    return $"{filter.FieldName} = '{filter.FilterValue}'";
-                case "contains":
-                    return $"{filter.FieldName} LIKE '%{filter.FilterValue}%'";
-                case ">":
-                    return $"{filter.FieldName} > '{filter.FilterValue}'";
-                case "<":
-                    return $"{filter.FieldName} < '{filter.FilterValue}'";
-                case ">=":
-                    return $"{filter.FieldName} >= '{filter.FilterValue}'";
-                case "<=":
-                    return $"{filter.FieldName} <= '{filter.FilterValue}'";
-                case "<>":
-                case "!=":
-                    return $"{filter.FieldName} <> '{filter.FilterValue}'";
-                case "between":
-                    return $"{filter.FieldName} >= '{filter.FilterValue}' AND {filter.FieldName} <= '{filter.FilterValue1}'";
-                default:
-                    throw new ArgumentException($"Invalid filter operator: {filter.Operator}");
-            }
-        }
-
-        public bool GenerateFilterExpression(DataRow record, AppFilter filter)
-        {
-            var fieldValue = record[filter.FieldName];
-
-            switch (filter.Operator)
-            {
-                case "equals":
-                case "=":
-                    return fieldValue.Equals(filter.FilterValue);
-                case "contains":
-                    return fieldValue.ToString().Contains(filter.FilterValue);
-                case ">":
-                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) > 0;
-                case "<":
-                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) < 0;
-                case ">=":
-                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) >= 0;
-                case "<=":
-                    return Comparer.Default.Compare(fieldValue, filter.FilterValue) <= 0;
-                case "<>":
-                case "!=":
-                    return !fieldValue.Equals(filter.FilterValue);
-                case "between":
-                    var value1 = filter.FilterValue;
-                    var value2 = filter.FilterValue1;
-
-                    return Comparer.Default.Compare(fieldValue, value1) >= 0 &&
-                           Comparer.Default.Compare(fieldValue, value2) <= 0;
-                default:
-                    throw new ArgumentException($"Invalid filter operator: {filter.Operator}");
-            }
-        }
-
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             throw new NotImplementedException();
         }
+        public int GetEntityIdx(string entityName)
+        {
+            return Entities.FindIndex(e => e.EntityName == entityName);
+        }
+        public EntityStructure GetEntityStructure(string EntityName, bool refresh)
+        {
+            return Entities.FirstOrDefault(e => e.EntityName == EntityName);
+        }
+        public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
+        {
+            return Entities.FirstOrDefault(e => e.EntityName == fnd.EntityName);
+        }
+
         public Type GetEntityType(string EntityName)
         {
+
             string filenamenoext = EntityName;
             DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, Entities.Where(x => x.EntityName == EntityName).FirstOrDefault().Fields);
             return DMTypeBuilder.myType;
         }
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
-        {
-            try
-            {
-                DMEEditor.ErrorObject.Ex = null;
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                DMEEditor.ErrorObject.Message = "";
-                SetObjects(EntityName);
-               
-                DataTable dataTable = Dataset.Tables[EntityName];
-                DataTable updatedTable = (DataTable)UploadData;
-                // Check changes
-                DataTable changesTable = updatedTable.GetChanges();
-                if (changesTable != null)
-                {
-                    foreach (DataRow dr in changesTable.Rows)
-                    {
-                        // Insert new rows
-                        if (dr.RowState == DataRowState.Added)
-                        {
-                            InsertEntity(EntityName, dr);
-                        }
-                        // Update modified rows
-                        else if (dr.RowState == DataRowState.Modified)
-                        {
-                            UpdateEntity(EntityName, dr);
-                        }
-                        // Delete removed rows
-                        else if (dr.RowState == DataRowState.Deleted)
-                        {
-                            DeleteEntity(EntityName, dr);
-                        }
-                    }
-                }
 
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Beep", $"Error in Insert {EntityName}  - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return DMEEditor.ErrorObject;
-        }
-        public object RunQuery(string qrystr)
+        public double GetScalar(string query)
         {
             throw new NotImplementedException();
         }
-        public EntityStructure GetEntityStructure(string EntityName, bool refresh = false)
+
+        public Task<double> GetScalarAsync(string query)
         {
-            EntityStructure retval = null;
-
-            if (GetFileState() == ConnectionState.Open)
-            {
-                if (Entities != null)
-                {
-                    if (Entities.Count == 0)
-                    {
-                        Getfields();
-
-                    }
-                }
-
-                retval = Entities.Where(x => string.Equals(x.OriginalEntityName, EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                if (retval == null || refresh)
-                {
-                    IsFileRead = false;
-                    Getfields();
-                    if (Entities.Count >= 0)
-                    {
-                        retval = Entities[0];
-                    }
-                  
-                   
-                }
-               
-                DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
-            }
-            return retval;
+            throw new NotImplementedException();
         }
-        public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
+
+
+
+
+        public ConnectionState Openconnection()
         {
-            EntityStructure retval = null;
-
-            if (GetFileState() == ConnectionState.Open)
+            // Check if the file exists
+            if (!File.Exists(FileName))
             {
-                if (Entities != null)
-                {
-                    if (Entities.Count == 0)
-                    {
-                        Getfields();
-                    }
-                }
-                retval = Entities.Where(x => string.Equals(x.OriginalEntityName, fnd.EntityName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                if (retval == null || refresh)
-                {
-                    GetEntityStructure(fnd.EntityName, true);
-                }
-              
-                DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = DatasourceName, Entities = Entities });
+                // If the file doesn't exist, you might want to create it or return an error.
+                // Here, we'll choose to create an empty JSON file.
+                File.WriteAllText(FileName, "{}");
             }
-            return retval;
+
+            try
+            {
+                // Attempt to read and parse the file to verify it contains valid JSON.
+                ReadJson(FileName);
+                ConnectionStatus = ConnectionState.Open;
+                // If this point is reached without an exception, the file is considered 'open' and accessible.
+                return ConnectionState.Open;
+            }
+            catch (JsonReaderException)
+            {
+                ConnectionStatus = ConnectionState.Broken;
+                // The file content is not a valid JSON.
+                return ConnectionState.Broken;
+            }
+            catch (Exception)
+            {
+                ConnectionStatus = ConnectionState.Closed;
+                // Some other error occurred (e.g., file access permissions).
+                return ConnectionState.Closed;
+            }
         }
+
+        //var titles = RunQuery("$.books[*].title");
+        //var booksAfter1900 = RunQuery("$.books[?(@.year > 1900)]");
+        //var authorOf1984 = RunQuery("$.books[?(@.title == '1984')].author");
+
+        public object RunQuery(string qrystr)
+        {
+            // Ensure the JSON is loaded.
+            JObject rootJson = GetRootJsonObject();
+            if (rootJson == null)
+            {
+                // Handle the error appropriately.
+                return new List<object>();
+            }
+
+            try
+            {
+                // Use JSONPath to query the JSON structure.
+                var queryResult = rootJson.SelectTokens(qrystr);
+                List<object> resultList = new List<object>();
+                EntityStructure entityStructure = Entities[GetEntityIdx(JsonExtensions.ExtractEntityNameFromQuery(qrystr))];
+                foreach (var result in queryResult)
+                {
+                    if (result is JObject)
+                    {
+                        dynamic record = new ExpandoObject();
+                        var recordDictionary = (IDictionary<string, object>)record;
+                        foreach (var property in ((JObject)result).Properties())
+                        {
+                            recordDictionary[property.Name] = property.Value.ToObject<object>();
+                            if(entityStructure != null)
+                            {
+                                // Update the EntityStructure with any missing fields from the query result
+                                UpdateEntityStructureWithMissingFields((JObject)result,entityStructure );
+                            }
+                            
+
+                        }
+                        resultList.Add(record);
+                    }
+                    //else if (result is JValue)
+                    //{
+                    //    resultList.Add(((JValue)result).Value);
+                    //}
+                    //else
+                    //{
+                    //    // For JArrays or other types, you can decide how to handle them.
+                    //    // For simplicity, add them directly to the result list.
+                    //    resultList.Add(result.ToObject<object>());
+                    //}
+                }
+
+                return resultList;
+            }
+            catch (Exception ex)
+            {
+                // Handle or log the exception as needed.
+                Console.WriteLine($"An error occurred while running the query: {ex.Message}");
+                return new List<object>();
+            }
+        }
+
         public IErrorsInfo RunScript(ETLScriptDet dDLScripts)
         {
             throw new NotImplementedException();
         }
-        public IErrorsInfo CreateEntities(List<EntityStructure> entities)
+
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
-            try
+            // Find the EntityStructure with the given name.
+            var entityStructure = Entities.FirstOrDefault(e => e.EntityName == EntityName);
+            if (entityStructure == null)
             {
-                DMEEditor.ErrorObject.Ex = null;
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                DMEEditor.ErrorObject.Message = "";
-                foreach (var item in entities)
-                {
-                    CreateEntityAs(item);
-                }
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = ex.Message;
-            }
-            return DMEEditor.ErrorObject;
-
-        }
-        public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
-        {
-            throw new NotImplementedException();
-        }
-        public virtual IErrorsInfo BeginTransaction(PassedArgs args)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
-              
-            }
-            catch (Exception ex)
-            {
-
-                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return DMEEditor.ErrorObject;
-        }
-        public virtual IErrorsInfo EndTransaction(PassedArgs args)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
-
-            }
-            catch (Exception ex)
-            {
-
-                DMEEditor.AddLogMessage("Beep", $"Error in end Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return DMEEditor.ErrorObject;
-        }
-        public virtual IErrorsInfo Commit(PassedArgs args)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
-                // Serialize the updated list of  objects back into a JSON array string
-                SaveJsonFile();
-
-            }
-            catch (Exception ex)
-            {
-
-                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return DMEEditor.ErrorObject;
-        }
-        #region "Insert or Update or Delete Objects"
-        EntityStructure DataStruct = null;
-        IDbCommand command = null;
-        Type enttype = null;
-        bool ObjectsCreated = false;
-        string lastentityname = null;
-        #endregion
-        private void SetObjects(string Entityname)
-        {
-            if (!ObjectsCreated || Entityname != lastentityname)
-            {
-                DataStruct = GetEntityStructure(Entityname, true);
-               // command = RDBMSConnection.DbConn.CreateCommand();
-                enttype = GetEntityType(Entityname);
-                ObjectsCreated = true;
-                lastentityname = Entityname;
-            }
-        }
-        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
-        {
-            try
-            {
-               
-                DMEEditor.ErrorObject.Ex = null;
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                DMEEditor.ErrorObject.Message = "";
-                SetObjects(EntityName);
-                if (DataStruct.PrimaryKeys.Count > 0)
-                {
-                    DataTable dataTable = Dataset.Tables[EntityName];
-                    DataRow dr =DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, UploadDataRow, DataStruct);
-                    if (dataTable != null)
-                    {
-                        // Create an array to hold the values of the primary keys from the row to update
-                        object[] keyValues = new object[DataStruct.PrimaryKeys.Count];
-
-                        for (int i = 0; i < DataStruct.PrimaryKeys.Count; i++)
-                        {
-                            keyValues[i] = dr[DataStruct.PrimaryKeys[i].fieldname];
-                        }
-
-                        // Find the row in the DataTable with the same primary keys
-                        DataRow rowToUpdate = dataTable.Rows.Find(keyValues);
-
-                        if (rowToUpdate != null)
-                        {
-                            // Update the DataRow in the DataTable with new DataRow
-                            rowToUpdate.ItemArray = dr.ItemArray;
-                        }
-                    }
-                }
-              
-
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Beep", $"Error in Update {EntityName} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return DMEEditor.ErrorObject;
-        }
-        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
-        {
-            try
-            {
-                DMEEditor.ErrorObject.Ex = null;
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                DMEEditor.ErrorObject.Message = "";
-                SetObjects(EntityName);
-                DataTable dataTable = Dataset.Tables[EntityName];
-                DataRow dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, DeletedDataRow, DataStruct);
-                if (dataTable != null)
-                {
-                    if (DataStruct.PrimaryKeys.Count > 0)
-                    {
-                        
-                        if (dataTable != null)
-                        {
-                            // Create an array to hold the values of the primary keys from the row to delete
-                            object[] keyValues = new object[DataStruct.PrimaryKeys.Count];
-
-                            for (int i = 0; i < DataStruct.PrimaryKeys.Count; i++)
-                            {
-                                keyValues[i] = dr[DataStruct.PrimaryKeys[i].fieldname];
-                            }
-
-                            // Find the row in the DataTable with the same primary keys
-                            DataRow rowToDelete = dataTable.Rows.Find(keyValues);
-
-                            if (rowToDelete != null)
-                            {
-                                // Delete the DataRow from the DataTable
-                                rowToDelete.Delete();
-                                // Commit the change to the DataTable
-                                dataTable.AcceptChanges();
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Beep", $"Error in Delete {EntityName}  - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return DMEEditor.ErrorObject;
-        }
-        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
-        {
-            try
-            {
-                DMEEditor.ErrorObject.Ex = null;
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                DMEEditor.ErrorObject.Message = "";
-                SetObjects(EntityName);
-                if (DataStruct.PrimaryKeys.Count > 0)
-                {
-                    DataTable dataTable = Dataset.Tables[EntityName];
-                    DataRow dr = DMEEditor.Utilfunction.GetDataRowFromobject(EntityName, enttype, InsertedData, DataStruct);
-                    if (dataTable != null)
-                    {
-                        // Create an array to hold the values of the primary keys from the row to insert
-                        object[] keyValues = new object[DataStruct.PrimaryKeys.Count];
-
-                        for (int i = 0; i < DataStruct.PrimaryKeys.Count; i++)
-                        {
-                            keyValues[i] = dr[DataStruct.PrimaryKeys[i].fieldname];
-                        }
-
-                        // Find the row in the DataTable with the same primary keys
-                        DataRow existingRow = dataTable.Rows.Find(keyValues);
-
-                        if (existingRow == null)
-                        {
-                            // Insert the DataRow into the DataTable
-                            DataRow newRow = dataTable.NewRow();
-                            newRow.ItemArray = dr.ItemArray;
-                            dataTable.Rows.Add(newRow);
-                        }
-                    }
-                }
-
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Beep", $"Error in Insert {EntityName}  - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return DMEEditor.ErrorObject;
-
-        }
-        public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
-        {
-            return (Task<object>)GetEntity(EntityName, Filter);
-        }
-        #endregion
-        #region "Json Reading MEthods"
-        public DataTable GenerateDataTable(JArray jArray)
-        {
-            var dataTable = new DataTable();
-
-            if (jArray.Count > 0)
-            {
-                // Use the first object to add columns
-                JObject firstObject = (JObject)jArray[0];
-                foreach (var property in firstObject.Properties())
-                {
-                    Type columnType = property.Name.ToLower() == "id" ? typeof(int) : typeof(string);
-                    dataTable.Columns.Add(property.Name, columnType);
-                }
-
-                // Populate rows
-                foreach (JObject item in jArray)
-                {
-                    var row = dataTable.NewRow();
-
-                    foreach (var property in item.Properties())
-                    {
-                        if (property.Name.ToLower() == "id")
-                        {
-                            row[property.Name] = property.Value.ToObject<int>();
-                        }
-                        else
-                        {
-                            row[property.Name] = property.Value.ToObject<string>();
-                        }
-                    }
-
-                    dataTable.Rows.Add(row);
-                }
+                return new ErrorsInfo { Message = "Entity not found.", Flag = Errors.Failed };
             }
 
-            return dataTable;
-        }
-    
-
-        public DataSet ParseJsonFile(string filePath)
-        {
-            string jsonData = File.ReadAllText(filePath);
-            Dataset = new DataSet();
-            Entities = new List<EntityStructure>();
-            string tableName = Path.GetFileNameWithoutExtension(filePath); // Use the file name as table name when dealing with a single JArray
-
-            var token = JToken.Parse(jsonData);
-            if (token is JObject jsonObject)
+            // Retrieve the corresponding part of the JSON.
+            JToken entityToken = _rootJsonObject.SelectToken(entityStructure.EntityPath);
+            if (entityToken == null || !(entityToken is JArray))
             {
-                foreach (var property in jsonObject.Properties())
-                {
-                    if (property.Value is JArray jsonArray)
-                    {
-                        var dataTable = LoadJsonToDataTable(jsonArray);
-                        dataTable.TableName = property.Name;
-                        Dataset.Tables.Add(dataTable);
-
-                        // Create an EntityStructure for this DataTable
-                        var entityStructure = new EntityStructure(property.Name);
-                        foreach (DataColumn column in dataTable.Columns)
-                        {
-                            var entityField = new EntityField
-                            {
-                                fieldname = column.ColumnName,
-                                Originalfieldname = column.ColumnName,
-                                fieldtype = column.DataType.ToString()
-                            };
-                            entityStructure.Fields.Add(entityField);
-                        }
-                        Entities.Add(entityStructure);
-                    }
-                }
-            }
-            else if (token is JArray jArray) // Handle a single JArray
-            {
-                var dataTable = LoadJsonToDataTable(jArray);
-                dataTable.TableName = tableName;
-                Dataset.Tables.Add(dataTable);
-
-                // Create an EntityStructure for this DataTable
-                var entityStructure = new EntityStructure(tableName);
-                foreach (DataColumn column in dataTable.Columns)
-                {
-                    var entityField = new EntityField
-                    {
-                        fieldname = column.ColumnName,
-                        Originalfieldname = column.ColumnName,
-                        fieldtype = column.DataType.ToString()
-                    };
-                    entityStructure.Fields.Add(entityField);
-                }
-                Entities.Add(entityStructure);
-            }
-            EntitiesNames = new List<string>();
-            EntitiesNames.Clear();
-            EntitiesNames.AddRange(Entities.Select(p => p.EntityName).ToList());
-            return Dataset;
-        }
-        public List<dynamic> ParseJsonFileAsdynamic(string filePath)
-        {
-            string jsonData = File.ReadAllText(filePath);
-            var objectsList = JsonConvert.DeserializeObject<List<dynamic>>(jsonData);
-
-            return objectsList;
-        }
-        public List<EntityStructure> ParseJsonFileBk(string filePath)
-    {
-        var entityStructures = new List<EntityStructure>();
-            EntityStructure entityStructure=null;
-            jsonData = File.ReadAllText(filePath);
-            string filename=Path.GetFileNameWithoutExtension(filePath);
-            var token = JToken.Parse(jsonData);
-            Records = new List<object>();
-            if (token is JObject jsonObject)
-            {
-                // handle JSON Object
-                if (jsonObject.HasValues)
-                {
-                    if (jsonObject.Children().Count() == 1 && jsonObject.First is JArray jsonArray)
-                    {
-                        // Single list case
-                         entityStructure = new EntityStructure(DatasourceName);
-                        foreach (var jObject in jsonArray.Children<JObject>())
-                        {
-                            var entityField = new EntityField();
-
-                            foreach (var fieldProperty in jObject.Properties())
-                            {
-                                var fieldName = fieldProperty.Name;
-                                var fieldValue = fieldProperty.Value.ToString();
-
-                                // Update the EntityField properties dynamically based on the field properties in JSON
-                                var propertyInfo = entityField.GetType().GetProperty(fieldName);
-                                if (propertyInfo != null)
-                                {
-                                    propertyInfo.SetValue(entityField, Convert.ChangeType(fieldValue, propertyInfo.PropertyType));
-                                }
-                            }
-
-                            entityStructure.Fields.Add(entityField);
-                        }
-
-                        entityStructures.Add(entityStructure);
-                        EntitiesNames = new List<string>();
-                        EntitiesNames.Clear();
-                        EntitiesNames.AddRange(entityStructures.Select(p => p.EntityName).ToList());
-                    }
-                    else
-                    {
-                        // Multiple lists case
-                        foreach (var property in jsonObject.Properties())
-                        {
-                            if (property.Value is JArray jsonArray2)
-                            {
-                                 entityStructure = new EntityStructure(property.Name);
-                                entityStructure.DatasourceEntityName=property.Name;
-                                entityStructure.OriginalEntityName=property.Name;
-
-                                foreach (var jObject in jsonArray2.Children<JObject>())
-                                {
-                                    var entityField = new EntityField();
-
-                                    foreach (var fieldProperty in jObject.Properties())
-                                    {
-                                        var fieldName = fieldProperty.Name;
-                                        var fieldValue = fieldProperty.Value.ToString();
-
-                                        // Update the EntityField properties dynamically based on the field properties in JSON
-                                        var propertyInfo = entityField.GetType().GetProperty(fieldName);
-                                        if (propertyInfo != null)
-                                        {
-                                            propertyInfo.SetValue(entityField, Convert.ChangeType(fieldValue, propertyInfo.PropertyType));
-                                        }
-                                    }
-
-                                    entityStructure.Fields.Add(entityField);
-                                }
-
-                                entityStructures.Add(entityStructure);
-                            }
-                        }
-                        Entities.Clear();
-                        Entities = entityStructures;
-                        EntitiesNames.Clear();
-                        EntitiesNames.AddRange(entityStructures.Select(p=>p.EntityName).ToList());
-
-                    }
-                }
-            }
-            else if (token is JArray jArray)
-            {
-                if (jArray.Count > 0)
-                {
-                    entityStructure = new EntityStructure(DatasourceName);
-                    entityStructure.DatasourceEntityName = DatasourceName;
-                    entityStructure.OriginalEntityName = DatasourceName;
-                    entityStructure.Fields = new List<EntityField>();
-
-                    // Get the first record to infer the schema.
-                    var firstRecord = jArray[0] as JObject;
-
-                    foreach (var property in firstRecord.Properties())
-                    {
-                        var entityField = new EntityField
-                        {
-                            fieldname = property.Name,
-                            Originalfieldname = property.Name,
-                            fieldtype = MapJsonTypeToDotNetType(property.Value.Type)
-                        };
-                        entityStructure.Fields.Add(entityField);
-                    }
-                  
-                }
-                Entities.Clear();
-                entityStructures.Add(entityStructure);
-                Entities.Add(entityStructure);
-                EntitiesNames = new List<string>();
-                EntitiesNames.Clear();
-                EntitiesNames.AddRange(entityStructures.Select(p => p.EntityName).ToList());
-            }
-            // Check if the JSON object contains multiple lists or a single list
-         
-
-        return entityStructures;
-    }
-      
-        public void DataSetToJson( string filePath)
-        {
-            var tablesDictionary = new Dictionary<string, JArray>();
-            foreach (DataTable table in Dataset.Tables)
-            {
-                string json = JsonConvert.SerializeObject(table);
-                tablesDictionary.Add(table.TableName, JArray.Parse(json));
+                return new ErrorsInfo { Message = "Target entity is not an array or collection.", Flag = Errors.Failed };
             }
 
-            string outputJson = JsonConvert.SerializeObject(tablesDictionary, Formatting.Indented);
-            File.WriteAllText(filePath, outputJson);
-        }
-        private DataTable ReadEntityFromDataSet(int entityId) {
-            return Dataset.Tables[entityId];
-        }
-        private List<dynamic> ReadEntityDataFromJsonFile( int entityIndex)
-        {
-            string jsonData = File.ReadAllText(FileName);
-            var token = JToken.Parse(jsonData);
-            var entityData = new List<dynamic>();
-
-            // If the JSON data is an object potentially containing multiple lists
-            if (token is JObject jsonObject)
-            {
-                // Get the property at the specified index
-                var property = jsonObject.Properties().ElementAtOrDefault(entityIndex);
-                if (property != null && property.Value is JArray entityArray)
-                {
-                    foreach (var jObject in entityArray.Children<JObject>())
-                    {
-                        dynamic record = new ExpandoObject();
-                        var recordDictionary = (IDictionary<string, object>)record;
-
-                        // (Your existing code to fill recordDictionary goes here.)
-
-                        entityData.Add(record);
-                    }
-                }
-            }
-            // If the JSON data is a single list
-            else if (token is JArray jArray && entityIndex == 0)
-            {
-                // Process the JArray directly if the entityIndex is 0
-                foreach (var jObject in jArray.Children<JObject>())
-                {
-                    dynamic record = new ExpandoObject();
-                    var recordDictionary = (IDictionary<string, object>)record;
-
-                    // (Your existing code to fill recordDictionary goes here.)
-
-                    entityData.Add(record);
-                }
-            }
-
-            return entityData;
-        }
-        public TypeCode ToConvert(Type dest)
-        {
-            TypeCode retval = TypeCode.String;
-            switch (dest.ToString())
-            {
-                case "System.String":
-                    retval = TypeCode.String;
-                    break;
-                case "System.Decimal":
-                    retval = TypeCode.Decimal;
-                    break;
-                case "System.DateTime":
-                    retval = TypeCode.DateTime;
-                    break;
-                case "System.Char":
-                    retval = TypeCode.Char;
-                    break;
-                case "System.Boolean":
-                    retval = TypeCode.Boolean;
-                    break;
-                case "System.DBNull":
-                    retval = TypeCode.DBNull;
-                    break;
-                case "System.Byte":
-                    retval = TypeCode.Byte;
-                    break;
-                case "System.Int16":
-                    retval = TypeCode.Int16;
-                    break;
-                case "System.Double":
-                    retval = TypeCode.Double;
-                    break;
-                case "System.Int32":
-                    retval = TypeCode.Int32;
-                    break;
-                case "System.Int64":
-                    retval = TypeCode.Int64;
-                    break;
-                case "System.Single":
-                    retval = TypeCode.Single;
-                    break;
-                case "System.Object":
-                    retval = TypeCode.String;
-
-                    break;
-
-
-            }
-            return retval;
-        }
-        private void SyncFieldTypes(ref DataTable dt, string EntityName)
-        {
-            EntityStructure ent = GetEntityStructure(EntityName);
-            DataTable newdt = new DataTable(EntityName);
-            if (ent != null)
-            {
-                foreach (var item in ent.Fields)
-                {
-                    DataColumn cl = new DataColumn(item.fieldname, Type.GetType(item.fieldtype));
-                    newdt.Columns.Add(cl);
-                    //dt.Columns[item.fieldname].DataType = Type.GetType(item.fieldtype);
-                }
-                foreach (DataRow dr in dt.Rows)
-                {
-                    try
-                    {
-                        DataRow r = newdt.NewRow();
-                        foreach (var item in ent.Fields)
-                        {
-                            if (dr[item.fieldname] != DBNull.Value)
-                            {
-                                string st = dr[item.fieldname].ToString().Trim();
-                                if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st))
-                                {
-                                    r[item.fieldname] = Convert.ChangeType(dr[item.fieldname], ToConvert(Type.GetType(item.fieldtype)));
-                                }
-
-                            }
-
-
-                        }
-                        try
-                        {
-                            newdt.Rows.Add(r);
-                        }
-                        catch (Exception aa)
-                        {
-
-
-                        }
-
-                    }
-                    catch (Exception ex)
-                    {
-
-                        // throw;
-                    }
-
-                }
-            }
-            dt = newdt;
-        }
-        public ConnectionState OpenConnection()
-        {
-            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.ConnectionName.Equals(Dataconnection.ConnectionProp.ConnectionName,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-           
-
-            if (GetFileState()== ConnectionState.Open)
-            {
-                Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(Dataconnection.ConnectionProp.ConnectionName).Entities;
-                ConnectionStatus = ConnectionState.Open;
-
-                Entities = GetEntityStructures(false);
-
-
-                return ConnectionState.Open;
-
-
-            }
-            else
-            {
-                ConnectionStatus = ConnectionState.Broken;
-                return ConnectionState.Broken;
-            }
-        }
-        public ConnectionState GetFileState()
-        {
-         //   string filen = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.ConnectionName);
-            if (File.Exists(FileName))
-            {
-                ConnectionStatus = ConnectionState.Open;
-
-
-                return ConnectionState.Open;
-
-
-            }
-            else
-            {
-                ConnectionStatus = ConnectionState.Broken;
-                return ConnectionState.Broken;
-            }
-        }
-        public IEnumerable<string> GetEntities()
-        {
-            List<string> entlist = new List<string>();
-            if (GetFileState() == ConnectionState.Open)
-            {
-                if (!IsFileRead)
-                {
-                    LoadJsonFile();
-                }
-
-                if (Entities.Count() > 0)
-                {
-
-                    foreach (EntityStructure item in Entities)
-                    {
-                        entlist.Add(item.EntityName);
-                    }
-                    return entlist;
-                }
-            }
-          
-           
-            return entlist;
-        }
-        public IErrorsInfo LoadJsonFile()
-        {
-            try
-            {
-                DMEEditor.ErrorObject.Ex = null;
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                DMEEditor.ErrorObject.Message = "";
-                if(GetFileState()  == ConnectionState.Open)
-                {
-                    ParseJsonFile(FileName);
-                    // InferSchemaFromRecords(FileName);
-                    IsFileRead = true;
-                }
-               
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = ex.Message;
-            }
-            return DMEEditor.ErrorObject;
-        }
-        public IErrorsInfo SaveJsonFile()
-        {
-            try
-            {
-                DMEEditor.ErrorObject.Ex = null;
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                DMEEditor.ErrorObject.Message = "";
-                DataSetToJson(FileName);
-                //DMEEditor.ConfigEditor.JsonLoader.Serialize(FileName,Records);
-                // Write the updated JSON array string back to the file
-                //   File.WriteAllText(FileName, updatedJson);
-
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.ErrorObject.Ex = ex;
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.ErrorObject.Message = ex.Message;
-            }
-            return DMEEditor.ErrorObject;
-        }
-        public List<EntityStructure> GetEntityStructures(bool refresh = false)
-        {
-            List<EntityStructure> retval = new List<EntityStructure>();
-
-
-           // string filen = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
-            if (GetFileState()== ConnectionState.Open)
-            {
-
-                if ((Entities == null) || (Entities.Count == 0) || refresh)
-                {
-                   // Entities = new List<EntityStructure>();
-                    Getfields();
-                    DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = Dataconnection.ConnectionProp.ConnectionName, Entities = Entities });
-                    // Dataconnection.ConnectionProp.Entities = Entities;
-                    DMEEditor.ConfigEditor.SaveDataconnectionsValues();
-
-                }
-                else
-                {
-                    if (refresh)
-                    {
-                        IsFileRead = false;
-                        Entities = new List<EntityStructure>();
-                        Getfields();
-                        DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities { datasourcename = Dataconnection.ConnectionProp.ConnectionName, Entities = Entities });
-                        //  Dataconnection.ConnectionProp.Entities = Entities;
-                        DMEEditor.ConfigEditor.SaveDataconnectionsValues();
-
-                    }
-                    else
-                    {
-                        Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(Dataconnection.ConnectionProp.ConnectionName).Entities;
-
-                    }
-
-                }
-
-
-            }
-            else
-                retval = Entities;
-
-            return retval;
-
-        }
-        private void Getfields()
-        {
-            //ds = new DataSet(); ;
-            //Entities = new List<EntityStructure>();
-
-            if (File.Exists(FileName) == true)
+            JArray targetArray = (JArray)entityToken;
+            if (UploadData is JArray newDataArray)
             {
                 try
                 {
-                    if(!IsFileRead)
-                    {
-                        LoadJsonFile();
-                    }
-                  
-                    if (DMEEditor.ErrorObject.Flag == Errors.Failed)
-                    {
-                        return;
-                    }
-                    
+                    // Example: Replace the entire array
+                    targetArray.Replace(newDataArray);
 
+                    // Optionally, report progress
+                    progress?.Report(new PassedArgs { Messege = "Update completed", ParameterInt1 = 100 });
 
+                    return new ErrorsInfo { Message = "Entities updated successfully.", Flag = Errors.Ok };
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
-
+                    return new ErrorsInfo { Message = $"Failed to update entities: {ex.Message}", Flag = Errors.Failed };
                 }
             }
             else
             {
-                DMEEditor.AddLogMessage("Error", "Json File Not Found " + Dataconnection.ConnectionProp.FileName, DateTime.Now, -1, "", Errors.Failed);
-
+                return new ErrorsInfo { Message = "Invalid data for update.", Flag = Errors.Failed };
+            }
+        }
+        public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
+        {
+            // Find the EntityStructure with the given name.
+            var entityStructure = Entities.FirstOrDefault(e => e.EntityName == EntityName);
+            if (entityStructure == null)
+            {
+                // Return an error if the entity does not exist.
+                return new ErrorsInfo { Message = "Entity not found.", Flag = Errors.Failed };
             }
 
+            // Retrieve the corresponding part of the JSON.
+            JToken entityToken = _rootJsonObject.SelectToken(entityStructure.EntityPath);
+            if (entityToken == null)
+            {
+                // Return an error if the entity path does not exist.
+                return new ErrorsInfo { Message = "Entity path not found.", Flag = Errors.Failed };
+            }
 
-        }
-        public IErrorsInfo InferSchemaFromRecords(string jsonFilePath)
-        {
-            Records = new List<object>();
-            jsonData = File.ReadAllText(jsonFilePath);
-            jArray = JArray.Parse(jsonData);
-            DMEEditor.ErrorObject.Flag = Errors.Ok;
-            EntityStructure entityStructure = new EntityStructure();
             try
             {
-                if (jArray.Count > 0)
+                // Update the entity with the new data.
+                if (entityToken.Type == JTokenType.Object && UploadDataRow is JObject newData)
                 {
-                    entityStructure.Fields = new List<EntityField>();
-
-                    // Get the first record to infer the schema.
-                    var firstRecord = jArray[0] as JObject;
-
-                    foreach (var property in firstRecord.Properties())
+                    // For an object, replace each existing property with the new data.
+                    foreach (var prop in newData.Properties())
                     {
-                        var entityField = new EntityField
-                        {
-                            fieldname = property.Name,
-                            Originalfieldname = property.Name,
-                            fieldtype = MapJsonTypeToDotNetType(property.Value.Type)
-                        };
-                        entityStructure.Fields.Add(entityField);
-                    }
-                    foreach (var jObject in jArray.Children<JObject>())
-                    {
-                        dynamic record = new ExpandoObject();
-                        var recordDictionary = (IDictionary<string, object>)record;
-
-                        foreach (var entityField in entityStructure.Fields)
-                        {
-                            try
-                            {
-                                var value = ConvertJTokenToType(jObject[entityField.fieldname], entityField.fieldtype);
-                                recordDictionary[entityField.fieldname] = value;
-                            }
-                            catch (Exception ex)
-                            {
-                                DMEEditor.AddLogMessage("Beep", $"JsonDataSource Error in Mapping Fields {entityField.fieldname} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-                            }
-                          
-                        }
-
-                        Records.Add(record);
+                        ((JObject)entityToken)[prop.Name] = prop.Value;
                     }
                 }
-                Entities.Clear();
-                Entities.Add(entityStructure);
-                EntitiesNames.Clear();
-                EntitiesNames.Add(Dataconnection.ConnectionProp.FileName);
+                else if (entityToken.Type == JTokenType.Array && UploadDataRow is JArray newArrayData)
+                {
+                    // For an array, replace the entire array.
+                    ((JArray)entityToken).Replace(newArrayData);
+                }
+                else
+                {
+                    // Return an error if the data types do not match or are not supported.
+                    return new ErrorsInfo { Message = "Incompatible data type for update.", Flag = Errors.Failed };
+                }
+
+                return new ErrorsInfo { Message = "Entity updated successfully.", Flag = Errors.Ok };
             }
             catch (Exception ex)
             {
-                DMEEditor.ErrorObject.Flag = Errors.Failed;
-                DMEEditor.AddLogMessage("Error", $"Error Loadin Json File {ex.Message} - {Dataconnection.ConnectionProp.FileName}", DateTime.Now, -1, "", Errors.Failed);
+                // Return an error if the update operation fails.
+                return new ErrorsInfo { Message = $"Failed to update entity: {ex.Message}", Flag = Errors.Failed };
             }
-
-
-
-
-            return DMEEditor.ErrorObject;
         }
-        public object ConvertJTokenToType(JToken token, string type)
+        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
-            // Adjust this conversion according to your needs and possible types.
-            if(token == null)
+            // Find the EntityStructure with the given name.
+            var entityStructure = Entities.FirstOrDefault(e => e.EntityName == EntityName);
+            if (entityStructure == null)
             {
-                return string.Empty;
+                // Return an error if the entity does not exist.
+                return new ErrorsInfo { Message = "Entity not found.", Flag = Errors.Failed };
             }
-            switch (type)
+
+            // Retrieve the corresponding part of the JSON.
+            JToken entityToken = _rootJsonObject.SelectToken(entityStructure.EntityPath);
+            if (entityToken == null || !(entityToken is JArray))
             {
-                case "System.String":
-                    return token.ToString();
-                case "System.Int32":
-                    return token.ToObject<int>();
-                case "System.Int64":
-                    return token.ToObject<long>();
-                case "System.Decimal":
-                    return token.ToObject<decimal>();
-                case "System.Double":
-                    return token.ToObject<double>();
-                case "System.Boolean":
-                    return token.ToObject<bool>();
-                case "System.DateTime":
-                    return token.ToObject<DateTime>();
-                case "System.Guid":
-                    return token.ToObject<Guid>();
-                case "System.Collections.Generic.List`1[System.String]":
-                    return token.ToObject<List<string>>();
-                case "System.Collections.Generic.List`1[System.Int32]":
-                    return token.ToObject<List<int>>();
-                case "System.Collections.Generic.Dictionary`2[System.String,System.String]":
-                    return token.ToObject<Dictionary<string, string>>();
-                case "System.Object":
-                    return token.ToObject<object>();
-                case "System.Array":
-                     return token.ToString();  //token.ToObject<List<object>>();
-                default:
-                    throw new ArgumentException($"Invalid type: {type}");
+                // Return an error if the path does not point to an array.
+                return new ErrorsInfo { Message = "Target entity is not an array.", Flag = Errors.Failed };
+            }
+
+            JArray entityArray = (JArray)entityToken;
+
+            try
+            {
+                // Insert the data into the array.
+                entityArray.Add(JToken.FromObject(InsertedData));
+                return new ErrorsInfo { Message = "Data inserted successfully.", Flag = Errors.Ok };
+            }
+            catch (Exception ex)
+            {
+                // Return an error if the insertion fails.
+                return new ErrorsInfo { Message = $"Failed to insert data: {ex.Message}", Flag = Errors.Failed };
             }
         }
-        public List<dynamic> LoadJsonData(string jsonFilePath, EntityStructure entityStructure)
-        {
-            var jsonData = File.ReadAllText(jsonFilePath);
-            var jArray = JArray.Parse(jsonData);
-
-            var records = new List<dynamic>();
-
-            foreach (var jObject in jArray.Cast<JObject>())
-            {
-                dynamic record = new ExpandoObject();
-                var recordDictionary = (IDictionary<string, object>)record;
-                foreach (var entityField in entityStructure.Fields)
-                {
-                    // Convert the JToken to the type indicated by EntityField.
-                    var value = ConvertJTokenToType(jObject[entityField.fieldname], entityField.fieldtype);
-                    recordDictionary[entityField.fieldname] = value;
-                }
-                records.Add(record);
-            }
-
-            return records;
-        }
-        public string MapJsonTypeToDotNetType(string jsonType)
-        {
-            switch (jsonType.ToLower())
-            {
-                case "string":
-                    return typeof(string).FullName;
-                case "number":
-                    return typeof(double).FullName; // or Decimal or Float based on your requirement
-                case "integer":
-                    return typeof(int).FullName; // or Int64 based on your requirement
-                case "boolean":
-                    return typeof(bool).FullName;
-                case "object":
-                case "array":
-                    return typeof(string).FullName;
-                case "null":
-                    return typeof(void).FullName;
-                case "datetime":
-                    return typeof(DateTime).FullName;
-                case "guid":
-                    return typeof(Guid).FullName;
-                default:
-                    throw new ArgumentException($"Invalid JSON type: {jsonType}");
-            }
-        }
-        public string MapJsonTypeToDotNetType(JTokenType tokenType)
-        {
-            switch (tokenType)
-            {
-                case JTokenType.String:
-                    return typeof(string).FullName;
-                case JTokenType.Integer:
-                    // Check if it fits into an int, otherwise use long
-                    return typeof(int).FullName;
-                case JTokenType.Float:
-                    return typeof(double).FullName;
-                case JTokenType.Boolean:
-                    return typeof(bool).FullName;
-                case JTokenType.Date:
-                    return typeof(DateTime).FullName;
-                case JTokenType.Guid:
-                    return typeof(Guid).FullName;
-                case JTokenType.Array:
-                case JTokenType.Object:
-                    // Since Array and Object types are being serialized to strings
-                    // they are mapped to string type in .NET
-                    return typeof(string).FullName;
-                case JTokenType.Null:
-                case JTokenType.Undefined:
-                    return typeof(DBNull).FullName;
-                default:
-                    throw new ArgumentException($"Invalid JSON token type: {tokenType}");
-            }
-        }
-
-        #region "Data Table Methods"
-        public DataTable LoadJsonToDataTable(JArray jArray)
-        {
-            DataTable dataTable = new DataTable();
-            EntityStructure entityStructure = new EntityStructure();
-
-            if (jArray.Count > 0)
-            {
-                var firstRecord = (JObject)jArray[0];
-                var fieldNames = firstRecord.Properties().Select(p => p.Name).ToList();
-
-                // Set up the fields in the EntityStructure based on field names
-                entityStructure.Fields = fieldNames.Select(fieldName => new EntityField
-                {
-                    fieldname = fieldName,
-                    fieldtype = "System.Object" // Set the default field type as System.Object
-                }).ToList();
-
-                foreach (var property in firstRecord.Properties())
-                {
-                    var columnName = property.Name;
-                    var columnType = MapJsonTypeToDotNetType(property.Value.Type);
-                    dataTable.Columns.Add(columnName, Type.GetType(columnType));
-                }
-
-                foreach (var jObject in jArray.Children<JObject>())
-                {
-                    var dataRow = dataTable.NewRow();
-
-                    foreach (var property in jObject.Properties())
-                    {
-                        var columnName = property.Name;
-                        object columnValue;
-                        // Check if the column exists in the DataTable
-                        if (!dataTable.Columns.Contains(columnName))
-                        {
-                            // Add the missing column with a default type
-                            dataTable.Columns.Add(columnName, Type.GetType(MapJsonTypeToDotNetType(property.Value.Type)));
-                        }
-                        // If it's an array or object, convert to a JSON string
-                        if (property.Value.Type == JTokenType.Array || property.Value.Type == JTokenType.Object)
-                        {
-                            columnValue = property.Value.ToString();
-                        }
-                        else
-                        {
-                            var columnType = dataTable.Columns[columnName].DataType;
-
-                            if (columnType.IsEnum)
-                            {
-                                // Convert the enum value to the underlying type of the enum
-                                columnValue = Convert.ChangeType(property.Value.ToObject<int>(), Enum.GetUnderlyingType(columnType));
-                            }
-                            else
-                            {
-                                // Convert to the corresponding .NET type
-                                columnValue = property.Value.ToObject(columnType);
-                            }
-                        }
-
-                        // If the column value is null, use DBNull.Value. Otherwise, use the actual value.
-                        dataRow[columnName] = columnValue ?? DBNull.Value;
-                    }
-
-                    dataTable.Rows.Add(dataRow);
-                }
-            }
-
-          
-            return dataTable;
-        }
-
-        public DataTable LoadJsonFileToDataTable(string jsonFilePath)
-        {
-             jsonData = File.ReadAllText(jsonFilePath);
-             jArray = JArray.Parse(jsonData);
-
-
-            DataTable dataTable = new DataTable();
-            EntityStructure entityStructure = new EntityStructure();
-
-            if (jArray.Count > 0)
-            {
-                var firstRecord = (JObject)jArray[0];
-                var fieldNames = firstRecord.Properties().Select(p => p.Name).ToList();
-
-                // Set up the fields in the EntityStructure based on field names
-                entityStructure.Fields = fieldNames.Select(fieldName => new EntityField
-                {
-                    fieldname = fieldName,
-                    fieldtype = "System.Object" // Set the default field type as System.Object
-                }).ToList();
-
-                foreach (var property in firstRecord.Properties())
-                {
-                    var columnName = property.Name;
-                    var columnType = MapJsonTypeToDotNetType(property.Value.Type.ToString());
-                    dataTable.Columns.Add(columnName, Type.GetType(columnType));
-                }
-
-                foreach (var jObject in jArray.Children<JObject>())
-                {
-                    var dataRow = dataTable.NewRow();
-
-                    foreach (var property in jObject.Properties())
-                    {
-                        var columnName = property.Name;
-                        var columnValue = ConvertJTokenToType(property.Value, dataTable.Columns[columnName].DataType.FullName);
-                        dataRow[columnName] = columnValue;
-                    }
-
-                    dataTable.Rows.Add(dataRow);
-                }
-            }
-
-            Entities.Clear();
-            Entities.Add(entityStructure);
-            EntitiesNames.Clear();
-            EntitiesNames.Add(Dataconnection.ConnectionProp.FileName);
-            return dataTable;
-        }
-        public DataTable ConvertListToDataTable(List<dynamic> records)
-        {
-            DataTable dataTable = new DataTable();
-
-            if (records.Count > 0)
-            {
-                var firstRecord = (IDictionary<string, object>)records[0];
-
-                foreach (var propertyName in firstRecord.Keys)
-                {
-                    var propertyValue = firstRecord[propertyName];
-                    var columnType = propertyValue?.GetType() ?? typeof(object);
-                    dataTable.Columns.Add(propertyName, columnType);
-                }
-
-                foreach (var record in records)
-                {
-                    var dataRow = dataTable.NewRow();
-
-                    foreach (var propertyName in ((IDictionary<string, object>)record).Keys)
-                    {
-                        dataRow[propertyName] = ((IDictionary<string, object>)record)[propertyName];
-                    }
-
-                    dataTable.Rows.Add(dataRow);
-                }
-            }
-
-            return dataTable;
-        }
-        public void SaveDataTableToJsonFile(DataTable dataTable, string jsonFilePath)
-        {
-            // Load the original JSON file into a JArray
-            JArray jsonArray;
-            using (StreamReader file = File.OpenText(jsonFilePath))
-            using (JsonTextReader reader = new JsonTextReader(file))
-            {
-                jsonArray = JArray.Load(reader);
-            }
-
-            // Iterate over the rows of the DataTable
-            for (int rowIndex = 0; rowIndex < dataTable.Rows.Count; rowIndex++)
-            {
-                DataRow row = dataTable.Rows[rowIndex];
-
-                // Find the corresponding JObject in the JArray
-                JObject jsonObject = (JObject)jsonArray[rowIndex];
-
-                // Update the properties in the JObject with the values from the DataRow
-                foreach (DataColumn column in dataTable.Columns)
-                {
-                    string columnName = column.ColumnName;
-                    object columnValue = row[column];
-
-                    // Update the property in the JObject
-                    jsonObject[columnName] = JToken.FromObject(columnValue);
-                }
-            }
-
-            // Save the modified JArray back to the JSON file
-            using (StreamWriter file = File.CreateText(jsonFilePath))
-            using (JsonTextWriter writer = new JsonTextWriter(file))
-            {
-                jsonArray.WriteTo(writer);
-            }
-        }
-        #endregion "Data Table Methods"
-
-        //public void CreateClass(int sheetno = 0)
-        //{
-        //    if (GetFileState() == ConnectionState.Open)
-        //    {
-        //        DataTable dataRows = new DataTable();
-
-        //        dataRows = ds.Tables[sheetno];
-
-        //        List<EntityField> flds = GetSheetColumns(ds.Tables[sheetno].TableName);
-        //        string classpath = DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath).FirstOrDefault();
-
-        //        DMEEditor.classCreator.CreateClass(ds.Tables[sheetno].TableName, flds, classpath);
-
-        //    }
-
-        //}
-        //public void CreateClass(string sheetname)
-        //{
-        //    if (GetFileState() == ConnectionState.Open)
-        //    {
-        //        DataTable dataRows = new DataTable();
-
-        //        dataRows = ds.Tables[sheetname];
-
-        //        List<EntityField> flds = GetSheetColumns(ds.Tables[sheetname].TableName);
-        //        string classpath = DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath).FirstOrDefault();
-
-        //        DMEEditor.classCreator.CreateClass(ds.Tables[sheetname].TableName, flds, classpath);
-
-        //    }
-
-        //}
-        //public List<Object> ReadList(int sheetno = 0, bool HeaderExist = true, int fromline = 0, int toline = 100)
-        //{
-        //    if (GetFileState() == ConnectionState.Open)
-        //    {
-        //        DataTable dataRows = new DataTable();
-
-        //        dataRows = ds.Tables[sheetno];
-        //        toline = dataRows.Rows.Count;
-        //        List<EntityField> flds = GetSheetColumns(ds.Tables[sheetno].TableName);
-        //        string classpath = DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass).Select(x => x.FolderPath).FirstOrDefault();
-        //        CreateClass(sheetno);
-        //        Type a = Type.GetType("TheTechIdea.ProjectClasses." + ds.Tables[sheetno].TableName);
-        //        List<Object> retval = new List<object>();
-        //        EntityStructure enttype = GetEntityDataType(sheetno);
-        //        retval = DMEEditor.Utilfunction.GetListByDataTable(dataRows, a, enttype);
-        //        return retval;
-        //    }
-        //    else
-        //    {
-        //        return null;
-        //    }
-
-        //}
-        //public List<Object> ReadList(string sheetname, bool HeaderExist = true, int fromline = 0, int toline = 100)
-        //{
-        //    if (GetFileState() == ConnectionState.Open)
-        //    {
-        //        DataTable dataRows = new DataTable();
-
-        //        dataRows = ds.Tables[sheetname];
-        //        toline = dataRows.Rows.Count;
-        //        List<EntityField> flds = GetSheetColumns(sheetname);
-        //        CreateClass(sheetname);
-        //        Type a = Type.GetType("TheTechIdea.ProjectClasses." + dataRows);
-        //        List<Object> retval = new List<object>();
-        //        EntityStructure enttype = GetEntityDataType(sheetname);
-        //        retval = DMEEditor.Utilfunction.GetListByDataTable(dataRows, a, enttype);
-        //        return retval;
-        //    }
-        //    else
-        //    {
-        //        return null;
-        //    }
-
-        //}
-        #endregion
-        #region "dispose"
-        private bool disposedValue;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects)
-                    Closeconnection();
                     Entities = null;
                     EntitiesNames = null;
-                    Records = null;
-                    Dataset = null;
+                    _rootJsonObject = null;
+                    DataStruct = null;
+                    Dataconnection = null;
+                    ErrorObject = null;
+                    
+
+                    // TODO: dispose managed state (managed objects)
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer
@@ -1804,7 +555,7 @@ namespace TheTechIdea.Beep.Json
         }
 
         // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~RDBSource()
+        // ~JsonDataSource2()
         // {
         //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         //     Dispose(disposing: false);
@@ -1815,6 +566,201 @@ namespace TheTechIdea.Beep.Json
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+        #region "Json File"
+        public void SaveJson(string jsonFilePath)
+        {
+            // Ensure the file path is valid.
+            if (string.IsNullOrWhiteSpace(jsonFilePath))
+            {
+                // Handle the error or log as needed.
+                Console.WriteLine("Invalid file path.");
+                return;
+            }
+
+            // Access the root JSON object.
+            JObject rootJson = GetRootJsonObject();
+            if (rootJson == null)
+            {
+                // Root JSON object not available, can't save the file.
+                Console.WriteLine("Root JSON object is not available.");
+                return;
+            }
+
+            try
+            {
+                // Write the JSON content to the specified file with indentation for readability.
+                File.WriteAllText(jsonFilePath, rootJson.ToString(Formatting.Indented));
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions, such as issues with file write access.
+                Console.WriteLine($"An error occurred while saving the JSON file: {ex.Message}");
+            }
+        }
+
+        public void ReadJson(string jsonFilePath)
+        {
+            // Update the file name only if it's different from the current file or if _rootJsonObject is not initialized.
+            if (FileName != jsonFilePath || _rootJsonObject == null)
+            {
+                FileName = jsonFilePath;
+                InitializeRootJsonObject();
+            }
+
+            // Use the initialized _rootJsonObject for further processing.
+            JToken json = _rootJsonObject;
+
+            // Proceed to work with the json object.
+            if (json.Type == JTokenType.Array)
+            {
+                ParseJsonArray(json as JArray, null, "RootArray", "$");
+            }
+            else if (json.Type == JTokenType.Object)
+            {
+                ParseJsonObject(json as JObject, null, "RootObject", "$");
+            }
+            // If _rootJsonObject is empty, this part will be skipped.
+        }
+
+        private void ParseJsonObject(JObject jObject, EntityStructure parentStructure, string entityName, string currentPath)
+        {
+            if (entityName != null) // Skip creating EntityStructure for root
+            {
+                var currentStructure = CreateEntityStructure(parentStructure, entityName, currentPath);
+                Entities.Add(currentStructure);
+                parentStructure = currentStructure;
+            }
+
+            foreach (var property in jObject.Properties())
+            {
+                if (parentStructure != null)
+                {
+                    var field = CreateEntityField(property);
+                    parentStructure.Fields.Add(field);
+                }
+
+                string propertyPath = $"{currentPath}.{property.Name}";
+
+                if (property.Value is JObject)
+                {
+                    ParseJsonObject(property.Value as JObject, parentStructure, property.Name, propertyPath);
+                }
+                else if (property.Value is JArray)
+                {
+                    ParseJsonArray(property.Value as JArray, parentStructure, property.Name, propertyPath);
+                }
+            }
+        }
+
+        private void ParseJsonArray(JArray jArray, EntityStructure parentStructure, string entityName, string currentPath)
+        {
+            int index = 0;
+            foreach (var item in jArray)
+            {
+                string itemPath = $"{currentPath}[{index}]";
+
+                if (item is JObject)
+                {
+                    // Entity name for nested objects in the array is derived from the index
+                    ParseJsonObject(item as JObject, parentStructure, $"{entityName}_{index}", itemPath);
+                }
+                else if (item is JArray)
+                {
+                    // Entity name for nested arrays in the array is derived from the index
+                    ParseJsonArray(item as JArray, parentStructure, $"{entityName}_{index}", itemPath);
+                }
+                index++;
+            }
+        }
+
+        private EntityStructure CreateEntityStructure(EntityStructure parent, string name, string path)
+        {
+            return new EntityStructure
+            {
+                EntityName = name,
+                ParentId = parent?.Id ?? 0,
+                EntityPath = path,
+                Fields = new List<EntityField>(),
+            };
+        }
+
+        private EntityField CreateEntityField(JProperty property)
+        {
+            return new EntityField
+            {
+                fieldname = property.Name,
+                fieldtype = JsonExtensions.DetermineFieldType(property.Value),
+            };
+        }
+
+
+        private void InitializeRootJsonObject()
+        {
+            // Check if _rootJsonObject is already initialized
+            if (_rootJsonObject != null) return;
+
+            // If the file exists and is not empty, read and parse it.
+            if (File.Exists(FileName) && new FileInfo(FileName).Length > 0)
+            {
+                 jsonContent = File.ReadAllText(FileName);
+                try
+                {
+                    _rootJsonObject = JObject.Parse(jsonContent);
+                }
+                catch (JsonReaderException)
+                {
+                    // If the file content is not valid JSON, initialize an empty JObject.
+                    _rootJsonObject = new JObject();
+                }
+            }
+            else
+            {
+                // If the file does not exist or is empty, initialize an empty JObject.
+                _rootJsonObject = new JObject();
+            }
+        }
+
+
+        private JObject GetRootJsonObject()
+        {
+            return _rootJsonObject;
+        }
+
+        public void UpdateEntityStructureWithMissingFields(JObject record, EntityStructure entityStructure)
+        {
+            // Iterate over each property in the incoming JSON record
+            foreach (var property in record.Properties())
+            {
+                // Check if this property is already represented in the EntityStructure
+                bool fieldExists = entityStructure.Fields.Any(f => f.fieldname == property.Name);
+
+                // If the field doesn't exist in the EntityStructure, add it
+                if (!fieldExists)
+                {
+                    entityStructure.Fields.Add(new EntityField
+                    {
+                        fieldname = property.Name,
+                        // Determining the type can be simplistic (as shown) or more complex based on your needs
+                        fieldtype = property.Value.Type.ToString(),
+                        // Add additional field details as necessary
+                    });
+                }
+            }
+        }
+
+        #endregion
+        #region "Utility"
+        private void SetObjects(string Entityname)
+        {
+            if (!ObjectsCreated || Entityname != lastentityname)
+            {
+                DataStruct = GetEntityStructure(Entityname, true);
+                // command = RDBMSConnection.DbConn.CreateCommand();
+                enttype = GetEntityType(Entityname);
+                ObjectsCreated = true;
+                lastentityname = Entityname;
+            }
         }
         #endregion
     }

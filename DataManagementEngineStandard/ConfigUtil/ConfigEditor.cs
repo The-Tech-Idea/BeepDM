@@ -690,7 +690,22 @@ namespace TheTechIdea.Util
 				DataConnections = new List<ConnectionProperties>();
 				return false;
 			}
-			return DataConnections != null ? DataConnections.Any(x => Path.Combine(x.FilePath, x.FileName).Equals(Path.Combine(cn.FilePath, cn.FileName), StringComparison.InvariantCultureIgnoreCase)) : false;
+			// check if the connection exists based or the file path and file name
+			if(cn != null)
+			{
+				if(cn.Category== DatasourceCategory.FILE)
+				{
+                    string filepath = Path.Combine(cn.FilePath, cn.FileName);
+                    return DataConnections != null ? DataConnections.Any(x => x.Category == DatasourceCategory.FILE && !string.IsNullOrEmpty(x.FilePath) && !string.IsNullOrEmpty(x.FileName) && Path.Combine(x.FilePath, x.FileName).Equals(filepath, StringComparison.InvariantCultureIgnoreCase)) : false;
+                }else
+				{
+					//cnnection is not a file connection
+					return DataConnections != null ? DataConnections.Any(x => x.ConnectionName.Equals(cn.ConnectionName, StringComparison.InvariantCultureIgnoreCase)) : false;
+                     
+                }
+			}
+			return false;
+			
 		}
 		/// <summary>Checks if a data connection with the specified GUID exists.</summary>
 		/// <param name="GuidID">The GUID of the data connection to check.</param>

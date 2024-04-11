@@ -63,7 +63,8 @@ namespace TheTechIdea.Util
     }
     public enum AddinType
     {
-        Form,Control,Class,Page,Link
+        Form,Control,Class,Page,Link,Branch,Menu,Button,Tab,Panel,Grid,Tree,Chart,
+        Report,Graph,Map,Table,View,Entity,Data,DataView
     }
     public enum TransActionType
     {
