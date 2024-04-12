@@ -1133,6 +1133,12 @@
             <param name="filter">A list of filters to apply to the entity.</param>
             <returns>The retrieved entity.</returns>
         </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetEntity(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Int32,System.Int32)">
+            <summary>Retrieves an entity based on the specified entity name and filter.</summary>
+            <param name="EntityName">The name of the entity to retrieve.</param>
+            <param name="filter">A list of filters to apply to the entity.</param>
+            <returns>The retrieved entity.</returns>
+        </member>
         <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.EntityListIndex(System.Int32)">
             <summary>Returns the index of an entity in the entity list.</summary>
             <param name="entityid">The ID of the entity.</param>
@@ -2911,21 +2917,21 @@
             <param name="primaryKey">The name of the primary key column.</param>
             <param name="type">The data type of the primary key column.</param>
             <returns>A SQL query to add a primary key to the specified table in the specified RDBMS.</returns>
-            <exception cref="!:ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateFetchNextSequenceValueQuery(TheTechIdea.Util.DataSourceType,System.String)">
             <summary>Generates a query to fetch the next value from a sequence in a specific database.</summary>
             <param name="rdbms">The type of the database.</param>
             <param name="sequenceName">The name of the sequence.</param>
             <returns>A query string to fetch the next value from the specified sequence in the given database.</returns>
-            <exception cref="!:ArgumentNullException">Thrown when the sequence name is null or empty.</exception>
+            <exception cref="T:System.ArgumentNullException">Thrown when the sequence name is null or empty.</exception>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateFetchLastIdentityQuery(TheTechIdea.Util.DataSourceType,System.String)">
             <summary>Generates a query to fetch the last inserted identity value based on the specified RDBMS.</summary>
             <param name="rdbms">The type of RDBMS.</param>
             <param name="sequenceName">The name of the sequence or generator (optional for some RDBMS).</param>
             <returns>A query string to fetch the last inserted identity value.</returns>
-            <exception cref="!:ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
         </member>
         <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDropPrimaryKeyQuery(TheTechIdea.Util.DataSourceType,System.String,System.String)" -->
         <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDropForeignKeyQuery(TheTechIdea.Util.DataSourceType,System.String,System.String)" -->
@@ -2936,11 +2942,15 @@
             <param name="tableName">The name of the table.</param>
             <param name="constraintName">The name of the foreign key constraint.</param>
             <returns>A query to enable the specified foreign key constraint.</returns>
-            <exception cref="!:ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateQuerySqlRepos">
             <summary>Creates a list of QuerySqlRepo objects.</summary>
             <returns>A list of QuerySqlRepo objects.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetPagingSyntax(TheTechIdea.Util.DataSourceType,System.Int32,System.Int32)">
+            <summary>Gets the SQL syntax for paging results in a database-agnostic way.</summary>
+            
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.TypeHelper.GetInstance(System.Type)">
             <summary>

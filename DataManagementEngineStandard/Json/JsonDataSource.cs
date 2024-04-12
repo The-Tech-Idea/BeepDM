@@ -271,7 +271,53 @@ namespace TheTechIdea.Beep.Json
 
             return resultList;
         }
+        public object GetEntity(string entityName, List<AppFilter> filter, int pageNumber, int pageSize)
+        {
+            var entityStructure = Entities.FirstOrDefault(e => e.EntityName == entityName);
+            if (entityStructure == null)
+            {
+                return new List<object>();  // Or throw an appropriate exception
+            }
 
+            JObject rootJson = GetRootJsonObject();
+            if (rootJson == null)
+            {
+                return new List<object>();  // Or throw an appropriate exception if the root JSON object is not set.
+            }
+
+            JToken token = rootJson.SelectToken(entityStructure.EntityPath);
+            List<object> resultList = new List<object>();
+
+            if (token is JArray arrayToken)
+            {
+                foreach (var item in arrayToken.Children<JObject>())
+                {
+                    dynamic record = new ExpandoObject();
+                    var recordDictionary = (IDictionary<string, object>)record;
+                    foreach (var property in item.Properties())
+                    {
+                        recordDictionary[property.Name] = property.Value.ToObject<object>();
+                    }
+                    // Apply any filters to the record here if necessary
+                    UpdateEntityStructureWithMissingFields(item, entityStructure);
+                    resultList.Add(record);
+                }
+            }
+            else if (token is JObject objectToken)
+            {
+                dynamic record = new ExpandoObject();
+                var recordDictionary = (IDictionary<string, object>)record;
+                foreach (var property in objectToken.Properties())
+                {
+                    recordDictionary[property.Name] = property.Value.ToObject<object>();
+                }
+                UpdateEntityStructureWithMissingFields((JObject)token, entityStructure);
+                // Apply any filters to the record here if necessary
+                resultList.Add(record);
+            }
+
+            return resultList;
+        }
         public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
            return Task.FromResult(GetEntity(EntityName, Filter));

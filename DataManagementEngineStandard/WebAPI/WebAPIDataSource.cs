@@ -196,7 +196,27 @@ namespace TheTechIdea.Beep.WebAPI
             throw new NotImplementedException();
         }
 
-      
+        public virtual object GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
+        {
+            EntityStructure ent = GetEntityStructure(EntityName, false);
+            string str = ent.CustomBuildQuery;
+            if (ent.Filters == null)
+            {
+                ent.Filters = new List<AppFilter>();
+            }
+            foreach (AppFilter item in ent.Filters)
+            {
+                if (string.IsNullOrEmpty(item.FilterValue) || string.IsNullOrWhiteSpace(item.FilterValue))
+                {
+
+                }
+            }
+            foreach (EntityParameters item in ent.Parameters)
+            {
+                str = str.Replace("{" + item.parameterIndex + "}", ent.Filters.Where(u => u.FieldName == item.parameterName).Select(p => p.FilterValue).FirstOrDefault());
+            }
+            throw new NotImplementedException();
+        }
         public virtual  object RunQuery( string qrystr)
         {
 

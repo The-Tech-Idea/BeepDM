@@ -258,6 +258,15 @@ namespace TheTechIdea
         /// <param name="filter">The filters to apply on the entity retrieval.</param>
         /// <returns>The requested entity.</returns>
         object GetEntity(string EntityName, List<AppFilter> filter);
+        /// <summary>
+        /// Retrieves an entity based on the provided name and filters.
+        /// </summary>
+        /// <param name="EntityName">The name of the entity to retrieve.</param>
+        /// <param name="filter">The filters to apply on the entity retrieval.</param>
+        /// <param name="pageNumber">The page number to retrieve.</param>
+        /// <param name="pageSize">The size of the page to retrieve.</param>
+        /// <returns>The requested entity.</returns>
+        object GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize);
 
         /// <summary>
         /// Asynchronously retrieves an entity based on the provided name and filters.

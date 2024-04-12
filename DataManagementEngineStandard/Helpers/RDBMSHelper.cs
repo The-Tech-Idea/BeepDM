@@ -1,4 +1,5 @@
 ﻿
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using TheTechIdea.Util;
@@ -499,5 +500,57 @@ new QuerySqlRepo(DataSourceType.OPC, "READ NODE", Sqlcommandtype.getTable), // C
         // ... (You can add similar entries for MySQL, PostgreSQL, SQLite, and DB2)
     };
         }
+
+        /// <summary>Gets the SQL syntax for paging results in a database-agnostic way.</summary>
+        /// 
+        public static string GetPagingSyntax(DataSourceType dataSourceType, int pageNumber, int pageSize)
+        {
+            int offset = (pageNumber - 1) * pageSize;
+            string pagingSyntax = "";
+
+            switch (dataSourceType)
+            {
+                case DataSourceType.SqlServer:
+                case DataSourceType.SqlCompact: // Assuming similar to SQL Server
+                    pagingSyntax = $"OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
+                    break;
+
+                case DataSourceType.Mysql:
+                case DataSourceType.SqlLite:
+                case DataSourceType.Postgre:
+                case DataSourceType.FireBird:
+                    pagingSyntax = $"LIMIT {pageSize} OFFSET {offset}";
+                    break;
+
+                case DataSourceType.Oracle:
+                    // Oracle 12c and later versions support the OFFSET-FETCH syntax.
+                    pagingSyntax = $"OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
+                    break;
+
+                case DataSourceType.DB2:
+                    // DB2 uses a similar syntax to SQL Server.
+                    pagingSyntax = $"FETCH FIRST {pageSize} ROWS ONLY SKIP {offset}";
+                    break;
+
+                case DataSourceType.Hana:
+                    // SAP Hana supports LIMIT and OFFSET.
+                    pagingSyntax = $"LIMIT {pageSize} OFFSET {offset}";
+                    break;
+
+                case DataSourceType.TerraData:
+                case DataSourceType.Vertica:
+                    // Some databases like Teradata and Vertica use QUALIFY.
+                    pagingSyntax = $"QUALIFY ROW_NUMBER() OVER (ORDER BY (SELECT 1)) BETWEEN {offset + 1} AND {offset + pageSize}";
+                    break;
+
+                // For databases or data sources that don't support standard SQL paging or where it's not applicable,
+                // throw an exception or handle accordingly.
+                default:
+                    throw new NotSupportedException($"Paging is not supported or not defined for {dataSourceType}");
+            }
+
+            return pagingSyntax;
+        }
+
     }
 }

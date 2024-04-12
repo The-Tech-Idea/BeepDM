@@ -338,7 +338,10 @@ namespace TheTechIdea.Beep.InMemory
         {
             throw new NotImplementedException();
         }
-
+        public virtual object GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
+        {
+            throw new NotImplementedException();
+        }
         public virtual Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             return Task.Run(() => GetEntity(EntityName, Filter));

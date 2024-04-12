@@ -407,6 +407,41 @@ namespace TheTechIdea.Beep.DataView
             }
             return retval;
         }
+        /// <summary>Retrieves an entity based on the specified entity name and filter.</summary>
+        /// <param name="EntityName">The name of the entity to retrieve.</param>
+        /// <param name="filter">A list of filters to apply to the entity.</param>
+        /// <returns>The retrieved entity.</returns>
+        public object GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
+        {
+            object retval = null;
+            IDataSource ds = GetDataSourceObject(EntityName);
+            if (ds != null)
+            {
+                if (ds.ConnectionStatus == ConnectionState.Open)
+                {
+                    EntityStructure ent = GetEntityStructure(EntityName);
+                    if (ent != null)
+                    {
+                        switch (ent.Viewtype)
+                        {
+                            case ViewType.File:
+                            case ViewType.Url:
+                            case ViewType.Table:
+                            case ViewType.Query:
+                                retval = GetDataSourceObject(EntityName).GetEntity(EntityName, filter);
+                                break;
+                            case ViewType.Code:
+                                retval = null;
+                                break;
+                            default:
+                                retval = null;
+                                break;
+                        }
+                    }
+                }
+            }
+            return retval;
+        }
         /// <summary>Returns the index of an entity in the entity list.</summary>
         /// <param name="entityid">The ID of the entity.</param>
         /// <returns>The index of the entity in the entity list.</returns>

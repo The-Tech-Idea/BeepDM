@@ -587,8 +587,37 @@ namespace TheTechIdea.Beep.FileManager
                 return null;
             }
         }
+        public object GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                int noofrows = 0;
+                if (filter != null)
+                {
 
-       
+
+                    if (filter.Count > 0)
+                    {
+                        if (!string.IsNullOrEmpty(filter[0].FilterValue) && !string.IsNullOrWhiteSpace(filter[0].FilterValue))
+                        {
+                            noofrows = Convert.ToInt32(filter[0].FilterValue);
+                        }
+                    }
+
+                }
+                return GetData(noofrows);
+            }
+            catch (Exception ex)
+            {
+
+                DMEEditor.AddLogMessage("Fail", $"Error in getting File Data({ex.Message}) ", DateTime.Now, -1, "", Errors.Failed);
+
+                return null;
+            }
+        }
+
+
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             throw new NotImplementedException();
