@@ -117,6 +117,8 @@ namespace TheTechIdea.Beep.Vis
         /// 
         /// </summary>
         public EnumPointType BranchType { get; set; }= EnumPointType.Global;
+
+       
     }
 
 }

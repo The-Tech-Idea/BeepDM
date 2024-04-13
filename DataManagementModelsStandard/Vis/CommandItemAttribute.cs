@@ -83,6 +83,11 @@ namespace TheTechIdea.Beep.Vis
         /// Gets or sets the display order of the command. Defaults to 0.
         /// </summary>
         public int Order { get; set; } = 0;
+        public BeepKeys Key { get; set; }
+        public bool Ctrl { get; set; } = false;
+        public bool Alt { get; set; } = false;
+        public bool Shift { get; set; } = false;
+
     }
 
 }
