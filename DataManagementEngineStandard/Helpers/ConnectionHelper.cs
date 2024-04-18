@@ -168,7 +168,7 @@ namespace TheTechIdea.Beep.Helpers
             configs.Add(CreateCSVFileReaderConfig());
             configs.Add(CreateFirebirdConfig());
             configs.Add(CreateCassandraConfig());
-            configs.Add(CreateMySqlConnectorConfig());
+           // configs.Add(CreateMySqlConnectorConfig());
             configs.Add(CreateSqlServerConfig());
             configs.Add(CreateSqlCompactConfig());
             configs.Add(CreateTxtXlsCSVFileSourceConfig());
@@ -188,6 +188,7 @@ namespace TheTechIdea.Beep.Helpers
             configs.Add(CreateFirebaseConfig());
             configs.Add(CreateDataViewConfig());
             configs.Add(CreateJsonDataSourceConfig());
+            configs.Add(CreateMySqlConfig());
             
 
             return configs;
@@ -762,33 +763,33 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false
             };
         }
-        /// <summary>Creates a configuration object for MySqlConnector.</summary>
-        /// <returns>A configuration object for MySqlConnector.</returns>
-        public static ConnectionDriversConfig CreateMySqlConnectorConfig()
-        {
-            return new ConnectionDriversConfig
-            {
-                GuidID = "2b9bcb1d-aacf-4c5b-a282-70b2c0006ffe",
-                PackageName = "MySqlConnector",
-                DriverClass = "MySqlConnector",
-                version = "2.0.0.0",
-                dllname = "MySqlConnector.dll",
-                AdapterType = "MySqlConnector.MySqlDataAdapter",
-                CommandBuilderType = "MySqlConnector.MySqlCommandBuilder",
-                DbConnectionType = "MySqlConnector.MySqlConnection",
-                DbTransactionType = "MySqlConnector.MySqlTransaction",
-                ConnectionString = "Server={Host};PORT={Port};Database={Database};Uid ={UserID}; Pwd = {Password};",
-                iconname = "mysql.png",
-                classHandler = "MySQLDataSource",
-                ADOType = true,
-                CreateLocal = false,
-                InMemory = false,
-                Favourite = false,
-                DatasourceCategory = DatasourceCategory.RDBMS, // Assuming appropriate enum value
-                DatasourceType = DataSourceType.Mysql, // Assuming appropriate enum value
-                IsMissing = false
-            };
-        }
+        ///// <summary>Creates a configuration object for MySqlConnector.</summary>
+        ///// <returns>A configuration object for MySqlConnector.</returns>
+        //public static ConnectionDriversConfig CreateMySqlConnectorConfig()
+        //{
+        //    return new ConnectionDriversConfig
+        //    {
+        //        GuidID = "2b9bcb1d-aacf-4c5b-a282-70b2c0006ffe",
+        //        PackageName = "MySqlConnector",
+        //        DriverClass = "MySqlConnector",
+        //        version = "2.0.0.0",
+        //        dllname = "MySql.Data.MySqlClient.dll",
+        //        AdapterType = "MySql.Data.MySqlClient.MySqlDataAdapter",
+        //        CommandBuilderType = "MySql.Data.MySqlClient.MySqlCommandBuilder",
+        //        DbConnectionType = "MySql.Data.MySqlClient.MySqlConnection",
+        //        DbTransactionType = "MySql.Data.MySqlClient.MySqlTransaction",
+        //        ConnectionString = "Server={Host};PORT={Port};Database={Database};Uid ={UserID}; Pwd = {Password};",
+        //        iconname = "mysql.png",
+        //        classHandler = "MySQLDataSource",
+        //        ADOType = true,
+        //        CreateLocal = false,
+        //        InMemory = false,
+        //        Favourite = false,
+        //        DatasourceCategory = DatasourceCategory.RDBMS, // Assuming appropriate enum value
+        //        DatasourceType = DataSourceType.Mysql, // Assuming appropriate enum value
+        //        IsMissing = false
+        //    };
+        //}
         /// <summary>Creates a configuration object for connecting to a SQL Server database.</summary>
         /// <returns>A configuration object for connecting to a SQL Server database.</returns>
         public static ConnectionDriversConfig CreateSqlServerConfig()

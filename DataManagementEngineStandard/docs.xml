@@ -2644,10 +2644,6 @@
             <summary>Creates a configuration object for connecting to a MySQL database.</summary>
             <returns>A configuration object for connecting to a MySQL database.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateMySqlConnectorConfig">
-            <summary>Creates a configuration object for MySqlConnector.</summary>
-            <returns>A configuration object for MySqlConnector.</returns>
-        </member>
         <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateSqlServerConfig">
             <summary>Creates a configuration object for connecting to a SQL Server database.</summary>
             <returns>A configuration object for connecting to a SQL Server database.</returns>

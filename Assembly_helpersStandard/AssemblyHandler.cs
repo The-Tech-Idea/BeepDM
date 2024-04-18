@@ -138,7 +138,7 @@ namespace TheTechIdea.Tools
                         {
                             // Filter out system assemblies or non-NuGet assemblies if necessary
                             // For example, you might check the assembly's name, location, etc.
-                            if (!item.FullName.StartsWith("System") && !item.FullName.StartsWith("Microsoft"))
+                            if (!assembly1.FullName.StartsWith("System") && !assembly1.FullName.StartsWith("Microsoft"))
                             {
                                 cls.Scan(assembly1);
                             }
@@ -977,7 +977,7 @@ namespace TheTechIdea.Tools
         /// <returns>Returns an AssemblyClassDefinition object containing class details.</returns>
         public AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type,string typename)
         {
-          
+           
             AssemblyClassDefinition xcls = new AssemblyClassDefinition();
             xcls.Methods = new List<MethodsClass>();
             xcls.className = type.Name;
