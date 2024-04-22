@@ -2897,6 +2897,13 @@
             Helper class for interacting with a Relational Database Management System (RDBMS).
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetSchemasorDatabases(TheTechIdea.Util.DataSourceType,System.String)">
+            <summary>Gets the query for fetching the schemas or databased user has privilge.</summary>
+            <param name="rdbms">The type of RDBMS.</param>
+            <param name="userName">The name of the user.</param>
+            <remarks> 
+            </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.IsSqlStatementValid(System.String)">
             <summary>Checks if a given SQL statement is valid.</summary>
             <param name="sqlString">The SQL statement to be validated.</param>

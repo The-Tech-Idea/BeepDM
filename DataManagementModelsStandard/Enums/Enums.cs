@@ -55,7 +55,7 @@ namespace TheTechIdea.Util
         String,Numeric,Date
     }
     public enum Sqlcommandtype
-    { getTable,getlistoftables, getPKforTable, getFKforTable, getChildTable, getParentTable,getFktableValues,CheckTableExist}
+    { getTable,getlistoftables, getPKforTable, getFKforTable, getChildTable, getParentTable,getFktableValues,CheckTableExist, getlistoftablesfromotherschema }
     
     public enum DefaultValueType
     {
