@@ -106,6 +106,21 @@
             Attribute class to define metadata for add-ins within the system.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.Url">
+            <summary>
+            Gets or sets URl of the add-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.Icon">
+            <summary>
+            Gets or sets the icon image of the add-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.GuidID">
+            <summary>
+            Gets or sets the unique identifier of the add-in.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Vis.AddinAttribute.Name">
             <summary>
             Gets or sets the unique name of the add-in.
@@ -219,6 +234,16 @@
         <member name="T:TheTechIdea.Beep.Vis.CommandAttribute">
             <summary>
             Attribute class to define metadata for commands within the system.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.Url">
+            <summary>
+            Gets or sets URl of the add-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.GuidID">
+            <summary>
+            Gets or sets the icon image of the add-in.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.Name">

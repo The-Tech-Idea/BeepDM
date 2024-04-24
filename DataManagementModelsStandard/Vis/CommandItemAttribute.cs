@@ -10,6 +10,14 @@ namespace TheTechIdea.Beep.Vis
     public sealed class CommandAttribute : Attribute
     {
         /// <summary>
+        /// Gets or sets URl of the add-in.
+        /// </summary>
+        public string Url { get; set; }
+        /// <summary>
+        /// Gets or sets the icon image of the add-in.
+        /// </summary>
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
+        /// <summary>
         /// Gets or sets the unique name of the command.
         /// </summary>
         public string Name { get; set; } = null;

@@ -47,7 +47,7 @@ namespace TheTechIdea.Util
     public enum FileTypes
     {
         Text, CSV, XML, Json, Xls, Xlsx, TSV, YAML, Markdown, HTML, SQL, INI, Log, PDF, Doc, Docx, PPT, PPTX,
-        Parquet, Avro, ORC, Onnx, Feather, TFRecord, RecordIO, LibSVM, GraphML, DICOM, LAS
+        Parquet, Avro, ORC, Onnx, Feather, TFRecord, RecordIO, LibSVM, GraphML, DICOM, LAS,Entity
     }
 
     public enum DbFieldCategory

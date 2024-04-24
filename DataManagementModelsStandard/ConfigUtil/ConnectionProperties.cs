@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
@@ -165,9 +166,20 @@ namespace TheTechIdea.Util
             get { return _url; }
             set { SetProperty(ref _url, value); }
         }
-        public List<string> Databases { get; set; } = new List<string>();
+        public List<string> _databases  = new List<string>();
+        public List<string> Databases
+        {
+            get { return _databases; }
+            set { SetProperty(ref _databases, value); }
+        }
         public string ApiKey { get; set; }
-        public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
+        private List<EntityStructure> _entities  = new List<EntityStructure>();
+        public List<EntityStructure> Entities
+         {
+            get { return _entities; }
+            set { SetProperty(ref _entities, value);}
+        }
+       
 
         private string _keytoken;
         public string KeyToken
@@ -175,17 +187,26 @@ namespace TheTechIdea.Util
             get { return _keytoken; }
             set { SetProperty(ref _keytoken, value); }
         }
-        public List<WebApiHeader> Headers { get; set; } = new List<WebApiHeader>();
+        private List<WebApiHeader> _headers = new List<WebApiHeader>();
+     
+        public List<WebApiHeader> Headers
+        {
+            get { return _headers; }
+            set { SetProperty(ref _headers, value); }
+        }
 
-       
         private string _compositelayername;
         public string CompositeLayerName
         {
             get { return _compositelayername; }
             set { SetProperty(ref _compositelayername, value); }
         }
-        public List<DefaultValue> DatasourceDefaults { get; set; } = new List<DefaultValue>();
-
+        private List<DefaultValue> _datasourceDefaults = new List<DefaultValue>();
+        public List<DefaultValue> DatasourceDefaults
+        {
+            get { return _datasourceDefaults; }
+            set { SetProperty(ref _datasourceDefaults, value); }
+        }
         private bool _favourite;
         public bool Favourite
         {
@@ -193,7 +214,7 @@ namespace TheTechIdea.Util
             set { SetProperty(ref _favourite, value); }
         }  
 
-        private string _guidid;
+        private string _guidid = Guid.NewGuid().ToString();
         public string GuidID
         {
             get { return _guidid; }
@@ -273,15 +294,25 @@ namespace TheTechIdea.Util
         {
             GuidID = Guid.NewGuid().ToString();
         }
+        private int _timeout;
+        public int Timeout
+        {
+            get { return _timeout; }
+            set { SetProperty(ref _timeout, value); }
+        }
 
+        private string _httpMethod;
+        public string HttpMethod
+        {
+            get { return _httpMethod; }
+            set { SetProperty(ref _httpMethod, value); }
+        }
 
     }
 
-    public class WebApiHeader
+    public class WebApiHeader:Entity
     {
-        private IDMEEditor pDMEEditor;
-        private IDataConnection pConn;
-        private List<EntityField> pfields;
+     
 
         public WebApiHeader(string datasourcename, string databasename)
         {
@@ -291,15 +322,22 @@ namespace TheTechIdea.Util
         {
 
         }
-        public WebApiHeader(string datasourcename, string databasename, IDMEEditor pDMEEditor, IDataConnection pConn, List<EntityField> pfields) : this(datasourcename, databasename)
+
+        private string _headername;
+        public string Headername
         {
-            this.pDMEEditor = pDMEEditor;
-            this.pConn = pConn;
-            this.pfields = pfields;
+            get { return _headername; }
+            set { SetProperty(ref _headername, value); }
         }
 
-        public string headername { get; set; }
-        public string headervalue { get; set; }
+        private string _headervalue;
+        public string Headervalue
+        {
+            get { return _headervalue; }
+            set { SetProperty(ref _headervalue, value); }
+        }
+
+        
     }
 
     public class ConnectionList

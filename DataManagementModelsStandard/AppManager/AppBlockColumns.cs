@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Beep.AppManager
 {
@@ -25,25 +26,102 @@ namespace TheTechIdea.Beep.AppManager
          Color BorderLineColor { get; set; }
     }
 
-    public class AppBlockColumns : IAppBlockColumns
+    public class AppBlockColumns : Entity, IAppBlockColumns
     {
         public AppBlockColumns()
         {
 
         }
-        public string ID { get; set; }
-        public string GuidID { get; set; } = Guid.NewGuid().ToString();
-        public string ColumnName { get; set; }
-        public string DisplayName { get; set; }
-        public int ColumnSeq { get; set; }
-        public int FieldDisplaySeq { get; set; }
-        public bool Show { get; set; } = true;
-        public int LocationY { get; set; } = 0;
-        public int LocationX { get; set; } = 0;
-       
-        public Color ForeColor { get; set; } = Color.Black;
-        public Color BackColor { get; set; } = Color.Transparent;
-        public Color AlternatingBackColor { get; set; } = Color.Transparent;
-        public Color BorderLineColor { get; set; } = Color.Transparent;
+        private string _id;
+        public string ID
+        {
+            get { return _id; }
+            set { SetProperty(ref _id, value); }
+        }
+
+        private string _guidid = Guid.NewGuid().ToString();
+        public string GuidID
+        {
+            get { return _guidid; }
+            set { SetProperty(ref _guidid, value); }
+        } 
+
+        private string _columnname;
+        public string ColumnName
+        {
+            get { return _columnname; }
+            set { SetProperty(ref _columnname, value); }
+        }
+
+        private string _displayname;
+        public string DisplayName
+        {
+            get { return _displayname; }
+            set { SetProperty(ref _displayname, value); }
+        }
+
+        private int _columnseq;
+        public int ColumnSeq
+        {
+            get { return _columnseq; }
+            set { SetProperty(ref _columnseq, value); }
+        }
+
+        private int _fielddisplayseq;
+        public int FieldDisplaySeq
+        {
+            get { return _fielddisplayseq; }
+            set { SetProperty(ref _fielddisplayseq, value); }
+        }
+
+        private bool _show = true;
+        public bool Show
+        {
+            get { return _show; }
+            set { SetProperty(ref _show, value); }
+        } 
+
+        private int _locationy = 0;
+        public int LocationY
+        {
+            get { return _locationy; }
+            set { SetProperty(ref _locationy, value); }
+        }
+
+        private int _locationx = 0;
+        public int LocationX
+        {
+            get { return _locationx; }
+            set { SetProperty(ref _locationx, value); }
+        } 
+
+
+        private Color _forecolor = Color.Black;
+        public Color ForeColor
+        {
+            get { return _forecolor; }
+            set { SetProperty(ref _forecolor, value); }
+        } 
+
+        private Color _backcolor = Color.Transparent;
+        public Color BackColor
+        {
+            get { return _backcolor; }
+            set { SetProperty(ref _backcolor, value); }
+        } 
+
+        private Color _alternatingbackcolor = Color.Transparent;
+        public Color AlternatingBackColor
+        {
+            get { return _alternatingbackcolor; }
+            set { SetProperty(ref _alternatingbackcolor, value); }
+        }
+
+        private Color _borderlinecolor = Color.Transparent;
+        public Color BorderLineColor
+        {
+            get { return _borderlinecolor; }
+            set { SetProperty(ref _borderlinecolor, value); }
+        } 
     }
 }

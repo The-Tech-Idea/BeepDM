@@ -346,7 +346,7 @@ namespace TheTechIdea.Beep.WebAPI
             request.RequestUri = new Uri(Dataconnection.ConnectionProp.Url + "/" + filterstr);
             foreach (WebApiHeader item in Dataconnection.ConnectionProp.Headers)
             {
-                request.Headers.Add(item.headername, item.headervalue);
+                request.Headers.Add(item.Headername, item.Headervalue);
             }
 
             //string retval = SendAsync(request).Result;

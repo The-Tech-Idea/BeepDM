@@ -3,45 +3,137 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Beep.DataBase
 {
-    public class QueryStructure : IQueryStructure
+    public class QueryStructure : Entity, IQueryStructure
+    
     {
-        public int ID { get; set; }
-        public string GuidID { get; set; } = Guid.NewGuid().ToString();
-        public QueryStructure()
-        {
+        
+private int _id;
+    public int ID
+    {
+        get { return _id; }
+        set { SetProperty(ref _id, value); }
+    }
 
-        }
-        public string QueryName { get; set; }
-        public string QueryDescription { get; set; }
-        public string Querystring { get; set; }
-        public List<EntityField> SelectedColumns { get; set; }
-        public List<EntityStructure> FromEntities { get; set; }
-        public List<QueryFieldsandValues> FieldsandValues { get; set; }
-        public int ParentViewID { get; set; }
-        public int ParentTableID { get; set; }
-
-
+    private string _guidid = Guid.NewGuid().ToString();
+        public string GuidID
+    {
+        get { return _guidid; }
+        set { SetProperty(ref _guidid, value); }
+    } 
+    public QueryStructure()
+    {
 
     }
 
-    public class QueryFieldsandValues
+    private string _queryname;
+    public string QueryName
     {
-        public int ID { get; set; }
-        public string GuidID { get; set; } = Guid.NewGuid().ToString();
-        public QueryFieldsandValues()
-        {
+        get { return _queryname; }
+        set { SetProperty(ref _queryname, value); }
+    }
 
-        }
-        public EntityField CompareField1 { get; set; }
-        public string Fieldvalue { get; set; }
-        public string Comparison { get; set; }
+    private string _querydescription;
+    public string QueryDescription
+    {
+        get { return _querydescription; }
+        set { SetProperty(ref _querydescription, value); }
+    }
+
+    private string _querystring;
+    public string Querystring
+    {
+        get { return _querystring; }
+        set { SetProperty(ref _querystring, value); }
+    }
+
+    private List<EntityField> _selectedcolumns;
+    public List<EntityField> SelectedColumns
+    {
+        get { return _selectedcolumns; }
+        set { SetProperty(ref _selectedcolumns, value); }
+    }
+
+    private List<EntityStructure> _fromentities;
+    public List<EntityStructure> FromEntities
+    {
+        get { return _fromentities; }
+        set { SetProperty(ref _fromentities, value); }
+    }
+
+    private List<QueryFieldsandValues> _fieldsandvalues;
+    public List<QueryFieldsandValues> FieldsandValues
+    {
+        get { return _fieldsandvalues; }
+        set { SetProperty(ref _fieldsandvalues, value); }
+    }
+
+    private int _parentviewid;
+    public int ParentViewID
+    {
+        get { return _parentviewid; }
+        set { SetProperty(ref _parentviewid, value); }
+    }
+
+    private int _parenttableid;
+    public int ParentTableID
+    {
+        get { return _parenttableid; }
+        set { SetProperty(ref _parenttableid, value); }
+    }
+
+
+
+}
+
+public class QueryFieldsandValues:Entity
+{
+
+    private int _id;
+    public int ID
+    {
+        get { return _id; }
+        set { SetProperty(ref _id, value); }
+    }
+
+    private string _guidid = Guid.NewGuid().ToString();
+        public string GuidID
+    {
+        get { return _guidid; }
+        set { SetProperty(ref _guidid, value); }
+    } 
+    public QueryFieldsandValues()
+    {
 
     }
 
-    public class FkListforSQLlite
+    private EntityField _comparefield1;
+    public EntityField CompareField1
+    {
+        get { return _comparefield1; }
+        set { SetProperty(ref _comparefield1, value); }
+    }
+
+    private string _fieldvalue;
+    public string Fieldvalue
+    {
+        get { return _fieldvalue; }
+        set { SetProperty(ref _fieldvalue, value); }
+    }
+
+    private string _comparison;
+    public string Comparison
+    {
+        get { return _comparison; }
+        set { SetProperty(ref _comparison, value); }
+    }
+
+}
+
+public class FkListforSQLlite
     {
         public int ID { get; set; }
         public string GuidID { get; set; } = Guid.NewGuid().ToString();
