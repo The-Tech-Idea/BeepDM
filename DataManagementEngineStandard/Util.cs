@@ -16,6 +16,7 @@ using System.Xml.Serialization;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.FileManager;
+using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
@@ -1416,8 +1417,11 @@ namespace TheTechIdea.Beep
             try
             {
                 string extens =DME.ConfigEditor.CreateFileExtensionString();
-
-
+                if(filenames.Length == 0)
+                {
+                    return null;
+                }
+                
                 retval = CreateFileConnections(filenames);
                 return retval;
             }
@@ -1493,7 +1497,7 @@ namespace TheTechIdea.Beep
             {
                 //   string extens = CreateFileExtensionString();
                 string[] filenames = Directory.GetFiles(directoryname, CreateFileExtensionString(extens));
-
+               
                 retval = CreateFileConnections(filenames);
                 return retval;
             }
@@ -1514,11 +1518,16 @@ namespace TheTechIdea.Beep
                     {
                         if (File.Exists(file))
                         {
-                            ConnectionProperties c = CreateFileDataConnection(file);
-                            if (c != null)
+                            string filename = Path.GetFileName(file);
+                            if (FileHelper.FileExists(DME,file)==null)
                             {
-                                retval.Add(c);
+                                ConnectionProperties c = CreateFileDataConnection(file);
+                                if (c != null)
+                                {
+                                    retval.Add(c);
+                                }
                             }
+                           
                         }
                         else
                         {
@@ -1545,7 +1554,11 @@ namespace TheTechIdea.Beep
                    DME.AddLogMessage("Beep", $"Error Could not Find File {file}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
                     return null;
                 }
-                string filename = Path.GetFileName(file);
+                if (FileHelper.FileExists(DME, file) != null)
+                {
+                    return FileHelper.FileExists(DME, file);
+                }
+                    string filename = Path.GetFileName(file);
                 string ext = Path.GetExtension(file).Replace(".", "").ToLower();
 
 

@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using TheTechIdea.Beep.DataBase;
 
 namespace TheTechIdea.Beep.FileManager
 {
@@ -71,6 +75,68 @@ namespace TheTechIdea.Beep.FileManager
         {
             if (reader == null) throw new ArgumentNullException(nameof(reader));
             this.reader = reader;
+        }
+        /// Writes a CSV file based on an EntityStructure.
+        /// </summary>
+        /// <param name="entity">The entity structure containing the data.</param>
+        /// <param name="filePath">The file path to write the CSV file.</param>
+        public void WriteEntityStructureToFile(IDMEEditor editor, string filePath,object records)
+        {
+            // Creating or overwriting a file at the given path.
+            using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
+            {
+                EntityStructure entity = editor.Utilfunction.GetEntityStructureFromListorTable(records);
+                // Assuming 'Fields' is a list of 'EntityField' that contains the column headers.
+                var headers = entity.Fields.Select(field => field.fieldname);
+
+                // Writing the headers separated by the delimiter.
+                writer.WriteLine(string.Join(delimiterChar.ToString(), headers));
+
+                // Example of how you might write data rows if 'entity' had a way to provide them.
+                // This part is highly dependent on your actual data structure and needs.
+                // For now, it is commented out and would need to be adapted to fit actual data handling:
+                //
+               
+                Type tp = records.GetType();
+                DataTable dt = new DataTable();
+                if (tp.GetTypeInfo().ImplementedInterfaces.Contains(typeof(IList)))
+                {
+                    dt = editor.Utilfunction.ToDataTable((IList)records, editor.Utilfunction.GetListType(tp));
+                }
+                else
+                {
+                    dt = (DataTable)records;
+
+                }
+                // Write each row in the DataTable to the file
+                foreach (DataRow row in dt.Rows)
+                {
+                    var values = entity.Fields.Select(field =>
+                    {
+                        var value = row[field.fieldname] ?? "";
+                        // Properly escape values that contain the delimiter or quotes.
+                        return value.ToString().Contains(delimiterChar) || value.ToString().Contains(quoteChar)
+                            ? $"\"{value.ToString().Replace(quoteChar.ToString(), quoteEscapeChar + quoteChar.ToString())}\""
+                            : value.ToString();
+                    });
+
+                    writer.WriteLine(string.Join(delimiterChar.ToString(), values));
+                }
+                //foreach (var record in records) // Assuming 'Records' is a list of data records.
+                //{
+                //    var values = entity.Fields.Select(field =>
+                //    {
+                //        var value = record.GetType().GetProperty(field.fieldname)?.GetValue(record, null) ?? "";
+                //         //Properly escape values that contain delimiter or quotes.
+                //        return value.ToString().Contains(delimiterChar) || value.ToString().Contains(quoteChar)
+                //            ? $"\"{value.ToString().Replace(quoteChar.ToString(), quoteEscapeChar + quoteChar.ToString())}\""
+                //            : value.ToString();
+                //    });
+
+                //    writer.WriteLine(string.Join(delimiterChar, values));
+                //}
+                
+            }
         }
 
         /// <summary>

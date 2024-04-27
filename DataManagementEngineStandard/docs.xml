@@ -768,6 +768,7 @@
             Constructs a parser from the specified input text reader.
             </summary>
         </member>
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.FileManager.CsvTextFieldParser.WriteEntityStructureToFile(TheTechIdea.Beep.IDMEEditor,System.String,System.Object)" -->
         <member name="P:TheTechIdea.Beep.FileManager.CsvTextFieldParser.EndOfData">
             <summary>
             True if there are non-empty lines between the current cursor position and the end of the file.

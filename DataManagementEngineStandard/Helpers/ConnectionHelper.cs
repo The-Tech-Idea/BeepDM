@@ -168,7 +168,7 @@ namespace TheTechIdea.Beep.Helpers
             configs.Add(CreateCSVFileReaderConfig());
             configs.Add(CreateFirebirdConfig());
             configs.Add(CreateCassandraConfig());
-           // configs.Add(CreateMySqlConnectorConfig());
+            // configs.Add(CreateMySqlConnectorConfig());
             configs.Add(CreateSqlServerConfig());
             configs.Add(CreateSqlCompactConfig());
             configs.Add(CreateTxtXlsCSVFileSourceConfig());
@@ -189,7 +189,7 @@ namespace TheTechIdea.Beep.Helpers
             configs.Add(CreateDataViewConfig());
             configs.Add(CreateJsonDataSourceConfig());
             configs.Add(CreateMySqlConfig());
-            
+
 
             return configs;
         }
@@ -676,7 +676,7 @@ namespace TheTechIdea.Beep.Helpers
                 CreateLocal = false,
                 InMemory = false,
                 Favourite = false,
-                extensionstoHandle = "csv" ,
+                extensionstoHandle = "csv",
                 DatasourceCategory = DatasourceCategory.FILE, // Assuming appropriate enum value
                 DatasourceType = DataSourceType.CSV, // Assuming appropriate enum value
                 IsMissing = false

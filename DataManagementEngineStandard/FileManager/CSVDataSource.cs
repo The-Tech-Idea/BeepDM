@@ -41,6 +41,15 @@ namespace TheTechIdea.Beep.FileManager
             Category = DatasourceCategory.FILE;
             FileName = Dataconnection.ConnectionProp.FileName;
             FilePath = Dataconnection.ConnectionProp.FilePath;
+            if(Openconnection() == ConnectionState.Open)
+            {
+                Getfields();
+            }
+            else
+            {
+                File.Create(Path.Combine(FilePath, FileName));
+                DMEEditor.AddLogMessage("Fail", $"Error Could not find File {datasourcename} , created empty one", DateTime.Now, 0, null, Errors.Failed);
+            }
 
         }
         public string GuidID { get; set; } = Guid.NewGuid().ToString();
@@ -517,32 +526,36 @@ namespace TheTechIdea.Beep.FileManager
 
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
-            throw new NotImplementedException();
+            return DMEEditor.ErrorObject;
         }
 
         public bool CreateEntityAs(EntityStructure entity)
         {
-            throw new NotImplementedException();
+            Entities.Clear();
+            EntitiesNames.Clear();
+            Entities.Add(entity);
+            EntitiesNames.Add(entity.EntityName);
+            return true;
         }
 
         public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow)
         {
-            throw new NotImplementedException();
+            return DMEEditor.ErrorObject;
         }
 
         public IErrorsInfo ExecuteSql(string sql)
         {
-            throw new NotImplementedException();
+            return DMEEditor.ErrorObject;
         }
 
         public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
-            throw new NotImplementedException();
+           return null;
         }
 
         public List<string> GetEntitesList()
@@ -717,17 +730,28 @@ namespace TheTechIdea.Beep.FileManager
 
          public  object RunQuery( string qrystr)
         {
-            throw new NotImplementedException();
+            return GetEntity(Entities[0].EntityName,new List<AppFilter>() { });
         }
 
         public IErrorsInfo RunScript(ETLScriptDet dDLScripts)
         {
-            throw new NotImplementedException();
+            return DMEEditor.ErrorObject;
         }
 
         public IErrorsInfo UpdateEntities(string EntityName, object UploadData,IProgress<PassedArgs> progress)
         {
-            throw new NotImplementedException();
+            try
+            {
+                CsvTextFieldParser fieldParser = new CsvTextFieldParser(Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName));
+                fieldParser.SetDelimiter(',');
+                fieldParser.WriteEntityStructureToFile(DMEEditor, Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName), UploadData);
+                
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Beep",$"Error in updating File {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            }
+            return DMEEditor.ErrorObject;
         }
 
         public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
