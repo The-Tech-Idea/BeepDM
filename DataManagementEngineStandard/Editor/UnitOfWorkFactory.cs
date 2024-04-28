@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DataManagementModels.Editor;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
@@ -17,11 +18,33 @@ namespace TheTechIdea.Beep.Editor
         /// <param name="dmeEditor">The IDMEEditor instance.</param>
         /// <param name="datasourceName">The name of the data source.</param>
         /// <returns>A new instance of UnitOfWork.</returns>
-        public static object CreateUnitOfWork(Type entityType, IDMEEditor dmeEditor, string datasourceName)
+        public static object CreateUnitOfWork(Type entityType, IDMEEditor dMEEditor, string datasourceName, string entityName, string primarykey)
         {
-            var unitOfWorkType = typeof(UnitofWork<>).MakeGenericType(entityType);
-            return Activator.CreateInstance(unitOfWorkType, dmeEditor, datasourceName);
+            // Create the specific UnitOfWork type using the entityType
+            Type uowGenericType = typeof(UnitofWork<>).MakeGenericType(entityType);
+
+            // Prepare the arguments for the constructor
+            object[] constructorArgs = new object[] { dMEEditor, datasourceName, entityName, primarykey };
+
+            // Create an instance of UnitOfWork<T> with the specific constructor
+            // Dynamically handle the instance since we can't cast to a specific IUnitofWork<T> at compile time
+            object uowInstance = Activator.CreateInstance(uowGenericType, constructorArgs);
+            return uowInstance;
         }
+
+        public static object CreateUnitOfWork(Type entityType, IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure, string primarykey)
+        {
+            // Create the specific UnitOfWork type using the entityType
+            Type uowGenericType = typeof(UnitofWork<>).MakeGenericType(entityType);
+
+            // Prepare the arguments for the constructor
+            object[] constructorArgs = new object[] { dMEEditor, datasourceName, entityName, entityStructure, primarykey };
+
+            // Create an instance of UnitOfWork<T> with the specific constructor
+            object uowInstance = Activator.CreateInstance(uowGenericType, constructorArgs);
+            return uowInstance;
+        }
+
         /// <summary>Gets a unit of work for a specified entity.</summary>
         /// <param name="entityName">The name of the entity.</param>
         /// <param name="dataSourceName">The name of the data source.</param>

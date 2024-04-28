@@ -2128,7 +2128,7 @@
         <member name="T:TheTechIdea.Beep.Editor.UnitOfWorkFactory">
             <summary>A factory class for creating and retrieving instances of UnitOfWork.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitOfWorkFactory.CreateUnitOfWork(System.Type,TheTechIdea.Beep.IDMEEditor,System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.UnitOfWorkFactory.CreateUnitOfWork(System.Type,TheTechIdea.Beep.IDMEEditor,System.String,System.String,System.String)">
             <summary>Creates a new instance of UnitOfWork for the specified entity type.</summary>
             <param name="entityType">The type of the entity.</param>
             <param name="dmeEditor">The IDMEEditor instance.</param>
