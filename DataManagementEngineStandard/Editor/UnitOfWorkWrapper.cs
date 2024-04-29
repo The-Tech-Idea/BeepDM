@@ -6,6 +6,7 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Util;
 using System.Dynamic;
 using TheTechIdea.Beep.Report;
+using DataManagementModels.Editor;
 
 namespace TheTechIdea.Beep.Editor
 {
@@ -117,107 +118,53 @@ namespace TheTechIdea.Beep.Editor
 
         public IEnumerable<int> GetAddedEntities() => _unitOfWork.GetAddedEntities();
 
-        public async Task<dynamic> GetQueryAsync(string query)
-        {
-            return await _unitOfWork.GetQuery(query);
-        }
+        public async Task<dynamic> GetQuery(string query) => await _unitOfWork.GetQuery(query);
 
+        public async Task<dynamic> Get() => await _unitOfWork.Get();
 
-        public async Task<dynamic> Ge(List<AppFilter> filters)
-        {
-            return await _unitOfWork.Get(filters);
-        }
+        public async Task<dynamic> Get(List<AppFilter> filters) => await _unitOfWork.Get(filters);
 
-        public IEnumerable<dynamic> GetDeletedEntities()
-        {
-            return _unitOfWork.GetDeletedEntities();
-        }
+        public IEnumerable<dynamic> GetDeletedEntities() => _unitOfWork.GetDeletedEntities();
 
-        public dynamic Get(int key)
-        {
-            return _unitOfWork.Get(key);
-        }
+        public dynamic Get(int key) => _unitOfWork.Get(key);
 
-        public dynamic GetIDValue(dynamic entity)
-        {
-            return _unitOfWork.GetIDValue(entity);
-        }
+        public dynamic GetIDValue(dynamic entity) => _unitOfWork.GetIDValue(entity);
 
-        public int Getindex(string id)
-        {
-            return _unitOfWork.Getindex(id);
-        }
+        public int Getindex(string id) => _unitOfWork.Getindex(id);
 
-        public int Getindex(dynamic entity)
-        {
-            return _unitOfWork.Getindex(entity);
-        }
+        public int Getindex(dynamic entity) => _unitOfWork.Getindex(entity);
 
-        public IEnumerable<int> GetModifiedEntities()
-        {
-            return _unitOfWork.GetModifiedEntities();
-        }
+        public IEnumerable<int> GetModifiedEntities() => _unitOfWork.GetModifiedEntities();
 
-        public int GetPrimaryKeySequence(dynamic doc)
-        {
-            return _unitOfWork.GetPrimaryKeySequence(doc);
-        }
+        public int GetPrimaryKeySequence(dynamic doc) => _unitOfWork.GetPrimaryKeySequence(doc);
 
-        public int GetSeq(string SeqName)
-        {
-            return _unitOfWork.GetSeq(SeqName);
-        }
+        public int GetSeq(string SeqName) => _unitOfWork.GetSeq(SeqName);
 
-        public dynamic Read(string id)
-        {
-            return _unitOfWork.Read(id);
-        }
+        public dynamic Read(string id) => _unitOfWork.Read(id);
 
+        public async Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token) => await _unitOfWork.Commit(progress, token);
 
-        public void Create(dynamic entity)
-        {
-            _unitOfWork.Create(entity);
-        }
+        public async Task<IErrorsInfo> Commit() => await _unitOfWork.Commit();
 
-        public ErrorsInfo Delete(string id)
-        {
-            return _unitOfWork.Delete(id);
-        }
+        public async Task<IErrorsInfo> Rollback() => await _unitOfWork.Rollback();
 
-        public ErrorsInfo Delete(dynamic doc)
-        {
-            return _unitOfWork.Delete(doc);
-        }
+        public void Create(dynamic entity) => _unitOfWork.Create(entity);
 
-        public ErrorsInfo Update(dynamic entity)
-        {
-            return _unitOfWork.Update(entity);
-        }
+        public ErrorsInfo Delete(string id) => _unitOfWork.Delete(id);
 
-        public ErrorsInfo Update(string id, dynamic entity)
-        {
-            return _unitOfWork.Update(id, entity);
-        }
+        public ErrorsInfo Delete(dynamic doc) => _unitOfWork.Delete(doc);
 
-        public int DocExist(dynamic doc)
-        {
-            return _unitOfWork.DocExist(doc);
-        }
+        public ErrorsInfo Update(dynamic entity) => _unitOfWork.Update(entity);
 
-        public int DocExistByKey(dynamic doc)
-        {
-            return _unitOfWork.DocExistByKey(doc);
-        }
+        public ErrorsInfo Update(string id, dynamic entity) => _unitOfWork.Update(id, entity);
 
-        public int FindDocIdx(dynamic doc)
-        {
-            return _unitOfWork.FindDocIdx(doc);
-        }
+        public int DocExist(dynamic doc) => _unitOfWork.DocExist(doc);
 
-        public dynamic Get(string PrimaryKeyid)
-        {
-            return _unitOfWork.Get(PrimaryKeyid);
-        }
+        public int DocExistByKey(dynamic doc) => _unitOfWork.DocExistByKey(doc);
+
+        public int FindDocIdx(dynamic doc) => _unitOfWork.FindDocIdx(doc);
+
+        public dynamic Get(string PrimaryKeyid) => _unitOfWork.Get(PrimaryKeyid);
 
 
 
