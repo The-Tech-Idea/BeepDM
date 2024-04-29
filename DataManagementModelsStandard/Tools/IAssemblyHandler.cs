@@ -16,6 +16,8 @@ namespace TheTechIdea.Tools
     public interface IAssemblyHandler:IDisposable
     {
       //  List<IDM_Addin> AddIns { get; set; }
+
+        List<string> NamespacestoIgnore { get; set; }
         List<assemblies_rep> Assemblies { get; set; }
      // AppDomain CurrentDomain { get; set; }
         List<AssemblyClassDefinition> DataSourcesClasses { get; set; }

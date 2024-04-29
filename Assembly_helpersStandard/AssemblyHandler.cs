@@ -33,6 +33,7 @@ namespace TheTechIdea.Tools
         private List<ConnectionDriversConfig> DataDriversConfig = new List<ConnectionDriversConfig>();
         private bool disposedValue;
 
+        public List<string> NamespacestoIgnore { get; set; } = new List<string>();
         /// <summary>
         /// Gets or sets the current domain in which the assembly is executed.
         /// </summary>
@@ -127,6 +128,7 @@ namespace TheTechIdea.Tools
         /// <param name="assembly">The Assembly object to be scanned.</param>
         private void ScanExtensions()
         {
+            bool skip = false;  
             foreach (Type item in LoaderExtensions)
             {
                 try
@@ -136,9 +138,18 @@ namespace TheTechIdea.Tools
                     {
                         try
                         {
+                            skip= false;    
                             // Filter out system assemblies or non-NuGet assemblies if necessary
                             // For example, you might check the assembly's name, location, etc.
-                            if (!assembly1.FullName.StartsWith("System") && !assembly1.FullName.StartsWith("Microsoft"))
+                            // filter also using the namespacetoignore
+                            if (NamespacestoIgnore.Count>0)
+                            {
+                                if (NamespacestoIgnore.Any(ns => assembly1.FullName.Contains(ns)))
+                                {
+                                    skip = true;
+                                }
+                            }
+                            if (!assembly1.FullName.StartsWith("System") && !assembly1.FullName.StartsWith("Microsoft") && skip==false )
                             {
                                 cls.Scan(assembly1);
                             }
@@ -149,8 +160,24 @@ namespace TheTechIdea.Tools
                             //DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
                         }
                     }
+                    //foreach (assemblies_rep assembly1 in Assemblies.Where(p=>p.FileTypes  == FolderFileTypes.Addin || p.FileTypes == FolderFileTypes.ProjectClass))
+                    //{
+                    //    try
+                    //    {
+                    //        // Filter out system assemblies or non-NuGet assemblies if necessary
+                    //        // For example, you might check the assembly's name, location, etc.
+                    //        // filter also using the namespacetoignore
+                    //        if (!assembly1.DllName.StartsWith("System") && !assembly1.DllName.StartsWith("Microsoft"))
+                    //        {
+                    //            cls.Scan(assembly1);
+                    //        }
+                    //    }
+                    //    catch (Exception ex)
+                    //    {
 
-                 
+                    //        //DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
+                    //    }
+                    //}
 
                 }
                 catch (Exception)
