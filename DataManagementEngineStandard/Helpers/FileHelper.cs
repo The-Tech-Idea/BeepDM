@@ -12,7 +12,7 @@ namespace TheTechIdea.Beep.Helpers
     {
         public static string GetFileExtensions(IDMEEditor DMEEditor)
         {
-            List<ConnectionDriversConfig> clss = DMEEditor.ConfigEditor.DataDriversClasses.Where(p => p.extensionstoHandle != null).ToList();
+            List<ConnectionDriversConfig> clss = DMEEditor.ConfigEditor.DataDriversClasses.Where(p => p.extensionstoHandle != null && !string.IsNullOrEmpty(p.classHandler)).ToList();
             string retval = null;
             if (clss != null)
             {

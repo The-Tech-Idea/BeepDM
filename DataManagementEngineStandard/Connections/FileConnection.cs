@@ -37,10 +37,16 @@ namespace TheTechIdea.Beep.FileManager
         }
         public string ReplaceValueFromConnectionString()
         {
+            
             return ConnectionHelper.ReplaceValueFromConnectionString(DataSourceDriver,ConnectionProp,DMEEditor);
         }
         private ConnectionState OpenConn()
         {
+            DataSourceDriver= ConnectionHelper.LinkConnection2Drivers(ConnectionProp, DMEEditor.ConfigEditor );
+            if (DataSourceDriver== null)
+            {
+                DataSourceDriver = DMEEditor.ConfigEditor.DataDriversClasses.Where(c => c.classHandler ==ConnectionProp.DriverName).FirstOrDefault();
+            }
             string r= ReplaceValueFromConnectionString();
             if (!string.IsNullOrEmpty(r))
             {

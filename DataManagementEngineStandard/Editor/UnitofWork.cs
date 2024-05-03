@@ -1662,11 +1662,19 @@ namespace TheTechIdea.Beep.Editor
                 {
                     var property = Expression.Property(parameter, filter.FieldName);
                     var propertyType = property.Type;
-
+                    // Handle nullable properties
+                    if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                    {
+                        propertyType = Nullable.GetUnderlyingType(propertyType);
+                    }
                     object convertedValue;
                     if (propertyType.IsEnum)
                     {
                         convertedValue = Enum.Parse(propertyType, filter.FilterValue.ToString());
+                    }
+                    else if (propertyType == typeof(DateTime))
+                    {
+                        convertedValue = DateTime.Parse(filter.FilterValue.ToString());
                     }
                     else
                     {
@@ -1674,31 +1682,46 @@ namespace TheTechIdea.Beep.Editor
                     }
 
                     var constant = Expression.Constant(convertedValue, propertyType);
-                    var equality = Expression.Equal(property, constant);
+                    BinaryExpression comparisonExpression;
 
-                    if (combinedExpression == null)
+                    switch (filter.Operator)
                     {
-                        combinedExpression = equality;
+                        case "=":
+                            comparisonExpression = Expression.Equal(property, constant);
+                            break;
+                        case ">":
+                            comparisonExpression = Expression.GreaterThan(property, constant);
+                            break;
+                        case "<":
+                            comparisonExpression = Expression.LessThan(property, constant);
+                            break;
+                        case "!=":
+                        case "<>":
+                            comparisonExpression = Expression.NotEqual(property, constant);
+                            break;
+                        case ">=":
+                            comparisonExpression = Expression.GreaterThanOrEqual(property, constant);
+                            break;
+                        case "<=":
+                            comparisonExpression = Expression.LessThanOrEqual(property, constant);
+                            break;
+                        default:
+                            throw new NotSupportedException($"Unsupported comparison type: {filter.Operator}");
                     }
-                    else
-                    {
-                        combinedExpression = Expression.AndAlso(combinedExpression, equality);
-                    }
+
+                    combinedExpression = combinedExpression == null ? comparisonExpression : Expression.AndAlso(combinedExpression, comparisonExpression);
                 }
 
                 if (combinedExpression == null)
                 {
-                    throw new Exception("No filters provided.");
+                    return originalCollection;  // or throw an exception if no filters should mean no results
                 }
 
                 var lambda = Expression.Lambda<Func<T, bool>>(combinedExpression, parameter);
-
-                var filteredData = new ObservableBindingList<T>(
-     originalCollection.AsQueryable().Where(lambda.Compile()).ToList()
- );
+                var filteredData = originalCollection.AsQueryable().Where(lambda.Compile()).ToList();
 
 
-                return filteredData;
+                return new ObservableBindingList<T>(filteredData);
             }
             catch (Exception ex)
             {

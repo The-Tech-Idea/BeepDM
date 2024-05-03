@@ -57,7 +57,10 @@ namespace TheTechIdea.Beep.Helpers
             string input = "";
             string replacement;
             string pattern;
-
+            if(DataSourceDriver==null)
+            {
+                return null;
+            }
             if (string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString))
             {
                 if (!string.IsNullOrEmpty(DataSourceDriver.ConnectionString))

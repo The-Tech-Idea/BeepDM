@@ -327,28 +327,31 @@ namespace TheTechIdea.Beep.FileManager
                     entityData.EntityName = sheetname;
                     entityData.OriginalEntityName = sheetname;
                     entityData.Id =0;
-                   
-                    foreach (string field in flds)
+                   if(flds != null && flds.Count()>0)
                     {
-                        EntityField f = new EntityField();
-                        string entspace = Regex.Replace(field, @"\s+", "_");
-                        f.fieldname = entspace;
-                        f.Originalfieldname = field;
-                        f.fieldtype = "System.String";
-                        f.ValueRetrievedFromParent = false;
-                        f.EntityName = sheetname;
-                        f.FieldIndex = y;
-                        f.Checked = false;
-                        f.AllowDBNull = true;
-                        f.IsAutoIncrement = false;
-                        f.IsCheck = false;
-                        f.IsKey = false;
-                        f.IsUnique = false;
-                        y++;
-                        fl.Add(f);
+                        foreach (string field in flds)
+                        {
+                            EntityField f = new EntityField();
+                            string entspace = Regex.Replace(field, @"\s+", "_");
+                            f.fieldname = entspace;
+                            f.Originalfieldname = field;
+                            f.fieldtype = "System.String";
+                            f.ValueRetrievedFromParent = false;
+                            f.EntityName = sheetname;
+                            f.FieldIndex = y;
+                            f.Checked = false;
+                            f.AllowDBNull = true;
+                            f.IsAutoIncrement = false;
+                            f.IsCheck = false;
+                            f.IsKey = false;
+                            f.IsUnique = false;
+                            y++;
+                            fl.Add(f);
+                        }
+
+                        entityData.Fields = GetFieldsbyTableScan(sheetname, fl, flds);
                     }
                    
-                    entityData.Fields = GetFieldsbyTableScan(sheetname, fl, flds);
                     Entities = new List<EntityStructure>();
                     EntitiesNames = new List<string>();
                     Entities.Add(entityData);
