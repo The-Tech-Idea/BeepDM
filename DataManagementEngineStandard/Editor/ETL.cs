@@ -1037,7 +1037,7 @@ namespace TheTechIdea.Beep.Editor
                     }
                 }
                 CurrentScriptRecord += 1;
-              //  SendMessege(progress, token, destEntitystructure, null, $"Inserting Record {CurrentScriptRecord} ");
+                 SendMessege(progress, token, destEntitystructure, null, $"Inserting Record {CurrentScriptRecord} ");
                 DMEEditor.ErrorObject = destds.InsertEntity(destEntitystructure.EntityName, retval);
                 token.ThrowIfCancellationRequested();
 
