@@ -1111,7 +1111,7 @@ namespace TheTechIdea.Beep
             DataRow dr;
             foreach (EntityField col in ent.Fields)
             {
-                DataColumn co=dt.Columns.Add(col.fieldname);
+                DataColumn co=dt.Columns.Add(col.fieldname.ToUpper());
                 co.DataType = Type.GetType(col.fieldtype);
 
             }
@@ -1235,11 +1235,11 @@ namespace TheTechIdea.Beep
                 {
                     try
                     {
-                        System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname);
+                        System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
 
                         //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
                         //{
-                        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname);
+                        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
                         if (GetPropAInfo != null && PropAInfo !=null)
                         {
                             result = GetPropAInfo.GetValue(UploadDataRow);
