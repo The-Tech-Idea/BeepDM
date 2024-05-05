@@ -9,6 +9,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
@@ -491,7 +492,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 return -1;
             }
-            int index = Units.IndexOf(entity);
+            int index = _units.IndexOf(entity);
             return index;
 
         }
@@ -599,8 +600,26 @@ namespace TheTechIdea.Beep.Editor
                 Guidproperty.SetValue(Guid.NewGuid().ToString(), null);
 
             }
-            IErrorsInfo retval = DataSource.InsertEntity(cname, doc);
+            IErrorsInfo retval;
+            if (!IsInListMode)
+            {
+                retval = DataSource.InsertEntity(cname, doc);
+            }
+            else
+            {
+                int idx = Getindex(doc);
+                if (idx > -1)
+                {
+                    _units[Getindex(doc)] = doc;
+                    retval = new ErrorsInfo { Flag = Errors.Ok, Message = "object already there, updated" };
+                }
+                else
+                {
+                    _units.Add(doc);
+                    retval = new ErrorsInfo { Flag = Errors.Ok, Message = "Add object to list" };
+                }
 
+            }
             return Task.FromResult<IErrorsInfo>(retval);
         }
         /// <summary>Updates a document and returns information about any errors that occurred.</summary>
@@ -608,9 +627,26 @@ namespace TheTechIdea.Beep.Editor
         /// <returns>An object containing information about any errors that occurred during the update.</returns>
         private Task<IErrorsInfo> UpdateDoc(T doc)
         {
+            IErrorsInfo retval;
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
             string cname = classnames[classnames.Count() - 1];
-            IErrorsInfo retval = DataSource.UpdateEntity(cname, doc);
+            if (!IsInListMode)
+            {
+                retval = DataSource.UpdateEntity(cname, doc);
+            }else
+            {
+                int idx = Getindex(doc);
+                if (idx > -1)
+                {
+                    _units[Getindex(doc)] = doc;
+                    retval=new ErrorsInfo { Flag = Errors.Ok, Message = "Update Done" };
+                }else
+                {
+                    retval=new ErrorsInfo { Flag = Errors.Failed, Message = "Object not found - Coud not Update" };
+                }
+                
+            }
+            
             return Task.FromResult<IErrorsInfo>(retval);
         }
         /// <summary>Deletes a document and returns information about any errors that occurred.</summary>
@@ -620,7 +656,25 @@ namespace TheTechIdea.Beep.Editor
         {
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
             string cname = classnames[classnames.Count() - 1];
-            IErrorsInfo retval = DataSource.DeleteEntity(cname, doc);
+            IErrorsInfo retval ;
+            if (!IsInListMode)
+            {
+                retval =  DataSource.DeleteEntity(cname, doc);
+            }
+            else
+            {
+                int idx = Getindex(doc);
+                if (idx > -1)
+                {
+                    _units.RemoveAt(idx);
+                    retval = new ErrorsInfo { Flag = Errors.Ok, Message = "Deleted is Done" };
+                }
+                else
+                {
+                    retval = new ErrorsInfo { Flag = Errors.Failed, Message = "Object not found - Coud not Delete" };
+                }
+
+            }
             return Task.FromResult<IErrorsInfo>(retval);
         }
 
@@ -638,6 +692,26 @@ namespace TheTechIdea.Beep.Editor
                 return;
             }
             Units.Add(entity);
+            if (!IsInListMode)
+            {
+                Units.Add(entity);
+            }
+            else
+            {
+                int idx = Getindex(entity);
+                if (idx > -1)
+                {
+                    Update(entity);
+                    DMEEditor.AddLogMessage("Beep", $"Added Entity ", DateTime.Now, 0, null, Errors.Ok);
+                  
+                }
+                else
+                {
+                    _units.Add(entity);
+                    DMEEditor.AddLogMessage("Beep", $"Added Entity ", DateTime.Now, 0, null, Errors.Ok);
+                }
+
+            }
             // int index = Getindex(entity);
             //    _entityStates.Add(index, EntityState.Added);
             // Subscribe to PropertyChanged event
@@ -676,8 +750,8 @@ namespace TheTechIdea.Beep.Editor
            
             if (index >= 0)
             {
-                Units[index] = entity;
-                Units.RemoveAt(index);
+              //  Units[index] = entity;
+                _units.RemoveAt(index);
                 if (_entityStates.Count > 0)
                 {
                     if (_entityStates.ContainsKey(index))
@@ -745,7 +819,7 @@ namespace TheTechIdea.Beep.Editor
             var index = DocExistByKey(entity);
             if (index >= 0)
             {
-                Units[index] = entity;
+                _units[index] = entity;
                 if (_entityStates.Count > 0)
                 {
                     if (_entityStates.ContainsKey(index))
@@ -891,6 +965,8 @@ namespace TheTechIdea.Beep.Editor
             _suppressNotification = true;
             if (IsInListMode)
             {
+                _suppressNotification = false;
+                IsFilterOn = false;
                 return DMEEditor.ErrorObject;
             }
             PassedArgs args = new PassedArgs();
@@ -1014,6 +1090,8 @@ namespace TheTechIdea.Beep.Editor
             _suppressNotification = true;
             if (IsInListMode)
             {
+                _suppressNotification = false;
+                IsFilterOn = false;
                 return DMEEditor.ErrorObject;
             }
             PassedArgs args = new PassedArgs();
@@ -1379,9 +1457,13 @@ namespace TheTechIdea.Beep.Editor
         /// public Task<string> GetClipboardContentAsTextAsync()
         public virtual int FindDocIdx(T doc)
         {
-            int retval = -1;
+            object docPrimaryKeyValue = doc.GetType().GetProperty(PrimaryKey)?.GetValue(doc, null);
 
-            retval = Units.IndexOf(doc);
+            // Find the first matching item in _units.
+            var item = _units.FirstOrDefault(p => object.Equals(p.GetType().GetProperty(PrimaryKey)?.GetValue(p, null), docPrimaryKeyValue));
+
+            // Get the index of the found item.
+            int retval = _units.IndexOf(item);
 
             return retval;
         }
@@ -1391,7 +1473,15 @@ namespace TheTechIdea.Beep.Editor
         /// <returns>The index of the document in the collection if it exists, otherwise -1.</returns>
         public virtual int DocExistByKey(T doc)
         {
-            int retval = Units.IndexOf(Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(doc, null).Equals(doc.GetType().GetProperty(PrimaryKey).GetValue(doc, null))));
+            // Retrieve the primary key value from the document `doc`.
+            object docPrimaryKeyValue = doc.GetType().GetProperty(PrimaryKey)?.GetValue(doc, null);
+
+            // Find the first matching item in _units.
+            var item = _units.FirstOrDefault(p => object.Equals(p.GetType().GetProperty(PrimaryKey)?.GetValue(p, null), docPrimaryKeyValue));
+
+            // Get the index of the found item.
+            int retval = _units.IndexOf(item);
+
             return retval;
         }
         /// <summary>Checks if a document exists in the collection and returns its index.</summary>
@@ -1400,9 +1490,13 @@ namespace TheTechIdea.Beep.Editor
         /// <returns>The index of the document if it exists in the collection, otherwise -1.</returns>
         public virtual int DocExist(T doc)
         {
-            int retval = -1;
+            object docPrimaryKeyValue = doc.GetType().GetProperty(PrimaryKey)?.GetValue(doc, null);
 
-            retval = Units.IndexOf(doc);
+            // Find the first matching item in _units.
+            var item = _units.FirstOrDefault(p => object.Equals(p.GetType().GetProperty(PrimaryKey)?.GetValue(p, null), docPrimaryKeyValue));
+
+            // Get the index of the found item.
+            int retval = _units.IndexOf(item);
 
             return retval;
         }
@@ -1635,7 +1729,11 @@ namespace TheTechIdea.Beep.Editor
                 keysidx++;
                 UpdatedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
                 int x = Getindex(item);
-                _entityStates.Add(x, EntityState.Modified);
+                if (!_entityStates.ContainsKey(x))
+                {
+                    _entityStates.Add(x, EntityState.Modified);
+                }
+                
             }
             CurrentProperty = item.GetType().GetProperty(e.PropertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
             UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, PropertyName = e.PropertyName, PropertyValue = Convert.ToString(CurrentProperty.GetValue(item, null)) };

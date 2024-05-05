@@ -496,7 +496,7 @@ namespace TheTechIdea.Beep.Helpers
                 AdapterType = "Npgsql.NpgsqlDataAdapter",
                 CommandBuilderType = "Npgsql.NpgsqlCommandBuilder",
                 DbConnectionType = "Npgsql.NpgsqlConnection",
-                ConnectionString = "User ID={UserID};Password={Password};Host={Host};Port={Port};Database=myDataBase;Pooling=true;Min Pool Size=0;Max Pool Size=100;Connection Lifetime=0;",
+                ConnectionString = "User ID={UserID};Password={Password};Host={Host};Port={Port};Database=myDataBase;",
                 iconname = "postgres.png",
                 classHandler = "PostgreDataSource",
                 ADOType = true,
