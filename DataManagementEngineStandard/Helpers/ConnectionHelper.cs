@@ -527,6 +527,7 @@ namespace TheTechIdea.Beep.Helpers
                 CreateLocal = false,
                 InMemory = false,
                 Favourite = false,
+                ConnectionString= "http://{host}:27017",
                 DatasourceCategory = DatasourceCategory.NOSQL, // Assuming appropriate enum value
                 DatasourceType = DataSourceType.MongoDB, // Assuming appropriate enum value
                 IsMissing = false
