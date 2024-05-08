@@ -966,7 +966,7 @@ namespace TheTechIdea.Beep.Helpers
                 iconname = "litedb.png",
                 classHandler = "LiteDBDataSource",
                 ADOType = false,
-                CreateLocal = false,
+                CreateLocal = true,
                 InMemory = false,
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.NOSQL, // Assuming appropriate enum value
