@@ -1322,6 +1322,7 @@ namespace TheTechIdea.Beep.Editor
         /// </returns>
         public virtual async Task<ObservableBindingList<T>> Get(List<AppFilter> filters)
         {
+
             if (filters == null)
             {
                 IsFilterOn = false;
@@ -1753,6 +1754,10 @@ namespace TheTechIdea.Beep.Editor
         {
             try
             {
+                // Separate pagination filters
+                var paginationFilters = filters.Where(f => f.FieldName == "PageIndex" || f.FieldName == "PageSize").ToList();
+                filters = filters.Except(paginationFilters).ToList();
+
                 var parameter = Expression.Parameter(typeof(T), "x");
 
                 Expression combinedExpression = null;
@@ -1817,7 +1822,13 @@ namespace TheTechIdea.Beep.Editor
 
                 var lambda = Expression.Lambda<Func<T, bool>>(combinedExpression, parameter);
                 var filteredData = originalCollection.AsQueryable().Where(lambda.Compile()).ToList();
-
+                // Apply pagination
+                if (paginationFilters.Any())
+                {
+                    int pageIndex = int.Parse(paginationFilters.FirstOrDefault(f => f.FieldName == "PageIndex")?.FilterValue ?? "1") - 1;
+                    int pageSize = int.Parse(paginationFilters.FirstOrDefault(f => f.FieldName == "PageSize")?.FilterValue ?? "10");
+                    filteredData = filteredData.Skip(pageIndex * pageSize).Take(pageSize).ToList();
+                }
 
                 return new ObservableBindingList<T>(filteredData);
             }
