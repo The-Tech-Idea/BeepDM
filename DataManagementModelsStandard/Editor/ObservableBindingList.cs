@@ -7,10 +7,11 @@ using System.Linq;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Reflection;
+using System.Linq.Expressions;
 
 namespace DataManagementModels.Editor
 {
-    public class ObservableBindingList<T> : BindingList<T>, INotifyCollectionChanged where T : INotifyPropertyChanged
+    public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged where T : INotifyPropertyChanged
     {
 
         protected override object AddNewCore()
@@ -20,7 +21,7 @@ namespace DataManagementModels.Editor
             return newItem;
         }
 
-
+        private bool suppressNotification = false;
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
         {
@@ -52,13 +53,16 @@ namespace DataManagementModels.Editor
         }
         protected override void OnListChanged(ListChangedEventArgs e)
         {
-            base.OnListChanged(e);
-
-            if (e.ListChangedType == ListChangedType.ItemChanged && e.NewIndex >= 0 && e.NewIndex < Count)
+            if (!suppressNotification)
             {
-                Current = this[e.NewIndex];
-                OnCurrentChanged();
+                base.OnListChanged(e);
+                if (e.ListChangedType == ListChangedType.ItemChanged && e.NewIndex >= 0 && e.NewIndex < Count)
+                {
+                    Current = this[e.NewIndex];
+                    OnCurrentChanged();
+                }
             }
+         
         }
 
         public bool MoveNext()
@@ -121,10 +125,60 @@ namespace DataManagementModels.Editor
             return false;
         }
 
-      
+
         #endregion
         #region "Sort"
+        public void Sort(string propertyName, IComparer<object> comparer)
+        {
+            var property = typeof(T).GetProperty(propertyName);
+            if (property == null)
+            {
+                throw new ArgumentException($"Property '{propertyName}' not found on type '{typeof(T)}'.");
+            }
 
+            var items = Items.ToList();
+            items.Sort((x, y) => comparer.Compare(property.GetValue(x, null), property.GetValue(y, null)));
+
+            // Rebind the sorted items
+            ResetItems(items);
+        }
+
+        public void ApplySort(ListSortDescriptionCollection sorts)
+        {
+            var paramExpr = Expression.Parameter(typeof(T), "x");
+            IQueryable<T> queryableList = originalList.AsQueryable();
+
+            IOrderedQueryable<T> orderedQuery = null;
+
+            foreach (ListSortDescription sortDesc in sorts)
+            {
+                var property = typeof(T).GetProperty(sortDesc.PropertyDescriptor.Name);
+                if (property == null)
+                    throw new InvalidOperationException($"No property '{sortDesc.PropertyDescriptor.Name}' on type '{typeof(T)}'");
+
+                var propertyAccess = Expression.MakeMemberAccess(paramExpr, property);
+                var orderByExp = Expression.Lambda(propertyAccess, paramExpr);
+
+                string methodName = null;
+
+                if (sortDesc.SortDirection == ListSortDirection.Ascending)
+                    methodName = orderedQuery == null ? "OrderBy" : "ThenBy";
+                else
+                    methodName = orderedQuery == null ? "OrderByDescending" : "ThenByDescending";
+
+                MethodCallExpression resultExp = Expression.Call(
+                    typeof(Queryable),
+                    methodName,
+                    new Type[] { typeof(T), property.PropertyType },
+                    queryableList.Expression,
+                    Expression.Quote(orderByExp));
+
+                queryableList = queryableList.Provider.CreateQuery<T>(resultExp);
+                orderedQuery = (IOrderedQueryable<T>)queryableList;
+            }
+
+            ResetItems(orderedQuery.ToList());
+        }
         private ListSortDirection _sortDirection;
         public ListSortDirection SortDirection
         {
@@ -171,86 +225,184 @@ namespace DataManagementModels.Editor
         }
         #endregion
         #region "Filter"
-        private Func<T, bool> _filter = null;
-        private IList<T> _originalCollection;
-        public Func<T, bool> Filter
+        private string filterString;
+        private List<T> originalList = new List<T>();
+        public ListSortDescriptionCollection SortDescriptions => null;
+        public bool SupportsAdvancedSorting => true;
+        public bool SupportsFiltering => true;
+        public string Filter
         {
-            get => _filter;
+            get => filterString;
             set
             {
-                _filter = value;
-                ApplyFilter();
-                OnPropertyChanged("Filter");
+                if (filterString != value)
+                {
+                    filterString = value;
+                    ApplyFilter();
+                }
             }
         }
+
+        public void RemoveFilter()
+        {
+            Filter = null;
+        }
+
         private void ApplyFilter()
         {
-            if (_originalCollection == null)
+            if (string.IsNullOrWhiteSpace(filterString))
             {
-                _originalCollection = new List<T>(this);
-            }
-
-            if (_filter == null)
-            {
-                if (Items.Count != _originalCollection.Count)
-                {
-                    ClearItems();
-
-                    foreach (var item in _originalCollection)
-                    {
-                        Add(item);
-                    }
-                }
+                ResetItems(originalList);
             }
             else
             {
-                var results = _originalCollection.Where(_filter).ToList();
+                var filteredItems = originalList.AsQueryable().Where(ParseFilter(filterString)).ToList();
+                ResetItems(filteredItems);
+            }
+        }
+        private bool MatchesFilter(T item, string filter)
+        {
+            if (string.IsNullOrEmpty(filter))
+                return true;
 
-                ClearItems();
-
-                foreach (var item in results)
+            var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var property in properties)
+            {
+                if (property.PropertyType == typeof(string) || property.PropertyType.IsValueType)
                 {
-                    Add(item);
+                    var value = property.GetValue(item);
+                    if (value != null && value.ToString().IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private Expression<Func<T, bool>> ParseFilter(string filter)
+        {
+            var parameter = Expression.Parameter(typeof(T), "x");
+            Expression expression = null;
+
+            // Simple tokenization of filter string
+            // Example filter: "Name LIKE '%John%' AND Age > 30"
+            var filters = filter.Split(new string[] { " AND " }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var f in filters)
+            {
+                var parts = f.Trim().Split(' ');
+                if (parts.Length < 3)
+                    continue;
+
+                var propName = parts[0];
+                var op = parts[1];
+                var value = string.Join(" ", parts.Skip(2)).Trim('\'', '%');
+
+                var property = Expression.Property(parameter, propName);
+                var valueExpression = Expression.Constant(value, property.Type);
+
+                switch (op.ToUpper())
+                {
+                    case "LIKE":
+                        expression = Expression.AndAlso(expression ?? Expression.Constant(true),
+                            Expression.Call(property, "Contains", null, valueExpression));
+                        break;
+                    case "=":
+                        expression = Expression.AndAlso(expression ?? Expression.Constant(true),
+                            Expression.Equal(property, valueExpression));
+                        break;
+                    case ">":
+                        expression = Expression.AndAlso(expression ?? Expression.Constant(true),
+                            Expression.GreaterThan(property, valueExpression));
+                        break;
+                    case "<":
+                        expression = Expression.AndAlso(expression ?? Expression.Constant(true),
+                            Expression.LessThan(property, valueExpression));
+                        break;
+                        // Add other cases as needed
                 }
             }
 
-            // Now we can raise the ListChanged event
-            ResetBindings();
+            return expression != null ? Expression.Lambda<Func<T, bool>>(expression, parameter) : null;
+        }
+
+        private void ResetItems(List<T> items)
+        {
+            suppressNotification = true;
+            // Create a copy of the list for safe iteration
+            var itemsCopy = new List<T>(items);
+
+            bool raiseEvent = itemsCopy.Count != this.Count;
+
+            // Clear the current items
+            ClearItems();
+
+            // Use the copy for adding items to avoid modification issues
+           
+            foreach (var item in itemsCopy)
+            {
+                this.Add(item);
+            }
+            suppressNotification = false;
+            if (raiseEvent)
+            {
+                OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
+            }
         }
         public new void ResetBindings()
         {
             OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
         }
         #endregion
-       
+        #region "Constructor"
         public ObservableBindingList() : base()
         {
-                        // Initialize the list with no items and subscribe to AddingNew event.
+            // Initialize the list with no items and subscribe to AddingNew event.
             AddingNew += ObservableBindingList_AddingNew;
-            this.AllowNew=true;
-            this.AllowEdit=true;
-            this.AllowRemove=true;
+            this.AllowNew = true;
+            this.AllowEdit = true;
+            this.AllowRemove = true;
+            originalList = new List<T>();
         }
-        public ObservableBindingList(IEnumerable<T> enumerable) : base()
+        public ObservableBindingList(IEnumerable<T> enumerable) : base(new List<T>(enumerable))
         {
-
-            foreach (T item in enumerable)
+            foreach (T item in this.Items)
+            {
                 item.PropertyChanged += Item_PropertyChanged;
+            }
             AddingNew += ObservableBindingList_AddingNew;
+            originalList = new List<T>(this.Items);
         }
+        //public ObservableBindingList(IEnumerable<T> enumerable) : base()
+        //{
+
+        //    foreach (T item in enumerable)
+        //    {
+        //        item.PropertyChanged += Item_PropertyChanged;
+        //        this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
+        //    }
+           
+        //    AddingNew += ObservableBindingList_AddingNew;
+        //    originalList = this.Items.ToList();
+        //}
         public ObservableBindingList(IList<T> list) : base(list)
         {
             foreach (T item in list)
-                item.PropertyChanged += Item_PropertyChanged;
+            {
 
-          //  HookupCollectionChangedEvent();
+                item.PropertyChanged += Item_PropertyChanged;
+               
+            }
+               
+
+            //  HookupCollectionChangedEvent();
 
             AddingNew += ObservableBindingList_AddingNew;
             this.AllowNew = true;
             this.AllowEdit = true;
             this.AllowRemove = true;
+            originalList = this.Items.ToList();
         }
-        public ObservableBindingList(DataTable dataTable) : base( )
+        public ObservableBindingList(DataTable dataTable) : base()
         {
             //if (dataTable == null)
             //{
@@ -263,18 +415,18 @@ namespace DataManagementModels.Editor
                 if (item != null)
                 {
                     item.PropertyChanged += Item_PropertyChanged;
-                    this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
+                    this.Items.Add(item); // Adds the item to the list and hooks up PropertyChanged event
                 }
+               
             }
 
             AddingNew += ObservableBindingList_AddingNew;
             this.AllowNew = true;
             this.AllowEdit = true;
             this.AllowRemove = true;
+            originalList = new List<T>(this.Items);
         }
-
-        // Your existing GetItem<T> method remains unchanged.
-
+        #endregion
         #region "Util Methods"
         private T GetItem<T>(DataRow dr)
         {
@@ -349,12 +501,20 @@ namespace DataManagementModels.Editor
         {
             T removedItem = this[index];
             base.RemoveItem(index);
+            if (string.IsNullOrEmpty(filterString))
+            {
+                originalList.RemoveAt(index);
+            }
             removedItem.PropertyChanged -= Item_PropertyChanged;
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
         }
         protected override void InsertItem(int index, T item)
         {
             base.InsertItem(index, item);
+            if (string.IsNullOrEmpty(filterString))
+            {
+                originalList.Insert(index, item);
+            }
             item.PropertyChanged += Item_PropertyChanged;
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
         }
@@ -363,6 +523,10 @@ namespace DataManagementModels.Editor
             T replacedItem = this[index];
             replacedItem.PropertyChanged -= Item_PropertyChanged;
             base.SetItem(index, item);
+            if (string.IsNullOrEmpty(filterString))
+            {
+                originalList[index] = item;
+            }
             item.PropertyChanged += Item_PropertyChanged;
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, replacedItem, index));
         }
