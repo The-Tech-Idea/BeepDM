@@ -198,7 +198,7 @@ namespace TheTechIdea.Beep.DataView
         /// <param name="per">The error information object.</param>
         public DataViewDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType pDatasourceType, IErrorsInfo per)
         {
-            DatasourceName = datasourcename;
+           
             Logger = logger;
             ErrorObject = per;
             DMEEditor = pDMEEditor;
@@ -210,15 +210,25 @@ namespace TheTechIdea.Beep.DataView
                 ErrorObject = ErrorObject,
                 DMEEditor = DMEEditor
             };
+            string filepath;
+            if (Path.GetDirectoryName(datasourcename) == null)
+            {
+                filepath = Path.Combine(DMEEditor.ConfigEditor.Config.Folders.FirstOrDefault(c => c.FolderFilesType == FolderFileTypes.DataView).FolderPath, datasourcename);
+
+            }
+            else
+            {
+                filepath = Path.GetDirectoryName(datasourcename);
+            }
             string filename = Path.GetFileName(datasourcename);
+          
             List<ConnectionProperties> cnlist = DMEEditor.ConfigEditor.DataConnections.Where(p => p.FileName != null && p.Category == DatasourceCategory.VIEWS).ToList();
-            string filepath; //= DMEEditor.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.DataView).FirstOrDefault().FolderPath;
+           
             if (cnlist.Where(c => c.FileName.Equals(filename, StringComparison.InvariantCultureIgnoreCase)).Any())
             {
                 Dataconnection.ConnectionProp = cnlist.Where(c => c.FileName.Equals(filename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 filepath = Dataconnection.ConnectionProp.FilePath;
-
-
+               
             }
             else
             {
@@ -235,6 +245,7 @@ namespace TheTechIdea.Beep.DataView
                 DMEEditor.ConfigEditor.SaveDataconnectionsValues();
 
             }
+            DatasourceName = filename;
             DataViewFile = Path.Combine(filepath, filename);
 
         }

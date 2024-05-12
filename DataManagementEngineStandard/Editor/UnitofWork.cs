@@ -1592,6 +1592,10 @@ namespace TheTechIdea.Beep.Editor
         /// </remarks
         private void Units_ListChanged(object sender, ListChangedEventArgs e)
         {
+            if (_units.SuppressNotification == true)
+            {
+                return;
+            }
             if (_suppressNotification)
             {
                 return;
@@ -1616,6 +1620,10 @@ namespace TheTechIdea.Beep.Editor
         /// <param name="e">The event arguments.</param>
         private void Units_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
+            if (_units.SuppressNotification == true)
+            {
+                return;
+            }
             if (_suppressNotification)
             {
                 return;
@@ -1712,6 +1720,10 @@ namespace TheTechIdea.Beep.Editor
         /// <param name="e">The event arguments containing information about the changed property.</param>
         private void ItemPropertyChangedHandler(object sender, PropertyChangedEventArgs e)
         {
+            if (_units.SuppressNotification == true)
+            {
+                return;
+            }
             if (_suppressNotification || IsNewRecord)
             {
                 return;

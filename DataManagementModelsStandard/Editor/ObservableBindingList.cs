@@ -21,7 +21,7 @@ namespace DataManagementModels.Editor
             return newItem;
         }
 
-        private bool suppressNotification = false;
+        public bool SuppressNotification { get; set; } = false;
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
         {
@@ -53,15 +53,14 @@ namespace DataManagementModels.Editor
         }
         protected override void OnListChanged(ListChangedEventArgs e)
         {
-            if (!suppressNotification)
-            {
+           
                 base.OnListChanged(e);
                 if (e.ListChangedType == ListChangedType.ItemChanged && e.NewIndex >= 0 && e.NewIndex < Count)
                 {
                     Current = this[e.NewIndex];
                     OnCurrentChanged();
                 }
-            }
+           
          
         }
 
@@ -250,6 +249,7 @@ namespace DataManagementModels.Editor
 
         private void ApplyFilter()
         {
+            SuppressNotification = true;
             if (string.IsNullOrWhiteSpace(filterString))
             {
                 ResetItems(originalList);
@@ -259,6 +259,7 @@ namespace DataManagementModels.Editor
                 var filteredItems = originalList.AsQueryable().Where(ParseFilter(filterString)).ToList();
                 ResetItems(filteredItems);
             }
+            SuppressNotification = false;
         }
         private bool MatchesFilter(T item, string filter)
         {
@@ -327,7 +328,7 @@ namespace DataManagementModels.Editor
 
         private void ResetItems(List<T> items)
         {
-            suppressNotification = true;
+          
             // Create a copy of the list for safe iteration
             var itemsCopy = new List<T>(items);
 
@@ -342,11 +343,12 @@ namespace DataManagementModels.Editor
             {
                 this.Add(item);
             }
-            suppressNotification = false;
+         
             if (raiseEvent)
             {
                 OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
             }
+          
         }
         public new void ResetBindings()
         {
@@ -505,8 +507,12 @@ namespace DataManagementModels.Editor
             {
                 originalList.RemoveAt(index);
             }
-            removedItem.PropertyChanged -= Item_PropertyChanged;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
+            if (!SuppressNotification)
+            {
+                removedItem.PropertyChanged -= Item_PropertyChanged;
+                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
+            }
+          
         }
         protected override void InsertItem(int index, T item)
         {
@@ -515,8 +521,12 @@ namespace DataManagementModels.Editor
             {
                 originalList.Insert(index, item);
             }
-            item.PropertyChanged += Item_PropertyChanged;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+            if (!SuppressNotification)
+            {
+                item.PropertyChanged += Item_PropertyChanged;
+                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+            }
+         
         }
         protected override void SetItem(int index, T item)
         {
@@ -527,8 +537,12 @@ namespace DataManagementModels.Editor
             {
                 originalList[index] = item;
             }
-            item.PropertyChanged += Item_PropertyChanged;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, replacedItem, index));
+            if (!SuppressNotification)
+            {
+                item.PropertyChanged += Item_PropertyChanged;
+                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, replacedItem, index));
+            }
+       
         }
         public event NotifyCollectionChangedEventHandler CollectionChanged;
         protected virtual void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
