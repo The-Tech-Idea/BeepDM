@@ -713,6 +713,86 @@ namespace TheTechIdea.Beep
         //    }
         //    return Records;
         //}
+        public  object GetBindingListFromIList(IList inputList, Type itemType, EntityStructure entType)
+        {
+            // Create the type of ObservableBindingList<> dynamically based on itemType
+            Type genericListType = typeof(ObservableBindingList<>).MakeGenericType(itemType);
+            var bindingList = Activator.CreateInstance(genericListType);
+
+            // Use reflection to find the Add method on ObservableBindingList<>
+            var addMethod = genericListType.GetMethod("Add");
+
+            foreach (var item in inputList)
+            {
+                // Optionally modify items based on EntityStructure if needed
+                object itemToAdd = item;
+
+                // For example, you might want to modify properties based on entType rules here
+                // This is just a placeholder for any potential transformation logic you might need
+                foreach (var field in entType.Fields)
+                {
+                    PropertyInfo propInfo = itemType.GetProperty(field.fieldname, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                    if (propInfo != null)
+                    {
+                        // Assuming there's some logic to determine a new value or modify existing
+                        object existingValue = propInfo.GetValue(itemToAdd);
+                        // Optionally modify the existingValue here
+                        propInfo.SetValue(itemToAdd, existingValue);
+                    }
+                }
+
+                // Add the potentially modified item to the ObservableBindingList
+                addMethod.Invoke(bindingList, new[] { itemToAdd });
+            }
+
+            return bindingList;
+        }
+        public object GetBindingListByDataTable(DataTable dt, Type type, EntityStructure enttype)
+        {
+
+
+            //  string f = "";
+            List<object> Records = new List<object>();
+            Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
+            //foreach (DataColumn item in dt.Columns)
+            //{
+            //    properties.Add(item.ColumnName.ToLower(), type.GetProperty(item.ColumnName));
+            //    //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
+            //}
+            for (int i = 0; i <= enttype.Fields.Count - 1; i++)
+            {
+                properties.Add(enttype.Fields[i].fieldname, type.GetProperty(enttype.Fields[i].fieldname));
+            }
+            foreach (DataRow row in dt.Rows)
+            {
+                // dynamic x = TypeHelpers.GetInstance(type);
+                dynamic x = Activator.CreateInstance(type);
+
+                foreach (DataColumn item in dt.Columns)
+                {
+                    if (row[item.ColumnName] != DBNull.Value)
+                    {
+                        string st = row[item.ColumnName].ToString();
+                        Type tp = Type.GetType(enttype.Fields.Where(p => p.fieldname.Equals(item.ColumnName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().fieldtype);
+                        var v = Convert.ChangeType(row[item.ColumnName], tp);
+                        if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st))
+                        {
+                            properties[item.ColumnName].SetValue(x, v, null);
+                        }
+                    }
+
+                }
+
+
+                Records.Add(x);
+            }
+            Type obstype = typeof(ObservableBindingList<>).MakeGenericType(type);
+            object[] args = new object[1] { Records};
+            return Activator.CreateInstance(type, args);
+           
+           // return Records;
+        }
+
         public List<object> GetListByDataTable(DataTable dt, Type type, EntityStructure enttype)
         {
 

@@ -48,6 +48,8 @@ namespace TheTechIdea.Beep
         List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype);
         List<object> GetListByDataTable(DataTable dt, Type type, EntityStructure enttype);
         List<object> GetListByDataTable(DataTable dt, string Namespace, string EntityName);
+        object GetBindingListByDataTable(DataTable dt, Type type, EntityStructure enttype);
+        object GetBindingListFromIList(IList inputList, Type itemType, EntityStructure entType);
         //   List<ExpandoObject> GetExpandoObject(DataTable dt, Type type, EntityStructure enttype);
         ConnectionDriversConfig LinkConnection2Drivers(IConnectionProperties cn);
        // dynamic GetTypeFromString(string strFullyQualifiedName);
