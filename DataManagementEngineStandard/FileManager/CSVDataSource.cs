@@ -13,6 +13,7 @@ using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
+using DataManagementModels.Editor;
 
 namespace TheTechIdea.Beep.FileManager
 {
@@ -332,7 +333,12 @@ namespace TheTechIdea.Beep.FileManager
                         foreach (string field in flds)
                         {
                             EntityField f = new EntityField();
-                            string entspace = Regex.Replace(field, @"\s+", "_");
+                            string entspace = Regex.Replace(field ,@"[\s-.]+", "_");
+                            if (entspace.Equals(sheetname, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                entspace = "_" + entspace;
+                            }
+                           
                             f.fieldname = entspace;
                             f.Originalfieldname = field;
                             f.fieldtype = "System.String";
@@ -374,6 +380,75 @@ namespace TheTechIdea.Beep.FileManager
             }
             return entityData;
         }
+        private DataTable GetDataTable(int nrofrows)
+        {
+            DataTable dataTable = new DataTable();
+            CsvTextFieldParser fieldParser = null;
+
+            try
+            {
+                // Ensure there's a definition of entity fields
+                if (Entities == null || Entities.Count == 0 || Entities[0].Fields.Count == 0)
+                {
+                    Getfields(); // Attempt to load fields if not loaded
+                }
+
+                if (Entities.Count == 0 || Entities[0].Fields.Count == 0)
+                {
+                    throw new InvalidOperationException("No entity fields defined.");
+                }
+
+                // Define DataTable structure based on entity fields
+                foreach (EntityField field in Entities[0].Fields)
+                {
+                    Type fieldType =Type.GetType(field.fieldtype);
+                    dataTable.Columns.Add(field.fieldname, fieldType ?? typeof(string)); // Default to string if type is unknown
+                }
+
+                // Initialize the CSV reader
+                fieldParser = new CsvTextFieldParser(Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName));
+                fieldParser.SetDelimiter(',');
+                if(nrofrows == 0)
+                {
+                    nrofrows = dataTable.Rows.Count ;
+                }
+               
+                // Read CSV data into DataTable
+                while (!fieldParser.EndOfData)
+                {
+                    DataRow newRow = dataTable.NewRow();
+                    string[] fields = fieldParser.ReadFields();
+
+                    for (int i = 0; i < Math.Min(fields.Length, dataTable.Columns.Count); i++)
+                    {
+                        try
+                        {
+                            string value = fields[i];
+                            Type targetType = dataTable.Columns[i].DataType;
+                            newRow[i] = Convert.ChangeType(value, targetType);
+                        }
+                        catch (Exception fieldEx)
+                        {
+                            newRow[i] = DBNull.Value; // Set as DB Null if conversion fails
+                        }
+                    }
+
+                    dataTable.Rows.Add(newRow);
+                }
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Error in GetData: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+            finally
+            {
+                fieldParser?.Close();
+            }
+
+            return dataTable;
+        }
+
         private List<object> GetData(int nrofrows)
         {
             try
@@ -395,12 +470,15 @@ namespace TheTechIdea.Beep.FileManager
                     Getfields();
                 }
                 Records = new List<object>();
+                //DMTypeBuilder.CreateNewObject(DMEEditor, "Beep.CSVDataSource", Entities[0].EntityName, Entities[0].Fields);
+                 
+               
                 if (Entities != null)
                 {
                    fieldParser = new CsvTextFieldParser(Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName));
                    fieldParser.SetDelimiter(',');
 
-                    DMTypeBuilder.CreateNewObject(DMEEditor, "Beep.CSVDataSource", Entities[0].EntityName, Entities[0].Fields);
+                  
                     Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
                     foreach (EntityField item in Entities[0].Fields)
                     {
@@ -438,8 +516,9 @@ namespace TheTechIdea.Beep.FileManager
                     }
                     
                 }
-
+                
                 fieldParser.Close();
+                 
                 return Records;
 
             }
@@ -593,7 +672,11 @@ namespace TheTechIdea.Beep.FileManager
                     }
                   
                 }
-                return GetData(noofrows);
+                var retval= GetDataTable(0);
+                var items = DMEEditor.Utilfunction.GetBindingListByDataTable(retval, DMTypeBuilder.myType,Entities.FirstOrDefault());
+              //  var observableType = typeof(ObservableBindingList<>).MakeGenericType(DMTypeBuilder.myType);
+                //var list = Activator.CreateInstance(observableType, args);
+                return items;
             }
             catch (Exception ex)
             {

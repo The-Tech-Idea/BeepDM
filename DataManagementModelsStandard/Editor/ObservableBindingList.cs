@@ -11,7 +11,7 @@ using System.Linq.Expressions;
 
 namespace DataManagementModels.Editor
 {
-    public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged where T : INotifyPropertyChanged
+    public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged where T : class,INotifyPropertyChanged
     {
 
         protected override object AddNewCore()
@@ -404,6 +404,24 @@ namespace DataManagementModels.Editor
             this.AllowRemove = true;
             originalList = this.Items.ToList();
         }
+        public ObservableBindingList(IBindingListView bindinglist) : base()
+        {
+            foreach (T item in bindinglist)
+            {
+
+                item.PropertyChanged += Item_PropertyChanged;
+
+            }
+
+
+            //  HookupCollectionChangedEvent();
+
+            AddingNew += ObservableBindingList_AddingNew;
+            this.AllowNew = true;
+            this.AllowEdit = true;
+            this.AllowRemove = true;
+            originalList = this.Items.ToList();
+        }
         public ObservableBindingList(DataTable dataTable) : base()
         {
             //if (dataTable == null)
@@ -428,6 +446,36 @@ namespace DataManagementModels.Editor
             this.AllowRemove = true;
             originalList = new List<T>(this.Items);
         }
+        public ObservableBindingList(List<object> objects) : base()
+        {
+            if (objects == null)
+            {
+                throw new ArgumentNullException(nameof(objects));
+            }
+
+            foreach (var obj in objects)
+            {
+                T item = obj as T;
+                if (item != null)
+                {
+                    item.PropertyChanged += Item_PropertyChanged;
+                    this.Items.Add(item); // Adds the item to the list and hooks up PropertyChanged event
+                }
+                else
+                {
+                    // Optionally handle the case where the object is not of type T
+                    // For example, you might throw an exception or ignore the item
+                    throw new InvalidCastException($"Object of type {obj.GetType().Name} cannot be cast to type {typeof(T).Name}.");
+                }
+            }
+
+            AddingNew += ObservableBindingList_AddingNew;
+            this.AllowNew = true;
+            this.AllowEdit = true;
+            this.AllowRemove = true;
+            originalList = new List<T>(this.Items);
+        }
+
         #endregion
         #region "Util Methods"
         private T GetItem<T>(DataRow dr)

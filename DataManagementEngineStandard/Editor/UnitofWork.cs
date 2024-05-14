@@ -1427,10 +1427,22 @@ namespace TheTechIdea.Beep.Editor
 
                 List<T> list = new List<T>();
                 _suppressNotification = true;
+                if (retval is IBindingListView)
+                {
+                     IBindingListView  ls= (IBindingListView)retval;
+                    if(EntityType == null)
+                    {
+                        EntityType = DataSource.GetEntityType(EntityName);
+                    }
+                    Units = new ObservableBindingList<T>(ls);
+                }else
                 if (retval is IList)
                 {
                     list = (List<T>)retval;
-
+                    if (EntityType == null)
+                    {
+                        EntityType = DataSource.GetEntityType(EntityName);
+                    }
                     Units = new ObservableBindingList<T>(list);
                 }
                 else

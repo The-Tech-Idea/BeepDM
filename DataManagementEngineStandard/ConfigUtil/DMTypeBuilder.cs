@@ -24,6 +24,7 @@ namespace TheTechIdea.Util
         public static object myObject { get; set; }
         public static  TypeBuilder tb { get; set; }
         public static  AssemblyBuilder ab { get; set; }
+        private static readonly Dictionary<string, Type> typeCache = new Dictionary<string, Type>();
         /// <summary>Creates a new object of a specified type.</summary>
         /// <param name="DMEEditor">The IDMEEditor instance.</param>
         /// <param name="classnamespace">The namespace of the class.</param>
@@ -36,26 +37,38 @@ namespace TheTechIdea.Util
         /// Then, it converts the P
         public static object CreateNewObject(IDMEEditor DMEEditor, string classnamespace, string typename, List<EntityField> MyFields)
         {
+
             string typenamespace = string.Empty;
             if (!string.IsNullOrEmpty(classnamespace))
             {
                 typenamespace = classnamespace;
             }else typenamespace = "TheTechIdea.Classes";
-            //myType = CompileResultType(libname, typenamespace,typename, MyFields);
-            //myObject = Activator.CreateInstance(myType);
-            EntityStructure ent=new EntityStructure() { Fields=MyFields,EntityName= typename };
-            string cls = ConvertPOCOClassToEntity(DMEEditor,  ent,  typenamespace);
-            Tuple<Type, Assembly> retval = RoslynCompiler.CompileClassTypeandAssembly(typename,cls);
-            //myType = CreateTypeFromCode(cls, typenamespace+"."+ typename);
-            // Type type = CreateTypeFromCode(cls,  typename); ;
-            if (retval!= null)
+
+            string fullTypeName = $"{typenamespace}.{typename}";
+            // Check if the type is already cached
+            if (!typeCache.ContainsKey(fullTypeName))
             {
-                myType = retval.Item1;
-                myObject = Activator.CreateInstance(myType);
+                EntityStructure ent = new EntityStructure() { Fields = MyFields, EntityName = typename };
+                string cls = ConvertPOCOClassToEntity(DMEEditor, ent, typenamespace);
+                Tuple<Type, Assembly> retval = RoslynCompiler.CompileClassTypeandAssembly(typename, cls);
+                if (retval != null)
+                {
+                    myType = retval.Item1;
+                    myObject = Activator.CreateInstance(myType);
 
 
 
+                }
             }
+            else
+            {
+                // Use the cached type
+                myType = typeCache[fullTypeName];
+                myObject = Activator.CreateInstance(myType);
+            }
+            
+            
+           
 
             return myObject;
 
