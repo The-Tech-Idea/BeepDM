@@ -51,7 +51,13 @@ private int _id;
         set { SetProperty(ref _caption, value); }
     }
 
-    private DataSourceType _databasetype;
+        private string _DescriptionValue;
+        public string Description
+        {
+            get { return _DescriptionValue; }
+            set { SetProperty(ref _DescriptionValue, value); }
+        }
+        private DataSourceType _databasetype;
     public DataSourceType DatabaseType
     {
         get { return _databasetype; }
@@ -312,6 +318,12 @@ private int _id;
             set { SetProperty(ref _fieldname, value); }
         }
 
+        private string _DescriptionValue;
+        public string Description
+        {
+            get { return _DescriptionValue; }
+            set { SetProperty(ref _DescriptionValue, value); }
+        }
         private string _originalfieldname;
         public string Originalfieldname
         {

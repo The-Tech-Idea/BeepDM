@@ -256,7 +256,12 @@ namespace DataManagementModels.Editor
             }
             else
             {
-                var filteredItems = originalList.AsQueryable().Where(ParseFilter(filterString)).ToList();
+                var fil = ParseFilter(filterString);
+                if(fil == null)
+                {
+                    return;
+                }
+                var filteredItems = originalList.AsQueryable().Where(fil).ToList();
                 ResetItems(filteredItems);
             }
             SuppressNotification = false;
@@ -290,41 +295,100 @@ namespace DataManagementModels.Editor
 
             foreach (var f in filters)
             {
-                var parts = f.Trim().Split(' ');
+                var parts = f.Trim().Split(new[] { ' ' }, 3);
                 if (parts.Length < 3)
                     continue;
 
-                var propName = parts[0];
-                var op = parts[1];
-                var value = string.Join(" ", parts.Skip(2)).Trim('\'', '%');
+                string propName = parts[0];
+                string op = parts[1];
+                string value = parts[2].Trim('\'');
 
                 var property = Expression.Property(parameter, propName);
-                var valueExpression = Expression.Constant(value, property.Type);
+                var propertyType = Nullable.GetUnderlyingType(property.Type) ?? property.Type;
 
-                switch (op.ToUpper())
+                Expression comparison = null;
+
+                bool treatAsString = value.Contains("%");
+
+                if ((op.ToUpper() == "LIKE" ) && (propertyType == typeof(string) || treatAsString) )
                 {
-                    case "LIKE":
-                        expression = Expression.AndAlso(expression ?? Expression.Constant(true),
-                            Expression.Call(property, "Contains", null, valueExpression));
-                        break;
-                    case "=":
-                        expression = Expression.AndAlso(expression ?? Expression.Constant(true),
-                            Expression.Equal(property, valueExpression));
-                        break;
-                    case ">":
-                        expression = Expression.AndAlso(expression ?? Expression.Constant(true),
-                            Expression.GreaterThan(property, valueExpression));
-                        break;
-                    case "<":
-                        expression = Expression.AndAlso(expression ?? Expression.Constant(true),
-                            Expression.LessThan(property, valueExpression));
-                        break;
-                        // Add other cases as needed
+                    var propertyAsString = Expression.Call(property, typeof(object).GetMethod("ToString", Type.EmptyTypes));
+                    // Handle LIKE operator for string properties
+                    if (value.StartsWith("%") && value.EndsWith("%"))
+                    {
+                        value = value.Trim('%');
+                        comparison = Expression.Call(propertyAsString, typeof(string).GetMethod("Contains", new[] { typeof(string) }), Expression.Constant(value));
+                    }
+                    else if (value.StartsWith("%"))
+                    {
+                        value = value.TrimStart('%');
+                        comparison = Expression.Call(propertyAsString, typeof(string).GetMethod("EndsWith", new[] { typeof(string) }), Expression.Constant(value));
+                    }
+                    else if (value.EndsWith("%"))
+                    {
+                        value = value.TrimEnd('%');
+                        comparison = Expression.Call(propertyAsString, typeof(string).GetMethod("StartsWith", new[] { typeof(string) }), Expression.Constant(value));
+                    }
+                }
+                else
+                {
+                    // Ensure the value is converted to the correct type
+                    object convertedValue = null;
+                    try
+                    {
+                        if (propertyType == typeof(string) || treatAsString)
+                        {
+                            // Treat as string if it contains '%' or the property type is string
+                            convertedValue = value;
+                        }
+                        else if (propertyType.IsEnum)
+                        {
+                            convertedValue = Enum.Parse(propertyType, value);
+                        }
+                        else if (propertyType == typeof(DateTime))
+                        {
+                            convertedValue = DateTime.Parse(value);
+                        }
+                        else if (IsNumericType(propertyType))
+                        {
+                            convertedValue = Convert.ChangeType(value, propertyType);
+                        }
+                        else
+                        {
+                            convertedValue = Convert.ChangeType(value, propertyType);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidCastException($"Failed to convert value '{value}' to type '{propertyType}'", ex);
+                    }
+
+                    var valueExpression = Expression.Constant(convertedValue, treatAsString ? typeof(string) : property.Type);
+
+                    switch (op.ToUpper())
+                    {
+                        case "=":
+                            comparison = Expression.Equal(property, valueExpression);
+                            break;
+                        case ">":
+                            comparison = Expression.GreaterThan(property, valueExpression);
+                            break;
+                        case "<":
+                            comparison = Expression.LessThan(property, valueExpression);
+                            break;
+                            // Add other cases as needed
+                    }
+                }
+
+                if (comparison != null)
+                {
+                    expression = expression == null ? comparison : Expression.AndAlso(expression, comparison);
                 }
             }
 
             return expression != null ? Expression.Lambda<Func<T, bool>>(expression, parameter) : null;
         }
+
 
         private void ResetItems(List<T> items)
         {
@@ -393,7 +457,7 @@ namespace DataManagementModels.Editor
             {
 
                 item.PropertyChanged += Item_PropertyChanged;
-                this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
+                //this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
             }
                
 

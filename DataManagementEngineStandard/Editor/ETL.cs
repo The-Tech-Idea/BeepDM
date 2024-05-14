@@ -406,7 +406,7 @@ namespace TheTechIdea.Beep.Editor
                         List<object> srcList = new List<object>();
                         if (src.Result != null)
                         {
-                            DMTypeBuilder.CreateNewObject(DMEEditor, item.EntityName, item.EntityName, item.Fields);
+                            DMTypeBuilder.CreateNewObject(DMEEditor, null, item.EntityName, item.Fields);
                             if (srcTb.GetType().FullName.Contains("DataTable"))
                             {
                                 srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, item);
@@ -526,12 +526,7 @@ namespace TheTechIdea.Beep.Editor
                             if (sc.scriptType == DDLScriptType.CopyData)
                             {
                                 SendMessege(progress, token, null, sc, $"Started Coping Data for Entity  {sc.destinationentityname}  in {sc.destinationdatasourcename}");
-
-                                await Task.Run(() =>
-                                {
-                                    DMEEditor.ErrorObject = RunCopyEntityScript(sc, srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname, progress, token, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
-
-                                });
+                                DMEEditor.ErrorObject = RunCopyEntityScript(sc, srcds, destds, sc.sourceDatasourceEntityName, sc.destinationentityname, progress, token, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
                                 SendMessege(progress, token, null, sc, $"Error in Coping Data for Entity  {sc.destinationentityname}"); ;
                             }
                         }
@@ -635,6 +630,7 @@ namespace TheTechIdea.Beep.Editor
                                             {
                                                 SendMessege(progress, token, entitystr, sc, $"Started  Coping Data From {entitystr.EntityName} ");
                                                 var t=await RunChildScriptAsync(sc, srcds, destds, progress, token);
+                                               
                                                 CreateSuccess = true;
                                             }
                                         }
@@ -713,7 +709,7 @@ namespace TheTechIdea.Beep.Editor
                 errorcount = 0;
                 EntityStructure srcentitystructure = sourceds.GetEntityStructure(srcentity, true);
                 EntityStructure destEntitystructure = destds.GetEntityStructure(destentity, true);
-                if (srcentitystructure != null)
+                if (srcentitystructure != null && destEntitystructure!=null)
                 {
                     if (destds.Category == DatasourceCategory.RDBMS)
                     {
@@ -748,7 +744,7 @@ namespace TheTechIdea.Beep.Editor
                         }
                         SendMessege(progress, token, null, sc, $"Getting Data for  {srcentity}"); ;
                         var src = Task.Run(() => { return sourceds.GetEntity(querystring, filters); });
-                        src.Wait();
+                        src.GetAwaiter().GetResult();
                         SendMessege(progress, token, null, sc, $"Finish Getting Data for  {srcentity}"); ;
 
                         srcTb = src.Result;
@@ -756,7 +752,7 @@ namespace TheTechIdea.Beep.Editor
                         List<object> srcList = new List<object>();
                         if (src.Result != null)
                         {
-                            DMTypeBuilder.CreateNewObject(DMEEditor, destEntitystructure.EntityName, srcentitystructure.EntityName, SourceFields);
+                            DMTypeBuilder.CreateNewObject(DMEEditor, null, srcentitystructure.EntityName, SourceFields);
                             if (srcTb.GetType().FullName.Contains("DataTable"))
                             {
                                 srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, srcentitystructure);
@@ -1044,7 +1040,7 @@ namespace TheTechIdea.Beep.Editor
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("ETL", $"Failed to Insert Entity {destEntitystructure.EntityName} :{ex.Message}", DateTime.Now, CurrentScriptRecord, ex.Message, Errors.Failed);
+                DMEEditor.AddLogMessage("ETL", $"Failed to Insert Entity {destentity} :{ex.Message}", DateTime.Now, CurrentScriptRecord, ex.Message, Errors.Failed);
 
             }
 
