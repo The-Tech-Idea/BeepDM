@@ -370,6 +370,7 @@ namespace DataManagementModels.Editor
             foreach (T item in this.Items)
             {
                 item.PropertyChanged += Item_PropertyChanged;
+                this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
             }
             AddingNew += ObservableBindingList_AddingNew;
             originalList = new List<T>(this.Items);
@@ -392,7 +393,7 @@ namespace DataManagementModels.Editor
             {
 
                 item.PropertyChanged += Item_PropertyChanged;
-               
+                this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
             }
                
 
@@ -410,7 +411,7 @@ namespace DataManagementModels.Editor
             {
 
                 item.PropertyChanged += Item_PropertyChanged;
-
+                this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
             }
 
 
