@@ -13,6 +13,7 @@ namespace TheTechIdea.Beep.Helpers
     /// </summary>
     public static class DataTypeFieldMappingHelper
     {
+
         /// <summary>
         /// A string representing a collection of .NET data types.
         /// </summary>
@@ -46,10 +47,13 @@ namespace TheTechIdea.Beep.Helpers
         public static string NetDataTypeDef2 = ",System.Byte[],System.SByte[],System.Byte,System.SByte,System.Int32,System.UInt32,System.Int16,System.UInt16,System.Int64,System.UInt64,System.Single,System.Double,System.Char,System.Boolean,System.Object,System.String,System.Decimal,System.DateTime,System.TimeSpan,System.DateTimeOffset,System.Guid,System.Xml";
         /// <summary>Returns an array of .NET data types.</summary>
         /// <returns>An array of .NET data types.</returns>
+        /// 
+
         public static string[] GetNetDataTypes()
         {
             string[] a = NetDataTypeDef1.Split(',');
             Array.Sort(a);
+            
             return a;
         }
         /// <summary>Returns an array of .NET data types.</summary>
@@ -273,6 +277,215 @@ namespace TheTechIdea.Beep.Helpers
                 DMEEditor.AddLogMessage(ex.Message, "Could not Convert Field Type to Provider Type " + mes, DateTime.Now, -1, mes, Errors.Failed);
             };
             return retval;
+        }
+        /// <summary>Gets the data type of a field in a specific data source.</summary>
+        /// <param name="className">The name of the data source class</param>
+        /// <param name="fld">The field for which to retrieve the data type.</param>
+        /// <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
+        /// <returns>The data type of the specified field.</returns>
+        public static string GetDataTypeFromDataSourceClassName(string className, EntityField fld, IDMEEditor DMEEditor)
+        {
+            string retval = null;
+            try
+            {
+              
+                
+                    if (DMEEditor.ConfigEditor.DataTypesMap == null)
+                    {
+                        DMEEditor.ConfigEditor.ReadDataTypeFile();
+                    }
+                            DatatypeMapping dt = null;
+                            if (fld.fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase))  //-- Fist Check all Data field that Contain Length
+                            {
+                                if (fld.Size1 > 0) //-- String Type first
+                                {
+                                    dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.Fav && x.DataType.Contains("N")).FirstOrDefault();
+                                    if (dt == null)
+                                    {
+                                        dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.DataType.Contains("N")).FirstOrDefault();
+                                    }
+                                    if (dt != null)
+                                        retval = dt.DataType.Replace("(N)", "(" + fld.Size1.ToString() + ")");
+                                }
+                                else
+                                {
+                                    dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                                    retval = dt.DataType;
+                                }
+
+                            }
+                            else
+                            if (!fld.fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                if (fld.fieldtype.Equals("System.Decimal", StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    if (fld.NumericPrecision == 0)
+                                    {
+                                        fld.NumericPrecision = 28;
+                                    }
+                                    if (fld.NumericScale == 0)
+                                    {
+                                        fld.NumericScale = 8;
+                                    }
+
+                                }
+                                if (fld.NumericPrecision > 0)
+                                {
+                                    if (fld.NumericScale > 0)
+                                    {
+                                        dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.Fav && x.DataType.Contains("P,S")).FirstOrDefault();
+                                        if (dt == null)
+                                        {
+                                            dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.DataType.Contains("P,S")).FirstOrDefault();
+                                        }
+                                        if (dt != null)
+                                        {
+                                            retval = dt.DataType.Replace("(P,S)", "(" + fld.NumericPrecision.ToString() + "," + fld.NumericScale.ToString() + ")");
+                                        }
+
+
+                                    }
+                                    else
+                                    {
+                                        dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.Fav && x.DataType.Contains("(N)")).FirstOrDefault();
+                                        if (dt != null)
+                                        {
+                                            dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.DataType.Contains("(N)")).FirstOrDefault();
+                                        }
+                                        if (dt != null)
+                                        {
+                                            retval = dt.DataType.Replace("(N)", "(" + fld.NumericPrecision.ToString() + ")");
+
+                                        }
+                                        else
+                                        {
+                                            dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.Fav && x.DataType.Contains("(P,S)")).FirstOrDefault();
+                                            if (dt == null)
+                                            {
+                                                dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.DataType.Contains("(P,S)")).FirstOrDefault();
+                                            }
+
+
+                                        }
+                                        if (dt != null)
+                                        {
+
+                                            retval = dt.DataType.Replace("(P,S)", "(" + fld.NumericPrecision.ToString() + "," + fld.NumericScale.ToString() + ")");
+                                        }
+                                    }
+                                }
+
+                            }
+                            if (retval == null)
+                            {
+                                dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                                if (dt != null)
+                                {
+                                    retval = dt.DataType;
+                                }
+
+                            }
+                       
+                      
+                   
+             
+               
+            }
+            catch (Exception ex)
+            {
+                string mes = "";
+                retval = null;
+                DMEEditor.AddLogMessage(ex.Message, "Could not Convert Field Type to Provider Type " + mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return retval;
+        }
+        /// <summary>Gets the data type of a field in a specific data source.</summary>
+        /// <param name="DSname">The name of the data source.</param>
+        /// <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
+        /// <returns>The List of DataTypeMapping for DataSource.</returns>
+        public static List<DatatypeMapping> GetDataTypes(string DSname, IDMEEditor DMEEditor)
+        {
+           
+            IDataSource ds;
+            try
+            {
+                if (DSname != null)
+                {
+                    ds = DMEEditor.GetDataSource(DSname);
+                    if (DMEEditor.ConfigEditor.DataTypesMap == null)
+                    {
+                        DMEEditor.ConfigEditor.ReadDataTypeFile();
+                    }
+
+                    AssemblyClassDefinition classhandler = DMEEditor.GetDataSourceClass(DSname);
+                    if (classhandler != null)
+                    {
+                        return DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className, StringComparison.InvariantCultureIgnoreCase)).ToList();
+
+                    }
+                    else
+                    {
+                        DMEEditor.AddLogMessage("Fail", "Could not Find Class Handler for " + DSname, DateTime.Now, -1, null, Errors.Failed);
+                    }
+                }
+                else
+                {
+                    DMEEditor.AddLogMessage("Fail", "Could not Convert Field Type to Provider Type " + DSname, DateTime.Now, -1, null, Errors.Failed);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                string mes = "";
+               
+                DMEEditor.AddLogMessage(ex.Message, "Could not Convert Field Type to Provider Type " + mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return null;
+        }
+        /// <summary>Gets the data type of a field in a specific data source.</summary>
+        /// <param name="DSname">The name of the data source.</param>
+        /// <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
+        /// <returns>The List of DataTypeMapping for DataSource.</returns>
+        public static List<DatatypeMapping> GetDataTypes(DataSourceType DSname, IDMEEditor DMEEditor)
+        {
+
+            IDataSource ds;
+            try
+            {
+                if (DSname != null)
+                {
+
+                    ConnectionDriversConfig classhandler = DMEEditor.ConfigEditor.DataDriversClasses.Where(x => x.DatasourceType == DSname).FirstOrDefault();
+
+                    if (DMEEditor.ConfigEditor.DataTypesMap == null)
+                    {
+                        DMEEditor.ConfigEditor.ReadDataTypeFile();
+
+                        if (classhandler != null)
+                        {
+                          
+                            return DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.classHandler, StringComparison.InvariantCultureIgnoreCase)).ToList();
+
+                        }
+                        else
+                        {
+                            DMEEditor.AddLogMessage("Fail", "Could not Find Class Handler for " + DSname, DateTime.Now, -1, null, Errors.Failed);
+                        }
+                    }
+                    else
+                    {
+                        DMEEditor.AddLogMessage("Fail", "Could not Convert Field Type to Provider Type " + DSname, DateTime.Now, -1, null, Errors.Failed);
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                string mes = "";
+
+                DMEEditor.AddLogMessage(ex.Message, "Could not Convert Field Type to Provider Type " + mes, DateTime.Now, -1, mes, Errors.Failed);
+            };
+            return null;
         }
         /// <summary>Gets the field type without conversion.</summary>
         /// <param name="DSname">The name of the data source.</param>
@@ -893,19 +1106,20 @@ namespace TheTechIdea.Beep.Helpers
         public static List<DatatypeMapping> GetLiteDBDataTypesMapping()
         {
             return new List<DatatypeMapping>
-        {
-            new DatatypeMapping { ID = 0, GuidID = "0e375c24-4d38-4bb3-98c2-35d89aaf77fe", DataType = "Int32", DataSourceName = "LiteDBDataSource", NetDataType = "System.Int32", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "88fa3009-285d-4d15-9da7-aa2a2f1abc97", DataType = "Int64", DataSourceName = "LiteDBDataSource", NetDataType = "System.Int64", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "eaec481e-6975-47a8-b4ff-112441a517a1", DataType = "Double", DataSourceName = "LiteDBDataSource", NetDataType = "System.Double", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "0da22d75-e558-4066-ad6d-cfb41b695e02", DataType = "String", DataSourceName = "LiteDBDataSource", NetDataType = "System.String", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "9758daa0-2c49-4224-b8a1-569b352728db", DataType = "Document", DataSourceName = "LiteDBDataSource", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "7129a003-2550-4f3c-9c48-8ed208cd1a30", DataType = "Array", DataSourceName = "LiteDBDataSource", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "11ba6cb3-bde6-4267-8833-59d434babb00", DataType = "Binary", DataSourceName = "LiteDBDataSource", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "3258239f-0e87-4e1c-8d1f-72bf50abafa9", DataType = "ObjectId", DataSourceName = "LiteDBDataSource", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "b51bec25-90d5-4990-bf78-1c4b24b68b30", DataType = "Guid", DataSourceName = "LiteDBDataSource", NetDataType = "System.Guid", Fav = false },
-            new DatatypeMapping { ID = 0, GuidID = "7b99280e-9912-4c87-87b5-be571ea98555", DataType = "DateTime", DataSourceName = "LiteDBDataSource", Fav = false }
-        };
+    {
+        new DatatypeMapping { ID = 0, GuidID = "0e375c24-4d38-4bb3-98c2-35d89aaf77fe", DataType = "Int32", DataSourceName = "LiteDBDataSource", NetDataType = "System.Int32", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = "88fa3009-285d-4d15-9da7-aa2a2f1abc97", DataType = "Int64", DataSourceName = "LiteDBDataSource", NetDataType = "System.Int64", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = "eaec481e-6975-47a8-b4ff-112441a517a1", DataType = "Double", DataSourceName = "LiteDBDataSource", NetDataType = "System.Double", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = "0da22d75-e558-4066-ad6d-cfb41b695e02", DataType = "String", DataSourceName = "LiteDBDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = "9758daa0-2c49-4224-b8a1-569b352728db", DataType = "Document", DataSourceName = "LiteDBDataSource", NetDataType = "System.String", Fav = false }, // Treat Document as string for portability
+        new DatatypeMapping { ID = 0, GuidID = "7129a003-2550-4f3c-9c48-8ed208cd1a30", DataType = "Array", DataSourceName = "LiteDBDataSource", NetDataType = "System.Collections.Generic.List<object>", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = "11ba6cb3-bde6-4267-8833-59d434babb00", DataType = "Binary", DataSourceName = "LiteDBDataSource", NetDataType = "System.Byte[]", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = "3258239f-0e87-4e1c-8d1f-72bf50abafa9", DataType = "ObjectId", DataSourceName = "LiteDBDataSource", NetDataType = "System.String", Fav = false }, // Treat ObjectId as string for portability
+        new DatatypeMapping { ID = 0, GuidID = "b51bec25-90d5-4990-bf78-1c4b24b68b30", DataType = "Guid", DataSourceName = "LiteDBDataSource", NetDataType = "System.Guid", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = "7b99280e-9912-4c87-87b5-be571ea98555", DataType = "DateTime", DataSourceName = "LiteDBDataSource", NetDataType = "System.DateTime", Fav = false }
+    };
         }
+
         /// <summary>Returns a list of datatype mappings for DuckDB.</summary>
         /// <returns>A list of datatype mappings for DuckDB.</returns>
         public static List<DatatypeMapping> GetDuckDBDataTypesMapping()
@@ -975,29 +1189,27 @@ namespace TheTechIdea.Beep.Helpers
             return new List<DatatypeMapping>
     {
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "String", DataSourceName = "MongoDBDataSource", NetDataType = "System.String", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "ObjectId", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.ObjectId", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "ObjectId", DataSourceName = "MongoDBDataSource", NetDataType = "System.String", Fav = false }, // Treat ObjectId as string for portability
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Boolean", DataSourceName = "MongoDBDataSource", NetDataType = "System.Boolean", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Int32", DataSourceName = "MongoDBDataSource", NetDataType = "System.Int32", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Int64", DataSourceName = "MongoDBDataSource", NetDataType = "System.Int64", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Double", DataSourceName = "MongoDBDataSource", NetDataType = "System.Double", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "DateTime", DataSourceName = "MongoDBDataSource", NetDataType = "System.DateTime", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Array", DataSourceName = "MongoDBDataSource", NetDataType = "System.Collections.Generic.List<>", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Array", DataSourceName = "MongoDBDataSource", NetDataType = "System.Collections.Generic.List<object>", Fav = false },
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Binary", DataSourceName = "MongoDBDataSource", NetDataType = "System.Byte[]", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Null", DataSourceName = "MongoDBDataSource", NetDataType = "System.DBNull", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "RegularExpression", DataSourceName = "MongoDBDataSource", NetDataType = "System.Text.RegularExpressions.Regex", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Document", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonDocument", Fav = false },
-          // Additional mappings
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Decimal128", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.Decimal128", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Null", DataSourceName = "MongoDBDataSource", NetDataType = "System.Object", Fav = false }, // DBNull cannot be used in POCO classes
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "RegularExpression", DataSourceName = "MongoDBDataSource", NetDataType = "System.String", Fav = false }, // Treat Regex as string for portability
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Document", DataSourceName = "MongoDBDataSource", NetDataType = "System.String", Fav = false }, // Treat BsonDocument as string for portability
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Decimal128", DataSourceName = "MongoDBDataSource", NetDataType = "System.Decimal", Fav = false }, // Use System.Decimal for portability
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "JavaScript", DataSourceName = "MongoDBDataSource", NetDataType = "System.String", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "JavaScriptWithScope", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonJavaScriptWithScope", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "MaxKey", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonMaxKey", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "MinKey", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonMinKey", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "ObjectId", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.ObjectId", Fav = true },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Symbol", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonSymbol", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Timestamp", DataSourceName = "MongoDBDataSource", NetDataType = "MongoDB.Bson.BsonTimestamp", Fav = false },
-
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "JavaScriptWithScope", DataSourceName = "MongoDBDataSource", NetDataType = "System.String", Fav = false }, // Treat JavaScriptWithScope as string
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "MaxKey", DataSourceName = "MongoDBDataSource", NetDataType = "System.String", Fav = false }, // Treat BsonMaxKey as string
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "MinKey", DataSourceName = "MongoDBDataSource", NetDataType = "System.String", Fav = false }, // Treat BsonMinKey as string
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Symbol", DataSourceName = "MongoDBDataSource", NetDataType = "System.String", Fav = false }, // Treat BsonSymbol as string
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Timestamp", DataSourceName = "MongoDBDataSource", NetDataType = "System.DateTime", Fav = false }, // Use System.DateTime for portability
     };
         }
+
         /// <summary>Returns a list of mappings between .NET data types and Cassandra data types.</summary>
         /// <returns>A list of <see cref="DatatypeMapping"/> objects representing the mappings.</returns>
         public static List<DatatypeMapping> GetCassandraDataTypeMappings()

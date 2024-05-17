@@ -44,7 +44,7 @@ namespace TheTechIdea.Beep.Helpers
         /// <returns>The data type of the specified field.</returns>
         public string GetDataType(string DSname, EntityField fld)
         {
-
+            
             return DataTypeFieldMappingHelper.GetDataType(DSname, fld, DMEEditor);
         }
         /// <summary>Gets the field type without conversion.</summary>

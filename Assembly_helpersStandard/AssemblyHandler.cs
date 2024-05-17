@@ -19,6 +19,7 @@ using TheTechIdea.Util;
 using TypeInfo = System.Reflection.TypeInfo;
 using Microsoft.Extensions.DependencyModel;
 
+
 namespace TheTechIdea.Tools
 {
     /// <summary>
@@ -32,7 +33,7 @@ namespace TheTechIdea.Tools
         private List<Type> LoaderExtensions { get; set; } = new List<Type>();
         private List<ConnectionDriversConfig> DataDriversConfig = new List<ConnectionDriversConfig>();
         private bool disposedValue;
-
+     
         public List<string> NamespacestoIgnore { get; set; } = new List<string>();
         /// <summary>
         /// Gets or sets the current domain in which the assembly is executed.

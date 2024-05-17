@@ -56,7 +56,7 @@ namespace TheTechIdea.Util
                     myType = retval.Item1;
                     myObject = Activator.CreateInstance(myType);
 
-
+                    typeCache.Add(fullTypeName, myType);
 
                 }
             }

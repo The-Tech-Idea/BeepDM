@@ -265,6 +265,7 @@ namespace DataManagementModels.Editor
                 ResetItems(filteredItems);
             }
             SuppressNotification = false;
+            ResetBindings();
         }
         private bool MatchesFilter(T item, string filter)
         {
@@ -283,7 +284,6 @@ namespace DataManagementModels.Editor
             }
             return false;
         }
-
         private Expression<Func<T, bool>> ParseFilter(string filter)
         {
             var parameter = Expression.Parameter(typeof(T), "x");
@@ -310,25 +310,29 @@ namespace DataManagementModels.Editor
 
                 bool treatAsString = value.Contains("%");
 
-                if ((op.ToUpper() == "LIKE" ) && (propertyType == typeof(string) || treatAsString) )
+                if ((op.ToUpper() == "LIKE") && (propertyType == typeof(string) || treatAsString))
                 {
+                    var nullCheck = Expression.NotEqual(property, Expression.Constant(null, property.Type));
                     var propertyAsString = Expression.Call(property, typeof(object).GetMethod("ToString", Type.EmptyTypes));
-                    // Handle LIKE operator for string properties
+
+                    Expression containsExpression = null;
                     if (value.StartsWith("%") && value.EndsWith("%"))
                     {
                         value = value.Trim('%');
-                        comparison = Expression.Call(propertyAsString, typeof(string).GetMethod("Contains", new[] { typeof(string) }), Expression.Constant(value));
+                        containsExpression = Expression.Call(propertyAsString, typeof(string).GetMethod("Contains", new[] { typeof(string) }), Expression.Constant(value));
                     }
                     else if (value.StartsWith("%"))
                     {
                         value = value.TrimStart('%');
-                        comparison = Expression.Call(propertyAsString, typeof(string).GetMethod("EndsWith", new[] { typeof(string) }), Expression.Constant(value));
+                        containsExpression = Expression.Call(propertyAsString, typeof(string).GetMethod("EndsWith", new[] { typeof(string) }), Expression.Constant(value));
                     }
                     else if (value.EndsWith("%"))
                     {
                         value = value.TrimEnd('%');
-                        comparison = Expression.Call(propertyAsString, typeof(string).GetMethod("StartsWith", new[] { typeof(string) }), Expression.Constant(value));
+                        containsExpression = Expression.Call(propertyAsString, typeof(string).GetMethod("StartsWith", new[] { typeof(string) }), Expression.Constant(value));
                     }
+
+                    comparison = Expression.AndAlso(nullCheck, containsExpression);
                 }
                 else
                 {
@@ -338,7 +342,6 @@ namespace DataManagementModels.Editor
                     {
                         if (propertyType == typeof(string) || treatAsString)
                         {
-                            // Treat as string if it contains '%' or the property type is string
                             convertedValue = value;
                         }
                         else if (propertyType.IsEnum)
@@ -393,11 +396,13 @@ namespace DataManagementModels.Editor
         private void ResetItems(List<T> items)
         {
           
+
             // Create a copy of the list for safe iteration
             var itemsCopy = new List<T>(items);
 
             bool raiseEvent = itemsCopy.Count != this.Count;
-
+            // Use Batch update to minimize events
+            RaiseListChangedEvents = false;
             // Clear the current items
             ClearItems();
 
@@ -407,7 +412,7 @@ namespace DataManagementModels.Editor
             {
                 this.Add(item);
             }
-         
+            RaiseListChangedEvents = true;
             if (raiseEvent)
             {
                 OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
@@ -416,7 +421,9 @@ namespace DataManagementModels.Editor
         }
         public new void ResetBindings()
         {
+            RaiseListChangedEvents = false;
             OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
+            RaiseListChangedEvents = true;
         }
         #endregion
         #region "Constructor"

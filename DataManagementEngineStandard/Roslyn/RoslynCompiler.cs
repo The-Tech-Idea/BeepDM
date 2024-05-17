@@ -15,6 +15,9 @@ namespace TheTechIdea.Beep.Roslyn
 {
     public static class RoslynCompiler
     {
+         // Dictionary to store compiled types and their assemblies
+          private static readonly Dictionary<string, Tuple<Type, Assembly>> CompiledTypes = new Dictionary<string, Tuple<Type, Assembly>>();
+
         public static bool CompileCodeToDLL(string sourceFile, string outputFile)
         {
             // Read the code from the file
@@ -194,6 +197,10 @@ namespace TheTechIdea.Beep.Roslyn
         }
         public static Tuple<Type, Assembly> CompileClassTypeandAssembly(string classname, string code)
         {
+            if (CompiledTypes.TryGetValue(classname, out var existingType))
+            {
+                return existingType;
+            }
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
 
             string assemblyName = Path.GetRandomFileName();
@@ -234,7 +241,13 @@ namespace TheTechIdea.Beep.Roslyn
                 {
                     ms.Seek(0, SeekOrigin.Begin);
                     Assembly assembly = Assembly.Load(ms.ToArray());
+                    var compiledType = assembly.GetTypes().FirstOrDefault(p => p.Name.Contains(classname));
 
+                    // Store the compiled type and assembly in the dictionary
+                    if (compiledType != null)
+                    {
+                        CompiledTypes[classname] = new Tuple<Type, Assembly>(compiledType, assembly);
+                    }
                     return new Tuple<Type, Assembly>(assembly.GetTypes().FirstOrDefault(p => p.Name.Contains(classname)), assembly);  // Gets first type. Adjust this if you need to get a specific type.
                 }
             }
