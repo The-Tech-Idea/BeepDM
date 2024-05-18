@@ -2057,7 +2057,18 @@
             Otherwise, it returns a collection of entities that have been marked as deleted.
             </remarks>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.UnitofWork`1.Units_ListChanged(System.Object,System.ComponentModel.ListChangedEventArgs)" -->
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Units_ListChanged(System.Object,System.ComponentModel.ListChangedEventArgs)">
+            <summary>Handles the event when the list of units changes.</summary>
+            <param name="sender">The object that triggered the event.</param>
+            <param name="e">The event arguments containing information about the change.</param>
+            <remarks>
+            This method is called when the list of units changes. It checks if the notification is suppressed,
+            and if so, it returns without performing any further actions. If the change type is an item change,
+            it retrieves the item at the specified index from the list of units. If the item's primary key value
+            is not already present in the UpdatedKeys collection, it adds the key value to the collection along
+            with an incremented index value.
+            </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Units_CollectionChanged(System.Object,System.Collections.Specialized.NotifyCollectionChangedEventArgs)">
             <summary>Handles the CollectionChanged event of the Units collection.</summary>
             <param name="sender">The sender of the event.</param>

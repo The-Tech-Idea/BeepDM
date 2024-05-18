@@ -177,16 +177,18 @@ namespace TheTechIdea.Beep.Editor
         public bool IsInListMode { get; set; } = false;
         private Dictionary<int, EntityState> _entityStates = new Dictionary<int, EntityState>();
         private Dictionary<T, EntityState> _deletedentities = new Dictionary<T, EntityState>();
+        public List<T> DeletedUnits { get; set; } = new List<T>();
+        public Dictionary<int, string> InsertedKeys { get; set; } = new Dictionary<int, string>();
+        public Dictionary<int, string> UpdatedKeys { get; set; } = new Dictionary<int, string>();
+        public Dictionary<int, string> DeletedKeys { get; set; } = new Dictionary<int, string>();
+
         Stack<Tuple<T, int>> undoDeleteStack = new Stack<Tuple<T, int>>();
         protected virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
         public bool IsIdentity { get; set; }= false;
       
         public string Sequencer { get; set; }
         public string DatasourceName { get; set; }
-        public List<T> DeletedUnits { get; set; } = new List<T>();
-        public Dictionary<int, string> InsertedKeys { get; set; } = new Dictionary<int, string>();
-        public Dictionary<int, string> UpdatedKeys { get; set; } = new Dictionary<int, string>();
-        public Dictionary<int, string> DeletedKeys { get; set; } = new Dictionary<int, string>();
+      
         public EntityStructure EntityStructure { get; set; }
         public IDMEEditor DMEEditor { get; }
         public IDataSource DataSource { get; set; }
@@ -492,6 +494,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 return -1;
             }
+           
             int index = _units.IndexOf(entity);
             return index;
 
@@ -1105,14 +1108,14 @@ namespace TheTechIdea.Beep.Editor
                     foreach (int t in GetAddedEntities())
                     {
                         //  int r = Getindex(t.ToString());
-                        IErrorsInfo errorsInfo1 = await InsertAsync(Units[t]);
+                        IErrorsInfo errorsInfo1 = await InsertAsync(_units[t]);
                         if (errorsInfo1.Flag == Errors.Ok)
                         {
-                            if (IsIdentity)
+                            if (IsIdentity && DataSource.Category== DatasourceCategory.RDBMS)
                             {
-                                SetIDValue(Units[t], GetLastIdentity());
+                                SetIDValue(_units[t], GetLastIdentity());
                             }
-                            var key= InsertedKeys.Where(x => x.Value == GetIDValue(Units[t]).ToString()).FirstOrDefault().Key;
+                            var key= InsertedKeys.Where(x => x.Value == t.ToString()).FirstOrDefault().Key;
                             InsertedKeys.Remove(key);
                             _entityStates.Remove(t);
                         }
@@ -1133,7 +1136,7 @@ namespace TheTechIdea.Beep.Editor
                         IErrorsInfo errorsInfo1 = await UpdateAsync(Units[t]);
                         if (errorsInfo1.Flag == Errors.Ok)
                         {
-                            var key = UpdatedKeys.Where(x => x.Value == GetIDValue(Units[t]).ToString()).FirstOrDefault().Key;
+                            var key = UpdatedKeys.Where(x => x.Value == t.ToString()).FirstOrDefault().Key;
                             UpdatedKeys.Remove(key);
                             _entityStates.Remove(t);
                         }
@@ -1601,7 +1604,7 @@ namespace TheTechIdea.Beep.Editor
         /// it retrieves the item at the specified index from the list of units. If the item's primary key value
         /// is not already present in the UpdatedKeys collection, it adds the key value to the collection along
         /// with an incremented index value.
-        /// </remarks
+        /// </remarks>
         private void Units_ListChanged(object sender, ListChangedEventArgs e)
         {
             if (_units.SuppressNotification == true)
@@ -1619,7 +1622,8 @@ namespace TheTechIdea.Beep.Editor
                     return;
                 }
                 T item = _units[e.NewIndex];
-                var entityKeyAsString = Convert.ToString(PKProperty.GetValue(item, null));
+                Tracking tracking = _units.GetTrackingITem(item);
+                var entityKeyAsString = Convert.ToString(tracking.OriginalIndex);
                 if (!UpdatedKeys.Any(p => p.Value.Equals(entityKeyAsString)))
                 {
                     keysidx++;
@@ -1659,11 +1663,11 @@ namespace TheTechIdea.Beep.Editor
                                     GetPrimaryKeySequence(item);
                                 }
                             }
-  
-                            if (!InsertedKeys.ContainsValue(Convert.ToString(PKProperty.GetValue(item, null))))
+                            Tracking tracking=_units.GetTrackingITem(item);
+                            if (!InsertedKeys.ContainsValue(Convert.ToString(tracking.OriginalIndex)))
                             {
-                                InsertedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
-                                _entityStates.Add(e.NewStartingIndex, EntityState.Added);
+                                InsertedKeys.Add(keysidx, Convert.ToString(tracking.OriginalIndex));
+                                _entityStates.Add(tracking.OriginalIndex, EntityState.Added);
                             }
                         }
                     }
@@ -1674,11 +1678,13 @@ namespace TheTechIdea.Beep.Editor
                     {
                         UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false };
                         PreDelete?.Invoke(item, ps);
+                        Tracking tracking = _units.GetTrackingITem(item);
                         if (!ps.Cancel)
                         {
-                            undoDeleteStack.Push(new Tuple<T, int>(item, e.OldStartingIndex));
+                           
+                            undoDeleteStack.Push(new Tuple<T, int>(item, tracking.OriginalIndex));
                             keysidx++;
-                            var entityKeyAsString = Convert.ToString(PKProperty.GetValue(item, null));
+                            var entityKeyAsString = Convert.ToString(tracking.OriginalIndex);
                             DeletedKeys.Add(keysidx, entityKeyAsString);
                             EntityState state= EntityState.Deleted;
                             var insertedKey = InsertedKeys.FirstOrDefault(kvp => kvp.Value == entityKeyAsString);
@@ -1695,7 +1701,7 @@ namespace TheTechIdea.Beep.Editor
                             _deletedentities.Add(item, state);
                         }
                         else
-                            UndoDelete(item, e.OldStartingIndex);
+                            UndoDelete(item, tracking.OriginalIndex);
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
@@ -1741,19 +1747,20 @@ namespace TheTechIdea.Beep.Editor
                 return;
             }
             T item = (T)sender;
+            Tracking tracking = _units.GetTrackingITem(item);
             if (item != null)
             {
-                if (InsertedKeys.ContainsValue(Convert.ToString(PKProperty.GetValue(item, null))))
+                if (InsertedKeys.ContainsValue(Convert.ToString(tracking.OriginalIndex)))
                 {
 
                     return;
                 }
             }
-            if (!UpdatedKeys.Any(p => p.Value.Equals(Convert.ToString(PKProperty.GetValue(item, null)))))
+            if (!UpdatedKeys.Any(p => p.Value.Equals(Convert.ToString(tracking.OriginalIndex))))
             {
                 keysidx++;
-                UpdatedKeys.Add(keysidx, Convert.ToString(PKProperty.GetValue(item, null)));
-                int x = Getindex(item);
+                UpdatedKeys.Add(keysidx, Convert.ToString(tracking.OriginalIndex));
+                int x = tracking.OriginalIndex;// Getindex(item);
                 if (!_entityStates.ContainsKey(x))
                 {
                     _entityStates.Add(x, EntityState.Modified);
@@ -2085,10 +2092,5 @@ namespace TheTechIdea.Beep.Editor
         }
 
     }
-    public enum EntityState
-    {
-        Added,
-        Modified,
-        Deleted
-    }
+   
 }

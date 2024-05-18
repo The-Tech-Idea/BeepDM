@@ -13,14 +13,15 @@ namespace DataManagementModels.Editor
 {
     public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged where T : class,INotifyPropertyChanged
     {
-
+       // private Dictionary<Guid, T> ItemIdentifierMapping = new Dictionary<Guid, T>();
+      //  public Dictionary<T, Guid> ItemUniqueIdentifierMapping { get; set; } = new Dictionary<T, Guid>();
         protected override object AddNewCore()
         {
             var newItem = Activator.CreateInstance<T>();
             Add(newItem);
             return newItem;
         }
-
+        public List<Tracking> Trackings { get; set; } = new List<Tracking>();
         public bool SuppressNotification { get; set; } = false;
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
@@ -395,7 +396,6 @@ namespace DataManagementModels.Editor
 
         private void ResetItems(List<T> items)
         {
-          
 
             // Create a copy of the list for safe iteration
             var itemsCopy = new List<T>(items);
@@ -407,7 +407,6 @@ namespace DataManagementModels.Editor
             ClearItems();
 
             // Use the copy for adding items to avoid modification issues
-           
             foreach (var item in itemsCopy)
             {
                 this.Add(item);
@@ -417,7 +416,9 @@ namespace DataManagementModels.Editor
             {
                 OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
             }
-          
+
+            UpdateIndexTrackingAfterFilterorSort(); // Update index mapping after resetting items
+
         }
         public new void ResetBindings()
         {
@@ -475,6 +476,7 @@ namespace DataManagementModels.Editor
             this.AllowEdit = true;
             this.AllowRemove = true;
             originalList = this.Items.ToList();
+            UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
         }
         public ObservableBindingList(IBindingListView bindinglist) : base()
         {
@@ -493,6 +495,7 @@ namespace DataManagementModels.Editor
             this.AllowEdit = true;
             this.AllowRemove = true;
             originalList = this.Items.ToList();
+            UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
         }
         public ObservableBindingList(DataTable dataTable) : base()
         {
@@ -517,6 +520,7 @@ namespace DataManagementModels.Editor
             this.AllowEdit = true;
             this.AllowRemove = true;
             originalList = new List<T>(this.Items);
+            UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
         }
         public ObservableBindingList(List<object> objects) : base()
         {
@@ -546,6 +550,7 @@ namespace DataManagementModels.Editor
             this.AllowEdit = true;
             this.AllowRemove = true;
             originalList = new List<T>(this.Items);
+            UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
         }
 
         #endregion
@@ -615,17 +620,48 @@ namespace DataManagementModels.Editor
         }
         void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            int index = IndexOf((T)sender);
-            OnListChanged(new ListChangedEventArgs(ListChangedType.ItemChanged, index));
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, sender, sender, index));
+            T item = (T)sender;
+            
+            // Notify that the entire item has changed, not just a single property
+            int index = IndexOf(item);
+            
+            if (index >= 0)
+            {   
+
+                OnListChanged(new ListChangedEventArgs(ListChangedType.ItemChanged, index));
+            }
+
         }
         protected override void RemoveItem(int index)
         {
             T removedItem = this[index];
             base.RemoveItem(index);
-            if (string.IsNullOrEmpty(filterString))
+            int trackingindex = -1;
+            Tracking tracking = null;
+            if (Trackings.Count > 0)
             {
-                originalList.RemoveAt(index);
+                trackingindex = Trackings.FindIndex(p=>p.CurrentIndex==index);
+            }
+            if(trackingindex != -1)
+            {
+                tracking = Trackings[trackingindex];
+                originalList.RemoveAt(tracking.OriginalIndex);
+                if (!string.IsNullOrEmpty(filterString))
+                {
+                    Items.RemoveAt(index);
+
+                }
+            }
+           
+           
+            if (Trackings.Count > 0)
+            {
+               
+                if (trackingindex >= 0)
+                {
+                    Trackings.RemoveAt(trackingindex);
+                }
+
             }
             if (!SuppressNotification)
             {
@@ -637,12 +673,24 @@ namespace DataManagementModels.Editor
         protected override void InsertItem(int index, T item)
         {
             base.InsertItem(index, item);
-            if (string.IsNullOrEmpty(filterString))
-            {
-                originalList.Insert(index, item);
-            }
+          
             if (!SuppressNotification)
             {
+                Tracking tr = new Tracking(Guid.NewGuid(), index, index);
+                tr.EntityState = EntityState.Added;
+
+                if (string.IsNullOrEmpty(filterString))
+                {
+                    originalList.Insert(index, item);
+
+                }
+                else
+                {
+                    originalList.Add(item);
+                    tr.OriginalIndex = originalList.Count - 1;
+
+                }
+                Trackings.Add(tr);
                 item.PropertyChanged += Item_PropertyChanged;
                 OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
             }
@@ -652,11 +700,35 @@ namespace DataManagementModels.Editor
         {
             T replacedItem = this[index];
             replacedItem.PropertyChanged -= Item_PropertyChanged;
+           
+         
             base.SetItem(index, item);
             if (string.IsNullOrEmpty(filterString))
             {
                 originalList[index] = item;
+                if (Trackings.Count > 0)
+                {
+                    index = Trackings.Where(p => p.Equals(index)).FirstOrDefault().OriginalIndex;
+                    if (index == -1)
+                    {
+                        Tracking tr=new Tracking(Guid.NewGuid(), index, index);
+                        tr.EntityState = EntityState.Modified;
+                        Trackings.Add(tr);
+                    }
+
+                }
             }
+            else
+            {
+                Tracking tracking =  Trackings.Where(p => p.CurrentIndex==index).FirstOrDefault();
+                if (tracking != null)
+                {
+                    tracking.EntityState = EntityState.Modified;
+                }
+                originalList[tracking.OriginalIndex] = item;
+
+            }
+
             if (!SuppressNotification)
             {
                 item.PropertyChanged += Item_PropertyChanged;
@@ -669,5 +741,87 @@ namespace DataManagementModels.Editor
         {
             CollectionChanged?.Invoke(this, e);
         }
+        #region "ID Generations"
+        private void UpdateIndexTrackingAfterFilterorSort()
+        {
+            for (int i = 0; i < Items.Count; i++)
+            {
+                int originallistidx = originalList.IndexOf(Items[i]);
+                int newlistidx = i;
+                if (Trackings.Count > 0)
+                {
+                    if (originallistidx != -1)
+                    {
+                        int idx = Trackings.FindIndex(p => p.OriginalIndex == originallistidx);
+                        if(idx != -1)
+                        {
+                            Trackings[idx].CurrentIndex = newlistidx;
+                        }
+                    }
+                 
+                }
+            }
+
+        }
+        private void UpdateItemIndexMapping(int startIndex, bool isInsert)
+        {
+
+            for (int i = startIndex; i < originalList.Count; i++)
+            {
+                T item = originalList[i];
+                if (isInsert)
+                {
+                    Tracking tr = new Tracking(Guid.NewGuid(), i,i);
+                    tr.EntityState = EntityState.Unchanged;
+                    Trackings.Add(tr);
+
+                }
+            }
+        }
+
+        public int GetOriginalIndex(T item)
+        {
+            return originalList.IndexOf(item);
+        }
+        public int GetItemsIndex(T item)
+        {
+
+            return base.Items.IndexOf(item);
+        }
+        public Tracking GetTrackingITem(T item)
+        {
+            int index = GetItemsIndex(item);
+      //      int orgindex = GetOriginalIndex(item);
+            return Trackings.Where(p => p.CurrentIndex == index ).FirstOrDefault();
+        }
+
+        #endregion
+    }
+    public class Tracking
+    {
+        public Guid UniqueId { get; set; }
+        public int OriginalIndex { get; set; }
+        public int CurrentIndex { get; set; }
+        public EntityState EntityState { get; set; } = EntityState.Unchanged;
+        public Tracking(Guid uniqueId, int originalIndex)
+        {
+            UniqueId = uniqueId;
+            OriginalIndex = originalIndex;
+            CurrentIndex = originalIndex;
+        }
+        public Tracking(Guid uniqueId, int originalIndex,int currentindex)
+        {
+            UniqueId = uniqueId;
+            OriginalIndex = originalIndex;
+            CurrentIndex = currentindex;
+        }
+
+    }
+    public enum EntityState
+    {
+        Added,
+        Modified,
+        Deleted,
+        Unchanged
     }
 }
