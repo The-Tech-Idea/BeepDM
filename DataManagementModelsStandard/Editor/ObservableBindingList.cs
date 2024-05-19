@@ -174,7 +174,7 @@ namespace DataManagementModels.Editor
         {
             SuppressNotification = true;
             var paramExpr = Expression.Parameter(typeof(T), "x");
-            IQueryable<T> queryableList = originalList.AsQueryable();
+            IQueryable<T> queryableList = originalList.ToList().AsQueryable(); 
 
             IOrderedQueryable<T> orderedQuery = null;
 
@@ -761,6 +761,10 @@ namespace DataManagementModels.Editor
                  
                 }
             }
+
+        }
+        private void ResettoOriginal(List<T> items)
+        {
 
         }
         private void UpdateItemIndexMapping(int startIndex, bool isInsert)
