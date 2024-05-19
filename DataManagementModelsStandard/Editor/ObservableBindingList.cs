@@ -13,8 +13,7 @@ namespace DataManagementModels.Editor
 {
     public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged where T : class,INotifyPropertyChanged
     {
-       // private Dictionary<Guid, T> ItemIdentifierMapping = new Dictionary<Guid, T>();
-      //  public Dictionary<T, Guid> ItemUniqueIdentifierMapping { get; set; } = new Dictionary<T, Guid>();
+     
         protected override object AddNewCore()
         {
             var newItem = Activator.CreateInstance<T>();
@@ -23,6 +22,9 @@ namespace DataManagementModels.Editor
         }
         public List<Tracking> Trackings { get; set; } = new List<Tracking>();
         public bool SuppressNotification { get; set; } = false;
+        public bool IsSorted => false;
+        public bool IsSynchronized => false;
+      
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
         {
@@ -45,26 +47,20 @@ namespace DataManagementModels.Editor
                 }
             }
         }
-
         public event EventHandler CurrentChanged;
-
         protected virtual void OnCurrentChanged()
         {
             CurrentChanged?.Invoke(this, EventArgs.Empty);
         }
         protected override void OnListChanged(ListChangedEventArgs e)
         {
-           
                 base.OnListChanged(e);
                 if (e.ListChangedType == ListChangedType.ItemChanged && e.NewIndex >= 0 && e.NewIndex < Count)
                 {
                     Current = this[e.NewIndex];
                     OnCurrentChanged();
                 }
-           
-         
         }
-
         public bool MoveNext()
         {
             if (_currentIndex < Items.Count - 1)
@@ -76,7 +72,6 @@ namespace DataManagementModels.Editor
 
             return false;
         }
-
         public bool MovePrevious()
         {
             if (_currentIndex > 0)
@@ -88,7 +83,6 @@ namespace DataManagementModels.Editor
 
             return false;
         }
-
         public bool MoveFirst()
         {
             if (Items.Count > 0)
@@ -100,7 +94,6 @@ namespace DataManagementModels.Editor
 
             return false;
         }
-
         public bool MoveLast()
         {
             if (Items.Count > 0)
@@ -112,7 +105,6 @@ namespace DataManagementModels.Editor
 
             return false;
         }
-
         public bool MoveTo(int index)
         {
             if (index >= 0 && index < Items.Count)
@@ -124,27 +116,63 @@ namespace DataManagementModels.Editor
 
             return false;
         }
-
-
         #endregion
         #region "Sort"
-        public void Sort(string propertyName, IComparer<object> comparer)
+        private bool isSorted;
+        private PropertyDescriptor sortProperty;
+        private ListSortDirection sortDirection;
+        protected override bool SupportsSortingCore => true;
+        protected override bool IsSortedCore => isSorted;
+        protected override PropertyDescriptor SortPropertyCore => sortProperty;
+        protected override ListSortDirection SortDirectionCore => sortDirection;
+
+        public ListSortDescriptionCollection SortDescriptions { get; }
+        public bool SupportsAdvancedSorting => true;
+        protected override void ApplySortCore(PropertyDescriptor prop, ListSortDirection direction)
         {
-            var property = typeof(T).GetProperty(propertyName);
-            if (property == null)
+            SuppressNotification = true;
+            var items = Items as List<T>;
+            if (items != null)
             {
-                throw new ArgumentException($"Property '{propertyName}' not found on type '{typeof(T)}'.");
+                var property = typeof(T).GetProperty(prop.Name);
+                if (property != null)
+                {
+                    items.Sort((x, y) =>
+                    {
+                        var valueX = property.GetValue(x);
+                        var valueY = property.GetValue(y);
+                        return direction == ListSortDirection.Ascending ?
+                            Comparer<object>.Default.Compare(valueX, valueY) :
+                            Comparer<object>.Default.Compare(valueY, valueX);
+                    });
+
+                    isSorted = true;
+                    sortProperty = prop;
+                    sortDirection = direction;
+
+                    ResetItems(items);
+                    SuppressNotification = false;
+                    ResetBindings();
+                }
             }
-
-            var items = Items.ToList();
-            items.Sort((x, y) => comparer.Compare(property.GetValue(x, null), property.GetValue(y, null)));
-
-            // Rebind the sorted items
-            ResetItems(items);
         }
-
+        public void RemoveSort()
+        {
+            if(isSorted)
+            {
+                RemoveSortCore();
+            }
+        }
+        protected override void RemoveSortCore()
+        {
+            isSorted = false;
+            sortProperty = null;
+            sortDirection = ListSortDirection.Ascending;
+            ResetItems(originalList);
+        }
         public void ApplySort(ListSortDescriptionCollection sorts)
         {
+            SuppressNotification = true;
             var paramExpr = Expression.Parameter(typeof(T), "x");
             IQueryable<T> queryableList = originalList.AsQueryable();
 
@@ -178,6 +206,8 @@ namespace DataManagementModels.Editor
             }
 
             ResetItems(orderedQuery.ToList());
+            SuppressNotification = false;
+            ResetBindings();
         }
         private ListSortDirection _sortDirection;
         public ListSortDirection SortDirection
@@ -227,8 +257,6 @@ namespace DataManagementModels.Editor
         #region "Filter"
         private string filterString;
         private List<T> originalList = new List<T>();
-        public ListSortDescriptionCollection SortDescriptions => null;
-        public bool SupportsAdvancedSorting => true;
         public bool SupportsFiltering => true;
         public string Filter
         {
@@ -242,12 +270,10 @@ namespace DataManagementModels.Editor
                 }
             }
         }
-
         public void RemoveFilter()
         {
             Filter = null;
         }
-
         private void ApplyFilter()
         {
             SuppressNotification = true;
@@ -267,23 +293,6 @@ namespace DataManagementModels.Editor
             }
             SuppressNotification = false;
             ResetBindings();
-        }
-        private bool MatchesFilter(T item, string filter)
-        {
-            if (string.IsNullOrEmpty(filter))
-                return true;
-
-            var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var property in properties)
-            {
-                if (property.PropertyType == typeof(string) || property.PropertyType.IsValueType)
-                {
-                    var value = property.GetValue(item);
-                    if (value != null && value.ToString().IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)
-                        return true;
-                }
-            }
-            return false;
         }
         private Expression<Func<T, bool>> ParseFilter(string filter)
         {
@@ -392,8 +401,6 @@ namespace DataManagementModels.Editor
 
             return expression != null ? Expression.Lambda<Func<T, bool>>(expression, parameter) : null;
         }
-
-
         private void ResetItems(List<T> items)
         {
 
@@ -405,7 +412,7 @@ namespace DataManagementModels.Editor
             RaiseListChangedEvents = false;
             // Clear the current items
             ClearItems();
-
+          //  Trackings=new List<Tracking>();
             // Use the copy for adding items to avoid modification issues
             foreach (var item in itemsCopy)
             {
@@ -447,18 +454,6 @@ namespace DataManagementModels.Editor
             AddingNew += ObservableBindingList_AddingNew;
             originalList = new List<T>(this.Items);
         }
-        //public ObservableBindingList(IEnumerable<T> enumerable) : base()
-        //{
-
-        //    foreach (T item in enumerable)
-        //    {
-        //        item.PropertyChanged += Item_PropertyChanged;
-        //        this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
-        //    }
-           
-        //    AddingNew += ObservableBindingList_AddingNew;
-        //    originalList = this.Items.ToList();
-        //}
         public ObservableBindingList(IList<T> list) : base(list)
         {
             foreach (T item in list)
@@ -652,49 +647,54 @@ namespace DataManagementModels.Editor
 
                 }
             }
-           
-           
             if (Trackings.Count > 0)
             {
-               
+
                 if (trackingindex >= 0)
                 {
-                    Trackings.RemoveAt(trackingindex);
+                    Trackings[trackingindex].EntityState = EntityState.Deleted;
                 }
 
             }
+
+
             if (!SuppressNotification)
             {
                 removedItem.PropertyChanged -= Item_PropertyChanged;
                 OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
             }
-          
+           
+
         }
         protected override void InsertItem(int index, T item)
         {
             base.InsertItem(index, item);
-          
+
             if (!SuppressNotification)
             {
-                Tracking tr = new Tracking(Guid.NewGuid(), index, index);
-                tr.EntityState = EntityState.Added;
-
-                if (string.IsNullOrEmpty(filterString))
+                if (RaiseListChangedEvents)
                 {
-                    originalList.Insert(index, item);
+                    Tracking tr = new Tracking(Guid.NewGuid(), index, index);
+                    tr.EntityState = EntityState.Added;
 
-                }
-                else
-                {
-                    originalList.Add(item);
-                    tr.OriginalIndex = originalList.Count - 1;
+                    if (string.IsNullOrEmpty(filterString) || !isSorted)
+                    {
+                        originalList.Insert(index, item);
 
+                    }
+                    else
+                    {
+                        originalList.Add(item);
+                        tr.OriginalIndex = originalList.Count - 1;
+
+                    }
+
+                    item.PropertyChanged += Item_PropertyChanged;
+                    OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
                 }
-                Trackings.Add(tr);
-                item.PropertyChanged += Item_PropertyChanged;
-                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+
             }
-         
+
         }
         protected override void SetItem(int index, T item)
         {
@@ -790,9 +790,18 @@ namespace DataManagementModels.Editor
         }
         public Tracking GetTrackingITem(T item)
         {
+            Tracking retval = null;
             int index = GetItemsIndex(item);
-      //      int orgindex = GetOriginalIndex(item);
-            return Trackings.Where(p => p.CurrentIndex == index ).FirstOrDefault();
+            if (index < 0)
+            {
+                index = GetOriginalIndex(item);
+                retval = Trackings.Where(p => p.OriginalIndex == index).FirstOrDefault();
+            }
+            else
+            {
+                retval= Trackings.Where(p => p.CurrentIndex == index).FirstOrDefault();
+            }
+            return retval;
         }
 
         #endregion

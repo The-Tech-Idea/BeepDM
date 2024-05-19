@@ -1430,6 +1430,11 @@ namespace TheTechIdea.Beep.Editor
 
                 List<T> list = new List<T>();
                 _suppressNotification = true;
+                var type = retval.GetType();
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ObservableBindingList<>))
+                {
+                    Units = (ObservableBindingList<T>)retval;
+                }
                 if (retval is IBindingListView)
                 {
                      IBindingListView  ls= (IBindingListView)retval;
@@ -2063,6 +2068,16 @@ namespace TheTechIdea.Beep.Editor
             }
             Ivalidated = true;
             return retval;
+        }
+        public  void AssignToUnits(object retval, out object units)
+        {
+            units = null;
+
+            var type = retval.GetType();
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ObservableBindingList<>))
+            {
+                units = retval;
+            }
         }
         protected virtual void Dispose(bool disposing)
         {

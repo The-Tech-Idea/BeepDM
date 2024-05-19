@@ -44,7 +44,7 @@ namespace TheTechIdea.Util
                 typenamespace = classnamespace;
             }else typenamespace = "TheTechIdea.Classes";
 
-            string fullTypeName = $"{typenamespace}.{typename}";
+            string fullTypeName = $"{typenamespace}.{typename}".ToUpper();
             // Check if the type is already cached
             if (!typeCache.ContainsKey(fullTypeName))
             {
