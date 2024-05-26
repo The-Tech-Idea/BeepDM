@@ -688,7 +688,7 @@ namespace DataManagementModels.Editor
                         tr.OriginalIndex = originalList.Count - 1;
 
                     }
-
+                    Trackings.Add(tr);
                     item.PropertyChanged += Item_PropertyChanged;
                     OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
                 }
