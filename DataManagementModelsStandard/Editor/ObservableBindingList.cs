@@ -708,10 +708,15 @@ namespace DataManagementModels.Editor
                 originalList[index] = item;
                 if (Trackings.Count > 0)
                 {
-                    index = Trackings.Where(p => p.Equals(index)).FirstOrDefault().OriginalIndex;
+                    Tracking tr =Trackings.Where(p => p.Equals(index)).FirstOrDefault();
+                    if (tr != null)
+                    {
+                        index = tr.OriginalIndex;
+                    }
+                   
                     if (index == -1)
                     {
-                        Tracking tr=new Tracking(Guid.NewGuid(), index, index);
+                        tr=new Tracking(Guid.NewGuid(), index, index);
                         tr.EntityState = EntityState.Modified;
                         Trackings.Add(tr);
                     }

@@ -32,7 +32,7 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="1.0.479" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.186" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.187" />
   </ItemGroup>
 
 </Project>
