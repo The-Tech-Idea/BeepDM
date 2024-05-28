@@ -24,6 +24,7 @@ namespace DataManagementModels.Editor
         public bool SuppressNotification { get; set; } = false;
         public bool IsSorted => false;
         public bool IsSynchronized => false;
+
       
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
@@ -173,6 +174,7 @@ namespace DataManagementModels.Editor
         public void ApplySort(ListSortDescriptionCollection sorts)
         {
             SuppressNotification = true;
+            RaiseListChangedEvents = false;
             var paramExpr = Expression.Parameter(typeof(T), "x");
             IQueryable<T> queryableList = originalList.ToList().AsQueryable(); 
 
@@ -206,8 +208,10 @@ namespace DataManagementModels.Editor
             }
 
             ResetItems(orderedQuery.ToList());
-            SuppressNotification = false;
+          
             ResetBindings();
+            SuppressNotification = false;
+            RaiseListChangedEvents = true;
         }
         private ListSortDirection _sortDirection;
         public ListSortDirection SortDirection
@@ -257,6 +261,7 @@ namespace DataManagementModels.Editor
         #region "Filter"
         private string filterString;
         private List<T> originalList = new List<T>();
+        private List<T> DeletedList = new List<T>();
         public bool SupportsFiltering => true;
         public string Filter
         {
@@ -277,6 +282,7 @@ namespace DataManagementModels.Editor
         private void ApplyFilter()
         {
             SuppressNotification = true;
+            RaiseListChangedEvents = false;
             if (string.IsNullOrWhiteSpace(filterString))
             {
                 ResetItems(originalList);
@@ -291,8 +297,10 @@ namespace DataManagementModels.Editor
                 var filteredItems = originalList.AsQueryable().Where(fil).ToList();
                 ResetItems(filteredItems);
             }
-            SuppressNotification = false;
             ResetBindings();
+            SuppressNotification = false;
+            RaiseListChangedEvents = true;
+           
         }
         private Expression<Func<T, bool>> ParseFilter(string filter)
         {
@@ -403,13 +411,13 @@ namespace DataManagementModels.Editor
         }
         private void ResetItems(List<T> items)
         {
-
+          
             // Create a copy of the list for safe iteration
             var itemsCopy = new List<T>(items);
 
             bool raiseEvent = itemsCopy.Count != this.Count;
             // Use Batch update to minimize events
-            RaiseListChangedEvents = false;
+           
             // Clear the current items
             ClearItems();
           //  Trackings=new List<Tracking>();
@@ -418,20 +426,20 @@ namespace DataManagementModels.Editor
             {
                 this.Add(item);
             }
-            RaiseListChangedEvents = true;
+          
             if (raiseEvent)
             {
                 OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
             }
-
+           
             UpdateIndexTrackingAfterFilterorSort(); // Update index mapping after resetting items
-
+          
         }
         public new void ResetBindings()
         {
-            RaiseListChangedEvents = false;
+           // RaiseListChangedEvents = false;
             OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
-            RaiseListChangedEvents = true;
+          //  RaiseListChangedEvents = true;
         }
         #endregion
         #region "Constructor"
@@ -446,6 +454,8 @@ namespace DataManagementModels.Editor
         }
         public ObservableBindingList(IEnumerable<T> enumerable) : base(new List<T>(enumerable))
         {
+            SuppressNotification = true;
+            RaiseListChangedEvents = false;
             foreach (T item in this.Items)
             {
                 item.PropertyChanged += Item_PropertyChanged;
@@ -453,9 +463,13 @@ namespace DataManagementModels.Editor
             }
             AddingNew += ObservableBindingList_AddingNew;
             originalList = new List<T>(this.Items);
+            SuppressNotification = false;
+            RaiseListChangedEvents = true;
         }
         public ObservableBindingList(IList<T> list) : base(list)
         {
+            SuppressNotification = true;
+            RaiseListChangedEvents = false;
             foreach (T item in list)
             {
 
@@ -472,9 +486,13 @@ namespace DataManagementModels.Editor
             this.AllowRemove = true;
             originalList = this.Items.ToList();
             UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
+            SuppressNotification = false;
+            RaiseListChangedEvents = true;
         }
         public ObservableBindingList(IBindingListView bindinglist) : base()
         {
+            SuppressNotification = true;
+            RaiseListChangedEvents = false;
             foreach (T item in bindinglist)
             {
 
@@ -491,6 +509,8 @@ namespace DataManagementModels.Editor
             this.AllowRemove = true;
             originalList = this.Items.ToList();
             UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
+            SuppressNotification = false;
+            RaiseListChangedEvents = true;
         }
         public ObservableBindingList(DataTable dataTable) : base()
         {
@@ -498,7 +518,8 @@ namespace DataManagementModels.Editor
             //{
             //    throw new ArgumentNullException(nameof(dataTable));
             //}
-
+            SuppressNotification = true;
+            RaiseListChangedEvents = false;
             foreach (DataRow row in dataTable.Rows)
             {
                 T item = GetItem<T>(row);
@@ -516,9 +537,13 @@ namespace DataManagementModels.Editor
             this.AllowRemove = true;
             originalList = new List<T>(this.Items);
             UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
+            SuppressNotification = false;
+            RaiseListChangedEvents = true;
         }
         public ObservableBindingList(List<object> objects) : base()
         {
+            SuppressNotification = true;
+            RaiseListChangedEvents = false;
             if (objects == null)
             {
                 throw new ArgumentNullException(nameof(objects));
@@ -546,6 +571,8 @@ namespace DataManagementModels.Editor
             this.AllowRemove = true;
             originalList = new List<T>(this.Items);
             UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
+            SuppressNotification = false;
+            RaiseListChangedEvents = true;
         }
 
         #endregion
@@ -630,41 +657,28 @@ namespace DataManagementModels.Editor
         protected override void RemoveItem(int index)
         {
             T removedItem = this[index];
-            base.RemoveItem(index);
             int trackingindex = -1;
             Tracking tracking = null;
             if (Trackings.Count > 0)
             {
-                trackingindex = Trackings.FindIndex(p=>p.CurrentIndex==index);
+                tracking = GetTrackingITem(removedItem);
             }
-            if(trackingindex != -1)
+            if (removedItem != null)
             {
-                tracking = Trackings[trackingindex];
-                originalList.RemoveAt(tracking.OriginalIndex);
-                if (!string.IsNullOrEmpty(filterString))
-                {
-                    Items.RemoveAt(index);
-
-                }
+                DeletedList.Add(removedItem);
             }
-            if (Trackings.Count > 0)
+            int deletedindex = DeletedList.IndexOf(removedItem);
+
+            if(tracking!=null)
             {
-
-                if (trackingindex >= 0)
-                {
-                    Trackings[trackingindex].EntityState = EntityState.Deleted;
-                }
-
+               
+                tracking.EntityState = EntityState.Deleted;
+                tracking.CurrentIndex = deletedindex;
             }
-
-
-            if (!SuppressNotification)
-            {
-                removedItem.PropertyChanged -= Item_PropertyChanged;
-                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
-            }
-           
-
+            removedItem.PropertyChanged -= Item_PropertyChanged;
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
+            Items.RemoveAt(index);
+            originalList.RemoveAt(tracking.OriginalIndex);
         }
         protected override void InsertItem(int index, T item)
         {
@@ -792,24 +806,29 @@ namespace DataManagementModels.Editor
         {
             return originalList.IndexOf(item);
         }
-        public int GetItemsIndex(T item)
-        {
-
-            return base.Items.IndexOf(item);
-        }
+       
         public Tracking GetTrackingITem(T item)
         {
             Tracking retval = null;
-            int index = GetItemsIndex(item);
-            if (index < 0)
+            int index = -1;
+            if (DeletedList.Count > 0)
+                {
+                    index = DeletedList.IndexOf(item);
+                    retval = Trackings.Where(p => p.CurrentIndex == index).FirstOrDefault();
+                }
+
+            index = GetOriginalIndex(item);
+            if (index>-1)
             {
-                index = GetOriginalIndex(item);
+                
                 retval = Trackings.Where(p => p.OriginalIndex == index).FirstOrDefault();
             }
             else
             {
                 retval= Trackings.Where(p => p.CurrentIndex == index).FirstOrDefault();
             }
+            
+                
             return retval;
         }
 
