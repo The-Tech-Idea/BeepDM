@@ -196,11 +196,6 @@
             <param name="asm">The assembly to scan for ADO.NET drivers.</param>
             <returns>True if drivers are successfully extracted, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.GetNonADODrivers">
-            <summary>
-            Configures non-ADO.NET type driver information based on predefined driver definitions.
-            </summary>
-        </member>
         <member name="M:TheTechIdea.Tools.AssemblyHandler.GetDrivers(System.Reflection.Assembly)">
             <summary>
             Retrieves a list of driver configurations from an assembly.

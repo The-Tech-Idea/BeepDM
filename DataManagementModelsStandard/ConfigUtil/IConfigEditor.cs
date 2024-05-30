@@ -35,7 +35,7 @@ namespace TheTechIdea.Util
         List<ObjectTypes> objectTypes { get; set; }
 
         List<ConnectionDriversConfig> DataDriversClasses { get; set; }
-        List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; }
+    //    List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; }
         List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
         List<AssemblyClassDefinition> BranchesClasses { get; set; }
         List<AssemblyClassDefinition> AppWritersClasses { get; set; }
@@ -102,8 +102,8 @@ namespace TheTechIdea.Util
         // void LoadMappingSchema();
         //void SaveMapsValues();
         // void LoadMapsValues();
-        List<ConnectionDriversConfig> LoadConnectionDriversDefinition();
-        void SaveConnectionDriversDefinitions();
+      //  List<ConnectionDriversConfig> LoadConnectionDriversDefinition();
+       // void SaveConnectionDriversDefinitions();
         CategoryFolder AddFolderCategory(string pfoldername, string prootname, string pparentname, string parentguidid, bool isparentFolder = false, bool isparentRoot = true, bool isphysical = false);
         CategoryFolder AddFolderCategory(string pfoldername, string prootname, string pparentname);
         bool RemoveFolderCategory(string pfoldername, string prootname, string parentguidid);

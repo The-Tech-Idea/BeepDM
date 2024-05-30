@@ -335,8 +335,8 @@ namespace TheTechIdea.Tools
             Utilfunction.Classlist = new List<string>();
             DataDriversConfig = new List<ConnectionDriversConfig>();
           
-            SendMessege(progress, token,"Getting Non ADO Drivers");
-            GetNonADODrivers();
+            //SendMessege(progress, token,"Getting Non ADO Drivers");
+            //GetNonADODrivers();
             SendMessege(progress, token, "Getting Builtin Classes");
             GetBuiltinClasses();
             SendMessege(progress, token, "Getting FrameWork Extensions");
@@ -1572,32 +1572,32 @@ namespace TheTechIdea.Tools
         /// <summary>
         /// Configures non-ADO.NET type driver information based on predefined driver definitions.
         /// </summary>
-        private void GetNonADODrivers()
-        {
-            ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
-            try
-            {
-                foreach (ConnectionDriversConfig item in  ConfigEditor.DriverDefinitionsConfig)
-                {
-                    driversConfig = DataDriversConfig.Where(c => c.PackageName == item.PackageName).FirstOrDefault();
-                    if (driversConfig == null)
-                    {
-                        driversConfig = new ConnectionDriversConfig();
-                        driversConfig.version = item.version;
-                        driversConfig.PackageName = item.PackageName;
-                        driversConfig.DriverClass = item.DriverClass;
-                        driversConfig.dllname = item.dllname;
-                        driversConfig.parameter1 = item.parameter1;
-                        driversConfig.parameter2 = item.parameter2;
-                        driversConfig.parameter3 = item.parameter3;
-                        DataDriversConfig.Add(driversConfig);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-            }
-        }
+        //private void GetNonADODrivers()
+        //{
+        //    ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
+        //    try
+        //    {
+        //        foreach (ConnectionDriversConfig item in  ConfigEditor.DriverDefinitionsConfig)
+        //        {
+        //            driversConfig = DataDriversConfig.Where(c => c.PackageName == item.PackageName).FirstOrDefault();
+        //            if (driversConfig == null)
+        //            {
+        //                driversConfig = new ConnectionDriversConfig();
+        //                driversConfig.version = item.version;
+        //                driversConfig.PackageName = item.PackageName;
+        //                driversConfig.DriverClass = item.DriverClass;
+        //                driversConfig.dllname = item.dllname;
+        //                driversConfig.parameter1 = item.parameter1;
+        //                driversConfig.parameter2 = item.parameter2;
+        //                driversConfig.parameter3 = item.parameter3;
+        //                DataDriversConfig.Add(driversConfig);
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //    }
+        //}
         /// <summary>
         /// Retrieves a list of driver configurations from an assembly.
         /// </summary>

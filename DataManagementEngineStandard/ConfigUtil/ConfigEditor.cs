@@ -79,7 +79,7 @@ namespace TheTechIdea.Util
 		public List<QuerySqlRepo> QueryList { get; set; } = new List<QuerySqlRepo>();
 		/// <summary>Gets or sets the list of driver definitions configuration.</summary>
 		/// <value>The list of driver definitions configuration.</value>
-		public List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; } = new List<ConnectionDriversConfig>();
+		//public List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; } = new List<ConnectionDriversConfig>();
 		/// <summary>Gets or sets the list of data connections.</summary>
 		/// <value>The list of data connections.</value>
 		public List<ConnectionProperties> DataConnections { get; set; } = new List<ConnectionProperties>(); //DataSourceConnectionConfig
@@ -1081,23 +1081,23 @@ namespace TheTechIdea.Util
 		}
 		/// <summary>Loads the connection drivers definition from a JSON file.</summary>
 		/// <returns>A list of ConnectionDriversConfig objects representing the loaded drivers definition.</returns>
-		public List<ConnectionDriversConfig> LoadConnectionDriversDefinition()
-		{
-			string path = Path.Combine(ConfigPath, "DriversDefinitions.json");
-			DriverDefinitionsConfig = JsonLoader.DeserializeObject<ConnectionDriversConfig>(path);
+		//public List<ConnectionDriversConfig> LoadConnectionDriversDefinition()
+		//{
+		//	string path = Path.Combine(ConfigPath, "DriversDefinitions.json");
+		//	DriverDefinitionsConfig = JsonLoader.DeserializeObject<ConnectionDriversConfig>(path);
 
-			return DriverDefinitionsConfig;
-			//  QueryList = ReadQueryFile("QueryList.json");
-		}
+		//	return DriverDefinitionsConfig;
+		//	//  QueryList = ReadQueryFile("QueryList.json");
+		//}
 		/// <summary>Saves the connection driver definitions to a JSON file.</summary>
 		/// <remarks>
 		/// The connection driver definitions are serialized to a JSON file located at the specified path.
 		/// </remarks>
-		public void SaveConnectionDriversDefinitions()
-		{
-			string path = Path.Combine(ConfigPath, "DriversDefinitions.json");
-			JsonLoader.Serialize(path, DriverDefinitionsConfig);
-		}
+		//public void SaveConnectionDriversDefinitions()
+		//{
+		//	string path = Path.Combine(ConfigPath, "DriversDefinitions.json");
+		//	JsonLoader.Serialize(path, DriverDefinitionsConfig);
+		//}
 		/// <summary>Saves the values of the databases to a JSON file.</summary>
 		/// <remarks>
 		/// The method serializes the values of the databases to a JSON file located at the specified path.
@@ -1517,39 +1517,39 @@ namespace TheTechIdea.Util
 		/// If the file exists, it calls the LoadConnectionDriversDefinition method to load the definitions.
 		/// If any errors occur during initialization, the ErrorObject is updated with the appropriate error information.
 		/// </remarks>
-		private IErrorsInfo InitConnectionConfigDrivers()
-		{
-			ErrorObject.Flag = Errors.Ok;
-			try
-			{
-				string path = Path.Combine(ConfigPath, "DriversDefinitions.json");
-				if (File.Exists(path))
-				{
-					LoadConnectionDriversDefinition();
+		//private IErrorsInfo InitConnectionConfigDrivers()
+		//{
+		//	ErrorObject.Flag = Errors.Ok;
+		//	try
+		//	{
+		//		string path = Path.Combine(ConfigPath, "DriversDefinitions.json");
+		//		//if (File.Exists(path))
+		//		//{
+		//		//	LoadConnectionDriversDefinition();
 
-				}
-				path = Path.Combine(ConfigPath, "ConnectionConfig.json");
-				if (File.Exists(path))
-				{
-					LoadConnectionDriversConfigValues();
-					//    Databasetypes = (DataSourceType)Enum.Parse(typeof(DataSourceType), );
-				}
-				else
-					DataConnections = new List<ConnectionProperties>();
-				SaveConnectionDriversConfigValues();
+		//		//}
+		//		path = Path.Combine(ConfigPath, "ConnectionConfig.json");
+		//		if (File.Exists(path))
+		//		{
+		//			LoadConnectionDriversConfigValues();
+		//			//    Databasetypes = (DataSourceType)Enum.Parse(typeof(DataSourceType), );
+		//		}
+		//		else
+		//			DataConnections = new List<ConnectionProperties>();
+		//		SaveConnectionDriversConfigValues();
 
-				//LoadConnectionDriversConfigValues
-			}
-			catch (Exception ex)
-			{
+		//		//LoadConnectionDriversConfigValues
+		//	}
+		//	catch (Exception ex)
+		//	{
 
-				ErrorObject.Flag = Errors.Failed;
-				ErrorObject.Ex = ex;
-				ErrorObject.Message = ex.Message;
-				Logger.WriteLog($"Error Initlization Lists ({ex.Message})");
-			}
-			return ErrorObject;
-		}
+		//		ErrorObject.Flag = Errors.Failed;
+		//		ErrorObject.Ex = ex;
+		//		ErrorObject.Message = ex.Message;
+		//		Logger.WriteLog($"Error Initlization Lists ({ex.Message})");
+		//	}
+		//	return ErrorObject;
+		//}
 		/// <summary>Initializes the data source configuration drivers.</summary>
 		/// <returns>An object containing information about any errors that occurred during initialization.</returns>
 		/// <remarks>
@@ -2107,7 +2107,7 @@ namespace TheTechIdea.Util
 				{
 					// TODO: dispose managed state (managed objects)
 					QueryList = null;
-					DriverDefinitionsConfig = null;
+					//DriverDefinitionsConfig = null;
 					DataConnections = null;
 					WorkFlows = null;
 					CategoryFolders = null;

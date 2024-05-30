@@ -41,10 +41,6 @@
             <summary>Gets or sets the list of QuerySqlRepo objects.</summary>
             <value>The list of QuerySqlRepo objects.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.DriverDefinitionsConfig">
-            <summary>Gets or sets the list of driver definitions configuration.</summary>
-            <value>The list of driver definitions configuration.</value>
-        </member>
         <member name="P:TheTechIdea.Util.ConfigEditor.DataConnections">
             <summary>Gets or sets the list of data connections.</summary>
             <value>The list of data connections.</value>
@@ -430,16 +426,6 @@
             <param name="ConfigPath">The path where the JSON file will be saved.</param>
             <param name="DataDriversClasses">The object containing the configuration values of connection drivers.</param>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadConnectionDriversDefinition">
-            <summary>Loads the connection drivers definition from a JSON file.</summary>
-            <returns>A list of ConnectionDriversConfig objects representing the loaded drivers definition.</returns>
-        </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveConnectionDriversDefinitions">
-            <summary>Saves the connection driver definitions to a JSON file.</summary>
-            <remarks>
-            The connection driver definitions are serialized to a JSON file located at the specified path.
-            </remarks>
-        </member>
         <member name="M:TheTechIdea.Util.ConfigEditor.SaveDatabasesValues">
             <summary>Saves the values of the databases to a JSON file.</summary>
             <remarks>
@@ -601,15 +587,6 @@
             <summary>Reads a JSON file containing datatype mappings and returns a list of DatatypeMapping objects.</summary>
             <param name="filename">The name of the JSON file to read. Default value is "DataTypeMapping".</param>
             <returns>A list of DatatypeMapping objects representing the datatype mappings.</returns>
-        </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.InitConnectionConfigDrivers">
-            <summary>Initializes the connection configuration drivers.</summary>
-            <returns>An object containing information about any errors that occurred during initialization.</returns>
-            <remarks>
-            This method loads the connection drivers definitions from a JSON file located at the specified path.
-            If the file exists, it calls the LoadConnectionDriversDefinition method to load the definitions.
-            If any errors occur during initialization, the ErrorObject is updated with the appropriate error information.
-            </remarks>
         </member>
         <member name="M:TheTechIdea.Util.ConfigEditor.InitDataSourceConfigDrivers">
             <summary>Initializes the data source configuration drivers.</summary>
