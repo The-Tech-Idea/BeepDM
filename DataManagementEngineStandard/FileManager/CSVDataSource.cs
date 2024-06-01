@@ -69,9 +69,27 @@ namespace TheTechIdea.Beep.FileManager
         public IDMEEditor DMEEditor { get ; set ; }
         ConnectionState pConnectionStatus;
         bool IsFieldsScanned = false;
+        #region "Insert or Update or Delete Objects"
+        EntityStructure DataStruct = null;
+        IDbCommand command = null;
+        Type enttype = null;
+        bool ObjectsCreated = false;
+        string lastentityname = null;
+        #endregion
         public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; } set { pConnectionStatus = value; } }
 
         public event EventHandler<PassedArgs> PassEvent;
+        private void SetObjects(string Entityname)
+        {
+            if (!ObjectsCreated || Entityname != lastentityname)
+            {
+                DataStruct = GetEntityStructure(Entityname, false);
+             
+                enttype = GetEntityType(Entityname);
+                ObjectsCreated = true;
+                lastentityname = Entityname;
+            }
+        }
         #region "Get Fields and Data"
         public ConnectionState GetFileState()
         {
@@ -673,10 +691,19 @@ namespace TheTechIdea.Beep.FileManager
                   
                 }
                 var retval= GetDataTable(0);
-                var items = DMEEditor.Utilfunction.GetBindingListByDataTable(retval, DMTypeBuilder.myType,Entities.FirstOrDefault());
+                enttype = GetEntityType(EntityName);
+                Type uowGenericType = typeof(ObservableBindingList<>).MakeGenericType(enttype);
+                // Prepare the arguments for the constructor
+                object[] constructorArgs = new object[] { retval };
+
+                // Create an instance of UnitOfWork<T> with the specific constructor
+                // Dynamically handle the instance since we can't cast to a specific IUnitofWork<T> at compile time
+                object uowInstance = Activator.CreateInstance(uowGenericType, constructorArgs);
+                //var items =   DMEEditor.Utilfunction.ConvertDataTableToObservableList(retval, GetEntityType(EntityName));
+               // var items = DMEEditor.Utilfunction.GetBindingListByDataTable(retval, DMTypeBuilder.myType,Entities.FirstOrDefault());
               //  var observableType = typeof(ObservableBindingList<>).MakeGenericType(DMTypeBuilder.myType);
                 //var list = Activator.CreateInstance(observableType, args);
-                return items;
+                return uowInstance;
             }
             catch (Exception ex)
             {

@@ -581,9 +581,10 @@ namespace DataManagementModels.Editor
         {
             Type temp = typeof(T);
             T obj = Activator.CreateInstance<T>();
-
+            var props = temp.GetProperties();
             foreach (DataColumn column in dr.Table.Columns)
             {
+
                 foreach (PropertyInfo pro in temp.GetProperties())
                 {
                     if (pro.Name == column.ColumnName)

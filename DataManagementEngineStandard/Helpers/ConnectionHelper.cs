@@ -103,38 +103,20 @@ namespace TheTechIdea.Beep.Helpers
             {
                 if (ConnectionProp.FilePath.StartsWith(".") || ConnectionProp.FilePath.Equals("/") || ConnectionProp.FilePath.Equals("\\"))
                 {
-                    ConnectionProp.FilePath = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
+                    string fullPath = Path.Combine(DMEEditor.ConfigEditor.ExePath, ConnectionProp.FilePath.TrimStart('.', '/', '\\'));
+                    ConnectionProp.FilePath =fullPath;
+                   //  = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
                 }
                 // input= Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
             }
 
 
-
-
-            pattern = "{Host}";
-            replacement = ConnectionProp.Host ?? string.Empty;
-            input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
-
-            pattern = "{UserID}";
-            replacement = ConnectionProp.UserID ?? string.Empty;
-            input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
-
-            pattern = "{Password}";
-            replacement = ConnectionProp.Password ?? string.Empty;
-            input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
-
-            pattern = "{DataBase}";
-            replacement = ConnectionProp.Database ?? string.Empty;
-            input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
-
-            pattern = "{Port}";
-            replacement = ConnectionProp.Port.ToString() ?? string.Empty;
-            input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
-
-
-
-
-
+            // Replace other placeholders
+            input = Regex.Replace(input, "{Host}", ConnectionProp.Host ?? string.Empty, RegexOptions.IgnoreCase);
+            input = Regex.Replace(input, "{UserID}", ConnectionProp.UserID ?? string.Empty, RegexOptions.IgnoreCase);
+            input = Regex.Replace(input, "{Password}", ConnectionProp.Password ?? string.Empty, RegexOptions.IgnoreCase);
+            input = Regex.Replace(input, "{DataBase}", ConnectionProp.Database ?? string.Empty, RegexOptions.IgnoreCase);
+            input = Regex.Replace(input, "{Port}", ConnectionProp.Port.ToString() ?? string.Empty, RegexOptions.IgnoreCase);
 
             if (IsFile)
             {
