@@ -89,6 +89,14 @@ namespace TheTechIdea.Beep.Helpers
             {
 
                 input = ConnectionProp.ConnectionString;
+                if (input.Contains("./") )
+                {
+                    string fullPath = input.Replace("./Beep", DMEEditor.ConfigEditor.ExePath);
+                    fullPath = fullPath.Replace('/', '\\');
+                    ConnectionProp.FilePath = fullPath;
+                    input= fullPath;
+                    //  = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
+                }
             }
 
             if (IsUrl)
@@ -99,16 +107,11 @@ namespace TheTechIdea.Beep.Helpers
                 input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
 
             }
-            if (IsFile)
-            {
-                if (ConnectionProp.FilePath.StartsWith(".") || ConnectionProp.FilePath.Equals("/") || ConnectionProp.FilePath.Equals("\\"))
-                {
-                    string fullPath = Path.Combine(DMEEditor.ConfigEditor.ExePath, ConnectionProp.FilePath.TrimStart('.', '/', '\\'));
-                    ConnectionProp.FilePath =fullPath;
-                   //  = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
-                }
-                // input= Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
-            }
+            //if (IsFile)
+            //{
+               
+            //    // input= Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
+            //}
 
 
             // Replace other placeholders
@@ -120,17 +123,28 @@ namespace TheTechIdea.Beep.Helpers
 
             if (IsFile)
             {
-                if (!string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString))
+                if (!string.IsNullOrEmpty(ConnectionProp.FilePath) && !string.IsNullOrEmpty(ConnectionProp.FileName))
                 {
+                    if (ConnectionProp.FilePath.StartsWith(".") || ConnectionProp.FilePath.Equals("/") || ConnectionProp.FilePath.Equals("\\"))
+                    {
+                        string fullPath = Path.Combine(DMEEditor.ConfigEditor.ExePath, ConnectionProp.FilePath.TrimStart('.', '/', '\\'));
+                        ConnectionProp.FilePath = fullPath;
+                        //  = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
+                    }
+                    if (!string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString))
+                    {
+                   
+                        pattern = "{File}";
+                        replacement = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName) ?? string.Empty;
+                        input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
+                    }
+                    else
+                    {
+                        input = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
+                    }
 
-                    pattern = "{File}";
-                    replacement = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName) ?? string.Empty;
-                    input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
                 }
-                else
-                {
-                    input = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
-                }
+                
             }
 
 
