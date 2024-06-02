@@ -1,4 +1,5 @@
-﻿using TheTechIdea.Util;
+﻿using System;
+using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.DataBase
 {
@@ -27,5 +28,18 @@ namespace TheTechIdea.Beep.DataBase
         bool DisplayField { get; set; }
         bool IsIdentity { get; set; }   
         string Description { get; set; }
+        // New fields
+        int OrdinalPosition { get; set; }
+        bool IsReadOnly { get; set; }
+        bool IsRowVersion { get; set; }
+        bool IsLong { get; set; }
+        string DefaultValue { get; set; }
+        string Expression { get; set; }
+        string BaseTableName { get; set; }
+        string BaseColumnName { get; set; }
+        int MaxLength { get; set; }
+        bool IsFixedLength { get; set; }
+        bool IsHidden { get; set; }
+
     }
 }

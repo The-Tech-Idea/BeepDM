@@ -449,7 +449,18 @@ private int _id;
             set { SetProperty(ref _entityname, value); }
         }
 
-
+        // New fields
+        public int OrdinalPosition { get; set; }
+        public bool IsReadOnly { get; set; }
+        public bool IsRowVersion { get; set; }
+        public bool IsLong { get; set; }
+        public string DefaultValue { get; set; }
+        public string Expression { get; set; }
+        public string BaseTableName { get; set; }
+        public string BaseColumnName { get; set; }
+        public int MaxLength { get; set; }
+        public bool IsFixedLength { get; set; }
+        public bool IsHidden { get; set; }
         public EntityField()
         {
             fieldtype = "Text";
