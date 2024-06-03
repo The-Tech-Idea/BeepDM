@@ -754,7 +754,7 @@ namespace TheTechIdea.Util
 				return false;
 
 			}
-			return DataConnections != null ? DataConnections.Any(x => x.ConnectionName.Equals(ConnectionName, StringComparison.InvariantCultureIgnoreCase)) : false;
+			return DataConnections != null ? DataConnections.Any(x =>!string.IsNullOrEmpty(x.ConnectionName) && x.ConnectionName.Equals(ConnectionName, StringComparison.InvariantCultureIgnoreCase)) : false;
 		}
 		/// <summary>Adds a data connection to the list of data connections.</summary>
 		/// <param name="cn">The connection properties to add.</param>

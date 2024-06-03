@@ -211,10 +211,7 @@ namespace TheTechIdea.Beep.Helpers
                                         {
                                             dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.DataType.Contains("P,S")).FirstOrDefault();
                                         }
-                                        if (dt != null)
-                                        {
-                                            retval = dt.DataType.Replace("(P,S)", "(" + fld.NumericPrecision.ToString() + "," + fld.NumericScale.ToString() + ")");
-                                        }
+                                       
 
 
                                     }
@@ -225,11 +222,7 @@ namespace TheTechIdea.Beep.Helpers
                                         {
                                             dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.DataType.Contains("(N)")).FirstOrDefault();
                                         }
-                                        if (dt != null)
-                                        {
-                                            retval = dt.DataType.Replace("(N)", "(" + fld.NumericPrecision.ToString() + ")");
-
-                                        }
+                                       
                                         else
                                         {
                                             dt = DMEEditor.ConfigEditor.DataTypesMap.Where(x => x.DataSourceName.Equals(classhandler.className, StringComparison.InvariantCultureIgnoreCase) && x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.Fav && x.DataType.Contains("(P,S)")).FirstOrDefault();
@@ -268,6 +261,21 @@ namespace TheTechIdea.Beep.Helpers
                 else
                 {
                     DMEEditor.AddLogMessage("Fail", "Could not Convert Field Type to Provider Type " + fld.EntityName + "_" + fld.fieldname, DateTime.Now, -1, null, Errors.Failed);
+                }
+             
+                if (retval != null)
+                {
+                    if (fld.NumericPrecision ==0 && retval.Contains("N"))
+                    {
+                        fld.NumericPrecision = 255;
+
+                    }
+                    retval = retval.Replace("(N)", "(" + fld.NumericPrecision.ToString() + ")");
+
+                }
+                if (retval != null)
+                {
+                    retval = retval.Replace("(P,S)", "(" + fld.NumericPrecision.ToString() + "," + fld.NumericScale.ToString() + ")");
                 }
             }
             catch (Exception ex)
