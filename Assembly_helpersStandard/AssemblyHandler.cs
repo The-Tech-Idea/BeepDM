@@ -93,11 +93,23 @@ namespace TheTechIdea.Tools
             CurrentDomain = AppDomain.CurrentDomain;
             DataSourcesClasses = new List<AssemblyClassDefinition>();
             CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            // Get current, executing, and calling assemblies
+           var assemblies = new List<Assembly>
+    {
+        Assembly.GetExecutingAssembly(),
+        Assembly.GetCallingAssembly(),
+        Assembly.GetEntryAssembly()
+    };
             LoadedAssemblies = DependencyContext.Default.RuntimeLibraries
     .SelectMany(library => library.GetDefaultAssemblyNames(DependencyContext.Default))
     .Select(Assembly.Load)
     .Where(assembly => !assembly.FullName.StartsWith("System") && !assembly.FullName.StartsWith("Microsoft"))
     .ToList();
+            LoadedAssemblies.AddRange(assemblies);
+            // Load all assemblies from the current domain to ensure referenced projects are included
+            //LoadedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies()
+            //    .Where(assembly => !assembly.FullName.StartsWith("System") && !assembly.FullName.StartsWith("Microsoft")));
+
         }
 
         #region "Loaders"
