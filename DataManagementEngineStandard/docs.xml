@@ -2609,6 +2609,10 @@
             <summary>Creates a configuration object for SQLite connection drivers.</summary>
             <returns>A configuration object for SQLite connection drivers.</returns>
         </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateMauiSQLiteConfig">
+            <summary>Creates a configuration object for SQLite connection drivers.</summary>
+            <returns>A configuration object for SQLite connection drivers.</returns>
+        </member>
         <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateRavenDBConfig">
             <summary>Creates a configuration object for RavenDB connection drivers.</summary>
             <returns>A configuration object for RavenDB connection drivers.</returns>

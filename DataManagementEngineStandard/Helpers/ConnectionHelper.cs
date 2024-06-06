@@ -163,6 +163,7 @@ namespace TheTechIdea.Beep.Helpers
             configs.Add(CreateCouchbaseLiteConfig());
             configs.Add(CreateElasticsearchConfig());
             configs.Add(CreateSQLiteConfig());
+            configs.Add(CreateMauiSQLiteConfig());
             configs.Add(CreateRavenDBConfig());
             configs.Add(CreateCSVFileReaderConfig());
             configs.Add(CreateFirebirdConfig());
@@ -623,6 +624,29 @@ namespace TheTechIdea.Beep.Helpers
                 iconname = "Sqlite.png",
                 classHandler = "SQLiteDataSource",
                 ADOType = true,
+                CreateLocal = true,
+                InMemory = false,
+                Favourite = true,
+                DatasourceCategory = DatasourceCategory.RDBMS, // Assuming appropriate enum value
+                DatasourceType = DataSourceType.SqlLite, // Assuming appropriate enum value
+                IsMissing = false
+            };
+        }
+        /// <summary>Creates a configuration object for SQLite connection drivers.</summary>
+        /// <returns>A configuration object for SQLite connection drivers.</returns>
+        public static ConnectionDriversConfig CreateMauiSQLiteConfig()
+        {
+            return new ConnectionDriversConfig
+            {
+                GuidID = "b68a607a-8d54-4ca1-b8e3-0feabe3f5590",
+                PackageName = "TheTechIdea.Beep.Maui.DataSource.Sqlite",
+                DriverClass = "TheTechIdea.Beep.Maui.DataSource.Sqlite",
+                version = "1.0.113.0",
+                dllname = "TheTechIdea.Beep.Maui.DataSource.Sqlite.dll",
+                ConnectionString = "{File}",
+                iconname = "Sqlite.png",
+                classHandler = "SQLiteMauiDataSource",
+                ADOType = false,
                 CreateLocal = true,
                 InMemory = false,
                 Favourite = true,
