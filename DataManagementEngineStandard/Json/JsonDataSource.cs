@@ -6,6 +6,7 @@ using System.Data;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
@@ -14,6 +15,7 @@ using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Logger;
 using TheTechIdea.Util;
+using DataManagementModels.Editor;
 
 namespace TheTechIdea.Beep.Json
 {
@@ -41,7 +43,8 @@ namespace TheTechIdea.Beep.Json
         }
         #region "Properties"
         private bool disposedValue;
-        private JObject _rootJsonObject = null;
+        private JToken _rootJsonObject = null;
+        private JArray _rootJsonArray = null;
         private string  jsonContent=null;
         private string lastentityname;
 
@@ -112,36 +115,41 @@ namespace TheTechIdea.Beep.Json
 
         public bool CreateEntityAs(EntityStructure entity)
         {
-            // Access the root JSON object.
-            JObject rootJson = GetRootJsonObject();
-            if (rootJson == null)
+            // Access the root JSON array.
+            JArray rootJsonArray = GetRootJsonArray();
+            if (rootJsonArray == null)
             {
-                // Root JSON object not available, can't create the entity.
-                return false;
+                // Root JSON array not available, initialize a new array.
+                rootJsonArray = new JArray();
+                _rootJsonObject["RootArray"] = rootJsonArray;
             }
 
-            // Check if the entity already exists.
-            if (rootJson.SelectToken(entity.EntityName) != null)
+            // Check if the entity already exists by checking if an entity with the same name is present.
+            if (Entities.Any(e => e.EntityName == entity.EntityName))
             {
                 // Entity already exists, can't create a new one with the same name.
                 return false;
             }
 
-            // Create a new JArray or JObject based on your needs.
-            JArray newArray = new JArray();
-            // JObject newObject = new JObject(); // Uncomment if you want to create a JObject instead.
+            // Create a new JObject to represent the entity.
+            JObject newEntityObject = new JObject();
 
-            // Add the new array or object to the root.
-            rootJson.Add(new JProperty(entity.EntityName, newArray));
+            // Populate the new entity object with fields.
+            foreach (var field in entity.Fields)
+            {
+                newEntityObject.Add(new JProperty(field.fieldname, JValue.CreateNull()));
+            }
+
+            // Add the new object to the root array.
+            rootJsonArray.Add(newEntityObject);
 
             // Optionally, update the EntityStructure to reflect the new entity's details.
             entity.EntityPath = $"$.{entity.EntityName}";
             Entities.Add(entity);
 
-           
-
             return true;
         }
+
 
         public IErrorsInfo DeleteEntity(string EntityName, object criteria)
         {
@@ -151,38 +159,35 @@ namespace TheTechIdea.Beep.Json
                 return new ErrorsInfo { Message = "Entity not found.", Flag = Errors.Failed };
             }
 
-            // Access the root JSON object.
-            JObject rootJson = GetRootJsonObject();
-            if (rootJson == null)
+            // Access the root JSON array.
+            JArray rootJsonArray = GetRootJsonArray();
+            if (rootJsonArray == null)
             {
-                return new ErrorsInfo { Message = "Root JSON object is not available.", Flag = Errors.Failed };
-            }
-
-            // Use the path to select the specific part of the JSON.
-            JToken entityToken = rootJson.SelectToken(entityStructure.EntityPath);
-            if (entityToken == null)
-            {
-                return new ErrorsInfo { Message = "Entity path not found.", Flag = Errors.Failed };
+                return new ErrorsInfo { Message = "Root JSON array is not available.", Flag = Errors.Failed };
             }
 
             try
             {
+                // Find the entity in the array.
+                JToken entityToken = rootJsonArray.FirstOrDefault(item => item[EntityName] != null);
+                if (entityToken == null)
+                {
+                    return new ErrorsInfo { Message = "Entity path not found.", Flag = Errors.Failed };
+                }
+
+                // Remove the entity that matches the criteria.
                 if (entityToken is JArray entityArray)
                 {
-                    // For arrays, remove the item that matches the criteria.
-                    // This assumes the criteria is an object with properties that should match the item to be removed.
                     var itemToRemove = entityArray.FirstOrDefault(item => item.MatchesCriteria(criteria));
                     if (itemToRemove != null)
                     {
                         itemToRemove.Remove();
                         return new ErrorsInfo { Message = "Item removed successfully.", Flag = Errors.Ok };
                     }
-
                 }
                 else
                 {
-                    // For a single object, you can simply remove it or set it to null.
-                    // The exact behavior depends on your application's needs.
+                    // For a single object, remove it.
                     entityToken.Remove();
                     return new ErrorsInfo { Message = "Entity removed successfully.", Flag = Errors.Ok };
                 }
@@ -194,6 +199,9 @@ namespace TheTechIdea.Beep.Json
 
             return new ErrorsInfo { Message = "No matching item found to remove.", Flag = Errors.Failed };
         }
+
+        // Helper method to get the root JSON array.
+    
 
         // Helper method to check if a JSON token matches the deletion criteria.
         public IErrorsInfo EndTransaction(PassedArgs args)
@@ -223,7 +231,6 @@ namespace TheTechIdea.Beep.Json
             }
             
         }
-
         public object GetEntity(string entityName, List<AppFilter> filter)
         {
             var entityStructure = Entities.FirstOrDefault(e => e.EntityName == entityName);
@@ -232,44 +239,80 @@ namespace TheTechIdea.Beep.Json
                 return new List<object>();  // Or throw an appropriate exception
             }
 
-            JObject rootJson = GetRootJsonObject();
-            if (rootJson == null)
+            JArray rootJsonArray = GetRootJsonArray();
+            if (rootJsonArray == null)
             {
-                return new List<object>();  // Or throw an appropriate exception if the root JSON object is not set.
+                return new List<object>();  // Or throw an appropriate exception if the root JSON array is not set.
             }
 
-            JToken token = rootJson.SelectToken(entityStructure.EntityPath);
             List<object> resultList = new List<object>();
+            Type entityType = GetEntityType(entityName);
 
-            if (token is JArray arrayToken)
+            foreach (var item in rootJsonArray.Children<JObject>())
             {
-                foreach (var item in arrayToken.Children<JObject>())
+                var entity = Activator.CreateInstance(entityType);
+
+                foreach (var property in item.Properties())
                 {
-                    dynamic record = new ExpandoObject();
-                    var recordDictionary = (IDictionary<string, object>)record;
-                    foreach (var property in item.Properties())
+                    var propInfo = entityType.GetProperty(property.Name, BindingFlags.Public | BindingFlags.Instance);
+                    if (propInfo != null && propInfo.CanWrite)
                     {
-                        recordDictionary[property.Name] = property.Value.ToObject<object>();
-                    }
-                    // Apply any filters to the record here if necessary
-                    UpdateEntityStructureWithMissingFields(item, entityStructure);
-                    resultList.Add(record);
-                }
-            }
-            else if (token is JObject objectToken)
-            {
-                dynamic record = new ExpandoObject();
-                var recordDictionary = (IDictionary<string, object>)record;
-                foreach (var property in objectToken.Properties())
-                {
-                    recordDictionary[property.Name] = property.Value.ToObject<object>();
-                }
-                UpdateEntityStructureWithMissingFields((JObject)token, entityStructure);
-                // Apply any filters to the record here if necessary
-                resultList.Add(record);
-            }
+                        try
+                        {
+                            var fieldInfo = entityStructure.Fields.FirstOrDefault(p => p.fieldname == property.Name);
+                            if (fieldInfo != null)
+                            {
+                                Type fieldType = Type.GetType(fieldInfo.fieldtype);
+                                object value;
 
-            return resultList;
+                                // Special handling for $oid
+                                if (property.Value.Type == JTokenType.Object && property.Value["$oid"] != null)
+                                {
+                                    value = property.Value["$oid"].ToString();
+                                }
+                                else
+                                {
+                                    value = property.Value.ToObject(fieldType);
+                                }
+
+                                propInfo.SetValue(entity, value);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error setting property {property.Name}: {ex.Message}");
+                        }
+
+                    }
+                }
+
+                // Apply any filters to the record here if necessary
+                UpdateEntityStructureWithMissingFields(item, entityStructure);
+                resultList.Add(entity);
+            }
+            enttype = GetEntityType(entityName);
+            Type uowGenericType = typeof(ObservableBindingList<>).MakeGenericType(enttype);
+            // Prepare the arguments for the constructor
+            object[] constructorArgs = new object[] { resultList };
+
+            // Create an instance of UnitOfWork<T> with the specific constructor
+            // Dynamically handle the instance since we can't cast to a specific IUnitofWork<T> at compile time
+            object uowInstance = Activator.CreateInstance(uowGenericType, constructorArgs);
+            return uowInstance;
+           // return resultList;
+        }
+        // Method to apply filters to a record
+        private bool ApplyFilters(IDictionary<string, object> record, List<AppFilter> filters)
+        {
+            foreach (var filter in filters)
+            {
+                if (!record.ContainsKey(filter.FieldName) ||
+                    !record[filter.FieldName].ToString().Contains(filter.FilterValue.ToString()))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
         public object GetEntity(string entityName, List<AppFilter> filter, int pageNumber, int pageSize)
         {
@@ -279,40 +322,32 @@ namespace TheTechIdea.Beep.Json
                 return new List<object>();  // Or throw an appropriate exception
             }
 
-            JObject rootJson = GetRootJsonObject();
-            if (rootJson == null)
+            JArray rootJsonArray = GetRootJsonArray();
+            if (rootJsonArray == null)
             {
-                return new List<object>();  // Or throw an appropriate exception if the root JSON object is not set.
+                return new List<object>();  // Or throw an appropriate exception if the root JSON array is not set.
             }
 
-            JToken token = rootJson.SelectToken(entityStructure.EntityPath);
             List<object> resultList = new List<object>();
 
-            if (token is JArray arrayToken)
-            {
-                foreach (var item in arrayToken.Children<JObject>())
-                {
-                    dynamic record = new ExpandoObject();
-                    var recordDictionary = (IDictionary<string, object>)record;
-                    foreach (var property in item.Properties())
-                    {
-                        recordDictionary[property.Name] = property.Value.ToObject<object>();
-                    }
-                    // Apply any filters to the record here if necessary
-                    UpdateEntityStructureWithMissingFields(item, entityStructure);
-                    resultList.Add(record);
-                }
-            }
-            else if (token is JObject objectToken)
+            // Calculate the starting index for the desired page
+            int startIndex = (pageNumber - 1) * pageSize;
+
+            // Use LINQ to paginate the array
+            var pagedItems = rootJsonArray.Skip(startIndex).Take(pageSize);
+
+            foreach (var item in pagedItems.OfType<JObject>())
             {
                 dynamic record = new ExpandoObject();
                 var recordDictionary = (IDictionary<string, object>)record;
-                foreach (var property in objectToken.Properties())
+
+                foreach (var property in item.Properties())
                 {
                     recordDictionary[property.Name] = property.Value.ToObject<object>();
                 }
-                UpdateEntityStructureWithMissingFields((JObject)token, entityStructure);
+
                 // Apply any filters to the record here if necessary
+                UpdateEntityStructureWithMissingFields(item, entityStructure);
                 resultList.Add(record);
             }
 
@@ -338,28 +373,21 @@ namespace TheTechIdea.Beep.Json
         {
             return Entities.FirstOrDefault(e => e.EntityName == fnd.EntityName);
         }
-
         public Type GetEntityType(string EntityName)
         {
 
             string filenamenoext = EntityName;
-            DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, Entities.Where(x => x.EntityName == EntityName).FirstOrDefault().Fields);
+            DMTypeBuilder.CreateNewObject(DMEEditor, "TheTechIdea.Beep", EntityName, Entities.Where(x => x.EntityName == EntityName).FirstOrDefault().Fields);
             return DMTypeBuilder.myType;
         }
-
         public double GetScalar(string query)
         {
             throw new NotImplementedException();
         }
-
         public Task<double> GetScalarAsync(string query)
         {
             throw new NotImplementedException();
         }
-
-
-
-
         public ConnectionState Openconnection()
         {
             // Check if the file exists
@@ -391,16 +419,11 @@ namespace TheTechIdea.Beep.Json
                 return ConnectionState.Closed;
             }
         }
-
-        //var titles = RunQuery("$.books[*].title");
-        //var booksAfter1900 = RunQuery("$.books[?(@.year > 1900)]");
-        //var authorOf1984 = RunQuery("$.books[?(@.title == '1984')].author");
-
         public object RunQuery(string qrystr)
         {
             // Ensure the JSON is loaded.
-            JObject rootJson = GetRootJsonObject();
-            if (rootJson == null)
+            JArray rootJsonArray = GetRootJsonArray();
+            if (rootJsonArray == null)
             {
                 // Handle the error appropriately.
                 return new List<object>();
@@ -409,38 +432,65 @@ namespace TheTechIdea.Beep.Json
             try
             {
                 // Use JSONPath to query the JSON structure.
-                var queryResult = rootJson.SelectTokens(qrystr);
+                var queryResult = rootJsonArray.SelectTokens(qrystr);
                 List<object> resultList = new List<object>();
-                EntityStructure entityStructure = Entities[GetEntityIdx(JsonExtensions.ExtractEntityNameFromQuery(qrystr))];
+                string entityName = JsonExtensions.ExtractEntityNameFromQuery(qrystr);
+                EntityStructure entityStructure = Entities.FirstOrDefault(e => e.EntityName == entityName);
+                Type entityType = GetEntityType(entityName);
+
                 foreach (var result in queryResult)
                 {
-                    if (result is JObject)
+                    if (result is JObject jObject)
                     {
-                        dynamic record = new ExpandoObject();
-                        var recordDictionary = (IDictionary<string, object>)record;
-                        foreach (var property in ((JObject)result).Properties())
-                        {
-                            recordDictionary[property.Name] = property.Value.ToObject<object>();
-                            if(entityStructure != null)
-                            {
-                                // Update the EntityStructure with any missing fields from the query result
-                                UpdateEntityStructureWithMissingFields((JObject)result,entityStructure );
-                            }
-                            
+                        var entity = Activator.CreateInstance(entityType);
 
+                        foreach (var property in jObject.Properties())
+                        {
+                            var propInfo = entityType.GetProperty(property.Name, BindingFlags.Public | BindingFlags.Instance);
+                            if (propInfo != null && propInfo.CanWrite)
+                            {
+                                try
+                                {
+                                    var fieldInfo = entityStructure.Fields.FirstOrDefault(p => p.fieldname == property.Name);
+                                    if (fieldInfo != null)
+                                    {
+                                        Type fieldType = Type.GetType(fieldInfo.fieldtype);
+                                        object value;
+
+                                        // Special handling for $oid
+                                        if (property.Value.Type == JTokenType.Object && property.Value["$oid"] != null)
+                                        {
+                                            value = property.Value["$oid"].ToString();
+                                        }
+                                        else
+                                        {
+                                            value = property.Value.ToObject(fieldType);
+                                        }
+
+                                        propInfo.SetValue(entity, value);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Error setting property {property.Name}: {ex.Message}");
+                                }
+                            }
                         }
-                        resultList.Add(record);
+
+                        // Apply any filters to the record here if necessary
+                        UpdateEntityStructureWithMissingFields(jObject, entityStructure);
+                        resultList.Add(entity);
                     }
-                    //else if (result is JValue)
-                    //{
-                    //    resultList.Add(((JValue)result).Value);
-                    //}
-                    //else
-                    //{
-                    //    // For JArrays or other types, you can decide how to handle them.
-                    //    // For simplicity, add them directly to the result list.
-                    //    resultList.Add(result.ToObject<object>());
-                    //}
+                    else if (result is JValue jValue)
+                    {
+                        resultList.Add(jValue.Value);
+                    }
+                    else
+                    {
+                        // For JArrays or other types, you can decide how to handle them.
+                        // For simplicity, add them directly to the result list.
+                        resultList.Add(result.ToObject<object>());
+                    }
                 }
 
                 return resultList;
@@ -457,7 +507,6 @@ namespace TheTechIdea.Beep.Json
         {
             throw new NotImplementedException();
         }
-
         public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
             // Find the EntityStructure with the given name.
@@ -468,19 +517,18 @@ namespace TheTechIdea.Beep.Json
             }
 
             // Retrieve the corresponding part of the JSON.
-            JToken entityToken = _rootJsonObject.SelectToken(entityStructure.EntityPath);
-            if (entityToken == null || !(entityToken is JArray))
+            JArray rootJsonArray = GetRootJsonArray();
+            if (rootJsonArray == null)
             {
-                return new ErrorsInfo { Message = "Target entity is not an array or collection.", Flag = Errors.Failed };
+                return new ErrorsInfo { Message = "Root JSON array is not available.", Flag = Errors.Failed };
             }
 
-            JArray targetArray = (JArray)entityToken;
             if (UploadData is JArray newDataArray)
             {
                 try
                 {
-                    // Example: Replace the entire array
-                    targetArray.Replace(newDataArray);
+                    // Replace the entire array
+                    rootJsonArray.Replace(newDataArray);
 
                     // Optionally, report progress
                     progress?.Report(new PassedArgs { Messege = "Update completed", ParameterInt1 = 100 });
@@ -508,40 +556,38 @@ namespace TheTechIdea.Beep.Json
             }
 
             // Retrieve the corresponding part of the JSON.
-            JToken entityToken = _rootJsonObject.SelectToken(entityStructure.EntityPath);
-            if (entityToken == null)
+            JArray rootJsonArray = GetRootJsonArray();
+            if (rootJsonArray == null)
             {
-                // Return an error if the entity path does not exist.
-                return new ErrorsInfo { Message = "Entity path not found.", Flag = Errors.Failed };
+                return new ErrorsInfo { Message = "Root JSON array is not available.", Flag = Errors.Failed };
             }
 
             try
             {
-                // Update the entity with the new data.
-                if (entityToken.Type == JTokenType.Object && UploadDataRow is JObject newData)
+                if (UploadDataRow is JObject newData)
                 {
-                    // For an object, replace each existing property with the new data.
-                    foreach (var prop in newData.Properties())
+                    // Find the object in the array to update based on some unique property, e.g., "_id".
+                    var itemToUpdate = rootJsonArray.FirstOrDefault(item => item["_id"]?["$oid"]?.ToString() == newData["_id"]?["$oid"]?.ToString());
+                    if (itemToUpdate != null)
                     {
-                        ((JObject)entityToken)[prop.Name] = prop.Value;
+                        foreach (var prop in newData.Properties())
+                        {
+                            ((JObject)itemToUpdate)[prop.Name] = prop.Value;
+                        }
+                        return new ErrorsInfo { Message = "Entity updated successfully.", Flag = Errors.Ok };
                     }
-                }
-                else if (entityToken.Type == JTokenType.Array && UploadDataRow is JArray newArrayData)
-                {
-                    // For an array, replace the entire array.
-                    ((JArray)entityToken).Replace(newArrayData);
+                    else
+                    {
+                        return new ErrorsInfo { Message = "Item to update not found.", Flag = Errors.Failed };
+                    }
                 }
                 else
                 {
-                    // Return an error if the data types do not match or are not supported.
-                    return new ErrorsInfo { Message = "Incompatible data type for update.", Flag = Errors.Failed };
+                    return new ErrorsInfo { Message = "Invalid data type for update.", Flag = Errors.Failed };
                 }
-
-                return new ErrorsInfo { Message = "Entity updated successfully.", Flag = Errors.Ok };
             }
             catch (Exception ex)
             {
-                // Return an error if the update operation fails.
                 return new ErrorsInfo { Message = $"Failed to update entity: {ex.Message}", Flag = Errors.Failed };
             }
         }
@@ -556,19 +602,17 @@ namespace TheTechIdea.Beep.Json
             }
 
             // Retrieve the corresponding part of the JSON.
-            JToken entityToken = _rootJsonObject.SelectToken(entityStructure.EntityPath);
-            if (entityToken == null || !(entityToken is JArray))
+            JArray rootJsonArray = GetRootJsonArray();
+            if (rootJsonArray == null)
             {
-                // Return an error if the path does not point to an array.
-                return new ErrorsInfo { Message = "Target entity is not an array.", Flag = Errors.Failed };
+                // Return an error if the root JSON array is not available.
+                return new ErrorsInfo { Message = "Root JSON array is not available.", Flag = Errors.Failed };
             }
-
-            JArray entityArray = (JArray)entityToken;
 
             try
             {
                 // Insert the data into the array.
-                entityArray.Add(JToken.FromObject(InsertedData));
+                rootJsonArray.Add(JToken.FromObject(InsertedData));
                 return new ErrorsInfo { Message = "Data inserted successfully.", Flag = Errors.Ok };
             }
             catch (Exception ex)
@@ -577,6 +621,7 @@ namespace TheTechIdea.Beep.Json
                 return new ErrorsInfo { Message = $"Failed to insert data: {ex.Message}", Flag = Errors.Failed };
             }
         }
+
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -624,19 +669,19 @@ namespace TheTechIdea.Beep.Json
                 return;
             }
 
-            // Access the root JSON object.
-            JObject rootJson = GetRootJsonObject();
-            if (rootJson == null)
+            // Access the root JSON array.
+            JArray rootJsonArray = GetRootJsonArray();
+            if (rootJsonArray == null)
             {
-                // Root JSON object not available, can't save the file.
-                Console.WriteLine("Root JSON object is not available.");
+                // Root JSON array not available, can't save the file.
+                Console.WriteLine("Root JSON array is not available.");
                 return;
             }
 
             try
             {
                 // Write the JSON content to the specified file with indentation for readability.
-                File.WriteAllText(jsonFilePath, rootJson.ToString(Formatting.Indented));
+                File.WriteAllText(jsonFilePath, rootJsonArray.ToString(Formatting.Indented));
             }
             catch (Exception ex)
             {
@@ -645,86 +690,114 @@ namespace TheTechIdea.Beep.Json
             }
         }
 
+
         public void ReadJson(string jsonFilePath)
         {
-            // Update the file name only if it's different from the current file or if _rootJsonObject is not initialized.
+            // Update the file name only if it's different from the current file or if _rootJsonArray is not initialized.
             if (FileName != jsonFilePath || _rootJsonObject == null)
             {
                 FileName = jsonFilePath;
                 InitializeRootJsonObject();
             }
 
-            // Use the initialized _rootJsonObject for further processing.
+            // Use the initialized _rootJsonArray for further processing.
             JToken json = _rootJsonObject;
-
-            // Proceed to work with the json object.
+            string entityName = Path.GetFileNameWithoutExtension(jsonFilePath);
             if (json.Type == JTokenType.Array)
             {
-                ParseJsonArray(json as JArray, null, "RootArray", "$");
-            }
-            else if (json.Type == JTokenType.Object)
+                // Process the JSON array as a single entity
+                ParseJsonArray(json as JArray, null, entityName, "$");
+            }else
+            if (json.Type == JTokenType.Object)
             {
-                ParseJsonObject(json as JObject, null, "RootObject", "$");
+                // Process the JSON object as a single entity
+                ParseJsonObject(json as JObject, null, entityName, "$");
             }
-            // If _rootJsonObject is empty, this part will be skipped.
+            else
+            {
+                Console.WriteLine("Unexpected JSON root type: " + json.Type);
+            }
         }
+
 
         private void ParseJsonObject(JObject jObject, EntityStructure parentStructure, string entityName, string currentPath)
         {
-            if (entityName != null) // Skip creating EntityStructure for root
-            {
-                var currentStructure = CreateEntityStructure(parentStructure, entityName, currentPath);
-                Entities.Add(currentStructure);
-                parentStructure = currentStructure;
-            }
-
-            foreach (var property in jObject.Properties())
-            {
-                if (parentStructure != null)
-                {
-                    var field = CreateEntityField(property);
-                    parentStructure.Fields.Add(field);
-                }
-
-                string propertyPath = $"{currentPath}.{property.Name}";
-
-                if (property.Value is JObject)
-                {
-                    ParseJsonObject(property.Value as JObject, parentStructure, property.Name, propertyPath);
-                }
-                else if (property.Value is JArray)
-                {
-                    ParseJsonArray(property.Value as JArray, parentStructure, property.Name, propertyPath);
-                }
-            }
+           
+          // use parsejsonarray to parse the first object
+            ParseJsonArray(new JArray(jObject), parentStructure, entityName, currentPath);
         }
 
         private void ParseJsonArray(JArray jArray, EntityStructure parentStructure, string entityName, string currentPath)
         {
-            int index = 0;
+            
+            // Create a single EntityStructure for the entire array
+            var currentStructure = CreateEntityStructure(parentStructure, entityName, currentPath);
+            Entities.Clear();
+            Entities.Add(currentStructure);
+            EntitiesNames.Clear();
+            EntitiesNames.Add(entityName);
+
+            // Assuming all objects in the array have the same structure, use the first object to define the fields
+            if (jArray.Count > 0 && jArray[0] is JObject firstObject)
+            {
+                JObject firstrecord;
+                if (firstObject.Property("RootArray") != null)
+                {
+                    _rootJsonArray = firstObject.Property("RootArray").Value as JArray;
+                     firstrecord = _rootJsonArray[0] as JObject;
+
+                }
+                else
+                {
+                    _rootJsonArray = jArray;
+                    firstrecord = firstObject;
+                }
+                foreach (var property in firstrecord.Properties())
+                {
+                    JObject keyValuePairs = new JObject();
+                    var field = CreateEntityField(property);
+                    if (field.fieldtype.Equals("object", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        field.fieldtype = "string";
+                    }
+                    if (!field.fieldtype.Equals("array", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        currentStructure.Fields.Add(field);
+                    }
+                    else
+                        Console.WriteLine("Array field not supported");
+
+
+
+                }
+
+            }
+
+            // Parse each object in the array to ensure all fields are captured
             foreach (var item in jArray)
             {
-                string itemPath = $"{currentPath}[{index}]";
-
-                if (item is JObject)
+                if (item is JObject jObject)
                 {
-                    // Entity name for nested objects in the array is derived from the index
-                    ParseJsonObject(item as JObject, parentStructure, $"{entityName}_{index}", itemPath);
+                    UpdateEntityStructureWithMissingFields(jObject, currentStructure);
                 }
-                else if (item is JArray)
-                {
-                    // Entity name for nested arrays in the array is derived from the index
-                    ParseJsonArray(item as JArray, parentStructure, $"{entityName}_{index}", itemPath);
-                }
-                index++;
             }
         }
+        private JArray GetRootJsonArray()
+        {
 
+            if (_rootJsonObject != null && _rootJsonArray!=null)
+            {
+                return _rootJsonArray;
+            }
+            return null;
+        }
         private EntityStructure CreateEntityStructure(EntityStructure parent, string name, string path)
         {
             return new EntityStructure
             {
                 EntityName = name,
+                DatasourceEntityName = name,
+                OriginalEntityName = name,
                 ParentId = parent?.Id ?? 0,
                 EntityPath = path,
                 Fields = new List<EntityField>(),
@@ -736,65 +809,79 @@ namespace TheTechIdea.Beep.Json
             return new EntityField
             {
                 fieldname = property.Name,
+                BaseColumnName = property.Name,
                 fieldtype = JsonExtensions.DetermineFieldType(property.Value),
             };
         }
 
-
         private void InitializeRootJsonObject()
         {
-            // Check if _rootJsonObject is already initialized
+            // Check if _rootJsonArray is already initialized
             if (_rootJsonObject != null) return;
 
             // If the file exists and is not empty, read and parse it.
             if (File.Exists(FileName) && new FileInfo(FileName).Length > 0)
             {
-                 jsonContent = File.ReadAllText(FileName);
+                jsonContent = File.ReadAllText(FileName);
                 try
                 {
-                    _rootJsonObject = JObject.Parse(jsonContent);
+                    var jsonToken = JToken.Parse(jsonContent);
+                    if (jsonToken is JArray jArray)
+                    {
+                        _rootJsonObject = jArray;
+                    }else if(jsonToken is JObject jObject)
+                    {
+                        _rootJsonObject = (JObject)jsonToken;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Unsupported JSON root type: " + jsonToken.Type);
+                        _rootJsonObject = new JArray();
+                    }
                 }
-                catch (JsonReaderException)
+                catch (JsonReaderException ex)
                 {
-                    // If the file content is not valid JSON, initialize an empty JObject.
-                    _rootJsonObject = new JObject();
+                    Console.WriteLine("Error parsing JSON: " + ex.Message);
+                    _rootJsonObject = new JArray();
                 }
             }
             else
             {
-                // If the file does not exist or is empty, initialize an empty JObject.
-                _rootJsonObject = new JObject();
+                _rootJsonObject = new JArray();
+                Console.WriteLine("File does not exist or is empty. Initialized an empty JArray.");
             }
         }
 
+      
 
-        private JObject GetRootJsonObject()
+
+        private JToken GetRootJsonObject()
         {
             return _rootJsonObject;
         }
 
         public void UpdateEntityStructureWithMissingFields(JObject record, EntityStructure entityStructure)
         {
-            // Iterate over each property in the incoming JSON record
             foreach (var property in record.Properties())
             {
-                // Check if this property is already represented in the EntityStructure
                 bool fieldExists = entityStructure.Fields.Any(f => f.fieldname == property.Name);
 
-                // If the field doesn't exist in the EntityStructure, add it
                 if (!fieldExists)
                 {
-                    entityStructure.Fields.Add(new EntityField
+                    var field = CreateEntityField(property);
+                    if (field.fieldtype.Equals("object", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        fieldname = property.Name,
-                        // Determining the type can be simplistic (as shown) or more complex based on your needs
-                        fieldtype = property.Value.Type.ToString(),
-                        // Add additional field details as necessary
-                    });
+                        field.fieldtype = "string";
+                    }
+                    if (!field.fieldtype.Equals("array", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        entityStructure.Fields.Add(field);
+                    }
+             
                 }
             }
         }
-
+       
         #endregion
         #region "Utility"
         private void SetObjects(string Entityname)

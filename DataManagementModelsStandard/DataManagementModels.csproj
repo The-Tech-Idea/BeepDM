@@ -11,13 +11,14 @@
     <Copyright>2022</Copyright>
     <Description>Data Management Library Models</Description>
     <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
-	  <Version>1.0.197</Version>
+	  <Version>1.0.198</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageId>TheTechIdea.Beep.DataManagementModels</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	  <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
 	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
 	  <DocumentationFile>docs.xml</DocumentationFile>
+	  <IncludeSymbols>False</IncludeSymbols>
    
   </PropertyGroup>
 	<Target Name="CopyPackage" AfterTargets="Pack">

@@ -14,9 +14,11 @@
     <PackageIcon>SimpleODM.png</PackageIcon>
     <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	  <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
 	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
 	  <DocumentationFile>docs.xml</DocumentationFile>
+	  <IncludeSymbols>False</IncludeSymbols>
    
   </PropertyGroup>
 
@@ -34,7 +36,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="8.0.0" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.197" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.198" />
   </ItemGroup>
 
 </Project>

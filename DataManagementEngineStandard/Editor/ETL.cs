@@ -12,6 +12,8 @@ using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Util;
 using System.IO;
 using DataManagementModels.ConfigUtil;
+using DataManagementModels.Editor;
+using System.ComponentModel;
 
 namespace TheTechIdea.Beep.Editor
 {
@@ -749,27 +751,45 @@ namespace TheTechIdea.Beep.Editor
 
                         srcTb = src.Result;
 
-                        List<object> srcList = new List<object>();
+                    IList<object> srcList = null;
                         if (src.Result != null)
                         {
-                            DMTypeBuilder.CreateNewObject(DMEEditor, null, srcentitystructure.EntityName, SourceFields);
+
+                 //           DMTypeBuilder.CreateNewObject(DMEEditor, null, srcentitystructure.EntityName, SourceFields);
                             if (srcTb.GetType().FullName.Contains("DataTable"))
                             {
                                 srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, srcentitystructure);
-                            }
-                            if (srcTb.GetType().FullName.Contains("List"))
+                          
+                        }
+                        else
+                             if (srcTb.GetType().FullName.Contains("ObservableBindingList"))
                             {
-                                srcList = (List<object>)srcTb;
+                              IBindingListView t = (IBindingListView)srcTb;
+                            srcList = new List<object>();
+
+                            foreach (var item in t)
+                            {
+                                srcList.Add((object)item);
                             }
 
+                        }
+                            else
+                            if (srcTb.GetType().FullName.Contains("List"))
+                            {
+                                srcList = (IList<object>)srcTb;
+                          
+                        }
+                        else
                             if (srcTb.GetType().FullName.Contains("IEnumerable"))
                             {
-                                srcList = (List<object>)srcTb;
+                                srcList = (IList<object>)srcTb;
+                          
                             }
-                            ScriptCount += srcList.Count();
+                           
                             SendMessege(progress, token, null, sc, $"Data fetched {ScriptCount} Record"); ;
                             int i=0;
-                            foreach (var r in srcList)
+                        ScriptCount += srcList.Count();
+                        foreach (var r in srcList)
                             {
                                 i++;
                                 DMEEditor.ErrorObject = InsertEntity(destds, destEntitystructure, destentity, map_DTL, r, progress, token); ;

@@ -17,35 +17,40 @@ namespace TheTechIdea.Beep.Json
             switch (token.Type)
             {
                 case JTokenType.Integer:
-                    return "int";
+                    return "System.Int32";
                 case JTokenType.Float:
-                    return "float";
+                    return "System.Single";
                 case JTokenType.String:
-                    return "string";
+                    return "System.String";
                 case JTokenType.Boolean:
-                    return "bool";
+                    return "System.Boolean";
                 case JTokenType.Date:
-                    return "DateTime";
+                    return "System.DateTime";
                 case JTokenType.Guid:
-                    return "Guid";
+                    return "System.Guid";
                 case JTokenType.Uri:
-                    return "Uri";
+                    return "System.Uri";
                 case JTokenType.TimeSpan:
-                    return "TimeSpan";
+                    return "System.TimeSpan";
                 case JTokenType.Bytes:
-                    return "byte[]";
+                    return "System.Byte[]";
                 case JTokenType.Null:
                 case JTokenType.Undefined:
-                    return "object"; // Or a specific type you use for null/undefined values
+                    return "System.String";
                 case JTokenType.Object:
-                    return "object"; // Nested object, may need special handling
+                    if (token["$oid"] != null)
+                    {
+                        return "System.String"; // or the type that represents ObjectId
+                    }
+                    return "System.String"; // Adjust if you need different handling for objects
                 case JTokenType.Array:
-                    return "array"; // Nested array, may need special handling
-                                    // Add more mappings as needed for your application
+                    return "System.Array";  // Nested array, may need special handling
+                                            // Add more mappings as needed for your application
                 default:
-                    return "unknown"; // Fallback type
+                    return "System.String";  // Fallback type, adjusted from "unknown"
             }
         }
+
         public static bool MatchesCriteria(this JToken item, object criteria)
         {
             JObject criteriaObject = JObject.FromObject(criteria);

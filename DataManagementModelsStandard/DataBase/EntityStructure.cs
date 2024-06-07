@@ -467,7 +467,7 @@ private int _id;
             fieldCategory = DbFieldCategory.String;
             GuidID = Guid.NewGuid().ToString();
             IsAutoIncrement = false;
-            AllowDBNull = false;
+            AllowDBNull = true;
             IsCheck = false;
             IsUnique = false;
             IsKey = false;

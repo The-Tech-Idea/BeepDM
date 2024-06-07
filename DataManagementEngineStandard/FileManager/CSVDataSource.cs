@@ -699,10 +699,6 @@ namespace TheTechIdea.Beep.FileManager
                 // Create an instance of UnitOfWork<T> with the specific constructor
                 // Dynamically handle the instance since we can't cast to a specific IUnitofWork<T> at compile time
                 object uowInstance = Activator.CreateInstance(uowGenericType, constructorArgs);
-                //var items =   DMEEditor.Utilfunction.ConvertDataTableToObservableList(retval, GetEntityType(EntityName));
-               // var items = DMEEditor.Utilfunction.GetBindingListByDataTable(retval, DMTypeBuilder.myType,Entities.FirstOrDefault());
-              //  var observableType = typeof(ObservableBindingList<>).MakeGenericType(DMTypeBuilder.myType);
-                //var list = Activator.CreateInstance(observableType, args);
                 return uowInstance;
             }
             catch (Exception ex)

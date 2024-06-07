@@ -6,8 +6,8 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.DataManagementEngine</PackageId>
     <Authors>The Tech Idea</Authors>
-    <Version>1.0.490</Version>
-	  <LangVersion>latest</LangVersion>
+    <Version>1.0.517</Version>
+	<LangVersion>latest</LangVersion>
     <Product>TheTechIdea.Beep.DataManagementEngine</Product>
     <Description>Data Management Library</Description>
     <Copyright>2022</Copyright>
@@ -15,14 +15,11 @@
     <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
     <PackageIcon>SimpleODM.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <UserSecretsId>73e1a0d4-e787-46f6-9485-f23ff98f8835</UserSecretsId>
-    <IncludeSymbols>True</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	  <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
 	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
 	  <DocumentationFile>docs.xml</DocumentationFile>
-    
-	
+	  <IncludeSymbols>False</IncludeSymbols>
   </PropertyGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<Copy SourceFiles="$(TargetDir)$(MSBuildProjectName).dll" DestinationFolder="$(ProjectDir)..\..\outputDLL\$(PackageId)\$(TargetFramework)" SkipUnchangedFiles="false" />
@@ -53,7 +50,7 @@
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.197" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.198" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="CodeDom\" />
