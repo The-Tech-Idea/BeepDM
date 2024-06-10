@@ -19,7 +19,9 @@ namespace TheTechIdea.Tools
 
         List<string> NamespacestoIgnore { get; set; }
         List<assemblies_rep> Assemblies { get; set; }
-     // AppDomain CurrentDomain { get; set; }
+        List<Assembly> LoadedAssemblies { get;  set; }
+        Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args);
+        // AppDomain CurrentDomain { get; set; }
         List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
         // public IDMEEditor DMEEditor { get; set; }
         IConfigEditor ConfigEditor { get; set; }

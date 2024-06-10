@@ -74,7 +74,7 @@ namespace TheTechIdea.Tools
         /// List of classes that represent data sources.
         /// </summary>
         public List<AssemblyClassDefinition> DataSourcesClasses { get; set; } = new List<AssemblyClassDefinition>();
-        public List<Assembly> LoadedAssemblies { get; private set; } = new List<Assembly>();
+        public List<Assembly> LoadedAssemblies { get;  set; } = new List<Assembly>();
 
         /// <summary>
         /// Constructor for AssemblyHandler, initializes necessary properties.
@@ -100,16 +100,18 @@ namespace TheTechIdea.Tools
         Assembly.GetCallingAssembly(),
         Assembly.GetEntryAssembly()
     };
-            LoadedAssemblies = DependencyContext.Default.RuntimeLibraries
+          var  dependencyAssemblies = DependencyContext.Default.RuntimeLibraries
     .SelectMany(library => library.GetDefaultAssemblyNames(DependencyContext.Default))
     .Select(Assembly.Load)
     .Where(assembly => !assembly.FullName.StartsWith("System") && !assembly.FullName.StartsWith("Microsoft"))
     .ToList();
-            LoadedAssemblies.AddRange(assemblies);
+            //LoadedAssemblies.AddRange(assemblies);
             // Load all assemblies from the current domain to ensure referenced projects are included
             //LoadedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies()
             //    .Where(assembly => !assembly.FullName.StartsWith("System") && !assembly.FullName.StartsWith("Microsoft")));
-
+            // Combine both sets of assemblies
+            LoadedAssemblies = dependencyAssemblies.Concat(assemblies).Distinct().ToList();
+           
         }
 
         #region "Loaders"
@@ -351,6 +353,7 @@ namespace TheTechIdea.Tools
             //GetNonADODrivers();
             SendMessege(progress, token, "Getting Builtin Classes");
             GetBuiltinClasses();
+            LoadAssemblyFormRunTime();
             SendMessege(progress, token, "Getting FrameWork Extensions");
             GetExtensionScanners(progress, token);
 
@@ -588,6 +591,50 @@ namespace TheTechIdea.Tools
 
                     assemblies_rep x = new assemblies_rep(loadedAssembly, path, dll, fileTypes);
                     Assemblies.Add(x);
+                }
+                catch (FileLoadException loadEx)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    res = "The Assembly has already been loaded" + loadEx.Message;
+                } // The Assembly has already been loaded.
+                catch (BadImageFormatException imgEx)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    res = imgEx.Message;
+                }
+                catch (Exception ex)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    res = ex.Message;
+                }
+            }
+
+
+            ErrorObject.Message = res;
+            return res;
+        }
+        /// <summary>
+        ///     Method Will Load All Assembly found in the Passed Path
+        /// </summary>
+        /// <param name="Path"></param>
+        /// <param name="FolderFileTypes"></param>
+        /// <returns></returns>
+        public string LoadAssemblyFormRunTime()
+        {
+            ErrorObject.Flag = Errors.Ok;
+            string res = "";
+
+            foreach (Assembly loadedAssembly in LoadedAssemblies)
+            {
+                try
+                {
+                  // if loadedassembly not found in Assemblies then add to assemblies
+                  if (Assemblies.Where(x => x.DllLib == loadedAssembly).Count() == 0)
+                    {
+                        assemblies_rep x = new assemblies_rep(loadedAssembly, "Builtin", loadedAssembly.FullName, FolderFileTypes.Builtin);
+                        Assemblies.Add(x);
+                    }
+                    
                 }
                 catch (FileLoadException loadEx)
                 {
@@ -1223,7 +1270,7 @@ namespace TheTechIdea.Tools
         /// <param name="sender">The sender of the event.</param>
         /// <param name="args">Arguments related to the assembly resolve event.</param>
         /// <returns>The resolved assembly or null if the assembly cannot be resolved.</returns>
-        private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        public Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
             // Ignore missing resources
             if (args.Name.Contains(".resources"))
@@ -1232,6 +1279,11 @@ namespace TheTechIdea.Tools
             string filenamewo = args.Name.Split(',')[0];
             // check for assemblies already loaded
             //   var s = AppDomain.CurrentDomain.GetAssemblies();
+            if(LoadedAssemblies.FirstOrDefault(a => a.FullName == args.Name)!=null)
+            {
+                return LoadedAssemblies.FirstOrDefault(a => a.FullName == args.Name);
+            }
+           
             Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName.StartsWith(filenamewo));
             if (assembly == null)
             {

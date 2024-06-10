@@ -98,6 +98,14 @@
             <param name="FolderFileTypes"></param>
             <returns></returns>
         </member>
+        <member name="M:TheTechIdea.Tools.AssemblyHandler.LoadAssemblyFormRunTime">
+            <summary>
+                Method Will Load All Assembly found in the Passed Path
+            </summary>
+            <param name="Path"></param>
+            <param name="FolderFileTypes"></param>
+            <returns></returns>
+        </member>
         <member name="M:TheTechIdea.Tools.AssemblyHandler.RearrangeAddin(System.String,System.String,System.String)">
             <summary>
             Rearranges or adds a new addin object to the function hierarchy.
