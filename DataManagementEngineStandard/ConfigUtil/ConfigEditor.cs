@@ -769,7 +769,8 @@ namespace TheTechIdea.Util
 			try
 			{
 				if (cn == null) { return false; }
-				if (DataConnections == null)
+                if (string.IsNullOrEmpty(cn.ConnectionName)) { return false; }
+                if (DataConnections == null)
 				{
 					DataConnections = new List<ConnectionProperties>();
 
@@ -820,7 +821,9 @@ namespace TheTechIdea.Util
 
 			try
 			{
-				if (DataConnections == null)
+                if (conn == null) { return false; }
+                if (string.IsNullOrEmpty(conn.ConnectionName)) { return false; }
+                if (DataConnections == null)
 				{
 					DataConnections = new List<ConnectionProperties>();
 
@@ -909,7 +912,7 @@ namespace TheTechIdea.Util
 					return false;
 
 				}
-				ConnectionProperties dc = DataConnections.Where(x => x.ConnectionName.Equals(pname, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+				ConnectionProperties dc = DataConnections.Where(x => !string.IsNullOrEmpty(x.ConnectionName) && x.ConnectionName.Equals(pname, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
 				if (dc != null)
 				{
 					DataConnections.Remove(dc);

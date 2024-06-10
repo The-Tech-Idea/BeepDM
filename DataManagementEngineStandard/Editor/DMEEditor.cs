@@ -222,7 +222,7 @@ namespace TheTechIdea.Beep
                
                 try
                 {
-                    ds1 = DataSources.Where(f => f.DatasourceName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                    ds1 = DataSources.Where(f => !string.IsNullOrEmpty(f.DatasourceName) && f.DatasourceName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 }
                 catch (Exception ex)
                 {
@@ -541,7 +541,7 @@ namespace TheTechIdea.Beep
         /// <returns></returns>
         public IDataSource CreateNewDataSourceConnection(string pdatasourcename)
         {
-            ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName.Equals(pdatasourcename,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+            ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName!=null && f.ConnectionName.Equals(pdatasourcename,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             ErrorObject.Flag = Errors.Ok;
             if (cn != null)
             {
