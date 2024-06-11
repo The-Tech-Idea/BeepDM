@@ -9,7 +9,7 @@ using TheTechIdea.Util;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public interface IUnitofWork<T>: IDisposable where T : Entity
+    public interface IUnitofWork<T>: IDisposable where T : Entity,new()
     {
         void Clear();
         bool IsInListMode { get; set; }

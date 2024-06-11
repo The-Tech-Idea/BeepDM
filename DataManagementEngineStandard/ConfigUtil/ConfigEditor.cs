@@ -717,6 +717,8 @@ namespace TheTechIdea.Util
 				DataConnections = new List<ConnectionProperties>();
 				return false;
 			}
+			
+			
 			return DataConnections != null ? DataConnections.Any(x => x.GuidID.Equals(GuidID, StringComparison.InvariantCultureIgnoreCase)) : false;
 		}
 		/// <summary>Saves the values of data connections to a JSON file.</summary>
@@ -754,7 +756,9 @@ namespace TheTechIdea.Util
 				return false;
 
 			}
-			return DataConnections != null ? DataConnections.Any(x =>!string.IsNullOrEmpty(x.ConnectionName) && x.ConnectionName.Equals(ConnectionName, StringComparison.InvariantCultureIgnoreCase)) : false;
+			bool found = false;
+			found = DataConnections.Any(x => !string.IsNullOrEmpty(x.ConnectionName) && x.ConnectionName.Equals(ConnectionName, StringComparison.InvariantCultureIgnoreCase));
+			return found;
 		}
 		/// <summary>Adds a data connection to the list of data connections.</summary>
 		/// <param name="cn">The connection properties to add.</param>

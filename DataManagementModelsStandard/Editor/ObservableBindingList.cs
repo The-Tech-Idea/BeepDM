@@ -11,7 +11,7 @@ using System.Linq.Expressions;
 
 namespace DataManagementModels.Editor
 {
-    public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged where T : class,INotifyPropertyChanged
+    public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged where T : class,INotifyPropertyChanged,new()
     {
      
         protected override object AddNewCore()
@@ -577,53 +577,75 @@ namespace DataManagementModels.Editor
 
         #endregion
         #region "Util Methods"
-        private T GetItem<T>(DataRow dr)
+        private T GetItem<T>(DataRow dr) where T :class, new()
         {
             Type temp = typeof(T);
-            T obj = Activator.CreateInstance<T>();
-            var props = temp.GetProperties();
+            T obj = new T();
+            var properties = temp.GetProperties();
+
             foreach (DataColumn column in dr.Table.Columns)
             {
-
-                foreach (PropertyInfo pro in temp.GetProperties())
+                var property = properties.FirstOrDefault(p => p.Name == column.ColumnName);
+                if (property != null)
                 {
-                    if (pro.Name == column.ColumnName)
+                    try
                     {
                         var value = dr[column.ColumnName];
-
                         if (value == DBNull.Value)
                         {
-                            value = pro.PropertyType.IsValueType ? Activator.CreateInstance(pro.PropertyType) : null;
+                            value = property.PropertyType.IsValueType ? Activator.CreateInstance(property.PropertyType) : null;
                         }
-                        else if (pro.PropertyType == typeof(char) && value is string str && str.Length == 1)
+                        else if (property.PropertyType == typeof(char) && value is string str && str.Length == 1)
                         {
                             value = str[0];
                         }
-                        else if (pro.PropertyType.IsEnum && value is string enumString)
+                        else if (property.PropertyType.IsEnum && value is string enumString)
                         {
-                            value = Enum.Parse(pro.PropertyType, enumString);
+                            value = Enum.Parse(property.PropertyType, enumString);
                         }
-                        else if (IsNumericType(pro.PropertyType) && value != null)
+                        else if (IsNumericType(property.PropertyType))
                         {
-                            try
-                            {
-                                // Convert the value to the property type if it's a numeric type
-                                value = Convert.ChangeType(value, pro.PropertyType);
-                            }
-                            catch (InvalidCastException ex)
-                            {
-                                // Handle the exception here (e.g., log it or throw a custom exception)
-                                throw new InvalidCastException($"Cannot convert value to {pro.PropertyType}: {ex.Message}");
-                            }
+                            value = ConvertToNumericType(value, property.PropertyType);
+                        }
+                        else
+                        {
+                            value = Convert.ChangeType(value, property.PropertyType);
                         }
 
-                        pro.SetValue(obj, value, null);
+                        property.SetValue(obj, value);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidCastException($"Cannot convert column '{column.ColumnName}' value to property '{property.Name}' of type '{property.PropertyType}': {ex.Message}", ex);
                     }
                 }
             }
+
             return obj;
         }
 
+        private object ConvertToNumericType(object value, Type targetType)
+        {
+            try
+            {
+                if (targetType == typeof(byte)) return Convert.ToByte(value);
+                if (targetType == typeof(sbyte)) return Convert.ToSByte(value);
+                if (targetType == typeof(short)) return Convert.ToInt16(value);
+                if (targetType == typeof(ushort)) return Convert.ToUInt16(value);
+                if (targetType == typeof(int)) return Convert.ToInt32(value);
+                if (targetType == typeof(uint)) return Convert.ToUInt32(value);
+                if (targetType == typeof(long)) return Convert.ToInt64(value);
+                if (targetType == typeof(ulong)) return Convert.ToUInt64(value);
+                if (targetType == typeof(float)) return Convert.ToSingle(value);
+                if (targetType == typeof(double)) return Convert.ToDouble(value);
+                if (targetType == typeof(decimal)) return Convert.ToDecimal(value);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidCastException($"Cannot convert value '{value}' to numeric type '{targetType}': {ex.Message}", ex);
+            }
+            return value;
+        }
         private static bool IsNumericType(Type type)
         {
             return type == typeof(byte) || type == typeof(sbyte) ||

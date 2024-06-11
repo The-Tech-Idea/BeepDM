@@ -33,7 +33,7 @@ namespace TheTechIdea.Beep
         List<string> Namespacelist { get; set; }
         List<ParentChildObject> FunctionHierarchy { get; set; }
         List<T> ConvertDataTable<T>(DataTable dt);
-        ObservableBindingList<T> ConvertDataTableToObservableBindingList<T>(DataTable dt) where T : Entity;
+        ObservableBindingList<T> ConvertDataTableToObservableBindingList<T>(DataTable dt) where T : Entity, new();
         IBindingList ConvertDataTableToObservableList(DataTable dataTable, Type type);
        DataTable CreateDataTableVer1(object[] array);
         DataTable CreateDataTableVer2(object[] arr);

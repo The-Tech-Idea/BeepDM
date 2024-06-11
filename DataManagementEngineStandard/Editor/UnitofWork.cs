@@ -695,26 +695,26 @@ namespace TheTechIdea.Beep.Editor
                 return;
             }
             Units.Add(entity);
-            if (!IsInListMode)
-            {
-                Units.Add(entity);
-            }
-            else
-            {
-                int idx = Getindex(entity);
-                if (idx > -1)
-                {
-                    Update(entity);
-                    DMEEditor.AddLogMessage("Beep", $"Added Entity ", DateTime.Now, 0, null, Errors.Ok);
+            //if (!IsInListMode)
+            //{
+            //    Units.Add(entity);
+            //}
+            //else
+            //{
+            //    int idx = Getindex(entity);
+            //    if (idx > -1)
+            //    {
+            //        Update(entity);
+            //        DMEEditor.AddLogMessage("Beep", $"Added Entity ", DateTime.Now, 0, null, Errors.Ok);
                   
-                }
-                else
-                {
-                    _units.Add(entity);
-                    DMEEditor.AddLogMessage("Beep", $"Added Entity ", DateTime.Now, 0, null, Errors.Ok);
-                }
+            //    }
+            //    else
+            //    {
+            //        _units.Add(entity);
+            //        DMEEditor.AddLogMessage("Beep", $"Added Entity ", DateTime.Now, 0, null, Errors.Ok);
+            //    }
 
-            }
+            //}
             // int index = Getindex(entity);
             //    _entityStates.Add(index, EntityState.Added);
             // Subscribe to PropertyChanged event
@@ -1755,23 +1755,31 @@ namespace TheTechIdea.Beep.Editor
             Tracking tracking = _units.GetTrackingITem(item);
             if (item != null)
             {
-                if (InsertedKeys.ContainsValue(Convert.ToString(tracking.OriginalIndex)))
+                if(InsertedKeys.Count>0)
                 {
+                    if (InsertedKeys.ContainsValue(Convert.ToString(tracking.OriginalIndex)))
+                    {
 
-                    return;
+                        return;
+                    }
                 }
+               
             }
-            if (!UpdatedKeys.Any(p => p.Value.Equals(Convert.ToString(tracking.OriginalIndex))))
+            if (UpdatedKeys.Count > 0)
             {
-                keysidx++;
-                UpdatedKeys.Add(keysidx, Convert.ToString(tracking.OriginalIndex));
-                int x = tracking.OriginalIndex;// Getindex(item);
-                if (!_entityStates.ContainsKey(x))
+                if (!UpdatedKeys.Any(p => p.Value.Equals(Convert.ToString(tracking.OriginalIndex))))
                 {
-                    _entityStates.Add(x, EntityState.Modified);
+                    keysidx++;
+                    UpdatedKeys.Add(keysidx, Convert.ToString(tracking.OriginalIndex));
+                    int x = tracking.OriginalIndex;// Getindex(item);
+                    if (!_entityStates.ContainsKey(x))
+                    {
+                        _entityStates.Add(x, EntityState.Modified);
+                    }
+
                 }
-                
             }
+           
             CurrentProperty = item.GetType().GetProperty(e.PropertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
             UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, PropertyName = e.PropertyName, PropertyValue = Convert.ToString(CurrentProperty.GetValue(item, null)) };
             PostEdit?.Invoke(item, ps);
