@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Reflection;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace DataManagementModels.Editor
 {
@@ -129,6 +130,77 @@ namespace DataManagementModels.Editor
 
         public ListSortDescriptionCollection SortDescriptions { get; }
         public bool SupportsAdvancedSorting => true;
+        private void InsertionSort(List<T> list, int left, int right, PropertyInfo property, ListSortDirection direction)
+        {
+            for (int i = left + 1; i <= right; i++)
+            {
+                T temp = list[i];
+                int j = i - 1;
+
+                while (j >= left && Compare(list[j], temp, property, direction) > 0)
+                {
+                    list[j + 1] = list[j];
+                    j--;
+                }
+
+                list[j + 1] = temp;
+            }
+        }
+        private int Compare(T x, T y, PropertyInfo property, ListSortDirection direction)
+        {
+            var valueX = property.GetValue(x);
+            var valueY = property.GetValue(y);
+            int result = Comparer<object>.Default.Compare(valueX, valueY);
+
+            return direction == ListSortDirection.Ascending ? result : -result;
+        }
+        private void ParallelQuickSort(List<T> list, int left, int right, PropertyInfo property, ListSortDirection direction)
+        {
+            if (left < right)
+            {
+                int pivotIndex = Partition(list, left, right, property, direction);
+
+                if (right - left < 1000) // Threshold for switching to insertion sort
+                {
+                    InsertionSort(list, left, pivotIndex - 1, property, direction);
+                    InsertionSort(list, pivotIndex + 1, right, property, direction);
+                }
+                else
+                {
+                    // Parallelize the recursive calls
+                    Parallel.Invoke(
+                        () => ParallelQuickSort(list, left, pivotIndex - 1, property, direction),
+                        () => ParallelQuickSort(list, pivotIndex + 1, right, property, direction)
+                    );
+                }
+            }
+        }
+
+        private int Partition(List<T> list, int left, int right, PropertyInfo property, ListSortDirection direction)
+        {
+            T pivot = list[right];
+            int i = left;
+
+            for (int j = left; j < right; j++)
+            {
+                if (Compare(list[j], pivot, property, direction) <= 0)
+                {
+                    Swap(list, i, j);
+                    i++;
+                }
+            }
+
+            Swap(list, i, right);
+            return i;
+        }
+
+        private void Swap(List<T> list, int i, int j)
+        {
+            T temp = list[i];
+            list[i] = list[j];
+            list[j] = temp;
+        }
+
         protected override void ApplySortCore(PropertyDescriptor prop, ListSortDirection direction)
         {
             SuppressNotification = true;
@@ -138,14 +210,8 @@ namespace DataManagementModels.Editor
                 var property = typeof(T).GetProperty(prop.Name);
                 if (property != null)
                 {
-                    items.Sort((x, y) =>
-                    {
-                        var valueX = property.GetValue(x);
-                        var valueY = property.GetValue(y);
-                        return direction == ListSortDirection.Ascending ?
-                            Comparer<object>.Default.Compare(valueX, valueY) :
-                            Comparer<object>.Default.Compare(valueY, valueX);
-                    });
+                    // Parallel quicksort with insertion sort for small subarrays
+                    ParallelQuickSort(items, 0, items.Count - 1, property, direction);
 
                     isSorted = true;
                     sortProperty = prop;
@@ -157,6 +223,10 @@ namespace DataManagementModels.Editor
                 }
             }
         }
+
+
+
+
         public void RemoveSort()
         {
             if(isSorted)
@@ -577,46 +647,47 @@ namespace DataManagementModels.Editor
 
         #endregion
         #region "Util Methods"
-        private T GetItem<T>(DataRow dr) where T :class, new()
+        private T GetItem<T>(DataRow dr) where T : class, new()
         {
             Type temp = typeof(T);
             T obj = new T();
             var properties = temp.GetProperties();
 
-            foreach (DataColumn column in dr.Table.Columns)
+            foreach (var property in properties)
             {
-                var property = properties.FirstOrDefault(p => p.Name == column.ColumnName);
-                if (property != null)
+                if (dr.Table.Columns.Contains(property.Name))
                 {
                     try
                     {
-                        var value = dr[column.ColumnName];
+                        var value = dr[property.Name];
+                        var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+
                         if (value == DBNull.Value)
                         {
-                            value = property.PropertyType.IsValueType ? Activator.CreateInstance(property.PropertyType) : null;
+                            value = property.PropertyType.IsValueType ? Activator.CreateInstance(propertyType) : null;
                         }
-                        else if (property.PropertyType == typeof(char) && value is string str && str.Length == 1)
+                        else if (propertyType == typeof(char) && value is string str && str.Length == 1)
                         {
                             value = str[0];
                         }
-                        else if (property.PropertyType.IsEnum && value is string enumString)
+                        else if (propertyType.IsEnum && value is string enumString)
                         {
-                            value = Enum.Parse(property.PropertyType, enumString);
+                            value = Enum.Parse(propertyType, enumString);
                         }
-                        else if (IsNumericType(property.PropertyType))
+                        else if (IsNumericType(propertyType))
                         {
-                            value = ConvertToNumericType(value, property.PropertyType);
+                            value = ConvertToNumericType(value, propertyType);
                         }
                         else
                         {
-                            value = Convert.ChangeType(value, property.PropertyType);
+                            value = Convert.ChangeType(value, propertyType);
                         }
 
                         property.SetValue(obj, value);
                     }
                     catch (Exception ex)
                     {
-                        throw new InvalidCastException($"Cannot convert column '{column.ColumnName}' value to property '{property.Name}' of type '{property.PropertyType}': {ex.Message}", ex);
+                        throw new InvalidCastException($"Cannot convert column '{property.Name}' value to property '{property.Name}' of type '{property.PropertyType}': {ex.Message}", ex);
                     }
                 }
             }
