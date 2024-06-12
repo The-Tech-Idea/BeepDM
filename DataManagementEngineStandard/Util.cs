@@ -212,7 +212,7 @@ namespace TheTechIdea.Beep
             ObjectActivator<T> compiled = (ObjectActivator<T>)lambda.Compile();
             return compiled;
         }
-        public ObservableBindingList<T> ConvertDataTableToObservableBindingList<T>(DataTable dt) where T : Entity
+        public ObservableBindingList<T> ConvertDataTableToObservableBindingList<T>(DataTable dt) where T : Entity,new()
         {
             ObservableBindingList<T> list = new ObservableBindingList<T>();
 

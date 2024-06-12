@@ -145,8 +145,8 @@ namespace TheTechIdea.Beep.Editor
             ETLScriptDet upscript = new ETLScriptDet();
             upscript.sourcedatasourcename = item.DataSourceID;
             upscript.sourceentityname = item.EntityName;
-            upscript.sourceDatasourceEntityName = item.DatasourceEntityName;
-            upscript.destinationDatasourceEntityName = item.EntityName;
+            upscript.sourceDatasourceEntityName = string.IsNullOrEmpty(item.DatasourceEntityName)? item.EntityName:item.DatasourceEntityName ;
+            upscript.destinationDatasourceEntityName = string.IsNullOrEmpty(item.DatasourceEntityName) ? item.EntityName : item.DatasourceEntityName;
             upscript.destinationentityname = item.EntityName;
             upscript.destinationdatasourcename = destSource;
             upscript.SourceEntity = item;
