@@ -641,6 +641,44 @@ new QuerySqlRepo(DataSourceType.OPC, "READ NODE", Sqlcommandtype.getTable), // C
 
 			return pagingSyntax;
 		}
+        public static string GetDropEntity(DataSourceType dataSourceType, string entityName)
+        {
+            string ddl = "";
+            switch (dataSourceType)
+            {
+                case DataSourceType.MongoDB:
+                    ddl = $"db.{entityName}.drop();";
+                    break;
+                case DataSourceType.LiteDB:
+                    ddl = @$"db.DropCollection(''{entityName}'');";
+            break;
+			case DataSourceType.SqlServer:
+            ddl = $"DROP TABLE IF EXISTS { entityName}; ";
+                    break;
+                case DataSourceType.Mysql:
+                    ddl = $"DROP TABLE IF EXISTS {entityName};";
+                    break;
+                case DataSourceType.Oracle:
+                    ddl = $"BEGIN EXECUTE IMMEDIATE 'DROP TABLE {entityName}'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;";
+                    break;
+                case DataSourceType.Postgre:
+                    ddl = $"DROP TABLE IF EXISTS {entityName};";
+                    break;
+                case DataSourceType.SqlLite:
+                    ddl = $"DROP TABLE IF EXISTS {entityName};";
+                    break;
+                case DataSourceType.Couchbase:
+                    ddl = $"DROP COLLECTION `{entityName}`;";
+            break;
+			case DataSourceType:
+            ddl = $"DROP MEASUREMENT {entityName};";
+            break;
+            // Add additional cases for each database type...
+            default:
+            throw new NotImplementedException($"DataSourceType {dataSourceType} is not supported.");
+        }
+    return ddl;
+}
 
-	}
+}
 }

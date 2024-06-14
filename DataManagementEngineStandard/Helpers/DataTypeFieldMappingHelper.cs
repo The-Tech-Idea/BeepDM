@@ -1115,18 +1115,118 @@ namespace TheTechIdea.Beep.Helpers
         {
             return new List<DatatypeMapping>
     {
-        new DatatypeMapping { ID = 0, GuidID = "0e375c24-4d38-4bb3-98c2-35d89aaf77fe", DataType = "Int32", DataSourceName = "LiteDBDataSource", NetDataType = "System.Int32", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = "88fa3009-285d-4d15-9da7-aa2a2f1abc97", DataType = "Int64", DataSourceName = "LiteDBDataSource", NetDataType = "System.Int64", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = "eaec481e-6975-47a8-b4ff-112441a517a1", DataType = "Double", DataSourceName = "LiteDBDataSource", NetDataType = "System.Double", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = "0da22d75-e558-4066-ad6d-cfb41b695e02", DataType = "String", DataSourceName = "LiteDBDataSource", NetDataType = "System.String", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = "9758daa0-2c49-4224-b8a1-569b352728db", DataType = "Document", DataSourceName = "LiteDBDataSource", NetDataType = "System.String", Fav = false }, // Treat Document as string for portability
-        new DatatypeMapping { ID = 0, GuidID = "7129a003-2550-4f3c-9c48-8ed208cd1a30", DataType = "Array", DataSourceName = "LiteDBDataSource", NetDataType = "System.Collections.Generic.List<object>", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = "11ba6cb3-bde6-4267-8833-59d434babb00", DataType = "Binary", DataSourceName = "LiteDBDataSource", NetDataType = "System.Byte[]", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = "3258239f-0e87-4e1c-8d1f-72bf50abafa9", DataType = "ObjectId", DataSourceName = "LiteDBDataSource", NetDataType = "System.String", Fav = false }, // Treat ObjectId as string for portability
-        new DatatypeMapping { ID = 0, GuidID = "b51bec25-90d5-4990-bf78-1c4b24b68b30", DataType = "Guid", DataSourceName = "LiteDBDataSource", NetDataType = "System.Guid", Fav = false },
-        new DatatypeMapping { ID = 0, GuidID = "7b99280e-9912-4c87-87b5-be571ea98555", DataType = "DateTime", DataSourceName = "LiteDBDataSource", NetDataType = "System.DateTime", Fav = false }
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "Int32",
+            DataSourceName = "LiteDBDataSource",
+            NetDataType = typeof(int).FullName,
+            Fav = false
+        },
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "Int64",
+            DataSourceName = "LiteDBDataSource",
+            NetDataType = typeof(long).FullName,
+            Fav = false
+        },
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "Double",
+            DataSourceName = "LiteDBDataSource",
+            NetDataType = typeof(double).FullName,
+            Fav = false
+        },
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "Decimal",
+            DataSourceName = "LiteDBDataSource",
+            NetDataType = typeof(decimal).FullName,
+            Fav = false
+        },
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "String",
+            DataSourceName = "LiteDBDataSource",
+            NetDataType = "System.String",
+            Fav = false
+        },
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "Document",
+            DataSourceName = "LiteDBDataSource",
+            NetDataType = "System.Collections.Generic.Dictionary<string, LiteDB.BsonValue>",
+            Fav = false
+        },
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "Array",
+            DataSourceName = "LiteDBDataSource",
+            NetDataType = "System.Collections.Generic.List<LiteDB.BsonValue>",
+            Fav = false
+        },
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "Binary",
+            DataSourceName = "LiteDBDataSource",
+            NetDataType = typeof(byte[]).FullName,
+            Fav = false
+        },
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "ObjectId",
+            DataSourceName = "LiteDBDataSource",
+            NetDataType = "System.String",
+            Fav = false
+        },
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "Guid",
+            DataSourceName = "LiteDBDataSource",
+            NetDataType = "System.String",
+            Fav = false
+        },
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "Boolean",
+            DataSourceName = "LiteDBDataSource",
+            NetDataType = typeof(bool).FullName,
+            Fav = false
+        },
+        new DatatypeMapping
+        {
+            ID = 0,
+            GuidID = Guid.NewGuid().ToString(),
+            DataType = "DateTime",
+            DataSourceName = "LiteDBDataSource",
+            NetDataType = typeof(DateTime).FullName,
+            Fav = false
+        },
+        // Add additional type mappings here as necessary.
     };
         }
+
 
         /// <summary>Returns a list of datatype mappings for DuckDB.</summary>
         /// <returns>A list of datatype mappings for DuckDB.</returns>
