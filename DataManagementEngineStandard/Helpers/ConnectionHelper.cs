@@ -471,8 +471,8 @@ namespace TheTechIdea.Beep.Helpers
                 iconname = "realm.png",
                 classHandler = "RealMDataSource",
                 ADOType = false,
-                CreateLocal = false,
-                InMemory = false,
+                CreateLocal = true,
+                InMemory = true,
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.NOSQL, // Assuming appropriate enum value
                 DatasourceType = DataSourceType.RealIM, // Assuming appropriate enum value

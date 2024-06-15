@@ -200,9 +200,19 @@ namespace TheTechIdea.Util
             try
             {
                 DMEEditor.ErrorObject.Flag = Errors.Ok;
-            //    assembly = CreateAssembly(DMEEditor, code);
-                 assembly=RoslynCompiler.CreateAssembly(DMEEditor, code);
-                OutputType = assembly.GetType(outputtypename);
+                string fullTypeName = $"TheTechIdea.Classes.{outputtypename}".ToUpper();
+                // Check if the type is already cached
+                if (!typeCache.ContainsKey(fullTypeName))
+                {
+                    assembly = RoslynCompiler.CreateAssembly(DMEEditor, code);
+                    OutputType = assembly.GetType(outputtypename);
+                }else
+                {
+
+                   // Use the cached type
+                    OutputType = typeCache[fullTypeName];
+                }
+                  
 
             }
             catch (Exception ex)
