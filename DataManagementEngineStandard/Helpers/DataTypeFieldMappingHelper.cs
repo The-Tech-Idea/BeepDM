@@ -607,6 +607,7 @@ namespace TheTechIdea.Beep.Helpers
             ls.AddRange(GetArangoDBDataTypeMappings());
             ls.AddRange(GetInfluxDBDataTypeMappings());
             ls.AddRange(GetFirebaseDataTypeMappings());
+            ls.AddRange(GetSupabaseDataTypeMappings());
 
             return ls;
 
@@ -1315,6 +1316,27 @@ namespace TheTechIdea.Beep.Helpers
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "MinKey", DataSourceName = "MongoDBDataSource", NetDataType = "System.String", Fav = false }, // Treat BsonMinKey as string
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Symbol", DataSourceName = "MongoDBDataSource", NetDataType = "System.String", Fav = false }, // Treat BsonSymbol as string
         new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "Timestamp", DataSourceName = "MongoDBDataSource", NetDataType = "System.DateTime", Fav = false }, // Use System.DateTime for portability
+    };
+        }
+        public static List<DatatypeMapping> GetSupabaseDataTypeMappings()
+        {
+            return new List<DatatypeMapping>
+    {
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "text", DataSourceName = "SupabaseDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "int4", DataSourceName = "SupabaseDataSource", NetDataType = "System.Int32", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "int8", DataSourceName = "SupabaseDataSource", NetDataType = "System.Int64", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "float8", DataSourceName = "SupabaseDataSource", NetDataType = "System.Double", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "numeric", DataSourceName = "SupabaseDataSource", NetDataType = "System.Decimal", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "bool", DataSourceName = "SupabaseDataSource", NetDataType = "System.Boolean", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "timestamp", DataSourceName = "SupabaseDataSource", NetDataType = "System.DateTime", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "date", DataSourceName = "SupabaseDataSource", NetDataType = "System.DateTime", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "json", DataSourceName = "SupabaseDataSource", NetDataType = "System.String", Fav = false }, // Treat JSON as string for simplicity
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "jsonb", DataSourceName = "SupabaseDataSource", NetDataType = "System.String", Fav = false }, // Treat JSONB as string for simplicity
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "uuid", DataSourceName = "SupabaseDataSource", NetDataType = "System.Guid", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "bytea", DataSourceName = "SupabaseDataSource", NetDataType = "System.Byte[]", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "varchar", DataSourceName = "SupabaseDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "char", DataSourceName = "SupabaseDataSource", NetDataType = "System.String", Fav = false },
+        new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "text", DataSourceName = "SupabaseDataSource", NetDataType = "System.String", Fav = false }
     };
         }
 
