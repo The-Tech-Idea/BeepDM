@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using TheTechIdea.Logger;
 
@@ -12,7 +13,8 @@ namespace TheTechIdea.Util
         string Message { get; set; }
         string Module { get; set; }
         string Fucntion { get; set; }
-       
+        List<IErrorsInfo> Errors { get; set; }
+
         event PropertyChangedEventHandler PropertyChanged;
     }
 }

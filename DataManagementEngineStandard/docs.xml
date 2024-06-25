@@ -1526,6 +1526,102 @@
         <member name="M:TheTechIdea.Beep.Editor.DataImportManager.Update">
             <summary>Updates the state of the object.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetRecordsFromSourceData(DataManagementModels.Editor.DataSyncSchema,System.String)">
+            <summary>
+            Retrieves records from the source data based on the schema's LastSyncDate and the specified filter operator.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+            <param name="filterOperator">The filter operator to use for comparing the LastSyncDate.</param>
+            <returns>A collection of records from the source data.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetNewRecordsFromSourceData(DataManagementModels.Editor.DataSyncSchema)">
+            <summary>
+            Retrieves new records from the source data based on the schema's LastSyncDate.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+            <returns>A collection of new records from the source data.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetUpdatedRecordsFromSourceData(DataManagementModels.Editor.DataSyncSchema)">
+            <summary>
+            Retrieves updated records from the source data based on the schema's LastSyncDate.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+            <returns>A collection of updated records from the source data.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncData(DataManagementModels.Editor.DataSyncSchema,System.Threading.CancellationToken,System.Progress{TheTechIdea.PassedArgs})">
+            <summary>
+            Synchronizes data based on the provided schema, cancellation token, and progress reporter.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+            <param name="token">Cancellation token to handle task cancellation.</param>
+            <param name="progress">Progress reporter to report synchronization progress.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncData(DataManagementModels.Editor.DataSyncSchema)">
+            <summary>
+            Synchronizes data based on the provided schema.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncDataAsync(DataManagementModels.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.PassedArgs})">
+            <summary>
+            Asynchronously synchronizes data based on the provided schema, cancellation token, and progress reporter.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+            <param name="token">Cancellation token to handle task cancellation.</param>
+            <param name="progress">Progress reporter to report synchronization progress.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.CreateDestinationEntity(DataManagementModels.Editor.DataSyncSchema,System.Object,System.Boolean)">
+            <summary>
+            Creates the destination entity by mapping fields from the source entity based on the schema.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+            <param name="sourceData">The source data entity.</param>
+            <param name="isNewRecord">Indicates whether the record is new or an update.</param>
+            <returns>The mapped destination entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.LogSyncRun(DataManagementModels.Editor.DataSyncSchema)">
+            <summary>
+            Logs the synchronization run data.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetDataSource(System.String)">
+            <summary>
+            Retrieves the IDataSource instance based on the name.
+            </summary>
+            <param name="dataSourceName">The name of the data source.</param>
+            <returns>The IDataSource instance.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncAllDataAsync(System.Threading.CancellationToken,System.IProgress{TheTechIdea.PassedArgs})">
+            <summary>
+            Asynchronously synchronizes all data based on the loaded schemas, cancellation token, and progress reporter.
+            </summary>
+            <param name="token">Cancellation token to handle task cancellation.</param>
+            <param name="progress">Progress reporter to report synchronization progress.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncAllData">
+            <summary>
+            Synchronizes all data based on the loaded schemas.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.ValidateSchema(DataManagementModels.Editor.DataSyncSchema)">
+            <summary>
+            Validates the provided schema to ensure all required fields are populated.
+            </summary>
+            <param name="schema">The DataSyncSchema to validate.</param>
+            <returns>An IErrorsInfo object containing validation results.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SendMessege(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.String)">
+            <summary>Sends a message and updates progress based on the result.</summary>
+            <param name="progress">An object that reports progress updates.</param>
+            <param name="token">A cancellation token that can be used to cancel the operation.</param>
+            <param name="refentity">An optional reference to an entity structure.</param>
+            <param name="sc">An optional ETL script detail.</param>
+            <param name="messege">An optional message to send.</param>
+            <remarks>
+            If the error flag is set to "Failed" in the DMEEditor.ErrorObject, a SyncErrorsandTracking object is created and the error count is incremented.
+            </remarks>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.ETL">
             <summary>
             Represents an Extract, Transform, Load (ETL) process.

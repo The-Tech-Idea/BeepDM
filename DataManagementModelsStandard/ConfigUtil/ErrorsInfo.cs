@@ -29,6 +29,7 @@ namespace TheTechIdea.Util
         }
         public ErrorsInfo()
         {
+            Errors = new List<IErrorsInfo>();
             //logger = plogger;
         }
         protected void OnPropertyChanged(string propertyName)
@@ -38,6 +39,7 @@ namespace TheTechIdea.Util
         }
         public string Module { get; set; }
         public string Fucntion { get; set; }
+        public List<IErrorsInfo> Errors { get; set; }
 
        
     }

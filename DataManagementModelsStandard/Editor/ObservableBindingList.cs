@@ -315,8 +315,17 @@ namespace DataManagementModels.Editor
 
             OnPropertyChanged("Item[]");
         }
-        #endregion 
+        #endregion
         #region "Find"
+        public T Find(Expression<Func<T, bool>> predicate)
+        {
+            if (predicate == null)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            return this.Items.AsQueryable().FirstOrDefault(predicate);
+        }
         public T Find(string propertyName, object value)
         {
             var prop = typeof(T).GetProperty(propertyName);
