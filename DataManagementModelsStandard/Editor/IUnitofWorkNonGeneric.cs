@@ -16,6 +16,7 @@ namespace DataManagementModels.Editor
         void Clear();
         bool IsInListMode { get; set; }
         bool IsDirty { get; }
+        bool IsLogging { get; set; }
         IDataSource DataSource { get; set; }
         string DatasourceName { get; set; }
         string EntityName { get; set; }
@@ -28,6 +29,8 @@ namespace DataManagementModels.Editor
         Task<ObservableBindingList<Entity>> GetQuery(string query);
         Task<ObservableBindingList<Entity>> Get();
         Task<ObservableBindingList<Entity>> Get(List<AppFilter> filters);
+        Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
+        bool SaveLog(string pathandname);
         // Add other non-generic methods and properties
     }
 

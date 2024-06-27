@@ -14,6 +14,7 @@ namespace TheTechIdea.Beep.Editor
         void Clear();
         bool IsInListMode { get; set; }
         bool IsDirty { get; }
+        bool IsLogging { get; set; }
         IDataSource DataSource { get; set; }
         string DatasourceName { get; set; }
         Dictionary<int, string> DeletedKeys { get; set; }
@@ -56,7 +57,9 @@ namespace TheTechIdea.Beep.Editor
         int GetPrimaryKeySequence(T doc);
         int GetSeq(string SeqName);
         T Read(string id);
-       
+
+        Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
+        bool SaveLog(string pathandname);
 
         event EventHandler<UnitofWorkParams> PreInsert;
         event EventHandler<UnitofWorkParams> PreUpdate;
@@ -78,4 +81,5 @@ namespace TheTechIdea.Beep.Editor
         public object Record { get; set; }
 
     }
+   
 }

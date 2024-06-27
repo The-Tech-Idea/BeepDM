@@ -74,5 +74,8 @@ namespace TheTechIdea.Util
     {
         OK,NullField,DuplicateValue,MissingRefernceValue
     }
-
+    public enum LogAction
+    {
+        Insert,Update,Delete,Select,Error
+    }
 }

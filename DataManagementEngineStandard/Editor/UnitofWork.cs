@@ -1,9 +1,11 @@
 ﻿using DataManagementModels.Editor;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -1966,6 +1968,61 @@ namespace TheTechIdea.Beep.Editor
                 // Optionally, remove any state or keys related to the deleted item
                 // (like undoing changes to DeletedKeys, _entityStates, etc.)
             }
+        }
+        #endregion
+        #region "Logging"
+        public bool IsLogging { get { return _units.IsLoggin; } set { _units.IsLoggin = value; } }
+        public Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get { return _units.UpdateLog; } set { } }
+        public bool SaveLog(string pathandname)
+        {
+            bool retval = false;
+            string dirpath=string.Empty;
+            try
+            {
+                if (string.IsNullOrEmpty(pathandname))
+                {
+                    DMEEditor.AddLogMessage("Beep",$"Error Saving Log File {pathandname} ", DateTime.Now, -1, null, Errors.Failed);
+                    return false;
+                }
+                dirpath = Path.GetDirectoryName(pathandname);
+                if (!Directory.Exists(dirpath))
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(dirpath);
+                    }
+                    catch (Exception ex)
+                    {
+                        DMEEditor.AddLogMessage("Beep",$"Error Creating Directory {dirpath} {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+                        return false;
+                    }
+                    
+                }
+                if (IsLogging)
+                {
+
+                    if (UpdateLog != null)
+                    {
+                        if (UpdateLog.Count > 0)
+                        {
+                            string json = JsonConvert.SerializeObject(UpdateLog, Formatting.Indented);
+                            File.WriteAllText(pathandname, json);
+                            retval = true;
+                        }
+                        else
+                        {
+                            DMEEditor.AddLogMessage("Beep",$"No Logs Records found", DateTime.Now, -1, null, Errors.Failed);
+                        }
+                    }
+                    else
+                    {
+                        DMEEditor.AddLogMessage("Beep", $"No Logs found", DateTime.Now, -1, null, Errors.Failed);
+                    }
+                }
+                else { DMEEditor.AddLogMessage("Beep", $"Log is not Enabled", DateTime.Now, -1, null, Errors.Failed); }
+            }
+            catch { retval = false; }
+            return retval;
         }
         #endregion
         /// <summary>Checks if the requirements for a valid operation are validated.</summary>

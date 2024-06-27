@@ -39,6 +39,7 @@ namespace TheTechIdea.Beep.Editor
         public string filepath { get; set; }
         public IDMEEditor Editor { get; }
         public ObservableBindingList<DataSyncSchema> SyncSchemas { get; set; }
+        private Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog = new Dictionary<DateTime, EntityUpdateInsertLog>();
 
         /// <summary>
         /// Retrieves records from the source data based on the schema's LastSyncDate and the specified filter operator.
@@ -550,7 +551,78 @@ namespace TheTechIdea.Beep.Editor
                 SyncSchemas = JsonConvert.DeserializeObject<ObservableBindingList<DataSyncSchema>>(json);
             }
         }
+        /// <summary>
+        /// Synchronizes changes from the update log to the destination data source.
+        /// </summary>
+        /// <param name="sourceList">The source ObservableBindingList containing the changes.</param>
+        /// <param name="destinationDataSource">The destination IDataSource to apply the changes to.</param>
+        public void UpdateDataSourceUsingUpdateLog( Dictionary<DateTime, EntityUpdateInsertLog> updateLog )
+        {
+            UpdateLog = updateLog;
+            foreach (var logEntry in UpdateLog.Values)
+            {
+                var tracking = logEntry.TrackingRecord;
+                var schema = SyncSchemas.Find(x => x.ID == tracking.UniqueId.ToString());
 
+                if (schema != null)
+                {
+                    IDataSource DestinationData = GetDataSource(schema.DestinationDataSourceName);
+                    var destEntityType = DestinationData.GetEntityType(tracking.EntityName);
+
+                    // Retrieve the existing record using the primary key
+                    List<AppFilter> filters = new List<AppFilter>
+            {
+                new AppFilter
+                {
+                    FieldName = tracking.PKFieldName,
+                    Operator = "=",
+                    FilterValue = tracking.PKFieldValue
+                }
+            };
+                    var existingRecord = DestinationData.GetEntity(tracking.EntityName, filters);
+
+                    if (existingRecord != null)
+                    {
+                        // Update the existing record with the changes from the log entry
+                        foreach (var field in logEntry.UpdatedFields)
+                        {
+                            var property = destEntityType.GetProperty(field.Key);
+                            if (property != null)
+                            {
+                                property.SetValue(existingRecord, field.Value);
+                            }
+                        }
+
+                        // Send the updated record back to the destination
+                        DestinationData.UpdateEntity(tracking.EntityName, existingRecord);
+                    }
+                    else if (logEntry.LogAction == LogAction.Insert)
+                    {
+                        // If the record does not exist and the action is insert, create a new record
+                        var newRecord = Activator.CreateInstance(destEntityType);
+                        foreach (var field in logEntry.UpdatedFields)
+                        {
+                            var property = destEntityType.GetProperty(field.Key);
+                            if (property != null)
+                            {
+                                property.SetValue(newRecord, field.Value);
+                            }
+                        }
+
+                        DestinationData.InsertEntity(tracking.EntityName, newRecord);
+                    }
+                }
+            }
+        }
+        private void LoadUpdateLog(string datasourcename)
+        {
+            string filePath = Path.Combine(filepath, "UpdateLog.json");
+            if (File.Exists(filePath))
+            {
+                string json = File.ReadAllText(filePath);
+                UpdateLog = JsonConvert.DeserializeObject<Dictionary<DateTime, EntityUpdateInsertLog>>(json);
+            }
+        }
         /// <summary>
         /// Validates the provided schema to ensure all required fields are populated.
         /// </summary>

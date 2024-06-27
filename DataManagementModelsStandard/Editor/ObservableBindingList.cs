@@ -9,6 +9,8 @@ using System.Data;
 using System.Reflection;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Util;
 
 namespace DataManagementModels.Editor
 {
@@ -522,6 +524,13 @@ namespace DataManagementModels.Editor
         }
         #endregion
         #region "Constructor"
+        private void ClearAll()
+        {
+            originalList = new List<T>();
+            UpdateLog = new Dictionary<DateTime, EntityUpdateInsertLog>();
+          
+            ChangedValues = new Dictionary<T, Dictionary<string, object>>();
+        }
         public ObservableBindingList() : base()
         {
             // Initialize the list with no items and subscribe to AddingNew event.
@@ -529,7 +538,7 @@ namespace DataManagementModels.Editor
             this.AllowNew = true;
             this.AllowEdit = true;
             this.AllowRemove = true;
-            originalList = new List<T>();
+            ClearAll();
         }
         public ObservableBindingList(IEnumerable<T> enumerable) : base(new List<T>(enumerable))
         {
@@ -541,7 +550,7 @@ namespace DataManagementModels.Editor
                 this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
             }
             AddingNew += ObservableBindingList_AddingNew;
-            originalList = new List<T>(this.Items);
+            ClearAll();
             SuppressNotification = false;
             RaiseListChangedEvents = true;
         }
@@ -563,7 +572,7 @@ namespace DataManagementModels.Editor
             this.AllowNew = true;
             this.AllowEdit = true;
             this.AllowRemove = true;
-            originalList = this.Items.ToList();
+            ClearAll();
             UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
             SuppressNotification = false;
             RaiseListChangedEvents = true;
@@ -586,7 +595,7 @@ namespace DataManagementModels.Editor
             this.AllowNew = true;
             this.AllowEdit = true;
             this.AllowRemove = true;
-            originalList = this.Items.ToList();
+            ClearAll();
             UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
             SuppressNotification = false;
             RaiseListChangedEvents = true;
@@ -614,7 +623,7 @@ namespace DataManagementModels.Editor
             this.AllowNew = true;
             this.AllowEdit = true;
             this.AllowRemove = true;
-            originalList = new List<T>(this.Items);
+            ClearAll();
             UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
             SuppressNotification = false;
             RaiseListChangedEvents = true;
@@ -736,6 +745,82 @@ namespace DataManagementModels.Editor
                    type == typeof(decimal);
         }
         #endregion
+        #region "Logging"
+
+        private Dictionary<string, object> TrackChanges(T original, T current)
+        {
+            var changedFields = new Dictionary<string, object>();
+
+            foreach (PropertyDescriptor prop in TypeDescriptor.GetProperties(current))
+            {
+                var originalValue = prop.GetValue(original);
+                var currentValue = prop.GetValue(current);
+                if (!Equals(originalValue, currentValue))
+                {
+                    if (!ChangedValues.ContainsKey(current))
+                    {
+                        ChangedValues[current] = new Dictionary<string, object>();
+                    }
+                    changedFields[prop.Name] = currentValue;
+                    ChangedValues[current][prop.Name] = originalValue;
+                }
+            }
+
+            return changedFields;
+        }
+        private void CreateLogEntry(T item, LogAction action, Tracking tracking, Dictionary<string, object> changedFields = null)
+        {
+            // Check if an entry for this tracking record already exists
+            var existingLogEntry = UpdateLog.Values.FirstOrDefault(log =>
+                log.TrackingRecord != null && log.TrackingRecord.UniqueId == tracking.UniqueId);
+
+            if (existingLogEntry != null)
+            {
+                // Update the existing log entry
+                existingLogEntry.LogDateandTime = DateTime.Now;
+                existingLogEntry.LogAction = action;
+                existingLogEntry.UpdatedFields = changedFields ?? new Dictionary<string, object>();
+            }
+            else
+            {
+                // Create a new log entry
+                var logEntry = new EntityUpdateInsertLog
+                {
+                    LogDateandTime = DateTime.Now,
+                    LogUser = "CurrentUser", // Replace with actual user if available
+                    LogAction = action,
+                    LogEntity = typeof(T).Name,
+                    UpdatedFields = changedFields ?? new Dictionary<string, object>(),
+                    TrackingRecord = tracking
+                };
+
+                UpdateLog[logEntry.LogDateandTime] = logEntry;
+            }
+        }
+
+        private Dictionary<T, Dictionary<string, object>> ChangedValues = new Dictionary<T, Dictionary<string, object>>();
+        public bool IsLoggin { get; set; } = false;
+        public Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
+        private Dictionary<string, object> GetChangedFields(T oldItem, T newItem)
+        {
+            var changedFields = new Dictionary<string, object>();
+
+            foreach (var property in typeof(T).GetProperties())
+            {
+                var oldValue = property.GetValue(oldItem);
+                var newValue = property.GetValue(newItem);
+
+                if (!Equals(oldValue, newValue))
+                {
+                    changedFields[property.Name] = newValue;
+                }
+            }
+
+            return changedFields;
+        }
+        #endregion
+        #region "List and Item Change"
+
         void ObservableBindingList_AddingNew(object sender, AddingNewEventArgs e)
         {
             if (e.NewObject is T item)
@@ -746,12 +831,12 @@ namespace DataManagementModels.Editor
         void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             T item = (T)sender;
-            
+
             // Notify that the entire item has changed, not just a single property
             int index = IndexOf(item);
-            
+
             if (index >= 0)
-            {   
+            {
 
                 OnListChanged(new ListChangedEventArgs(ListChangedType.ItemChanged, index));
             }
@@ -772,11 +857,15 @@ namespace DataManagementModels.Editor
             }
             int deletedindex = DeletedList.IndexOf(removedItem);
 
-            if(tracking!=null)
+            if (tracking != null)
             {
-               
+
                 tracking.EntityState = EntityState.Deleted;
                 tracking.CurrentIndex = deletedindex;
+            }
+            if (IsLoggin)
+            {
+                CreateLogEntry(removedItem, LogAction.Delete, tracking);
             }
             removedItem.PropertyChanged -= Item_PropertyChanged;
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
@@ -806,6 +895,10 @@ namespace DataManagementModels.Editor
 
                     }
                     Trackings.Add(tr);
+                    if (IsLoggin)
+                    {
+                        CreateLogEntry(item, LogAction.Insert, tr);
+                    }
                     item.PropertyChanged += Item_PropertyChanged;
                     OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
                 }
@@ -817,35 +910,45 @@ namespace DataManagementModels.Editor
         {
             T replacedItem = this[index];
             replacedItem.PropertyChanged -= Item_PropertyChanged;
-           
-         
+
+            var changedFields = TrackChanges(replacedItem, item);
+
             base.SetItem(index, item);
             if (string.IsNullOrEmpty(filterString))
             {
                 originalList[index] = item;
                 if (Trackings.Count > 0)
                 {
-                    Tracking tr =Trackings.Where(p => p.Equals(index)).FirstOrDefault();
+                    Tracking tr = Trackings.Where(p => p.Equals(index)).FirstOrDefault();
                     if (tr != null)
                     {
                         index = tr.OriginalIndex;
                     }
-                   
+
                     if (index == -1)
                     {
-                        tr=new Tracking(Guid.NewGuid(), index, index);
+                        tr = new Tracking(Guid.NewGuid(), index, index);
                         tr.EntityState = EntityState.Modified;
                         Trackings.Add(tr);
+                    }
+                    if (IsLoggin)
+                    {
+                        CreateLogEntry(item, LogAction.Update, tr, changedFields);
                     }
 
                 }
             }
             else
             {
-                Tracking tracking =  Trackings.Where(p => p.CurrentIndex==index).FirstOrDefault();
+                Tracking tracking = Trackings.Where(p => p.CurrentIndex == index).FirstOrDefault();
                 if (tracking != null)
                 {
                     tracking.EntityState = EntityState.Modified;
+                    if (IsLoggin)
+                    {
+
+                        CreateLogEntry(item, LogAction.Update, tracking, changedFields);
+                    }
                 }
                 originalList[tracking.OriginalIndex] = item;
 
@@ -856,13 +959,14 @@ namespace DataManagementModels.Editor
                 item.PropertyChanged += Item_PropertyChanged;
                 OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, replacedItem, index));
             }
-       
+
         }
         public event NotifyCollectionChangedEventHandler CollectionChanged;
         protected virtual void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
         {
             CollectionChanged?.Invoke(this, e);
         }
+        #endregion "List and Item Change"
         #region "ID Generations"
         private void UpdateIndexTrackingAfterFilterorSort()
         {
@@ -878,12 +982,35 @@ namespace DataManagementModels.Editor
                         if(idx != -1)
                         {
                             Trackings[idx].CurrentIndex = newlistidx;
+                            UpdateLogEntries(Trackings[idx], newlistidx);
+                        }
+                        else
+                        {
+                            // Create a new tracking record if one does not exist
+                            Tracking newTracking = new Tracking(Guid.NewGuid(), originallistidx, newlistidx)
+                            {
+                                EntityState = EntityState.Unchanged
+                            };
+                            Trackings.Add(newTracking);
                         }
                     }
                  
                 }
             }
 
+        }
+        private void UpdateLogEntries(Tracking tracking, int newlistidx)
+        {
+            if (UpdateLog != null && UpdateLog.Count > 0)
+            {
+                foreach (var logEntry in UpdateLog.Values)
+                {
+                    if (logEntry.TrackingRecord != null && logEntry.TrackingRecord.UniqueId == tracking.UniqueId)
+                    {
+                        logEntry.TrackingRecord.CurrentIndex = newlistidx;
+                    }
+                }
+            }
         }
         private void ResettoOriginal(List<T> items)
         {
@@ -943,6 +1070,10 @@ namespace DataManagementModels.Editor
         public int OriginalIndex { get; set; }
         public int CurrentIndex { get; set; }
         public EntityState EntityState { get; set; } = EntityState.Unchanged;
+        public string EntityName { get; set; }
+        public string PKFieldName { get; set; }
+        public string PKFieldValue { get; set; }
+        public string PKFieldNameType { get; set; } // Can Int or string or Guid
         public Tracking(Guid uniqueId, int originalIndex)
         {
             UniqueId = uniqueId;
@@ -963,5 +1094,65 @@ namespace DataManagementModels.Editor
         Modified,
         Deleted,
         Unchanged
+    }
+    public class EntityUpdateInsertLog
+    {
+        public int ID { get; set; }
+        public int RecordID { get; set; }
+        public string RecordGuidKey { get; set; }
+        public string GuidKey { get; set; } = Guid.NewGuid().ToString();
+        public Dictionary<string, object> UpdatedFields { get; set; }
+        public DateTime LogDateandTime { get; set; }
+        public string LogUser { get; set; }
+        public LogAction LogAction { get; set; }
+        public string LogEntity { get; set; }
+        public Tracking TrackingRecord { get; set; }
+        public EntityUpdateInsertLog()
+        {
+
+        }
+        public EntityUpdateInsertLog(Dictionary<string, object> updatedFields, DateTime logDateandTime, string logUser, LogAction logAction, string logEntity, string recordGuidKey)
+        {
+            UpdatedFields = updatedFields;
+            LogDateandTime = logDateandTime;
+            LogUser = logUser;
+            LogAction = logAction;
+            LogEntity = logEntity;
+            RecordGuidKey = recordGuidKey;
+        }
+
+        public EntityUpdateInsertLog(Dictionary<string, object> updatedFields, DateTime logDateandTime, string logUser, LogAction logAction, string logEntity)
+        {
+            UpdatedFields = updatedFields;
+            LogDateandTime = logDateandTime;
+            LogUser = logUser;
+            LogAction = logAction;
+            LogEntity = logEntity;
+        }
+        public EntityUpdateInsertLog(Dictionary<string, object> updatedFields, DateTime logDateandTime, string logUser, LogAction logAction)
+        {
+            UpdatedFields = updatedFields;
+            LogDateandTime = logDateandTime;
+            LogUser = logUser;
+            LogAction = logAction;
+        }
+        public EntityUpdateInsertLog(Dictionary<string, object> updatedFields, DateTime logDateandTime, string logUser)
+        {
+            UpdatedFields = updatedFields;
+            LogDateandTime = logDateandTime;
+            LogUser = logUser;
+        }
+        public EntityUpdateInsertLog(Dictionary<string, object> updatedFields, DateTime logDateandTime)
+        {
+            UpdatedFields = updatedFields;
+            LogDateandTime = logDateandTime;
+        }
+        public EntityUpdateInsertLog(Dictionary<string, object> updatedFields)
+        {
+            UpdatedFields = updatedFields;
+        }
+
+
+
     }
 }
