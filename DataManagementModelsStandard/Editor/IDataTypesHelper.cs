@@ -8,7 +8,7 @@ namespace TheTechIdea.Beep.Editor
     public interface IDataTypesHelper:IDisposable
     {
         IDMEEditor DMEEditor { get; set; }
-     
+        int DefaultStringSize { get; set; }
         List<DatatypeMapping> mapping { get; set; }
         List<string> GetDataClasses();
         string[] GetNetDataTypes();

@@ -544,13 +544,14 @@ namespace DataManagementModels.Editor
         {
             SuppressNotification = true;
             RaiseListChangedEvents = false;
+            ClearAll();
             foreach (T item in this.Items)
             {
                 item.PropertyChanged += Item_PropertyChanged;
                 this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
             }
             AddingNew += ObservableBindingList_AddingNew;
-            ClearAll();
+            
             SuppressNotification = false;
             RaiseListChangedEvents = true;
         }
@@ -558,11 +559,13 @@ namespace DataManagementModels.Editor
         {
             SuppressNotification = true;
             RaiseListChangedEvents = false;
+            ClearAll();
             foreach (T item in list)
             {
 
                 item.PropertyChanged += Item_PropertyChanged;
-                //this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
+         //       this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
+                originalList.Add(item);
             }
                
 
@@ -572,7 +575,7 @@ namespace DataManagementModels.Editor
             this.AllowNew = true;
             this.AllowEdit = true;
             this.AllowRemove = true;
-            ClearAll();
+          
             UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
             SuppressNotification = false;
             RaiseListChangedEvents = true;
@@ -581,11 +584,13 @@ namespace DataManagementModels.Editor
         {
             SuppressNotification = true;
             RaiseListChangedEvents = false;
+            ClearAll();
             foreach (T item in bindinglist)
             {
 
                 item.PropertyChanged += Item_PropertyChanged;
                 this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
+                originalList.Add(item);
             }
 
 
@@ -595,7 +600,7 @@ namespace DataManagementModels.Editor
             this.AllowNew = true;
             this.AllowEdit = true;
             this.AllowRemove = true;
-            ClearAll();
+          
             UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
             SuppressNotification = false;
             RaiseListChangedEvents = true;
@@ -608,6 +613,7 @@ namespace DataManagementModels.Editor
             //}
             SuppressNotification = true;
             RaiseListChangedEvents = false;
+            ClearAll();
             foreach (DataRow row in dataTable.Rows)
             {
                 T item = GetItem<T>(row);
@@ -615,6 +621,7 @@ namespace DataManagementModels.Editor
                 {
                     item.PropertyChanged += Item_PropertyChanged;
                     this.Items.Add(item); // Adds the item to the list and hooks up PropertyChanged event
+                    originalList.Add(item);
                 }
                
             }
@@ -623,7 +630,7 @@ namespace DataManagementModels.Editor
             this.AllowNew = true;
             this.AllowEdit = true;
             this.AllowRemove = true;
-            ClearAll();
+          
             UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
             SuppressNotification = false;
             RaiseListChangedEvents = true;
@@ -636,7 +643,7 @@ namespace DataManagementModels.Editor
             {
                 throw new ArgumentNullException(nameof(objects));
             }
-
+            ClearAll();
             foreach (var obj in objects)
             {
                 T item = obj as T;

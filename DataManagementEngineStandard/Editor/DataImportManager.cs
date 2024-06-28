@@ -54,10 +54,10 @@ namespace TheTechIdea.Beep.Editor
         public DefaultValueType DefaultValueType { get; set; }
         /// <summary>Gets or sets the unit of work for the source entity.</summary>
         /// <value>The unit of work for the source entity.</value>
-        public UnitofWork<Entity> SrcunitofWork { get; set; }
+        public IUnitofWork SrcunitofWork { get; set; }
         /// <summary>Gets or sets the unit of work for the destination entity.</summary>
         /// <value>The unit of work for the destination entity.</value>
-        public UnitofWork<Entity> DstunitofWork { get; set; }
+        public IUnitofWork DstunitofWork { get; set; }
         /// <summary>Gets or sets the unit of work for mapping entity data.</summary>
         /// <value>The unit of work for mapping entity data.</value>
         public UnitofWork<EntityDataMap_DTL> MappingunitofWork { get; set; }
@@ -75,10 +75,10 @@ namespace TheTechIdea.Beep.Editor
         bool IsEntitychanged = false;
         /// <summary>Gets or sets the list of default values for the source.</summary>
         /// <value>The list of default values for the source.</value>
-        public List<DefaultValue> SourceDefaults { get; set; } = new List<DefaultValue>();
+        public ObservableBindingList<DefaultValue> SourceDefaults { get; set; } = new ObservableBindingList<DefaultValue>();
         /// <summary>Gets or sets the list of default values for the destination.</summary>
         /// <value>The list of default values for the destination.</value>
-        public List<DefaultValue> DestDefaults { get; set; } = new List<DefaultValue>();
+        public ObservableBindingList<DefaultValue> DestDefaults { get; set; } = new ObservableBindingList<DefaultValue>();
         /// <summary>Gets or sets the list of workflow rules.</summary>
         /// <value>The list of workflow rules.</value>
         public List<IWorkFlowRule> Rules { get; set; } = new List<IWorkFlowRule>();
@@ -136,7 +136,7 @@ namespace TheTechIdea.Beep.Editor
                     DestDataSourceName = destDataSourceName; DestEntityName = destEntityName;
                     if (DestData.ConnectionStatus == ConnectionState.Open)
                     {
-                        DestDefaults = DMEEditor.Getdefaults(destDataSourceName);
+                        DestDefaults = new ObservableBindingList<DefaultValue>(DMEEditor.Getdefaults(destDataSourceName));
                         DestEntityStructure = (EntityStructure)DestData.GetEntityStructure(destEntityName, false).Clone();
                     }
                     else DMEEditor.AddLogMessage("Beep", $"Error Could open  Destination Datasource {destDataSourceName} ", DateTime.Now, 0, null, Errors.Failed);

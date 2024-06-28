@@ -267,7 +267,15 @@ namespace TheTechIdea.Beep.Helpers
                 {
                     if (fld.NumericPrecision ==0 && retval.Contains("N"))
                     {
-                        fld.NumericPrecision = 255;
+                        if (DMEEditor.typesHelper.DefaultStringSize > 0)
+                        {
+                            fld.NumericPrecision = (short)DMEEditor.typesHelper.DefaultStringSize;
+                        }
+                        else
+                        {
+                            fld.NumericPrecision = 255;
+                        }
+                        
 
                     }
                     retval = retval.Replace("(N)", "(" + fld.NumericPrecision.ToString() + ")");
