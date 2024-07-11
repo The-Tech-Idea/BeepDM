@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using TheTechIdea.Beep;
@@ -24,7 +25,8 @@ namespace TheTechIdea.Util
         public static object myObject { get; set; }
         public static  TypeBuilder tb { get; set; }
         public static  AssemblyBuilder ab { get; set; }
-        private static readonly Dictionary<string, Type> typeCache = new Dictionary<string, Type>();
+        public static Dictionary<string, string> DataSourceNameSpace { get; set; } = new Dictionary<string, string>();
+        public static readonly Dictionary<string, Type> typeCache = new Dictionary<string, Type>();
         /// <summary>Creates a new object of a specified type.</summary>
         /// <param name="DMEEditor">The IDMEEditor instance.</param>
         /// <param name="classnamespace">The namespace of the class.</param>
@@ -35,16 +37,24 @@ namespace TheTechIdea.Util
         /// If the classnamespace is not provided, the default namespace "TheTechIdea.Classes" will be used.
         /// The method first creates an EntityStructure object using the provided typename and MyFields.
         /// Then, it converts the P
-        public static object CreateNewObject(IDMEEditor DMEEditor, string classnamespace, string typename, List<EntityField> MyFields)
+          public static object CreateNewObject(IDMEEditor DMEEditor, string classnamespace,string datasourcename, string typename, List<EntityField> MyFields)
         {
 
             string typenamespace = string.Empty;
-            if (!string.IsNullOrEmpty(classnamespace))
+            if(DataSourceNameSpace.ContainsKey(typename))
             {
-                typenamespace = classnamespace;
-            }else typenamespace = "TheTechIdea.Classes";
+                // get typenamespace from DataSourceNameSpace[typename] which contains example aa.jj.typename
 
-            string fullTypeName = $"{typenamespace}.{typename}".ToUpper();
+                typenamespace = GetTypeNamespace(typename);
+            }
+            else
+            {
+                DataSourceNameSpace.Add(typename, datasourcename + "." + typename);
+                typenamespace = datasourcename ;
+            }
+           
+
+            string fullTypeName = $"{typenamespace}.{typename}";
             // Check if the type is already cached
             if (!typeCache.ContainsKey(fullTypeName))
             {
@@ -56,7 +66,74 @@ namespace TheTechIdea.Util
                     myType = retval.Item1;
                     myObject = Activator.CreateInstance(myType);
 
-                    typeCache.Add(fullTypeName, myType);
+                    typeCache.Add(myType.FullName, myType);
+
+                }
+            }
+            else
+            {
+                // Use the cached type
+                myType = typeCache[fullTypeName];
+                myObject = Activator.CreateInstance(myType);
+            }
+            
+            
+           
+
+            return myObject;
+
+        }
+        public static string GetTypeNamespace(string typename)
+        {
+            if (DataSourceNameSpace.TryGetValue(typename, out string fullTypeName))
+            {
+                // Split the full type name by '.' and remove the last part (entity name)
+                var parts = fullTypeName.Split('.');
+                if (parts.Length > 1)
+                {
+                    return string.Join(".", parts.Take(parts.Length - 1));
+                }
+                else
+                {
+                    return fullTypeName;
+                }
+            }
+            else
+            {
+                throw new ArgumentException($"Namespace for typename '{typename}' not found.");
+            }
+        }
+        public static object CreateNewObject(IDMEEditor DMEEditor, string classnamespace, string typename, List<EntityField> MyFields)
+        {
+
+            string typenamespace = string.Empty;
+            if(DataSourceNameSpace.ContainsKey(typename))
+            {
+                typenamespace = GetTypeNamespace(typename);
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(classnamespace))
+                {
+                    typenamespace = classnamespace;
+                }
+                else typenamespace = "TheTechIdea.Classes";
+            }
+           
+
+            string fullTypeName = $"{typenamespace}.{typename}";
+            // Check if the type is already cached
+            if (!typeCache.ContainsKey(fullTypeName))
+            {
+                EntityStructure ent = new EntityStructure() { Fields = MyFields, EntityName = typename };
+                string cls = ConvertPOCOClassToEntity(DMEEditor, ent, typenamespace);
+                Tuple<Type, Assembly> retval = RoslynCompiler.CompileClassTypeandAssembly(typename, cls);
+                if (retval != null)
+                {
+                    myType = retval.Item1;
+                    myObject = Activator.CreateInstance(myType);
+
+                    typeCache.Add(myType.FullName, myType);
 
                 }
             }

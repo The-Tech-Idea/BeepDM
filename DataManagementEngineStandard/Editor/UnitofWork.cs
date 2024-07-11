@@ -233,7 +233,13 @@ namespace TheTechIdea.Beep.Editor
             {
                 getPrimaryKey(Units.FirstOrDefault());
             }
+            if (!DMTypeBuilder.DataSourceNameSpace.ContainsValue(typeof(T).FullName))
+            {
+                DMTypeBuilder.DataSourceNameSpace.Add(EntityName, typeof(T).FullName);
+                DMTypeBuilder.typeCache.Add(typeof(T).FullName, typeof(T));
 
+            }
+           
             _suppressNotification = false;
         }
         /// <summary>Initializes a new instance of the UnitOfWork class.</summary>
@@ -269,7 +275,12 @@ namespace TheTechIdea.Beep.Editor
             {
                 getPrimaryKey(Units.FirstOrDefault());
             }
+            if (!DMTypeBuilder.DataSourceNameSpace.ContainsValue(typeof(T).FullName))
+            {
+                DMTypeBuilder.DataSourceNameSpace.Add(EntityName, typeof(T).FullName);
+                DMTypeBuilder.typeCache.Add(typeof(T).FullName, typeof(T));
 
+            }
             _suppressNotification = false;
         }
         /// <summary>Initializes a new instance of the UnitofWork class.</summary>
@@ -1377,7 +1388,7 @@ namespace TheTechIdea.Beep.Editor
             IsFilterOn = false;
             if (!IsInListMode)
             {
-
+                
                 var retval = DataSource.GetEntity(EntityName, null);
                 try
                 {
@@ -1435,6 +1446,7 @@ namespace TheTechIdea.Beep.Editor
                 var type = retval.GetType();
                 if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ObservableBindingList<>))
                 {
+                  //  IBindingListView ls = (IBindingListView)retval;
                     Units = (ObservableBindingList<T>)retval;
                 }
                 if (retval is IBindingListView)
