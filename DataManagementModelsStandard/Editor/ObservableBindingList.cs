@@ -48,6 +48,7 @@ namespace DataManagementModels.Editor
                 {
                     _current = value;
                     OnPropertyChanged("Current");
+                    OnCurrentChanged();
                 }
             }
         }

@@ -35,6 +35,7 @@ namespace TheTechIdea.Beep.Editor
         void Create(T entity);
         ErrorsInfo Delete(string id);
         ErrorsInfo Delete(T doc);
+        ErrorsInfo Delete();
         ErrorsInfo Update(T entity);
         ErrorsInfo Update(string id, T entity);
         

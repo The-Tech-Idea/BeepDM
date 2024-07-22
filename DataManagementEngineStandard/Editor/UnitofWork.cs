@@ -744,6 +744,92 @@ namespace TheTechIdea.Beep.Editor
             }
             return Units[Getindex(id)];
         }
+        public ErrorsInfo Delete()
+        {
+            ErrorsInfo errorsInfo = new ErrorsInfo();
+            if (!Validateall())
+            {
+                errorsInfo.Message = "Validation Failed";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+            if(_units.Count==0)
+            {
+                errorsInfo.Message = "No Object to delete";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+            if(_units.Current==null)
+            {
+                errorsInfo.Message = "No Object to delete";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+            T entity=_units.Current;
+            var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
+            var index = Getindex(entity);
+            Tracking tracking = _units.GetTrackingITem(entity);
+            //if (!InsertedKeys.ContainsValue(Convert.ToString(tracking.OriginalIndex)))
+            //{
+            //    InsertedKeys.Add(keysidx, Convert.ToString(tracking.OriginalIndex));
+            //    _entityStates.Add(tracking.OriginalIndex, EntityState.Added);
+            //}
+            if (index >= 0)
+            {
+                if (_entityStates.Count > 0)
+                {
+                    if (_entityStates.ContainsKey(tracking.OriginalIndex))
+                    {
+                        if (InsertedKeys.ContainsValue(tracking.OriginalIndex.ToString()))
+                        {
+                            // Attempt to remove the entity from InsertedKeys and UpdatedKeys.
+                            var insertedKey = InsertedKeys.FirstOrDefault(kvp => kvp.Value == tracking.OriginalIndex.ToString());
+                            if (!default(KeyValuePair<int, string>).Equals(insertedKey))
+                            {
+                                InsertedKeys.Remove(insertedKey.Key);
+                            }
+                            var updatedKey = UpdatedKeys.FirstOrDefault(kvp => kvp.Value == tracking.OriginalIndex.ToString());
+                            if (!default(KeyValuePair<int, string>).Equals(updatedKey))
+                            {
+                                UpdatedKeys.Remove(updatedKey.Key);
+                            }
+                            // Remove the entity's state from _entityStates if present.
+                            if (_entityStates.ContainsKey(tracking.OriginalIndex))
+                            {
+                                _entityStates.Remove(tracking.OriginalIndex);
+                            }
+                            else
+                            {
+                                // If the entity was added and then deleted before committing, its state might be under a different key.
+                                // Additional logic might be required to handle this case.
+                            }
+                        }
+                        _units.RemoveAt(index);
+                        errorsInfo.Message = "Delete Done";
+                        errorsInfo.Flag = Errors.Ok;
+                        return errorsInfo;
+                    }
+                }
+                errorsInfo.Message = "Delete Done";
+                errorsInfo.Flag = Errors.Ok;
+                return errorsInfo;
+            }
+            else
+            {
+                if (!_units.Remove(entity))
+                {
+                    errorsInfo.Message = "Object not found";
+                    errorsInfo.Flag = Errors.Failed;
+                    return errorsInfo;
+                }
+                else
+                {
+                    errorsInfo.Message = "Delete Done";
+                    errorsInfo.Flag = Errors.Ok;
+                    return errorsInfo;
+                }
+            }
+        }
         /// <summary>Deletes an entity and returns information about the operation.</summary>
         /// <param name="entity">The entity to delete.</param>
         /// <returns>An ErrorsInfo object containing information about the delete operation.</returns>
@@ -763,35 +849,35 @@ namespace TheTechIdea.Beep.Editor
             }
             var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
             var index = Getindex(entity);
-           
+            Tracking tracking = _units.GetTrackingITem(entity);
+            //if (!InsertedKeys.ContainsValue(Convert.ToString(tracking.OriginalIndex)))
+            //{
+            //    InsertedKeys.Add(keysidx, Convert.ToString(tracking.OriginalIndex));
+            //    _entityStates.Add(tracking.OriginalIndex, EntityState.Added);
+            //}
             if (index >= 0)
             {
-              //  Units[index] = entity;
-                _units.RemoveAt(index);
                 if (_entityStates.Count > 0)
                 {
-                    if (_entityStates.ContainsKey(index))
+                    if (_entityStates.ContainsKey(tracking.OriginalIndex))
                     {
-                        if (InsertedKeys.ContainsValue(Convert.ToString(PKProperty.GetValue(entity, null))))
+                        if (InsertedKeys.ContainsValue(tracking.OriginalIndex.ToString()))
                         {
-
                             // Attempt to remove the entity from InsertedKeys and UpdatedKeys.
-                            var insertedKey = InsertedKeys.FirstOrDefault(kvp => kvp.Value == entityKeyAsString);
+                            var insertedKey = InsertedKeys.FirstOrDefault(kvp => kvp.Value == tracking.OriginalIndex.ToString());
                             if (!default(KeyValuePair<int, string>).Equals(insertedKey))
                             {
                                 InsertedKeys.Remove(insertedKey.Key);
                             }
-
-                            var updatedKey = UpdatedKeys.FirstOrDefault(kvp => kvp.Value == entityKeyAsString);
+                            var updatedKey = UpdatedKeys.FirstOrDefault(kvp => kvp.Value == tracking.OriginalIndex.ToString());
                             if (!default(KeyValuePair<int, string>).Equals(updatedKey))
                             {
                                 UpdatedKeys.Remove(updatedKey.Key);
                             }
-
                             // Remove the entity's state from _entityStates if present.
-                            if (_entityStates.ContainsKey(index))
+                            if (_entityStates.ContainsKey(tracking.OriginalIndex))
                             {
-                                _entityStates.Remove(index);
+                                _entityStates.Remove(tracking.OriginalIndex);
                             }
                             else
                             {
@@ -799,6 +885,7 @@ namespace TheTechIdea.Beep.Editor
                                 // Additional logic might be required to handle this case.
                             }
                         }
+                        _units.RemoveAt(index);
                         errorsInfo.Message = "Delete Done";
                         errorsInfo.Flag = Errors.Ok;
                         return errorsInfo;
@@ -810,9 +897,18 @@ namespace TheTechIdea.Beep.Editor
             }
             else
             {
-                errorsInfo.Message = "Object not found";
-                errorsInfo.Flag = Errors.Failed;
-                return errorsInfo;
+                if (!_units.Remove(entity))
+                {
+                    errorsInfo.Message = "Object not found";
+                    errorsInfo.Flag = Errors.Failed;
+                    return errorsInfo;
+                }
+                else
+                {
+                    errorsInfo.Message = "Delete Done";
+                    errorsInfo.Flag = Errors.Ok;
+                    return errorsInfo;
+                }
             }
         }
         /// <summary>Updates an entity and returns information about the operation.</summary>
@@ -929,7 +1025,7 @@ namespace TheTechIdea.Beep.Editor
                 return errorsInfo;
             }
             var index = Getindex(id);
-
+           
             if (index >= 0)
             {
                 // Assuming ID is the value used in InsertedKeys and UpdatedKeys
