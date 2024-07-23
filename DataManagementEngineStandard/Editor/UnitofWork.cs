@@ -1875,8 +1875,7 @@ namespace TheTechIdea.Beep.Editor
                 }
                
             }
-            if (UpdatedKeys.Count > 0)
-            {
+           
                 if (!UpdatedKeys.Any(p => p.Value.Equals(Convert.ToString(tracking.OriginalIndex))))
                 {
                     keysidx++;
@@ -1888,7 +1887,7 @@ namespace TheTechIdea.Beep.Editor
                     }
 
                 }
-            }
+           
            
             CurrentProperty = item.GetType().GetProperty(e.PropertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
             UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, PropertyName = e.PropertyName, PropertyValue = Convert.ToString(CurrentProperty.GetValue(item, null)) };

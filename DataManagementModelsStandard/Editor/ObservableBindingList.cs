@@ -48,7 +48,7 @@ namespace DataManagementModels.Editor
                 {
                     _current = value;
                     OnPropertyChanged("Current");
-                    OnCurrentChanged();
+                  //  OnCurrentChanged();
                 }
             }
         }
@@ -207,6 +207,7 @@ namespace DataManagementModels.Editor
         protected override void ApplySortCore(PropertyDescriptor prop, ListSortDirection direction)
         {
             SuppressNotification = true;
+            RaiseListChangedEvents = false;
             var items = Items as List<T>;
             if (items != null)
             {
@@ -221,15 +222,13 @@ namespace DataManagementModels.Editor
                     sortDirection = direction;
 
                     ResetItems(items);
-                    SuppressNotification = false;
+                   
                     ResetBindings();
                 }
             }
+            SuppressNotification = false;
+            RaiseListChangedEvents = true;
         }
-
-
-
-
         public void RemoveSort()
         {
             if(isSorted)
@@ -239,10 +238,14 @@ namespace DataManagementModels.Editor
         }
         protected override void RemoveSortCore()
         {
+            SuppressNotification = true;
+            RaiseListChangedEvents = false;
             isSorted = false;
             sortProperty = null;
             sortDirection = ListSortDirection.Ascending;
             ResetItems(originalList);
+            SuppressNotification = false;
+            RaiseListChangedEvents = true;
         }
         public void ApplySort(ListSortDescriptionCollection sorts)
         {
@@ -301,6 +304,8 @@ namespace DataManagementModels.Editor
         }
         public void Sort(string propertyName)
         {
+            SuppressNotification = true;
+            RaiseListChangedEvents = false;
             var prop = typeof(T).GetProperty(propertyName);
             if (prop == null)
             {
@@ -317,6 +322,8 @@ namespace DataManagementModels.Editor
             }
 
             OnPropertyChanged("Item[]");
+            SuppressNotification = false;
+            RaiseListChangedEvents = true;
         }
         #endregion
         #region "Find"
@@ -509,10 +516,10 @@ namespace DataManagementModels.Editor
                 this.Add(item);
             }
           
-            if (raiseEvent)
-            {
-                OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
-            }
+            //if (raiseEvent)
+            //{
+            //    OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
+            //}
            
             UpdateIndexTrackingAfterFilterorSort(); // Update index mapping after resetting items
           
@@ -1044,7 +1051,28 @@ namespace DataManagementModels.Editor
         {
             return originalList.IndexOf(item);
         }
-       
+        public T GetItem()
+        {
+            return this.Current;
+        }
+        public T GetItemFromOriginalList(int index)
+        {
+            if (index >= 0 && index < originalList.Count)
+            {
+                return originalList[index];
+            }
+            else
+            { return null; }
+        }
+        public T GetItemFroCurrentList(int index)
+        {
+            if(index>=0 && index < Items.Count)
+            {
+                return this[index];
+            }else
+                { return null; }
+            
+        }
         public Tracking GetTrackingITem(T item)
         {
             Tracking retval = null;
