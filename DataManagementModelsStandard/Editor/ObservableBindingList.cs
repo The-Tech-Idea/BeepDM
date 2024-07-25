@@ -27,8 +27,8 @@ namespace DataManagementModels.Editor
         public bool SuppressNotification { get; set; } = false;
         public bool IsSorted => false;
         public bool IsSynchronized => false;
+        private bool _isPositionChanging = false; // Add this flag
 
-      
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
         {
@@ -38,19 +38,11 @@ namespace DataManagementModels.Editor
         private int _currentIndex = -1;
         public int CurrentIndex { get { return _currentIndex; } }
         // public T Current => (_currentIndex >= 0 && _currentIndex < Items.Count) ? Items[_currentIndex] : default;
-        private T _current;
+        //private T _current;
         public T Current
         {
-            get => _current;
-            set
-            {
-                if (!EqualityComparer<T>.Default.Equals(_current, value))
-                {
-                    _current = value;
-                    OnPropertyChanged("Current");
-                  //  OnCurrentChanged();
-                }
-            }
+            get => Items[CurrentIndex];
+          
         }
         public event EventHandler CurrentChanged;
         protected virtual void OnCurrentChanged()
@@ -59,13 +51,17 @@ namespace DataManagementModels.Editor
         }
         protected override void OnListChanged(ListChangedEventArgs e)
         {
-                base.OnListChanged(e);
+            if (!_isPositionChanging) // Check the flag before executing the base method
+            {
                 if (e.ListChangedType == ListChangedType.ItemChanged && e.NewIndex >= 0 && e.NewIndex < Count)
                 {
-                    Current = this[e.NewIndex];
+                    _currentIndex = e.NewIndex;
                     OnCurrentChanged();
                 }
+                base.OnListChanged(e); // Ensure base method is called conditionally
+            }
         }
+
         public bool MoveNext()
         {
             if (_currentIndex < Items.Count - 1)
@@ -114,13 +110,17 @@ namespace DataManagementModels.Editor
         {
             if (index >= 0 && index < Items.Count)
             {
+                _isPositionChanging = true; // Set the flag before changing the position
                 _currentIndex = index;
                 OnPropertyChanged("Current");
+                OnCurrentChanged(); // Manually call OnCurrentChanged if needed
+                _isPositionChanging = false; // Reset the flag after changing the position
                 return true;
             }
 
             return false;
         }
+
         #endregion
         #region "Sort"
         private bool isSorted;
