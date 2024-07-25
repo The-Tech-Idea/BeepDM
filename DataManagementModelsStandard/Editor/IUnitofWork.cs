@@ -38,7 +38,7 @@ namespace TheTechIdea.Beep.Editor
         ErrorsInfo Delete();
         ErrorsInfo Update(T entity);
         ErrorsInfo Update(string id, T entity);
-        
+        void UndoLastChange();
         int DocExist(T doc);
         int DocExistByKey(T doc);
         int FindDocIdx(T doc);

@@ -1984,6 +1984,16 @@
             <param name="id">The ID of the item to read.</param>
             <returns>The item with the specified ID, or the default value of the item type if the ID is not found or the collection is not valid.</returns>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Delete(System.String)">
+            <summary>Deletes an object based on its ID.</summary>
+            <param name="id">The ID of the object to delete.</param>
+            <returns>An ErrorsInfo object indicating the result of the delete operation.</returns>
+            <remarks>
+            If the validation fails, the ErrorsInfo object will have a message of "Validation Failed" and a flag of Errors.Failed.
+            If the object is found and successfully deleted, the ErrorsInfo object will have a message of "Delete Done" and a flag of Errors.Ok.
+            If the object is not found, the ErrorsInfo object will have a message of "Object not found" and a flag of Errors.Failed.
+            </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Delete(`0)">
             <summary>Deletes an entity and returns information about the operation.</summary>
             <param name="entity">The entity to delete.</param>
@@ -2009,16 +2019,6 @@
             <param name="id">The ID of the entity to update.</param>
             <param name="entity">The updated entity.</param>
             <returns>An ErrorsInfo object indicating the result of the update operation.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Delete(System.String)">
-            <summary>Deletes an object based on its ID.</summary>
-            <param name="id">The ID of the object to delete.</param>
-            <returns>An ErrorsInfo object indicating the result of the delete operation.</returns>
-            <remarks>
-            If the validation fails, the ErrorsInfo object will have a message of "Validation Failed" and a flag of Errors.Failed.
-            If the object is found and successfully deleted, the ErrorsInfo object will have a message of "Delete Done" and a flag of Errors.Ok.
-            If the object is not found, the ErrorsInfo object will have a message of "Object not found" and a flag of Errors.Failed.
-            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Commit(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken)">
             <summary>Commits changes and returns information about any errors that occurred.</summary>

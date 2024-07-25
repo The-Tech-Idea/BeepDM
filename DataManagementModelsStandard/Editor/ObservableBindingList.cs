@@ -49,18 +49,7 @@ namespace DataManagementModels.Editor
         {
             CurrentChanged?.Invoke(this, EventArgs.Empty);
         }
-        protected override void OnListChanged(ListChangedEventArgs e)
-        {
-            if (!_isPositionChanging) // Check the flag before executing the base method
-            {
-                if (e.ListChangedType == ListChangedType.ItemChanged && e.NewIndex >= 0 && e.NewIndex < Count)
-                {
-                    _currentIndex = e.NewIndex;
-                    OnCurrentChanged();
-                }
-                base.OnListChanged(e); // Ensure base method is called conditionally
-            }
-        }
+    
 
         public bool MoveNext()
         {
@@ -835,7 +824,22 @@ namespace DataManagementModels.Editor
         }
         #endregion
         #region "List and Item Change"
-
+        protected override void OnListChanged(ListChangedEventArgs e)
+        {
+            if(SuppressNotification)
+            {
+                return;
+            }
+            if (!_isPositionChanging) // Check the flag before executing the base method
+            {
+                if (e.ListChangedType == ListChangedType.ItemChanged && e.NewIndex >= 0 && e.NewIndex < Count)
+                {
+                    _currentIndex = e.NewIndex;
+                    OnCurrentChanged();
+                }
+                base.OnListChanged(e); // Ensure base method is called conditionally
+            }
+        }
         void ObservableBindingList_AddingNew(object sender, AddingNewEventArgs e)
         {
             if (e.NewObject is T item)
@@ -874,9 +878,9 @@ namespace DataManagementModels.Editor
 
             if (tracking != null)
             {
-
                 tracking.EntityState = EntityState.Deleted;
                 tracking.CurrentIndex = deletedindex;
+                tracking.IsSaved = false;
             }
             if (IsLoggin)
             {
@@ -897,7 +901,8 @@ namespace DataManagementModels.Editor
                 {
                     Tracking tr = new Tracking(Guid.NewGuid(), index, index);
                     tr.EntityState = EntityState.Added;
-
+                    tr.IsNew = true;
+                    tr.IsSaved=false;
                     if (string.IsNullOrEmpty(filterString) || !isSorted)
                     {
                         originalList.Insert(index, item);
@@ -916,11 +921,32 @@ namespace DataManagementModels.Editor
                     }
                     item.PropertyChanged += Item_PropertyChanged;
                     OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+                    // Set current index to the new item
+                    SetPosition(index);
                 }
 
             }
 
         }
+        public void SetPosition(int newPosition)
+        {
+            if (newPosition >= 0 && newPosition < Count)
+            {
+                SuppressNotification = true;
+                _isPositionChanging = true; // Set the flag before changing the position
+                try
+                {
+                    _currentIndex = newPosition;
+                    OnCurrentChanged();
+                }
+                finally
+                {
+                    SuppressNotification = false;
+                    _isPositionChanging = false; // Reset the flag after changing the position
+                }
+            }
+        }
+
         protected override void SetItem(int index, T item)
         {
             T replacedItem = this[index];
@@ -1106,6 +1132,8 @@ namespace DataManagementModels.Editor
         public int OriginalIndex { get; set; }
         public int CurrentIndex { get; set; }
         public EntityState EntityState { get; set; } = EntityState.Unchanged;
+        public bool IsSaved { get; set; } = false;
+        public bool IsNew { get; set; } = false;
         public string EntityName { get; set; }
         public string PKFieldName { get; set; }
         public string PKFieldValue { get; set; }

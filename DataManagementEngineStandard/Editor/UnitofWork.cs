@@ -26,6 +26,8 @@ namespace TheTechIdea.Beep.Editor
     /// <typeparam name="T">The type of entity.</typeparam>
     public class UnitofWork<T> : IUnitofWork<T> where T : Entity, new()
     {
+        private Stack<ChangeLogEntry<T>> changeLog = new Stack<ChangeLogEntry<T>>();
+
         /// <summary>Indicates whether notifications should be suppressed.</summary>
         private bool _suppressNotification = false;
 
@@ -593,6 +595,7 @@ namespace TheTechIdea.Beep.Editor
                 DMEEditor.ErrorObject.Message = "Object is null";
                 return DMEEditor.ErrorObject;
             }
+            
             IErrorsInfo retval = await DeleteDoc(doc);
 
             return retval;
@@ -673,8 +676,11 @@ namespace TheTechIdea.Beep.Editor
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
             string cname = classnames[classnames.Count() - 1];
             IErrorsInfo retval ;
+            Tracking tracking = _units.GetTrackingITem(doc);
+           
             if (!IsInListMode)
             {
+                
                 retval =  DataSource.DeleteEntity(cname, doc);
             }
             else
@@ -691,6 +697,8 @@ namespace TheTechIdea.Beep.Editor
                 }
 
             }
+         
+
             return Task.FromResult<IErrorsInfo>(retval);
         }
 
@@ -708,31 +716,16 @@ namespace TheTechIdea.Beep.Editor
                 return;
             }
             Units.Add(entity);
-            //if (!IsInListMode)
-            //{
-            //    Units.Add(entity);
-            //}
-            //else
-            //{
-            //    int idx = Getindex(entity);
-            //    if (idx > -1)
-            //    {
-            //        Update(entity);
-            //        DMEEditor.AddLogMessage("Beep", $"Added Entity ", DateTime.Now, 0, null, Errors.Ok);
-                  
-            //    }
-            //    else
-            //    {
-            //        _units.Add(entity);
-            //        DMEEditor.AddLogMessage("Beep", $"Added Entity ", DateTime.Now, 0, null, Errors.Ok);
-            //    }
-
-            //}
-            // int index = Getindex(entity);
-            //    _entityStates.Add(index, EntityState.Added);
+            changeLog.Push(new ChangeLogEntry<T>
+            {
+                Entity = entity,
+                ChangeType = ChangeType.Insert
+            });
             // Subscribe to PropertyChanged event
             entity.PropertyChanged += ItemPropertyChangedHandler;
         }
+       
+
         /// <summary>Reads an item from a collection based on its ID.</summary>
         /// <param name="id">The ID of the item to read.</param>
         /// <returns>The item with the specified ID, or the default value of the item type if the ID is not found or the collection is not valid.</returns>
@@ -743,6 +736,85 @@ namespace TheTechIdea.Beep.Editor
                 return default(T);
             }
             return Units[Getindex(id)];
+        }
+        /// <summary>Deletes an object based on its ID.</summary>
+        /// <param name="id">The ID of the object to delete.</param>
+        /// <returns>An ErrorsInfo object indicating the result of the delete operation.</returns>
+        /// <remarks>
+        /// If the validation fails, the ErrorsInfo object will have a message of "Validation Failed" and a flag of Errors.Failed.
+        /// If the object is found and successfully deleted, the ErrorsInfo object will have a message of "Delete Done" and a flag of Errors.Ok.
+        /// If the object is not found, the ErrorsInfo object will have a message of "Object not found" and a flag of Errors.Failed.
+        /// </remarks>
+        public ErrorsInfo Delete(string id)
+        {
+            ErrorsInfo errorsInfo = new ErrorsInfo();
+            if (!Validateall())
+            {
+                errorsInfo.Message = "Validation Failed";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+            var index = Getindex(id);
+          
+            if (index >= 0)
+            {
+                // Assuming ID is the value used in InsertedKeys and UpdatedKeys
+                // Remove the entity from Units
+                T entity = Units[index];
+            
+                Tracking tracking = _units.GetTrackingITem(entity);
+                // Remove references from InsertedKeys and UpdatedKeys
+                if (_entityStates.Count > 0)
+                {
+                    if (_entityStates.ContainsKey(tracking.OriginalIndex))
+                    {
+                        if (InsertedKeys.ContainsValue(tracking.OriginalIndex.ToString()))
+                        {
+                            // Attempt to remove the entity from InsertedKeys and UpdatedKeys.
+                            var insertedKey = InsertedKeys.FirstOrDefault(kvp => kvp.Value == tracking.OriginalIndex.ToString());
+                            if (!default(KeyValuePair<int, string>).Equals(insertedKey))
+                            {
+                                InsertedKeys.Remove(insertedKey.Key);
+                            }
+                            var updatedKey = UpdatedKeys.FirstOrDefault(kvp => kvp.Value == tracking.OriginalIndex.ToString());
+                            if (!default(KeyValuePair<int, string>).Equals(updatedKey))
+                            {
+                                UpdatedKeys.Remove(updatedKey.Key);
+                            }
+                            if (tracking.IsNew && !tracking.IsSaved)
+                            {
+                                var deletedKey = DeletedKeys.FirstOrDefault(kvp => kvp.Value == tracking.OriginalIndex.ToString());
+                                if (!default(KeyValuePair<int, string>).Equals(deletedKey))
+                                {
+                                    DeletedKeys.Remove(deletedKey.Key);
+                                }
+                                // Remove the entity's state from _entityStates if present.
+                                if (_entityStates.ContainsKey(tracking.OriginalIndex))
+                                {
+                                    _entityStates.Remove(tracking.OriginalIndex);
+                                }
+                                DeletedUnits.Remove(entity);
+
+                            }
+                        }
+                        changeLog.Push(new ChangeLogEntry<T>
+                        {
+                            Entity = entity,
+                            ChangeType = ChangeType.Delete
+                        });
+                        _units.RemoveAt(index);
+                        errorsInfo.Message = "Delete Done";
+                        errorsInfo.Flag = Errors.Ok;
+                        return errorsInfo;
+                    }
+                }
+              
+            }
+           
+                errorsInfo.Message = "Object not found";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            
         }
         public ErrorsInfo Delete()
         {
@@ -793,17 +865,27 @@ namespace TheTechIdea.Beep.Editor
                             {
                                 UpdatedKeys.Remove(updatedKey.Key);
                             }
-                            // Remove the entity's state from _entityStates if present.
-                            if (_entityStates.ContainsKey(tracking.OriginalIndex))
+                            if (tracking.IsNew && !tracking.IsSaved)
                             {
-                                _entityStates.Remove(tracking.OriginalIndex);
-                            }
-                            else
-                            {
-                                // If the entity was added and then deleted before committing, its state might be under a different key.
-                                // Additional logic might be required to handle this case.
+                                var deletedKey = DeletedKeys.FirstOrDefault(kvp => kvp.Value == tracking.OriginalIndex.ToString());
+                                if (!default(KeyValuePair<int, string>).Equals(deletedKey))
+                                {
+                                    DeletedKeys.Remove(deletedKey.Key);
+                                }
+                                // Remove the entity's state from _entityStates if present.
+                                if (_entityStates.ContainsKey(tracking.OriginalIndex))
+                                {
+                                    _entityStates.Remove(tracking.OriginalIndex);
+                                }
+                                DeletedUnits.Remove(entity);
+
                             }
                         }
+                        changeLog.Push(new ChangeLogEntry<T>
+                        {
+                            Entity = entity,
+                            ChangeType = ChangeType.Delete
+                        });
                         _units.RemoveAt(index);
                         errorsInfo.Message = "Delete Done";
                         errorsInfo.Flag = Errors.Ok;
@@ -850,6 +932,13 @@ namespace TheTechIdea.Beep.Editor
             var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
             var index = Getindex(entity);
             Tracking tracking = _units.GetTrackingITem(entity);
+            if(tracking.IsSaved && tracking.EntityState== EntityState.Deleted)
+            {
+                errorsInfo.Message = "Object already deleted";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+          
             //if (!InsertedKeys.ContainsValue(Convert.ToString(tracking.OriginalIndex)))
             //{
             //    InsertedKeys.Add(keysidx, Convert.ToString(tracking.OriginalIndex));
@@ -874,17 +963,30 @@ namespace TheTechIdea.Beep.Editor
                             {
                                 UpdatedKeys.Remove(updatedKey.Key);
                             }
+                           
+                        }
+                        if (tracking.IsNew && !tracking.IsSaved)
+                        {
+                            var deletedKey = DeletedKeys.FirstOrDefault(kvp => kvp.Value == tracking.OriginalIndex.ToString());
+                            if (!default(KeyValuePair<int, string>).Equals(deletedKey))
+                            {
+                                DeletedKeys.Remove(deletedKey.Key);
+                            }
                             // Remove the entity's state from _entityStates if present.
                             if (_entityStates.ContainsKey(tracking.OriginalIndex))
                             {
                                 _entityStates.Remove(tracking.OriginalIndex);
                             }
-                            else
-                            {
-                                // If the entity was added and then deleted before committing, its state might be under a different key.
-                                // Additional logic might be required to handle this case.
-                            }
+                            DeletedUnits.Remove(entity);
+
                         }
+                       
+                            changeLog.Push(new ChangeLogEntry<T>
+                            {
+                                Entity = entity,
+                                ChangeType = ChangeType.Delete
+                            });
+                       
                         _units.RemoveAt(index);
                         errorsInfo.Message = "Delete Done";
                         errorsInfo.Flag = Errors.Ok;
@@ -950,7 +1052,25 @@ namespace TheTechIdea.Beep.Editor
                     _entityStates.Add(index, EntityState.Modified);
 
                 }
+                var originalEntity = Units.FirstOrDefault(e => e.Equals(entity));
+                if (originalEntity != null)
+                {
+                    var originalValues = new Dictionary<string, object>();
+                    foreach (var prop in typeof(T).GetProperties())
+                    {
+                        originalValues[prop.Name] = prop.GetValue(originalEntity);
+                    }
 
+                   changeLog.Push(new ChangeLogEntry<T>
+                        {
+                            Entity = entity,
+                            OriginalValues = originalValues,
+                            ChangeType = ChangeType.Update
+                        });
+ 
+                }
+
+               
                 errorsInfo.Message = "Update Done";
                 errorsInfo.Flag = Errors.Ok;
                 return errorsInfo;
@@ -1007,67 +1127,7 @@ namespace TheTechIdea.Beep.Editor
                 return errorsInfo;
             }
         }
-        /// <summary>Deletes an object based on its ID.</summary>
-        /// <param name="id">The ID of the object to delete.</param>
-        /// <returns>An ErrorsInfo object indicating the result of the delete operation.</returns>
-        /// <remarks>
-        /// If the validation fails, the ErrorsInfo object will have a message of "Validation Failed" and a flag of Errors.Failed.
-        /// If the object is found and successfully deleted, the ErrorsInfo object will have a message of "Delete Done" and a flag of Errors.Ok.
-        /// If the object is not found, the ErrorsInfo object will have a message of "Object not found" and a flag of Errors.Failed.
-        /// </remarks>
-        public ErrorsInfo Delete(string id)
-        {
-            ErrorsInfo errorsInfo = new ErrorsInfo();
-            if (!Validateall())
-            {
-                errorsInfo.Message = "Validation Failed";
-                errorsInfo.Flag = Errors.Failed;
-                return errorsInfo;
-            }
-            var index = Getindex(id);
-           
-            if (index >= 0)
-            {
-                // Assuming ID is the value used in InsertedKeys and UpdatedKeys
-                // Remove the entity from Units
-                T entity = Units[index];
-                Units.RemoveAt(index);
-
-                // Remove references from InsertedKeys and UpdatedKeys
-                var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
-                var insertedKey = InsertedKeys.FirstOrDefault(kvp => kvp.Value == entityKeyAsString);
-                if (!default(KeyValuePair<int, string>).Equals(insertedKey))
-                {
-                    InsertedKeys.Remove(insertedKey.Key);
-                }
-
-                var updatedKey = UpdatedKeys.FirstOrDefault(kvp => kvp.Value == entityKeyAsString);
-                if (!default(KeyValuePair<int, string>).Equals(updatedKey))
-                {
-                    UpdatedKeys.Remove(updatedKey.Key);
-                }
-
-                // Remove the entity's state from _entityStates
-                if (_entityStates.ContainsKey(index))
-                {
-                    _entityStates.Remove(index);
-                }
-                else
-                {
-                    // Handle cases where the index might not directly map due to previous deletions or additions
-                    // Additional logic may be required if your index in _entityStates doesn't align with Units index
-                }
-                errorsInfo.Message = "Delete Done";
-                errorsInfo.Flag = Errors.Ok;
-                return errorsInfo;
-            }
-            else
-            {
-                errorsInfo.Message = "Object not found";
-                errorsInfo.Flag = Errors.Failed;
-                return errorsInfo;
-            }
-        }
+      
         /// <summary>Commits changes and returns information about any errors that occurred.</summary>
         /// <param name="progress">An object that reports progress during the commit process.</param>
         /// <param name="token">A cancellation token that can be used to cancel the commit process.</param>
@@ -1853,6 +1913,7 @@ namespace TheTechIdea.Beep.Editor
         /// <param name="e">The event arguments containing information about the changed property.</param>
         private void ItemPropertyChangedHandler(object sender, PropertyChangedEventArgs e)
         {
+            
             if (_units.SuppressNotification == true)
             {
                 return;
@@ -1875,7 +1936,8 @@ namespace TheTechIdea.Beep.Editor
                 }
                
             }
-           
+            if(!InsertedKeys.Any(p => p.Value.Equals(Convert.ToString(tracking.OriginalIndex))))
+            {
                 if (!UpdatedKeys.Any(p => p.Value.Equals(Convert.ToString(tracking.OriginalIndex))))
                 {
                     keysidx++;
@@ -1885,13 +1947,26 @@ namespace TheTechIdea.Beep.Editor
                     {
                         _entityStates.Add(x, EntityState.Modified);
                     }
-
+                    CurrentProperty = item.GetType().GetProperty(e.PropertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                    UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, PropertyName = e.PropertyName, PropertyValue = Convert.ToString(CurrentProperty.GetValue(item, null)) };
+                    PostEdit?.Invoke(item, ps);
                 }
-           
-           
+
+            }
             CurrentProperty = item.GetType().GetProperty(e.PropertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, PropertyName = e.PropertyName, PropertyValue = Convert.ToString(CurrentProperty.GetValue(item, null)) };
-            PostEdit?.Invoke(item, ps);
+            if (CurrentProperty != null)
+            {
+                var originalValue = CurrentProperty.GetValue(item, null);
+                changeLog.Push(new ChangeLogEntry<T>
+                {
+                    Entity = item,
+                    OriginalValues = { { e.PropertyName, originalValue } },
+                    NewValues = { { e.PropertyName, originalValue } },
+                    ChangeType = ChangeType.Update
+                });
+            }
+
+
 
         }
         /// <summary>Filters a collection based on a list of filters.</summary>
@@ -2251,6 +2326,36 @@ namespace TheTechIdea.Beep.Editor
                 units = retval;
             }
         }
+        #region "Undo"
+        public void UndoLastChange()
+        {
+            if (changeLog.Count > 0)
+            {
+                var lastChange = changeLog.Pop();
+                switch (lastChange.ChangeType)
+                {
+                    case ChangeType.Insert:
+                        Units.Remove(lastChange.Entity);
+                        Delete(lastChange.Entity);
+                        break;
+                    case ChangeType.Update:
+                        foreach (var originalValue in lastChange.OriginalValues)
+                        {
+                            var property = lastChange.Entity.GetType().GetProperty(originalValue.Key);
+                            if (property != null)
+                            {
+                                property.SetValue(lastChange.Entity, originalValue.Value);
+                            }
+                        }
+                        break;
+                    case ChangeType.Delete:
+                        Units.Add(lastChange.Entity);
+                        break;
+                }
+            }
+        }
+
+        #endregion "Undo"
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -2279,5 +2384,17 @@ namespace TheTechIdea.Beep.Editor
         }
 
     }
-   
+    public class ChangeLogEntry<T>
+    {
+        public T Entity { get; set; }
+        public Dictionary<string, object> OriginalValues { get; set; } = new Dictionary<string, object>();
+        public Dictionary<string, object> NewValues { get; set; } = new Dictionary<string, object>();
+        public ChangeType ChangeType { get; set; }
+    }
+    public enum ChangeType
+    {
+        Insert,
+        Update,
+        Delete
+    }
 }
