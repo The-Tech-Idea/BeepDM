@@ -27,6 +27,7 @@ namespace DataManagementModels.Editor
         Task<IErrorsInfo> Rollback();
         ErrorsInfo Delete(string id);
         void UndoLastChange();
+
         Task<ObservableBindingList<Entity>> GetQuery(string query);
         Task<ObservableBindingList<Entity>> Get();
         Task<ObservableBindingList<Entity>> Get(List<AppFilter> filters);

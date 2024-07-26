@@ -1854,6 +1854,13 @@ namespace TheTechIdea.Beep.Editor
                         UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false };
                         PreDelete?.Invoke(item, ps);
                         Tracking tracking = _units.GetTrackingITem(item);
+                        if (tracking != null)
+                        {
+                            if(!tracking.IsSaved && tracking.IsNew)
+                            {
+                                return ;
+                            }
+                        }
                         if (!ps.Cancel)
                         {
                            
@@ -2325,6 +2332,17 @@ namespace TheTechIdea.Beep.Editor
             {
                 units = retval;
             }
+        }
+        public T GetItemFroCurrentList(int index)
+        {
+           return _units.GetItemFroCurrentList(index);
+
+        }
+        public Tracking GetTrackingITem(T item)
+        {
+           
+
+            return _units.GetTrackingITem(item);
         }
         #region "Undo"
         public void UndoLastChange()

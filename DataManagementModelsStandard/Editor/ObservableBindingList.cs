@@ -872,24 +872,24 @@ namespace DataManagementModels.Editor
             }
             if (removedItem != null)
             {
+                removedItem.PropertyChanged -= Item_PropertyChanged;
                 DeletedList.Add(removedItem);
             }
-            int deletedindex = DeletedList.IndexOf(removedItem);
+     //       int deletedindex = DeletedList.IndexOf(removedItem);
 
-            if (tracking != null)
-            {
-                tracking.EntityState = EntityState.Deleted;
-                tracking.CurrentIndex = deletedindex;
-                tracking.IsSaved = false;
-            }
             if (IsLoggin)
             {
                 CreateLogEntry(removedItem, LogAction.Delete, tracking);
             }
-            removedItem.PropertyChanged -= Item_PropertyChanged;
+           
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
             Items.RemoveAt(index);
             originalList.RemoveAt(tracking.OriginalIndex);
+
+            if (tracking != null)
+            {
+              Trackings.Remove(tracking);
+            }
         }
         protected override void InsertItem(int index, T item)
         {

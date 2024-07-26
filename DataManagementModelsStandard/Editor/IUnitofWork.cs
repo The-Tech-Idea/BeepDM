@@ -58,7 +58,9 @@ namespace TheTechIdea.Beep.Editor
         int GetPrimaryKeySequence(T doc);
         int GetSeq(string SeqName);
         T Read(string id);
+        T GetItemFroCurrentList(int index);
 
+        Tracking GetTrackingITem(T item);
         Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
         bool SaveLog(string pathandname);
 
