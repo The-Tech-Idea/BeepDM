@@ -27,7 +27,10 @@ namespace DataManagementModels.Editor
         Task<IErrorsInfo> Rollback();
         ErrorsInfo Delete(string id);
         void UndoLastChange();
-
+        ErrorsInfo Update(Func<Entity, bool> predicate, Entity updatedEntity);
+        ErrorsInfo Delete(Func<Entity, bool> predicate);
+        Entity Read(Func<Entity, bool> predicate);
+        Task<ObservableBindingList<Entity>> MultiRead(Func<Entity, bool> predicate);
         Task<ObservableBindingList<Entity>> GetQuery(string query);
         Task<ObservableBindingList<Entity>> Get();
         Task<ObservableBindingList<Entity>> Get(List<AppFilter> filters);

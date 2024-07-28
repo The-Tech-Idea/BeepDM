@@ -208,6 +208,78 @@ namespace TheTechIdea.Beep.Editor
         private bool disposedValue;
         #endregion
         #region "Constructors"
+        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName)
+        {
+            IsInListMode = false;
+            _suppressNotification = true;
+            DMEEditor = dMEEditor;
+            DatasourceName = datasourceName;
+            EntityName = entityName;
+            if (OpenDataSource())
+            {
+                init();
+            }
+            if (!DMTypeBuilder.DataSourceNameSpace.ContainsValue(typeof(T).FullName))
+            {
+                DMTypeBuilder.DataSourceNameSpace.Add(EntityName, typeof(T).FullName);
+
+            }
+            if (!DMTypeBuilder.typeCache.ContainsValue(typeof(T)))
+            {
+
+                DMTypeBuilder.typeCache.Add(typeof(T).FullName, typeof(T));
+            }
+            _suppressNotification = false;
+        }
+
+        public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure)
+        {
+            IsInListMode = false;
+            _suppressNotification = true;
+            DMEEditor = dMEEditor;
+            DatasourceName = datasourceName;
+            EntityName = entityName;
+            EntityStructure = entityStructure;
+            if (OpenDataSource())
+            {
+                init();
+            }
+            if (!DMTypeBuilder.DataSourceNameSpace.ContainsValue(typeof(T).FullName))
+            {
+                DMTypeBuilder.DataSourceNameSpace.Add(EntityName, typeof(T).FullName);
+               
+            }
+            if (!DMTypeBuilder.typeCache.ContainsValue(typeof(T)))
+            {
+               
+                DMTypeBuilder.typeCache.Add(typeof(T).FullName, typeof(T));
+            }
+            _suppressNotification = false;
+        }
+
+        public UnitofWork(IDMEEditor dMEEditor, bool isInListMode, ObservableBindingList<T> ts)
+        {
+            _suppressNotification = true;
+            DMEEditor = dMEEditor;
+            IsInListMode = isInListMode;
+            init();
+            EntityStructure = new EntityStructure();
+            EntityStructure.Fields = new List<EntityField>();
+            EntityStructure = DMEEditor.Utilfunction.GetEntityStructureFromList<T>(ts.ToList());
+            Units = ts;
+            if (!DMTypeBuilder.DataSourceNameSpace.ContainsValue(typeof(T).FullName))
+            {
+                DMTypeBuilder.DataSourceNameSpace.Add(EntityName, typeof(T).FullName);
+
+            }
+            if (!DMTypeBuilder.typeCache.ContainsValue(typeof(T)))
+            {
+
+                DMTypeBuilder.typeCache.Add(typeof(T).FullName, typeof(T));
+            }
+            _suppressNotification = false;
+        }
+
         /// <summary>Initializes a new instance of the UnitofWork class.</summary>
         /// <param name="dMEEditor">The IDMEEditor instance.</param>
         /// <param name="datasourceName">The name of the data source.</param>
@@ -238,10 +310,14 @@ namespace TheTechIdea.Beep.Editor
             if (!DMTypeBuilder.DataSourceNameSpace.ContainsValue(typeof(T).FullName))
             {
                 DMTypeBuilder.DataSourceNameSpace.Add(EntityName, typeof(T).FullName);
-                DMTypeBuilder.typeCache.Add(typeof(T).FullName, typeof(T));
 
             }
-           
+            if (!DMTypeBuilder.typeCache.ContainsValue(typeof(T)))
+            {
+
+                DMTypeBuilder.typeCache.Add(typeof(T).FullName, typeof(T));
+            }
+
             _suppressNotification = false;
         }
         /// <summary>Initializes a new instance of the UnitOfWork class.</summary>
@@ -280,8 +356,12 @@ namespace TheTechIdea.Beep.Editor
             if (!DMTypeBuilder.DataSourceNameSpace.ContainsValue(typeof(T).FullName))
             {
                 DMTypeBuilder.DataSourceNameSpace.Add(EntityName, typeof(T).FullName);
-                DMTypeBuilder.typeCache.Add(typeof(T).FullName, typeof(T));
 
+            }
+            if (!DMTypeBuilder.typeCache.ContainsValue(typeof(T)))
+            {
+
+                DMTypeBuilder.typeCache.Add(typeof(T).FullName, typeof(T));
             }
             _suppressNotification = false;
         }
@@ -303,7 +383,11 @@ namespace TheTechIdea.Beep.Editor
             EntityStructure = new EntityStructure();
             EntityStructure.Fields = new List<EntityField>();
             EntityStructure = DMEEditor.Utilfunction.GetEntityStructureFromList<T>(ts.ToList());
-         
+            if (string.IsNullOrEmpty(EntityName))
+            {
+                EntityName = typeof(T).FullName;
+                EntityStructure.EntityName= EntityName;
+            }
             Units = ts;
             PrimaryKey = primarykey;
             if (ts == null || ts.Count == 0)
@@ -315,7 +399,16 @@ namespace TheTechIdea.Beep.Editor
             {
                 getPrimaryKey(ts.FirstOrDefault());
             }
+            if (!DMTypeBuilder.DataSourceNameSpace.ContainsValue(typeof(T).FullName))
+            {
+                DMTypeBuilder.DataSourceNameSpace.Add(EntityName, typeof(T).FullName);
 
+            }
+            if (!DMTypeBuilder.typeCache.ContainsValue(typeof(T)))
+            {
+
+                DMTypeBuilder.typeCache.Add(typeof(T).FullName, typeof(T));
+            }
             _suppressNotification = false;
         }
 
@@ -528,6 +621,93 @@ namespace TheTechIdea.Beep.Editor
             return identity;
         }
         #endregion
+        #region "CRUD no KEY"
+        public T Read(Func<T, bool> predicate)
+        {
+            if (!Validateall())
+            {
+                return default(T);
+            }
+            return Units.FirstOrDefault(predicate);
+        }
+        public Task<ObservableBindingList<T>> MultiRead(Func<T, bool> predicate)
+        {
+            if (!Validateall())
+            {
+                return null;
+            }
+            return  Task.FromResult<ObservableBindingList<T>>(new ObservableBindingList<T>(Units.Where(predicate)));
+        }
+        public ErrorsInfo Update(Func<T, bool> predicate, T updatedEntity)
+        {
+            ErrorsInfo errorsInfo = new ErrorsInfo();
+            if (!Validateall())
+            {
+                errorsInfo.Message = "Validation Failed";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+            var entity = Units.FirstOrDefault(predicate);
+            if (entity != null)
+            {
+                var index = Units.IndexOf(entity);
+                Units[index] = updatedEntity;
+                changeLog.Push(new ChangeLogEntry<T>
+                {
+                    Entity = updatedEntity,
+                    ChangeType = ChangeType.Update,
+                    OriginalValues = GetEntityValues(entity)
+                });
+                errorsInfo.Message = "Update Done";
+                errorsInfo.Flag = Errors.Ok;
+                return errorsInfo;
+            }
+            else
+            {
+                errorsInfo.Message = "Object not found";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+        }
+        public ErrorsInfo Delete(Func<T, bool> predicate)
+        {
+            ErrorsInfo errorsInfo = new ErrorsInfo();
+            if (!Validateall())
+            {
+                errorsInfo.Message = "Validation Failed";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+            var entity = Units.FirstOrDefault(predicate);
+            if (entity != null)
+            {
+                Units.Remove(entity);
+                changeLog.Push(new ChangeLogEntry<T>
+                {
+                    Entity = entity,
+                    ChangeType = ChangeType.Delete
+                });
+                errorsInfo.Message = "Delete Done";
+                errorsInfo.Flag = Errors.Ok;
+                return errorsInfo;
+            }
+            else
+            {
+                errorsInfo.Message = "Object not found";
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+        }
+        private Dictionary<string, object> GetEntityValues(T entity)
+        {
+            var values = new Dictionary<string, object>();
+            foreach (var prop in typeof(T).GetProperties())
+            {
+                values[prop.Name] = prop.GetValue(entity);
+            }
+            return values;
+        }
+        #endregion "CRUD no KEY"
         #region "CRUD Operations"
         /// <summary>Updates a document asynchronously.</summary>
         /// <param name="doc">The document to be updated.</param>
@@ -838,7 +1018,7 @@ namespace TheTechIdea.Beep.Editor
                 return errorsInfo;
             }
             T entity=_units.Current;
-            var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
+           // var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
             var index = Getindex(entity);
             Tracking tracking = _units.GetTrackingITem(entity);
             //if (!InsertedKeys.ContainsValue(Convert.ToString(tracking.OriginalIndex)))
@@ -929,7 +1109,7 @@ namespace TheTechIdea.Beep.Editor
                 errorsInfo.Flag = Errors.Failed;
                 return errorsInfo;
             }
-            var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
+           // var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
             var index = Getindex(entity);
             Tracking tracking = _units.GetTrackingITem(entity);
             if(tracking.IsSaved && tracking.EntityState== EntityState.Deleted)
@@ -1604,7 +1784,7 @@ namespace TheTechIdea.Beep.Editor
                 {
                   //  IBindingListView ls = (IBindingListView)retval;
                     Units = (ObservableBindingList<T>)retval;
-                }
+                }else
                 if (retval is IBindingListView)
                 {
                      IBindingListView  ls= (IBindingListView)retval;
@@ -1639,6 +1819,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 _suppressNotification = false;
                 DMEEditor.AddLogMessage("Beep", $"Error Converting Data to Units {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                Units= new ObservableBindingList<T>();
                 return false;
             }
 
@@ -2214,6 +2395,7 @@ namespace TheTechIdea.Beep.Editor
             return retval;
         }
         #endregion
+        #region "Misc"
         /// <summary>Checks if the requirements for a valid operation are validated.</summary>
         /// <returns>True if the requirements are validated, false otherwise.</returns>
         /// <remarks>
@@ -2323,7 +2505,7 @@ namespace TheTechIdea.Beep.Editor
             Ivalidated = true;
             return retval;
         }
-        public  void AssignToUnits(object retval, out object units)
+        public void AssignToUnits(object retval, out object units)
         {
             units = null;
 
@@ -2335,15 +2517,16 @@ namespace TheTechIdea.Beep.Editor
         }
         public T GetItemFroCurrentList(int index)
         {
-           return _units.GetItemFroCurrentList(index);
+            return _units.GetItemFroCurrentList(index);
 
         }
         public Tracking GetTrackingITem(T item)
         {
-           
+
 
             return _units.GetTrackingITem(item);
         }
+        #endregion "Misc"
         #region "Undo"
         public void UndoLastChange()
         {

@@ -44,6 +44,32 @@ namespace TheTechIdea.Beep.Editor
             object uowInstance = Activator.CreateInstance(uowGenericType, constructorArgs);
             return uowInstance;
         }
+        public static object CreateUnitOfWork(Type entityType, IDMEEditor dMEEditor, string datasourceName, string entityName)
+        {
+            // Create the specific UnitOfWork type using the entityType
+            Type uowGenericType = typeof(UnitofWork<>).MakeGenericType(entityType);
+
+            // Prepare the arguments for the constructor
+            object[] constructorArgs = new object[] { dMEEditor, datasourceName, entityName };
+
+            // Create an instance of UnitOfWork<T> with the specific constructor
+            // Dynamically handle the instance since we can't cast to a specific IUnitofWork<T> at compile time
+            object uowInstance = Activator.CreateInstance(uowGenericType, constructorArgs);
+            return uowInstance;
+        }
+
+        public static object CreateUnitOfWork(Type entityType, IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure)
+        {
+            // Create the specific UnitOfWork type using the entityType
+            Type uowGenericType = typeof(UnitofWork<>).MakeGenericType(entityType);
+
+            // Prepare the arguments for the constructor
+            object[] constructorArgs = new object[] { dMEEditor, datasourceName, entityName, entityStructure };
+
+            // Create an instance of UnitOfWork<T> with the specific constructor
+            object uowInstance = Activator.CreateInstance(uowGenericType, constructorArgs);
+            return uowInstance;
+        }
 
         /// <summary>Gets a unit of work for a specified entity.</summary>
         /// <param name="entityName">The name of the entity.</param>

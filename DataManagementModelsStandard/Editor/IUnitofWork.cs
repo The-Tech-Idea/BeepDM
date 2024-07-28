@@ -1,6 +1,7 @@
 ﻿using DataManagementModels.Editor;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
@@ -38,6 +39,10 @@ namespace TheTechIdea.Beep.Editor
         ErrorsInfo Delete();
         ErrorsInfo Update(T entity);
         ErrorsInfo Update(string id, T entity);
+        T Read(Func<T, bool> predicate);
+        Task<ObservableBindingList<T>> MultiRead(Func<T, bool> predicate);
+        ErrorsInfo Update(Func<T, bool> predicate, T updatedEntity);
+        ErrorsInfo Delete(Func<T, bool> predicate);
         void UndoLastChange();
         int DocExist(T doc);
         int DocExistByKey(T doc);
