@@ -30,5 +30,6 @@ namespace TheTechIdea
        
         void Run(IPassedArgs pPassedarg);
         void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil,string[] args, IPassedArgs e, IErrorsInfo per );
+        
     }
 }

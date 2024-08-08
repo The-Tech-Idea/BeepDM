@@ -14,9 +14,9 @@ using TheTechIdea.Util;
 
 namespace DataManagementModels.Editor
 {
-    public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged where T : class,INotifyPropertyChanged,new()
+    public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged where T : class, INotifyPropertyChanged, new()
     {
-     
+
         protected override object AddNewCore()
         {
             var newItem = Activator.CreateInstance<T>();
@@ -41,7 +41,17 @@ namespace DataManagementModels.Editor
         //private T _current;
         public T Current
         {
-            get => Items[CurrentIndex];
+            get 
+            { 
+                if (_currentIndex >= 0 && _currentIndex < Items.Count)
+                {
+                    return Items[_currentIndex];
+                }
+                else
+                {
+                    return default;
+                }
+            }
           
         }
         public event EventHandler CurrentChanged;
