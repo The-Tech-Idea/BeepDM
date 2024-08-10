@@ -138,12 +138,30 @@ namespace TheTechIdea.Beep.Editor
                 DetachHandlers(_units);
                 _units = value;
                 AttachHandlers(_units);
-                Tempunits = value;
-                //OnPropertyChanged(nameof(Units));
+
+                // Create a deep copy of _units and assign it to Tempunits
+                Tempunits = new ObservableBindingList<T>(value.Select(item => CloneItem(item)).ToList());
             }
         }
 
+        private T CloneItem(T item)
+        {
+            // Assuming T is a reference type with a parameterless constructor.
+            // You might need to implement this more carefully depending on the complexity of T.
+            var clonedItem = new T();
 
+            // Use reflection or manual copying to clone the properties.
+            foreach (var property in typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (property.CanWrite)
+                {
+                    var value = property.GetValue(item);
+                    property.SetValue(clonedItem, value);
+                }
+            }
+
+            return clonedItem;
+        }
         /// <summary>Detaches event handlers from the specified collection and its items.</summary>
         /// <param name="collection">The collection to detach event handlers from.</param>
         private void DetachHandlers(ObservableBindingList<T> collection)
@@ -1160,13 +1178,17 @@ namespace TheTechIdea.Beep.Editor
                             DeletedUnits.Remove(entity);
 
                         }
-                       
+                        else
+                        {
+
                             changeLog.Push(new ChangeLogEntry<T>
                             {
                                 Entity = entity,
                                 ChangeType = ChangeType.Delete
                             });
-                       
+
+                        }
+
                         _units.RemoveAt(index);
                         errorsInfo.Message = "Delete Done";
                         errorsInfo.Flag = Errors.Ok;
@@ -2141,15 +2163,21 @@ namespace TheTechIdea.Beep.Editor
                 }
 
             }
+            // Get the current property that was changed
             CurrentProperty = item.GetType().GetProperty(e.PropertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
             if (CurrentProperty != null)
             {
-                var originalValue = CurrentProperty.GetValue(item, null);
+                // Get the new value
+                var newValue = CurrentProperty.GetValue(item, null);
+
+                // Get the original item using the tracking index
+                var originalItem = Tempunits.ElementAtOrDefault(tracking.OriginalIndex);
+                var originalValue = originalItem != null ? CurrentProperty.GetValue(originalItem, null) : null;
                 changeLog.Push(new ChangeLogEntry<T>
                 {
                     Entity = item,
                     OriginalValues = { { e.PropertyName, originalValue } },
-                    NewValues = { { e.PropertyName, originalValue } },
+                    NewValues = { { e.PropertyName, newValue } },
                     ChangeType = ChangeType.Update
                 });
             }
@@ -2530,6 +2558,7 @@ namespace TheTechIdea.Beep.Editor
         #region "Undo"
         public void UndoLastChange()
         {
+            Tracking tracking;
             if (changeLog.Count > 0)
             {
                 var lastChange = changeLog.Pop();
@@ -2540,6 +2569,7 @@ namespace TheTechIdea.Beep.Editor
                         Delete(lastChange.Entity);
                         break;
                     case ChangeType.Update:
+                        Units.SuppressNotification = true;
                         foreach (var originalValue in lastChange.OriginalValues)
                         {
                             var property = lastChange.Entity.GetType().GetProperty(originalValue.Key);
@@ -2548,9 +2578,43 @@ namespace TheTechIdea.Beep.Editor
                                 property.SetValue(lastChange.Entity, originalValue.Value);
                             }
                         }
+                        tracking= _units.GetTrackingITem(lastChange.Entity);
+                        if(tracking!= null)
+                        {
+                            if (tracking.IsNew)
+                            {
+                                Units.Remove(lastChange.Entity);
+                                Delete(lastChange.Entity);
+
+                            }
+                            else
+                            {
+                                var entityKeyAsString = Convert.ToString(tracking.OriginalIndex);
+                                if (UpdatedKeys.ContainsValue(entityKeyAsString))
+                                {
+                                    var key = UpdatedKeys.FirstOrDefault(x => x.Value == entityKeyAsString).Key;
+                                    UpdatedKeys.Remove(key);
+                                }
+                                tracking.EntityState = EntityState.Unchanged;
+
+                            }
+                        }
+                        Units.SuppressNotification = false;
                         break;
                     case ChangeType.Delete:
                         Units.Add(lastChange.Entity);
+                        tracking = _units.GetTrackingITem(lastChange.Entity);
+                        if (tracking != null)
+                        {
+                                var entityKeyAsString = Convert.ToString(tracking.OriginalIndex);
+                                if (DeletedKeys.ContainsValue(entityKeyAsString))
+                                {
+                                    var key = DeletedKeys.FirstOrDefault(x => x.Value == entityKeyAsString).Key;
+                                    DeletedKeys.Remove(key);
+                                }
+                                tracking.EntityState = EntityState.Unchanged;
+                           
+                        }
                         break;
                 }
             }

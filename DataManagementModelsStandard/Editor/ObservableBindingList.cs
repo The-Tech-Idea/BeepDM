@@ -57,7 +57,11 @@ namespace DataManagementModels.Editor
         public event EventHandler CurrentChanged;
         protected virtual void OnCurrentChanged()
         {
+            SuppressNotification = true;
+            _isPositionChanging = true; // Set the flag before changing the position
             CurrentChanged?.Invoke(this, EventArgs.Empty);
+            _isPositionChanging = false; // Reset the flag after changing the position
+            SuppressNotification = false;
         }
     
 
@@ -66,6 +70,8 @@ namespace DataManagementModels.Editor
             if (_currentIndex < Items.Count - 1)
             {
                 _currentIndex++;
+              
+                OnCurrentChanged(); // Manually call OnCurrentChanged if needed
                 OnPropertyChanged("Current");
                 return true;
             }
@@ -77,6 +83,7 @@ namespace DataManagementModels.Editor
             if (_currentIndex > 0)
             {
                 _currentIndex--;
+                OnCurrentChanged(); // Manually call OnCurrentChanged if needed
                 OnPropertyChanged("Current");
                 return true;
             }
@@ -88,6 +95,7 @@ namespace DataManagementModels.Editor
             if (Items.Count > 0)
             {
                 _currentIndex = 0;
+                OnCurrentChanged(); // Manually call OnCurrentChanged if needed
                 OnPropertyChanged("Current");
                 return true;
             }
@@ -99,6 +107,7 @@ namespace DataManagementModels.Editor
             if (Items.Count > 0)
             {
                 _currentIndex = Items.Count - 1;
+                OnCurrentChanged(); // Manually call OnCurrentChanged if needed
                 OnPropertyChanged("Current");
                 return true;
             }
@@ -109,11 +118,11 @@ namespace DataManagementModels.Editor
         {
             if (index >= 0 && index < Items.Count)
             {
-                _isPositionChanging = true; // Set the flag before changing the position
+              
                 _currentIndex = index;
-                OnPropertyChanged("Current");
                 OnCurrentChanged(); // Manually call OnCurrentChanged if needed
-                _isPositionChanging = false; // Reset the flag after changing the position
+                OnPropertyChanged("Current");
+
                 return true;
             }
 
@@ -836,10 +845,11 @@ namespace DataManagementModels.Editor
         #region "List and Item Change"
         protected override void OnListChanged(ListChangedEventArgs e)
         {
-            if(SuppressNotification)
+            if(SuppressNotification || _isPositionChanging)
             {
                 return;
             }
+        
             if (!_isPositionChanging) // Check the flag before executing the base method
             {
                 if (e.ListChangedType == ListChangedType.ItemChanged && e.NewIndex >= 0 && e.NewIndex < Count)
@@ -849,6 +859,7 @@ namespace DataManagementModels.Editor
                 }
                 base.OnListChanged(e); // Ensure base method is called conditionally
             }
+           
         }
         void ObservableBindingList_AddingNew(object sender, AddingNewEventArgs e)
         {
@@ -862,12 +873,15 @@ namespace DataManagementModels.Editor
             T item = (T)sender;
 
             // Notify that the entire item has changed, not just a single property
-            int index = IndexOf(item);
-
-            if (index >= 0)
+            if (!SuppressNotification)
             {
+                int index = IndexOf(item);
+                if (index >= 0)
+                {
 
-                OnListChanged(new ListChangedEventArgs(ListChangedType.ItemChanged, index));
+                    OnListChanged(new ListChangedEventArgs(ListChangedType.ItemChanged, index));
+                }
+
             }
 
         }
@@ -1050,6 +1064,21 @@ namespace DataManagementModels.Editor
             }
 
         }
+        private void EnsureTrackingConsistency()
+        {
+            for (int i = 0; i < Items.Count; i++)
+            {
+                var item = Items[i];
+                var originalIndex = originalList.IndexOf(item);
+                var tracking = Trackings.FirstOrDefault(t => t.CurrentIndex == i);
+
+                if (tracking != null)
+                {
+                    tracking.OriginalIndex = originalIndex;
+                }
+            }
+        }
+
         private void UpdateLogEntries(Tracking tracking, int newlistidx)
         {
             if (UpdateLog != null && UpdateLog.Count > 0)
