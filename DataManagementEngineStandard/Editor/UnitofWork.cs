@@ -24,6 +24,12 @@ namespace TheTechIdea.Beep.Editor
     /// Represents a unit of work for managing entities of type T.
     /// </summary>
     /// <typeparam name="T">The type of entity.</typeparam>
+#if WINDOWS &&  NET6_0_OR_GREATER
+    [DesignerCategory("TheTechIdea")]
+    [ToolboxItem(true)]
+    [ToolboxBitmap(typeof(UnitOfWork<>), "TheTechIdea.Beep.GFX.unitofwork.ico")]
+    [DisplayName("Unit of Work")]
+#endif
     public class UnitofWork<T> : IUnitofWork<T> where T : Entity, new()
     {
         private Stack<ChangeLogEntry<T>> changeLog = new Stack<ChangeLogEntry<T>>();
@@ -117,11 +123,15 @@ namespace TheTechIdea.Beep.Editor
         /// If the filter is applied, the filtered units collection will be returned.
         /// Otherwise, the original units collection will be returned.
         /// </remarks>
+#if WINDOWS
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+#endif
         public ObservableBindingList<T> Units
         {
             get
             {
                 return IsFilterOn ? _filteredunits : _units;
+                
             }
             set
             {
@@ -194,7 +204,7 @@ namespace TheTechIdea.Beep.Editor
             }
         }
 
-        #endregion
+#endregion
         #region "Properties"
         public bool IsInListMode { get; set; } = false;
         private Dictionary<int, EntityState> _entityStates = new Dictionary<int, EntityState>();
@@ -226,6 +236,12 @@ namespace TheTechIdea.Beep.Editor
         private bool disposedValue;
         #endregion
         #region "Constructors"
+        // Parameterless constructor for designer support
+        public UnitofWork() : base()
+        {
+            // Initialization logic specific for design-time
+            // This can be empty or can set default values
+        }
         public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName)
         {
             IsInListMode = false;

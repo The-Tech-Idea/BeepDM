@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	  <TargetFrameworks>netstandard2.0;net6.0;net7.0;net8.0</TargetFrameworks>
+	  <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
     <RootNamespace>TheTechIdea.Beep</RootNamespace>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.DataManagementEngine</PackageId>
     <Authors>The Tech Idea</Authors>
-    <Version>1.0.566</Version>
+    <Version>1.0.571</Version>
 	<LangVersion>12.0</LangVersion>
     <Product>TheTechIdea.Beep.DataManagementEngine</Product>
     <Description>Data Management Library</Description>
@@ -35,6 +35,12 @@
 	  <Compile Remove="Workflow\Actions\CopyEntity.cs" />
 	  <Compile Remove="Workflow\Actions\RunScript.cs" />
 	</ItemGroup>
+	<ItemGroup>
+	  <None Remove="GFX\unitofwork.ico" />
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Include="GFX\unitofwork.ico" />
+	</ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\InstallationScripts\LogoGFx\128\SimpleODM.png">
@@ -50,11 +56,25 @@
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.252" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="1.0.253" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="CodeDom\" />
+    <Folder Include="Resources\" />
     <Folder Include="Workflow\Actions\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 
 
