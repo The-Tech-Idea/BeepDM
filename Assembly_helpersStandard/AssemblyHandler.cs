@@ -18,6 +18,7 @@ using TheTechIdea.Logger;
 using TheTechIdea.Util;
 using TypeInfo = System.Reflection.TypeInfo;
 using Microsoft.Extensions.DependencyModel;
+using DataManagementModels.Addin;
 
 
 namespace TheTechIdea.Tools
@@ -947,115 +948,110 @@ namespace TheTechIdea.Tools
         /// <returns>Returns true if the scanning is successful, otherwise false.</returns>
         private bool ScanAssembly(Assembly asm)
         {
-            Type[] t;
-          //  Console.WriteLine(asm.FullName);
+            if (asm == null) return false;
+
+            Type[] types;
+
+            try
+            {
                 try
                 {
-                    try
-                    {
-                        t = asm.GetTypes();
-                    }
-                    catch (Exception ex2)
-                    {
-                        //DMEEditor.AddLogMessage("Failed", $"Could not get types for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
-                        try
-                    {
-                        //DMEEditor.AddLogMessage("Try", $"Trying to get exported types for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Ok);
-                        t = asm.GetExportedTypes();
-                        }
-                        catch (Exception ex3)
-                        {
-                            t = null;
-                            //DMEEditor.AddLogMessage("Failed", $"Could not get types for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
-                        }
-                       
-                    }
-
-                    if (t != null)
-                    {
-                        foreach (var mytype in t) //asm.DefinedTypes
-                        {
-
-                            TypeInfo type = mytype.GetTypeInfo();
-                            string[] p = asm.FullName.Split(new char[] { ',' });
-                            p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
-                        //-------------------------------------------------------
-                        // Get WorkFlow Definitions
-                        if (type.ImplementedInterfaces.Contains(typeof(ILoaderExtention)))
-                         {
-                            
-                            LoaderExtensions.Add(type);
-                            LoaderExtensionClasses.Add(GetAssemblyClassDefinition(type, "ILoaderExtention"));
-                        }
-                        //-------------------------------------------------------
-                        // Get DataBase Drivers
-                        if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
-                        {
-                              
-                            AssemblyClassDefinition xcls = GetAssemblyClassDefinition(type, "IDataSource");
-                            DataSourcesClasses.Add(xcls);
-                            ConfigEditor.DataSourcesClasses.Add(xcls);
-                        }
-                         //-------------------------------------------------------
-                         // Get WorkFlow Definitions
-                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
-                        {
-                      
-                            ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(type, "IWorkFlowAction"));
-                        }
-                        if (type.ImplementedInterfaces.Contains(typeof(IDM_Addin)))
-                        {
-                            AssemblyClassDefinition cls=GetAssemblyClassDefinition(type, "IDM_Addin");
-                            ConfigEditor.Addins.Add(cls);
-                        }
-                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowStep)))
-                        {
-
-                            ConfigEditor.WorkFlowSteps.Add(GetAssemblyClassDefinition(type, "IWorkFlowStep"));
-                        }
-                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowStepEditor)))
-                        {
-
-                            ConfigEditor.WorkFlowStepEditors.Add(GetAssemblyClassDefinition(type, "IWorkFlowStepEditor"));
-                        }
-                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowEditor)))
-                        {
-
-                            ConfigEditor.WorkFlowStepEditors.Add(GetAssemblyClassDefinition(type, "IWorkFlowEditor"));
-                        }
-                        if (type.ImplementedInterfaces.Contains(typeof(IWorkFlowRule)))
-                        {
-                            ConfigEditor.Rules.Add(GetAssemblyClassDefinition(type, "IWorkFlowRule"));
-                        }
-                        // Get IFunctionExtension Definitions
-                        if (type.ImplementedInterfaces.Contains(typeof(IFunctionExtension)))
-                        {
-                            ConfigEditor.GlobalFunctions.Add(GetAssemblyClassDefinition(type, "IFunctionExtension"));
-                        }
-                        // Get Print Managers Definitions
-                        if (type.ImplementedInterfaces.Contains(typeof(IPrintManager)))
-                        {
-                            ConfigEditor.PrintManagers.Add(GetAssemblyClassDefinition(type, "IPrintManager"));
-                        }
-                        if (type.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
-                        {
-                            //GetAddinObjects(asm);
-                        } 
-                       
-                    }
-                      
-                    }
-
+                    types = asm.GetTypes();
                 }
-                catch (Exception ex)
+                catch (ReflectionTypeLoadException ex)
                 {
-                   //DMEEditor.AddLogMessage("Failed", $"Could not get Any types for {asm.GetName().ToString()}" , DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
-                };
+                    // Handle the case when not all types can be loaded
+                    types = ex.Types.Where(t => t != null).ToArray();
+                }
+                catch (Exception)
+                {
+                    // Try to get exported types as a fallback
+                    types = asm.GetExportedTypes();
+                }
 
-                return true;
-           
-           
+                // If types are null or empty, return false as there is nothing to process
+                if (types == null || types.Length == 0) return false;
+
+                foreach (var type in types)
+                {
+                    TypeInfo typeInfo = type.GetTypeInfo();
+
+                    if (typeInfo.ImplementedInterfaces.Contains(typeof(ILoaderExtention)))
+                    {
+                        LoaderExtensions.Add(typeInfo);
+                        LoaderExtensionClasses.Add(GetAssemblyClassDefinition(typeInfo, "ILoaderExtention"));
+                    }
+
+                    if (typeInfo.ImplementedInterfaces.Contains(typeof(IDataSource)))
+                    {
+                        var xcls = GetAssemblyClassDefinition(typeInfo, "IDataSource");
+                        DataSourcesClasses.Add(xcls);
+                        ConfigEditor.DataSourcesClasses.Add(xcls);
+                    }
+
+                    if (typeInfo.ImplementedInterfaces.Contains(typeof(IWorkFlowAction)))
+                    {
+                        ConfigEditor.WorkFlowActions.Add(GetAssemblyClassDefinition(typeInfo, "IWorkFlowAction"));
+                    }
+
+                    if (typeInfo.ImplementedInterfaces.Contains(typeof(IDM_Addin)))
+                    {
+                        var cls = GetAssemblyClassDefinition(typeInfo, "IDM_Addin");
+                        ConfigEditor.Addins.Add(cls);
+                    }
+
+                    if (typeInfo.ImplementedInterfaces.Contains(typeof(IWorkFlowStep)))
+                    {
+                        ConfigEditor.WorkFlowSteps.Add(GetAssemblyClassDefinition(typeInfo, "IWorkFlowStep"));
+                    }
+
+                    if (typeInfo.ImplementedInterfaces.Contains(typeof(IBeepViewModel)))
+                    {
+                        ConfigEditor.ViewModels.Add(GetAssemblyClassDefinition(typeInfo, "IBeepViewModel"));
+                    }
+
+                    if (typeInfo.ImplementedInterfaces.Contains(typeof(IWorkFlowStepEditor)))
+                    {
+                        ConfigEditor.WorkFlowStepEditors.Add(GetAssemblyClassDefinition(typeInfo, "IWorkFlowStepEditor"));
+                    }
+
+                    if (typeInfo.ImplementedInterfaces.Contains(typeof(IWorkFlowEditor)))
+                    {
+                        ConfigEditor.WorkFlowStepEditors.Add(GetAssemblyClassDefinition(typeInfo, "IWorkFlowEditor"));
+                    }
+
+                    if (typeInfo.ImplementedInterfaces.Contains(typeof(IWorkFlowRule)))
+                    {
+                        ConfigEditor.Rules.Add(GetAssemblyClassDefinition(typeInfo, "IWorkFlowRule"));
+                    }
+
+                    if (typeInfo.ImplementedInterfaces.Contains(typeof(IFunctionExtension)))
+                    {
+                        ConfigEditor.GlobalFunctions.Add(GetAssemblyClassDefinition(typeInfo, "IFunctionExtension"));
+                    }
+
+                    if (typeInfo.ImplementedInterfaces.Contains(typeof(IPrintManager)))
+                    {
+                        ConfigEditor.PrintManagers.Add(GetAssemblyClassDefinition(typeInfo, "IPrintManager"));
+                    }
+
+                    // Placeholder for handling IAddinVisSchema if necessary
+                    if (typeInfo.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
+                    {
+                        // GetAddinObjects(asm); 
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log exception details for debugging purposes
+                // DMEEditor.AddLogMessage("Failed", $"Could not process assembly {asm.GetName().Name}: {ex.Message}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
+                return false;
+            }
+
+            return true;
         }
+
         /// <summary>
         /// Gets the definition of a class within an assembly, including metadata and methods.
         /// </summary>

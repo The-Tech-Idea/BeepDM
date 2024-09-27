@@ -41,6 +41,7 @@ namespace TheTechIdea.Util
         List<AssemblyClassDefinition> AppWritersClasses { get; set; }
         List<AssemblyClassDefinition> GlobalFunctions { get; set; }
         List<AssemblyClassDefinition> AppComponents { get; set; }
+        List<AssemblyClassDefinition> ViewModels { get; set; }
         List<AssemblyClassDefinition> ReportWritersClasses { get; set; }
         List<AssemblyClassDefinition> WorkFlowActions { get; set; }
         List<AssemblyClassDefinition> WorkFlowEditors { get; set; }

@@ -89,9 +89,11 @@ namespace TheTechIdea.Util
 		/// <summary>Gets or sets the list of category folders.</summary>
 		/// <value>The list of category folders.</value>
 		public List<CategoryFolder> CategoryFolders { get; set; } = new List<CategoryFolder>();
-		/// <summary>Gets or sets the list of assembly class definitions for the branches.</summary>
-		/// <value>The list of assembly class definitions for the branches.</value>
-		public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
+
+        public List<AssemblyClassDefinition> ViewModels { get; set; } = new List<AssemblyClassDefinition>();
+        /// <summary>Gets or sets the list of assembly class definitions for the branches.</summary>
+        /// <value>The list of assembly class definitions for the branches.</value>
+        public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
 		/// <summary>Gets or sets the list of global functions.</summary>
 		/// <value>The list of global functions.</value>
 		public List<AssemblyClassDefinition> GlobalFunctions { get; set; } = new List<AssemblyClassDefinition>();
