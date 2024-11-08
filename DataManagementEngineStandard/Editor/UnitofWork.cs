@@ -203,8 +203,9 @@ namespace TheTechIdea.Beep.Editor
                 collection.CollectionChanged += Units_CollectionChanged;
             }
         }
-
-#endregion
+        public T CurrentItem => Units[CurrentPosition];
+        public int CurrentPosition { get; private set; }
+        #endregion
         #region "Properties"
         public bool IsInListMode { get; set; } = false;
         private Dictionary<int, EntityState> _entityStates = new Dictionary<int, EntityState>();
@@ -234,6 +235,12 @@ namespace TheTechIdea.Beep.Editor
         PropertyInfo Guidproperty = null;
         int keysidx;
         private bool disposedValue;
+
+        // Paging and filtering properties
+        public int PageIndex { get; set; } = 0;
+        public int PageSize { get; set; } = 10;
+        public int TotalItemCount => Units.Count;
+        public string FilterExpression { get; set; }
         #endregion
         #region "Constructors"
         // Parameterless constructor for designer support
@@ -457,6 +464,12 @@ namespace TheTechIdea.Beep.Editor
         public event EventHandler<UnitofWorkParams> PostQuery;
         public event EventHandler<UnitofWorkParams> PostInsert;
         public event EventHandler<UnitofWorkParams> PostUpdate;
+        // Event declarations
+        public event EventHandler CurrentChanged;
+        public event EventHandler ListChanged;
+        public event EventHandler FilterApplied;
+        public event EventHandler PageChanged;
+
         #endregion
         #region "Misc Methods"
         /// <summary>Clears the data in the collection.</summary>
@@ -746,7 +759,7 @@ namespace TheTechIdea.Beep.Editor
         /// <summary>Updates a document asynchronously.</summary>
         /// <param name="doc">The document to be updated.</param>
         /// <returns>An object containing information about any errors that occurred during the update.</returns>
-        private async Task<IErrorsInfo> UpdateAsync(T doc)
+        public async Task<IErrorsInfo> UpdateAsync(T doc)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             if (!IsRequirmentsValidated())
@@ -771,7 +784,7 @@ namespace TheTechIdea.Beep.Editor
         /// <summary>Inserts a document asynchronously.</summary>
         /// <param name="doc">The document to be inserted.</param>
         /// <returns>An object containing information about any errors that occurred during the insertion process.</returns>
-        private async Task<IErrorsInfo> InsertAsync(T doc)
+        public async Task<IErrorsInfo> InsertAsync(T doc)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             if (!IsRequirmentsValidated())
@@ -796,7 +809,7 @@ namespace TheTechIdea.Beep.Editor
         /// <summary>Deletes a document asynchronously.</summary>
         /// <param name="doc">The document to be deleted.</param>
         /// <returns>An object containing information about any errors that occurred during the deletion process.</returns>
-        private async Task<IErrorsInfo> DeleteAsync(T doc)
+        public async Task<IErrorsInfo> DeleteAsync(T doc)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             if (!IsRequirmentsValidated())
@@ -818,7 +831,7 @@ namespace TheTechIdea.Beep.Editor
         /// <typeparam name="T">The type of the document.</typeparam>
         /// <param name="doc">The document to insert.</param>
         /// <returns>An object containing information about any errors that occurred during the insertion.</returns>
-        private Task<IErrorsInfo> InsertDoc(T doc)
+        public Task<IErrorsInfo> InsertDoc(T doc)
         {
 
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
@@ -858,7 +871,7 @@ namespace TheTechIdea.Beep.Editor
         /// <summary>Updates a document and returns information about any errors that occurred.</summary>
         /// <param name="doc">The document to update.</param>
         /// <returns>An object containing information about any errors that occurred during the update.</returns>
-        private Task<IErrorsInfo> UpdateDoc(T doc)
+        public Task<IErrorsInfo> UpdateDoc(T doc)
         {
             IErrorsInfo retval;
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
@@ -885,7 +898,7 @@ namespace TheTechIdea.Beep.Editor
         /// <summary>Deletes a document and returns information about any errors that occurred.</summary>
         /// <param name="doc">The document to delete.</param>
         /// <returns>An object containing information about any errors that occurred during the deletion process.</returns>
-        private Task<IErrorsInfo> DeleteDoc(T doc)
+        public Task<IErrorsInfo> DeleteDoc(T doc)
         {
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
             string cname = classnames[classnames.Count() - 1];
@@ -2678,4 +2691,5 @@ namespace TheTechIdea.Beep.Editor
         Update,
         Delete
     }
+
 }

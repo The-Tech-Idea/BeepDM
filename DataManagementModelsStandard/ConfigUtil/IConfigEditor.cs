@@ -56,7 +56,7 @@ namespace TheTechIdea.Util
         List<Function2FunctionAction> Function2Functions { get; set; }
         List<Event> Events { get; set; }
         List<AddinTreeStructure> AddinTreeStructure { get; set; }
-        List<AppTemplate> ReportsDefinition { get; set; }
+       // List<AppTemplate> ReportsDefinition { get; set; }
         List<ReportsList> Reportslist { get; set; }
         List<ReportsList> AIScriptslist { get; set; }
         List<CompositeLayer> CompositeQueryLayers { get; set; }

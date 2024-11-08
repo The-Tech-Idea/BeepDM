@@ -11,7 +11,7 @@
     <Copyright>2022</Copyright>
     <Description>Data Management Library Models</Description>
     <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
-	  <Version>1.0.254</Version>
+	  <Version>1.0.255</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageId>TheTechIdea.Beep.DataManagementModels</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -27,11 +27,22 @@
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<Copy SourceFiles="$(TargetDir)$(MSBuildProjectName).dll" DestinationFolder="$(ProjectDir)..\..\outputDLL\$(PackageId)\$(TargetFramework)" SkipUnchangedFiles="false" />
 	</Target>
+	<ItemGroup>
+	  <Compile Remove="AppBlock.cs" />
+	  <Compile Remove="AppBlockColumns.cs" />
+	  <Compile Remove="AppDefinition.cs" />
+	  <Compile Remove="AppFilter.cs" />
+	  <Compile Remove="AppTemplate.cs" />
+	</ItemGroup>
   <ItemGroup>
     <None Include="..\..\InstallationScripts\LogoGFx\128\SimpleODM.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="AppManager\" />
+    <Folder Include="NewFolder\" />
   </ItemGroup>
 
 </Project>
