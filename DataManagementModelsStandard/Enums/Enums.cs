@@ -52,7 +52,19 @@ namespace TheTechIdea.Util
 
     public enum DbFieldCategory
     {
-        String,Numeric,Date
+        String,        // Text-based fields
+        Numeric,       // Integer, float, double, decimal, etc.
+        Date,          // Date and DateTime fields
+        Boolean,       // True/False fields
+        Binary,        // Binary data, such as images or files
+        Guid,          // Globally Unique Identifier fields
+        Json,          // JSON or structured data
+        Xml,           // XML formatted data
+        Geography,     // Spatial data types, e.g., points, lines, polygons
+        Currency,      // Monetary values
+        Enum,          // Enum types or lookup values
+        Timestamp,     // Timestamp or row version for concurrency
+        Complex        // Complex or nested types, possibly serialized
     }
     public enum Sqlcommandtype
     { getTable,getlistoftables, getPKforTable, getFKforTable, getChildTable, getParentTable,getFktableValues,CheckTableExist, getlistoftablesfromotherschema }
