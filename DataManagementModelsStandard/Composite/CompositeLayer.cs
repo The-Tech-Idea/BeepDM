@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using TheTechIdea.Beep.DataBase;
 
-namespace TheTechIdea.Beep.CompositeLayer
+namespace TheTechIdea.Beep.Composite
 {
     public class CompositeLayer : ILayer
     {

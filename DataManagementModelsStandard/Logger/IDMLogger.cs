@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 
-namespace TheTechIdea.Logger
+namespace TheTechIdea.Beep.Logger
 {
     public interface IDMLogger
     {

@@ -1,4 +1,4 @@
-﻿using DataManagementModels.ConfigUtil;
+﻿
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,8 +7,9 @@ using System.IO;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Util
+namespace TheTechIdea.Beep.ConfigUtil
 {
     public class ConnectionProperties : Entity,IConnectionProperties
     {

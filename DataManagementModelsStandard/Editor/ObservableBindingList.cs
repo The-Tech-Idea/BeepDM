@@ -10,9 +10,9 @@ using System.Reflection;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 
-namespace DataManagementModels.Editor
+namespace TheTechIdea.Beep.Editor
 {
     public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged where T : class, INotifyPropertyChanged, new()
     {

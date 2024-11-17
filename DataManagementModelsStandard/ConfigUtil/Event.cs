@@ -2,7 +2,7 @@
 
 using TheTechIdea.Beep.Editor;
 
-namespace DataManagementModels.ConfigUtil
+namespace TheTechIdea.Beep.ConfigUtil
 {
     public class Event : Entity
     {

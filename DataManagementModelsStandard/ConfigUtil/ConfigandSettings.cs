@@ -10,10 +10,11 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Vis;
+using TheTechIdea.Beep.Utilities;
 
 //using TheTechIdea.Beep.Vis;
 
-namespace TheTechIdea.Util
+namespace TheTechIdea.Beep.ConfigUtil
 {
     public partial class ConfigandSettings : Entity
     {

@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Threading;
 using TheTechIdea;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 
-namespace DataManagementModels.DataBase
+namespace TheTechIdea.Beep.DataBase
 {
     public interface IInMemoryDB
     {

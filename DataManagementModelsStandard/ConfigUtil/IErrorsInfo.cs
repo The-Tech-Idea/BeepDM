@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using TheTechIdea.Logger;
 
-namespace TheTechIdea.Util
+
+namespace TheTechIdea.Beep.ConfigUtil   
 {
     public interface IErrorsInfo
     {

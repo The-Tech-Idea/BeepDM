@@ -1,6 +1,5 @@
 ﻿
-using DataManagementModels.DataBase;
-using DataManagementModels.DriversConfigurations;
+
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -10,18 +9,21 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using TheTechIdea.Beep;
-using TheTechIdea.Beep.Addin;
+
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.Workflow;
-using TheTechIdea.Logger;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.Utilities;
 using TypeInfo = System.Reflection.TypeInfo;
 using Microsoft.Extensions.DependencyModel;
-using DataManagementModels.Addin;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DriversConfigurations;
 
 
-namespace TheTechIdea.Tools
+namespace TheTechIdea.Beep.Tools
 {
     /// <summary>
     /// Handles assembly-related operations such as loading, scanning for extensions, and managing driver configurations.

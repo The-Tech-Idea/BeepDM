@@ -4,9 +4,9 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TheTechIdea.Logger;
 
-namespace TheTechIdea.Util
+
+namespace TheTechIdea.Beep.ConfigUtil
 {
 
     public class ErrorsInfo : INotifyPropertyChanged, IErrorsInfo

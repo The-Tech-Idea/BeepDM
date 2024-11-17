@@ -1,5 +1,5 @@
-﻿using DataManagementModels.ConfigUtil;
-using DataManagementModels.DriversConfigurations;
+﻿using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DriversConfigurations;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,17 +8,18 @@ using System.Reflection;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.AppManager;
-using TheTechIdea.Beep.CompositeLayer;
-using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Composite;
+
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
-using TheTechIdea.Logger;
+using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Util
+namespace TheTechIdea.Beep.ConfigUtil
 {
 	public class ConfigEditor : IConfigEditor
 	{

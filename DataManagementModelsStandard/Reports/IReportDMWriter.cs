@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 using TheTechIdea.Beep.AppManager;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Report
 {

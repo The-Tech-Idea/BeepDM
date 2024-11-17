@@ -1,4 +1,4 @@
-﻿using DataManagementModels.Editor;
+﻿using TheTechIdea.Beep.Editor;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -15,7 +15,13 @@ using System.Xml.Linq;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DriversConfigurations;
+using TheTechIdea.Beep.Connections;
+using TheTechIdea.Beep.Addin;
+
+
 
 
 namespace TheTechIdea.Beep.Editor

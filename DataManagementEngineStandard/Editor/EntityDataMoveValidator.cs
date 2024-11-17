@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 using TheTechIdea;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep
 {

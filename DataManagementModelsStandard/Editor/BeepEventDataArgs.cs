@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea;
+using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.DataBase;
 
-namespace DataManagementModels.Editor
+namespace TheTechIdea.Beep.Editor
 {
    
     public class BeepEventDataArgs : EventArgs

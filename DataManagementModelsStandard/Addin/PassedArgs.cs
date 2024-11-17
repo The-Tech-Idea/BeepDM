@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using TheTechIdea.Beep.DataBase;
 
-namespace TheTechIdea
+namespace TheTechIdea.Beep.Addin
 {
     /// <summary>
     /// Represents the arguments passed to a method or event.

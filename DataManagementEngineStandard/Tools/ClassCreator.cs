@@ -1,18 +1,19 @@
 ﻿using System;
-using System.CodeDom;
-using System.CodeDom.Compiler;
+
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Tools;
-using Microsoft.CSharp;
+
 using System.Threading;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 using System.Linq;
 using System.Text.RegularExpressions;
 using TheTechIdea.Beep.Roslyn;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Addin;
 
 namespace TheTechIdea.Beep.Tools
 {
@@ -44,7 +45,7 @@ namespace TheTechIdea.Beep.Tools
             //}
             if (!RoslynCompiler.CompileClassFromStringToDLL(SourceString, output))
             {
-                DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, TheTechIdea.Util.Errors.Failed);
+                DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, Errors.Failed);
             }
 
         }
@@ -102,7 +103,7 @@ namespace TheTechIdea.Beep.Tools
                 //List<string> retval = CompileCode(provider, listofpaths, Path.Combine(outputpath, dllname + ".dll"));
                 if (!RoslynCompiler.CompileCodeToDLL(listofpaths, Path.Combine(outputpath, dllname + ".dll")))
                 {
-                    DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, TheTechIdea.Util.Errors.Failed);
+                    DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, Errors.Failed);
                 }
                 //if (progress != null)
                 //{
@@ -205,7 +206,7 @@ namespace TheTechIdea.Beep.Tools
                 //}
                 if (!RoslynCompiler.CompileCodeToDLL(listofpaths, Path.Combine(outputpath, dllname + ".dll")))
                 {
-                    DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, TheTechIdea.Util.Errors.Failed);
+                    DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, Errors.Failed);
                 }
                 return ret;
             }
@@ -235,7 +236,7 @@ namespace TheTechIdea.Beep.Tools
 
             if (!RoslynCompiler.CompileFile(fileName))
             {
-                DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, TheTechIdea.Util.Errors.Failed);
+                DMEEditor.AddLogMessage("Beep", $"Error in Compiling Code ", DateTime.Now, -1, null, Errors.Failed);
             }
         }
         #region "Create Classes"

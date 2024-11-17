@@ -1,5 +1,5 @@
-﻿using DataManagementModels.ConfigUtil;
-using DataManagementModels.Editor;
+﻿using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Editor;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -12,7 +12,8 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Mapping;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Addin;
 
 namespace TheTechIdea.Beep.Editor
 {

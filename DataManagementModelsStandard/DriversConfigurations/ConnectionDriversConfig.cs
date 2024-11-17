@@ -1,8 +1,8 @@
 ﻿using System;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 
-namespace DataManagementModels.DriversConfigurations
+namespace TheTechIdea.Beep.DriversConfigurations
 {
     public class ConnectionDriversConfig : Entity
     {

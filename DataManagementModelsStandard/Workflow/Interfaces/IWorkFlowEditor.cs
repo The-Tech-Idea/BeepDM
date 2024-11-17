@@ -3,10 +3,13 @@ using System.ComponentModel;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Beep.Workflow;
-using TheTechIdea.Logger;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.Utilities;
 using System.Threading;
 using System;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Addin;
 
 namespace TheTechIdea.Beep.Workflow
 {

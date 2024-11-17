@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DataManagementModels.Addin
+namespace TheTechIdea.Beep.Addin
 {
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
     public sealed class ImporterExporterAttr: Attribute

@@ -10,11 +10,29 @@
         <member name="T:TheTechIdea.Beep.Addin.DisplayLookUpDescription">
             <summary>Represents a lookup description for display purposes.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Addin.IDM_Addin">
+            <summary>
+            Represents an add-in in the Beep system.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Addin.IFunctionExtension">
             <summary>Represents an extension for a function.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Addin.IPrintManager">
             <summary>Interface for managing printing functionality.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Addin.IPassedArgs">
+            <summary>
+            Represents the arguments passed to a method or event.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Addin.PassedArgs">
+            <summary>
+            Represents the arguments passed to a method or event.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Addin.ObjectItem">
+            <summary>Represents an item in an object collection.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Addin.AddinVisSchema">
             <summary>
@@ -96,10 +114,297 @@
             Gets or sets the class associated with the branch. Defaults to "ADDIN".
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.DataBase.DMDataView">
+        <member name="T:TheTechIdea.Beep.DataView.DMDataView">
             <summary>
             Represents a view for displaying and interacting with DataView  data.
             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.ColumnDelimiter">
+            <summary>
+            Gets or sets the delimiter used to separate columns in queries or data representations.
+            This property is particularly useful for formatting data for certain types of data sources
+            or for parsing query results.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.ParameterDelimiter">
+            <summary>
+            Gets or sets the delimiter used for parameters in SQL queries.
+            This property allows for customization of the parameter syntax in queries,
+            which can be essential for compatibility with different types of data sources.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.GuidID">
+            <summary>
+            Gets or sets the unique identifier for the data source.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.IDataSource.PassEvent">
+            <summary>
+            Occurs when a specific action or event is passed.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.DatasourceType">
+            <summary>
+            Gets or sets the type of the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.Category">
+            <summary>
+            Gets or sets the category of the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.Dataconnection">
+            <summary>
+            Gets or sets the data connection interface.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.DatasourceName">
+            <summary>
+            Gets or sets the name of the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.ErrorObject">
+            <summary>
+            Gets or sets the error handling object.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.Id">
+            <summary>
+            Gets or sets a secondary identifier for the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.Logger">
+            <summary>
+            Gets or sets the logger for data management activities.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.EntitiesNames">
+            <summary>
+            Gets or sets the list of entity names in the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.Entities">
+            <summary>
+            Gets or sets the list of entity structures.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.DMEEditor">
+            <summary>
+            Gets or sets the data manipulation and exploration editor.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.IDataSource.ConnectionStatus">
+            <summary>
+            Gets or sets the current connection status.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetEntitesList">
+            <summary>
+            Retrieves a list of entity names from the data source.
+            </summary>
+            <returns>List of entity names.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.RunQuery(System.String)">
+            <summary>
+            Executes a query and returns the results.
+            </summary>
+            <param name="qrystr">The query string to be executed.</param>
+            <returns>The result of the query execution.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.ExecuteSql(System.String)">
+            <summary>
+            Executes a SQL command and returns any errors encountered.
+            </summary>
+            <param name="sql">The SQL command to be executed.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.CreateEntityAs(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Creates a new entity based on the provided structure.
+            </summary>
+            <param name="entity">The structure of the entity to be created.</param>
+            <returns>True if creation is successful, false otherwise.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetEntityType(System.String)">
+            <summary>
+            Retrieves the type of the specified entity.
+            </summary>
+            <param name="EntityName">The name of the entity.</param>
+            <returns>The type of the entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.CheckEntityExist(System.String)">
+            <summary>
+            Checks if the specified entity exists in the data source.
+            </summary>
+            <param name="EntityName">The name of the entity to check.</param>
+            <returns>True if the entity exists, false otherwise.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetEntityIdx(System.String)">
+            <summary>
+            Retrieves the index of a given entity.
+            </summary>
+            <param name="entityName">The name of the entity.</param>
+            <returns>The index of the entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetChildTablesList(System.String,System.String,System.String)">
+            <summary>
+            Gets a list of child tables related to a specified table.
+            </summary>
+            <param name="tablename">The name of the table.</param>
+            <param name="SchemaName">The name of the schema.</param>
+            <param name="Filterparamters">Filter parameters for the child tables.</param>
+            <returns>List of child relations.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetEntityforeignkeys(System.String,System.String)">
+            <summary>
+            Retrieves foreign keys for a specified entity.
+            </summary>
+            <param name="entityname">The name of the entity.</param>
+            <param name="SchemaName">The schema name.</param>
+            <returns>List of relationship keys.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetEntityStructure(System.String,System.Boolean)">
+            <summary>
+            Obtains the structure of a specified entity.
+            </summary>
+            <param name="EntityName">The name of the entity.</param>
+            <param name="refresh">Whether to refresh the entity structure.</param>
+            <returns>The structure of the entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetEntityStructure(TheTechIdea.Beep.DataBase.EntityStructure,System.Boolean)">
+            <summary>
+            Overloaded method to get the structure of an entity.
+            </summary>
+            <param name="fnd">The entity structure to find.</param>
+            <param name="refresh">Whether to refresh the entity structure.</param>
+            <returns>The structure of the entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.RunScript(TheTechIdea.Beep.Editor.ETLScriptDet)">
+            <summary>
+            Executes a provided script and returns any errors.
+            </summary>
+            <param name="dDLScripts">The script to be executed.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetCreateEntityScript(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Generates scripts for creating entities.
+            </summary>
+            <param name="entities">List of entities to generate scripts for.</param>
+            <returns>List of ETL script details.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.CreateEntities(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Creates multiple entities and returns any errors.
+            </summary>
+            <param name="entities">List of entities to be created.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.UpdateEntities(System.String,System.Object,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Updates specified entities with the provided data.
+            </summary>
+            <param name="EntityName">The name of the entity to update.</param>
+            <param name="UploadData">The data to update the entity with.</param>
+            <param name="progress">Progress reporting object.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.UpdateEntity(System.String,System.Object)">
+            <summary>
+            Updates a single entity with the provided data row.
+            </summary>
+            <param name="EntityName">The name of the entity to update.</param>
+            <param name="UploadDataRow">The data row for the update.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.DeleteEntity(System.String,System.Object)">
+            <summary>
+            Deletes an entity based on the provided data row.
+            </summary>
+            <param name="EntityName">The name of the entity to delete.</param>
+            <param name="UploadDataRow">The data row that specifies the entity to delete.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.InsertEntity(System.String,System.Object)">
+            <summary>
+            Inserts a new entity with the provided data.
+            </summary>
+            <param name="EntityName">The name of the entity to insert.</param>
+            <param name="InsertedData">The data for the new entity.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.BeginTransaction(TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>
+            Begins a database transaction.
+            </summary>
+            <param name="args">Arguments related to the transaction.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.EndTransaction(TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>
+            Ends a database transaction.
+            </summary>
+            <param name="args">Arguments related to the transaction.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.Commit(TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>
+            Commits the current database transaction.
+            </summary>
+            <param name="args">Arguments related to the transaction.</param>
+            <returns>Error information, if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetEntity(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Retrieves an entity based on the provided name and filters.
+            </summary>
+            <param name="EntityName">The name of the entity to retrieve.</param>
+            <param name="filter">The filters to apply on the entity retrieval.</param>
+            <returns>The requested entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetEntity(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Int32,System.Int32)">
+            <summary>
+            Retrieves an entity based on the provided name and filters.
+            </summary>
+            <param name="EntityName">The name of the entity to retrieve.</param>
+            <param name="filter">The filters to apply on the entity retrieval.</param>
+            <param name="pageNumber">The page number to retrieve.</param>
+            <param name="pageSize">The size of the page to retrieve.</param>
+            <returns>The requested entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetEntityAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Asynchronously retrieves an entity based on the provided name and filters.
+            </summary>
+            <param name="EntityName">The name of the entity to retrieve.</param>
+            <param name="Filter">The filters to apply on the entity retrieval.</param>
+            <returns>A task that represents the asynchronous operation. The task result contains the requested entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetScalarAsync(System.String)">
+            <summary>
+            Asynchronously retrieves a scalar value based on the provided query.
+            </summary>
+            <param name="query">The query to execute.</param>
+            <returns>A task that represents the asynchronous operation. The task result contains the scalar value.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.GetScalar(System.String)">
+            <summary>
+            Retrieves a scalar value based on the provided query.
+            </summary>
+            <param name="query">The query to execute.</param>
+            <returns>The scalar value from the query.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.Openconnection">
+            <summary>
+            Opens a connection to the data source.
+            </summary>
+            <returns>The state of the connection after attempting to open it.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.IDataSource.Closeconnection">
+            <summary>
+            Closes the connection to the data source.
+            </summary>
+            <returns>The state of the connection after attempting to close it.</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Vis.AddinAttribute">
             <summary>
@@ -320,311 +625,6 @@
             <summary>
             Gets or sets the display order of the command. Defaults to 0.
             </summary>
-        </member>
-        <member name="T:TheTechIdea.IDM_Addin">
-            <summary>
-            Represents an add-in in the Beep system.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.IPassedArgs">
-            <summary>
-            Represents the arguments passed to a method or event.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.PassedArgs">
-            <summary>
-            Represents the arguments passed to a method or event.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.ObjectItem">
-            <summary>Represents an item in an object collection.</summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.ColumnDelimiter">
-            <summary>
-            Gets or sets the delimiter used to separate columns in queries or data representations.
-            This property is particularly useful for formatting data for certain types of data sources
-            or for parsing query results.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.ParameterDelimiter">
-            <summary>
-            Gets or sets the delimiter used for parameters in SQL queries.
-            This property allows for customization of the parameter syntax in queries,
-            which can be essential for compatibility with different types of data sources.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.GuidID">
-            <summary>
-            Gets or sets the unique identifier for the data source.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.IDataSource.PassEvent">
-            <summary>
-            Occurs when a specific action or event is passed.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.DatasourceType">
-            <summary>
-            Gets or sets the type of the data source.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.Category">
-            <summary>
-            Gets or sets the category of the data source.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.Dataconnection">
-            <summary>
-            Gets or sets the data connection interface.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.DatasourceName">
-            <summary>
-            Gets or sets the name of the data source.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.ErrorObject">
-            <summary>
-            Gets or sets the error handling object.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.Id">
-            <summary>
-            Gets or sets a secondary identifier for the data source.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.Logger">
-            <summary>
-            Gets or sets the logger for data management activities.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.EntitiesNames">
-            <summary>
-            Gets or sets the list of entity names in the data source.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.Entities">
-            <summary>
-            Gets or sets the list of entity structures.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.DMEEditor">
-            <summary>
-            Gets or sets the data manipulation and exploration editor.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.IDataSource.ConnectionStatus">
-            <summary>
-            Gets or sets the current connection status.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetEntitesList">
-            <summary>
-            Retrieves a list of entity names from the data source.
-            </summary>
-            <returns>List of entity names.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.RunQuery(System.String)">
-            <summary>
-            Executes a query and returns the results.
-            </summary>
-            <param name="qrystr">The query string to be executed.</param>
-            <returns>The result of the query execution.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.ExecuteSql(System.String)">
-            <summary>
-            Executes a SQL command and returns any errors encountered.
-            </summary>
-            <param name="sql">The SQL command to be executed.</param>
-            <returns>Error information, if any.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.CreateEntityAs(TheTechIdea.Beep.DataBase.EntityStructure)">
-            <summary>
-            Creates a new entity based on the provided structure.
-            </summary>
-            <param name="entity">The structure of the entity to be created.</param>
-            <returns>True if creation is successful, false otherwise.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetEntityType(System.String)">
-            <summary>
-            Retrieves the type of the specified entity.
-            </summary>
-            <param name="EntityName">The name of the entity.</param>
-            <returns>The type of the entity.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.CheckEntityExist(System.String)">
-            <summary>
-            Checks if the specified entity exists in the data source.
-            </summary>
-            <param name="EntityName">The name of the entity to check.</param>
-            <returns>True if the entity exists, false otherwise.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetEntityIdx(System.String)">
-            <summary>
-            Retrieves the index of a given entity.
-            </summary>
-            <param name="entityName">The name of the entity.</param>
-            <returns>The index of the entity.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetChildTablesList(System.String,System.String,System.String)">
-            <summary>
-            Gets a list of child tables related to a specified table.
-            </summary>
-            <param name="tablename">The name of the table.</param>
-            <param name="SchemaName">The name of the schema.</param>
-            <param name="Filterparamters">Filter parameters for the child tables.</param>
-            <returns>List of child relations.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetEntityforeignkeys(System.String,System.String)">
-            <summary>
-            Retrieves foreign keys for a specified entity.
-            </summary>
-            <param name="entityname">The name of the entity.</param>
-            <param name="SchemaName">The schema name.</param>
-            <returns>List of relationship keys.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetEntityStructure(System.String,System.Boolean)">
-            <summary>
-            Obtains the structure of a specified entity.
-            </summary>
-            <param name="EntityName">The name of the entity.</param>
-            <param name="refresh">Whether to refresh the entity structure.</param>
-            <returns>The structure of the entity.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetEntityStructure(TheTechIdea.Beep.DataBase.EntityStructure,System.Boolean)">
-            <summary>
-            Overloaded method to get the structure of an entity.
-            </summary>
-            <param name="fnd">The entity structure to find.</param>
-            <param name="refresh">Whether to refresh the entity structure.</param>
-            <returns>The structure of the entity.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.RunScript(TheTechIdea.Beep.Editor.ETLScriptDet)">
-            <summary>
-            Executes a provided script and returns any errors.
-            </summary>
-            <param name="dDLScripts">The script to be executed.</param>
-            <returns>Error information, if any.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetCreateEntityScript(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
-            <summary>
-            Generates scripts for creating entities.
-            </summary>
-            <param name="entities">List of entities to generate scripts for.</param>
-            <returns>List of ETL script details.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.CreateEntities(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
-            <summary>
-            Creates multiple entities and returns any errors.
-            </summary>
-            <param name="entities">List of entities to be created.</param>
-            <returns>Error information, if any.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.UpdateEntities(System.String,System.Object,System.IProgress{TheTechIdea.PassedArgs})">
-            <summary>
-            Updates specified entities with the provided data.
-            </summary>
-            <param name="EntityName">The name of the entity to update.</param>
-            <param name="UploadData">The data to update the entity with.</param>
-            <param name="progress">Progress reporting object.</param>
-            <returns>Error information, if any.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.UpdateEntity(System.String,System.Object)">
-            <summary>
-            Updates a single entity with the provided data row.
-            </summary>
-            <param name="EntityName">The name of the entity to update.</param>
-            <param name="UploadDataRow">The data row for the update.</param>
-            <returns>Error information, if any.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.DeleteEntity(System.String,System.Object)">
-            <summary>
-            Deletes an entity based on the provided data row.
-            </summary>
-            <param name="EntityName">The name of the entity to delete.</param>
-            <param name="UploadDataRow">The data row that specifies the entity to delete.</param>
-            <returns>Error information, if any.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.InsertEntity(System.String,System.Object)">
-            <summary>
-            Inserts a new entity with the provided data.
-            </summary>
-            <param name="EntityName">The name of the entity to insert.</param>
-            <param name="InsertedData">The data for the new entity.</param>
-            <returns>Error information, if any.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.BeginTransaction(TheTechIdea.PassedArgs)">
-            <summary>
-            Begins a database transaction.
-            </summary>
-            <param name="args">Arguments related to the transaction.</param>
-            <returns>Error information, if any.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.EndTransaction(TheTechIdea.PassedArgs)">
-            <summary>
-            Ends a database transaction.
-            </summary>
-            <param name="args">Arguments related to the transaction.</param>
-            <returns>Error information, if any.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.Commit(TheTechIdea.PassedArgs)">
-            <summary>
-            Commits the current database transaction.
-            </summary>
-            <param name="args">Arguments related to the transaction.</param>
-            <returns>Error information, if any.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetEntity(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
-            <summary>
-            Retrieves an entity based on the provided name and filters.
-            </summary>
-            <param name="EntityName">The name of the entity to retrieve.</param>
-            <param name="filter">The filters to apply on the entity retrieval.</param>
-            <returns>The requested entity.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetEntity(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Int32,System.Int32)">
-            <summary>
-            Retrieves an entity based on the provided name and filters.
-            </summary>
-            <param name="EntityName">The name of the entity to retrieve.</param>
-            <param name="filter">The filters to apply on the entity retrieval.</param>
-            <param name="pageNumber">The page number to retrieve.</param>
-            <param name="pageSize">The size of the page to retrieve.</param>
-            <returns>The requested entity.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetEntityAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
-            <summary>
-            Asynchronously retrieves an entity based on the provided name and filters.
-            </summary>
-            <param name="EntityName">The name of the entity to retrieve.</param>
-            <param name="Filter">The filters to apply on the entity retrieval.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains the requested entity.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetScalarAsync(System.String)">
-            <summary>
-            Asynchronously retrieves a scalar value based on the provided query.
-            </summary>
-            <param name="query">The query to execute.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains the scalar value.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.GetScalar(System.String)">
-            <summary>
-            Retrieves a scalar value based on the provided query.
-            </summary>
-            <param name="query">The query to execute.</param>
-            <returns>The scalar value from the query.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.Openconnection">
-            <summary>
-            Opens a connection to the data source.
-            </summary>
-            <returns>The state of the connection after attempting to open it.</returns>
-        </member>
-        <member name="M:TheTechIdea.IDataSource.Closeconnection">
-            <summary>
-            Closes the connection to the data source.
-            </summary>
-            <returns>The state of the connection after attempting to close it.</returns>
         </member>
     </members>
 </doc>

@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using TheTechIdea.Beep;
+using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
 
-namespace TheTechIdea.Tools
+namespace TheTechIdea.Beep.Tools
 {
     public interface IClassCreator
     {

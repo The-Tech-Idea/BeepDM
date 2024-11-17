@@ -4,8 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.ConfigUtil;
 
 namespace TheTechIdea.Beep.Vis
 {

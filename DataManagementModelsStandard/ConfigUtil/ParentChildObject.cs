@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor;
 
-namespace TheTechIdea.Util
+namespace TheTechIdea.Beep.ConfigUtil
 {
     [Serializable]
     public class ParentChildObject : Entity

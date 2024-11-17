@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.DataBase
 {

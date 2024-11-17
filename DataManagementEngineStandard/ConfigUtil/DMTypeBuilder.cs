@@ -4,12 +4,15 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using TheTechIdea.Beep;
-using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.ConfigUtil;
+
 using TheTechIdea.Beep.Editor;
+
+using TheTechIdea.Beep.DataBase;
+
 using TheTechIdea.Beep.Roslyn;
 
-namespace TheTechIdea.Util
+namespace TheTechIdea.Beep.Utilities
 {
     /// <summary>
     /// A utility class for building and manipulating dynamic types.

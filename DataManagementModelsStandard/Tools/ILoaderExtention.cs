@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using TheTechIdea.Beep;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Tools
+namespace TheTechIdea.Beep.Tools
 {
     public interface ILoaderExtention
     {

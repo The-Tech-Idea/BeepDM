@@ -4,194 +4,194 @@
         <name>DataManagementEngine</name>
     </assembly>
     <members>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Util.ConfigEditor.#ctor(TheTechIdea.Logger.IDMLogger,TheTechIdea.Util.IErrorsInfo,TheTechIdea.Beep.ConfigUtil.IJsonLoader,System.String,System.String,TheTechIdea.Util.BeepConfigType)" -->
-        <member name="P:TheTechIdea.Util.ConfigEditor.ConfigType">
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.#ctor(TheTechIdea.Beep.Logger.IDMLogger,TheTechIdea.Beep.ConfigUtil.IErrorsInfo,TheTechIdea.Beep.ConfigUtil.IJsonLoader,System.String,System.String,TheTechIdea.Beep.Utilities.BeepConfigType)" -->
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ConfigType">
             <summary>Gets or sets the configuration type for the beep.</summary>
             <value>The configuration type for the beep.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.IsLoaded">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.IsLoaded">
             <summary>Checks if the location is loaded.</summary>
             <returns>True if the location is loaded, false otherwise.</returns>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.ContainerName">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ContainerName">
             <summary>Gets or sets the name of the container.</summary>
             <value>The name of the container.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.ErrorObject">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ErrorObject">
             <summary>Gets or sets the error object.</summary>
             <value>The error object.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.JsonLoader">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.JsonLoader">
             <summary>Gets or sets the JSON loader.</summary>
             <value>The JSON loader.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.Config">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Config">
             <summary>Gets or sets the configuration and settings object.</summary>
             <value>The configuration and settings object.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.Logger">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Logger">
             <summary>Gets or sets the logger used for logging.</summary>
             <value>The logger.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.Databasetypes">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Databasetypes">
             <summary>Gets or sets the list of database types.</summary>
             <value>The list of database types.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.QueryList">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.QueryList">
             <summary>Gets or sets the list of QuerySqlRepo objects.</summary>
             <value>The list of QuerySqlRepo objects.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.DataConnections">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.DataConnections">
             <summary>Gets or sets the list of data connections.</summary>
             <value>The list of data connections.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.WorkFlows">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.WorkFlows">
             <summary>Gets or sets the list of workflows.</summary>
             <value>The list of workflows.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.CategoryFolders">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.CategoryFolders">
             <summary>Gets or sets the list of category folders.</summary>
             <value>The list of category folders.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.BranchesClasses">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.BranchesClasses">
             <summary>Gets or sets the list of assembly class definitions for the branches.</summary>
             <value>The list of assembly class definitions for the branches.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.GlobalFunctions">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.GlobalFunctions">
             <summary>Gets or sets the list of global functions.</summary>
             <value>The list of global functions.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.AppWritersClasses">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.AppWritersClasses">
             <summary>Gets or sets the list of AssemblyClassDefinition objects representing the classes used for writing in the application.</summary>
             <value>The list of AssemblyClassDefinition objects.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.AppComponents">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.AppComponents">
             <summary>Gets or sets the list of application components.</summary>
             <value>The list of application components.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.ReportWritersClasses">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ReportWritersClasses">
             <summary>Gets or sets the list of assembly class definitions for report writers.</summary>
             <value>The list of assembly class definitions for report writers.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.PrintManagers">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.PrintManagers">
             <summary>Gets or sets the list of assembly class definitions for print managers.</summary>
             <value>The list of assembly class definitions for print managers.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.DataSourcesClasses">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.DataSourcesClasses">
             <summary>Gets or sets the list of data source classes.</summary>
             <value>The list of data source classes.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.WorkFlowActions">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.WorkFlowActions">
             <summary>Gets or sets the list of workflow actions.</summary>
             <value>The list of workflow actions.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.WorkFlowEditors">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.WorkFlowEditors">
             <summary>Gets or sets the list of assembly class definitions for workflow editors.</summary>
             <value>The list of assembly class definitions for workflow editors.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.WorkFlowSteps">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.WorkFlowSteps">
             <summary>Gets or sets the list of workflow steps.</summary>
             <value>The list of workflow steps.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.WorkFlowStepEditors">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.WorkFlowStepEditors">
             <summary>Gets or sets the list of assembly class definitions for workflow step editors.</summary>
             <value>The list of assembly class definitions.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.FunctionExtensions">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.FunctionExtensions">
             <summary>Gets or sets the list of function extensions.</summary>
             <value>The list of function extensions.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.Addins">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Addins">
             <summary>Gets or sets the list of assembly class definitions representing add-ins.</summary>
             <value>The list of assembly class definitions representing add-ins.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.Others">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Others">
             <summary>Gets or sets a list of AssemblyClassDefinition objects.</summary>
             <value>The list of AssemblyClassDefinition objects.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.Rules">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Rules">
             <summary>Gets or sets the list of assembly class definitions.</summary>
             <value>The list of assembly class definitions.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.AddinTreeStructure">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.AddinTreeStructure">
             <summary>Gets or sets the list of add-in tree structures.</summary>
             <value>The list of add-in tree structures.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.Function2Functions">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Function2Functions">
             <summary>Gets or sets a list of Function2FunctionAction objects.</summary>
             <value>The list of Function2FunctionAction objects.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.objectTypes">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.objectTypes">
             <summary>Gets or sets the list of object types.</summary>
             <value>The list of object types.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.Events">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Events">
             <summary>Gets or sets the list of events.</summary>
             <value>The list of events.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.ReportsDefinition">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ReportsDefinition">
             <summary>Gets or sets the list of app templates for generating reports.</summary>
             <value>The list of app templates.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.Reportslist">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Reportslist">
             <summary>Gets or sets the list of reports.</summary>
             <value>The list of reports.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.AIScriptslist">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.AIScriptslist">
             <summary>Gets or sets the list of AIScripts.</summary>
             <value>The list of AIScripts.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.CompositeQueryLayers">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.CompositeQueryLayers">
             <summary>Gets or sets the list of composite query layers.</summary>
             <value>The list of composite query layers.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.EntityCreateObjects">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.EntityCreateObjects">
             <summary>Gets or sets the list of entity structures used for creating objects.</summary>
             <value>The list of entity structures.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.DataTypesMap">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.DataTypesMap">
             <summary>Gets or sets the list of datatype mappings.</summary>
             <value>The list of datatype mappings.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.Entities">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Entities">
             <summary>Gets or sets a dictionary of entities.</summary>
             <value>The dictionary of entities.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.DataDriversClasses">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.DataDriversClasses">
             <summary>Gets or sets the list of connection driver configurations.</summary>
             <value>The list of connection driver configurations.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.Projects">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Projects">
             <summary>Gets or sets the list of root folders representing projects.</summary>
             <value>The list of root folders representing projects.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.ExePath">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ExePath">
             <summary>Gets or sets the path of the executable file.</summary>
             <value>The path of the executable file.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.ConfigPath">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ConfigPath">
             <summary>Gets or sets the path to the configuration file.</summary>
             <value>The path to the configuration file.</value>
         </member>
-        <member name="P:TheTechIdea.Util.ConfigEditor.LoadedAssemblies">
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadedAssemblies">
             <summary>Gets or sets the list of loaded assemblies.</summary>
             <value>The list of loaded assemblies.</value>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.AddDriver(DataManagementModels.DriversConfigurations.ConnectionDriversConfig)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.AddDriver(TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig)">
             <summary>Adds a driver to the connection drivers configuration.</summary>
             <param name="dr">The driver to add.</param>
             <returns>The index at which the driver was added.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveScriptsValues(TheTechIdea.Beep.Editor.ETLScriptHDR)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveScriptsValues(TheTechIdea.Beep.Editor.ETLScriptHDR)">
             <summary>Saves the values of ETL scripts to a JSON file.</summary>
             <param name="Scripts">The ETLScriptHDR object containing the scripts to be saved.</param>
             <remarks>The values of the ETL scripts are serialized and saved to a JSON file located at the specified path.</remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadScriptsValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadScriptsValues">
             <summary>Loads the values of ETL scripts from a JSON file.</summary>
             <returns>An instance of ETLScriptHDR containing the loaded script values.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.GetSql(TheTechIdea.Util.Sqlcommandtype,System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Util.QuerySqlRepo},TheTechIdea.Util.DataSourceType)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.GetSql(TheTechIdea.Beep.Utilities.Sqlcommandtype,System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.QuerySqlRepo},TheTechIdea.Beep.Utilities.DataSourceType)">
             <summary>Generates a SQL query based on the specified parameters.</summary>
             <param name="CmdType">The type of SQL command.</param>
             <param name="TableName">The name of the table.</param>
@@ -201,7 +201,7 @@
             <param name="DatabaseType">The type of the database.</param>
             <returns>A formatted SQL query string.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.GetSqlList(TheTechIdea.Util.Sqlcommandtype,System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Util.QuerySqlRepo},TheTechIdea.Util.DataSourceType)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.GetSqlList(TheTechIdea.Beep.Utilities.Sqlcommandtype,System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.QuerySqlRepo},TheTechIdea.Beep.Utilities.DataSourceType)">
             <summary>Retrieves a list of SQL queries based on the specified parameters.</summary>
             <param name="CmdType">The type of SQL command.</param>
             <param name="TableName">The name of the table.</param>
@@ -211,7 +211,7 @@
             <param name="DatabaseType">The type of the database.</param>
             <returns>A list of SQL queries.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.GetSqlFromCustomQuery(TheTechIdea.Util.Sqlcommandtype,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Util.QuerySqlRepo},TheTechIdea.Util.DataSourceType)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.GetSqlFromCustomQuery(TheTechIdea.Beep.Utilities.Sqlcommandtype,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.QuerySqlRepo},TheTechIdea.Beep.Utilities.DataSourceType)">
             <summary>Gets the SQL statement from a custom query.</summary>
             <param name="CmdType">The type of SQL command.</param>
             <param name="TableName">The name of the table.</param>
@@ -220,65 +220,65 @@
             <param name="DatabaseType">The type of the database.</param>
             <returns>The formatted SQL statement.</returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Util.ConfigEditor.InitQueryList" -->
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveQueryFile">
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.InitQueryList" -->
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveQueryFile">
             <summary>Saves the query list to a JSON file.</summary>
             <remarks>
             The query list is serialized to a JSON file and saved at the specified path.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadQueryFile">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadQueryFile">
             <summary>Loads a query file and returns a list of QuerySqlRepo objects.</summary>
             <returns>A list of QuerySqlRepo objects loaded from the query file.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.InitQueryDefaultValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.InitQueryDefaultValues">
             <summary>Initializes a list of default query values.</summary>
             <returns>A list of QuerySqlRepo objects with default query values.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadDataSourceEntitiesValues(System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadDataSourceEntitiesValues(System.String)">
             <summary>Loads the values of a data source's entities from a JSON file.</summary>
             <param name="dsname">The name of the data source.</param>
             <returns>An instance of DatasourceEntities containing the loaded values.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.RemoveDataSourceEntitiesValues(System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.RemoveDataSourceEntitiesValues(System.String)">
             <summary>Removes the values of a data source's entities.</summary>
             <param name="dsname">The name of the data source.</param>
             <returns>True if the values were successfully removed, false otherwise.</returns>
             <exception cref="T:System.IO.IOException">Thrown when an error occurs while deleting the file.</exception>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveDataSourceEntitiesValues(TheTechIdea.Beep.ConfigUtil.DatasourceEntities)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveDataSourceEntitiesValues(TheTechIdea.Beep.ConfigUtil.DatasourceEntities)">
             <summary>Saves the values of a DataSourceEntities object to a JSON file.</summary>
             <param name="datasourceEntities">The DataSourceEntities object containing the values to be saved.</param>
             <remarks>The JSON file will be saved in the same directory as the executable, under a folder named "Entities". The file name will be in the format "datasourcename_entities.json".</remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.ScanSavedEntities">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ScanSavedEntities">
             <summary>Scans the saved entities in the specified folders and adds them to the collection.</summary>
             <remarks>
             This method iterates through the specified folders and searches for files with the extension "_ES.json".
             For each found file, it extracts the entity name and entity ID from the file name and adds them to the Entities collection.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.EntityStructureExist(System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.EntityStructureExist(System.String,System.String,System.String)">
             <summary>Checks if the entity structure file exists.</summary>
             <param name="filepath">The directory path where the file is located.</param>
             <param name="EntityName">The name of the entity.</param>
             <param name="DataSourceID">The ID of the data source.</param>
             <returns>True if the entity structure file exists, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveEntityStructure(System.String,TheTechIdea.Beep.DataBase.EntityStructure)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveEntityStructure(System.String,TheTechIdea.Beep.DataBase.EntityStructure)">
             <summary>Saves the structure of an entity to a JSON file.</summary>
             <param name="filepath">The directory path where the file will be saved.</param>
             <param name="entity">The entity structure to be saved.</param>
             <remarks>The file name is constructed using the entity's DataSourceID and EntityName properties.</remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadEntityStructure(System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadEntityStructure(System.String,System.String,System.String)">
             <summary>Loads an entity structure from a JSON file.</summary>
             <param name="filepath">The path to the directory containing the JSON file.</param>
             <param name="EntityName">The name of the entity.</param>
             <param name="DataSourceID">The ID of the data source.</param>
             <returns>The loaded entity structure.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveMappingSchemaValue(System.String,TheTechIdea.Beep.Workflow.Map_Schema)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveMappingSchemaValue(System.String,TheTechIdea.Beep.Workflow.Map_Schema)">
             <summary>Saves a mapping schema value to a JSON file.</summary>
             <param name="schemaname">The name of the schema.</param>
             <param name="mapping_Rep">The mapping schema object to be saved.</param>
@@ -288,51 +288,51 @@
             The file is saved in the directory specified by the "MappingPath" configuration setting.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadMappingSchema(System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadMappingSchema(System.String)">
             <summary>Loads a mapping schema from a JSON file.</summary>
             <param name="schemaname">The name of the schema to load.</param>
             <returns>The loaded mapping schema.</returns>
             <exception cref="T:System.IO.FileNotFoundException">Thrown when the JSON file for the specified schema name is not found.</exception>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveMappingValues(System.String,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveMappingValues(System.String,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap)">
             <summary>Saves the mapping values for a specific entity.</summary>
             <param name="Entityname">The name of the entity.</param>
             <param name="datasource">The data source.</param>
             <param name="mapping_Rep">The entity data map containing the mapping values.</param>
             <exception cref="T:System.ArgumentNullException">Thrown when Entityname, datasource, or mapping_Rep is null.</exception>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadMappingValues(System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadMappingValues(System.String,System.String)">
             <summary>Loads the mapping values for a given entity from a JSON file.</summary>
             <param name="Entityname">The name of the entity.</param>
             <param name="datasource">The name of the data source.</param>
             <returns>An instance of EntityDataMap containing the loaded mapping values.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.DataConnectionExist(TheTechIdea.Util.ConnectionProperties)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.DataConnectionExist(TheTechIdea.Beep.ConfigUtil.ConnectionProperties)">
             <summary>Checks if a data connection exists.</summary>
             <param name="cn">The connection properties to check.</param>
             <returns>True if the data connection exists, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.DataConnectionGuidExist(System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.DataConnectionGuidExist(System.String)">
             <summary>Checks if a data connection with the specified GUID exists.</summary>
             <param name="GuidID">The GUID of the data connection to check.</param>
             <returns>True if a data connection with the specified GUID exists, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveDataconnectionsValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveDataconnectionsValues">
             <summary>Saves the values of data connections to a JSON file.</summary>
             <remarks>
             The data connections values are serialized and saved to a JSON file located at the specified path.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadDataConnectionsValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadDataConnectionsValues">
             <summary>Loads the values of data connections from a JSON file.</summary>
             <returns>A list of ConnectionProperties objects representing the loaded data connections.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.DataConnectionExist(System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.DataConnectionExist(System.String)">
             <summary>Checks if a data connection with the specified name exists.</summary>
             <param name="ConnectionName">The name of the data connection to check.</param>
             <returns>True if a data connection with the specified name exists, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.AddDataConnection(TheTechIdea.Util.ConnectionProperties)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.AddDataConnection(TheTechIdea.Beep.ConfigUtil.ConnectionProperties)">
             <summary>Adds a data connection to the list of data connections.</summary>
             <param name="cn">The connection properties to add.</param>
             <returns>True if the connection was successfully added, false otherwise.</returns>
@@ -342,28 +342,28 @@
             Any exceptions thrown during the process will be caught and the method will return false.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.UpdateDataConnection(TheTechIdea.Util.ConnectionProperties,System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.UpdateDataConnection(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.String)">
             <summary>Updates the data connection with the specified properties.</summary>
             <param name="conn">The connection properties to update.</param>
             <param name="category">The category of the connection.</param>
             <returns>True if the update was successful, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.RemoveConnByName(System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.RemoveConnByName(System.String)">
             <summary>Removes a connection from the list of data connections by its name.</summary>
             <param name="pname">The name of the connection to remove.</param>
             <returns>True if the connection was successfully removed, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.RemoveConnByID(System.Int32)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.RemoveConnByID(System.Int32)">
             <summary>Removes a connection from the list of data connections by its ID.</summary>
             <param name="ID">The ID of the connection to be removed.</param>
             <returns>True if the connection was successfully removed, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.RemoveConnByGuidID(System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.RemoveConnByGuidID(System.String)">
             <summary>Removes a connection from the list of data connections based on its GuidID.</summary>
             <param name="GuidID">The GuidID of the connection to be removed.</param>
             <returns>True if the connection was successfully removed, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.RemoveDataConnection(System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.RemoveDataConnection(System.String)">
             <summary>Removes a data connection with the specified name.</summary>
             <param name="pname">The name of the data connection to remove.</param>
             <returns>True if the data connection was successfully removed, false otherwise.</returns>
@@ -373,19 +373,19 @@
             If an exception occurs during the process, the exception message is stored in a variable and false is returned.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadConfigValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadConfigValues">
             <summary>Loads the configuration values from a JSON file.</summary>
             <returns>An instance of the ConfigandSettings class containing the loaded configuration values.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveConfigValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveConfigValues">
             <summary>Saves the configuration values to a JSON file.</summary>
             <remarks>
             The configuration values are serialized using JSON format and saved to a file named "Config.json".
             The file is saved in the same directory as the executable file.
             </remarks>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Util.ConfigEditor.AddFolderCategory(System.String,System.String,System.String,System.String,System.Boolean,System.Boolean,System.Boolean)" -->
-        <member name="M:TheTechIdea.Util.ConfigEditor.AddFolderCategory(System.String,System.String,System.String)">
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.AddFolderCategory(System.String,System.String,System.String,System.String,System.Boolean,System.Boolean,System.Boolean)" -->
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.AddFolderCategory(System.String,System.String,System.String)">
             <summary>Adds a new folder category to the collection of category folders.</summary>
             <param name="pfoldername">The name of the folder.</param>
             <param name="prootname">The name of the root category.</param>
@@ -393,31 +393,31 @@
             <returns>The newly added CategoryFolder object.</returns>
             <remarks>If an exception occurs during the process, null is returned.</remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.RemoveFolderCategory(System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.RemoveFolderCategory(System.String,System.String,System.String)">
             <summary>Removes a folder category.</summary>
             <param name="pfoldername">The name of the folder.</param>
             <param name="prootname">The name of the root.</param>
             <param name="parentguidid">The ID of the parent.</param>
             <returns>True if the folder category was successfully removed, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadCategoryFoldersValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadCategoryFoldersValues">
             <summary>Loads the values of category folders from a JSON file.</summary>
             <remarks>
             The JSON file should be located at the specified path.
             The loaded values are stored in the CategoryFolders property.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveCategoryFoldersValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveCategoryFoldersValues">
             <summary>Saves the values of category folders to a JSON file.</summary>
             <remarks>
             The method serializes the CategoryFolders object to JSON format and saves it to the specified file path.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadConnectionDriversConfigValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadConnectionDriversConfigValues">
             <summary>Loads the connection drivers configuration values from a JSON file.</summary>
             <returns>A list of ConnectionDriversConfig objects representing the loaded configuration values.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveConnectionDriversConfigValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveConnectionDriversConfigValues">
             <summary>Saves the configuration values of connection drivers to a JSON file.</summary>
             <remarks>
             The method serializes the <paramref name="DataDriversClasses"/> object to JSON format
@@ -426,132 +426,132 @@
             <param name="ConfigPath">The path where the JSON file will be saved.</param>
             <param name="DataDriversClasses">The object containing the configuration values of connection drivers.</param>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveDatabasesValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveDatabasesValues">
             <summary>Saves the values of the databases to a JSON file.</summary>
             <remarks>
             The method serializes the values of the databases to a JSON file located at the specified path.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadDatabasesValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadDatabasesValues">
             <summary>Loads the values of the databases from a JSON file.</summary>
             <remarks>
             The method reads the JSON file located at the specified path and deserializes its content into a collection of strings.
             The deserialized values are then assigned to the Databasetypes property.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveEvents">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveEvents">
             <summary>Saves the events to a JSON file.</summary>
             <remarks>
             The events are serialized to JSON format and saved to the specified file path.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadEvents">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadEvents">
             <summary>Loads events from a JSON file.</summary>
             <remarks>
             The method reads the events from a JSON file located at the specified path.
             The events are deserialized into a collection of Event objects.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveFucntion2Function">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveFucntion2Function">
             <summary>Saves the Function2Function data to a JSON file.</summary>
             <remarks>
             The Function2Function data will be serialized and saved to a JSON file located at the specified path.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadFucntion2Function">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadFucntion2Function">
             <summary>Loads the configuration for Function2Function from a JSON file.</summary>
             <remarks>
             The JSON file should be located at the specified path.
             The loaded configuration is stored in the Function2Functions property.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadAddinTreeStructure">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadAddinTreeStructure">
             <summary>Loads the add-in tree structure from a JSON file.</summary>
             <remarks>
             The add-in tree structure is loaded from a JSON file located at the specified path.
-            The JSON file should contain the serialized representation of the <see cref="P:TheTechIdea.Util.ConfigEditor.AddinTreeStructure"/> object.
+            The JSON file should contain the serialized representation of the <see cref="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.AddinTreeStructure"/> object.
             </remarks>
             <param name="path">The path to the JSON file.</param>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveAddinTreeStructure">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveAddinTreeStructure">
             <summary>Saves the add-in tree structure to a JSON file.</summary>
             <remarks>
             The add-in tree structure is serialized to a JSON file and saved at the specified path.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveAIScriptsValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveAIScriptsValues">
             <summary>Saves the values of AI scripts to a JSON file.</summary>
             <remarks>
             The AI scripts values are serialized and saved to a JSON file located at the specified path.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadAIScriptsValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadAIScriptsValues">
             <summary>Loads the values of AI scripts from a JSON file.</summary>
             <returns>A list of ReportsList objects representing the loaded AI scripts.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveReportsValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveReportsValues">
             <summary>Saves the values of the reports list to a JSON file.</summary>
             <remarks>
             The reports list is serialized using JSON format and saved to the specified file path.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadReportsValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadReportsValues">
             <summary>Loads the values of reports from a JSON file.</summary>
             <returns>A list of ReportsList objects containing the loaded report values.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveReportDefinitionsValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveReportDefinitionsValues">
             <summary>Saves the values of report definitions to a JSON file.</summary>
             <remarks>
             The report definitions are serialized using JSON format and saved to the specified file path.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadReportsDefinitionValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadReportsDefinitionValues">
             <summary>Loads the values of the reports definition from a JSON file.</summary>
             <returns>A list of AppTemplate objects representing the reports definition.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveLocation">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveLocation">
             <summary>Saves the location information.</summary>
             <remarks>
             This method creates a directory if it doesn't exist at the specified path.
             It then saves the location information to a JSON file and the executable path to a text file.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.IsLocationSaved">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.IsLocationSaved">
             <summary>Checks if the location is saved.</summary>
             <returns>True if the location is saved, otherwise false.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.RemoveLayerByName(System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.RemoveLayerByName(System.String)">
             <summary>Removes a layer from the composite query layers by its name.</summary>
             <param name="LayerName">The name of the layer to remove.</param>
             <returns>True if the layer was successfully removed, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.RemoveLayerByID(System.Int32)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.RemoveLayerByID(System.Int32)">
             <summary>Removes a layer from the composite query layers list based on its ID.</summary>
             <param name="ID">The ID of the layer to be removed.</param>
             <returns>True if the layer was successfully removed, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveCompositeLayersValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveCompositeLayersValues">
             <summary>Saves the values of composite layers to a JSON file.</summary>
             <remarks>
             The method serializes the composite query layers and saves them to a JSON file.
             The JSON file is saved at the specified path, which is a combination of the configuration path and the file name "CompositeLayers.json".
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadCompositeLayersValues">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadCompositeLayersValues">
             <summary>Loads the values of composite layers from a JSON file.</summary>
             <returns>A list of composite layers.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveObjectTypes">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveObjectTypes">
             <summary>Saves the object types to a JSON file.</summary>
             <remarks>
             The object types are serialized and saved to a JSON file located at the specified path.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadObjectTypes">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadObjectTypes">
             <summary>Loads the object types from a JSON file.</summary>
             <returns>A list of object types.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.ReadWork">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ReadWork">
             <summary>Reads the work flow data from a JSON file.</summary>
             <remarks>
             The method attempts to read the work flow data from a JSON file located in the "WorkFlow" directory
@@ -560,35 +560,35 @@
             it is caught and ignored.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveWork">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveWork">
             <summary>Saves the work to a JSON file.</summary>
             <remarks>
             The work is serialized and saved to a JSON file located in the "WorkFlow" directory.
             The file name is "DataWorkFlow.json".
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.LoadTablesEntities">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadTablesEntities">
             <summary>Loads the entities and their structures from a JSON file.</summary>
             <returns>A list of EntityStructure objects representing the loaded tables.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.SaveTablesEntities">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveTablesEntities">
             <summary>Saves the table entities to a JSON file.</summary>
             <remarks>
             The table entities are serialized into a JSON file at the specified path.
             </remarks>
             <exception cref="T:System.IO.IOException">Thrown when an I/O error occurs while saving the file.</exception>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.WriteDataTypeFile(System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.WriteDataTypeFile(System.String)">
             <summary>Writes the data type mapping to a JSON file.</summary>
             <param name="filename">The name of the file to write the data type mapping to. Default value is "DataTypeMapping".</param>
             <remarks>The data type mapping is serialized as JSON and written to the specified file.</remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.ReadDataTypeFile(System.String)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ReadDataTypeFile(System.String)">
             <summary>Reads a JSON file containing datatype mappings and returns a list of DatatypeMapping objects.</summary>
             <param name="filename">The name of the JSON file to read. Default value is "DataTypeMapping".</param>
             <returns>A list of DatatypeMapping objects representing the datatype mappings.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.InitDataSourceConfigDrivers">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.InitDataSourceConfigDrivers">
             <summary>Initializes the data source configuration drivers.</summary>
             <returns>An object containing information about any errors that occurred during initialization.</returns>
             <remarks>
@@ -597,7 +597,7 @@
             If any errors occur during initialization, an error object is returned with the appropriate error information.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.InitDatabaseTypes">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.InitDatabaseTypes">
             <summary>Initializes the database types.</summary>
             <returns>An object containing information about any errors that occurred during initialization.</returns>
             <remarks>
@@ -606,7 +606,7 @@
             If any errors occur during initialization, the ErrorObject is updated with the appropriate information.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.InitSqlquerytypes">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.InitSqlquerytypes">
             <summary>Initializes the SQL query types.</summary>
             <returns>An object containing error information.</returns>
             <remarks>
@@ -615,17 +615,17 @@
             If an exception occurs during the initialization process, the error information is captured and returned.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.InitMapping">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.InitMapping">
             <summary>Initializes the mapping for error handling.</summary>
             <returns>An object containing information about any errors that occurred during initialization.</returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Util.ConfigEditor.InitDataConnections" -->
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Util.ConfigEditor.InitConfig" -->
-        <member name="M:TheTechIdea.Util.ConfigEditor.CreateDir(System.String)">
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.InitDataConnections" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.InitConfig" -->
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.CreateDir(System.String)">
             <summary>Creates a directory at the specified path if it doesn't already exist.</summary>
             <param name="path">The path of the directory to create.</param>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.CreateDirConfig(System.String,TheTechIdea.Util.FolderFileTypes)">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.CreateDirConfig(System.String,TheTechIdea.Beep.Utilities.FolderFileTypes)">
             <summary>Creates a directory configuration.</summary>
             <param name="path">The path of the directory.</param>
             <param name="foldertype">The type of the folder.</param>
@@ -634,13 +634,13 @@
             It then adds the directory to the list of folder configurations if it's not already present.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.ConfigEditor.CreateFileExtensionString">
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.CreateFileExtensionString">
             <summary>Creates a string representing file extensions.</summary>
             <returns>A string representing file extensions in the format "FileType1 (*.ext1)|*.ext1|FileType2 (*.ext2)|*.ext2|...|All files (*.*)|*.*".</returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Util.ConfigEditor.Getdefaults(TheTechIdea.Beep.IDMEEditor,System.String)" -->
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Util.ConfigEditor.Savedefaults(TheTechIdea.Beep.IDMEEditor,System.Collections.Generic.List{DataManagementModels.ConfigUtil.DefaultValue},System.String)" -->
-        <member name="M:TheTechIdea.Util.ConfigEditor.Init">
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Getdefaults(TheTechIdea.Beep.Editor.IDMEEditor,System.String)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Savedefaults(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.DefaultValue},System.String)" -->
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Init">
             <summary>Initializes the application.</summary>
             <returns>An object containing information about any errors that occurred during initialization.</returns>
             <remarks>
@@ -649,18 +649,18 @@
             stores the exception in the ErrorObject's Ex property, and logs an error message.
             </remarks>
         </member>
-        <member name="T:TheTechIdea.Util.DMTypeBuilder">
+        <member name="T:TheTechIdea.Beep.Utilities.DMTypeBuilder">
             <summary>
             A utility class for building and manipulating dynamic types.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Util.DMTypeBuilder.DMEEditor">
+        <member name="P:TheTechIdea.Beep.Utilities.DMTypeBuilder.DMEEditor">
             <summary>
             Gets or sets the DMEEditor instance.
             </summary>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Util.DMTypeBuilder.CreateNewObject(TheTechIdea.Beep.IDMEEditor,System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityField})" -->
-        <member name="M:TheTechIdea.Util.DMTypeBuilder.CreateNewObject(System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityField})">
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Utilities.DMTypeBuilder.CreateNewObject(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityField})" -->
+        <member name="M:TheTechIdea.Beep.Utilities.DMTypeBuilder.CreateNewObject(System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityField})">
             <summary>Creates a new object based on the specified library, type namespace, type name, and list of entity fields.</summary>
             <param name="libname">The name of the library.</param>
             <param name="typenamespace">The namespace of the type.</param>
@@ -668,7 +668,7 @@
             <param name="MyFields">The list of entity fields.</param>
             <returns>A new object of the specified type.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.DMTypeBuilder.CompileResultType(System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityField})">
+        <member name="M:TheTechIdea.Beep.Utilities.DMTypeBuilder.CompileResultType(System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityField})">
             <summary>Compiles a result type dynamically based on the provided parameters.</summary>
             <param name="libname">The name of the library.</param>
             <param name="typenamespace">The namespace of the type.</param>
@@ -676,14 +676,14 @@
             <param name="MyFields">A list of EntityField objects representing the fields of the type.</param>
             <returns>The compiled result type.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.DMTypeBuilder.GetTypeBuilder(System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Utilities.DMTypeBuilder.GetTypeBuilder(System.String,System.String,System.String)">
             <summary>Creates a dynamic type builder.</summary>
             <param name="libname">The name of the dynamic assembly.</param>
             <param name="typenamespace">The namespace of the type.</param>
             <param name="typename">The name of the type.</param>
             <returns>A TypeBuilder object representing the dynamic type.</returns>
         </member>
-        <member name="M:TheTechIdea.Util.DMTypeBuilder.CreateProperty(System.Reflection.Emit.TypeBuilder,System.String,System.Type)">
+        <member name="M:TheTechIdea.Beep.Utilities.DMTypeBuilder.CreateProperty(System.Reflection.Emit.TypeBuilder,System.String,System.Type)">
             <summary>Creates a property in a dynamically generated type.</summary>
             <param name="tb">The type builder representing the dynamically generated type.</param>
             <param name="propertyName">The name of the property.</param>
@@ -696,7 +696,7 @@
             The setter method sets the value of the backing field.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Util.DMTypeBuilder.CreateTypeFromCode(TheTechIdea.Beep.IDMEEditor,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Utilities.DMTypeBuilder.CreateTypeFromCode(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String)">
             <summary>Creates a type from code using the Roslyn compiler.</summary>
             <param name="DMEEditor">The IDMEEditor instance.</param>
             <param name="code">The code to compile.</param>
@@ -704,7 +704,7 @@
             <returns>The created type.</returns>
             <exception cref="T:System.Exception">Thrown when an error occurs during compilation.</exception>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Util.DMTypeBuilder.ConvertPOCOClassToEntity(TheTechIdea.Beep.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,System.String)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Utilities.DMTypeBuilder.ConvertPOCOClassToEntity(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,System.String)" -->
         <member name="M:TheTechIdea.Beep.FileManager.CsvTextFieldParser.#ctor(System.IO.Stream)">
             <summary>
             Constructs a parser from the specified input stream.
@@ -745,7 +745,7 @@
             Constructs a parser from the specified input text reader.
             </summary>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.FileManager.CsvTextFieldParser.WriteEntityStructureToFile(TheTechIdea.Beep.IDMEEditor,System.String,System.Object)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.FileManager.CsvTextFieldParser.WriteEntityStructureToFile(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.Object)" -->
         <member name="P:TheTechIdea.Beep.FileManager.CsvTextFieldParser.EndOfData">
             <summary>
             True if there are non-empty lines between the current cursor position and the end of the file.
@@ -930,7 +930,7 @@
             <summary>Opens a connection to the database.</summary>
             <returns>The connection state after opening the connection.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewConnection.OpenConnection(TheTechIdea.Util.DataSourceType,System.String,System.Int32,System.String,System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewConnection.OpenConnection(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.Int32,System.String,System.String,System.String,System.String)">
             <summary>Opens a connection to a database.</summary>
             <param name="dbtype">The type of the database.</param>
             <param name="host">The host name or IP address of the database server.</param>
@@ -941,7 +941,7 @@
             <param name="parameters">Additional parameters for the connection.</param>
             <returns>The connection state after opening the connection.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewConnection.OpenConnection(TheTechIdea.Util.DataSourceType,System.String)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewConnection.OpenConnection(TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
             <summary>Opens a connection to a database.</summary>
             <param name="dbtype">The type of the database.</param>
             <param name="connectionstring">The connection string for the database.</param>
@@ -1064,7 +1064,7 @@
             It is used to identify the manufacturer of a USB device.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.#ctor(System.String,TheTechIdea.Logger.IDMLogger,TheTechIdea.Beep.IDMEEditor,TheTechIdea.Util.DataSourceType,TheTechIdea.Util.IErrorsInfo)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.#ctor(System.String,TheTechIdea.Beep.Logger.IDMLogger,TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.ConfigUtil.IErrorsInfo)">
             <summary>
             Initializes a new instance of the DataViewDataSource class.
             </summary>
@@ -1074,19 +1074,19 @@
             <param name="pDatasourceType">The type of the data source.</param>
             <param name="per">The error information object.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.BeginTransaction(TheTechIdea.PassedArgs)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.BeginTransaction(TheTechIdea.Beep.Addin.PassedArgs)">
             <summary>
             Begins a transaction with the specified arguments.
             </summary>
             <param name="args">The arguments passed to the transaction.</param>
             <returns>An object that provides information about any errors that occurred during the transaction.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.EndTransaction(TheTechIdea.PassedArgs)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.EndTransaction(TheTechIdea.Beep.Addin.PassedArgs)">
             <summary>Ends a transaction and returns information about any errors that occurred.</summary>
             <param name="args">The arguments passed to the transaction.</param>
             <returns>An object containing information about any errors that occurred during the transaction.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.Commit(TheTechIdea.PassedArgs)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.Commit(TheTechIdea.Beep.Addin.PassedArgs)">
             <summary>Commits the changes made with the provided arguments.</summary>
             <param name="args">The arguments containing the changes to be committed.</param>
             <returns>An object implementing the IErrorsInfo interface that provides information about any errors that occurred during the commit process.</returns>
@@ -1184,7 +1184,7 @@
             <param name="qrystr">The query string to execute.</param>
             <returns>The result of the query execution.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.UpdateEntities(System.String,System.Object,System.IProgress{TheTechIdea.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.UpdateEntities(System.String,System.Object,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <summary>Updates entities in the system.</summary>
             <param name="EntityName">The name of the entity to update.</param>
             <param name="UploadData">The data to upload for updating the entities.</param>
@@ -1250,7 +1250,7 @@
             <param name="EntityID">The ID of the parent entity.</param>
             <returns>An object containing information about any errors that occurred during the removal process.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GenerateViewFromTable(System.String,TheTechIdea.IDataSource,System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GenerateViewFromTable(System.String,TheTechIdea.Beep.IDataSource,System.String,System.String,System.String)">
             <summary>
             Generates a view from a table using the specified parameters.
             </summary>
@@ -1261,7 +1261,7 @@
             <param name="Filterparamters">The filter parameters to be applied to the view.</param>
             <returns>The number of rows affected by the view generation process.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GenerateDataView(TheTechIdea.IDataSource,System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GenerateDataView(TheTechIdea.Beep.IDataSource,System.String,System.String,System.String)">
             <summary>
             Generates a data view based on the provided data source, table name, schema name, and filter parameters.
             </summary>
@@ -1277,7 +1277,7 @@
             <param name="ConnectionName">The name of the connection.</param>
             <returns>The generated data view.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GenerateDataViewForChildNode(TheTechIdea.IDataSource,System.Int32,System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GenerateDataViewForChildNode(TheTechIdea.Beep.IDataSource,System.Int32,System.String,System.String,System.String)">
             <summary>
             Generates a data view for a child node based on the provided parameters.
             </summary>
@@ -1288,7 +1288,7 @@
             <param name="Filterparamters">The filter parameters.</param>
             <returns>An object representing the generated data view.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.AddEntityAsChild(TheTechIdea.IDataSource,System.String,System.String,System.String,System.Int32,System.Int32)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.AddEntityAsChild(TheTechIdea.Beep.IDataSource,System.String,System.String,System.String,System.Int32,System.Int32)">
             <summary>Adds an entity as a child to a specified parent table.</summary>
             <param name="conn">The data source connection.</param>
             <param name="tablename">The name of the table to add the entity to.</param>
@@ -1298,7 +1298,7 @@
             <param name="ParentTableIndex">The index of the parent table.</param>
             <returns>The index of the added entity.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.AddEntitytoDataView(TheTechIdea.IDataSource,System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.AddEntitytoDataView(TheTechIdea.Beep.IDataSource,System.String,System.String,System.String)">
             <summary>Adds an entity to a data view.</summary>
             <param name="conn">The data source connection.</param>
             <param name="tablename">The name of the table.</param>
@@ -1311,7 +1311,7 @@
             <param name="maintab">The entity structure to add.</param>
             <returns>The index of the added entity in the data view.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GeticonForViewType(TheTechIdea.Util.ViewType)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GeticonForViewType(TheTechIdea.Beep.Utilities.ViewType)">
             <summary>Returns the icon associated with a specific view type.</summary>
             <param name="v">The view type.</param>
             <returns>The icon associated with the view type.</returns>
@@ -1348,7 +1348,7 @@
             <param name="e">The EntityStructure object.</param>
             <returns>A DataTable representing the structure of the entity.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetChildTablesForDataset(TheTechIdea.IDataSource,System.Data.DataSet@,TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.Int32)">
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetChildTablesForDataset(TheTechIdea.Beep.IDataSource,System.Data.DataSet@,TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.Int32)">
             <summary>
             Retrieves the child tables for a given dataset and parent table.
             </summary>
@@ -1464,17 +1464,17 @@
             <summary>Gets or sets the list of workflow rules.</summary>
             <value>The list of workflow rules.</value>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.#ctor(TheTechIdea.Beep.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>Initializes a new instance of the DataImportManager class.</summary>
             <param name="dMEEditor">The IDMEEditor instance used for data import.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.#ctor(TheTechIdea.Beep.IDMEEditor,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String)">
             <summary>Initializes a new instance of the DataImportManager class.</summary>
             <param name="dMEEditor">The IDMEEditor instance used for data import.</param>
             <param name="destEntityName">The name of the destination entity.</param>
             <param name="destDataSourceName">The name of the destination data source.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.#ctor(TheTechIdea.Beep.IDMEEditor,System.String,System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.String)">
             <summary>Initializes a new instance of the DataImportManager class.</summary>
             <param name="dMEEditor">The IDMEEditor instance used for data import.</param>
             <param name="destEntityName">The name of the destination entity.</param>
@@ -1514,7 +1514,7 @@
             <param name="destentityname">The name of the destination entity.</param>
             <returns>True if there are any changes between the two entity names, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.RunImport(System.IProgress{TheTechIdea.IPassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.DataImportManager.RunImport(System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
             <summary>Runs the import process.</summary>
             <param name="progress">An object that reports the progress of the import process.</param>
             <param name="token">A cancellation token that can be used to cancel the import process.</param>
@@ -1526,7 +1526,7 @@
         <member name="M:TheTechIdea.Beep.Editor.DataImportManager.Update">
             <summary>Updates the state of the object.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetRecordsFromSourceData(DataManagementModels.Editor.DataSyncSchema,System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema,System.String)">
             <summary>
             Retrieves records from the source data based on the schema's LastSyncDate and the specified filter operator.
             </summary>
@@ -1534,21 +1534,21 @@
             <param name="filterOperator">The filter operator to use for comparing the LastSyncDate.</param>
             <returns>A collection of records from the source data.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetNewRecordsFromSourceData(DataManagementModels.Editor.DataSyncSchema)">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetNewRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema)">
             <summary>
             Retrieves new records from the source data based on the schema's LastSyncDate.
             </summary>
             <param name="schema">The DataSyncSchema defining the synchronization process.</param>
             <returns>A collection of new records from the source data.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetUpdatedRecordsFromSourceData(DataManagementModels.Editor.DataSyncSchema)">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetUpdatedRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema)">
             <summary>
             Retrieves updated records from the source data based on the schema's LastSyncDate.
             </summary>
             <param name="schema">The DataSyncSchema defining the synchronization process.</param>
             <returns>A collection of updated records from the source data.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncData(DataManagementModels.Editor.DataSyncSchema,System.Threading.CancellationToken,System.Progress{TheTechIdea.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncData(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.Progress{TheTechIdea.Beep.Addin.PassedArgs})">
             <summary>
             Synchronizes data based on the provided schema, cancellation token, and progress reporter.
             </summary>
@@ -1556,13 +1556,13 @@
             <param name="token">Cancellation token to handle task cancellation.</param>
             <param name="progress">Progress reporter to report synchronization progress.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncData(DataManagementModels.Editor.DataSyncSchema)">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncData(TheTechIdea.Beep.Editor.DataSyncSchema)">
             <summary>
             Synchronizes data based on the provided schema.
             </summary>
             <param name="schema">The DataSyncSchema defining the synchronization process.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncDataAsync(DataManagementModels.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <summary>
             Asynchronously synchronizes data based on the provided schema, cancellation token, and progress reporter.
             </summary>
@@ -1570,7 +1570,7 @@
             <param name="token">Cancellation token to handle task cancellation.</param>
             <param name="progress">Progress reporter to report synchronization progress.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.CreateDestinationEntity(DataManagementModels.Editor.DataSyncSchema,System.Object,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.CreateDestinationEntity(TheTechIdea.Beep.Editor.DataSyncSchema,System.Object,System.Boolean)">
             <summary>
             Creates the destination entity by mapping fields from the source entity based on the schema.
             </summary>
@@ -1579,7 +1579,7 @@
             <param name="isNewRecord">Indicates whether the record is new or an update.</param>
             <returns>The mapped destination entity.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.LogSyncRun(DataManagementModels.Editor.DataSyncSchema)">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.LogSyncRun(TheTechIdea.Beep.Editor.DataSyncSchema)">
             <summary>
             Logs the synchronization run data.
             </summary>
@@ -1592,7 +1592,7 @@
             <param name="dataSourceName">The name of the data source.</param>
             <returns>The IDataSource instance.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncAllDataAsync(System.Threading.CancellationToken,System.IProgress{TheTechIdea.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncAllDataAsync(System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <summary>
             Asynchronously synchronizes all data based on the loaded schemas, cancellation token, and progress reporter.
             </summary>
@@ -1604,21 +1604,21 @@
             Synchronizes all data based on the loaded schemas.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.UpdateDataSourceUsingUpdateLog(System.Collections.Generic.Dictionary{System.DateTime,DataManagementModels.Editor.EntityUpdateInsertLog})">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.UpdateDataSourceUsingUpdateLog(System.Collections.Generic.Dictionary{System.DateTime,TheTechIdea.Beep.Editor.EntityUpdateInsertLog})">
             <summary>
             Synchronizes changes from the update log to the destination data source.
             </summary>
             <param name="sourceList">The source ObservableBindingList containing the changes.</param>
             <param name="destinationDataSource">The destination IDataSource to apply the changes to.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.ValidateSchema(DataManagementModels.Editor.DataSyncSchema)">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.ValidateSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
             <summary>
             Validates the provided schema to ensure all required fields are populated.
             </summary>
             <param name="schema">The DataSyncSchema to validate.</param>
             <returns>An IErrorsInfo object containing validation results.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SendMessege(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SendMessege(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.String)">
             <summary>Sends a message and updates progress based on the result.</summary>
             <param name="progress">An object that reports progress updates.</param>
             <param name="token">A cancellation token that can be used to cancel the operation.</param>
@@ -1634,7 +1634,7 @@
             Represents an Extract, Transform, Load (ETL) process.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ETL.#ctor(TheTechIdea.Beep.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Editor.ETL.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
             Initializes a new instance of the ETL class.
             </summary>
@@ -1682,14 +1682,14 @@
             <summary>Gets or sets the ETL script for HDR processing.</summary>
             <value>The ETL script for HDR processing.</value>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ETL.CreateScriptHeader(TheTechIdea.IDataSource,System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.ETL.CreateScriptHeader(TheTechIdea.Beep.IDataSource,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
             <summary>Creates the header of an ETL script.</summary>
             <param name="Srcds">The data source object.</param>
             <param name="progress">The progress object to report progress.</param>
             <param name="token">The cancellation token to cancel the operation.</param>
             <exception cref="T:System.ArgumentNullException">Thrown when Srcds is null.</exception>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ETL.GetCreateEntityScript(TheTechIdea.IDataSource,System.Collections.Generic.List{System.String},System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.ETL.GetCreateEntityScript(TheTechIdea.Beep.IDataSource,System.Collections.Generic.List{System.String},System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean)">
             <summary>Generates a list of ETL script details for creating entities from a data source.</summary>
             <param name="ds">The data source to retrieve entities from.</param>
             <param name="entities">The list of entities to create scripts for.</param>
@@ -1705,7 +1705,7 @@
             <param name="scriptType">The type of DDL script.</param>
             <returns>An ETLScriptDet object representing the generated script.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ETL.GetCreateEntityScript(TheTechIdea.IDataSource,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.ETL.GetCreateEntityScript(TheTechIdea.Beep.IDataSource,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean)">
             <summary>Generates a list of ETL script details for creating entities.</summary>
             <param name="Dest">The destination data source.</param>
             <param name="entities">The list of entity structures.</param>
@@ -1717,7 +1717,7 @@
             It reports progress using the provided progress object and can be cancelled using the cancellation token.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ETL.GetCopyDataEntityScript(TheTechIdea.IDataSource,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.ETL.GetCopyDataEntityScript(TheTechIdea.Beep.IDataSource,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
             <summary>Generates a script for copying data entities.</summary>
             <param name="Dest">The destination data source.</param>
             <param name="entities">The list of entity structures.</param>
@@ -1725,11 +1725,11 @@
             <param name="token">A cancellation token to cancel the operation.</param>
             <returns>A list of ETLScriptDet objects representing the generated script.</returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.CopyEntitiesStructure(TheTechIdea.IDataSource,TheTechIdea.IDataSource,System.Collections.Generic.List{System.String},System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean)" -->
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.CopyEntityStructure(TheTechIdea.IDataSource,TheTechIdea.IDataSource,System.String,System.String,System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean)" -->
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.CopyDatasourceData(TheTechIdea.IDataSource,TheTechIdea.IDataSource,System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)" -->
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.CopyEntitiesData(TheTechIdea.IDataSource,TheTechIdea.IDataSource,System.Collections.Generic.List{System.String},System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)" -->
-        <member name="M:TheTechIdea.Beep.Editor.ETL.CopyEntityData(TheTechIdea.IDataSource,TheTechIdea.IDataSource,System.String,System.String,System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)">
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.CopyEntitiesStructure(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.IDataSource,System.Collections.Generic.List{System.String},System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.CopyEntityStructure(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.IDataSource,System.String,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.CopyDatasourceData(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.IDataSource,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.CopyEntitiesData(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.IDataSource,System.Collections.Generic.List{System.String},System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)" -->
+        <member name="M:TheTechIdea.Beep.Editor.ETL.CopyEntityData(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.IDataSource,System.String,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)">
             <summary>Copies entity data from a source data source to a destination data source.</summary>
             <param name="sourceds">The source data source.</param>
             <param name="destds">The destination data source.</param>
@@ -1739,8 +1739,8 @@
             <param name="token">A cancellation token to cancel the copy operation.</param>
             <param name="CreateMissingEntity">A flag indicating whether to create the destination entity if it doesn't exist.</param>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.CopyEntitiesData(TheTechIdea.IDataSource,TheTechIdea.IDataSource,System.Collections.Generic.List{TheTechIdea.Beep.Editor.ETLScriptDet},System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)" -->
-        <member name="M:TheTechIdea.Beep.Editor.ETL.RunChildScriptAsync(TheTechIdea.Beep.Editor.ETLScriptDet,TheTechIdea.IDataSource,TheTechIdea.IDataSource,System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken)">
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.CopyEntitiesData(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.IDataSource,System.Collections.Generic.List{TheTechIdea.Beep.Editor.ETLScriptDet},System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)" -->
+        <member name="M:TheTechIdea.Beep.Editor.ETL.RunChildScriptAsync(TheTechIdea.Beep.Editor.ETLScriptDet,TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.IDataSource,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
             <summary>Runs a child script asynchronously.</summary>
             <param name="ParentScript">The parent script.</param>
             <param name="srcds">The data source for the source.</param>
@@ -1749,7 +1749,7 @@
             <param name="token">The cancellation token to cancel the operation.</param>
             <returns>An object containing information about any errors that occurred during the execution of the child script.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ETL.RunCreateScript(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.ETL.RunCreateScript(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean,System.Boolean)">
             <summary>Runs a create script and updates data.</summary>
             <param name="progress">An object that reports the progress of the operation.</param>
             <param name="token">A cancellation token that can be used to cancel the operation.</param>
@@ -1758,7 +1758,7 @@
             This method runs a create script and updates data. It connects to the specified data sources, performs the necessary operations, and reports progress using the provided progress object. If the operation is cancelled using the provided cancellation token, the method will stop and return the current error information.
             </remarks>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.RunCopyEntityScript(TheTechIdea.Beep.Editor.ETLScriptDet,TheTechIdea.IDataSource,TheTechIdea.IDataSource,System.String,System.String,System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.RunCopyEntityScript(TheTechIdea.Beep.Editor.ETLScriptDet,TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.IDataSource,System.String,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)" -->
         <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.LoadETL(System.String)" -->
         <member name="M:TheTechIdea.Beep.Editor.ETL.SaveETL(System.String)">
             <summary>Saves the ETL (Extract, Transform, Load) configuration for a given datasource.</summary>
@@ -1771,14 +1771,14 @@
             </remarks>
         </member>
         <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.CreateImportScript(TheTechIdea.Beep.Workflow.Mapping.EntityDataMap,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)" -->
-        <member name="M:TheTechIdea.Beep.Editor.ETL.RunImportScript(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.ETL.RunImportScript(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean)">
             <summary>Runs an import script and returns information about any errors that occurred.</summary>
             <param name="progress">An object that reports the progress of the import script.</param>
             <param name="token">A cancellation token that can be used to cancel the import script.</param>
             <returns>An object containing information about any errors that occurred during the import script.</returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.InsertEntity(TheTechIdea.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL,System.Object,System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken)" -->
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.SendMessege(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.Editor.ETLScriptDet,System.String)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.InsertEntity(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL,System.Object,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETL.SendMessege(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.Editor.ETLScriptDet,System.String)" -->
         <member name="T:TheTechIdea.Beep.Editor.UnitofWork`1">
             <summary>
             Represents a unit of work for managing entities of type T.
@@ -1840,15 +1840,15 @@
             Otherwise, the original units collection will be returned.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.SetUnits(DataManagementModels.Editor.ObservableBindingList{`0})">
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.SetUnits(TheTechIdea.Beep.Editor.ObservableBindingList{`0})">
             <summary>Sets the units collection and raises the PropertyChanged event for the Units property.</summary>
             <param name="value">The new units collection.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.DetachHandlers(DataManagementModels.Editor.ObservableBindingList{`0})">
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.DetachHandlers(TheTechIdea.Beep.Editor.ObservableBindingList{`0})">
             <summary>Detaches event handlers from the specified collection and its items.</summary>
             <param name="collection">The collection to detach event handlers from.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.AttachHandlers(DataManagementModels.Editor.ObservableBindingList{`0})">
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.AttachHandlers(TheTechIdea.Beep.Editor.ObservableBindingList{`0})">
             <summary>Attaches event handlers to a collection and its items.</summary>
             <param name="collection">The collection to attach event handlers to.</param>
             <remarks>
@@ -1856,15 +1856,15 @@
             and a CollectionChanged event handler to the collection itself.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.#ctor(TheTechIdea.Beep.IDMEEditor,System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String)">
             <summary>Initializes a new instance of the UnitofWork class.</summary>
             <param name="dMEEditor">The IDMEEditor instance.</param>
             <param name="datasourceName">The name of the data source.</param>
             <param name="entityName">The name of the entity.</param>
             <param name="primaryKey">The primary key.</param>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.UnitofWork`1.#ctor(TheTechIdea.Beep.IDMEEditor,System.String,System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String)" -->
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.UnitofWork`1.#ctor(TheTechIdea.Beep.IDMEEditor,System.Boolean,DataManagementModels.Editor.ObservableBindingList{`0},System.String)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.UnitofWork`1.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.UnitofWork`1.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Boolean,TheTechIdea.Beep.Editor.ObservableBindingList{`0},System.String)" -->
         <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Clear">
             <summary>Clears the data in the collection.</summary>
             <remarks>
@@ -2020,7 +2020,7 @@
             <param name="entity">The updated entity.</param>
             <returns>An ErrorsInfo object indicating the result of the update operation.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Commit(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Commit(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
             <summary>Commits changes and returns information about any errors that occurred.</summary>
             <param name="progress">An object that reports progress during the commit process.</param>
             <param name="token">A cancellation token that can be used to cancel the commit process.</param>
@@ -2161,7 +2161,7 @@
             <param name="sender">The object that triggered the event.</param>
             <param name="e">The event arguments containing information about the changed property.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.FilterCollection(DataManagementModels.Editor.ObservableBindingList{`0},System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.FilterCollection(TheTechIdea.Beep.Editor.ObservableBindingList{`0},System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
             <summary>Filters a collection based on a list of filters.</summary>
             <param name="originalCollection">The original collection to filter.</param>
             <param name="filters">The list of filters to apply.</param>
@@ -2172,7 +2172,7 @@
             If an error occurs during the filtering process, a log message is added and null is returned.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.FilterCollection(DataManagementModels.Editor.ObservableBindingList{`0},System.String,System.Object)">
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.FilterCollection(TheTechIdea.Beep.Editor.ObservableBindingList{`0},System.String,System.Object)">
             <summary>Filters a collection based on a specified property and value.</summary>
             <param name="originalCollection">The original collection to filter.</param>
             <param name="propertyName">The name of the property to filter on.</param>
@@ -2219,14 +2219,14 @@
         <member name="T:TheTechIdea.Beep.Editor.UnitOfWorkFactory">
             <summary>A factory class for creating and retrieving instances of UnitOfWork.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitOfWorkFactory.CreateUnitOfWork(System.Type,TheTechIdea.Beep.IDMEEditor,System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.UnitOfWorkFactory.CreateUnitOfWork(System.Type,TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String)">
             <summary>Creates a new instance of UnitOfWork for the specified entity type.</summary>
             <param name="entityType">The type of the entity.</param>
             <param name="dmeEditor">The IDMEEditor instance.</param>
             <param name="datasourceName">The name of the data source.</param>
             <returns>A new instance of UnitOfWork.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitOfWorkFactory.GetUnitOfWork(System.String,System.String,TheTechIdea.Beep.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Editor.UnitOfWorkFactory.GetUnitOfWork(System.String,System.String,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>Gets a unit of work for a specified entity.</summary>
             <param name="entityName">The name of the entity.</param>
             <param name="dataSourceName">The name of the data source.</param>
@@ -2312,7 +2312,7 @@
             Global Event Handler to handle events  in class
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.DMEEditor.AddLogMessage(System.String,System.String,System.DateTime,System.Int32,System.String,TheTechIdea.Util.Errors)">
+        <member name="M:TheTechIdea.Beep.DMEEditor.AddLogMessage(System.String,System.String,System.DateTime,System.Int32,System.String,TheTechIdea.Beep.ConfigUtil.Errors)">
             <summary>
             Function to Add Log Message 
             </summary>
@@ -2413,7 +2413,7 @@
             <param name="pdatasourcename"></param>
             <returns></returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DMEEditor.CreateNewDataSourceConnection(TheTechIdea.Util.ConnectionProperties,System.String)">
+        <member name="M:TheTechIdea.Beep.DMEEditor.CreateNewDataSourceConnection(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.String)">
             <summary>
             Create New Datasource and add to the List by passing new Connection Properties 
             </summary>
@@ -2421,7 +2421,7 @@
             <param name="pdatasourcename"></param>
             <returns></returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DMEEditor.CreateLocalDataSourceConnection(TheTechIdea.Util.ConnectionProperties,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.DMEEditor.CreateLocalDataSourceConnection(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.String,System.String)">
             <summary>
              Create New Datasource and add to the List by passing new Connection Properties and Datasource Class Handler
             </summary>
@@ -2452,14 +2452,14 @@
             <param name="pdatasourcename"></param>
             <returns></returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DMEEditor.RaiseEvent(System.Object,TheTechIdea.PassedArgs)">
+        <member name="M:TheTechIdea.Beep.DMEEditor.RaiseEvent(System.Object,TheTechIdea.Beep.Addin.PassedArgs)">
             <summary>
             Raise the Public and Global event
             </summary>
             <param name="sender"></param>
             <param name="args"></param>
         </member>
-        <member name="M:TheTechIdea.Beep.DMEEditor.GetOutputAsync(TheTechIdea.IDataSource,System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+        <member name="M:TheTechIdea.Beep.DMEEditor.GetOutputAsync(TheTechIdea.Beep.IDataSource,System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
             <summary>
             Run Query on an Opened DataSource 
             </summary>
@@ -2468,7 +2468,7 @@
             <param name="filter"></param>
             <returns></returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DMEEditor.GetData(TheTechIdea.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure)">
+        <member name="M:TheTechIdea.Beep.DMEEditor.GetData(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure)">
             <summary>
             Get Entity Data from an Opened DataSource
             </summary>
@@ -2476,7 +2476,7 @@
             <param name="entity"></param>
             <returns></returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DMEEditor.AskQuestion(TheTechIdea.IPassedArgs)">
+        <member name="M:TheTechIdea.Beep.DMEEditor.AskQuestion(TheTechIdea.Beep.Addin.IPassedArgs)">
             <summary>
             Functio to Raise Question 
             </summary>
@@ -2484,7 +2484,7 @@
             <returns></returns>
         </member>
         <!-- Badly formed XML comment ignored for member "T:TheTechIdea.Beep.EntityDataMoveValidator" -->
-        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.CanInsertRecord(TheTechIdea.Beep.IDMEEditor,TheTechIdea.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.Object,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.CanInsertRecord(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.Object,System.String,System.String)">
             <summary>
             Checks if a record can be inserted into a data source for a specific entity.
             </summary>
@@ -2496,7 +2496,7 @@
             <param name="datasource">The name of the data source.</param>
             <returns>A list of validation messages indicating whether the record can be inserted or not.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.CanInsertRecord(TheTechIdea.Beep.IDMEEditor,TheTechIdea.IDataSource,System.Object,TheTechIdea.Beep.DataBase.EntityStructure)">
+        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.CanInsertRecord(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.IDataSource,System.Object,TheTechIdea.Beep.DataBase.EntityStructure)">
             <summary>Checks if a record can be inserted into a data source.</summary>
             <param name="DMEEditor">The IDMEEditor instance.</param>
             <param name="DataSource">The data source.</param>
@@ -2511,7 +2511,7 @@
             <param name="fldval">The object to be checked.</param>
             <returns>True if the object is not null, otherwise false.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.TrueifNotUnique(TheTechIdea.Beep.IDMEEditor,TheTechIdea.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.Object,System.String,System.Object)">
+        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.TrueifNotUnique(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.Object,System.String,System.Object)">
             <summary>
             Checks if a field value is not unique within a given entity and data source.
             </summary>
@@ -2523,7 +2523,7 @@
             <param name="fldval">The value of the field to check.</param>
             <returns>True if the field value is not unique, otherwise false.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.TrueifParentExist(TheTechIdea.Beep.IDMEEditor,TheTechIdea.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.Object,System.String,System.Object)">
+        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.TrueifParentExist(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.Object,System.String,System.Object)">
             <summary>
             Checks if the parent entity exists in the data source based on the provided parameters.
             </summary>
@@ -2535,7 +2535,7 @@
             <param name="fldval">The value of the field.</param>
             <returns>True if the parent entity exists, otherwise false.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.TrueifEntityExist(TheTechIdea.Beep.IDMEEditor,TheTechIdea.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure)">
+        <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.TrueifEntityExist(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure)">
             <summary>Checks if an entity exists in a data source.</summary>
             <param name="DMEEditor">The IDMEEditor instance.</param>
             <param name="DataSource">The data source to check.</param>
@@ -2543,7 +2543,7 @@
             <returns>True if the entity exists in the data source, false otherwise.</returns>
         </member>
         <!-- Badly formed XML comment ignored for member "T:TheTechIdea.Beep.Mapping.MappingManager" -->
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
             <summary>
             Creates an entity map for a given DME editor, destination entity structure, source entity name, and source data source name.
             </summary>
@@ -2553,7 +2553,7 @@
             <param name="SourceDataSourceName">The name of the source data source.</param>
             <returns>A tuple containing the errors information and the entity data map.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.IDMEEditor,System.String,System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.String)">
             <summary>
             Creates an entity map for data migration between two entities.
             </summary>
@@ -2564,7 +2564,7 @@
             <param name="DestDataSourceName">The name of the destination data source.</param>
             <returns>A tuple containing the errors information and the entity data map.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.IDMEEditor,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String)">
             <summary>
             Creates an entity map using the specified DME editor, destination entity name, and destination data source name.
             </summary>
@@ -2573,7 +2573,7 @@
             <param name="DestDataSourceName">The name of the destination data source.</param>
             <returns>A tuple containing the errors information and the entity data map.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntitytoMappedEntities(TheTechIdea.Beep.IDMEEditor,System.String,System.String,TheTechIdea.Beep.DataBase.EntityStructure)">
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntitytoMappedEntities(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.DataBase.EntityStructure)">
             <summary>Adds an entity to the mapped entities in the specified DME editor.</summary>
             <param name="DMEEditor">The IDMEEditor instance.</param>
             <param name="SourceDataSourceName">The name of the source data source.</param>
@@ -2581,7 +2581,7 @@
             <param name="destent">The destination entity structure.</param>
             <returns>The updated EntityDataMap_DTL object.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntitytoMappedEntities(TheTechIdea.Beep.IDMEEditor,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL,System.String,System.String,TheTechIdea.Beep.DataBase.EntityStructure)">
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntitytoMappedEntities(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL,System.String,System.String,TheTechIdea.Beep.DataBase.EntityStructure)">
             <summary>Adds an entity to the mapped entities in the EntityDataMap_DTL.</summary>
             <param name="DMEEditor">The IDMEEditor instance.</param>
             <param name="det">The EntityDataMap_DTL instance.</param>
@@ -2590,7 +2590,7 @@
             <param name="destent">The destination entity structure.</param>
             <returns>The updated EntityDataMap_DTL instance.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntitytoMappedEntities(TheTechIdea.Beep.IDMEEditor,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityStructure)">
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntitytoMappedEntities(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityStructure)">
             <summary>Adds an entity to the mapped entities in the EntityDataMap_DTL.</summary>
             <param name="DMEEditor">The IDMEEditor instance.</param>
             <param name="det">The EntityDataMap_DTL instance.</param>
@@ -2598,14 +2598,14 @@
             <param name="destent">The destination entity structure.</param>
             <returns>The updated EntityDataMap_DTL instance with the added entity.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntitytoMappedEntities(TheTechIdea.Beep.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityStructure)">
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntitytoMappedEntities(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityStructure)">
             <summary>Adds an entity to the mapped entities in the IDMEEditor.</summary>
             <param name="DMEEditor">The IDMEEditor instance.</param>
             <param name="srcent">The source entity structure.</param>
             <param name="destent">The destination entity structure.</param>
             <returns>The updated EntityDataMap_DTL object.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.MapEntityFields(TheTechIdea.Beep.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)">
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.MapEntityFields(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)">
             <summary>
             Maps the fields of a source entity to a destination entity using a data map.
             </summary>
@@ -2614,20 +2614,20 @@
             <param name="datamap">The data map used for mapping.</param>
             <returns>A list of Mapping_rep_fields representing the mapped fields.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CheckifMappingEntityExist(TheTechIdea.Beep.IDMEEditor,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap)">
+        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CheckifMappingEntityExist(TheTechIdea.Beep.Editor.IDMEEditor,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap)">
             <summary>Checks if a mapping entity exists.</summary>
             <param name="DMEEditor">The IDMEEditor instance.</param>
             <param name="entityname">The name of the entity.</param>
             <param name="entityDataMap">The EntityDataMap instance.</param>
             <returns>An integer value indicating if the mapping entity exists.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.LinkConnection2Drivers(TheTechIdea.Util.IConnectionProperties,TheTechIdea.Util.IConfigEditor)">
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.LinkConnection2Drivers(TheTechIdea.Beep.ConfigUtil.IConnectionProperties,TheTechIdea.Beep.ConfigUtil.IConfigEditor)">
             <summary>Links a connection to its corresponding drivers in the configuration editor.</summary>
             <param name="cn">The connection properties.</param>
             <param name="configEditor">The configuration editor.</param>
             <returns>The connection drivers configuration.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.ReplaceValueFromConnectionString(DataManagementModels.DriversConfigurations.ConnectionDriversConfig,TheTechIdea.Util.IConnectionProperties,TheTechIdea.Beep.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.ReplaceValueFromConnectionString(TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig,TheTechIdea.Beep.ConfigUtil.IConnectionProperties,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>Replaces a value in a connection string based on the provided parameters.</summary>
             <param name="DataSourceDriver">The driver configuration for the data source.</param>
             <param name="ConnectionProp">The connection properties.</param>
@@ -2804,41 +2804,41 @@
             <summary>Returns an array of .NET data types.</summary>
             <returns>An array of .NET data types.</returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataTypeMappingForString(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.IDMEEditor)" -->
-        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataType(System.String,System.String,TheTechIdea.Beep.IDMEEditor)">
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataTypeMappingForString(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.Editor.IDMEEditor)" -->
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataType(System.String,System.String,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>Gets the data type of a field in a specific data source.</summary>
             <param name="DSname">The name of the data source.</param>
             <param name="fld">The field for which to retrieve the data type.</param>
             <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
             <returns>The data type of the specified field.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataType(System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataType(System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>Gets the data type of a field in a specific data source.</summary>
             <param name="DSname">The name of the data source.</param>
             <param name="fld">The field for which to retrieve the data type.</param>
             <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
             <returns>The data type of the specified field.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataTypeFromDataSourceClassName(System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataTypeFromDataSourceClassName(System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>Gets the data type of a field in a specific data source.</summary>
             <param name="className">The name of the data source class</param>
             <param name="fld">The field for which to retrieve the data type.</param>
             <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
             <returns>The data type of the specified field.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataTypes(System.String,TheTechIdea.Beep.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataTypes(System.String,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>Gets the data type of a field in a specific data source.</summary>
             <param name="DSname">The name of the data source.</param>
             <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
             <returns>The List of DataTypeMapping for DataSource.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataTypes(TheTechIdea.Util.DataSourceType,TheTechIdea.Beep.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetDataTypes(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>Gets the data type of a field in a specific data source.</summary>
             <param name="DSname">The name of the data source.</param>
             <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
             <returns>The List of DataTypeMapping for DataSource.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetFieldTypeWoConversion(System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetFieldTypeWoConversion(System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>Gets the field type without conversion.</summary>
             <param name="DSname">The name of the data source.</param>
             <param name="fld">The entity field.</param>
@@ -2911,7 +2911,7 @@
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetCassandraDataTypeMappings">
             <summary>Returns a list of mappings between .NET data types and Cassandra data types.</summary>
-            <returns>A list of <see cref="T:DataManagementModels.DriversConfigurations.DatatypeMapping"/> objects representing the mappings.</returns>
+            <returns>A list of <see cref="T:TheTechIdea.Beep.DriversConfigurations.DatatypeMapping"/> objects representing the mappings.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetRedisDataTypeMappings">
             <summary>Returns a list of Redis data type mappings.</summary>
@@ -2970,7 +2970,7 @@
             Helper class for mapping data types to field names.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.#ctor(TheTechIdea.Beep.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>Initializes a new instance of the DataTypesHelper class.</summary>
             <param name="pDMEEditor">The IDMEEditor instance to be associated with the helper.</param>
         </member>
@@ -3013,7 +3013,7 @@
             Helper class for interacting with a Relational Database Management System (RDBMS).
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetSchemasorDatabases(TheTechIdea.Util.DataSourceType,System.String)">
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetSchemasorDatabases(TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
             <summary>Gets the query for fetching the schemas or databased user has privilge.</summary>
             <param name="rdbms">The type of RDBMS.</param>
             <param name="userName">The name of the user.</param>
@@ -3029,7 +3029,7 @@
             It uses a regular expression pattern to match the keywords in a case-insensitive manner.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GeneratePrimaryKeyQuery(TheTechIdea.Util.DataSourceType,System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GeneratePrimaryKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String,System.String)">
             <summary>Generates a SQL query to add a primary key to a table in a specific RDBMS.</summary>
             <param name="rdbms">The type of RDBMS.</param>
             <param name="tableName">The name of the table.</param>
@@ -3038,24 +3038,24 @@
             <returns>A SQL query to add a primary key to the specified table in the specified RDBMS.</returns>
             <exception cref="T:System.ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateFetchNextSequenceValueQuery(TheTechIdea.Util.DataSourceType,System.String)">
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateFetchNextSequenceValueQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
             <summary>Generates a query to fetch the next value from a sequence in a specific database.</summary>
             <param name="rdbms">The type of the database.</param>
             <param name="sequenceName">The name of the sequence.</param>
             <returns>A query string to fetch the next value from the specified sequence in the given database.</returns>
             <exception cref="T:System.ArgumentNullException">Thrown when the sequence name is null or empty.</exception>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateFetchLastIdentityQuery(TheTechIdea.Util.DataSourceType,System.String)">
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateFetchLastIdentityQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
             <summary>Generates a query to fetch the last inserted identity value based on the specified RDBMS.</summary>
             <param name="rdbms">The type of RDBMS.</param>
             <param name="sequenceName">The name of the sequence or generator (optional for some RDBMS).</param>
             <returns>A query string to fetch the last inserted identity value.</returns>
             <exception cref="T:System.ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDropPrimaryKeyQuery(TheTechIdea.Util.DataSourceType,System.String,System.String)" -->
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDropForeignKeyQuery(TheTechIdea.Util.DataSourceType,System.String,System.String)" -->
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDisableForeignKeyQuery(TheTechIdea.Util.DataSourceType,System.String,System.String)" -->
-        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateEnableForeignKeyQuery(TheTechIdea.Util.DataSourceType,System.String,System.String)">
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDropPrimaryKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDropForeignKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDisableForeignKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)" -->
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateEnableForeignKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)">
             <summary>Generates a query to enable a foreign key constraint in a specific RDBMS.</summary>
             <param name="rdbms">The type of RDBMS.</param>
             <param name="tableName">The name of the table.</param>
@@ -3067,7 +3067,7 @@
             <summary>Creates a list of QuerySqlRepo objects.</summary>
             <returns>A list of QuerySqlRepo objects.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetPagingSyntax(TheTechIdea.Util.DataSourceType,System.Int32,System.Int32)">
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetPagingSyntax(TheTechIdea.Beep.Utilities.DataSourceType,System.Int32,System.Int32)">
             <summary>Gets the SQL syntax for paging results in a database-agnostic way.</summary>
             
         </member>

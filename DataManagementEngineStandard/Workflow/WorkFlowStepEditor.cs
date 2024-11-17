@@ -10,8 +10,11 @@ using TheTechIdea;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Workflow;
-using TheTechIdea.Logger;
-using TheTechIdea.Util;
+
+using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.ConfigUtil;
 
 namespace TheTechIdea.Beep.Workflow
 {

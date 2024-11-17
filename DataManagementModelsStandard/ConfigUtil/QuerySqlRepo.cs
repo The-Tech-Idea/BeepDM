@@ -1,7 +1,8 @@
 ﻿using System;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Util
+namespace TheTechIdea.Beep.ConfigUtil
 {
     public class QuerySqlRepo : Entity
     {

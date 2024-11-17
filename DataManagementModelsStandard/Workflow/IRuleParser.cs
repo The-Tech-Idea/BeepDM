@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using TheTechIdea.Beep;
+using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Workflow.Interfaces;
 
 namespace TheTechIdea.Beep.Workflow

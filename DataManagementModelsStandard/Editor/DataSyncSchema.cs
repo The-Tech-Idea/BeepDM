@@ -4,7 +4,7 @@ using System.Text;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Report;
 
-namespace DataManagementModels.Editor
+namespace TheTechIdea.Beep.Editor
 {
     public class DataSyncSchema : Entity
     {

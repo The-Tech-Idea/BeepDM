@@ -2,7 +2,7 @@
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 
-namespace DataManagementModels.DriversConfigurations
+namespace TheTechIdea.Beep.DriversConfigurations
 {
     public class DatatypeMapping : Entity , IDatatypeMapping
     {

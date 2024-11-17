@@ -1,5 +1,4 @@
-﻿using DataManagementModels.DriversConfigurations;
-using DataManagementModels.Editor;
+﻿
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,13 +8,15 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Workflow.Mapping;
-using TheTechIdea.Logger;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Logger;
 
-namespace TheTechIdea.Beep
+using TheTechIdea.Beep.ConfigUtil;
+
+namespace TheTechIdea.Beep.Utilities
 {
     public interface IUtil
     {

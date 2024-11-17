@@ -1,4 +1,4 @@
-﻿using DataManagementModels.ConfigUtil;
+﻿using TheTechIdea.Beep.ConfigUtil;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,11 @@ using TheTechIdea.Beep;
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Interfaces;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
+
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Editor;
+
 
 namespace TheTechIdea.Beep.Workflow.DefaultRules
 {

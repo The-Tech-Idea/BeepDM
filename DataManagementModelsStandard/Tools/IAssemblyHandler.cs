@@ -1,4 +1,4 @@
-﻿using DataManagementModels.DriversConfigurations;
+﻿
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -8,10 +8,14 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep;
-using TheTechIdea.Logger;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DriversConfigurations;
+using TheTechIdea.Beep.Logger;
 
-namespace TheTechIdea.Tools
+using TheTechIdea.Beep.Utilities;
+
+namespace TheTechIdea.Beep.Tools
 {
     public interface IAssemblyHandler:IDisposable
     {

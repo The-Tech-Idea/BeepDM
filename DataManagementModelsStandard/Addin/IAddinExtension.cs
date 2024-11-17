@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using TheTechIdea;
 
-namespace DataManagementModels.Addin
+namespace TheTechIdea.Beep.Addin
 {
     public interface IAddinExtension
     {

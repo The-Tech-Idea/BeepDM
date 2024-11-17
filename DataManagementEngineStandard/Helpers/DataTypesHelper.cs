@@ -1,9 +1,9 @@
 ﻿using TheTechIdea.Beep.DataBase;
 using System;
 using System.Collections.Generic;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 using System.Linq;
-using DataManagementModels.DriversConfigurations;
+using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Beep.Helpers

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Tools
+namespace TheTechIdea.Beep.Tools
 {
     public class assemblies_rep : Entity
     {

@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Report;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 
-namespace DataManagementModels.Editor
+
+namespace TheTechIdea.Beep.Editor
 {
     public interface IUnitofWork : IDisposable
     {
@@ -82,12 +85,5 @@ namespace DataManagementModels.Editor
         event EventHandler<UnitofWorkParams> PostCreate;
     }
 
-    public class UnitofWorkParams : PassedArgs
-    {
-        public bool Cancel { get; set; } = false;
-        public string PropertyName { get; set; }
-        public string PropertyValue { get; set; }
-        public string EntityName { get; set; }
-        public object Record { get; set; }
-    }
+  
 }

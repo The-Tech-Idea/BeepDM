@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Beep.Addin
 {

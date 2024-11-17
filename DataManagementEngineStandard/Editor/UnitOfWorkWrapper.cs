@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 using System.Dynamic;
 using TheTechIdea.Beep.Report;
-using DataManagementModels.Editor;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Addin;
 
 namespace TheTechIdea.Beep.Editor
 {

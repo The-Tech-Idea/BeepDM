@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor;
 
 
-namespace TheTechIdea.Tools
+namespace TheTechIdea.Beep.Tools
 {
     public class AssemblyItem : Entity
     {

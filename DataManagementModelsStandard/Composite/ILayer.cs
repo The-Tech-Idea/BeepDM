@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Beep.CompositeLayer
+namespace TheTechIdea.Beep.Composite
 {
     public interface ILayer
     {

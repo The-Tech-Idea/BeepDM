@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
-using TheTechIdea.Beep.CompositeLayer;
 using System.Reflection;
 using TheTechIdea.Beep.Workflow;
-using TheTechIdea.Logger;
+using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.DataBase;
@@ -11,11 +10,15 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Beep.AppManager;
 using TheTechIdea.Beep.FileManager;
-using DataManagementModels.ConfigUtil;
-using DataManagementModels.DriversConfigurations;
-using System;
 
-namespace TheTechIdea.Util
+
+using System;
+using TheTechIdea.Beep.DriversConfigurations;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Composite;
+
+namespace TheTechIdea.Beep.ConfigUtil
 {
     public interface IConfigEditor: IDisposable
     {

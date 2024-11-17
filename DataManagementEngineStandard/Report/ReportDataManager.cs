@@ -10,8 +10,10 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.AppManager;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Beep.DataView;
-using TheTechIdea.Util;
+
+using TheTechIdea.Beep.Editor;
+
+using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Report
 {

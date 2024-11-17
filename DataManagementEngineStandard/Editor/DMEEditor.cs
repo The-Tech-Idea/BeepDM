@@ -1,26 +1,28 @@
 ﻿
 using System.Collections.Generic;
 using System.Data;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 using System.Linq;
 using System;
 using System.Reflection;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Logger;
+using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Workflow;
 using System.ComponentModel;
-using TheTechIdea.Beep.Logger;
-using TheTechIdea.Tools;
-using static TheTechIdea.Beep.Util;
+
+using TheTechIdea.Beep.Tools;
+using  TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Report;
 using System.Threading.Tasks;
 using System.Collections;
-using TheTechIdea.Beep.Tools;
-using DataManagementModels.DriversConfigurations;
-using DataManagementModels.ConfigUtil;
+
+using TheTechIdea.Beep.DriversConfigurations;
+using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Connections;
+using TheTechIdea.Beep.Addin;
+using static TheTechIdea.Beep.Utilities.Util;
 
 
 namespace TheTechIdea.Beep

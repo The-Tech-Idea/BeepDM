@@ -1,9 +1,11 @@
-﻿using DataManagementModels.ConfigUtil;
+﻿
 
 using System.Collections.Generic;
+using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Util
+namespace TheTechIdea.Beep.ConfigUtil
 {
     public interface IConnectionProperties
     {

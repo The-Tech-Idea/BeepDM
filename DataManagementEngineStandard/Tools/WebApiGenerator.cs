@@ -5,8 +5,10 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Util;
-
+using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Editor;
 namespace TheTechIdea.Beep.Tools
 {
     public class WebApiGenerator

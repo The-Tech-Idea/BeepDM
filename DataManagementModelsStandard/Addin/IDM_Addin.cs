@@ -1,10 +1,13 @@
 ﻿using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Logger;
+using TheTechIdea.Beep.Logger;
 using System;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep;
+using TheTechIdea.Beep.Editor;
 
-namespace TheTechIdea
+using TheTechIdea.Beep.ConfigUtil;
+
+namespace TheTechIdea.Beep.Addin
 {
     /// <summary>
     /// Represents an add-in in the Beep system.

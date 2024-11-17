@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using TheTechIdea.Beep.ConfigUtil;
-
-namespace TheTechIdea.Util
+ 
+namespace TheTechIdea.Beep.Utilities
 {/// <summary>
 /// Provides methods for serializing objects to JSON and deserializing JSON to objects.
 /// </summary>

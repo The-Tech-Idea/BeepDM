@@ -4,52 +4,52 @@
         <name>Assembly_helpers</name>
     </assembly>
     <members>
-        <member name="T:TheTechIdea.Tools.AssemblyHandler">
+        <member name="T:TheTechIdea.Beep.Tools.AssemblyHandler">
             <summary>
             Handles assembly-related operations such as loading, scanning for extensions, and managing driver configurations.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Tools.AssemblyHandler.CurrentDomain">
+        <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.CurrentDomain">
             <summary>
             Gets or sets the current domain in which the assembly is executed.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Tools.AssemblyHandler.ErrorObject">
+        <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.ErrorObject">
             <summary>
             Error handling object.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Tools.AssemblyHandler.Logger">
+        <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.Logger">
             <summary>
             Logging interface for tracking activities and errors.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Tools.AssemblyHandler.Utilfunction">
+        <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.Utilfunction">
             <summary>
             Utility functions for assembly handling.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Tools.AssemblyHandler.ConfigEditor">
+        <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.ConfigEditor">
             <summary>
             Interface for configuration editing.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Tools.AssemblyHandler.LoaderExtensionClasses">
+        <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.LoaderExtensionClasses">
             <summary>
             List of classes that extend the loader functionality.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Tools.AssemblyHandler.Assemblies">
+        <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.Assemblies">
             <summary>
             List of assemblies loaded or referenced.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Tools.AssemblyHandler.DataSourcesClasses">
+        <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.DataSourcesClasses">
             <summary>
             List of classes that represent data sources.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.#ctor(TheTechIdea.Util.IConfigEditor,TheTechIdea.Util.IErrorsInfo,TheTechIdea.Logger.IDMLogger,TheTechIdea.Beep.IUtil)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.#ctor(TheTechIdea.Beep.ConfigUtil.IConfigEditor,TheTechIdea.Beep.ConfigUtil.IErrorsInfo,TheTechIdea.Beep.Logger.IDMLogger,TheTechIdea.Beep.Utilities.IUtil)">
             <summary>
             Constructor for AssemblyHandler, initializes necessary properties.
             </summary>
@@ -58,19 +58,19 @@
             <param name="pLogger">Logging interface.</param>
             <param name="pUtilfunction">Utility functions.</param>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.ScanExtensions(TheTechIdea.Tools.assemblies_rep)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.ScanExtensions(TheTechIdea.Beep.Tools.assemblies_rep)">
             <summary>
             Scans and initializes loader extensions within a given assembly representation.
             </summary>
             <param name="assembly">The assemblies_rep object representing the assembly to be scanned.</param>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.ScanExtensions">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.ScanExtensions">
             <summary>
             Scans and initializes loader extensions within a given .NET Assembly object.
             </summary>
             <param name="assembly">The Assembly object to be scanned.</param>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.GetExtensionScanners(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetExtensionScanners(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
             <summary>
             Loads assemblies from a specified path and scans them for extension scanners, 
             reporting progress through IProgress.
@@ -78,19 +78,19 @@
             <param name="progress">The progress reporting mechanism.</param>
             <param name="token">The token to monitor for cancellation requests.</param>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.GetBuiltinClasses">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetBuiltinClasses">
             <summary>
             Scans the current executing assembly and the root assembly for built-in classes.
             </summary>
             <returns>Returns an IErrorsInfo object indicating the success or failure of the operation.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.LoadAllAssembly(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.LoadAllAssembly(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
             <summary>
                 This Method will go through all Folders ProjectClass,OtherDLL,Addin, Drivers and load DLL
             </summary>
             <returns></returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.LoadAssembly(System.String,TheTechIdea.Util.FolderFileTypes)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.LoadAssembly(System.String,TheTechIdea.Beep.Utilities.FolderFileTypes)">
             <summary>
                 Method Will Load All Assembly found in the Passed Path
             </summary>
@@ -98,7 +98,7 @@
             <param name="FolderFileTypes"></param>
             <returns></returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.LoadAssemblyFormRunTime">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.LoadAssemblyFormRunTime">
             <summary>
                 Method Will Load All Assembly found in the Passed Path
             </summary>
@@ -106,7 +106,7 @@
             <param name="FolderFileTypes"></param>
             <returns></returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.RearrangeAddin(System.String,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.RearrangeAddin(System.String,System.String,System.String)">
             <summary>
             Rearranges or adds a new addin object to the function hierarchy.
             </summary>
@@ -115,28 +115,28 @@
             <param name="Objt">The type of the object.</param>
             <returns>Returns a new or existing ParentChildObject based on the input parameters.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.GetAddinObjects(System.Reflection.Assembly)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetAddinObjects(System.Reflection.Assembly)">
             <summary>
             Retrieves addin objects from the specified assembly and organizes them into a hierarchical structure.
             </summary>
             <param name="asm">The assembly to scan for addin objects.</param>
             <returns>A list of ParentChildObjects representing the hierarchical structure of addins.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.GetAddinObjectsFromTree">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetAddinObjectsFromTree">
             <summary>
             Retrieves addin objects from the addin tree structure defined in the configuration editor.
             </summary>
             <returns>A list of ParentChildObjects representing the addins organized in a hierarchical structure.</returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Tools.AssemblyHandler.ScanAssemblyForDataSources(System.Reflection.Assembly)" -->
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.ScanAssembly(System.Reflection.Assembly)">
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Tools.AssemblyHandler.ScanAssemblyForDataSources(System.Reflection.Assembly)" -->
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.ScanAssembly(System.Reflection.Assembly)">
             <summary>
             Scans an assembly to identify various implementations like data sources, loader extensions, workflow actions, and more.
             </summary>
             <param name="asm">The assembly to scan.</param>
             <returns>Returns true if the scanning is successful, otherwise false.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.GetAssemblyClassDefinition(System.Reflection.TypeInfo,System.String)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetAssemblyClassDefinition(System.Reflection.TypeInfo,System.String)">
             <summary>
             Gets the definition of a class within an assembly, including metadata and methods.
             </summary>
@@ -144,7 +144,7 @@
             <param name="typename">The name of the type being defined.</param>
             <returns>Returns an AssemblyClassDefinition object containing class details.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.SendMessege(System.IProgress{TheTechIdea.PassedArgs},System.Threading.CancellationToken,System.String)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.SendMessege(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.String)">
             <summary>
             Sends a progress update message.
             </summary>
@@ -152,7 +152,7 @@
             <param name="token">A cancellation token for the task.</param>
             <param name="messege">The message to be sent. Default is null.</param>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.CreateInstanceFromString(System.String,System.Object[])">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.CreateInstanceFromString(System.String,System.Object[])">
             <summary>
             Creates an instance of a class from its type name.
             </summary>
@@ -160,7 +160,7 @@
             <param name="args">Arguments for the type constructor.</param>
             <returns>An instance of the specified type or null if the type cannot be created.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.CreateInstanceFromString(System.String,System.String,System.Object[])">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.CreateInstanceFromString(System.String,System.String,System.Object[])">
             <summary>
             Creates an instance of a class from its type name within a specific assembly.
             </summary>
@@ -169,7 +169,7 @@
             <param name="args">Arguments for the type constructor.</param>
             <returns>An instance of the specified type or null if the type cannot be created.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.CurrentDomain_AssemblyResolve(System.Object,System.ResolveEventArgs)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.CurrentDomain_AssemblyResolve(System.Object,System.ResolveEventArgs)">
             <summary>
             Handles the assembly resolution for the current application domain.
             </summary>
@@ -177,59 +177,59 @@
             <param name="args">Arguments related to the assembly resolve event.</param>
             <returns>The resolved assembly or null if the assembly cannot be resolved.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.GetInstance(System.String)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetInstance(System.String)">
             <summary>
             Creates an instance of a type specified by a fully qualified name.
             </summary>
             <param name="strFullyQualifiedName">The fully qualified name of the type.</param>
             <returns>An instance of the specified type or null if the type cannot be instantiated.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.GetType(System.String)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetType(System.String)">
             <summary>
             Retrieves a type by its fully qualified name.
             </summary>
             <param name="strFullyQualifiedName">The fully qualified name of the type.</param>
             <returns>The type corresponding to the name, or null if it cannot be found.</returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Tools.AssemblyHandler.RunMethod(System.Object,System.String,System.String)" -->
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.CheckDriverAlreadyExistinList">
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Tools.AssemblyHandler.RunMethod(System.Object,System.String,System.String)" -->
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.CheckDriverAlreadyExistinList">
             <summary>
             Checks and updates the list of driver configurations to ensure no duplicates exist.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.GetADOTypeDrivers(System.Reflection.Assembly)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetADOTypeDrivers(System.Reflection.Assembly)">
             <summary>
             Extracts and configures ADO.NET type driver information from an assembly.
             </summary>
             <param name="asm">The assembly to scan for ADO.NET drivers.</param>
             <returns>True if drivers are successfully extracted, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.GetDrivers(System.Reflection.Assembly)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetDrivers(System.Reflection.Assembly)">
             <summary>
             Retrieves a list of driver configurations from an assembly.
             </summary>
             <param name="asm">The assembly to scan for drivers.</param>
             <returns>A list of driver configurations.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.CreateFileExtensionString">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.CreateFileExtensionString">
             <summary>
             Creates a list of file extensions supported by the data sources.
             </summary>
             <returns>A list of file extension strings.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.AddEngineDefaultDrivers">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.AddEngineDefaultDrivers">
             <summary>
             Adds default engine drivers to the driver configurations.
             </summary>
             <returns>True if default drivers are successfully added, false otherwise.</returns>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.Dispose(System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.Dispose(System.Boolean)">
             <summary>
             Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
             </summary>
             <param name="disposing">Indicates whether the method call comes from a Dispose method (its value is true) or from a finalizer (its value is false).</param>
         </member>
-        <member name="M:TheTechIdea.Tools.AssemblyHandler.Dispose">
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.Dispose">
             <summary>
             Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
             </summary>

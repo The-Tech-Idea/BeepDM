@@ -1,19 +1,19 @@
-﻿using DataManagementModels.ConfigUtil;
-using DataManagementModels.Editor;
+﻿
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
-using TheTechIdea.Logger;
-using TheTechIdea.Tools;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Tools;
+using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.ConfigUtil;
 
-namespace TheTechIdea.Beep
+namespace TheTechIdea.Beep.Editor
 {
     public interface IDMEEditor: IDisposable
     {

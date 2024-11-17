@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DataManagementModels.Addin
+namespace TheTechIdea.Beep.Addin
 {
     public interface IBeepViewModel
     {

@@ -1,5 +1,5 @@
-﻿using DataManagementModels.DriversConfigurations;
-using DataManagementModels.Editor;
+﻿using TheTechIdea.Beep.DriversConfigurations;
+using TheTechIdea.Beep.Editor;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,16 +14,20 @@ using System.Net;
 using System.Reflection;
 using System.Xml.Serialization;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Addin;
+
+
 using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
-using TheTechIdea.Logger;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Beep
+
+namespace TheTechIdea.Beep.Utilities
 {
     public class Util : IUtil
     {
@@ -1600,7 +1604,7 @@ namespace TheTechIdea.Beep
             {
                 if (!File.Exists(file))
                 {
-                   DME.AddLogMessage("Beep", $"Error Could not Find File {file}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
+                   DME.AddLogMessage("Beep", $"Error Could not Find File {file}", DateTime.Now, 0, null, Errors.Failed);
                     return null;
                 }
                 if (FileHelper.FileExists(DME, file) != null)
@@ -1630,7 +1634,7 @@ namespace TheTechIdea.Beep
                 ConnectionDriversConfig c = GetConnectionDrivers(ext);
                 if (c == null)
                 {
-                   DME.AddLogMessage("Beep", $"Error Could not Find Drivers for {filename}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
+                   DME.AddLogMessage("Beep", $"Error Could not Find Drivers for {filename}", DateTime.Now, 0, null, Errors.Failed);
                     return null;
                 }
                 if (c != null)
@@ -1768,7 +1772,7 @@ namespace TheTechIdea.Beep
             }
             else
             {
-               DME.AddLogMessage("Beep", $"Error Could not Find Drivers for extension {ext}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
+               DME.AddLogMessage("Beep", $"Error Could not Find Drivers for extension {ext}", DateTime.Now, 0, null, Errors.Failed);
                 return null;
             }
             return driversConfig;
@@ -1779,7 +1783,7 @@ namespace TheTechIdea.Beep
             IDataSource ds = null;
             if (!File.Exists(filepath))
             {
-               DME.AddLogMessage("Beep", $"Error Could not Find File {filepath}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
+               DME.AddLogMessage("Beep", $"Error Could not Find File {filepath}", DateTime.Now, 0, null, Errors.Failed);
                 return null;
             }
             string filename = Path.GetFileNameWithoutExtension(filepath);
@@ -1788,7 +1792,7 @@ namespace TheTechIdea.Beep
             ConnectionDriversConfig driversConfig = GetConnectionDrivers(ext);
             if (driversConfig == null)
             {
-               DME.AddLogMessage("Beep", $"Error Could not Find Drivers for {filename}", DateTime.Now, 0, null, TheTechIdea.Util.Errors.Failed);
+               DME.AddLogMessage("Beep", $"Error Could not Find Drivers for {filename}", DateTime.Now, 0, null,     Errors.Failed);
                 return null;
             }
             // Found Drivers

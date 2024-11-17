@@ -1,8 +1,9 @@
-﻿using TheTechIdea.Beep.DataBase;
+﻿using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.DataView;
-using TheTechIdea.Util;
+using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Beep.CompositeLayer
+namespace TheTechIdea.Beep.Composite
 {
     public interface ICompositeLayerDataSource
     {
