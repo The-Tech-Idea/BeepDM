@@ -36,10 +36,10 @@ namespace TheTechIdea.Beep.Editor
     [ToolboxBitmap(typeof(UnitOfWork<>), "TheTechIdea.Beep.GFX.unitofwork.ico")]
     [DisplayName("Unit of Work")]
 #endif
-    public class UnitofWork<T> : IUnitofWork<T> where T : Entity, new()
+    public class UnitofWork<T> : IUnitofWork<T>, INotifyPropertyChanged where T : Entity, new()
     {
         private Stack<ChangeLogEntry<T>> changeLog = new Stack<ChangeLogEntry<T>>();
-
+        
         /// <summary>Indicates whether notifications should be suppressed.</summary>
         private bool _suppressNotification = false;
 
@@ -209,8 +209,8 @@ namespace TheTechIdea.Beep.Editor
                 collection.CollectionChanged += Units_CollectionChanged;
             }
         }
-        public T CurrentItem => Units[CurrentPosition];
-        public int CurrentPosition { get; private set; }
+        public T CurrentItem => Units.Current;
+        
         #endregion
         #region "Properties"
         public bool IsInListMode { get; set; } = false;
@@ -222,7 +222,7 @@ namespace TheTechIdea.Beep.Editor
         public Dictionary<int, string> DeletedKeys { get; set; } = new Dictionary<int, string>();
 
         Stack<Tuple<T, int>> undoDeleteStack = new Stack<Tuple<T, int>>();
-        protected virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+       
         public bool IsIdentity { get; set; }= false;
       
         public string Sequencer { get; set; }
@@ -577,6 +577,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 return;
             }
+            OnPropertyChanged("CurrentItem");
         }
 
         /// <summary>Sets the value of the primary key property for the specified entity.</summary>
@@ -2656,6 +2657,38 @@ namespace TheTechIdea.Beep.Editor
         }
 
         #endregion "Undo"
+        #region "Moving"
+        public void MoveFirst()
+        {
+            Units.MoveFirst();
+        }
+
+        public void MoveNext()
+        {
+            Units.MoveNext();
+        }
+
+        public void MovePrevious()
+        {
+            Units.MovePrevious();
+        }
+
+        public void MoveLast()
+        {
+            Units.MoveLast();
+        }
+
+        public void MoveTo(int index)
+        {
+            Units.MoveTo(index);
+        }
+        #endregion "Moving"
+        public virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            if (_suppressNotification) return;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

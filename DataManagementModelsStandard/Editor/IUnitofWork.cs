@@ -70,6 +70,23 @@ namespace TheTechIdea.Beep.Editor
         Tracking GetTrackingITem(T item);
         Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
         bool SaveLog(string pathandname);
+        void MoveFirst();
+
+
+
+         void MoveNext();
+
+
+         void MovePrevious();
+
+
+
+         void MoveLast();
+
+
+
+         void MoveTo(int index);
+       
 
         event EventHandler<UnitofWorkParams> PreInsert;
         event EventHandler<UnitofWorkParams> PreUpdate;
