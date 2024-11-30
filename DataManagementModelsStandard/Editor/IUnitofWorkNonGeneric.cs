@@ -18,6 +18,7 @@ namespace TheTechIdea.Beep.Editor
         void Clear();
         bool IsInListMode { get; set; }
         bool IsDirty { get; }
+        Entity CurrentItem { get; }
         bool IsLogging { get; set; }
         IDataSource DataSource { get; set; }
         string DatasourceName { get; set; }
@@ -69,7 +70,22 @@ namespace TheTechIdea.Beep.Editor
         int GetSeq(string SeqName);
         Entity Read(string id);
         Entity GetItemFromCurrentList(int index);
+        void MoveFirst();
 
+
+
+        void MoveNext();
+
+
+        void MovePrevious();
+
+
+
+        void MoveLast();
+
+
+
+        void MoveTo(int index);
         Tracking GetTrackingItem(Entity item);
         Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
         bool SaveLog(string pathandname);

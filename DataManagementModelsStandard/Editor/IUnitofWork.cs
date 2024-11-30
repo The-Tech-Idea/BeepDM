@@ -18,6 +18,7 @@ namespace TheTechIdea.Beep.Editor
         bool IsInListMode { get; set; }
         bool IsDirty { get; }
         bool IsLogging { get; set; }
+        T CurrentItem { get; }
         IDataSource DataSource { get; set; }
         string DatasourceName { get; set; }
         Dictionary<int, string> DeletedKeys { get; set; }
