@@ -17,6 +17,15 @@ namespace TheTechIdea.Beep.Editor
     public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged where T : class, INotifyPropertyChanged, new()
     {
 
+        public int PageSize { get; private set; } = 20;
+        public int CurrentPage { get; private set; } = 1;
+        public int TotalPages => (int)Math.Ceiling((double)originalList.Count / PageSize);
+        public event EventHandler<ItemAddedEventArgs<T>> ItemAdded;
+        public event EventHandler<ItemRemovedEventArgs<T>> ItemRemoved;
+        public event EventHandler<ItemChangedEventArgs<T>> ItemChanged;
+
+        public event EventHandler<ItemValidatingEventArgs<T>> ItemValidating;
+        public event EventHandler<ItemValidatingEventArgs<T>> ItemDeleteing;
         protected override object AddNewCore()
         {
             var newItem = Activator.CreateInstance<T>();
@@ -211,6 +220,27 @@ namespace TheTechIdea.Beep.Editor
             list[i] = list[j];
             list[j] = temp;
         }
+        public void ApplySort(string propertyName, ListSortDirection direction)
+        {
+            if (string.IsNullOrEmpty(propertyName))
+                throw new ArgumentException("Property name cannot be null or empty.");
+
+            PropertyDescriptor propDesc = TypeDescriptor.GetProperties(typeof(T))[propertyName];
+            if (propDesc == null)
+                throw new ArgumentException($"No property '{propertyName}' in type '{typeof(T).Name}'");
+
+            // Create a comparer based on the property and direction
+            var comparer = new PropertyComparer<T>(propDesc, direction);
+
+            // Sort the original list
+            originalList.Sort(comparer);
+
+            // Apply the same sort to the current list
+            var sortedList = new List<T>(originalList);
+            ResetItems(sortedList);
+
+            ResetBindings();
+        }
 
         protected override void ApplySortCore(PropertyDescriptor prop, ListSortDirection direction)
         {
@@ -335,6 +365,11 @@ namespace TheTechIdea.Beep.Editor
         }
         #endregion
         #region "Find"
+        public List<T> Search(Func<T, bool> predicate)
+        {
+            return originalList.Where(predicate).ToList();
+        }
+
         public T Find(Expression<Func<T, bool>> predicate)
         {
             if (predicate == null)
@@ -360,6 +395,63 @@ namespace TheTechIdea.Beep.Editor
         private List<T> originalList = new List<T>();
         private List<T> DeletedList = new List<T>();
         public bool SupportsFiltering => true;
+        // New ApplyFilter method using predicate
+        public void ApplyFilter(Func<T, bool> predicate)
+        {
+            SuppressNotification = true;
+            RaiseListChangedEvents = false;
+
+            if (predicate == null)
+            {
+                // Remove filter by resetting items to the original list
+                ResetItems(originalList);
+            }
+            else
+            {
+                // Apply the predicate to filter the items
+                var filteredItems = originalList.Where(predicate).ToList();
+                ResetItems(filteredItems);
+            }
+
+            ResetBindings();
+            SuppressNotification = false;
+            RaiseListChangedEvents = true;
+        }
+        public void ApplyFilter(string propertyName, object value, string comparisonOperator = "==")
+        {
+            var parameter = Expression.Parameter(typeof(T), "x");
+            var property = Expression.Property(parameter, propertyName);
+            var constant = Expression.Constant(value);
+
+            BinaryExpression comparison;
+            switch (comparisonOperator)
+            {
+                case "==":
+                    comparison = Expression.Equal(property, constant);
+                    break;
+                case "!=":
+                    comparison = Expression.NotEqual(property, constant);
+                    break;
+                case ">":
+                    comparison = Expression.GreaterThan(property, constant);
+                    break;
+                case "<":
+                    comparison = Expression.LessThan(property, constant);
+                    break;
+                case ">=":
+                    comparison = Expression.GreaterThanOrEqual(property, constant);
+                    break;
+                case "<=":
+                    comparison = Expression.LessThanOrEqual(property, constant);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid comparison operator");
+            }
+
+            var lambda = Expression.Lambda<Func<T, bool>>(comparison, parameter);
+            ApplyFilter(lambda.Compile());
+        }
+
         public string Filter
         {
             get => filterString;
@@ -855,6 +947,7 @@ namespace TheTechIdea.Beep.Editor
                 if (e.ListChangedType == ListChangedType.ItemChanged && e.NewIndex >= 0 && e.NewIndex < Count)
                 {
                     _currentIndex = e.NewIndex;
+                   
                     OnCurrentChanged();
                 }
                 base.OnListChanged(e); // Ensure base method is called conditionally
@@ -871,7 +964,14 @@ namespace TheTechIdea.Beep.Editor
         void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             T item = (T)sender;
-
+            var args = new ItemValidatingEventArgs<T>(item);
+            ItemValidating?.Invoke(this, args);
+            if (args.Cancel)
+            {
+                // Revert change or handle as needed
+                throw new InvalidOperationException(args.ErrorMessage);
+            }
+            // Continue with change notification
             // Notify that the entire item has changed, not just a single property
             if (!SuppressNotification)
             {
@@ -880,6 +980,7 @@ namespace TheTechIdea.Beep.Editor
                 {
 
                     OnListChanged(new ListChangedEventArgs(ListChangedType.ItemChanged, index));
+                    ItemChanged?.Invoke(this, new ItemChangedEventArgs<T>((T)sender, e.PropertyName));
                 }
 
             }
@@ -888,6 +989,14 @@ namespace TheTechIdea.Beep.Editor
         protected override void RemoveItem(int index)
         {
             T removedItem = this[index];
+            var args = new ItemValidatingEventArgs<T>(removedItem);
+            ItemDeleteing?.Invoke(this, args);
+            if (args.Cancel)
+            {
+                // Revert change or handle as needed
+                throw new InvalidOperationException(args.ErrorMessage);
+            }
+            // Continue with change notification
             int trackingindex = -1;
             Tracking tracking = null;
             if (Trackings.Count > 0)
@@ -909,7 +1018,7 @@ namespace TheTechIdea.Beep.Editor
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
             Items.RemoveAt(index);
             originalList.RemoveAt(tracking.OriginalIndex);
-
+            ItemRemoved?.Invoke(this, new ItemRemovedEventArgs<T>(removedItem));
             if (tracking != null)
             {
               Trackings.Remove(tracking);
@@ -917,12 +1026,19 @@ namespace TheTechIdea.Beep.Editor
         }
         protected override void InsertItem(int index, T item)
         {
+            var args = new ItemValidatingEventArgs<T>(item);
+            ItemValidating?.Invoke(this, args);
+            if (args.Cancel)
+            {
+                throw new InvalidOperationException(args.ErrorMessage);
+            }
             base.InsertItem(index, item);
 
             if (!SuppressNotification)
             {
                 if (RaiseListChangedEvents)
                 {
+                    ItemAdded?.Invoke(this, new ItemAddedEventArgs<T>(item));
                     Tracking tr = new Tracking(Guid.NewGuid(), index, index);
                     tr.EntityState = EntityState.Added;
                     tr.IsNew = true;
@@ -1164,6 +1280,34 @@ namespace TheTechIdea.Beep.Editor
         }
 
         #endregion
+        #region "Pagination"
+        public void SetPageSize(int pageSize)
+        {
+            if (pageSize <= 0)
+                throw new ArgumentException("Page size must be greater than zero.");
+
+            PageSize = pageSize;
+            CurrentPage = 1;
+            ApplyPaging();
+        }
+
+        public void GoToPage(int pageNumber)
+        {
+            if (pageNumber < 1 || pageNumber > TotalPages)
+                throw new ArgumentOutOfRangeException("Invalid page number.");
+
+            CurrentPage = pageNumber;
+            ApplyPaging();
+        }
+
+        private void ApplyPaging()
+        {
+            var pagedItems = originalList.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+            ResetItems(pagedItems);
+            ResetBindings();
+        }
+
+        #endregion "Pagination"
     }
     public class Tracking
     {
@@ -1258,4 +1402,60 @@ namespace TheTechIdea.Beep.Editor
 
 
     }
+    public class PropertyComparer<T> : IComparer<T>
+    {
+        private readonly PropertyDescriptor _property;
+        private readonly ListSortDirection _direction;
+
+        public PropertyComparer(PropertyDescriptor property, ListSortDirection direction)
+        {
+            _property = property;
+            _direction = direction;
+        }
+
+        public int Compare(T x, T y)
+        {
+            var valueX = _property.GetValue(x);
+            var valueY = _property.GetValue(y);
+
+            int result = Comparer.Default.Compare(valueX, valueY);
+
+            return _direction == ListSortDirection.Ascending ? result : -result;
+        }
+    }
+    public class ItemAddedEventArgs<T> : EventArgs
+    {
+        public T Item { get; }
+        public ItemAddedEventArgs(T item) => Item = item;
+    }
+
+    public class ItemRemovedEventArgs<T> : EventArgs
+    {
+        public T Item { get; }
+        public ItemRemovedEventArgs(T item) => Item = item;
+    }
+
+    public class ItemChangedEventArgs<T> : EventArgs
+    {
+        public T Item { get; }
+        public string PropertyName { get; }
+        public ItemChangedEventArgs(T item, string propertyName)
+        {
+            Item = item;
+            PropertyName = propertyName;
+        }
+    }
+    public class ItemValidatingEventArgs<T> : EventArgs
+    {
+        public T Item { get; }
+        public bool Cancel { get; set; } = false;
+        public string ErrorMessage { get; set; }
+
+        public ItemValidatingEventArgs(T item)
+        {
+            Item = item;
+        }
+    }
+
+
 }
