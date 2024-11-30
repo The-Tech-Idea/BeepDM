@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
@@ -36,6 +37,7 @@ namespace TheTechIdea.Beep.Editor
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         Task<IErrorsInfo> Commit();
         Task<IErrorsInfo> Rollback();
+        void Create();
         void Create(T entity);
         ErrorsInfo Delete(string id);
         ErrorsInfo Delete(T doc);
@@ -87,7 +89,14 @@ namespace TheTechIdea.Beep.Editor
 
 
          void MoveTo(int index);
-       
+        Task<IErrorsInfo> UpdateAsync(T doc);
+        Task<IErrorsInfo> InsertAsync(T doc);
+        Task<IErrorsInfo> DeleteAsync(T doc);
+
+        Task<IErrorsInfo> InsertDoc(T doc);
+        Task<IErrorsInfo> UpdateDoc(T doc);
+        Task<IErrorsInfo> DeleteDoc(T doc);
+
 
         event EventHandler<UnitofWorkParams> PreInsert;
         event EventHandler<UnitofWorkParams> PreUpdate;

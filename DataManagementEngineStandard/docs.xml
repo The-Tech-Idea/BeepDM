@@ -1970,6 +1970,15 @@
             <param name="doc">The document to delete.</param>
             <returns>An object containing information about any errors that occurred during the deletion process.</returns>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Create">
+            <summary>Adds a new entity to the collection and subscribes to its PropertyChanged event.</summary>
+            <param name="entity">The entity to be added.</param>
+            <remarks>
+            This method first validates all entities in the collection using the Validateall method.
+            If the validation fails, the method returns without adding the entity.
+            Otherwise, the entity is added to the Units collection and the ItemPropertyChangedHandler is subscribed to its PropertyChanged event.
+            </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Create(`0)">
             <summary>Adds a new entity to the collection and subscribes to its PropertyChanged event.</summary>
             <param name="entity">The entity to be added.</param>

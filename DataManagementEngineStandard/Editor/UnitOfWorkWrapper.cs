@@ -159,7 +159,13 @@ namespace TheTechIdea.Beep.Editor
         public ErrorsInfo Update(dynamic entity) => _unitOfWork.Update(entity);
 
         public ErrorsInfo Update(string id, dynamic entity) => _unitOfWork.Update(id, entity);
+        public async Task<IErrorsInfo> UpdateAsync(dynamic doc)=> await _unitOfWork.UpdateAsync(doc);
+        public async Task<IErrorsInfo> InsertAsync(dynamic doc) => await _unitOfWork.InsertAsync(doc);
+        public async  Task<IErrorsInfo> DeleteAsync(dynamic doc) => await _unitOfWork.DeleteAsync(doc);
 
+        public async  Task<IErrorsInfo> InsertDoc(dynamic doc) => await _unitOfWork.InsertDoc(doc);
+        public async Task<IErrorsInfo> UpdateDoc(dynamic doc) => await _unitOfWork.UpdateDoc(doc);
+        public async Task<IErrorsInfo> DeleteDoc(dynamic doc) => await _unitOfWork.DeleteDoc(doc);
         public int DocExist(dynamic doc) => _unitOfWork.DocExist(doc);
 
         public int DocExistByKey(dynamic doc) => _unitOfWork.DocExistByKey(doc);

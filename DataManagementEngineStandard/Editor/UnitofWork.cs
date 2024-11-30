@@ -935,6 +935,29 @@ namespace TheTechIdea.Beep.Editor
 
             return Task.FromResult<IErrorsInfo>(retval);
         }
+        /// <summary>Adds a new entity to the collection and subscribes to its PropertyChanged event.</summary>
+        /// <param name="entity">The entity to be added.</param>
+        /// <remarks>
+        /// This method first validates all entities in the collection using the Validateall method.
+        /// If the validation fails, the method returns without adding the entity.
+        /// Otherwise, the entity is added to the Units collection and the ItemPropertyChangedHandler is subscribed to its PropertyChanged event.
+        /// </remarks>
+        public void Create()
+        {
+            if (!Validateall())
+            {
+                return;
+            }
+            T entity = new T();
+            Units.Add(entity);
+            changeLog.Push(new ChangeLogEntry<T>
+            {
+                Entity = entity,
+                ChangeType = ChangeType.Insert
+            });
+            // Subscribe to PropertyChanged event
+            entity.PropertyChanged += ItemPropertyChangedHandler;
+        }
 
         /// <summary>Adds a new entity to the collection and subscribes to its PropertyChanged event.</summary>
         /// <param name="entity">The entity to be added.</param>

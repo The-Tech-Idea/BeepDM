@@ -38,7 +38,7 @@ namespace TheTechIdea.Beep.Editor
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         Task<IErrorsInfo> Commit();
         Task<IErrorsInfo> Rollback();
-
+        void Create();
         ErrorsInfo Delete(string id);
         ErrorsInfo Delete();
         ErrorsInfo Update(Func<Entity, bool> predicate, Entity updatedEntity);
@@ -83,7 +83,13 @@ namespace TheTechIdea.Beep.Editor
 
         void MoveLast();
 
+        Task<IErrorsInfo> UpdateAsync(Entity doc);
+        Task<IErrorsInfo> InsertAsync(Entity doc);
+        Task<IErrorsInfo> DeleteAsync(Entity doc);
 
+        Task<IErrorsInfo> InsertDoc(Entity doc);
+        Task<IErrorsInfo> UpdateDoc(Entity doc);
+        Task<IErrorsInfo> DeleteDoc(Entity doc);
 
         void MoveTo(int index);
         Tracking GetTrackingItem(Entity item);
