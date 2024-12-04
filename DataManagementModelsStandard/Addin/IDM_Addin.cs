@@ -30,8 +30,9 @@ namespace TheTechIdea.Beep.Addin
         EntityStructure EntityStructure { get; set; }
         string EntityName { get; set; }
         IPassedArgs Passedarg { get; set; }
-       
+        string GuidID { get; set; }
         void Run(IPassedArgs pPassedarg);
+        void Run(params object[] args);
         void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil,string[] args, IPassedArgs e, IErrorsInfo per );
         
     }
