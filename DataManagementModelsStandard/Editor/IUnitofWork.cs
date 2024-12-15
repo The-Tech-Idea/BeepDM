@@ -39,11 +39,7 @@ namespace TheTechIdea.Beep.Editor
         Task<IErrorsInfo> Rollback();
         void Create();
         void Create(T entity);
-        ErrorsInfo Delete(string id);
-        ErrorsInfo Delete(T doc);
-        ErrorsInfo Delete();
-        ErrorsInfo Update(T entity);
-        ErrorsInfo Update(string id, T entity);
+     
         T Read(Func<T, bool> predicate);
         Task<ObservableBindingList<T>> MultiRead(Func<T, bool> predicate);
         ErrorsInfo Update(Func<T, bool> predicate, T updatedEntity);
@@ -74,28 +70,22 @@ namespace TheTechIdea.Beep.Editor
         Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
         bool SaveLog(string pathandname);
         void MoveFirst();
-
-
-
          void MoveNext();
-
-
          void MovePrevious();
-
-
-
          void MoveLast();
-
-
-
          void MoveTo(int index);
         Task<IErrorsInfo> UpdateAsync(T doc);
         Task<IErrorsInfo> InsertAsync(T doc);
         Task<IErrorsInfo> DeleteAsync(T doc);
 
-        Task<IErrorsInfo> InsertDoc(T doc);
-        Task<IErrorsInfo> UpdateDoc(T doc);
-        Task<IErrorsInfo> DeleteDoc(T doc);
+        IErrorsInfo InsertDoc(T doc);
+        IErrorsInfo UpdateDoc(T doc);
+        IErrorsInfo DeleteDoc(T doc);
+        IErrorsInfo Delete(string id);
+        IErrorsInfo Delete(T doc);
+        IErrorsInfo Delete();
+        IErrorsInfo Update(T entity);
+        IErrorsInfo Update(string id, T entity);
 
 
         event EventHandler<UnitofWorkParams> PreInsert;

@@ -785,7 +785,7 @@ namespace TheTechIdea.Beep.Editor
                 DMEEditor.ErrorObject.Message = "Object is null";
                 return DMEEditor.ErrorObject;
             }
-            IErrorsInfo retval = await UpdateDoc(doc);
+            IErrorsInfo retval = UpdateDoc(doc);
             return retval;
         }
         /// <summary>Inserts a document asynchronously.</summary>
@@ -810,7 +810,7 @@ namespace TheTechIdea.Beep.Editor
                 DMEEditor.ErrorObject.Message = "Object is null";
                 return DMEEditor.ErrorObject;
             }
-            IErrorsInfo retval = await InsertDoc(doc);
+            IErrorsInfo retval = InsertDoc(doc);
             return retval;
         }
         /// <summary>Deletes a document asynchronously.</summary>
@@ -830,7 +830,7 @@ namespace TheTechIdea.Beep.Editor
                 return DMEEditor.ErrorObject;
             }
             
-            IErrorsInfo retval = await DeleteDoc(doc);
+            IErrorsInfo retval = DeleteDoc(doc);
 
             return retval;
         }
@@ -838,7 +838,7 @@ namespace TheTechIdea.Beep.Editor
         /// <typeparam name="T">The type of the document.</typeparam>
         /// <param name="doc">The document to insert.</param>
         /// <returns>An object containing information about any errors that occurred during the insertion.</returns>
-        public Task<IErrorsInfo> InsertDoc(T doc)
+        public  IErrorsInfo InsertDoc(T doc)
         {
 
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
@@ -873,12 +873,12 @@ namespace TheTechIdea.Beep.Editor
                 }
 
             }
-            return Task.FromResult<IErrorsInfo>(retval);
+            return retval;
         }
         /// <summary>Updates a document and returns information about any errors that occurred.</summary>
         /// <param name="doc">The document to update.</param>
         /// <returns>An object containing information about any errors that occurred during the update.</returns>
-        public Task<IErrorsInfo> UpdateDoc(T doc)
+        public IErrorsInfo UpdateDoc(T doc)
         {
             IErrorsInfo retval;
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
@@ -900,12 +900,12 @@ namespace TheTechIdea.Beep.Editor
                 
             }
             
-            return Task.FromResult<IErrorsInfo>(retval);
+            return retval;
         }
         /// <summary>Deletes a document and returns information about any errors that occurred.</summary>
         /// <param name="doc">The document to delete.</param>
         /// <returns>An object containing information about any errors that occurred during the deletion process.</returns>
-        public Task<IErrorsInfo> DeleteDoc(T doc)
+        public IErrorsInfo DeleteDoc(T doc)
         {
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
             string cname = classnames[classnames.Count() - 1];
@@ -933,7 +933,7 @@ namespace TheTechIdea.Beep.Editor
             }
          
 
-            return Task.FromResult<IErrorsInfo>(retval);
+            return retval;
         }
         /// <summary>Adds a new entity to the collection and subscribes to its PropertyChanged event.</summary>
         /// <param name="entity">The entity to be added.</param>
@@ -1002,7 +1002,7 @@ namespace TheTechIdea.Beep.Editor
         /// If the object is found and successfully deleted, the ErrorsInfo object will have a message of "Delete Done" and a flag of Errors.Ok.
         /// If the object is not found, the ErrorsInfo object will have a message of "Object not found" and a flag of Errors.Failed.
         /// </remarks>
-        public ErrorsInfo Delete(string id)
+        public IErrorsInfo Delete(string id)
         {
             ErrorsInfo errorsInfo = new ErrorsInfo();
             if (!Validateall())
@@ -1073,7 +1073,7 @@ namespace TheTechIdea.Beep.Editor
                 return errorsInfo;
             
         }
-        public ErrorsInfo Delete()
+        public IErrorsInfo Delete()
         {
             ErrorsInfo errorsInfo = new ErrorsInfo();
             if (!Validateall())
@@ -1177,7 +1177,7 @@ namespace TheTechIdea.Beep.Editor
         /// If the entity fails validation, the ErrorsInfo object will have a Flag of Errors.Failed and a Message of "Validation Failed".
         /// If the entity is not found, the ErrorsInfo object will have a Flag of Errors.Failed and a Message of "Object not found".
         /// </remarks>
-        public ErrorsInfo Delete(T entity)
+        public IErrorsInfo Delete(T entity)
         {
             ErrorsInfo errorsInfo = new ErrorsInfo();
             if (!Validateall())
@@ -1282,7 +1282,7 @@ namespace TheTechIdea.Beep.Editor
         /// If the entity is successfully updated, the ErrorsInfo object will have a message indicating the success and a flag set to Errors.Ok.
         /// If the entity is not found, the ErrorsInfo object will have a message indicating the failure and a flag set to Errors.Failed.
         /// </remarks>
-        public ErrorsInfo Update(T entity)
+        public IErrorsInfo Update(T entity)
         {
             ErrorsInfo errorsInfo = new ErrorsInfo();
             if (!Validateall())
@@ -1347,7 +1347,7 @@ namespace TheTechIdea.Beep.Editor
         /// <param name="id">The ID of the entity to update.</param>
         /// <param name="entity">The updated entity.</param>
         /// <returns>An ErrorsInfo object indicating the result of the update operation.</returns>
-        public ErrorsInfo Update(string id, T entity)
+        public IErrorsInfo Update(string id, T entity)
         {
             ErrorsInfo errorsInfo = new ErrorsInfo();
             if (!Validateall())
@@ -1508,7 +1508,7 @@ namespace TheTechIdea.Beep.Editor
                 DMEEditor.AddLogMessage("UnitofWork", $"Saving and Commiting Changes error {ex.Message}", DateTime.Now, args.ParameterInt1, ex.Message, Errors.Failed);
             }
             _suppressNotification = false;
-            return await Task.FromResult<IErrorsInfo>(errorsInfo);
+            return  errorsInfo;
         }
         /// <summary>Commits changes made in the unit of work.</summary>
         /// <returns>An object containing information about any errors that occurred during the commit.</returns>
@@ -1628,7 +1628,7 @@ namespace TheTechIdea.Beep.Editor
                 DMEEditor.AddLogMessage("UnitofWork", $"Saving and Commiting Changes error {ex.Message}", DateTime.Now, args.ParameterInt1, ex.Message, Errors.Failed);
             }
             _suppressNotification = false;
-            return await Task.FromResult<IErrorsInfo>(errorsInfo);
+            return errorsInfo;
         }
         /// <summary>Gets the next value of a sequence.</summary>
         /// <param name="SeqName">The name of the sequence.</param>
