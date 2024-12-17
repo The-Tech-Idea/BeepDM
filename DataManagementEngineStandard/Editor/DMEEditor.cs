@@ -31,13 +31,14 @@ namespace TheTechIdea.Beep
     /// Data Management Enterprize Editor (DMEEditor)
     /// This is the Class that encapsulate all functionality of Data Management.
     /// </summary>
-    public class DMEEditor : IDMEEditor
+    public class DMEEditor : IDMEEditor,IDisposable
     {
         private bool disposedValue;
         /// <summary>
         /// Container Properties to allow multi-tenant application
         /// </summary>
         /// 
+        #region "Properties"
         public bool ContainerMode { get; set; } = false;
         public IProgress<PassedArgs> progress { get; set; }
         public string ContainerName { get; set; } = null;
@@ -92,10 +93,43 @@ namespace TheTechIdea.Beep
         /// <summary>
         /// Global Event Handler to handle events  in class
         /// </summary>
+        /// 
+        private DefaultsManager _defaultsManager;
         public event EventHandler<PassedArgs> PassEvent;
         public string EntityName { get; set; }
-        public  string DataSourceName { get; set; }
+        public string DataSourceName { get; set; }
         IDataSource ds1;
+        #endregion "Properties"
+        #region "Log and Error Methods"
+        /// <summary>
+        /// Raise the Public and Global event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        public void RaiseEvent(object sender, PassedArgs args)
+        {
+            PassEvent?.Invoke(sender, args);
+        }
+        /// <summary>
+        /// Functio to Raise Question 
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        public IErrorsInfo AskQuestion(IPassedArgs args)
+        {
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+            }
+            return ErrorObject;
+        }
         /// <summary>
         /// Function to Add Log Message 
         /// </summary>
@@ -105,34 +139,144 @@ namespace TheTechIdea.Beep
         /// <param name="pRecordID"></param>
         /// <param name="pMiscData"></param>
         /// <param name="pFlag"></param>
-        public void AddLogMessage(string pLogType ,string pLogMessage ,DateTime pLogData , int pRecordID , string pMiscData,Errors pFlag)
+        public void AddLogMessage(string pLogType, string pLogMessage, DateTime pLogData, int pRecordID, string pMiscData, Errors pFlag)
         {
             if (Logger != null)
             {
-              //  LogAndError log = new LogAndError(pLogType, pLogMessage, pLogData, pRecordID, pMiscData);
-             //   Loganderrors.Add(log);
+                //  LogAndError log = new LogAndError(pLogType, pLogMessage, pLogData, pRecordID, pMiscData);
+                //   Loganderrors.Add(log);
                 string errmsg = pLogType + "," + pLogMessage;
                 ErrorObject.Flag = pFlag;
                 ErrorObject.Message = errmsg;
-                Task.Run(()=> Logger.WriteLog(errmsg));
+                Task.Run(() => Logger.WriteLog(errmsg));
             }
         }
         /// <summary>
         /// Function to Add Log Message 
         /// </summary>
         /// <param name="pLogMessage"></param>
-        public void AddLogMessage( string pLogMessage)
+        public void AddLogMessage(string pLogMessage)
         {
             if (Logger != null)
             {
-              //  LogAndError log = new LogAndError("Beep", pLogMessage,DateTime.Now, 0, null);
-              //  Loganderrors.Add(log);
+                //  LogAndError log = new LogAndError("Beep", pLogMessage,DateTime.Now, 0, null);
+                //  Loganderrors.Add(log);
                 string errmsg = "Beep" + "," + pLogMessage;
-                ErrorObject.Flag =  Errors.Ok;
+                ErrorObject.Flag = Errors.Ok;
                 ErrorObject.Message = errmsg;
                 Task.Run(() => Logger.WriteLog(errmsg));
             }
         }
+        #endregion "Log and Error Methods"
+        #region "Entity Structure Methods"
+        /// <summary>
+        /// Get Entity Structure from DataSource
+        /// </summary>
+        /// <param name="entityname"></param>
+        /// <param name="datasourcename"></param>
+        /// <returns></returns>
+        public EntityStructure GetEntityStructure(string entityname, string datasourcename)
+        {
+            IDataSource ds = null;
+            EntityStructure entity = null;
+            try
+            {
+                ds = GetDataSource(datasourcename);
+                if (ds != null)
+                {
+                    entity = ds.GetEntityStructure(entityname, true);
+                }
+                return entity;
+            }
+            catch (Exception ex)
+            {
+
+                return entity;
+            }
+        }
+        #endregion "Entity Structure Methods"
+        #region "Get Data Methods"
+        /// <summary>
+        /// Run Query on an Opened DataSource 
+        /// </summary>
+        /// <param name="ds"></param>
+        /// <param name="CurrentEntity"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        private async Task<dynamic> GetOutputAsync(IDataSource ds, string CurrentEntity, List<AppFilter> filter)
+        {
+            return await ds.GetEntityAsync(CurrentEntity, filter);
+        }
+        /// <summary>
+        /// Get Entity Data from an Opened DataSource
+        /// </summary>
+        /// <param name="ds"></param>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public object GetData(IDataSource ds, EntityStructure entity)
+        {
+            object retval = null;
+            if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
+            {
+                if (ds.Category == DatasourceCategory.WEBAPI)
+                {
+                    try
+                    {
+                        Task<dynamic> output = GetOutputAsync(ds, entity.EntityName, entity.Filters);
+                        output.Wait();
+                        dynamic t = output.Result;
+                        Type tp = t.GetType();
+                        if (!tp.GetTypeInfo().ImplementedInterfaces.Contains(typeof(IList)))
+
+                        {
+                            retval = ConfigEditor.JsonLoader.JsonToDataTable(t.ToString());
+                        }
+                        else
+                        {
+                            retval = t;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        AddLogMessage($"{ex.Message}");
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        retval = ds.GetEntity(entity.EntityName, entity.Filters);
+
+                    }
+                    catch (Exception ex)
+                    {
+
+                        AddLogMessage($"{ex.Message}");
+                    }
+
+                }
+                if (retval != null)
+                {
+                    try
+                    {
+                        entity = Utilfunction.GetEntityStructureFromListorTable(retval);
+                    }
+                    catch (Exception ex)
+                    {
+
+                        throw;
+                    }
+                }
+                else
+                {
+                    retval = null;
+                }
+
+            }
+            return retval;
+        }
+        #endregion "Get Data Methods"
+        #region "Data Sources Methods"
         /// <summary>
         /// Open DataSource and add it list of DataSources , if the samename exist in connections list
         /// </summary>
@@ -146,7 +290,7 @@ namespace TheTechIdea.Beep
                 if (ds1 == null)
                 {
                     GetDataSource(pdatasourcename);
-                  
+
                 }
                 if (ds1 != null)
                 {
@@ -157,13 +301,13 @@ namespace TheTechIdea.Beep
                     AddLogMessage("Fail", $"Could not Open DataSource Connection ", DateTime.Now, 0, pdatasourcename, Errors.Failed);
                     return ConnectionState.Broken;
                 }
-              
+
             }
             catch (Exception ex)
             {
 
                 AddLogMessage("Fail", $"Could not Open DataSource Connection {ex.Message}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
-                return ConnectionState.Broken; 
+                return ConnectionState.Broken;
             }
 
         }
@@ -176,11 +320,11 @@ namespace TheTechIdea.Beep
         {
             try
             {
-                ConnectionState st= ConnectionState.Closed;
+                ConnectionState st = ConnectionState.Closed;
                 IDataSource ds1 = GetDataSource(pdatasourcename);
                 if (ds1 != null)
                 {
-                     st= ds1.Dataconnection.CloseConn();
+                    st = ds1.Dataconnection.CloseConn();
                 }
                 else
                 {
@@ -192,7 +336,7 @@ namespace TheTechIdea.Beep
                 }
                 else
                     return false;
-               
+
             }
             catch (Exception ex)
             {
@@ -212,22 +356,23 @@ namespace TheTechIdea.Beep
             {
                 return null;
             }
-            else {
+            else
+            {
                 if (ds1 != null)
                 {
-                    if (pdatasourcename.Equals(ds1.DatasourceName,StringComparison.InvariantCultureIgnoreCase))
+                    if (pdatasourcename.Equals(ds1.DatasourceName, StringComparison.InvariantCultureIgnoreCase))
                     {
                         return ds1;
                     }
                 }
-               
+
                 try
                 {
                     ds1 = DataSources.Where(f => !string.IsNullOrEmpty(f.DatasourceName) && f.DatasourceName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 }
                 catch (Exception ex)
                 {
-                    AddLogMessage(ex.Message, "Could not Open Datasource " , DateTime.Now, -1, "", Errors.Failed);
+                    AddLogMessage(ex.Message, "Could not Open Datasource ", DateTime.Now, -1, "", Errors.Failed);
                 };
                 if (ds1 == null) //|| ds1.ConnectionStatus==ConnectionState.Closed
                 {
@@ -244,7 +389,8 @@ namespace TheTechIdea.Beep
                                     ds1.Entities = ConfigEditor.LoadDataSourceEntitiesValues(ds1.DatasourceName).Entities;
                                 }
                             }
-                        }else
+                        }
+                        else
                         {
                             AddLogMessage("Fail", $"Error in Opening Connection ({ErrorObject.Message})", DateTime.Now, -1, "", Errors.Failed);
                         }
@@ -260,7 +406,7 @@ namespace TheTechIdea.Beep
             {
                 ds1.GuidID = ds1.Dataconnection.ConnectionProp.GuidID;
             }
-            return ds1 ;
+            return ds1;
         }
         /// <summary>
         /// Open DataSource and add it list of DataSources , if the samename exist in connections list
@@ -415,7 +561,7 @@ namespace TheTechIdea.Beep
             }
             catch (Exception ex)
             {
-               
+
 
                 AddLogMessage("Beep", $"Could not check Datasource Exist {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
                 return false;
@@ -436,8 +582,8 @@ namespace TheTechIdea.Beep
                 {
                     if (ds.Dataconnection.DataSourceDriver.CreateLocal)
                     {
-                            int x=ConfigEditor.DataConnections.FindIndex(x => x.GuidID.Equals(guidID, StringComparison.InvariantCultureIgnoreCase));
-                        if(x>=0)
+                        int x = ConfigEditor.DataConnections.FindIndex(x => x.GuidID.Equals(guidID, StringComparison.InvariantCultureIgnoreCase));
+                        if (x >= 0)
                         {
                             ConfigEditor.DataConnections.Remove(ConfigEditor.DataConnections[x]);
                         }
@@ -506,7 +652,7 @@ namespace TheTechIdea.Beep
                 return null;
             }
         }
-      
+
         /// <summary>
         /// Get DataSource Assembly and Class Handling Class
         /// </summary>
@@ -517,12 +663,13 @@ namespace TheTechIdea.Beep
             AssemblyClassDefinition retval = null;
             try
             {
-                ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName.Equals(DatasourceName,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName.Equals(DatasourceName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
                 ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
-                if (cn==null || driversConfig == null)
+                if (cn == null || driversConfig == null)
                 {
-                    AddLogMessage("Fail", "Could not get Datasource class " , DateTime.Now, -1, "", Errors.Failed);
-                }else
+                    AddLogMessage("Fail", "Could not get Datasource class ", DateTime.Now, -1, "", Errors.Failed);
+                }
+                else
                 {
                     retval = ConfigEditor.DataSourcesClasses.Where(x => x.className == driversConfig.classHandler).FirstOrDefault();
                 }
@@ -535,170 +682,7 @@ namespace TheTechIdea.Beep
             };
             return retval;
         }
-        /// <summary>
-        /// Create New Datasource and add to the List
-        /// </summary>
-        /// <param name="pdatasourcename"></param>
-        /// <returns></returns>
-        public IDataSource CreateNewDataSourceConnection(string pdatasourcename)
-        {
-            ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName!=null && f.ConnectionName.Equals(pdatasourcename,StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-            ErrorObject.Flag = Errors.Ok;
-            if (cn != null)
-            {
-               return CreateNewDataSourceConnection(cn, pdatasourcename);
-            }
-            else
-            {
-                AddLogMessage("Failure", "Error occured in  DataSource Creation " + pdatasourcename, DateTime.Now, 0, null, Errors.Ok);
-                return null;
-            }
-        }
-        /// <summary>
-        /// Create New Datasource and add to the List by passing new Connection Properties 
-        /// </summary>
-        /// <param name="cn"></param>
-        /// <param name="pdatasourcename"></param>
-        /// <returns></returns>
-        public IDataSource CreateNewDataSourceConnection(ConnectionProperties cn, string pdatasourcename)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            IDataSource ds = null;
-            ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
-            if (driversConfig == null)
-            {
-                AddLogMessage("Fail", $"Error Coud not find Data Source Connector/Driver", DateTime.Now, 0, pdatasourcename, Errors.Failed);
-                return null;
-            }
-            if (ConfigEditor.DataSourcesClasses.Any(x => x.className != null && x.className.Equals(driversConfig.classHandler,StringComparison.InvariantCultureIgnoreCase)))
-            {
-                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className != null && x.className.Equals(driversConfig.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
-                AssemblyClassDefinition ase= ConfigEditor.DataSourcesClasses.Where(x => x.className != null && x.className.Equals(driversConfig.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                if (ase != null)
-                {
-                   Type adc = assemblyHandler.GetType(ase.type.AssemblyQualifiedName);
-                   if (adc != null)
-                   {
-                        ConstructorInfo ctor = adc.GetConstructors().Where(o => o.GetParameters().Count() == 5).FirstOrDefault();
-                        if (ctor == null)
-                        {
-                            ctor = adc.GetConstructors().FirstOrDefault();
-                        }
-                        ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
-                        //create an instance:
-                        ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
-                   }
-                }
-            }
-            try
-            {
-                if (ds == null)
-                {
-                    AddLogMessage("Fail", "Could Find DataSource Drivers", DateTime.Now, 0, pdatasourcename, Errors.Failed);
-                    return null;
-                }
-                else
-                {
-                    if (ds.Dataconnection == null)
-                    {
-                        ds.Dataconnection = new DefaulDataConnection();
-                    }
-                    ds.Dataconnection.ConnectionProp = cn;
-                    ds.Dataconnection.DataSourceDriver = driversConfig;
-                    DataSources.Add(ds);
-                    return ds;
-                }
-            }
-            catch (Exception ex)
-            {
-                AddLogMessage("Fail", "Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})", DateTime.Now, 0, pdatasourcename, Errors.Failed);
-                return null;
-            }
-        }
-        /// <summary>
-        ///  Create New Datasource and add to the List by passing new Connection Properties and Datasource Class Handler
-        /// </summary>
-        /// <param name="dataConnection"></param>
-        /// <param name="pdatasourcename"></param>
-        /// <param name="ClassDBHandlerName"></param>
-        /// <returns></returns>
-        public IDataSource CreateLocalDataSourceConnection(ConnectionProperties dataConnection, string pdatasourcename,string ClassDBHandlerName)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            IDataSource ds = null;
-            ConnectionDriversConfig package=null;
-            if (ConfigEditor.DataDriversClasses.Where(x => x.classHandler!=null  && x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).Any())
-            {
-                package = ConfigEditor.DataDriversClasses.Where(x => x.classHandler != null &&  x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className!=null &&  x.className.Equals(package.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
-                AssemblyClassDefinition ase = ConfigEditor.DataSourcesClasses.Where(x => x.className != null && x.className.Equals(package.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                if (ase != null)
-                {
-                    Type adc = assemblyHandler.GetType(ase.type.AssemblyQualifiedName);
-                    ConstructorInfo ctor = adc.GetConstructors().Where(o => o.GetParameters().Count() == 5).FirstOrDefault();
-                    if (ctor == null)
-                    {
-                        ctor = adc.GetConstructors().FirstOrDefault();
-                    }
-                    ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
 
-                    //create an instance:
-                    ds = createdActivator(dataConnection.ConnectionName, Logger, this, dataConnection.DatabaseType, ErrorObject);
-                }
-            }
-            try
-            {
-                if (ds != null)
-                {
-                    if (ds.Dataconnection == null)
-                    {
-                        ds.Dataconnection = new DefaulDataConnection();
-                    }
-                    ds.Dataconnection.ConnectionProp = dataConnection;
-                    ds.Dataconnection.DataSourceDriver = package;
-                    ds.Dataconnection.ReplaceValueFromConnectionString();
-                    ILocalDB dB = (ILocalDB)ds;
-                    DataSources.Add(ds);
-
-                    AddLogMessage("Fail", $"Success Created Local Database  {pdatasourcename}", DateTime.Now, -1, "", Errors.Failed);
-                    return ds;
-                }else
-                {
-                    AddLogMessage("Fail", "Could Find DataSource Drivers", DateTime.Now, 0, pdatasourcename, Errors.Failed);
-                    return null;
-                }
-             }
-            catch (Exception ex)
-            {
-                AddLogMessage("Fail", $"Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
-                return null;
-            }
-        }
-        /// <summary>
-        /// Get Entity Structure from DataSource
-        /// </summary>
-        /// <param name="entityname"></param>
-        /// <param name="datasourcename"></param>
-        /// <returns></returns>
-        public EntityStructure GetEntityStructure(string entityname,string datasourcename)
-        {
-            IDataSource ds = null;
-            EntityStructure entity = null;
-            try
-            {
-                ds = GetDataSource(datasourcename);
-                if (ds != null)
-                {
-                    entity= ds.GetEntityStructure(entityname,true);
-                }
-                return entity;
-            }
-            catch (Exception ex)
-            {
-
-                return entity;
-            }
-        }
         /// <summary>
         /// Check DataSource Exist in List
         /// </summary>
@@ -710,22 +694,23 @@ namespace TheTechIdea.Beep
             {
                 if (DataSources.Count > 0)
                 {
-                    return DataSources.Any(x => x.DatasourceName.Equals(pdatasourcename,StringComparison.InvariantCultureIgnoreCase));
-                }else              
+                    return DataSources.Any(x => x.DatasourceName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase));
+                }
+                else
                     return false;
-               
 
-             
+
+
                 // AddLogMessage("Success", "Added Database Connection", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-               
-               
+
+
                 AddLogMessage("Beep", $"Could not check Datasource Exist {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
                 return false;
             };
-          
+
         }
         /// <summary>
         /// Remove DataSource from List
@@ -759,145 +744,326 @@ namespace TheTechIdea.Beep
                 return false;
             };
         }
-        /// <summary>
-        /// Raise the Public and Global event
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        public void RaiseEvent(object sender, PassedArgs args)
+
+        #endregion "Data Sources Methods"
+        #region "Data Sources Open/Close"
+        public async Task<ConnectionState> OpenDataSourceAsync(string dataSourceName)
         {
-            PassEvent?.Invoke(sender, args);
-        }
-        /// <summary>
-        /// Run Query on an Opened DataSource 
-        /// </summary>
-        /// <param name="ds"></param>
-        /// <param name="CurrentEntity"></param>
-        /// <param name="filter"></param>
-        /// <returns></returns>
-        private async Task<dynamic> GetOutputAsync(IDataSource ds, string CurrentEntity, List<AppFilter> filter)
-        {
-            return await ds.GetEntityAsync(CurrentEntity, filter);
-        }
-        /// <summary>
-        /// Get Entity Data from an Opened DataSource
-        /// </summary>
-        /// <param name="ds"></param>
-        /// <param name="entity"></param>
-        /// <returns></returns>
-        public object GetData(IDataSource ds,EntityStructure entity)
-        {
-            object retval = null;
-            if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
+            var ds = DataSources.FirstOrDefault(f => f.DatasourceName.Equals(dataSourceName, StringComparison.InvariantCultureIgnoreCase));
+            if (ds == null)
             {
-                if (ds.Category == DatasourceCategory.WEBAPI)
-                {
-                    try
-                    {
-                        Task<dynamic> output = GetOutputAsync(ds,entity.EntityName, entity.Filters);
-                        output.Wait();
-                        dynamic t = output.Result;
-                        Type tp = t.GetType();
-                        if (!tp.GetTypeInfo().ImplementedInterfaces.Contains(typeof(IList)))
-
-                        {
-                            retval = ConfigEditor.JsonLoader.JsonToDataTable(t.ToString());
-                        }
-                        else
-                        {
-                            retval = t;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        AddLogMessage($"{ex.Message}");
-                    }
-                }
-                else
-                {
-                    try
-                    {
-                        retval = ds.GetEntity(entity.EntityName, entity.Filters);
-
-                    }
-                    catch (Exception ex)
-                    {
-
-                        AddLogMessage($"{ex.Message}");
-                    }
-
-                }
-                if (retval != null)
-                {
-                    try
-                    {
-                        entity=Utilfunction.GetEntityStructureFromListorTable(retval);
-                    }
-                    catch (Exception ex)
-                    {
-
-                        throw;
-                    }
-                }
-                else
-                {
-                    retval = null;
-                }
-
+                ds = await CreateNewDataSourceConnectionAsync(dataSourceName);
             }
-            return retval;
+
+            return ds != null ?  ds.Openconnection() : ConnectionState.Broken;
         }
         /// <summary>
-        /// Functio to Raise Question 
+        /// Create New Datasource and add to the List
         /// </summary>
-        /// <param name="args"></param>
+        /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public IErrorsInfo AskQuestion(IPassedArgs args)
+        public IDataSource CreateNewDataSourceConnection(string pdatasourcename)
         {
+            ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName != null && f.ConnectionName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+            ErrorObject.Flag = Errors.Ok;
+            if (cn != null)
+            {
+                return CreateNewDataSourceConnection(cn, pdatasourcename);
+            }
+            else
+            {
+                AddLogMessage("Failure", "Error occured in  DataSource Creation " + pdatasourcename, DateTime.Now, 0, null, Errors.Ok);
+                return null;
+            }
+        }
+        public async Task<IDataSource> CreateNewDataSourceConnectionAsync(string pdatasourcename)
+        {
+            ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName != null && f.ConnectionName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+            ErrorObject.Flag = Errors.Ok;
+            if (cn != null)
+            {
+                return CreateNewDataSourceConnection(cn, pdatasourcename);
+            }
+            else
+            {
+                AddLogMessage("Failure", "Error occured in  DataSource Creation " + pdatasourcename, DateTime.Now, 0, null, Errors.Ok);
+                return null;
+            }
+        }
+        /// <summary>
+        /// Create New Datasource and add to the List by passing new Connection Properties 
+        /// </summary>
+        /// <param name="cn"></param>
+        /// <param name="pdatasourcename"></param>
+        /// <returns></returns>
+        public IDataSource CreateNewDataSourceConnection(ConnectionProperties cn, string pdatasourcename)
+        {
+            ErrorObject.Flag = Errors.Ok;
+
             try
             {
+                // Link connection properties to driver configuration
+                ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
+                if (driversConfig == null)
+                {
+                    AddLogMessage("Fail", $"Error: Could not find Data Source Connector/Driver for {pdatasourcename}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
 
+                // Find the associated class definition for the driver
+                AssemblyClassDefinition ase = ConfigEditor.DataSourcesClasses
+                    .FirstOrDefault(x => x.className != null &&
+                                         x.className.Equals(driversConfig.classHandler, StringComparison.InvariantCultureIgnoreCase));
+
+                if (ase == null)
+                {
+                    AddLogMessage("Fail", $"Error: No matching Data Source Class found for {driversConfig.classHandler}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
+
+                // Get the type and constructor
+                Type adc = assemblyHandler.GetType(ase.type.AssemblyQualifiedName);
+                if (adc == null)
+                {
+                    AddLogMessage("Fail", $"Error: Could not load type {ase.type.AssemblyQualifiedName} for {pdatasourcename}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
+
+                ConstructorInfo ctor = adc.GetConstructors()
+                    .FirstOrDefault(c => c.GetParameters().Length == 5) ?? adc.GetConstructors().FirstOrDefault();
+
+                if (ctor == null)
+                {
+                    AddLogMessage("Fail", $"Error: No suitable constructor found for {adc.FullName}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
+
+                // Create an instance of the IDataSource implementation
+                ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
+                IDataSource ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
+
+                if (ds == null)
+                {
+                    AddLogMessage("Fail", "Error: Failed to create DataSource instance", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
+
+                // Configure and add the DataSource
+                ds.Dataconnection ??= new DefaulDataConnection();
+                ds.Dataconnection.ConnectionProp = cn;
+                ds.Dataconnection.DataSourceDriver = driversConfig;
+                DataSources.Add(ds);
+
+                return ds;
             }
             catch (Exception ex)
             {
-
-                ErrorObject.Flag = Errors.Failed;
-                ErrorObject.Ex = ex;
-                ErrorObject.Message = ex.Message;
+                AddLogMessage("Fail", $"Error in Opening Connection: {ex.Message} (Check DLLs, connection string, or network issues)", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                return null;
             }
-            return ErrorObject;
+        }
+        public async Task<IDataSource> CreateNewDataSourceConnectionAsync(ConnectionProperties cn, string pdatasourcename)
+        {
+            ErrorObject.Flag = Errors.Ok;
+
+            try
+            {
+                // Link connection properties to driver configuration
+                ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
+                if (driversConfig == null)
+                {
+                    AddLogMessage("Fail", $"Error: Could not find Data Source Connector/Driver for {pdatasourcename}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
+
+                // Find the associated class definition for the driver
+                AssemblyClassDefinition ase = ConfigEditor.DataSourcesClasses
+                    .FirstOrDefault(x => x.className != null &&
+                                         x.className.Equals(driversConfig.classHandler, StringComparison.InvariantCultureIgnoreCase));
+
+                if (ase == null)
+                {
+                    AddLogMessage("Fail", $"Error: No matching Data Source Class found for {driversConfig.classHandler}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
+
+                // Get the type and constructor
+                Type adc = assemblyHandler.GetType(ase.type.AssemblyQualifiedName);
+                if (adc == null)
+                {
+                    AddLogMessage("Fail", $"Error: Could not load type {ase.type.AssemblyQualifiedName} for {pdatasourcename}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
+
+                ConstructorInfo ctor = adc.GetConstructors()
+                    .FirstOrDefault(c => c.GetParameters().Length == 5) ?? adc.GetConstructors().FirstOrDefault();
+
+                if (ctor == null)
+                {
+                    AddLogMessage("Fail", $"Error: No suitable constructor found for {adc.FullName}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
+
+                // Create an instance of the IDataSource implementation
+                ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
+                IDataSource ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
+
+                if (ds == null)
+                {
+                    AddLogMessage("Fail", "Error: Failed to create DataSource instance", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
+
+                // Configure and add the DataSource
+                ds.Dataconnection ??= new DefaulDataConnection();
+                ds.Dataconnection.ConnectionProp = cn;
+                ds.Dataconnection.DataSourceDriver = driversConfig;
+
+                // Assuming the connection opening operation is asynchronous
+                var connectionState = ds.Openconnection();
+                if (connectionState != ConnectionState.Open)
+                {
+                    AddLogMessage("Fail", $"Error: Unable to open connection for {pdatasourcename}", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
+
+                DataSources.Add(ds);
+                return ds;
+            }
+            catch (Exception ex)
+            {
+                AddLogMessage("Fail", $"Error in Opening Connection: {ex.Message} (Check DLLs, connection string, or network issues)", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                return null;
+            }
         }
 
-        //----------------- ------------------------------ -----
-        public DMEEditor(IDMLogger logger, IUtil utilfunctions,IErrorsInfo per, IConfigEditor configEditor, IAssemblyHandler LLoader) //,IWorkFlowEditor pworkFlowEditor, IClassCreator pclasscreator, IETL pETL, IAssemblyHandler passemblyHandler, IDataTypesHelper dataTypesHelper,IWorkFlowEditor workFlowEditor,IWorkFlowStepEditor workFlowStepEditor,IRuleParser ruleParser,IRulesEditor rulesEditor
+        /// <summary>
+        ///  Create New Datasource and add to the List by passing new Connection Properties and Datasource Class Handler
+        /// </summary>
+        /// <param name="dataConnection"></param>
+        /// <param name="pdatasourcename"></param>
+        /// <param name="ClassDBHandlerName"></param>
+        /// <returns></returns>
+        public IDataSource CreateLocalDataSourceConnection(ConnectionProperties dataConnection, string pdatasourcename, string ClassDBHandlerName)
         {
-          
+            ErrorObject.Flag = Errors.Ok;
+            IDataSource ds = null;
+            ConnectionDriversConfig package = null;
+            if (ConfigEditor.DataDriversClasses.Where(x => x.classHandler != null && x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).Any())
+            {
+                package = ConfigEditor.DataDriversClasses.Where(x => x.classHandler != null && x.classHandler.Equals(ClassDBHandlerName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                string packagename = ConfigEditor.DataSourcesClasses.Where(x => x.className != null && x.className.Equals(package.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().PackageName;
+                AssemblyClassDefinition ase = ConfigEditor.DataSourcesClasses.Where(x => x.className != null && x.className.Equals(package.classHandler, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                if (ase != null)
+                {
+                    Type adc = assemblyHandler.GetType(ase.type.AssemblyQualifiedName);
+                    ConstructorInfo ctor = adc.GetConstructors().Where(o => o.GetParameters().Count() == 5).FirstOrDefault();
+                    if (ctor == null)
+                    {
+                        ctor = adc.GetConstructors().FirstOrDefault();
+                    }
+                    ObjectActivator<IDataSource> createdActivator = GetActivator<IDataSource>(ctor);
+
+                    //create an instance:
+                    ds = createdActivator(dataConnection.ConnectionName, Logger, this, dataConnection.DatabaseType, ErrorObject);
+                }
+            }
+            try
+            {
+                if (ds != null)
+                {
+                    if (ds.Dataconnection == null)
+                    {
+                        ds.Dataconnection = new DefaulDataConnection();
+                    }
+                    ds.Dataconnection.ConnectionProp = dataConnection;
+                    ds.Dataconnection.DataSourceDriver = package;
+                    ds.Dataconnection.ReplaceValueFromConnectionString();
+                    ILocalDB dB = (ILocalDB)ds;
+                    DataSources.Add(ds);
+
+                    AddLogMessage("Fail", $"Success Created Local Database  {pdatasourcename}", DateTime.Now, -1, "", Errors.Failed);
+                    return ds;
+                }
+                else
+                {
+                    AddLogMessage("Fail", "Could Find DataSource Drivers", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                AddLogMessage("Fail", $"Error in Opening Connection (Check DLL for Connection drivers,connect string, Datasource down,Firewall, .. etc)({ex.Message})", DateTime.Now, -1, "", Errors.Failed);
+                return null;
+            }
+        }
+
+        #endregion "Data Sources Open/Close"
+        #region "Constructor"
+        public DMEEditor(IDMLogger logger, IUtil utilfunctions, IErrorsInfo per, IConfigEditor configEditor, IAssemblyHandler LLoader) //,IWorkFlowEditor pworkFlowEditor, IClassCreator pclasscreator, IETL pETL, IAssemblyHandler passemblyHandler, IDataTypesHelper dataTypesHelper,IWorkFlowEditor workFlowEditor,IWorkFlowStepEditor workFlowStepEditor,IRuleParser ruleParser,IRulesEditor rulesEditor
+        {
+
             logger.WriteLog("init all variables");
             Logger = logger;
             Utilfunction = utilfunctions;
             Utilfunction.DME = this;
             ConfigEditor = configEditor;
             ErrorObject = per;
-            typesHelper= new DataTypesHelper(this);
-            ETL = new ETL(this);
+            typesHelper = new DataTypesHelper(this);
+            ETL = new ETLEditor(this);
             assemblyHandler = LLoader;
             classCreator = new ClassCreator(this);
             WorkFlowEditor = new WorkFlowEditor(this);
+            _defaultsManager = new DefaultsManager(configEditor, logger);
             progress = new Progress<PassedArgs>(percent => {
 
                 if (!string.IsNullOrEmpty(percent.Messege))
                 {
-                    if(percent.IsError)
+                    if (percent.IsError)
                     {
                         AddLogMessage("Beep", percent.Messege, DateTime.Now, 0, null, Errors.Failed);
-                    }else
+                    }
+                    else
                         AddLogMessage("Beep", percent.Messege, DateTime.Now, 0, null, Errors.Ok);
 
                 }
-               
+
 
             });
         }
+
+        public DMEEditor(
+    IDMLogger logger,
+    IUtil utilfunctions,
+    IErrorsInfo errorObject,
+    IConfigEditor configEditor,
+    IAssemblyHandler assemblyHandler,
+    IETL etl,
+    IWorkFlowEditor workFlowEditor)
+        {
+            Logger = logger;
+            Utilfunction = utilfunctions;
+            ErrorObject = errorObject;
+            ConfigEditor = configEditor;
+            assemblyHandler = assemblyHandler;
+            ETL = etl;
+            WorkFlowEditor = workFlowEditor;
+            _defaultsManager = new DefaultsManager(configEditor, logger);
+        }
+
+        #endregion "Constructor"
+        #region "Default Manager"
+        public List<DefaultValue> Getdefaults(string DatasourceName)
+        {
+            return _defaultsManager.GetDefaults(DatasourceName);
+
+        }
+        public IErrorsInfo Savedefaults(List<DefaultValue> defaults, string DatasourceName)
+        {
+            return _defaultsManager.SaveDefaults(defaults, DatasourceName);
+        }
+        #endregion "Default Manager"
+        //----------------- ------------------------------ -----
 
         protected virtual void Dispose(bool disposing)
         {
@@ -937,50 +1103,6 @@ namespace TheTechIdea.Beep
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
-        public  List<DefaultValue> Getdefaults( string DatasourceName)
-        {
-            ErrorObject.Message = null;
-            ErrorObject.Flag = Errors.Ok;
-            List<DefaultValue> defaults = null;
-            try
-            {
-                ConnectionProperties cn = ConfigEditor.DataConnections[ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName.Equals(DatasourceName,StringComparison.InvariantCultureIgnoreCase))];
-                if (cn != null)
-                {
-                    defaults = ConfigEditor.DataConnections[ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName.Equals(DatasourceName, StringComparison.InvariantCultureIgnoreCase))].DatasourceDefaults;
-                }
-                else AddLogMessage("Beep", $"Could not Find DataSource  {DatasourceName}", DateTime.Now, 0, null, Errors.Failed);
-
-            }
-            catch (Exception ex)
-            {
-                AddLogMessage("Beep", $"Could not Save DataSource Defaults Values {DatasourceName}- {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-
-            }
-            return defaults;
-
-        }
-        public  IErrorsInfo Savedefaults(List<DefaultValue> defaults, string DatasourceName)
-        {
-            ErrorObject.Message = null;
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
-
-                ConnectionProperties cn = ConfigEditor.DataConnections[ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName.Equals(DatasourceName, StringComparison.InvariantCultureIgnoreCase))];
-                if (cn != null)
-                {
-                    cn.DatasourceDefaults = defaults;
-                    ConfigEditor.SaveDataconnectionsValues();
-                }
-                else AddLogMessage("Beep", $"Could not Find DataSource  {DatasourceName}", DateTime.Now, 0, null, Errors.Failed);
-            }
-            catch (Exception ex)
-            {
-                AddLogMessage("Beep", $"Could not Save DataSource Defaults Values {DatasourceName}- {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
-
-            return ErrorObject;
-        }
+       
     }
 }

@@ -380,7 +380,7 @@ namespace TheTechIdea.Beep.Json
 
             string filenamenoext = EntityName;
             DMTypeBuilder.CreateNewObject(DMEEditor, "TheTechIdea.Beep", EntityName, Entities.Where(x => x.EntityName == EntityName).FirstOrDefault().Fields);
-            return DMTypeBuilder.myType;
+            return DMTypeBuilder.MyType;
         }
         public double GetScalar(string query)
         {
@@ -691,8 +691,6 @@ namespace TheTechIdea.Beep.Json
                 Console.WriteLine($"An error occurred while saving the JSON file: {ex.Message}");
             }
         }
-
-
         public void ReadJson(string jsonFilePath)
         {
             // Update the file name only if it's different from the current file or if _rootJsonArray is not initialized.
@@ -720,15 +718,12 @@ namespace TheTechIdea.Beep.Json
                 Console.WriteLine("Unexpected JSON root type: " + json.Type);
             }
         }
-
-
         private void ParseJsonObject(JObject jObject, EntityStructure parentStructure, string entityName, string currentPath)
         {
            
           // use parsejsonarray to parse the first object
             ParseJsonArray(new JArray(jObject), parentStructure, entityName, currentPath);
         }
-
         private void ParseJsonArray(JArray jArray, EntityStructure parentStructure, string entityName, string currentPath)
         {
             
@@ -805,7 +800,6 @@ namespace TheTechIdea.Beep.Json
                 Fields = new List<EntityField>(),
             };
         }
-
         private EntityField CreateEntityField(JProperty property)
         {
             return new EntityField
@@ -815,7 +809,6 @@ namespace TheTechIdea.Beep.Json
                 fieldtype = JsonExtensions.DetermineFieldType(property.Value),
             };
         }
-
         private void InitializeRootJsonObject()
         {
             // Check if _rootJsonArray is already initialized
@@ -853,15 +846,10 @@ namespace TheTechIdea.Beep.Json
                 Console.WriteLine("File does not exist or is empty. Initialized an empty JArray.");
             }
         }
-
-      
-
-
         private JToken GetRootJsonObject()
         {
             return _rootJsonObject;
         }
-
         public void UpdateEntityStructureWithMissingFields(JObject record, EntityStructure entityStructure)
         {
             foreach (var property in record.Properties())

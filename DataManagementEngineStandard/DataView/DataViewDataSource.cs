@@ -545,7 +545,7 @@ namespace TheTechIdea.Beep.DataView
                 default:
 
                     DMTypeBuilder.CreateNewObject(DMEEditor, entityname, entityname, dh.Fields);
-                    retval = DMTypeBuilder.myType;
+                    retval = DMTypeBuilder.MyType;
                     break;
             }
             return retval;

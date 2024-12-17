@@ -35,7 +35,8 @@ namespace TheTechIdea.Beep.Workflow
         public IWorkFlowAction FlowAction { get; set; }
         public IWorkFlowRule FlowRule { get; set; }
         public bool Cancel { get; set; }=false;
-
+        public string Message { get;  set; }
+        public string ActionName { get;  set; }
     }
   
   

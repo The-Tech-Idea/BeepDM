@@ -16,7 +16,6 @@ namespace TheTechIdea.Beep.Workflow
     public interface IWorkFlowEditor
     {
         IDMEEditor DMEEditor { get; set; }
-        IWorkFlowStepEditor StepEditor { get; set; }
         List<IWorkFlow> WorkFlows { get; set; }
         List<IWorkFlowAction> Actions { get; set; }
         List<IWorkFlowRule> Rules { get; set; }

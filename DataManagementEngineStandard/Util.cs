@@ -807,7 +807,7 @@ namespace TheTechIdea.Beep.Utilities
             }
             return Records;
         }
-        public List<object> GetListByDataTable(DataTable dt,string NameSpace,string Entityname)
+        public List<object> GetListByDataTable(IDMEEditor editor, DataTable dt,string NameSpace,string Entityname)
         {
             List<EntityField> flds=new List<EntityField>();
             //  Create type from Table 
@@ -821,8 +821,8 @@ namespace TheTechIdea.Beep.Utilities
 
                 //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
             }
-            DMTypeBuilder.CreateNewObject(Entityname,NameSpace, Entityname, flds);
-            Type type = DMTypeBuilder.myType;
+            DMTypeBuilder.CreateNewObject(editor,Entityname, NameSpace, Entityname, flds);
+            Type type = DMTypeBuilder.MyType;
             //  string f = "";
             List<object> Records = new List<object>();
             Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
@@ -1257,12 +1257,11 @@ namespace TheTechIdea.Beep.Utilities
         {
             
             DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, Fields);
-            return DMTypeBuilder.myType;
+            return DMTypeBuilder.MyType;
         }
         public object GetEntityObject(IDMEEditor DMEEditor, string EntityName, List<EntityField> Fields)
         {
-            DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, Fields);
-            return DMTypeBuilder.myObject;
+            return DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, Fields);
         }
         public DataRow GetDataRowFromobject(string EntityName, Type enttype,object UploadDataRow, EntityStructure DataStruct)
         {

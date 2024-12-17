@@ -21,13 +21,13 @@ namespace TheTechIdea.Beep.Editor
     /// <summary>
     /// Represents an Extract, Transform, Load (ETL) process.
     /// </summary>
-    public class ETL : IETL
+    public class ETLEditor : IETL
     {
         /// <summary>
         /// Initializes a new instance of the ETL class.
         /// </summary>
         /// <param name="_DMEEditor">The DME editor to use for the ETL process.</param>
-        public ETL(IDMEEditor _DMEEditor)
+        public ETLEditor(IDMEEditor _DMEEditor)
         {
             DMEEditor = _DMEEditor;
             RulesEditor = new RulesEditor(DMEEditor);
@@ -412,7 +412,7 @@ namespace TheTechIdea.Beep.Editor
                             DMTypeBuilder.CreateNewObject(DMEEditor, null, item.EntityName, item.Fields);
                             if (srcTb.GetType().FullName.Contains("DataTable"))
                             {
-                                srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, item);
+                                srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.MyType, item);
                             }
                             if (srcTb.GetType().FullName.Contains("List"))
                             {
@@ -759,7 +759,7 @@ namespace TheTechIdea.Beep.Editor
                  //           DMTypeBuilder.CreateNewObject(DMEEditor, null, srcentitystructure.EntityName, SourceFields);
                             if (srcTb.GetType().FullName.Contains("DataTable"))
                             {
-                                srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.myType, srcentitystructure);
+                                srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.MyType, srcentitystructure);
                           
                         }
                         else
@@ -1001,9 +1001,9 @@ namespace TheTechIdea.Beep.Editor
                 {
                     foreach (DefaultValue _defaultValue in CurrrentDBDefaults.Where(p => p.propertyType == DefaultValueType.Rule))
                     {
-                        if (destEntitystructure.Fields.Any(p => p.fieldname.Equals(_defaultValue.propertyName, StringComparison.InvariantCultureIgnoreCase)))
+                        if (destEntitystructure.Fields.Any(p => p.fieldname.Equals(_defaultValue.PropertyName, StringComparison.InvariantCultureIgnoreCase)))
                         {
-                            string fieldname = _defaultValue.propertyName;
+                            string fieldname = _defaultValue.PropertyName;
                             DMEEditor.Passedarguments.DatasourceName = destds.DatasourceName;
                             DMEEditor.Passedarguments.CurrentEntity = destentity;
                             ObjectItem ob = DMEEditor.Passedarguments.Objects.Find(p => p.Name == destentity);
@@ -1012,7 +1012,7 @@ namespace TheTechIdea.Beep.Editor
                                 DMEEditor.Passedarguments.Objects.Remove(ob);
                             }
                             DMEEditor.Passedarguments.Objects.Add(new ObjectItem() { Name = destentity, obj = retval });
-                            DMEEditor.Passedarguments.ParameterString1 = $":{_defaultValue.Rule}.{fieldname}.{_defaultValue.propoertValue}";
+                            DMEEditor.Passedarguments.ParameterString1 = $":{_defaultValue.Rule}.{fieldname}.{_defaultValue.PropertyValue}";
                             var value = RulesEditor.SolveRule(DMEEditor.Passedarguments);
                             if (value != null)
                             {

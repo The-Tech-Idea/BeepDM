@@ -26,14 +26,14 @@ namespace TheTechIdea.Beep.ConfigUtil
         }
 
         private string _propertyname;
-        public string propertyName
+        public string PropertyName
         {
             get { return _propertyname; }
             set { SetProperty(ref _propertyname, value); }
         }
 
         private string _propoertvalue;
-        public string propoertValue
+        public string PropertyValue
         {
             get { return _propoertvalue; }
             set { SetProperty(ref _propoertvalue, value); }
@@ -54,7 +54,7 @@ namespace TheTechIdea.Beep.ConfigUtil
         }
 
         private string _propertycategory;
-        public string propertyCategory
+        public string PropertyCategory
         {
             get { return _propertycategory; }
             set { SetProperty(ref _propertycategory, value); }

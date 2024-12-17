@@ -89,6 +89,184 @@ namespace TheTechIdea.Beep.Editor
             return GetRecordsFromSourceData(schema, ">=");
         }
 
+       
+
+        /// <summary>
+        /// Asynchronously synchronizes data based on the provided schema, cancellation token, and progress reporter.
+        /// </summary>
+        /// <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+        /// <param name="token">Cancellation token to handle task cancellation.</param>
+        /// <param name="progress">Progress reporter to report synchronization progress.</param>
+        public async Task SyncDataAsync(DataSyncSchema schema, CancellationToken token, IProgress<PassedArgs> progress)
+        {
+            if (ValidateSchema(schema).Flag == Errors.Failed)
+            {
+                schema.SyncStatus = "Failed";
+                schema.SyncStatusMessage = "Schema Validation failed.";
+                Editor.AddLogMessage("Beep", "Schema Validation failed.", DateTime.Now, -1, "", Errors.Failed);
+                return;
+            }
+
+            IDataSource SourceData = GetDataSource(schema.SourceDataSourceName);
+            IDataSource DestinationData = GetDataSource(schema.DestinationDataSourceName);
+
+            if (SourceData != null && DestinationData != null && schema != null)
+            {
+                try
+                {
+                    // Retrieve data from SourceData using schema.SourceSyncDataField
+                    var sourceFilters = schema.Filters.ToList();
+                    SendMessege(progress, token, $"Getting Source Entity Data {schema.SourceEntityName}...");
+                    var sourceData = await Task.Run(() => SourceData.GetEntity(schema.SourceEntityName, sourceFilters), token);
+
+                    if (sourceData == null)
+                    {
+                        schema.SyncStatus = "Failed";
+                        schema.SyncStatusMessage = "Source data retrieval failed.";
+                        SendMessege(progress, token, $"Failed: Getting Source Entity Data {schema.SourceEntityName}!!!");
+                        Editor.AddLogMessage("Beep", "Source data retrieval failed.", DateTime.Now, -1, "", Errors.Failed);
+                        LogSyncRun(schema);
+                        return;
+                    }
+
+                    // Check if record exists in DestinationData
+                    SendMessege(progress, token, $"Checking if record exists in Destination Data {schema.DestinationEntityName}...");
+                    List<AppFilter> ExistFilters = new List<AppFilter>
+                    {
+                        new AppFilter
+                        {
+                            FieldName = schema.SourceSyncDataField,
+                            Operator = "=",
+                            FilterValue = sourceData.GetType().GetProperty(schema.SourceSyncDataField).GetValue(sourceData).ToString()
+                        }
+                    };
+                    var destinationData = await Task.Run(() => DestinationData.GetEntity(schema.DestinationEntityName, ExistFilters), token);
+                    bool isNewRecord = destinationData == null;
+
+                    // Map source fields to destination fields and perform update or insert
+                    var destEntity = CreateDestinationEntity(schema, sourceData, isNewRecord);
+
+                    if (isNewRecord)
+                    {
+                        SendMessege(progress, token, $"Inserting New Record in Destination Data {schema.DestinationEntityName}...");
+                        await Task.Run(() => DestinationData.InsertEntity(schema.DestinationEntityName, destEntity), token);
+                    }
+                    else
+                    {
+                        SendMessege(progress, token, $"Updating Record in Destination Data {schema.DestinationEntityName}...");
+                        await Task.Run(() => DestinationData.UpdateEntity(schema.DestinationEntityName, destEntity), token);
+                    }
+
+                    SendMessege(progress, token, $"Synchronization completed for {schema.DestinationEntityName}...");
+                    // Update sync status and log
+                    schema.LastSyncDate = DateTime.Now;
+                    schema.SyncStatus = "Success";
+                    schema.SyncStatusMessage = $"Synchronization completed successfully for {schema.DestinationEntityName}";
+                    Editor.AddLogMessage("Beep", $"Synchronization completed successfully for {schema.DestinationEntityName}", DateTime.Now, -1, "", Errors.Ok);
+                    LogSyncRun(schema);
+                }
+                catch (Exception ex)
+                {
+                    // Handle exceptions and update sync status
+                    schema.SyncStatus = "Failed";
+                    schema.SyncStatusMessage = $"Synchronization failed: {ex.Message}";
+                    Editor.AddLogMessage("Beep", $"Synchronization failed: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                    LogSyncRun(schema);
+                }
+            }
+            else
+            {
+                schema.SyncStatus = "Failed";
+                schema.SyncStatusMessage = "Data Source not found";
+                Editor.AddLogMessage("Beep", "Data Source not found", DateTime.Now, -1, "", Errors.Failed);
+            }
+        }
+
+        /// <summary>
+        /// Creates the destination entity by mapping fields from the source entity based on the schema.
+        /// </summary>
+        /// <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+        /// <param name="sourceData">The source data entity.</param>
+        /// <param name="isNewRecord">Indicates whether the record is new or an update.</param>
+        /// <returns>The mapped destination entity.</returns>
+        private object CreateDestinationEntity(DataSyncSchema schema, object sourceData, bool isNewRecord)
+        {
+            IDataSource destinationData = GetDataSource(schema.DestinationDataSourceName);
+            var destEntityType = destinationData.GetEntityType(schema.DestinationEntityName);
+            var destEntity = Activator.CreateInstance(destEntityType);
+
+            MapFields(sourceData, destEntity, schema.MappedFields);
+
+            if (isNewRecord)
+            {
+                var keyFieldValue = sourceData.GetType().GetProperty(schema.SourceKeyField)?.GetValue(sourceData);
+                destEntityType.GetProperty(schema.DestinationKeyField)?.SetValue(destEntity, keyFieldValue);
+            }
+
+            return destEntity;
+        }
+
+        /// <summary>
+        /// Logs the synchronization run data.
+        /// </summary>
+        /// <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+        private void LogSyncRun(DataSyncSchema schema)
+        {
+            var syncRunData = new SyncRunData
+            {
+                SyncSchemaID = schema.ID,
+                SyncDate = schema.LastSyncDate,
+                SyncStatus = schema.SyncStatus,
+                SyncStatusMessage = schema.SyncStatusMessage
+            };
+            schema.SyncRuns.Add(syncRunData);
+            schema.LastSyncRunData = syncRunData;
+        }
+
+        /// <summary>
+        /// Retrieves the IDataSource instance based on the name.
+        /// </summary>
+        /// <param name="dataSourceName">The name of the data source.</param>
+        /// <returns>The IDataSource instance.</returns>
+        private IDataSource GetDataSource(string dataSourceName)
+        {
+            IDataSource ds = Editor.GetDataSource(dataSourceName);
+            if (ds == null)
+            {
+                Editor.AddLogMessage("Beep", $"Data Source {dataSourceName} not found", DateTime.Now, -1, "", Errors.Failed);
+            }
+            return ds;
+        }
+
+        /// <summary>
+        /// Asynchronously synchronizes all data based on the loaded schemas, cancellation token, and progress reporter.
+        /// </summary>
+        /// <param name="token">Cancellation token to handle task cancellation.</param>
+        /// <param name="progress">Progress reporter to report synchronization progress.</param>
+        public async Task SyncAllDataAsync(CancellationToken token, IProgress<PassedArgs> progress)
+        {
+            foreach (var schema in SyncSchemas)
+            {
+                if (token.IsCancellationRequested)
+                {
+                    progress?.Report(new PassedArgs { Messege = "Synchronization canceled.", EventType = "Cancel" });
+                    break;
+                }
+
+                await SyncDataAsync(schema, token, progress);
+            }
+        }
+
+        /// <summary>
+        /// Synchronizes all data based on the loaded schemas.
+        /// </summary>
+        public void SyncAllData()
+        {
+            foreach (var schema in SyncSchemas)
+            {
+                SyncData(schema);
+            }
+        }
         /// <summary>
         /// Synchronizes data based on the provided schema, cancellation token, and progress reporter.
         /// </summary>
@@ -262,186 +440,6 @@ namespace TheTechIdea.Beep.Editor
             }
         }
 
-        /// <summary>
-        /// Asynchronously synchronizes data based on the provided schema, cancellation token, and progress reporter.
-        /// </summary>
-        /// <param name="schema">The DataSyncSchema defining the synchronization process.</param>
-        /// <param name="token">Cancellation token to handle task cancellation.</param>
-        /// <param name="progress">Progress reporter to report synchronization progress.</param>
-        public async Task SyncDataAsync(DataSyncSchema schema, CancellationToken token, IProgress<PassedArgs> progress)
-        {
-            if (ValidateSchema(schema).Flag == Errors.Failed)
-            {
-                schema.SyncStatus = "Failed";
-                schema.SyncStatusMessage = "Schema Validation failed.";
-                Editor.AddLogMessage("Beep", "Schema Validation failed.", DateTime.Now, -1, "", Errors.Failed);
-                return;
-            }
-
-            IDataSource SourceData = GetDataSource(schema.SourceDataSourceName);
-            IDataSource DestinationData = GetDataSource(schema.DestinationDataSourceName);
-
-            if (SourceData != null && DestinationData != null && schema != null)
-            {
-                try
-                {
-                    // Retrieve data from SourceData using schema.SourceSyncDataField
-                    var sourceFilters = schema.Filters.ToList();
-                    SendMessege(progress, token, $"Getting Source Entity Data {schema.SourceEntityName}...");
-                    var sourceData = await Task.Run(() => SourceData.GetEntity(schema.SourceEntityName, sourceFilters), token);
-
-                    if (sourceData == null)
-                    {
-                        schema.SyncStatus = "Failed";
-                        schema.SyncStatusMessage = "Source data retrieval failed.";
-                        SendMessege(progress, token, $"Failed: Getting Source Entity Data {schema.SourceEntityName}!!!");
-                        Editor.AddLogMessage("Beep", "Source data retrieval failed.", DateTime.Now, -1, "", Errors.Failed);
-                        LogSyncRun(schema);
-                        return;
-                    }
-
-                    // Check if record exists in DestinationData
-                    SendMessege(progress, token, $"Checking if record exists in Destination Data {schema.DestinationEntityName}...");
-                    List<AppFilter> ExistFilters = new List<AppFilter>
-                    {
-                        new AppFilter
-                        {
-                            FieldName = schema.SourceSyncDataField,
-                            Operator = "=",
-                            FilterValue = sourceData.GetType().GetProperty(schema.SourceSyncDataField).GetValue(sourceData).ToString()
-                        }
-                    };
-                    var destinationData = await Task.Run(() => DestinationData.GetEntity(schema.DestinationEntityName, ExistFilters), token);
-                    bool isNewRecord = destinationData == null;
-
-                    // Map source fields to destination fields and perform update or insert
-                    var destEntity = CreateDestinationEntity(schema, sourceData, isNewRecord);
-
-                    if (isNewRecord)
-                    {
-                        SendMessege(progress, token, $"Inserting New Record in Destination Data {schema.DestinationEntityName}...");
-                        await Task.Run(() => DestinationData.InsertEntity(schema.DestinationEntityName, destEntity), token);
-                    }
-                    else
-                    {
-                        SendMessege(progress, token, $"Updating Record in Destination Data {schema.DestinationEntityName}...");
-                        await Task.Run(() => DestinationData.UpdateEntity(schema.DestinationEntityName, destEntity), token);
-                    }
-
-                    SendMessege(progress, token, $"Synchronization completed for {schema.DestinationEntityName}...");
-                    // Update sync status and log
-                    schema.LastSyncDate = DateTime.Now;
-                    schema.SyncStatus = "Success";
-                    schema.SyncStatusMessage = $"Synchronization completed successfully for {schema.DestinationEntityName}";
-                    Editor.AddLogMessage("Beep", $"Synchronization completed successfully for {schema.DestinationEntityName}", DateTime.Now, -1, "", Errors.Ok);
-                    LogSyncRun(schema);
-                }
-                catch (Exception ex)
-                {
-                    // Handle exceptions and update sync status
-                    schema.SyncStatus = "Failed";
-                    schema.SyncStatusMessage = $"Synchronization failed: {ex.Message}";
-                    Editor.AddLogMessage("Beep", $"Synchronization failed: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
-                    LogSyncRun(schema);
-                }
-            }
-            else
-            {
-                schema.SyncStatus = "Failed";
-                schema.SyncStatusMessage = "Data Source not found";
-                Editor.AddLogMessage("Beep", "Data Source not found", DateTime.Now, -1, "", Errors.Failed);
-            }
-        }
-
-        /// <summary>
-        /// Creates the destination entity by mapping fields from the source entity based on the schema.
-        /// </summary>
-        /// <param name="schema">The DataSyncSchema defining the synchronization process.</param>
-        /// <param name="sourceData">The source data entity.</param>
-        /// <param name="isNewRecord">Indicates whether the record is new or an update.</param>
-        /// <returns>The mapped destination entity.</returns>
-        private object CreateDestinationEntity(DataSyncSchema schema, object sourceData, bool isNewRecord)
-        {
-            IDataSource DestinationData = GetDataSource(schema.DestinationDataSourceName);
-            var destEntityType = DestinationData.GetEntityType(schema.DestinationEntityName);
-            var destEntity = Activator.CreateInstance(destEntityType);
-
-            foreach (var field in schema.MappedFields)
-            {
-                var sourceFieldValue = sourceData.GetType().GetProperty(field.SourceField).GetValue(sourceData);
-                destEntityType.GetProperty(field.DestinationField).SetValue(destEntity, sourceFieldValue);
-            }
-
-            if (isNewRecord)
-            {
-                var keyFieldValue = sourceData.GetType().GetProperty(schema.SourceKeyField).GetValue(sourceData);
-                destEntityType.GetProperty(schema.DestinationKeyField).SetValue(destEntity, keyFieldValue);
-            }
-
-            return destEntity;
-        }
-
-        /// <summary>
-        /// Logs the synchronization run data.
-        /// </summary>
-        /// <param name="schema">The DataSyncSchema defining the synchronization process.</param>
-        private void LogSyncRun(DataSyncSchema schema)
-        {
-            var syncRunData = new SyncRunData
-            {
-                SyncSchemaID = schema.ID,
-                SyncDate = schema.LastSyncDate,
-                SyncStatus = schema.SyncStatus,
-                SyncStatusMessage = schema.SyncStatusMessage
-            };
-            schema.SyncRuns.Add(syncRunData);
-            schema.LastSyncRunData = syncRunData;
-        }
-
-        /// <summary>
-        /// Retrieves the IDataSource instance based on the name.
-        /// </summary>
-        /// <param name="dataSourceName">The name of the data source.</param>
-        /// <returns>The IDataSource instance.</returns>
-        private IDataSource GetDataSource(string dataSourceName)
-        {
-            IDataSource ds = Editor.GetDataSource(dataSourceName);
-            if (ds == null)
-            {
-                Editor.AddLogMessage("Beep", $"Data Source {dataSourceName} not found", DateTime.Now, -1, "", Errors.Failed);
-            }
-            return ds;
-        }
-
-        /// <summary>
-        /// Asynchronously synchronizes all data based on the loaded schemas, cancellation token, and progress reporter.
-        /// </summary>
-        /// <param name="token">Cancellation token to handle task cancellation.</param>
-        /// <param name="progress">Progress reporter to report synchronization progress.</param>
-        public async Task SyncAllDataAsync(CancellationToken token, IProgress<PassedArgs> progress)
-        {
-            foreach (var schema in SyncSchemas)
-            {
-                await SyncDataAsync(schema, token, progress);
-                if (token.IsCancellationRequested)
-                {
-                    // Handle the cancellation request here if needed
-                    break;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Synchronizes all data based on the loaded schemas.
-        /// </summary>
-        public void SyncAllData()
-        {
-            foreach (var schema in SyncSchemas)
-            {
-                SyncData(schema);
-            }
-        }
-
         public void SyncData(string SchemaID)
         {
             DataSyncSchema schema = SyncSchemas.Find(x => x.ID == SchemaID);
@@ -558,21 +556,19 @@ namespace TheTechIdea.Beep.Editor
         /// </summary>
         /// <param name="sourceList">The source ObservableBindingList containing the changes.</param>
         /// <param name="destinationDataSource">The destination IDataSource to apply the changes to.</param>
-        public void UpdateDataSourceUsingUpdateLog( Dictionary<DateTime, EntityUpdateInsertLog> updateLog )
+        public void UpdateDataSourceUsingUpdateLog(Dictionary<DateTime, EntityUpdateInsertLog> updateLog, IProgress<PassedArgs> progress = null)
         {
-            UpdateLog = updateLog;
-            foreach (var logEntry in UpdateLog.Values)
+            Parallel.ForEach(updateLog.Values, logEntry =>
             {
                 var tracking = logEntry.TrackingRecord;
                 var schema = SyncSchemas.Find(x => x.ID == tracking.UniqueId.ToString());
 
                 if (schema != null)
                 {
-                    IDataSource DestinationData = GetDataSource(schema.DestinationDataSourceName);
-                    var destEntityType = DestinationData.GetEntityType(tracking.EntityName);
+                    IDataSource destinationData = GetDataSource(schema.DestinationDataSourceName);
+                    var destEntityType = destinationData.GetEntityType(tracking.EntityName);
 
-                    // Retrieve the existing record using the primary key
-                    List<AppFilter> filters = new List<AppFilter>
+                    var filters = new List<AppFilter>
             {
                 new AppFilter
                 {
@@ -581,41 +577,55 @@ namespace TheTechIdea.Beep.Editor
                     FilterValue = tracking.PKFieldValue
                 }
             };
-                    var existingRecord = DestinationData.GetEntity(tracking.EntityName, filters);
+
+                    var existingRecord = destinationData.GetEntity(tracking.EntityName, filters);
 
                     if (existingRecord != null)
                     {
-                        // Update the existing record with the changes from the log entry
-                        foreach (var field in logEntry.UpdatedFields)
-                        {
-                            var property = destEntityType.GetProperty(field.Key);
-                            if (property != null)
-                            {
-                                property.SetValue(existingRecord, field.Value);
-                            }
-                        }
-
-                        // Send the updated record back to the destination
-                        DestinationData.UpdateEntity(tracking.EntityName, existingRecord);
+                        MapFields(logEntry.UpdatedFields, existingRecord, schema.MappedFields); // Use schema.MappedFields for field mappings
+                        destinationData.UpdateEntity(tracking.EntityName, existingRecord);
                     }
                     else if (logEntry.LogAction == LogAction.Insert)
                     {
-                        // If the record does not exist and the action is insert, create a new record
                         var newRecord = Activator.CreateInstance(destEntityType);
-                        foreach (var field in logEntry.UpdatedFields)
-                        {
-                            var property = destEntityType.GetProperty(field.Key);
-                            if (property != null)
-                            {
-                                property.SetValue(newRecord, field.Value);
-                            }
-                        }
-
-                        DestinationData.InsertEntity(tracking.EntityName, newRecord);
+                        MapFields(logEntry.UpdatedFields, newRecord, schema.MappedFields); // Use schema.MappedFields for field mappings
+                        destinationData.InsertEntity(tracking.EntityName, newRecord);
                     }
+
+                    progress?.Report(new PassedArgs { Messege = $"Processed entity: {tracking.EntityName}" });
+                }
+            });
+        }
+        private void MapFields(object source, object destination, IEnumerable<FieldSyncData> mappedFields)
+        {
+            foreach (var field in mappedFields)
+            {
+                // Get the value of the source field
+                var sourceValue = source.GetType().GetProperty(field.SourceField)?.GetValue(source);
+
+                // Set the value of the destination field
+                destination.GetType().GetProperty(field.DestinationField)?.SetValue(destination, sourceValue);
+            }
+        }
+
+
+        private async Task RetryAsync(Func<Task> operation, int maxRetries = 3)
+        {
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    await operation();
+                    return;
+                }
+                catch (Exception ex) when (attempt < maxRetries)
+                {
+                    Editor.AddLogMessage("Beep", $"Retry {attempt}: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                    await Task.Delay(1000); // Delay between retries
                 }
             }
         }
+
         private void LoadUpdateLog(string datasourcename)
         {
             string filePath = Path.Combine(filepath, "UpdateLog.json");

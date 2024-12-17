@@ -29,6 +29,7 @@ namespace TheTechIdea.Beep.Workflow
 
 
         PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token);
+        PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token, Func<PassedArgs> actionToExecute);
         PassedArgs StopAction();
 
        

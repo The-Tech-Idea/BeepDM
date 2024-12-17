@@ -248,7 +248,7 @@ namespace TheTechIdea.Beep.WebAPI
         {
             EntityStructure x = GetEntityStructure(EntityName, false);
             DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, x.Fields);
-            return DMTypeBuilder.myType;
+            return DMTypeBuilder.MyType;
         }
         public virtual IErrorsInfo BeginTransaction(PassedArgs args)
         {

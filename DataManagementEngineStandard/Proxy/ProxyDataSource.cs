@@ -17,7 +17,7 @@ using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Proxy
 {
-    public class ProxyDataSource : IDataSource
+    public class ProxyDataSource : IDataSource,IDisposable
     {
         private readonly IDMEEditor _dmeEditor;
         private readonly List<string> _dataSourceNames;

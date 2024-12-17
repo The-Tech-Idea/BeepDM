@@ -51,7 +51,7 @@ namespace TheTechIdea.Beep.Workflow.DefaultRules
                             if (defaultValue != null)
                             {
 
-                                args.ParameterString2 = defaultValue.propoertValue;
+                                args.ParameterString2 = defaultValue.PropertyValue;
                                 DMEEditor.Passedarguments.ReturnData = args.ParameterString2;
                                 DMEEditor.Passedarguments.ReturnType = args.ParameterString2.GetType();
 

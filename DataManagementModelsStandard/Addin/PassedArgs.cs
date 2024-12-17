@@ -43,6 +43,14 @@ namespace TheTechIdea.Beep.Addin
         string ErrorCode { get; set; }
         bool IsError { get; set; }
         bool Cancel { get; set; }
+        Action TrueAction { get; set; }
+        Action FalseAction { get; set; }
+        Action NoneAction { get; set; }
+        Action DefaultAction { get; set; }
+        string ParameterName { get; set; }
+         Action CurrentAction { get; set; }
+         Action NextAction { get; set; }
+         Action PreviousAction { get; set; }
     }
 
     /// <summary>
@@ -52,6 +60,7 @@ namespace TheTechIdea.Beep.Addin
 
     {
         public string Args { get; set; } = string.Empty;
+       
         public IDataSource DataSource { get; set; }
         public List<ObjectItem> Objects { get; set; } = new List<ObjectItem>();
         public IDM_Addin Addin { get; set; }
@@ -85,6 +94,14 @@ namespace TheTechIdea.Beep.Addin
         public bool IsError { get; set; }
         public bool Cancel { get; set; }
         public int Id { get; set; }
+        public Action TrueAction { get; set; }
+        public Action FalseAction { get; set; }
+        public Action CurrentAction { get; set; }
+        public Action NextAction { get; set; }
+        public Action PreviousAction { get; set; }
+        public Action NoneAction { get; set; }
+        public Action DefaultAction { get; set; }
+        public string ParameterName { get; set; }
         public PassedArgs()
         {
 

@@ -48,7 +48,7 @@ namespace TheTechIdea.Beep.Utilities
         bool IsObjectNumeric( object o);
         List<object> ConvertTableToList(DataTable dt, EntityStructure ent, Type enttype);
         List<object> GetListByDataTable(DataTable dt, Type type, EntityStructure enttype);
-        List<object> GetListByDataTable(DataTable dt, string Namespace, string EntityName);
+        List<object> GetListByDataTable(IDMEEditor editor, DataTable dt, string Namespace, string EntityName);
         object GetBindingListByDataTable(DataTable dt, Type type, EntityStructure enttype);
         object GetBindingListFromIList(IList inputList, Type itemType, EntityStructure entType);
         //   List<ExpandoObject> GetExpandoObject(DataTable dt, Type type, EntityStructure enttype);

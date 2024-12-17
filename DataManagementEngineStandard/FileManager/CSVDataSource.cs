@@ -501,14 +501,14 @@ namespace TheTechIdea.Beep.FileManager
                     Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
                     foreach (EntityField item in Entities[0].Fields)
                     {
-                        properties.Add(item.fieldname, DMTypeBuilder.myType.GetProperty(item.fieldname));
+                        properties.Add(item.fieldname, DMTypeBuilder.MyType.GetProperty(item.fieldname));
                         //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
                     }
 
                     string[] r = fieldParser.ReadFields();
                     while ((fieldParser.EndOfData == false) )
                         {
-                            dynamic x = Activator.CreateInstance(DMTypeBuilder.myType);
+                            dynamic x = Activator.CreateInstance(DMTypeBuilder.MyType);
 
                         r = fieldParser.ReadFields();
 
@@ -627,8 +627,56 @@ namespace TheTechIdea.Beep.FileManager
 
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
-            return DMEEditor.ErrorObject;
+            ErrorObject.Flag = Errors.Ok;
+
+            try
+            {
+                foreach (var entity in entities)
+                {
+                    // Build the file path for the entity (CSV file)
+                    string entityFilePath = Path.Combine(FilePath, $"{entity.EntityName}.csv");
+
+                    if (!File.Exists(entityFilePath))
+                    {
+                        // Create a new CSV file and write the headers (field names)
+                        using (var writer = new StreamWriter(entityFilePath, false))
+                        {
+                            var headerLine = string.Join(Delimiter.ToString(), entity.Fields.Select(f => f.fieldname));
+                            writer.WriteLine(headerLine);
+                        }
+
+                        Logger.WriteLog($"Entity '{entity.EntityName}' created successfully at {entityFilePath}.");
+
+                        // Add the entity to the internal Entities list
+                        if (!EntitiesNames.Contains(entity.EntityName))
+                        {
+                            EntitiesNames.Add(entity.EntityName);
+                            Entities.Add(entity);
+                        }
+                    }
+                    else
+                    {
+                        Logger.WriteLog($"Entity '{entity.EntityName}' already exists at {entityFilePath}.");
+                    }
+                }
+
+                // Save the entities configuration for persistence
+                DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities
+                {
+                    datasourcename = DatasourceName,
+                    Entities = Entities
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLog($"Error in CreateEntities: {ex.Message}");
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+            }
+
+            return ErrorObject;
         }
+
 
         public bool CreateEntityAs(EntityStructure entity)
         {
@@ -639,10 +687,7 @@ namespace TheTechIdea.Beep.FileManager
             return true;
         }
 
-        public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow)
-        {
-            return DMEEditor.ErrorObject;
-        }
+    
 
         public IErrorsInfo ExecuteSql(string sql)
         {
@@ -835,7 +880,7 @@ namespace TheTechIdea.Beep.FileManager
           
 
             DMTypeBuilder.CreateNewObject(DMEEditor, "Beep.CSVDataSource", Entities.FirstOrDefault().EntityName, Entities.FirstOrDefault().Fields);
-            return DMTypeBuilder.myType;
+            return DMTypeBuilder.MyType;
         }
 
          public  object RunQuery( string qrystr)
@@ -863,12 +908,136 @@ namespace TheTechIdea.Beep.FileManager
             }
             return DMEEditor.ErrorObject;
         }
-
-        public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
+        public IErrorsInfo UpdateEntity(string entityName, object uploadDataRow)
         {
-            throw new NotImplementedException();
-        }
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                var entityStructure = GetEntityStructure(entityName, false);
+                if (entityStructure == null || entityStructure.Fields.Count == 0)
+                {
+                    Logger.WriteLog($"Entity '{entityName}' structure not found.");
+                    return ErrorObject;
+                }
 
+                var rows = new List<string>();
+                bool isUpdated = false;
+
+                using (var reader = new StreamReader(CombineFilePath))
+                {
+                    string headers = reader.ReadLine();
+                    rows.Add(headers); // Add headers back
+                    string[] headerFields = headers.Split(Delimiter);
+
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        var fields = line.Split(Delimiter);
+                        var dataRow = new Dictionary<string, string>();
+
+                        for (int i = 0; i < headerFields.Length; i++)
+                        {
+                            dataRow[headerFields[i]] = fields[i];
+                        }
+
+                        // Match condition (update based on primary key)
+                        if (dataRow[entityStructure.Fields[0].fieldname].Equals(
+                                uploadDataRow.GetType().GetProperty(entityStructure.Fields[0].fieldname)
+                                .GetValue(uploadDataRow).ToString()))
+                        {
+                            // Replace with new data
+                            var updatedRow = string.Join(Delimiter, entityStructure.Fields.Select(f =>
+                                uploadDataRow.GetType().GetProperty(f.fieldname).GetValue(uploadDataRow)?.ToString() ?? ""));
+                            rows.Add(updatedRow);
+                            isUpdated = true;
+                        }
+                        else
+                        {
+                            rows.Add(line);
+                        }
+                    }
+                }
+
+                if (isUpdated)
+                {
+                    File.WriteAllLines(CombineFilePath, rows);
+                    Logger.WriteLog($"Entity '{entityName}' updated successfully.");
+                }
+                else
+                {
+                    Logger.WriteLog($"No matching record found to update in entity '{entityName}'.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLog($"Error updating entity '{entityName}': {ex.Message}");
+                ErrorObject.Flag = Errors.Failed;
+            }
+            return ErrorObject;
+        }
+        public IErrorsInfo DeleteEntity(string entityName, object uploadDataRow)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                var entityStructure = GetEntityStructure(entityName, false);
+                if (entityStructure == null || entityStructure.Fields.Count == 0)
+                {
+                    Logger.WriteLog($"Entity '{entityName}' structure not found.");
+                    return ErrorObject;
+                }
+
+                var rows = new List<string>();
+                bool isDeleted = false;
+
+                using (var reader = new StreamReader(CombineFilePath))
+                {
+                    string headers = reader.ReadLine();
+                    rows.Add(headers); // Add headers back
+                    string[] headerFields = headers.Split(Delimiter);
+
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        var fields = line.Split(Delimiter);
+                        var dataRow = new Dictionary<string, string>();
+
+                        for (int i = 0; i < headerFields.Length; i++)
+                        {
+                            dataRow[headerFields[i]] = fields[i];
+                        }
+
+                        // Match condition (delete based on primary key)
+                        if (dataRow[entityStructure.Fields[0].fieldname].Equals(
+                                uploadDataRow.GetType().GetProperty(entityStructure.Fields[0].fieldname)
+                                .GetValue(uploadDataRow).ToString()))
+                        {
+                            isDeleted = true;
+                        }
+                        else
+                        {
+                            rows.Add(line);
+                        }
+                    }
+                }
+
+                if (isDeleted)
+                {
+                    File.WriteAllLines(CombineFilePath, rows);
+                    Logger.WriteLog($"Entity '{entityName}' deleted successfully.");
+                }
+                else
+                {
+                    Logger.WriteLog($"No matching record found to delete in entity '{entityName}'.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLog($"Error deleting entity '{entityName}': {ex.Message}");
+                ErrorObject.Flag = Errors.Failed;
+            }
+            return ErrorObject;
+        }
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
             throw new NotImplementedException();
@@ -956,5 +1125,7 @@ namespace TheTechIdea.Beep.FileManager
             GC.SuppressFinalize(this);
         }
         #endregion
+        #region "Helpers"
+        #endregion "Helpers"
     }
 }

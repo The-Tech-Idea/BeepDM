@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Schema;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -214,6 +215,185 @@ namespace TheTechIdea.Beep.Json
 
             // Assuming the first segment after '$' is the entity name
             return segments.FirstOrDefault();
+        }
+        public static Dictionary<string, object> FlattenJson(JObject jObject, string parentKey = "")
+        {
+            var result = new Dictionary<string, object>();
+
+            foreach (var property in jObject.Properties())
+            {
+                string key = string.IsNullOrEmpty(parentKey) ? property.Name : $"{parentKey}.{property.Name}";
+
+                if (property.Value.Type == JTokenType.Object)
+                {
+                    var childObject = (JObject)property.Value;
+                    foreach (var child in FlattenJson(childObject, key))
+                    {
+                        result.Add(child.Key, child.Value);
+                    }
+                }
+                else if (property.Value.Type == JTokenType.Array)
+                {
+                    var array = property.Value as JArray;
+                    for (int i = 0; i < array.Count; i++)
+                    {
+                        if (array[i] is JObject nestedObject)
+                        {
+                            foreach (var child in FlattenJson(nestedObject, $"{key}[{i}]"))
+                            {
+                                result.Add(child.Key, child.Value);
+                            }
+                        }
+                        else
+                        {
+                            result.Add($"{key}[{i}]", array[i]);
+                        }
+                    }
+                }
+                else
+                {
+                    result.Add(key, property.Value);
+                }
+            }
+
+            return result;
+        }
+        public static DataTable JsonToDataTable(string json)
+        {
+            var dataTable = new DataTable();
+            try
+            {
+                var jsonArray = JArray.Parse(json);
+                if (!jsonArray.Any()) return dataTable;
+
+                foreach (JProperty column in ((JObject)jsonArray.First()).Properties())
+                {
+                    dataTable.Columns.Add(column.Name, typeof(string));
+                }
+
+                foreach (JObject row in jsonArray)
+                {
+                    var dataRow = dataTable.NewRow();
+                    foreach (JProperty column in row.Properties())
+                    {
+                        dataRow[column.Name] = column.Value.ToString();
+                    }
+                    dataTable.Rows.Add(dataRow);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error converting JSON to DataTable: {ex.Message}");
+            }
+            return dataTable;
+        }
+        public static string DataTableToJson(DataTable table)
+        {
+            var jsonArray = new JArray();
+
+            foreach (DataRow row in table.Rows)
+            {
+                var jsonObject = new JObject();
+                foreach (DataColumn column in table.Columns)
+                {
+                    jsonObject[column.ColumnName] = row[column]?.ToString();
+                }
+                jsonArray.Add(jsonObject);
+            }
+
+            return jsonArray.ToString();
+        }
+        public static JObject MergeJsonObjects(JObject primary, JObject secondary)
+        {
+            var result = new JObject(primary);
+            foreach (var property in secondary.Properties())
+            {
+                if (result.ContainsKey(property.Name))
+                {
+                    if (result[property.Name] is JObject && property.Value is JObject)
+                    {
+                        result[property.Name] = MergeJsonObjects((JObject)result[property.Name], (JObject)property.Value);
+                    }
+                }
+                else
+                {
+                    result[property.Name] = property.Value;
+                }
+            }
+            return result;
+        }
+        public static bool SearchValueInJson(JToken token, string searchValue)
+        {
+            if (token == null) return false;
+
+            if (token.Type == JTokenType.Object)
+            {
+                return token.Children<JProperty>().Any(prop =>
+                    SearchValueInJson(prop.Value, searchValue));
+            }
+            else if (token.Type == JTokenType.Array)
+            {
+                return token.Children().Any(child =>
+                    SearchValueInJson(child, searchValue));
+            }
+            else
+            {
+                return token.ToString().Equals(searchValue, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+        public static string PrettyPrintJson(string json)
+        {
+            try
+            {
+                var parsedJson = JToken.Parse(json);
+                return parsedJson.ToString(Newtonsoft.Json.Formatting.Indented);
+            }
+            catch (Exception ex)
+            {
+                return $"Invalid JSON: {ex.Message}";
+            }
+        }
+        public static JObject ExtractSpecificKeys(JObject jsonObject, params string[] keys)
+        {
+            var result = new JObject();
+            foreach (var key in keys)
+            {
+                if (jsonObject.ContainsKey(key))
+                {
+                    result[key] = jsonObject[key];
+                }
+            }
+            return result;
+        }
+        public static Dictionary<string, JObject> JsonArrayToDictionary(JArray jsonArray, string keyProperty)
+        {
+            var result = new Dictionary<string, JObject>();
+
+            foreach (JObject obj in jsonArray)
+            {
+                if (obj.ContainsKey(keyProperty))
+                {
+                    string key = obj[keyProperty].ToString();
+                    result[key] = obj;
+                }
+            }
+
+            return result;
+        }
+
+        public static string DetectJsonType(string json)
+        {
+            try
+            {
+                var token = JToken.Parse(json);
+                if (token is JObject) return "Object";
+                if (token is JArray) return "Array";
+            }
+            catch
+            {
+                return "Invalid";
+            }
+            return "Unknown";
         }
 
     }

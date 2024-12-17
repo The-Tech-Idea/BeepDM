@@ -1,67 +1,30 @@
-﻿using TheTechIdea.Beep.ConfigUtil;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TheTechIdea.Beep.Vis;
+﻿using System;
 using TheTechIdea.Beep.Workflow.Interfaces;
-using TheTechIdea.Beep.Utilities;
-
-using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
-
+using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Vis;
+using TheTechIdea.Beep.Addin;
 
 namespace TheTechIdea.Beep.Workflow.DefaultRules
 {
     [Addin(Caption = "Default GUID", Name = "GUID", misc = "Defaults", addinType = AddinType.Class, returndataTypename = "string")]
-    public class GetGUID : IWorkFlowRule
+    public class GetGUID : BaseWorkFlowRule
     {
-        public GetGUID(IDMEEditor pDMEEditor)
-        {
-            DMEEditor = pDMEEditor;
-            RuleName = "GetGUID";
-            Rule = "GUID";
-        }
-        public IDMEEditor DMEEditor { get; set; }
-        public string RuleName { get; set; } = "GetGUID";
-        public string Rule { get; set; } = "GUID";
-        private List<string> _Tokens = new List<string>();
+        public GetGUID(IDMEEditor pDMEEditor) : base(pDMEEditor, "GetGUID") { }
 
-        public event EventHandler<WorkFlowEventArgs> WorkFlowRuleStarted;
-        public event EventHandler<WorkFlowEventArgs> WorkFlowRuleEnded;
-        public event EventHandler<WorkFlowEventArgs> WorkFlowRuleRunning;
-
-        public PassedArgs ExecuteRule(PassedArgs args, IRuleStructure rule)
+        public override PassedArgs ExecuteRule(PassedArgs args, IRuleStructure rule)
         {
-            if (args != null)
+            InitializePassedArguments(args);
+
+            var defaultValue = GetDefaultValue(args, rule);
+            if (defaultValue != null)
             {
-                DMEEditor.Passedarguments.ParameterString2 = null;
-                DMEEditor.Passedarguments.ReturnData = null;
-                DMEEditor.Passedarguments.ReturnType = null;
-                if (!string.IsNullOrEmpty(args.DatasourceName))
-                {
-                    List<DefaultValue> defaults = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == args.DatasourceName)].DatasourceDefaults;
-                    if (defaults != null)
-                    {
-                        if (rule != null)
-                        {
-                            DefaultValue defaultValue = defaults.Where(p => string.Equals(p.Rule, rule.Rulename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                            if (defaultValue != null)
-                            {
-                                Guid g = Guid.NewGuid();
-
-                                args.ParameterString2 = g.ToString("N");
-                                DMEEditor.Passedarguments.ReturnData = args.ParameterString2;
-                                DMEEditor.Passedarguments.ReturnType = args.ParameterString2.GetType();
-                            }
-                        }
-                    }
-                }
+                args.ParameterString2 = Guid.NewGuid().ToString("N");
+                DMEEditor.Passedarguments.ReturnData = args.ParameterString2;
+                DMEEditor.Passedarguments.ReturnType = typeof(string);
             }
+
             return (PassedArgs)DMEEditor.Passedarguments;
         }
-
-
     }
 }
