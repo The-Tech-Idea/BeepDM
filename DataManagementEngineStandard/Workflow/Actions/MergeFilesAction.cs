@@ -55,7 +55,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
             return PerformAction(progress, token, null);
         }
 
-        public PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token, Func<PassedArgs> actionToExecute)
+        public PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token, Func<PassedArgs, object> actionToExecute)
         {
             var args = new PassedArgs { Messege = "Merge Files Action Started" };
             try

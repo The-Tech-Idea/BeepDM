@@ -31,6 +31,23 @@ namespace TheTechIdea.Beep.Tools
         string CreatePOCOClass(string classname, EntityStructure entity, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true);
         Type CreateTypeFromCode(string code, string outputtypename);
         void GenerateCSharpCode(string fileName);
-
+        string GenerateMinimalWebApi(string outputPath, string namespaceName = "TheTechIdea.ProjectMinimalAPI");
+        List<string> GenerateWebApiControllers(string dataSourceName, List<EntityStructure> entities, string outputPath, string namespaceName = "TheTechIdea.ProjectControllers");
+        string GenerateWebApiControllerForEntityWithParams(
+            string className,
+            string outputPath,
+            string namespaceName = "TheTechIdea.ProjectControllers");
+        List<string> ValidateEntityStructure(EntityStructure entity);
+        string GenerateDataAccessLayer(EntityStructure entity, string outputPath);
+        string GenerateUnitTestClass(EntityStructure entity, string outputPath);
+        string GenerateDbContext(List<EntityStructure> entities, string namespaceString, string outputPath);
+        string GenerateEntityConfiguration(EntityStructure entity, string namespaceString, string outputPath);
+        string GenerateBlazorCrudCode(EntityStructure entity, string apiBaseUrl);
+        string GenerateBlazorDetailedView(string namespaceName, string entityName, List<EntityField> fields);
+        string GenerateBlazorDashboardPage(string namespaceName, List<EntityStructure> entities);
+        string GenerateReactListComponent(string entityName, List<EntityField> fields, string outputPath);
+        string GenerateReactDashboardComponent(List<string> entityNames, string outputPath);
+        string GenerateReactDetailComponent(string entityName, List<EntityField> fields, string outputPath);
+        string GenerateReactNavbarComponent(List<string> entityNames, string outputPath);
     }
 }

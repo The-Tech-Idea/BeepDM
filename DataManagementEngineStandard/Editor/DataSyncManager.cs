@@ -36,13 +36,19 @@ namespace TheTechIdea.Beep.Editor
             }
 
             LoadSchemas();
+            pauseEvent = new ManualResetEventSlim(true);
+            cancellationTokenSource = new CancellationTokenSource();
         }
 
         public string filepath { get; set; }
         public IDMEEditor Editor { get; }
         public ObservableBindingList<DataSyncSchema> SyncSchemas { get; set; }
         private Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog = new Dictionary<DateTime, EntityUpdateInsertLog>();
+        private ManualResetEventSlim pauseEvent;
+        private CancellationTokenSource cancellationTokenSource;
 
+        // Added Sync Metrics tracking
+        public SyncMetrics Metrics { get; private set; } = new SyncMetrics();
         /// <summary>
         /// Retrieves records from the source data based on the schema's LastSyncDate and the specified filter operator.
         /// </summary>
@@ -727,7 +733,27 @@ namespace TheTechIdea.Beep.Editor
                 }
             }
         }
+        #region Pause, Resume, Stop
 
+        public void PauseSync()
+        {
+            pauseEvent.Reset();
+            Editor.AddLogMessage("Beep", "Synchronization paused.", DateTime.Now, -1, "", Errors.Ok);
+        }
+
+        public void ResumeSync()
+        {
+            pauseEvent.Set();
+            Editor.AddLogMessage("Beep", "Synchronization resumed.", DateTime.Now, -1, "", Errors.Ok);
+        }
+
+        public void StopSync()
+        {
+            cancellationTokenSource.Cancel();
+            Editor.AddLogMessage("Beep", "Synchronization stopped.", DateTime.Now, -1, "", Errors.Ok);
+        }
+
+        #endregion
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -749,5 +775,14 @@ namespace TheTechIdea.Beep.Editor
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+    }
+
+    public class SyncMetrics
+    {
+        public string SchemaID { get; set; }
+        public int TotalRecords { get; set; }
+        public int SuccessfulRecords { get; set; }
+        public int FailedRecords { get; set; }
+        public DateTime SyncDate { get; set; }
     }
 }

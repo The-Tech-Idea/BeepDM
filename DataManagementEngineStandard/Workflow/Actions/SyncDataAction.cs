@@ -57,7 +57,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
             return PerformAction(progress, _cancellationTokenSource.Token, null);
         }
 
-        public PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token, Func<PassedArgs> customAction)
+        public PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token, Func<PassedArgs, object> customAction)
         {
             var args = new PassedArgs { Messege = "Sync Data Action Started", ParameterInt1 = 0 };
             try

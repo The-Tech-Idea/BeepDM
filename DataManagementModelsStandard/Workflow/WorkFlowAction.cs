@@ -49,7 +49,7 @@ namespace TheTechIdea.Beep.Workflow
         }
 
         // Overloaded method with a function to execute
-        public virtual PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token, Func<PassedArgs> actionToExecute)
+        public virtual PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token, Func<PassedArgs,object> actionToExecute)
         {
             var args = new PassedArgs { Messege = "Action Started", ParameterInt1 = 0 };
 
@@ -72,7 +72,8 @@ namespace TheTechIdea.Beep.Workflow
                 // Execute the custom function if provided
                 if (actionToExecute != null)
                 {
-                    PassedArgs result = actionToExecute.Invoke();
+
+                    PassedArgs result = (PassedArgs)actionToExecute.Invoke(args);
                     args = result;
                 }
 

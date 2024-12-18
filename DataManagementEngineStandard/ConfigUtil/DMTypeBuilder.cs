@@ -26,7 +26,7 @@ namespace TheTechIdea.Beep.Utilities
         private static ModuleBuilder moduleBuilder;
 
         /// <summary>Caches generated types to improve performance.</summary>
-        private static readonly Dictionary<string, Type> typeCache = new Dictionary<string, Type>();
+        public static readonly Dictionary<string, Type> typeCache = new Dictionary<string, Type>();
 
         /// <summary>Maintains namespace mappings for types.</summary>
         public static Dictionary<string, string> DataSourceNameSpace { get; set; } = new Dictionary<string, string>();

@@ -70,20 +70,7 @@ namespace TheTechIdea.Beep.Tools
             sb.AppendLine("}");
             sb.AppendLine("}");
             return sb.ToString();
-                //var tree = CSharpSyntaxTree.ParseText(sb.ToString());
-                //var mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
-                //var dictsLib = MetadataReference.CreateFromFile(typeof(Dictionary<,>).Assembly.Location);
 
-                //var compilation = CSharpCompilation.Create("MyCompilation",
-                 //   syntaxTrees: new[] { tree }, references: new[] { mscorlib, dictsLib });
-
-                //Emit to stream
-               // var ms = new MemoryStream();
-               // var emitResult = compilation.Emit(ms);
-
-                //Load into currently running assembly. Normally we'd probably
-                //want to do this in an AppDomain
-               // ourAssembly = Assembly.Load(ms.ToArray());
            
         }
     }

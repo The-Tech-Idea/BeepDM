@@ -51,7 +51,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
             return PerformAction(progress, token, null); // Default to no custom function
         }
 
-        public PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token, Func<PassedArgs> actionToExecute)
+        public PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token, Func<PassedArgs, object> actionToExecute)
         {
             var args = new PassedArgs { Messege = "Transform and Load Action Started", ParameterInt1 = 0 };
 
@@ -60,51 +60,38 @@ namespace TheTechIdea.Beep.Workflow.Actions
                 WorkFlowActionStarted?.Invoke(this, new WorkFlowEventArgs { Message = "Action Started", ActionName = Name });
                 IsRunning = true;
 
-                // Custom Function Execution
                 if (actionToExecute != null)
                 {
-                    return actionToExecute.Invoke();
+                    // Iterate through the input parameters and apply the action function
+                    foreach (var param in InParameters)
+                    {
+                        // Pass the current parameter to the action function
+                        var transformedResult = actionToExecute((PassedArgs)param);
+
+                        if (transformedResult != null)
+                        {
+                            // Add the transformed result to the OutParameters
+                            OutParameters.Add(new PassedArgs { ReturnData = transformedResult });
+                        }
+                    }
+
+                    args.Messege = "Transform and Load completed using provided action.";
                 }
-
-                // Extract required parameters
-                var sourceDataSource = GetParameterValue<string>("SourceDataSource");
-                var transformationSteps = GetParameterValue<List<Func<object, object>>>("TransformationSteps");
-                var targetEntity = GetParameterValue<string>("TargetTable");
-
-                if (string.IsNullOrEmpty(sourceDataSource) || string.IsNullOrEmpty(targetEntity) || transformationSteps == null)
+                else
                 {
-                    args.Messege = "Invalid Parameters: SourceDataSource, TransformationSteps, or TargetTable missing.";
-                    return args;
+                    args.Messege = "No transformation function provided. Skipping transformation.";
                 }
 
-                // Load source data
-                SendProgress(progress, "Loading Source Data...");
-                var sourceData = LoadSourceData(sourceDataSource, token);
-                if (sourceData == null)
-                {
-                    args.Messege = "Failed to load source data.";
-                    return args;
-                }
-
-                // Apply transformations
-                SendProgress(progress, "Applying Transformations...");
-                var transformedData = ApplyTransformations(sourceData, transformationSteps, token);
-
-                // Load into target entity
-                SendProgress(progress, $"Loading Data into Target: {targetEntity}...");
-                var destinationDataSource = DMEEditor.GetDataSource(sourceDataSource);
-                destinationDataSource?.InsertEntity(targetEntity, transformedData);
-
-                args.Messege = "Transform and Load Completed Successfully.";
                 WorkFlowActionEnded?.Invoke(this, new WorkFlowEventArgs { Message = "Action Completed", ActionName = Name });
             }
             catch (OperationCanceledException)
             {
-                args.Messege = "Action Canceled.";
+                args.Messege = "Action was canceled.";
             }
             catch (Exception ex)
             {
-                args.Messege = $"Error during TransformAndLoadAction: {ex.Message}";
+                args.Messege = $"Error during Transform and Load: {ex.Message}";
+                DMEEditor.AddLogMessage("TransformAndLoadAction", args.Messege, DateTime.Now, -1, null, Errors.Failed);
             }
             finally
             {
