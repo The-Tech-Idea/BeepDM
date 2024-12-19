@@ -15,6 +15,7 @@ namespace TheTechIdea.Beep.Workflow
         IDMEEditor DMEEditor { get; set; }
         string RuleName { get; set; }
         string Rule { get; set; }
+        // args.SentObject has data object needed for rule to run
         PassedArgs ExecuteRule(PassedArgs args, IRuleStructure rule);
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -34,19 +35,11 @@ namespace TheTechIdea.Beep.Editor
         public IDataSource SourceData { get; set; }
         public IDataSource DestData { get; set; }
 
-        /// <summary>
-        /// Optional mapping configuration. If provided and MappedEntities are set, fields are mapped accordingly.
-        /// </summary>
         public EntityDataMap Mapping { get; set; }
-
-        /// <summary>
-        /// Optional filters for fetching source data. If set, only filtered data is retrieved.
-        /// </summary>
         public List<AppFilter> SourceFilters { get; set; } = new List<AppFilter>();
+        public List<string> SelectedFields { get; set; }
 
         public IDMEEditor DMEEditor { get; }
-
-        private bool IsEntitychanged = false;
         private readonly ETLValidator _validator;
         private ManualResetEventSlim _pauseEvent = new ManualResetEventSlim(true);
         private CancellationTokenSource _cancellationTokenSource;
@@ -57,6 +50,7 @@ namespace TheTechIdea.Beep.Editor
         public DataImportManager(IDMEEditor dMEEditor)
         {
             DMEEditor = dMEEditor ?? throw new ArgumentNullException(nameof(dMEEditor));
+          
             _validator = new ETLValidator(dMEEditor);
         }
 
@@ -69,7 +63,7 @@ namespace TheTechIdea.Beep.Editor
                 DestEntityName = destEntityName;
                 DestDataSourceName = destDataSourceName;
 
-                if (DestData != null && DestData.ConnectionStatus == System.Data.ConnectionState.Open)
+                if (DestData != null && DestData.ConnectionStatus == ConnectionState.Open)
                 {
                     DestEntityStructure = (EntityStructure)DestData.GetEntityStructure(destEntityName, false)?.Clone();
                 }
@@ -79,19 +73,6 @@ namespace TheTechIdea.Beep.Editor
                 LogError("Error Loading Destination Entity", ex);
             }
             return DMEEditor.ErrorObject;
-        }
-
-        public void StartImportAsync(
-            IProgress<IPassedArgs> progress = null,
-            Func<object, object> transformation = null,
-            int batchSize = 50)
-        {
-            ImportLogData.Clear();
-
-            _cancellationTokenSource = new CancellationTokenSource();
-            var token = _cancellationTokenSource.Token;
-
-            _importTask = Task.Run(() => RunImportAsync(progress, token, transformation, batchSize), token);
         }
 
         public async Task<IErrorsInfo> RunImportAsync(
@@ -108,6 +89,8 @@ namespace TheTechIdea.Beep.Editor
                     if (validation.Flag == Errors.Failed)
                         return validation;
                 }
+
+                await EnsureDestinationEntityExists();
 
                 var sourceData = await FetchSourceDataAsync(token);
                 if (sourceData == null || !sourceData.Any())
@@ -143,43 +126,108 @@ namespace TheTechIdea.Beep.Editor
             return DMEEditor.ErrorObject;
         }
 
+        private async Task EnsureDestinationEntityExists()
+        {
+            if (DestData == null)
+            {
+                throw new InvalidOperationException("Destination data source is not initialized.");
+            }
+
+            if (!DestData.CheckEntityExist(DestEntityName))
+            {
+                DMEEditor.AddLogMessage("ETL", $"Destination entity '{DestEntityName}' does not exist. Creating it...", DateTime.Now, 0, null, Errors.Failed);
+                LogImport($"Destination entity '{DestEntityName}' does not exist. Creating it...", 0);
+
+                if (SourceEntityStructure == null)
+                {
+                    SourceEntityStructure = LoadSourceEntityStructure();
+                    if (SourceEntityStructure == null)
+                    {
+                        throw new InvalidOperationException($"Source entity structure could not be loaded for '{SourceEntityName}'.");
+                    }
+                }
+
+                var creationSuccess = await Task.Run(() => DestData.CreateEntityAs(SourceEntityStructure));
+                if (creationSuccess)
+                {
+                    DMEEditor.AddLogMessage("ETL", $"Successfully created destination entity '{DestEntityName}'.", DateTime.Now, 0, null, Errors.Ok);
+                    LogImport($"Successfully created destination entity '{DestEntityName}'.", 0);
+                }
+                else
+                {
+                    throw new Exception($"Failed to create destination entity '{DestEntityName}'.");
+                }
+            }
+        }
+
+        private EntityStructure LoadSourceEntityStructure()
+        {
+            if (SourceData == null)
+            {
+                SourceData = DMEEditor.GetDataSource(SourceDataSourceName);
+            }
+
+            if (SourceData == null || !SourceData.CheckEntityExist(SourceEntityName))
+            {
+                throw new InvalidOperationException($"Source entity '{SourceEntityName}' does not exist in source data source '{SourceDataSourceName}'.");
+            }
+
+            return SourceData.GetEntityStructure(SourceEntityName, false);
+        }
+
         private async Task<IEnumerable<object>> FetchSourceDataAsync(CancellationToken token)
         {
-            // Use SourceFilters to limit the data retrieved
             var result = await Task.Run(() => SourceData.GetEntity(SourceEntityName, SourceFilters), token);
-            IEnumerable<object> data = null;
 
             if (result is DataTable table)
             {
-                data = DMEEditor.Utilfunction.GetListByDataTable(table, null, SourceEntityStructure);
-            }
-            else if (result is IEnumerable<object> enumerableData)
-            {
-                data = enumerableData;
+                return table.AsEnumerable()
+                            .Select(row => DMEEditor.Utilfunction.ConvertDataTableToObservableList(table, DMEEditor.Utilfunction.GetEntityType(DMEEditor,SourceEntityName, SourceEntityStructure.Fields)));
             }
 
-            if (data != null)
+            if (result is IEnumerable<object> enumerableData)
             {
-                LogImport($"Fetched {data.Count()} source records using applied filters.", 0);
+                return enumerableData;
             }
 
-            return data;
+            return null;
         }
 
         private async Task InsertBatchAsync(IEnumerable<object> batch, IProgress<IPassedArgs> progress, CancellationToken token)
         {
             int processed = 0;
-
-            bool hasMappings = Mapping?.MappedEntities != null && Mapping.MappedEntities.Any(p => p.EntityName == DestEntityName && p.EntityDataSource == DestDataSourceName);
-            var mapDetail = hasMappings ? Mapping.MappedEntities.FirstOrDefault(p => p.EntityName == DestEntityName && p.EntityDataSource == DestDataSourceName) : null;
-
-            foreach (var record in batch)
+            List<DefaultValue> defaultValues = new List<DefaultValue>();
+            defaultValues=DefaultsManager.GetDefaults(DMEEditor, DestDataSourceName);
+            foreach (var originalRecord in batch)
             {
                 _pauseEvent.Wait(token);
                 token.ThrowIfCancellationRequested();
 
-                var finalRecord = hasMappings ? ApplyMapping(record, mapDetail) : record;
-
+                // Use a new variable to store the possibly filtered record
+                var finalRecord = SelectedFields != null && SelectedFields.Any()
+                    ? FilterFields(originalRecord)
+                    : originalRecord;
+                // Map the source record to the destination format using MappingManager
+                if (finalRecord != null) { 
+                    if(Mapping != null)
+                    {
+                        if (Mapping.MappedEntities.Any(p=>p.EntityName.Equals(DestEntityName, StringComparison.InvariantCultureIgnoreCase)))
+                        {
+                            finalRecord=MappingManager.MapObjectToAnother(DMEEditor, DestEntityName, Mapping.MappedEntities.FirstOrDefault(), finalRecord);
+                        }
+                    }
+                }
+                if(defaultValues != null && defaultValues.Any())
+                {
+                    foreach (var def in defaultValues)
+                    {
+                        if ( DestEntityStructure.Fields.Any(p=>p.fieldname.Equals(def.PropertyName, StringComparison.InvariantCultureIgnoreCase)))
+                        {
+                           object retval= DefaultsManager.ResolveDefaultValue(DMEEditor, DestDataSourceName, def.PropertyName, new PassedArgs() { SentData=def,ObjectName="DefaultValue"});
+                            DMEEditor.Utilfunction.SetFieldValueFromObject(def.PropertyName, finalRecord, retval);
+                        }
+                    }
+                }
                 await Task.Run(() => DestData.InsertEntity(DestEntityName, finalRecord), token);
                 processed++;
 
@@ -194,63 +242,23 @@ namespace TheTechIdea.Beep.Editor
             }
         }
 
-        private object ApplyMapping(object sourceRecord, EntityDataMap_DTL mapDetail)
+
+        private object FilterFields(object record)
         {
-            if (mapDetail == null || mapDetail.FieldMapping == null || !mapDetail.FieldMapping.Any())
-                return sourceRecord;
-
-            var destObject = CreateDestinationObject();
-
-            foreach (var fieldMap in mapDetail.FieldMapping)
-            {
-                object sourceValue = GetPropertyValue(sourceRecord, fieldMap.FromFieldName);
-                SetPropertyValue(destObject, fieldMap.ToFieldName, sourceValue);
-            }
-
-            return destObject;
-        }
-
-        private object CreateDestinationObject()
-        {
-            return new System.Dynamic.ExpandoObject();
-        }
-
-        private object GetPropertyValue(object obj, string propertyName)
-        {
-            if (obj == null || string.IsNullOrEmpty(propertyName))
+            if (record == null)
                 return null;
 
-            if (obj is IDictionary<string, object> dict)
+            var filteredRecord = new Dictionary<string, object>();
+
+            foreach (var field in SelectedFields)
             {
-                return dict.ContainsKey(propertyName) ? dict[propertyName] : null;
+                if (record is IDictionary<string, object> dict && dict.ContainsKey(field))
+                {
+                    filteredRecord[field] = dict[field];
+                }
             }
 
-            var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-            return prop?.GetValue(obj);
-        }
-
-        private void SetPropertyValue(object obj, string propertyName, object value)
-        {
-            if (obj == null || string.IsNullOrEmpty(propertyName))
-                return;
-
-            if (obj is IDictionary<string, object> dict)
-            {
-                dict[propertyName] = value;
-                return;
-            }
-
-            var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-            if (prop != null && prop.CanWrite)
-            {
-                prop.SetValue(obj, value);
-            }
-        }
-
-        private void LogError(string message, Exception ex)
-        {
-            DMEEditor.AddLogMessage("Beep", $"{message}: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            LogImport($"{message}: {ex.Message}", 0);
+            return filteredRecord;
         }
 
         private void LogImport(string message, int recordNumber)
@@ -263,51 +271,10 @@ namespace TheTechIdea.Beep.Editor
             });
         }
 
-        public void PauseImport()
+        private void LogError(string message, Exception ex)
         {
-            _pauseEvent.Reset();
-            DMEEditor.AddLogMessage("ETL", "Import paused.", DateTime.Now, 0, null, Errors.Ok);
-            LogImport("Import paused by user.", 0);
-        }
-
-        public void ResumeImport()
-        {
-            _pauseEvent.Set();
-            DMEEditor.AddLogMessage("ETL", "Import resumed.", DateTime.Now, 0, null, Errors.Ok);
-            LogImport("Import resumed by user.", 0);
-        }
-
-        public void StopImport()
-        {
-            _cancellationTokenSource?.Cancel();
-            DMEEditor.AddLogMessage("ETL", "Import stop requested.", DateTime.Now, 0, null, Errors.Ok);
-            LogImport("Import stop requested by user.", 0);
-        }
-    }
-
-    public static class EnumerableExtensions
-    {
-        public static IEnumerable<IEnumerable<T>> Batch<T>(this IEnumerable<T> source, int size)
-        {
-            T[] bucket = null;
-            var count = 0;
-
-            foreach (var item in source)
-            {
-                if (bucket == null)
-                    bucket = new T[size];
-
-                bucket[count++] = item;
-                if (count != size)
-                    continue;
-
-                yield return bucket;
-                bucket = null;
-                count = 0;
-            }
-
-            if (bucket != null && count > 0)
-                yield return bucket.Take(count);
+            DMEEditor.AddLogMessage("Beep", $"{message}: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+            LogImport($"{message}: {ex.Message}", 0);
         }
     }
 }

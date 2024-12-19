@@ -12,7 +12,9 @@ namespace TheTechIdea.Beep.Workflow
         List<IWorkFlowRule> Rules { get; set; }
         IRuleParser Parser { get; set; }
 
-        object SolveRule(IPassedArgs args);
+        // args.SentObject has data object needed for rule to run
+        Tuple<IPassedArgs,object> SolveRule(IWorkFlowRule rule,IPassedArgs args);
+        Tuple<IPassedArgs, object> SolveRule(string rulename, IPassedArgs args);
 
     }
 }

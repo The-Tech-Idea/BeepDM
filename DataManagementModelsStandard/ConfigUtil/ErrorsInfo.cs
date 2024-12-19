@@ -45,7 +45,7 @@ namespace TheTechIdea.Beep.ConfigUtil
     }
     public enum Errors
     {
-        Ok, Failed
+        Ok, Failed, Warning, Information, Critical, Exception, Error, Fatal, Unknown
     }
 
 }

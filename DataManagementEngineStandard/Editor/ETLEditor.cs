@@ -1013,7 +1013,7 @@ namespace TheTechIdea.Beep.Editor
                             }
                             DMEEditor.Passedarguments.Objects.Add(new ObjectItem() { Name = destentity, obj = retval });
                             DMEEditor.Passedarguments.ParameterString1 = $":{_defaultValue.Rule}.{fieldname}.{_defaultValue.PropertyValue}";
-                            var value = RulesEditor.SolveRule(DMEEditor.Passedarguments);
+                            var value = RulesEditor.SolveRule(_defaultValue.Rule,DMEEditor.Passedarguments);
                             if (value != null)
                             {
                                 DMEEditor.Utilfunction.SetFieldValueFromObject(fieldname, retval, value);

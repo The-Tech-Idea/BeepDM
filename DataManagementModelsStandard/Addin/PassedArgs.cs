@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 
 namespace TheTechIdea.Beep.Addin
@@ -39,8 +40,12 @@ namespace TheTechIdea.Beep.Addin
         DateTime ParameterDate3 { get; set; }
         object ReturnData { get; set; }
         Type ReturnType { get; set; }
+        object SentData { get; set; }
+        Type SentType { get; set; }
         string Messege { get; set; }
         string ErrorCode { get; set; }
+        IErrorsInfo ErrorObject { get; set; }
+        Errors Flag { get; set; }
         bool IsError { get; set; }
         bool Cancel { get; set; }
         Action TrueAction { get; set; }
@@ -51,6 +56,7 @@ namespace TheTechIdea.Beep.Addin
          Action CurrentAction { get; set; }
          Action NextAction { get; set; }
          Action PreviousAction { get; set; }
+        DateTime Timestamp { get; set; }
     }
 
     /// <summary>
@@ -89,6 +95,8 @@ namespace TheTechIdea.Beep.Addin
         public DateTime ParameterDate3 { get; set; }
         public object ReturnData { get; set; }
         public Type ReturnType { get; set; }
+        public object SentData { get; set; }
+        public Type SentType { get; set; }
         public string Messege { get; set; }
         public string ErrorCode { get; set; }
         public bool IsError { get; set; }
@@ -102,6 +110,9 @@ namespace TheTechIdea.Beep.Addin
         public Action NoneAction { get; set; }
         public Action DefaultAction { get; set; }
         public string ParameterName { get; set; }
+        public IErrorsInfo ErrorObject { get; set; }
+        public Errors Flag { get; set; }
+        public DateTime Timestamp { get; set; }
         public PassedArgs()
         {
 

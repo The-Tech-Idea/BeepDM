@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Workflow.Mapping;
 
@@ -15,6 +16,8 @@ namespace TheTechIdea.Beep.Editor.ETL
     public class ETLDataCopier
     {
         private IDMEEditor DMEEditor { get; }
+        private EntityStructure SourceEntityStructure;
+        private EntityStructure DestEntityStructure;
 
         public ETLDataCopier(IDMEEditor editor)
         {
@@ -41,6 +44,9 @@ namespace TheTechIdea.Beep.Editor.ETL
 
             try
             {
+                // Step 0: Get entity structures
+                SourceEntityStructure = sourceDs.GetEntityStructure(srcEntity,false);
+                DestEntityStructure = destDs.GetEntityStructure(destEntity, false);
                 // Step 1: Fetch source data
                 var sourceData = await FetchSourceDataAsync(sourceDs, srcEntity, token);
                 if (sourceData == null)
@@ -100,6 +106,8 @@ namespace TheTechIdea.Beep.Editor.ETL
         {
             try
             {
+                List<DefaultValue> defaultValues = new List<DefaultValue>();
+                defaultValues = DefaultsManager.GetDefaults(DMEEditor, destDataSourceName);
                 var transformedList = new List<object>();
 
                 if (sourceData is IEnumerable<object> sourceList)
@@ -113,7 +121,18 @@ namespace TheTechIdea.Beep.Editor.ETL
                         {
                             transformedRecord = DMEEditor.Utilfunction.MapObjectToAnother(DMEEditor, destDataSourceName, map_DTL, record);
                         }
-
+                        // Apply Default Values 
+                        if (defaultValues != null && defaultValues.Any())
+                        {
+                            foreach (var def in defaultValues)
+                            {
+                                if (DestEntityStructure.Fields.Any(p => p.fieldname.Equals(def.PropertyName, StringComparison.InvariantCultureIgnoreCase)))
+                                {
+                                    object retval = DefaultsManager.ResolveDefaultValue(DMEEditor, destDataSourceName, def.PropertyName, new PassedArgs() { ParameterString1 = def.Rule ,SentData=def,ObjectName="Default"});
+                                    DMEEditor.Utilfunction.SetFieldValueFromObject(def.PropertyName, transformedRecord, retval);
+                                }
+                            }
+                        }
                         // Apply custom transformation
                         if (customTransformation != null)
                         {

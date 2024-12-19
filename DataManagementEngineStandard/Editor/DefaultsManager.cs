@@ -1,48 +1,105 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Workflow;
+using TheTechIdea.Beep.Workflow.Interfaces;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class DefaultsManager : IDisposable
+    public static class DefaultsManager 
     {
-        private readonly IConfigEditor _configEditor;
-        private readonly IDMLogger _logger;
+        private static  IConfigEditor _configEditor;
+        private static  IRulesEditor _rulesEditor;
+        private static  IDMLogger _logger;
+        private static IDMEEditor _editor;
 
-        public DefaultsManager(IConfigEditor configEditor, IDMLogger logger)
-        {
-            _configEditor = configEditor ?? throw new ArgumentNullException(nameof(configEditor));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
+
 
         /// <summary>
         /// Retrieves the default values for a specified data source.
         /// </summary>
         /// <param name="dataSourceName">The name of the data source.</param>
-        /// <returns>List of DefaultValue objects.</returns>
-        public List<DefaultValue> GetDefaults(string dataSourceName)
+        /// <returns>A list of DefaultValue objects.</returns>
+        public static List<DefaultValue> GetDefaults(IDMEEditor editor, string dataSourceName)
         {
-            try
-            {
-                var connection = _configEditor.DataConnections
-                    .FirstOrDefault(c => c.ConnectionName.Equals(dataSourceName, StringComparison.InvariantCultureIgnoreCase));
+            _editor = editor;
+            _configEditor = _editor.ConfigEditor;
+            var connection = _configEditor.DataConnections
+                .FirstOrDefault(c => c.ConnectionName.Equals(dataSourceName, StringComparison.InvariantCultureIgnoreCase));
 
-                if (connection == null)
-                {
-                    _logger.WriteLog($"DefaultsManager: Could not find DataSource '{dataSourceName}'.");
-                    return null;
-                }
-
-                return connection.DatasourceDefaults ?? new List<DefaultValue>();
-            }
-            catch (Exception ex)
+            if (connection == null)
             {
-                _logger.WriteLog($"DefaultsManager: Error retrieving defaults for '{dataSourceName}'. Exception: {ex.Message}");
+                _logger.WriteLog($"DefaultsManager: Could not find DataSource '{dataSourceName}'.");
                 return null;
             }
+
+            return connection.DatasourceDefaults ?? new List<DefaultValue>();
+        }
+
+        /// <summary>
+        /// Resolves the default value for a specific DefaultValue object.
+        /// </summary>
+        /// <param name="defaultValue">The DefaultValue object containing the rule or static value.</param>
+        /// <param name="parameters">The parameters to pass to the rule, if applicable.</param>
+        /// <returns>The resolved value.</returns>
+        public static object ResolveDefaultValue(IDMEEditor editor, DefaultValue defaultValue, IPassedArgs parameters)
+        {
+            _editor = editor;
+            _configEditor = _editor.ConfigEditor;
+            if (defaultValue == null)
+                return null;
+
+            // If there's a Rule, execute it
+            if (!string.IsNullOrEmpty(defaultValue.Rule))
+            {
+                try
+                {
+                    // Parse and execute the rule
+                    var ruleStructure = _rulesEditor.Parser.ParseRule(defaultValue.Rule);
+                    if (ruleStructure != null)
+                    {
+                        // Pass parameters and execute the rule
+                        return _rulesEditor.SolveRule(defaultValue.Rule,parameters);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.WriteLog($"DefaultsManager: Error resolving rule '{defaultValue.Rule}'. Exception: {ex.Message}");
+                    return null;
+                }
+            }
+
+            // If no Rule, return the static PropertyValue
+            return defaultValue.PropertyValue;
+        }
+
+        /// <summary>
+        /// Resolves the default value for a given data source and field name.
+        /// </summary>
+        /// <param name="dataSourceName">The name of the data source.</param>
+        /// <param name="fieldName">The name of the field to find the default for.</param>
+        /// <param name="parameters">The parameters to pass to the rule, if applicable.</param>
+        /// <returns>The resolved value.</returns>
+        public static object ResolveDefaultValue(IDMEEditor editor, string dataSourceName, string fieldName, IPassedArgs parameters)
+        {
+            _editor = editor;
+            _configEditor = _editor.ConfigEditor;
+            // Get defaults for the data source
+            var defaults = GetDefaults(editor,dataSourceName);
+            if (defaults == null || !defaults.Any())
+                return null;
+
+            // Find the DefaultValue for the specified field name
+            var defaultValue = defaults.FirstOrDefault(d => d.PropertyName.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
+            if (defaultValue == null)
+                return null;
+
+            // Resolve the value using the other method
+            return ResolveDefaultValue(editor,defaultValue, parameters);
         }
 
         /// <summary>
@@ -51,8 +108,11 @@ namespace TheTechIdea.Beep.Editor
         /// <param name="defaults">The default values to save.</param>
         /// <param name="dataSourceName">The name of the data source.</param>
         /// <returns>Error information.</returns>
-        public IErrorsInfo SaveDefaults(List<DefaultValue> defaults, string dataSourceName)
+        public static IErrorsInfo SaveDefaults(IDMEEditor editor, List<DefaultValue> defaults, string dataSourceName)
         {
+            _editor = editor;
+            _configEditor = _editor.ConfigEditor;
+            _logger = _editor.Logger;
             var errorInfo = new ErrorsInfo();
             try
             {
@@ -82,9 +142,6 @@ namespace TheTechIdea.Beep.Editor
             }
         }
 
-        public void Dispose()
-        {
-            // Clean up resources if necessary
-        }
+       
     }
 }

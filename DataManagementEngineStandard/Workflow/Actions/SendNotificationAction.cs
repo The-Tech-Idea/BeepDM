@@ -52,8 +52,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
         {
             return PerformAction(progress, token, null);
         }
-
-        public PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token, Func<PassedArgs> actionToExecute)
+        public PassedArgs PerformAction(IProgress<PassedArgs> progress, CancellationToken token, Func<PassedArgs, object> actionToExecute)
         {
             var args = new PassedArgs { Messege = "Notification Trigger Started" };
 
@@ -115,6 +114,7 @@ namespace TheTechIdea.Beep.Workflow.Actions
 
             return args;
         }
+        
 
         public PassedArgs StopAction()
         {
@@ -176,6 +176,8 @@ namespace TheTechIdea.Beep.Workflow.Actions
             }
             return default;
         }
+
+     
         #endregion
     }
 }

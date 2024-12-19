@@ -42,7 +42,7 @@ namespace TheTechIdea.Beep.Tools
         string GenerateUnitTestClass(EntityStructure entity, string outputPath);
         string GenerateDbContext(List<EntityStructure> entities, string namespaceString, string outputPath);
         string GenerateEntityConfiguration(EntityStructure entity, string namespaceString, string outputPath);
-        string GenerateBlazorCrudCode(EntityStructure entity, string apiBaseUrl);
+
         string GenerateBlazorDetailedView(string namespaceName, string entityName, List<EntityField> fields);
         string GenerateBlazorDashboardPage(string namespaceName, List<EntityStructure> entities);
         string GenerateReactListComponent(string entityName, List<EntityField> fields, string outputPath);

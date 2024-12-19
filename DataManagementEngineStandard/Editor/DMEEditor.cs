@@ -94,7 +94,7 @@ namespace TheTechIdea.Beep
         /// Global Event Handler to handle events  in class
         /// </summary>
         /// 
-        private DefaultsManager _defaultsManager;
+      
         public event EventHandler<PassedArgs> PassEvent;
         public string EntityName { get; set; }
         public string DataSourceName { get; set; }
@@ -1014,7 +1014,7 @@ namespace TheTechIdea.Beep
             assemblyHandler = LLoader;
             classCreator = new ClassCreator(this);
             WorkFlowEditor = new WorkFlowEditor(this);
-            _defaultsManager = new DefaultsManager(configEditor, logger);
+         
             progress = new Progress<PassedArgs>(percent => {
 
                 if (!string.IsNullOrEmpty(percent.Messege))
@@ -1048,19 +1048,19 @@ namespace TheTechIdea.Beep
             assemblyHandler = assemblyHandler;
             ETL = etl;
             WorkFlowEditor = workFlowEditor;
-            _defaultsManager = new DefaultsManager(configEditor, logger);
+          
         }
 
         #endregion "Constructor"
         #region "Default Manager"
         public List<DefaultValue> Getdefaults(string DatasourceName)
         {
-            return _defaultsManager.GetDefaults(DatasourceName);
+            return DefaultsManager.GetDefaults(this,DatasourceName);
 
         }
         public IErrorsInfo Savedefaults(List<DefaultValue> defaults, string DatasourceName)
         {
-            return _defaultsManager.SaveDefaults(defaults, DatasourceName);
+            return DefaultsManager.SaveDefaults(this,defaults, DatasourceName);
         }
         #endregion "Default Manager"
         //----------------- ------------------------------ -----
