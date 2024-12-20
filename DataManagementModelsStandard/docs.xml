@@ -406,6 +406,109 @@
             </summary>
             <returns>The state of the connection after attempting to close it.</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.Logger.IDMLogger">
+            <summary>
+            Provides a comprehensive logging interface for the application.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Logger.IDMLogger.Onevent">
+            <summary>
+            Occurs when a log event is triggered.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Logger.IDMLogger.PropertyChanged">
+            <summary>
+            Occurs when a property value changes.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.WriteLog(System.String)">
+            <summary>
+            Writes a general log message.
+            </summary>
+            <param name="info">The information to log.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.LogError(System.String)">
+            <summary>
+            Logs an error message.
+            </summary>
+            <param name="error">The error message to log.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.LogWarning(System.String)">
+            <summary>
+            Logs a warning message.
+            </summary>
+            <param name="warning">The warning message to log.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.LogInfo(System.String)">
+            <summary>
+            Logs an informational message.
+            </summary>
+            <param name="info">The informational message to log.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.LogCritical(System.String)">
+            <summary>
+            Logs a critical error message.
+            </summary>
+            <param name="error">The critical error message to log.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.LogDebug(System.String)">
+            <summary>
+            Logs a debug message.
+            </summary>
+            <param name="message">The debug message to log.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.LogTrace(System.String)">
+            <summary>
+            Logs a trace message for fine-grained details.
+            </summary>
+            <param name="message">The trace message to log.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.LogWithContext(System.String,System.Object)">
+            <summary>
+            Logs a message with additional context information.
+            </summary>
+            <param name="message">The message to log.</param>
+            <param name="context">The additional context information.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.LogStructured(System.String,System.Object)">
+            <summary>
+            Logs a message with structured properties.
+            </summary>
+            <param name="message">The message to log.</param>
+            <param name="properties">The structured properties to include.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.StartLog">
+            <summary>
+            Starts logging.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.StopLog">
+            <summary>
+            Stops logging.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.PauseLog">
+            <summary>
+            Pauses logging.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.Flush">
+            <summary>
+            Flushes all pending log messages to the output.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.ConfigureLogger(System.Action{System.Object})">
+            <summary>
+            Configures the logger dynamically at runtime.
+            </summary>
+            <param name="configure">The configuration action.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.IDMLogger.AddLogFilter(System.Func{System.String,System.Boolean})">
+            <summary>
+            Adds a filter to selectively log messages based on custom conditions.
+            </summary>
+            <param name="filter">The filter function.</param>
+        </member>
         <member name="T:TheTechIdea.Beep.Vis.AddinAttribute">
             <summary>
             Attribute class to define metadata for add-ins within the system.

@@ -14,11 +14,6 @@
             Occurs when a log event is triggered.
             </summary>
         </member>
-        <member name="E:TheTechIdea.Beep.Logger.DMLogger.LogEvent">
-            <summary>
-            Represents the method that will handle a log event.
-            </summary>
-        </member>
         <member name="E:TheTechIdea.Beep.Logger.DMLogger.PropertyChanged">
             <summary>
             Occurs when a property value changes.
@@ -31,29 +26,7 @@
         </member>
         <member name="M:TheTechIdea.Beep.Logger.DMLogger.WriteLog(System.String)">
             <summary>
-            Writes a log message.
-            </summary>
-            <param name="info">The information to log.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Logger.DMLogger.OnPropertyChanged(System.String)">
-            <summary>
-            Invokes the PropertyChanged event.
-            </summary>
-            <param name="propertyName">The name of the property that changed.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Logger.DMLogger.StartLog">
-            <summary>
-            Starts logging.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Logger.DMLogger.StopLog">
-            <summary>
-            Stops logging.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Logger.DMLogger.PauseLog">
-            <summary>
-            Pauses logging.
+            Writes a general log message.
             </summary>
         </member>
     </members>

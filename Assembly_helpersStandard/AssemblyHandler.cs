@@ -998,8 +998,8 @@ namespace TheTechIdea.Beep.Tools
 
                     if (typeInfo.ImplementedInterfaces.Contains(typeof(IDM_Addin)))
                     {
-                        var cls = GetAssemblyClassDefinition(typeInfo, "IDM_Addin");
-                        ConfigEditor.Addins.Add(cls);
+                        ConfigEditor.Addins.Add(GetAssemblyClassDefinition(typeInfo, "IDM_Addin"));
+                      
                     }
 
                     if (typeInfo.ImplementedInterfaces.Contains(typeof(IWorkFlowStep)))
@@ -1012,10 +1012,10 @@ namespace TheTechIdea.Beep.Tools
                         ConfigEditor.ViewModels.Add(GetAssemblyClassDefinition(typeInfo, "IBeepViewModel"));
                     }
 
-                    if (typeInfo.ImplementedInterfaces.Contains(typeof(IWorkFlowStepEditor)))
-                    {
-                        ConfigEditor.WorkFlowStepEditors.Add(GetAssemblyClassDefinition(typeInfo, "IWorkFlowStepEditor"));
-                    }
+                    //if (typeInfo.ImplementedInterfaces.Contains(typeof(IWorkFlowStepEditor)))
+                    //{
+                    //    ConfigEditor.WorkFlowStepEditors.Add(GetAssemblyClassDefinition(typeInfo, "IWorkFlowStepEditor"));
+                    //}
 
                     if (typeInfo.ImplementedInterfaces.Contains(typeof(IWorkFlowEditor)))
                     {
@@ -1040,7 +1040,7 @@ namespace TheTechIdea.Beep.Tools
                     // Placeholder for handling IAddinVisSchema if necessary
                     if (typeInfo.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
                     {
-                        // GetAddinObjects(asm); 
+                        GetAddinObjects(asm); 
                     }
                 }
             }

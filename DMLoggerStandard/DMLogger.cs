@@ -1,110 +1,180 @@
-﻿using Serilog;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using Serilog;
 
 namespace TheTechIdea.Beep.Logger
 {
-   
+    // Define an enum for the logging state
+    public enum LogState
+    {
+        Active,
+        Paused,
+        Stopped
+    }
     /// <summary>
     /// Provides logging functionalities for the application.
     /// </summary>
-    public class DMLogger : IDMLogger,IDisposable
+    public class DMLogger : IDMLogger, IDisposable
     {
-        public delegate void LogEventHandler(string logMessage);
-
         /// <summary>
         /// Occurs when a log event is triggered.
         /// </summary>
         public event EventHandler<string> Onevent;
 
         /// <summary>
-        /// Represents the method that will handle a log event.
-        /// </summary>
-        public static event LogEventHandler LogEvent;
-        /// <summary>
         /// Occurs when a property value changes.
         /// </summary>
         public event PropertyChangedEventHandler PropertyChanged;
-        private Serilog.ILogger logger { get; set; }
+
+        private Serilog.ILogger logger;
         private readonly object lockObject = new object();
         private bool logstatus = true;
         private bool disposedValue;
-
+        private readonly List<Func<string, bool>> logFilters = new List<Func<string, bool>>();
+        private LogState logstate = LogState.Active;
+        public LogState LogState { get { return logstate; } set { logstate = value; } } // Default state is Active
         /// <summary>
         /// Initializes a new instance of the DMLogger class, setting up the logger configurations.
         /// </summary>
         public DMLogger()
         {
             logger = new LoggerConfiguration()
-             .WriteTo.File("log.txt", outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-            .WriteTo.Console()
-           
-            .CreateLogger();
-            WriteLog("Init Logger");  //File("log.txt"
-           // Log.CloseAndFlush();
+                .MinimumLevel.Debug()
+                .WriteTo.Console()
+                .WriteTo.File("log.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
+                .CreateLogger();
+
+            WriteLog("Logger Initialized");
         }
 
         /// <summary>
-        /// Writes a log message.
+        /// Writes a general log message.
         /// </summary>
-        /// <param name="info">The information to log.</param>
         public void WriteLog(string info)
         {
-            // Check for null or empty strings to avoid logging unnecessary information.
-            if (string.IsNullOrEmpty(info))
-            {
-                return;
-            }
+            LogMessage(() => logger.Information(info), info);
+        }
 
-            // Ensure thread safety when checking and using logstatus and logger.
+        public void LogError(string error)
+        {
+            LogMessage(() => logger.Error(error), error);
+        }
+
+        public void LogWarning(string warning)
+        {
+            LogMessage(() => logger.Warning(warning), warning);
+        }
+
+        public void LogInfo(string info)
+        {
+            LogMessage(() => logger.Information(info), info);
+        }
+
+        public void LogCritical(string error)
+        {
+            LogMessage(() => logger.Fatal(error), error);
+        }
+
+        public void LogDebug(string message)
+        {
+            LogMessage(() => logger.Debug(message), message);
+        }
+
+        public void LogTrace(string message)
+        {
+            LogMessage(() => logger.Verbose(message), message);
+        }
+
+        public void LogWithContext(string message, object context)
+        {
+            LogMessage(() => logger.ForContext("Context", context, destructureObjects: true).Information(message), message);
+        }
+
+        public void LogStructured(string message, object properties)
+        {
+            LogMessage(() => logger.Information("{@Message} {@Properties}", message, properties), message);
+        }
+
+
+        public void StartLog()
+        {
+            logstate = LogState.Active;
+            WriteLog("Logging resumed.");
+        }
+
+        public void StopLog()
+        {
+            logstate = LogState.Stopped;
+            WriteLog("Logging stopped.");
+        }
+
+        public void PauseLog()
+        {
+            logstate = LogState.Paused;
+            WriteLog("Logging paused.");
+        }
+
+        public void Flush()
+        {
+            Log.CloseAndFlush();
+        }
+
+        public void ConfigureLogger(Action<object> configure)
+        {
+
             lock (lockObject)
             {
-                if (logstatus && logger != null)
+                Action<LoggerConfiguration> x = (Action<LoggerConfiguration>)configure;
+                var config = new LoggerConfiguration();
+                x?.Invoke(config);
+                logger = config.CreateLogger();
+            }
+        }
+
+        public void AddLogFilter(Func<string, bool> filter)
+        {
+            logFilters.Add(filter);
+        }
+
+      
+
+        private void LogMessage(Action logAction, string message)
+        {
+            if (string.IsNullOrEmpty(message))
+            {
+                return; // Do not log empty messages
+            }
+
+            lock (lockObject)
+            {
+                if (logstate == LogState.Stopped)
                 {
-                    try
-                    {
-                        logger.Information(info);
-                        Onevent?.Invoke(this, info);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Consider how to handle logging exceptions.
-                        // You might want to log to an alternative destination, show a message, etc.
-                        Console.WriteLine($"Error logging message: {ex.Message}");
-                    }
+                    return; // Ignore logs when stopped
+                }
+
+                if (logstate == LogState.Paused)
+                {
+                    // Optionally buffer messages or just discard
+                    Console.WriteLine("Log paused; message discarded: " + message);
+                    return;
+                }
+
+                try
+                {
+                    logAction(); // Execute the log action
+                    Onevent?.Invoke(this, message); // Raise the event
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error logging message: {ex.Message}");
                 }
             }
         }
 
-        /// <summary>
-        /// Invokes the PropertyChanged event.
-        /// </summary>
-        /// <param name="propertyName">The name of the property that changed.</param>
         protected void OnPropertyChanged(string propertyName)
         {
-            if (PropertyChanged != null) // if there is any subscribers 
-                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-        }
-        /// <summary>
-        /// Starts logging.
-        /// </summary>
-        public void StartLog()
-        {
-            logstatus = true;
-        }
-        /// <summary>
-        /// Stops logging.
-        /// </summary>
-        public void StopLog()
-        {
-            logstatus = false;
-        }
-        /// <summary>
-        /// Pauses logging.
-        /// </summary>
-        public void PauseLog()
-        {
-            logstatus = false;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         protected virtual void Dispose(bool disposing)
@@ -113,28 +183,16 @@ namespace TheTechIdea.Beep.Logger
             {
                 if (disposing)
                 {
-                    // Dispose managed state (managed objects).
-                    // Since logger is a managed type but holds onto unmanaged resources, ensure it's disposed.
                     (logger as IDisposable)?.Dispose();
                 }
 
-                // Set large fields to null.
                 logger = null;
-
                 disposedValue = true;
             }
         }
 
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~DMLogger()
-        // {
-        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        //     Dispose(disposing: false);
-        // }
-
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
