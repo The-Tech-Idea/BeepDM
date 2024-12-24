@@ -509,6 +509,139 @@
             </summary>
             <param name="filter">The filter function.</param>
         </member>
+        <member name="T:TheTechIdea.Beep.Messaging.GenericMessage">
+            <summary>
+            Represents a generic message with dynamic payload and metadata.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.DeliveryTag">
+            <summary>
+            RabbitMQ-specific delivery tag for acknowledging the message.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.EntityName">
+            <summary>
+            The name of the entity/stream associated with the message.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.Payload">
+            <summary>
+            The payload of the message. Can be any object or serialized data.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.Metadata">
+            <summary>
+            Additional metadata for the message (e.g., headers, correlation IDs).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.Timestamp">
+            <summary>
+            The timestamp when the message was created.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.MessageId">
+            <summary>
+            A unique identifier for the message.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.Priority">
+            <summary>
+            The priority of the message (optional).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.GenericMessage.SerializePayload">
+            <summary>
+            Converts the payload to JSON for serialization.
+            </summary>
+            <returns>The JSON representation of the payload.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.GenericMessage.DeserializePayload``1(System.String)">
+            <summary>
+            Deserializes JSON into the payload.
+            </summary>
+            <typeparam name="T">The target type for deserialization.</typeparam>
+            <param name="json">The JSON string to deserialize.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.GenericMessage.Clone">
+            <summary>
+            Clones the current message to create a new instance with the same data.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.IMessageDataSource`2.Initialize(`1)">
+            <summary>
+            Initializes the data source with the specified configuration.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.IMessageDataSource`2.SendMessageAsync(System.String,`0,System.Threading.CancellationToken)">
+            <summary>
+            Sends a message to the specified stream.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.IMessageDataSource`2.SubscribeAsync(System.String,System.Func{`0,System.Threading.Tasks.Task},System.Threading.CancellationToken)">
+            <summary>
+            Subscribes to a specific stream to receive messages.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.IMessageDataSource`2.AcknowledgeMessageAsync(System.String,`0,System.Threading.CancellationToken)">
+            <summary>
+            Acknowledges that a message has been successfully processed.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.IMessageDataSource`2.PeekMessageAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a message without committing its acknowledgment (peek functionality).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.IMessageDataSource`2.GetStreamMetadataAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves metadata about a stream (e.g., queue depth, message count).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.IMessageDataSource`2.Disconnect">
+            <summary>
+            Disconnects and cleans up resources.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Messaging.StreamConfig">
+            <summary>
+            Configuration settings for a message stream or queue.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.StreamConfig.EntityName">
+            <summary>
+            The name of the entity/stream.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.StreamConfig.ConsumerType">
+            <summary>
+            The type of consumer for this stream (e.g., subscriber, listener).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.StreamConfig.MessageCategory">
+            <summary>
+            The message category (Command, Event, Request, Response).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.StreamConfig.ExchangeType">
+            <summary>
+            The type of exchange (for systems like RabbitMQ).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.StreamConfig.PartitionKey">
+            <summary>
+            The partition key (for systems like Kafka).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.StreamConfig.RetentionPolicy">
+            <summary>
+            Retention policy for the stream (e.g., time-based, size-based).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.StreamConfig.AdditionalOptions">
+            <summary>
+            Additional options specific to the messaging system.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Vis.AddinAttribute">
             <summary>
             Attribute class to define metadata for add-ins within the system.

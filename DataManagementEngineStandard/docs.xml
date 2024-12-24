@@ -3223,6 +3223,350 @@
             An instance of the given <paramref name="type"/>. 
             </returns>
         </member>
+        <member name="T:TheTechIdea.Beep.Json.JsonDataSource">
+            <summary>
+            JsonDataSource provides CRUD operations on a JSON file acting as a data source.
+            It implements IDataSource and manages entities derived from JSON objects/arrays.
+            This class supports reading, writing, updating, and deleting JSON objects from a file,
+            and includes the ability to generate EntityStructures dynamically.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.#ctor(System.String,TheTechIdea.Beep.Logger.IDMLogger,TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.ConfigUtil.IErrorsInfo)">
+            <summary>
+            Constructor initializing JsonDataSource with a specified data source name, logger, editor, and datasource type.
+            It attempts to load the JSON file associated with the connection specified in the DMEEditor.ConfigEditor.
+            </summary>
+            <param name="datasourcename">Name of the data source</param>
+            <param name="logger">Logger implementation</param>
+            <param name="pDMEEditor">Editor reference</param>
+            <param name="databasetype">Type of the data source</param>
+            <param name="per">Error object to accumulate errors</param>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.ColumnDelimiter">
+            <summary>
+            Delimiter used to separate columns if needed.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.ParameterDelimiter">
+            <summary>
+            Delimiter used to separate parameters if needed.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.GuidID">
+            <summary>
+            GUID of the data source instance.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.DatasourceType">
+            <summary>
+            Type of the data source (e.g., Json).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.Category">
+            <summary>
+            Category of the data source (e.g., FILE).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.Dataconnection">
+            <summary>
+            Data connection used to manage file paths and properties.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.DatasourceName">
+            <summary>
+            Name of the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.ErrorObject">
+            <summary>
+            Error object instance used to store and report errors.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.Id">
+            <summary>
+            Identifier for this data source instance.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.Logger">
+            <summary>
+            Logger instance for logging operations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.EntitiesNames">
+            <summary>
+            List of entity names recognized by this data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.Entities">
+            <summary>
+            List of entity structures representing schema-like information for each entity.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.DMEEditor">
+            <summary>
+            Reference to the main editor instance.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.ConnectionStatus">
+            <summary>
+            Current connection state of the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.FileName">
+            <summary>
+            Path to the JSON file managed by this data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.ObjectsCreated">
+            <summary>
+            Indicates whether objects (structures, types) have been created.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonDataSource.DataStruct">
+            <summary>
+            Holds the current entity structure being operated on.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Json.JsonDataSource.PassEvent">
+            <summary>
+            Event triggered to pass arguments between components.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.BeginTransaction(TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>
+            Begin a database transaction. Not implemented for JSON.
+            </summary>
+            <param name="args">Passed arguments</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.Commit(TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>
+            Commit a database transaction. Not implemented for JSON.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.EndTransaction(TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>
+            Ends a database transaction. Not implemented for JSON.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.ExecuteSql(System.String)">
+            <summary>
+            Executes a SQL query against the data source. Not applicable for JSON.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.RunScript(TheTechIdea.Beep.Editor.ETLScriptDet)">
+            <summary>
+            Runs a provided script (DML/DDL). Not implemented for JSON.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.Openconnection">
+            <summary>
+            Opens a connection to the JSON file by reading and parsing it.
+            Returns the resulting state.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.Closeconnection">
+            <summary>
+            Closes the connection to the JSON file and ensures that any changes are saved.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.CheckEntityExist(System.String)">
+            <summary>
+            Checks if an entity with the specified name exists in the data source.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.CreateEntities(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Creates multiple entities as specified by a list of EntityStructure objects.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.CreateEntityAs(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Creates a single entity based on the provided EntityStructure.
+            Note: This implementation assumes a root JSON array and adds a new JSON object for the entity schema.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.DeleteEntity(System.String,System.Object)">
+            <summary>
+            Deletes an entity (or an item within it) matching certain criteria.
+            Currently, the method is a placeholder. You need to provide a 'MatchesCriteria' extension or logic.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetChildTablesList(System.String,System.String,System.String)">
+            <summary>
+            Returns a list of child relations for a given table. Not implemented for JSON.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetCreateEntityScript(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Returns a list of scripts to create entities, if applicable. Not implemented for JSON.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetEntitesList">
+            <summary>
+            Returns a list of entity names managed by this data source.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetEntity(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Retrieves entity data as objects. Each object is constructed dynamically from the JSON array.
+            </summary>
+            <param name="entityName">Name of the entity to retrieve</param>
+            <param name="filter">Filter criteria (not fully implemented)</param>
+            <returns>Collection of objects representing the entity data</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetEntity(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Int32,System.Int32)">
+            <summary>
+            Retrieves a paginated subset of the entity data.
+            This version returns dynamic objects (ExpandoObjects).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetEntityAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Asynchronously retrieves entity data. Uses GetEntity internally.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetEntityforeignkeys(System.String,System.String)">
+            <summary>
+            Returns foreign keys for an entity. Not implemented for JSON.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetEntityIdx(System.String)">
+            <summary>
+            Returns the index of a given entity in the Entities list.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetEntityStructure(System.String,System.Boolean)">
+            <summary>
+            Retrieves the EntityStructure for a given entity name.
+            If refresh is true, it may re-parse the entity structure.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetEntityStructure(TheTechIdea.Beep.DataBase.EntityStructure,System.Boolean)">
+            <summary>
+            Overload that retrieves the EntityStructure from an existing structure object.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetEntityType(System.String)">
+            <summary>
+            Dynamically constructs a .NET Type for the given entity based on its fields.
+            Uses DMTypeBuilder utility.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetScalar(System.String)">
+            <summary>
+            Retrieves a scalar value from the data source. Not implemented for JSON.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetScalarAsync(System.String)">
+            <summary>
+            Asynchronously retrieves a scalar value. Not implemented for JSON.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.RunQuery(System.String)">
+            <summary>
+            Runs a given query against the JSON data using JSONPath-like syntax.
+            Attempts to match entity structure and return a list of objects.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.UpdateEntities(System.String,System.Object,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Updates multiple entities at once by replacing the root JSON array content.
+            Expects UploadData to be a JArray that replaces the entire root array.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.UpdateEntity(System.String,System.Object)">
+            <summary>
+            Updates a single entity by locating it (e.g., via an '_id') and replacing fields from UploadDataRow.
+            Expects UploadDataRow to be a JObject containing updated fields.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.InsertEntity(System.String,System.Object)">
+            <summary>
+            Inserts a new entity/object into the JSON array.
+            Expects InsertedData to be an object (e.g., JObject) that can be converted to JToken.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.Dispose(System.Boolean)">
+            <summary>
+            Dispose pattern implementation to clean up resources.
+            </summary>
+            <param name="disposing">True if managed resources should be disposed.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.Dispose">
+            <summary>
+            Public Dispose method to clean up resources.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.SaveJson(System.String)">
+            <summary>
+            Writes the current _rootJsonArray to the file with indentation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.ReadJson(System.String)">
+            <summary>
+            Reads the JSON content from the specified file and initializes internal structures.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.ParseJsonObject(Newtonsoft.Json.Linq.JObject,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Parses a JSON object as if it's the first record in an array.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.ParseJsonArray(Newtonsoft.Json.Linq.JArray,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Parses a JSON array to create an EntityStructure and discover fields.
+            Expects uniform objects or at least compatible structures.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.InitializeRootJsonObject">
+            <summary>
+            Initializes _rootJsonObject by reading and parsing the file at FileName.
+            If file does not exist or is empty, initializes an empty JArray.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetRootJsonArray">
+            <summary>
+            Returns the root JSON array if available. If not, returns null.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.CreateEntityStructure(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Constructs an EntityStructure with given name and path.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.CreateEntityField(Newtonsoft.Json.Linq.JProperty)">
+            <summary>
+            Creates an EntityField from a JSON property, determining field type dynamically.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.UpdateEntityStructureWithMissingFields(Newtonsoft.Json.Linq.JObject,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Ensures that any fields present in the given JObject but not defined in the EntityStructure are added.
+            This keeps the entity schema consistent with the data.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.SetObjects(System.String)">
+            <summary>
+            Prepares objects for operations on a specified entity if not done or if a different entity is requested.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.SynchronizeEntityStructure">
+            <summary>
+            Synchronizes the JSON data with the current EntityStructure.
+            Adds missing fields and removes fields not present in the EntityStructure.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.ValidateSchema">
+            <summary>
+            Validates that the JSON schema matches the current EntityStructure.
+            Logs discrepancies for missing or extra fields.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.HandleSchemaChanges">
+            <summary>
+            Handles schema changes dynamically, including adding and removing fields.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Properties.Resources">
             <summary>
               A strongly-typed resource class, for looking up localized strings, etc.

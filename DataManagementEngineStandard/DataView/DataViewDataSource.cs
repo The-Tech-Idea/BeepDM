@@ -1186,7 +1186,7 @@ namespace TheTechIdea.Beep.DataView
                     case DataSourceType.XML:
                         maintab.Viewtype = ViewType.File;
                         break;
-                    case DataSourceType.WebService:
+                    
 
                     case DataSourceType.OPC:
                         maintab.Viewtype = ViewType.Url;

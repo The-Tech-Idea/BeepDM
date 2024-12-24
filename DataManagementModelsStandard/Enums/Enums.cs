@@ -30,20 +30,80 @@ namespace TheTechIdea.Beep.Utilities
     { TextBox, CheckBox, ComboBox, DateCalendar,Label }
     public enum DataSourceType
     {
-        NONE, Oracle, SqlServer, Mysql, SqlCompact, SqlLite,
-        Text, CSV, Xls, WebService, Json, XML, DuckDB, RealIM, Hdf5, Parquet, Avro, ORC, TSV, Onnx,
-        Postgre, Firebase, FireBird, Couchbase, RavenDB, MongoDB, CouchDB, VistaDB, DB2, OPC, Kafka, Redis, Hadoop, LiteDB, SnowFlake, ElasticSearch,
-        Petastorm, MiModel, RocketSet, Spanner, Hana, Cockroach, Firebolt, Hologres, Presto, Trino, GoogleBigQuery, GoogleSheets, TerraData, TimeScale,
-        Vertica, DataBricks, AzureCloud,
-        HTML, SQL, INI, Log, PDF, Doc, Docx, PPT, PPTX,
-        YAML, Markdown,
-        Feather, TFRecord, RecordIO, LibSVM, GraphML, DICOM, LAS, Cassandra, Neo4j, ArangoDB, OrientDB, InfluxDB, ClickHouse, Kudu, Druid, Pinot, DynamoDB, Supabase
-    }
+        // Relational Databases
+        NONE, Oracle, SqlServer, Mysql, SqlCompact, SqlLite, Postgre, FireBird, DB2, SnowFlake, Hana, Cockroach, Spanner, TerraData, Vertica, AzureSQL, AWSRDS,
 
+        // NoSQL Databases
+        MongoDB, CouchDB, RavenDB, Couchbase, Redis, DynamoDB, Firebase, LiteDB, ArangoDB, Neo4j, Cassandra, OrientDB, ElasticSearch, ClickHouse, InfluxDB, VistaDB,
+
+        // Graph Databases
+        TigerGraph, JanusGraph,
+
+        // Big Data / Columnar
+        Hadoop, Kudu, Druid, Pinot, Parquet, Avro, ORC, Feather,
+
+        // In-Memory
+        RealIM, Petastorm, RocketSet,
+
+        // Cloud Services
+        AWSRedshift, GoogleBigQuery, AWSGlue, AWSAthena, AzureCloud, DataBricks, Firebolt, Hologres, Supabase,
+
+        // Streaming and Messaging
+        Kafka, RabbitMQ, ActiveMQ, Pulsar, MassTransit, Nats, ZeroMQ, AWSKinesis, AWSSQS, AWSSNS, AzureServiceBus,
+
+        // Machine Learning
+        TFRecord, ONNX, PyTorchData, ScikitLearnData,
+
+        // File Formats
+        FlatFile, CSV, TSV, Text, YAML,Json, Markdown, Log, INI, JSON, XML, Xls, Doc, Docx, PPT, PPTX, PDF,Onnx,  RecordIO,
+
+        // Specialized Formats
+        Hdf5, LibSVM, GraphML, DICOM, LAS,
+
+        // Workflow Systems
+        AWSSWF, AWSStepFunctions,
+
+        // Internet of Things (IoT)
+        AWSIoT, AWSIoTCore, AWSIoTAnalytics,
+
+        // Search Platforms
+         Solr,
+
+        // Industrial and Specialized Systems
+        OPC,
+
+        // Miscellaneous
+        DuckDB, GoogleSheets, MiModel, Presto, Trino, TimeScale,WebApi, RestApi, GraphQL, OData, ODBC, OLEDB, ADO, EntityFramework
+    }
     public enum DatasourceCategory
     {
-        RDBMS,FILE,WEBAPI,NOSQL,CLOUD,VIEWS,STREAM,QUEUE,NONE,INMEMORY
+        RDBMS,
+        FILE,
+        WEBAPI,
+        NOSQL,
+        CLOUD,
+        VIEWS,
+        STREAM,
+        QUEUE,
+        NONE,
+        INMEMORY,
+        GraphDB,
+        TimeSeriesDB,
+        MessageQueue,
+        BigData,
+        DocumentDB,
+        KeyValueDB,
+        ColumnarDB,
+        MLModel,
+        SearchEngine,
+        StreamProcessing,
+        GraphFile,
+        Geospatial,
+        IoT,
+        Workflow,
+        AnalyticsPlatform
     }
+
     public enum FileTypes
     {
         Text, CSV, XML, Json, Xls, Xlsx, TSV, YAML, Markdown, HTML, SQL, INI, Log, PDF, Doc, Docx, PPT, PPTX,

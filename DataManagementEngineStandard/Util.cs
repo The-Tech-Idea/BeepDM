@@ -1676,13 +1676,6 @@ namespace TheTechIdea.Beep.Utilities
                         case "onnx":
                             f.DatabaseType = DataSourceType.Onnx;
                             break;
-                        case "html":
-                        case "htm":
-                            f.DatabaseType = DataSourceType.HTML;
-                            break;
-                        case "sql":
-                            f.DatabaseType = DataSourceType.SQL;
-                            break;
                         case "ini":
                         case "cfg":
                             f.DatabaseType = DataSourceType.INI;
