@@ -2,13 +2,10 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using TheTechIdea;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Report;
-using TheTechIdea.Beep.Utilities;
 
 
 namespace TheTechIdea.Beep.Editor
@@ -71,18 +68,9 @@ namespace TheTechIdea.Beep.Editor
         Entity Read(string id);
         Entity GetItemFromCurrentList(int index);
         void MoveFirst();
-
-
-
         void MoveNext();
-
-
         void MovePrevious();
-
-
-
         void MoveLast();
-
         Task<IErrorsInfo> UpdateAsync(Entity doc);
         Task<IErrorsInfo> InsertAsync(Entity doc);
         Task<IErrorsInfo> DeleteAsync(Entity doc);
@@ -90,21 +78,24 @@ namespace TheTechIdea.Beep.Editor
         Task<IErrorsInfo> InsertDoc(Entity doc);
         Task<IErrorsInfo> UpdateDoc(Entity doc);
         Task<IErrorsInfo> DeleteDoc(Entity doc);
-
         void MoveTo(int index);
         Tracking GetTrackingItem(Entity item);
         Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
         bool SaveLog(string pathandname);
 
+        event EventHandler<UnitofWorkParams> PreDelete;
         event EventHandler<UnitofWorkParams> PreInsert;
+        event EventHandler<UnitofWorkParams> PreCreate;
         event EventHandler<UnitofWorkParams> PreUpdate;
         event EventHandler<UnitofWorkParams> PreQuery;
         event EventHandler<UnitofWorkParams> PostQuery;
         event EventHandler<UnitofWorkParams> PostInsert;
+        event EventHandler<UnitofWorkParams> PostCreate;
         event EventHandler<UnitofWorkParams> PostUpdate;
         event EventHandler<UnitofWorkParams> PostEdit;
-        event EventHandler<UnitofWorkParams> PreDelete;
-        event EventHandler<UnitofWorkParams> PostCreate;
+        event EventHandler<UnitofWorkParams> PostDelete;
+        event EventHandler<UnitofWorkParams> PostCommit;
+        event EventHandler<UnitofWorkParams> PreCommit;
     }
 
   

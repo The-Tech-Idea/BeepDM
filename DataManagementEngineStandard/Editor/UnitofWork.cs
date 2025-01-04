@@ -463,6 +463,7 @@ namespace TheTechIdea.Beep.Editor
         #region "Events"
         public event EventHandler<UnitofWorkParams> PreInsert;
         public event EventHandler<UnitofWorkParams> PostCreate;
+        public event EventHandler<UnitofWorkParams> PreCreate;
         public event EventHandler<UnitofWorkParams> PostEdit;
         public event EventHandler<UnitofWorkParams> PreDelete;
         public event EventHandler<UnitofWorkParams> PreUpdate;
@@ -470,6 +471,9 @@ namespace TheTechIdea.Beep.Editor
         public event EventHandler<UnitofWorkParams> PostQuery;
         public event EventHandler<UnitofWorkParams> PostInsert;
         public event EventHandler<UnitofWorkParams> PostUpdate;
+        public event EventHandler<UnitofWorkParams> PostDelete;
+        public event EventHandler<UnitofWorkParams> PostCommit;
+        public event EventHandler<UnitofWorkParams> PreCommit;
         // Event declarations
         public event EventHandler CurrentChanged;
         public event EventHandler ListChanged;
@@ -773,7 +777,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 return DMEEditor.ErrorObject;
             }
-            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false };
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction=  EventAction.PreUpdate };
             PreUpdate?.Invoke(doc, ps);
             if (ps.Cancel)
             {
@@ -798,7 +802,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 return DMEEditor.ErrorObject;
             }
-            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false };
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false,EventAction= EventAction.PreInsert };
             PreInsert?.Invoke(doc, ps);
             if (ps.Cancel)
             {
@@ -820,6 +824,12 @@ namespace TheTechIdea.Beep.Editor
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             if (!IsRequirmentsValidated())
+            {
+                return DMEEditor.ErrorObject;
+            }
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreDelete };
+            PreDelete?.Invoke(doc, ps);
+            if (ps.Cancel)
             {
                 return DMEEditor.ErrorObject;
             }
@@ -853,9 +863,16 @@ namespace TheTechIdea.Beep.Editor
                 Guidproperty.SetValue(Guid.NewGuid().ToString(), null);
 
             }
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreInsert };
+            PreInsert?.Invoke(doc, ps);
+            if (ps.Cancel)
+            {
+                return DMEEditor.ErrorObject;
+            }
             IErrorsInfo retval;
             if (!IsInListMode)
             {
+               
                 retval = DataSource.InsertEntity(cname, doc);
             }
             else
@@ -883,6 +900,12 @@ namespace TheTechIdea.Beep.Editor
             IErrorsInfo retval;
             string[] classnames = doc.ToString().Split(new Char[] { ' ', ',', '.', '-', '\n', '\t' });
             string cname = classnames[classnames.Count() - 1];
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreUpdate };
+            PreUpdate?.Invoke(doc, ps);
+            if (ps.Cancel)
+            {
+                return DMEEditor.ErrorObject;
+            }
             if (!IsInListMode)
             {
                 retval = DataSource.UpdateEntity(cname, doc);
@@ -911,7 +934,12 @@ namespace TheTechIdea.Beep.Editor
             string cname = classnames[classnames.Count() - 1];
             IErrorsInfo retval ;
             Tracking tracking = _units.GetTrackingITem(doc);
-           
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreDelete };
+            PreDelete?.Invoke(doc, ps);
+            if (ps.Cancel)
+            {
+                return DMEEditor.ErrorObject;
+            }
             if (!IsInListMode)
             {
                 
@@ -949,6 +977,12 @@ namespace TheTechIdea.Beep.Editor
                 return;
             }
             T entity = new T();
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreCreate };
+            PreCreate?.Invoke(entity, ps);
+            if (ps.Cancel)
+            {
+                return ;
+            }
             Units.Add(entity);
             changeLog.Push(new ChangeLogEntry<T>
             {
@@ -956,7 +990,13 @@ namespace TheTechIdea.Beep.Editor
                 ChangeType = ChangeType.Insert
             });
             // Subscribe to PropertyChanged event
-            entity.PropertyChanged += ItemPropertyChangedHandler;
+            entity.PropertyChanged += ItemPropertyChangedHandler; 
+            ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreCreate };
+            PostCreate?.Invoke(entity, ps);
+            if (ps.Cancel)
+            {
+                return;
+            }
         }
 
         /// <summary>Adds a new entity to the collection and subscribes to its PropertyChanged event.</summary>
@@ -972,6 +1012,12 @@ namespace TheTechIdea.Beep.Editor
             {
                 return;
             }
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreCreate };
+            PreCreate?.Invoke(entity, ps);
+            if (ps.Cancel)
+            {
+                return;
+            }
             Units.Add(entity);
             changeLog.Push(new ChangeLogEntry<T>
             {
@@ -980,6 +1026,12 @@ namespace TheTechIdea.Beep.Editor
             });
             // Subscribe to PropertyChanged event
             entity.PropertyChanged += ItemPropertyChangedHandler;
+             ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostCreate };
+            PostCreate?.Invoke(entity, ps);
+            if (ps.Cancel)
+            {
+                return;
+            }
         }
        
 
@@ -1015,10 +1067,16 @@ namespace TheTechIdea.Beep.Editor
           
             if (index >= 0)
             {
+
                 // Assuming ID is the value used in InsertedKeys and UpdatedKeys
                 // Remove the entity from Units
                 T entity = Units[index];
-            
+                UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreDelete };
+                PreDelete?.Invoke(entity, ps);
+                if (ps.Cancel)
+                {
+                    return errorsInfo;
+                }
                 Tracking tracking = _units.GetTrackingITem(entity);
                 // Remove references from InsertedKeys and UpdatedKeys
                 if (_entityStates.Count > 0)
@@ -1060,6 +1118,12 @@ namespace TheTechIdea.Beep.Editor
                             ChangeType = ChangeType.Delete
                         });
                         _units.RemoveAt(index);
+                        ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostDelete };
+                        PostDelete?.Invoke(entity, ps);
+                        if (ps.Cancel)
+                        {
+                            return errorsInfo;
+                        }
                         errorsInfo.Message = "Delete Done";
                         errorsInfo.Flag = Errors.Ok;
                         return errorsInfo;
@@ -1095,7 +1159,13 @@ namespace TheTechIdea.Beep.Editor
                 return errorsInfo;
             }
             T entity=_units.Current;
-           // var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreDelete };
+            PreDelete?.Invoke(entity, ps);
+            if (ps.Cancel)
+            {
+                return errorsInfo;
+            }
+            // var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
             var index = Getindex(entity);
             Tracking tracking = _units.GetTrackingITem(entity);
             //if (!InsertedKeys.ContainsValue(Convert.ToString(tracking.OriginalIndex)))
@@ -1144,6 +1214,12 @@ namespace TheTechIdea.Beep.Editor
                             ChangeType = ChangeType.Delete
                         });
                         _units.RemoveAt(index);
+                        ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostDelete };
+                        PostDelete?.Invoke(entity, ps);
+                        if (ps.Cancel)
+                        {
+                            return errorsInfo;
+                        }
                         errorsInfo.Message = "Delete Done";
                         errorsInfo.Flag = Errors.Ok;
                         return errorsInfo;
@@ -1163,6 +1239,12 @@ namespace TheTechIdea.Beep.Editor
                 }
                 else
                 {
+                    ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostDelete };
+                    PostDelete?.Invoke(entity, ps);
+                    if (ps.Cancel)
+                    {
+                        return errorsInfo;
+                    }
                     errorsInfo.Message = "Delete Done";
                     errorsInfo.Flag = Errors.Ok;
                     return errorsInfo;
@@ -1186,7 +1268,13 @@ namespace TheTechIdea.Beep.Editor
                 errorsInfo.Flag = Errors.Failed;
                 return errorsInfo;
             }
-           // var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreDelete };
+            PreDelete?.Invoke(entity, ps);
+            if (ps.Cancel)
+            {
+                return errorsInfo;
+            }
+            // var entityKeyAsString = Convert.ToString(PKProperty.GetValue(entity, null));
             var index = Getindex(entity);
             Tracking tracking = _units.GetTrackingITem(entity);
             if(tracking.IsSaved && tracking.EntityState== EntityState.Deleted)
@@ -1254,6 +1342,12 @@ namespace TheTechIdea.Beep.Editor
                         return errorsInfo;
                     }
                 }
+                ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostDelete };
+                PostDelete?.Invoke(entity, ps);
+                if (ps.Cancel)
+                {
+                    return errorsInfo;
+                }
                 errorsInfo.Message = "Delete Done";
                 errorsInfo.Flag = Errors.Ok;
                 return errorsInfo;
@@ -1262,6 +1356,12 @@ namespace TheTechIdea.Beep.Editor
             {
                 if (!_units.Remove(entity))
                 {
+                    ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostDelete };
+                    PostDelete?.Invoke(entity, ps);
+                    if (ps.Cancel)
+                    {
+                        return errorsInfo;
+                    }
                     errorsInfo.Message = "Object not found";
                     errorsInfo.Flag = Errors.Failed;
                     return errorsInfo;
@@ -1273,6 +1373,7 @@ namespace TheTechIdea.Beep.Editor
                     return errorsInfo;
                 }
             }
+
         }
         /// <summary>Updates an entity and returns information about the operation.</summary>
         /// <param name="entity">The entity to be updated.</param>
@@ -1289,6 +1390,12 @@ namespace TheTechIdea.Beep.Editor
             {
                 errorsInfo.Message = "Validation Failed";
                 errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreUpdate };
+            PreUpdate?.Invoke(entity, ps);
+            if (ps.Cancel)
+            {
                 return errorsInfo;
             }
             var index = DocExistByKey(entity);
@@ -1331,17 +1438,24 @@ namespace TheTechIdea.Beep.Editor
  
                 }
 
-               
+                 ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostUpdate };
+                PostUpdate?.Invoke(entity, ps);
+                if (ps.Cancel)
+                {
+                    return errorsInfo;
+                }
                 errorsInfo.Message = "Update Done";
                 errorsInfo.Flag = Errors.Ok;
                 return errorsInfo;
             }
             else
             {
+                
                 errorsInfo.Message = "Object not found";
                 errorsInfo.Flag = Errors.Failed;
                 return errorsInfo;
             }
+            
         }
         /// <summary>Updates an entity with the specified ID.</summary>
         /// <param name="id">The ID of the entity to update.</param>
@@ -1360,6 +1474,12 @@ namespace TheTechIdea.Beep.Editor
             if (index >= 0)
             {
                 Units[index] = entity;
+                UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreUpdate };
+                PreUpdate?.Invoke(entity, ps);
+                if (ps.Cancel)
+                {
+                    return errorsInfo;
+                }
                 if (_entityStates.Count > 0)
                 {
                     if (_entityStates.ContainsKey(index))
@@ -1377,12 +1497,19 @@ namespace TheTechIdea.Beep.Editor
                 {
                     _entityStates.Add(index, EntityState.Modified);
                 }
+                 ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostUpdate };
+                PostUpdate?.Invoke(entity, ps);
+                if (ps.Cancel)
+                {
+                    return errorsInfo;
+                }
                 errorsInfo.Message = "Update Done";
                 errorsInfo.Flag = Errors.Ok;
                 return errorsInfo;
             }
             else
             {
+
                 errorsInfo.Message = "Object not found";
                 errorsInfo.Flag = Errors.Failed;
                 return errorsInfo;
@@ -1408,6 +1535,13 @@ namespace TheTechIdea.Beep.Editor
             args.ParameterInt1 = InsertedKeys.Count + UpdatedKeys.Count + DeletedKeys.Count;
             args.ParameterString1 = $"Started Saving Changes {args.ParameterInt1}";
             args.Messege = $"Started Saving Changes {args.ParameterInt1}";
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreCommit };
+            PreCommit?.Invoke(this, ps);
+            if (ps.Cancel)
+            {
+                errorsInfo.Message = "Commit Cancelled";
+                return errorsInfo;
+            }
             progress.Report(args);
             try
             {
@@ -1496,6 +1630,13 @@ namespace TheTechIdea.Beep.Editor
                 args.ErrorCode = "END";
                 progress.Report(args);
                 _suppressNotification = false;
+                ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostCommit };
+                PostCommit?.Invoke(this, ps);
+                if (ps.Cancel)
+                {
+                    errorsInfo.Message = "Commit Cancelled";
+                    return errorsInfo;
+                }
             }
             catch (Exception ex)
             {
@@ -1530,7 +1671,13 @@ namespace TheTechIdea.Beep.Editor
             PassedArgs args = new PassedArgs();
             IErrorsInfo errorsInfo = new ErrorsInfo();
             int x = 1;
-
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreCommit };
+            PreCommit?.Invoke(this, ps);
+            if (ps.Cancel)
+            {
+                errorsInfo.Message = "Commit Cancelled";
+                return errorsInfo;
+            }
             try
             {
                 if (GetAddedEntities() != null)
@@ -1617,6 +1764,13 @@ namespace TheTechIdea.Beep.Editor
                     }
                     DeletedKeys.Clear();
                     undoDeleteStack.Clear();
+                }
+                 ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostCommit };
+                PostCommit?.Invoke(this, ps);
+                if (ps.Cancel)
+                {
+                    errorsInfo.Message = "Commit Finished";
+                    return errorsInfo;
                 }
                 _suppressNotification = false;
             }
@@ -1708,6 +1862,14 @@ namespace TheTechIdea.Beep.Editor
         /// </returns>
         public virtual async Task<ObservableBindingList<T>> GetQuery(string query)
         {
+           
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreQuery };
+            PreQuery?.Invoke(this, ps);
+            if (ps.Cancel)
+            {
+                DMEEditor.ErrorObject.Message = "Query Cancelled";
+                return await Task.FromResult(Units);
+            }
             if (query == null)
             {
                 IsFilterOn = false;
@@ -1740,6 +1902,13 @@ namespace TheTechIdea.Beep.Editor
 
                 }
             }
+            ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostQuery };
+            PostQuery?.Invoke(Units, ps);
+            if (ps.Cancel)
+            {
+                DMEEditor.ErrorObject.Message = "Post Query";
+                return await Task.FromResult(Units);
+            }
             return await Task.FromResult(Units);
 
 
@@ -1755,7 +1924,13 @@ namespace TheTechIdea.Beep.Editor
         /// </returns>
         public virtual async Task<ObservableBindingList<T>> Get(List<AppFilter> filters)
         {
-
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreQuery };
+            PreQuery?.Invoke(this, ps);
+            if (ps.Cancel)
+            {
+                DMEEditor.ErrorObject.Message = "Query Cancelled";
+                return await Task.FromResult(Units);
+            }
             if (filters == null)
             {
                 IsFilterOn = false;
@@ -1787,6 +1962,12 @@ namespace TheTechIdea.Beep.Editor
 
                 }
             }
+            PostQuery?.Invoke(Units, ps);
+            if (ps.Cancel)
+            {
+                DMEEditor.ErrorObject.Message = "Post Query";
+                return await Task.FromResult(Units);
+            }
             return await Task.FromResult(Units);
 
 
@@ -1801,6 +1982,13 @@ namespace TheTechIdea.Beep.Editor
         /// </remarks>
         public virtual async Task<ObservableBindingList<T>> Get()
         {
+            UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreQuery };
+            PreQuery?.Invoke(this, ps);
+            if (ps.Cancel)
+            {
+                DMEEditor.ErrorObject.Message = "Query Cancelled";
+                return await Task.FromResult(Units);
+            }
             _suppressNotification = true;
             IsFilterOn = false;
             if (!IsInListMode)
@@ -1818,6 +2006,12 @@ namespace TheTechIdea.Beep.Editor
 
             }
             _suppressNotification = false;
+            PostQuery?.Invoke(Units, ps);
+            if (ps.Cancel)
+            {
+                DMEEditor.ErrorObject.Message = "Post Query";
+                return await Task.FromResult(Units);
+            }
             return await Task.FromResult(Units);
         }
         /// <summary>Retrieves the value associated with the specified key.</summary>

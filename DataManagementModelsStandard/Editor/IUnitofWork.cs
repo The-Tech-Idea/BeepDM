@@ -87,20 +87,27 @@ namespace TheTechIdea.Beep.Editor
         IErrorsInfo Update(T entity);
         IErrorsInfo Update(string id, T entity);
 
-
+        event EventHandler<UnitofWorkParams> PreDelete;
         event EventHandler<UnitofWorkParams> PreInsert;
+        event EventHandler<UnitofWorkParams> PreCreate;
         event EventHandler<UnitofWorkParams> PreUpdate;
         event EventHandler<UnitofWorkParams> PreQuery;
+
         event EventHandler<UnitofWorkParams> PostQuery;
         event EventHandler<UnitofWorkParams> PostInsert;
+        event EventHandler<UnitofWorkParams> PostCreate;
         event EventHandler<UnitofWorkParams> PostUpdate;
         event EventHandler<UnitofWorkParams> PostEdit;
-        event EventHandler<UnitofWorkParams> PreDelete;
-        event EventHandler<UnitofWorkParams> PostCreate;
+        event EventHandler<UnitofWorkParams> PostDelete;
+        event EventHandler<UnitofWorkParams> PostCommit;
+        event EventHandler<UnitofWorkParams> PreCommit;
+
+
 
     }
     public class UnitofWorkParams : PassedArgs
     {
+        public EventAction EventAction { get; set; }
         public bool Cancel { get; set; } = false;
         public string PropertyName { get; set; }
         public string PropertyValue { get; set; }
@@ -108,5 +115,22 @@ namespace TheTechIdea.Beep.Editor
         public object Record { get; set; }
 
     }
-   
+    public enum EventAction
+    {
+        PreInsert,
+        PreCreate,
+        PreUpdate,
+        PreDelete,
+        PostEdit,
+        PreQuery,
+        PostInsert,
+        PostUpdate,
+        PostDelete,
+        PostQuery,
+        PostCreate,
+        PostCommit,
+        PreCommit
+
+    }
+
 }
