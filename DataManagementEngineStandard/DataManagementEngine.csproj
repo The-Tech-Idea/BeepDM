@@ -6,7 +6,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.DataManagementEngine</PackageId>
     <Authors>The Tech Idea</Authors>
-    <Version>2.0.9</Version>
+    <Version>2.0.10</Version>
 	<LangVersion>12.0</LangVersion>
     <Product>TheTechIdea.Beep.DataManagementEngine</Product>
     <Description>Data Management Library</Description>

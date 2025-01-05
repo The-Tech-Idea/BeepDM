@@ -21,7 +21,8 @@ namespace TheTechIdea.Beep.Utilities
     public interface IUtil
     {
         EntityStructure GetEntityStructureFromType<T>();
-        
+        EntityStructure GetEntityStructureFromType(Type type);
+
         EntityStructure GetEntityStructureFromList<T>(List<T> list);
        
         ObservableCollection<T> ConvertToObservableCollection<T>(List<T> list);

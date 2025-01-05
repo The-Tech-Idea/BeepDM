@@ -15,16 +15,14 @@ using System.Reflection;
 using System.Xml.Serialization;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.ConfigUtil;
-using TheTechIdea.Beep.Addin;
-
-
 using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Beep.Logger;
-using TheTechIdea.Beep.Utilities;
+using System.Text.Json;
+using System.Xml;
 
 
 namespace TheTechIdea.Beep.Utilities
@@ -772,8 +770,6 @@ namespace TheTechIdea.Beep.Utilities
 
         public List<object> GetListByDataTable(DataTable dt, Type type, EntityStructure enttype)
         {
-
-
             //  string f = "";
             List<object> Records = new List<object>();
             Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
@@ -817,6 +813,7 @@ namespace TheTechIdea.Beep.Utilities
                 field.EntityName = dt.TableName;
                 field.fieldname=item.ColumnName;
                 field.fieldtype = item.DataType.ToString();
+                field = SetField(item, field);
                 flds.Add(field);
 
                 //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
@@ -872,18 +869,10 @@ namespace TheTechIdea.Beep.Utilities
                 int y = 0;
                 foreach (DataColumn field in tb.Columns)
                 {
-
-                    Console.WriteLine("        " + field.ColumnName + ": " + field.DataType);
-
                     EntityField f = new EntityField();
-
-
-                    //  f.tablename = sheetname;
-                    f.fieldname = field.ColumnName;
-                    f.fieldtype = field.DataType.ToString();
-                    f.ValueRetrievedFromParent = false;
-                    f.EntityName = sheetname;
+                        f=SetField(field, f);
                     f.FieldIndex = y;
+                    f.EntityName = sheetname;
                     Fields.Add(f);
                     y += 1;
 
@@ -1039,7 +1028,292 @@ namespace TheTechIdea.Beep.Utilities
 
             return entity;
         }
+        public EntityStructure GetEntityStructureFromType(Type type)
+        {
+            EntityStructure entity = new EntityStructure();
+            if (entity.Fields.Count == 0)
+            {
+                // Iterate over the properties of the type to create fields
+                foreach (PropertyInfo propInfo in type.GetProperties())
+                {
+                   entity= SetField(propInfo, entity);
+                }
+            }
+            return entity;
+        }
+        private EntityField SetField(PropertyInfo propInfo, EntityField entity)
+        {
+            DbFieldCategory fldcat = DbFieldCategory.String;
+            if (propInfo.PropertyType == typeof(string))
+            {
+                fldcat = DbFieldCategory.String;
+            }
+            else if (propInfo.PropertyType == typeof(int) || propInfo.PropertyType == typeof(long) || propInfo.PropertyType == typeof(float) || propInfo.PropertyType == typeof(double) || propInfo.PropertyType == typeof(decimal))
+            {
+                fldcat = DbFieldCategory.Numeric;
+            }
+            else if (propInfo.PropertyType == typeof(DateTime))
+            {
+                fldcat = DbFieldCategory.Date;
+            }
+            else if (propInfo.PropertyType == typeof(bool))
+            {
+                fldcat = DbFieldCategory.Boolean;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(Guid))
+            {
+                fldcat = DbFieldCategory.Guid;
+            }
+            else if (propInfo.PropertyType == typeof(JsonDocument))
+            {
+                fldcat = DbFieldCategory.Json;
+            }
+            else if (propInfo.PropertyType == typeof(XmlDocument))
+            {
+                fldcat = DbFieldCategory.Xml;
+            }
+            else if (propInfo.PropertyType == typeof(decimal))
+            {
+                fldcat = DbFieldCategory.Currency;
+            }
+            else if (propInfo.PropertyType.IsEnum)
+            {
+                fldcat = DbFieldCategory.Enum;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            EntityField field = new EntityField
+            {
+                fieldname = propInfo.Name,
+                fieldtype = propInfo.PropertyType.FullName,
+                fieldCategory = fldcat
+            };
+            // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
+            // might not be directly available or applicable for every property type.
+            // You'll need to set these based on the specific needs or defaults.
 
+            return field;
+        }
+        private EntityField SetField(DataColumn col, EntityField entity)
+        {
+            DbFieldCategory fldcat = DbFieldCategory.String;
+            if (col.DataType != null) {
+                // set fldcat based on col.DataType using all posibilties
+                if(col.DataType == typeof(string))
+                {
+                    fldcat = DbFieldCategory.String;
+                }
+                else if (col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(float) || col.DataType == typeof(double) || col.DataType == typeof(decimal))
+                {
+                    fldcat = DbFieldCategory.Numeric;
+                }
+                else if (col.DataType == typeof(DateTime))
+                {
+                    fldcat = DbFieldCategory.Date;
+                }
+                else if (col.DataType == typeof(bool))
+                {
+                    fldcat = DbFieldCategory.Boolean;
+                }
+                else if (col.DataType == typeof(byte[]))
+                {
+                    fldcat = DbFieldCategory.Binary;
+                }
+                else if (col.DataType == typeof(Guid))
+                {
+                    fldcat = DbFieldCategory.Guid;
+                }
+                else if (col.DataType == typeof(JsonDocument))
+                {
+                    fldcat = DbFieldCategory.Json;
+                }
+                else if (col.DataType == typeof(XmlDocument))
+                {
+                    fldcat = DbFieldCategory.Xml;
+                }
+                else if (col.DataType == typeof(decimal))
+                {
+                    fldcat = DbFieldCategory.Currency;
+                }
+                else if (col.DataType.IsEnum)
+                {
+                    fldcat = DbFieldCategory.Enum;
+                }
+                else if (col.DataType == typeof(byte[]))
+                {
+                    fldcat = DbFieldCategory.Binary;
+                }
+                else if (col.DataType == typeof(byte[]))
+                {
+                    fldcat = DbFieldCategory.Binary;
+                }
+                else if (col.DataType == typeof(byte[]))
+                {
+                    fldcat = DbFieldCategory.Binary;
+                }
+                else if (col.DataType == typeof(byte[]))
+                {
+                    fldcat = DbFieldCategory.Binary;
+                }
+                else if (col.DataType == typeof(byte[]))
+                {
+                    fldcat = DbFieldCategory.Binary;
+                }
+                else if (col.DataType == typeof(byte[]))
+                {
+                    fldcat = DbFieldCategory.Binary;
+                }
+                else if (col.DataType == typeof(byte[]))
+                {
+                    fldcat = DbFieldCategory.Binary;
+                }
+                else if (col.DataType == typeof(byte[]))
+                {
+                    fldcat = DbFieldCategory.Binary;
+                }
+            }
+
+            EntityField field = new EntityField
+            {
+                EntityName=col.Table.TableName,
+                fieldname = col.ColumnName,
+                fieldtype = col.DataType.ToString(),
+                fieldCategory = fldcat,
+                ValueRetrievedFromParent = false,
+                FieldIndex = col.Ordinal
+
+            };
+            // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
+            // might not be directly available or applicable for every property type.
+            // You'll need to set these based on the specific needs or defaults.
+
+            return field;
+        }
+        private EntityStructure SetField(PropertyInfo propInfo,EntityStructure entity)
+        {
+            DbFieldCategory fldcat = DbFieldCategory.String;
+            if (propInfo.PropertyType == typeof(string))
+            {
+                fldcat = DbFieldCategory.String;
+            }
+            else if (propInfo.PropertyType == typeof(int) || propInfo.PropertyType == typeof(long) || propInfo.PropertyType == typeof(float) || propInfo.PropertyType == typeof(double) || propInfo.PropertyType == typeof(decimal))
+            {
+                fldcat = DbFieldCategory.Numeric;
+            }
+            else if (propInfo.PropertyType == typeof(DateTime))
+            {
+                fldcat = DbFieldCategory.Date;
+            }
+            else if (propInfo.PropertyType == typeof(bool))
+            {
+                fldcat = DbFieldCategory.Boolean;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(Guid))
+            {
+                fldcat = DbFieldCategory.Guid;
+            }
+            else if (propInfo.PropertyType == typeof(JsonDocument))
+            {
+                fldcat = DbFieldCategory.Json;
+            }
+            else if (propInfo.PropertyType == typeof(XmlDocument))
+            {
+                fldcat = DbFieldCategory.Xml;
+            }
+            else if (propInfo.PropertyType == typeof(decimal))
+            {
+                fldcat = DbFieldCategory.Currency;
+            }
+            else if (propInfo.PropertyType.IsEnum)
+            {
+                fldcat = DbFieldCategory.Enum;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            else if (propInfo.PropertyType == typeof(byte[]))
+            {
+                fldcat = DbFieldCategory.Binary;
+            }
+            EntityField field = new EntityField
+            {
+                fieldname = propInfo.Name,
+                fieldtype = propInfo.PropertyType.FullName,
+                fieldCategory = fldcat
+            };
+            // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
+            // might not be directly available or applicable for every property type.
+            // You'll need to set these based on the specific needs or defaults.
+            if (field.IsKey)
+            {
+                entity.PrimaryKeys.Add(field);
+            }
+            entity.Fields.Add(field);
+            return entity;
+        }
         public EntityStructure GetEntityStructureFromListorTable(  dynamic retval)
         {
             EntityStructure entity = new EntityStructure();
@@ -1063,6 +1337,48 @@ namespace TheTechIdea.Beep.Utilities
                     {
                         x.fieldname = item.ColumnName;
                         x.fieldtype = item.DataType.ToString(); //"ColumnSize"
+                        DbFieldCategory fieldCategory = DbFieldCategory.String;
+                        if (item.DataType == typeof(string))
+                        {
+                            fieldCategory = DbFieldCategory.String;
+                        }
+                        else if (item.DataType == typeof(int) || item.DataType == typeof(long) || item.DataType == typeof(float) || item.DataType == typeof(double) || item.DataType == typeof(decimal))
+                        {
+                            fieldCategory = DbFieldCategory.Numeric;
+                        }
+                        else if (item.DataType == typeof(DateTime))
+                        {
+                            fieldCategory = DbFieldCategory.Date;
+                        }
+                        else if (item.DataType == typeof(bool))
+                        {
+                            fieldCategory = DbFieldCategory.Boolean;
+                        }
+                        else if (item.DataType == typeof(byte[]))
+                        {
+                            fieldCategory = DbFieldCategory.Binary;
+                        }
+                        else if (item.DataType == typeof(Guid))
+                        {
+                            fieldCategory = DbFieldCategory.Guid;
+                        }
+                        else if (item.DataType == typeof(JsonDocument))
+                        {
+                            fieldCategory = DbFieldCategory.Json;
+                        }
+                        else if (item.DataType == typeof(XmlDocument))
+                        {
+                            fieldCategory = DbFieldCategory.Xml;
+                        }
+                        else if (item.DataType == typeof(decimal))
+                        {
+                            fieldCategory = DbFieldCategory.Currency;
+                        }
+                        else if (item.DataType.IsEnum)
+                        {
+                            fieldCategory = DbFieldCategory.Enum;
+                        }
+                        x.fieldCategory = fieldCategory;
                         x.Size1 = item.MaxLength;
                         try
                         {
@@ -1213,7 +1529,49 @@ namespace TheTechIdea.Beep.Utilities
                 EntityField f = new EntityField();
                 f.fieldname = item.ColumnName;
                 f.fieldtype = item.DataType.FullName;
-                
+                DbFieldCategory fieldCategory = DbFieldCategory.String;
+                if (item.DataType == typeof(string))
+                {
+                    fieldCategory = DbFieldCategory.String;
+                }
+                else if (item.DataType == typeof(int) || item.DataType == typeof(long) || item.DataType == typeof(float) || item.DataType == typeof(double) || item.DataType == typeof(decimal))
+                {
+                    fieldCategory = DbFieldCategory.Numeric;
+                }
+                else if (item.DataType == typeof(DateTime))
+                {
+                    fieldCategory = DbFieldCategory.Date;
+                }
+                else if (item.DataType == typeof(bool))
+                {
+                    fieldCategory = DbFieldCategory.Boolean;
+                }
+                else if (item.DataType == typeof(byte[]))
+                {
+                    fieldCategory = DbFieldCategory.Binary;
+                }
+                else if (item.DataType == typeof(Guid))
+                {
+                    fieldCategory = DbFieldCategory.Guid;
+                }
+                else if (item.DataType == typeof(JsonDocument))
+                {
+                    fieldCategory = DbFieldCategory.Json;
+                }
+                else if (item.DataType == typeof(XmlDocument))
+                {
+                    fieldCategory = DbFieldCategory.Xml;
+                }
+                else if (item.DataType == typeof(decimal))
+                {
+                    fieldCategory = DbFieldCategory.Currency;
+                }
+                else if (item.DataType.IsEnum)
+                {
+                    fieldCategory = DbFieldCategory.Enum;
+                }
+                f.fieldCategory = fieldCategory;
+
                 try
                 {
                     f.IsAutoIncrement = item.AutoIncrement;
