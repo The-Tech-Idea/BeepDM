@@ -57,6 +57,9 @@ namespace TheTechIdea.Beep.Addin
          Action NextAction { get; set; }
          Action PreviousAction { get; set; }
         DateTime Timestamp { get; set; }
+        string Title { get; set; }
+        string ImagePath { get; set; }
+        int Progress { get; set; }
     }
 
     /// <summary>
@@ -113,6 +116,9 @@ namespace TheTechIdea.Beep.Addin
         public IErrorsInfo ErrorObject { get; set; }
         public Errors Flag { get; set; }
         public DateTime Timestamp { get; set; }
+        public string Title { get; set; }
+        public string ImagePath { get; set; }
+        public int Progress { get; set; }   
         public PassedArgs()
         {
 
