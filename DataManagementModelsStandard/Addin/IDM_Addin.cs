@@ -31,8 +31,8 @@ namespace TheTechIdea.Beep.Addin
         // Execution
         void Run(IPassedArgs pPassedarg);
         void Run(params object[] args);
-        Task RunAsync(IPassedArgs pPassedarg);
-        Task RunAsync(params object[] args);
+        Task<IErrorsInfo> RunAsync(IPassedArgs pPassedarg);
+        Task<IErrorsInfo> RunAsync(params object[] args);
 
         string GuidID { get; set; }
 
