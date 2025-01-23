@@ -38,6 +38,8 @@ namespace TheTechIdea.Beep.Addin
 
         // Optional Configuration (if runtime config is needed)
         void Configure(Dictionary<string, object> settings);
+        // Apply theme if applicable
+        void ApplyTheme();
         // Events
         event EventHandler OnStart;
         event EventHandler OnStop;
