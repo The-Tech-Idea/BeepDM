@@ -1970,7 +1970,7 @@
             <param name="doc">The document to delete.</param>
             <returns>An object containing information about any errors that occurred during the deletion process.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Create">
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.New">
             <summary>Adds a new entity to the collection and subscribes to its PropertyChanged event.</summary>
             <param name="entity">The entity to be added.</param>
             <remarks>
@@ -1979,7 +1979,7 @@
             Otherwise, the entity is added to the Units collection and the ItemPropertyChangedHandler is subscribed to its PropertyChanged event.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Create(`0)">
+        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.Add(`0)">
             <summary>Adds a new entity to the collection and subscribes to its PropertyChanged event.</summary>
             <param name="entity">The entity to be added.</param>
             <remarks>

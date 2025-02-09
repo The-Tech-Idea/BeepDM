@@ -37,9 +37,8 @@ namespace TheTechIdea.Beep.Editor
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         Task<IErrorsInfo> Commit();
         Task<IErrorsInfo> Rollback();
-        void Create();
-        void Create(T entity);
-     
+        void Add(T entity);
+        void New();
         T Read(Func<T, bool> predicate);
         Task<ObservableBindingList<T>> MultiRead(Func<T, bool> predicate);
         ErrorsInfo Update(Func<T, bool> predicate, T updatedEntity);

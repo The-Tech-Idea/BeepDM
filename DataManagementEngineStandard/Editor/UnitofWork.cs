@@ -970,7 +970,7 @@ namespace TheTechIdea.Beep.Editor
         /// If the validation fails, the method returns without adding the entity.
         /// Otherwise, the entity is added to the Units collection and the ItemPropertyChangedHandler is subscribed to its PropertyChanged event.
         /// </remarks>
-        public void Create()
+        public void New()
         {
             if (!Validateall())
             {
@@ -1006,7 +1006,7 @@ namespace TheTechIdea.Beep.Editor
         /// If the validation fails, the method returns without adding the entity.
         /// Otherwise, the entity is added to the Units collection and the ItemPropertyChangedHandler is subscribed to its PropertyChanged event.
         /// </remarks>
-        public void Create(T entity)
+        public void Add(T entity)
         {
             if (!Validateall())
             {

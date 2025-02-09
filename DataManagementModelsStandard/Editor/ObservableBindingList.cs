@@ -26,12 +26,7 @@ namespace TheTechIdea.Beep.Editor
 
         public event EventHandler<ItemValidatingEventArgs<T>> ItemValidating;
         public event EventHandler<ItemValidatingEventArgs<T>> ItemDeleteing;
-        protected override object AddNewCore()
-        {
-            var newItem = Activator.CreateInstance<T>();
-            Add(newItem);
-            return newItem;
-        }
+      
         public List<Tracking> Trackings { get; set; } = new List<Tracking>();
         public bool SuppressNotification { get; set; } = false;
         public bool IsSorted => false;
@@ -1308,6 +1303,30 @@ namespace TheTechIdea.Beep.Editor
         }
 
         #endregion "Pagination"
+        #region"CRUD"
+        protected override object AddNewCore()
+        {
+            var newItem = Activator.CreateInstance<T>();
+            Add(newItem);
+            return newItem;
+        }
+        public void AddNew(T item)
+        {
+            Add(item);
+        }
+        public void AddNew()
+        {
+            AddNewCore();
+        }
+        public void AddRange(IEnumerable<T> items)
+        {
+            foreach (var item in items)
+            {
+                Add(item);
+            }
+        }
+
+        #endregion "CRUD"
     }
     public class Tracking
     {
