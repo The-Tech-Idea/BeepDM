@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace TheTechIdea.Beep.Addin
 {
-    public interface IBeepViewModel
+    public interface IBeepViewModel 
     {
         string GetName();
         string GetDescription();
@@ -20,5 +21,6 @@ namespace TheTechIdea.Beep.Addin
         bool CloseViewModel();
         bool DisposeViewModel();
         bool QueryViewModel(string[] parameters);
+       
     }
 }
