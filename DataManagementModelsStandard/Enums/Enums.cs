@@ -113,6 +113,7 @@ namespace TheTechIdea.Beep.Utilities
     public enum DbFieldCategory
     {
         String,        // Text-based fields
+        Char,          // Fixed-length text fields
         Numeric,       // Integer, float, double, decimal, etc.
         Date,          // Date and DateTime fields
         Boolean,       // True/False fields
