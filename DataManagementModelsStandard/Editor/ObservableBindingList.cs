@@ -654,7 +654,7 @@ namespace TheTechIdea.Beep.Editor
                 this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
             }
             AddingNew += ObservableBindingList_AddingNew;
-            
+            UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
             SuppressNotification = false;
             RaiseListChangedEvents = true;
         }
