@@ -1236,11 +1236,13 @@ namespace TheTechIdea.Beep.Tools
         {
             object instance = null;
             Type type = null;
-
+            string dllname = Path.GetFileName(dll);
+            string withoutExtension = Path.GetFileNameWithoutExtension(dll);
             try
             {
-                assemblies_rep dllas = Assemblies.Where(p => Path.GetFileName(p.DllName) == dll).FirstOrDefault();
-                if(dllas != null)
+                assemblies_rep dllas = Assemblies.Where(p => new AssemblyName(p.DllName).Name.Equals(withoutExtension, StringComparison.InvariantCultureIgnoreCase))
+    .FirstOrDefault();
+                if (dllas != null)
                 {
                     type = dllas.DllLib.GetType(typeName);
                     if (type == null)
