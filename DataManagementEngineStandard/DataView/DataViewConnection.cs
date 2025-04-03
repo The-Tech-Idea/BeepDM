@@ -90,7 +90,7 @@ namespace TheTechIdea.Beep.DataView
         /// <returns>The connection state after opening the connection.</returns>
         private ConnectionState OpenConn()
         {
-            ReplaceValueFromConnectionString();
+        //    ReplaceValueFromConnectionString();
             if (Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName) != null)
             {
                 if (File.Exists(Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)))

@@ -667,7 +667,7 @@ namespace TheTechIdea.Beep.DataView
         /// <returns>The state of the connection.</returns>
         public ConnectionState Openconnection()
         {
-            ConnectionStatus = Dataconnection.OpenConnection();
+           ConnectionStatus = Dataconnection.OpenConnection();
             if (ConnectionStatus == ConnectionState.Open)
             {
                 LoadView();
