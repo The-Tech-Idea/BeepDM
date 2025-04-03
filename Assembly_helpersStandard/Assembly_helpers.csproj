@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	  <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+	  <TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
     <RootNamespace>TheTechIdea.Beep</RootNamespace>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.AssemblyLoader</PackageId>
-	<Version>2.0.2</Version>
+	<Version>2.0.4</Version>
     <Authors>The Tech Idea</Authors>
     <Product>TheTechIdea.Beep.AssemblyLoader</Product>
     <Description>Aseembly Loader for Data Management Engine</Description>
@@ -36,7 +36,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="9.0.0" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.39" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.40" />
   </ItemGroup>
 
 </Project>
