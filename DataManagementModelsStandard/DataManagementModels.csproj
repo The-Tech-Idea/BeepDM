@@ -2,7 +2,7 @@
 
   <PropertyGroup>
 	  <TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
-	  <LangVersion>12.0</LangVersion>
+	  <LangVersion>latest</LangVersion>
     <PackageIcon>SimpleODM.png</PackageIcon>
     <Authors>The Tech Idea</Authors>
     <Company>The Tech Idea</Company>
@@ -11,7 +11,7 @@
     <Copyright>2022</Copyright>
     <Description>Data Management Library Models</Description>
     <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
-	  <Version>2.0.40</Version>
+	  <Version>2.0.42</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageId>TheTechIdea.Beep.DataManagementModels</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -40,9 +40,6 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="AppManager\" />
   </ItemGroup>
 
 </Project>

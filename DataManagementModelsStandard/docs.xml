@@ -509,6 +509,13 @@
             </summary>
             <param name="filter">The filter function.</param>
         </member>
+        <member name="M:TheTechIdea.Beep.Messaging.IGenericConsumer`1.GenericConsumer`1.#ctor(System.Func{`1,System.Threading.CancellationToken,System.Threading.Tasks.Task},System.Action{System.Exception})">
+            <summary>
+            Creates a generic consumer with a message handler.
+            </summary>
+            <param name="handler">Delegate to process messages.</param>
+            <param name="errorHandler">Optional delegate to handle exceptions.</param>
+        </member>
         <member name="T:TheTechIdea.Beep.Messaging.GenericMessage">
             <summary>
             Represents a generic message with dynamic payload and metadata.
@@ -566,6 +573,13 @@
             <summary>
             Clones the current message to create a new instance with the same data.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.GenericProducer`1.#ctor(System.Func{`0,System.Threading.CancellationToken,System.Threading.Tasks.Task},System.Action{System.Exception})">
+            <summary>
+            Creates a generic producer with a send action.
+            </summary>
+            <param name="sendAction">Delegate to send messages.</param>
+            <param name="errorHandler">Optional delegate to handle exceptions.</param>
         </member>
         <member name="M:TheTechIdea.Beep.Messaging.IMessageDataSource`2.Initialize(`1)">
             <summary>

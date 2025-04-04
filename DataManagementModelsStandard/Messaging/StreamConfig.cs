@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace TheTechIdea.Beep.Messaging
 {
@@ -7,6 +8,7 @@ namespace TheTechIdea.Beep.Messaging
     /// </summary>
     public class StreamConfig
     {
+        public string MessageType { get; set; }
         /// <summary>
         /// The name of the entity/stream.
         /// </summary>

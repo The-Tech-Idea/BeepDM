@@ -218,5 +218,62 @@ namespace TheTechIdea.Beep.Utilities
                 DMEEditor?.AddLogMessage("Error", $"{message}: {ex.Message}", DateTime.Now, 0, ex.StackTrace, Errors.Failed);
             }
         }
+        public static Type CreateDynamicTypeFromObject(object sourceObject, string typeName = "DynamicType")
+        {
+            if (sourceObject == null)
+                throw new ArgumentNullException(nameof(sourceObject));
+
+            var properties = sourceObject.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            var assemblyName = new AssemblyName("DynamicAssembly_" + Guid.NewGuid().ToString("N"));
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+
+            var typeBuilder = moduleBuilder.DefineType(
+                typeName,
+                TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Serializable);
+
+            foreach (var prop in properties)
+            {
+                AddProperty(typeBuilder, prop.Name, prop.PropertyType);
+            }
+
+            return typeBuilder.CreateTypeInfo().AsType();
+        }
+
+        private static void AddProperty(TypeBuilder typeBuilder, string propertyName, Type propertyType)
+        {
+            var fieldBuilder = typeBuilder.DefineField($"_{propertyName.ToLower()}", propertyType, FieldAttributes.Private);
+
+            var propBuilder = typeBuilder.DefineProperty(propertyName, PropertyAttributes.HasDefault, propertyType, null);
+
+            // Getter
+            var getter = typeBuilder.DefineMethod(
+                $"get_{propertyName}",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
+                propertyType,
+                Type.EmptyTypes);
+
+            var getterIL = getter.GetILGenerator();
+            getterIL.Emit(OpCodes.Ldarg_0);
+            getterIL.Emit(OpCodes.Ldfld, fieldBuilder);
+            getterIL.Emit(OpCodes.Ret);
+
+            // Setter
+            var setter = typeBuilder.DefineMethod(
+                $"set_{propertyName}",
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
+                null,
+                new[] { propertyType });
+
+            var setterIL = setter.GetILGenerator();
+            setterIL.Emit(OpCodes.Ldarg_0);
+            setterIL.Emit(OpCodes.Ldarg_1);
+            setterIL.Emit(OpCodes.Stfld, fieldBuilder);
+            setterIL.Emit(OpCodes.Ret);
+
+            propBuilder.SetGetMethod(getter);
+            propBuilder.SetSetMethod(setter);
+        }
     }
 }

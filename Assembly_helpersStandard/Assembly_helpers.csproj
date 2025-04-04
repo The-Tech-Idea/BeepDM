@@ -36,7 +36,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="9.0.0" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.40" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.42" />
   </ItemGroup>
 
 </Project>
