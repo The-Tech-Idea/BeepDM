@@ -328,7 +328,7 @@ if (sqliteDB.ConnectionStatus == ConnectionState.Open)
 BeepDM is licensed under the [MIT License](LICENSE).
 
 ## Learn More
-- [Wiki](https://github.com/The-Tech-Idea/BeepDM/wiki)
+- [Wiki](https://github.com/The-Tech-Idea/BeepDM/wiki/Beep-Data-Management-Engine-(BeepDM))
 - [Issues](https://github.com/The-Tech-Idea/BeepDM/issues)
 - [Beep Data Sources](https://github.com/The-Tech-Idea/BeepDataSources)
 - [Beep Enterprize Winform](https://github.com/The-Tech-Idea/BeepEnterprize.winform)
