@@ -1069,22 +1069,79 @@ namespace TheTechIdea.Beep.ConfigUtil
 			string path = Path.Combine(ConfigPath, "CategoryFolders.json");
 			JsonLoader.Serialize(path, CategoryFolders);
 		}
-		/// <summary>Loads the connection drivers configuration values from a JSON file.</summary>
-		/// <returns>A list of ConnectionDriversConfig objects representing the loaded configuration values.</returns>
-		public List<ConnectionDriversConfig> LoadConnectionDriversConfigValues()
-		{
-			string path = Path.Combine(ConfigPath, "ConnectionConfig.json");
-			DataDriversClasses = JsonLoader.DeserializeObject<ConnectionDriversConfig>(path);
-			return DataDriversClasses;
-		}
-		/// <summary>Saves the configuration values of connection drivers to a JSON file.</summary>
-		/// <remarks>
-		/// The method serializes the <paramref name="DataDriversClasses"/> object to JSON format
-		/// and saves it to the specified file path.
-		/// </remarks>
-		/// <param name="ConfigPath">The path where the JSON file will be saved.</param>
-		/// <param name="DataDriversClasses">The object containing the configuration values of connection drivers.</param>
-		public void SaveConnectionDriversConfigValues()
+        /// <summary>Loads the connection drivers configuration values from a JSON file.</summary>
+        /// <returns>A list of ConnectionDriversConfig objects representing the loaded configuration values.</returns>
+        /// <summary>Loads the connection drivers configuration values from a JSON file and syncs with the in-memory list.</summary>
+        /// <returns>A list of ConnectionDriversConfig objects representing the synchronized configuration values.</returns>
+        public List<ConnectionDriversConfig> LoadConnectionDriversConfigValues()
+        {
+            string path = Path.Combine(ConfigPath, "ConnectionConfig.json");
+            var loadedConfigs = JsonLoader.DeserializeObject<ConnectionDriversConfig>(path);
+
+            if (DataDriversClasses == null)
+                DataDriversClasses = new List<ConnectionDriversConfig>();
+
+            var loadedDict = loadedConfigs.ToDictionary(c => c.GuidID);
+
+            // Update existing and add new
+            foreach (var config in loadedConfigs)
+            {
+                var existing = DataDriversClasses.FirstOrDefault(c => c.GuidID == config.GuidID);
+                if (existing != null)
+                {
+                    UpdateConfig(existing, config);
+                }
+                else
+                {
+                    DataDriversClasses.Add(config);
+                }
+            }
+
+            // Remove missing ones (optional: comment out if you don't want removal)
+            //var toRemove = DataDriversClasses.Where(c => !loadedDict.ContainsKey(c.GuidID)).ToList();
+            //foreach (var config in toRemove)
+            //{
+            //    DataDriversClasses.Remove(config);
+            //}
+
+            return DataDriversClasses;
+        }
+
+        // Helper method to update existing config
+        private void UpdateConfig(ConnectionDriversConfig target, ConnectionDriversConfig source)
+        {
+            target.PackageName = source.PackageName;
+            target.DriverClass = source.DriverClass;
+            target.version = source.version;
+            target.dllname = source.dllname;
+            target.AdapterType = source.AdapterType;
+            target.CommandBuilderType = source.CommandBuilderType;
+            target.DbConnectionType = source.DbConnectionType;
+            target.DbTransactionType = source.DbTransactionType;
+            target.ConnectionString = source.ConnectionString;
+            target.parameter1 = source.parameter1;
+            target.parameter2 = source.parameter2;
+            target.parameter3 = source.parameter3;
+            target.iconname = source.iconname;
+            target.classHandler = source.classHandler;
+            target.ADOType = source.ADOType;
+            target.CreateLocal = source.CreateLocal;
+            target.InMemory = source.InMemory;
+            target.extensionstoHandle = source.extensionstoHandle;
+            target.Favourite = source.Favourite;
+            target.DatasourceCategory = source.DatasourceCategory;
+            target.DatasourceType = source.DatasourceType;
+            target.IsMissing = source.IsMissing;
+        }
+
+        /// <summary>Saves the configuration values of connection drivers to a JSON file.</summary>
+        /// <remarks>
+        /// The method serializes the <paramref name="DataDriversClasses"/> object to JSON format
+        /// and saves it to the specified file path.
+        /// </remarks>
+        /// <param name="ConfigPath">The path where the JSON file will be saved.</param>
+        /// <param name="DataDriversClasses">The object containing the configuration values of connection drivers.</param>
+        public void SaveConnectionDriversConfigValues()
 		{
 			string path = Path.Combine(ConfigPath, "ConnectionConfig.json");
 			JsonLoader.Serialize(path, DataDriversClasses);
@@ -1137,56 +1194,180 @@ namespace TheTechIdea.Beep.ConfigUtil
 			string path = Path.Combine(ConfigPath, "events.json");
 			JsonLoader.Serialize(path, Events);
 		}
-		/// <summary>Loads events from a JSON file.</summary>
-		/// <remarks>
-		/// The method reads the events from a JSON file located at the specified path.
-		/// The events are deserialized into a collection of Event objects.
-		/// </remarks>
+        /// <summary>Loads events from a JSON file.</summary>
+        /// <remarks>
+        /// The method reads the events from a JSON file located at the specified path.
+        /// The events are deserialized into a collection of Event objects.
+        /// </remarks>
 
-		public void LoadEvents()
-		{
-			string path = Path.Combine(ConfigPath, "events.json");
-			Events = JsonLoader.DeserializeObject<Event>(path);
+        public void LoadEvents()
+        {
+            string path = Path.Combine(ConfigPath, "events.json");
+            var loadedEvents = JsonLoader.DeserializeObject<Event>(path);
 
-		}
-		/// <summary>Saves the Function2Function data to a JSON file.</summary>
-		/// <remarks>
-		/// The Function2Function data will be serialized and saved to a JSON file located at the specified path.
-		/// </remarks>
-		public void SaveFucntion2Function()
+            if (Events == null)
+                Events = new List<Event>();
+
+            var loadedDict = loadedEvents.ToDictionary(e => e.GuidID);
+
+            // Update existing and add new
+            foreach (var evt in loadedEvents)
+            {
+                var existing = Events.FirstOrDefault(e => e.GuidID == evt.GuidID);
+                if (existing != null)
+                {
+                    UpdateEvent(existing, evt);
+                }
+                else
+                {
+                    Events.Add(evt);
+                }
+            }
+
+            // Remove those not found in the JSON file (optional)
+            //var toRemove = Events.Where(e => !loadedDict.ContainsKey(e.GuidID)).ToList();
+            //foreach (var evt in toRemove)
+            //{
+            //    Events.Remove(evt);
+            //}
+        }
+
+        // Helper method to update existing Event object
+        private void UpdateEvent(Event target, Event source)
+        {
+            target.EventName = source.EventName;
+        }
+
+        /// <summary>Saves the Function2Function data to a JSON file.</summary>
+        /// <remarks>
+        /// The Function2Function data will be serialized and saved to a JSON file located at the specified path.
+        /// </remarks>
+        public void SaveFucntion2Function()
 		{
 
 			string path = Path.Combine(ConfigPath, "Function2Function.json");
 			JsonLoader.Serialize(path, Function2Functions);
 		}
-		/// <summary>Loads the configuration for Function2Function from a JSON file.</summary>
-		/// <remarks>
-		/// The JSON file should be located at the specified path.
-		/// The loaded configuration is stored in the Function2Functions property.
-		/// </remarks>
-		public void LoadFucntion2Function()
-		{
-			string path = Path.Combine(ConfigPath, "Function2Function.json");
-			Function2Functions = JsonLoader.DeserializeObject<Function2FunctionAction>(path);
+        /// <summary>Loads the configuration for Function2Function from a JSON file.</summary>
+        /// <remarks>
+        /// The JSON file should be located at the specified path.
+        /// The loaded configuration is stored in the Function2Functions property.
+        /// </remarks>
+        public void LoadFucntion2Function()
+        {
+            string path = Path.Combine(ConfigPath, "Function2Function.json");
+            var loadedList = JsonLoader.DeserializeObject<Function2FunctionAction>(path);
 
-		}
-		/// <summary>Loads the add-in tree structure from a JSON file.</summary>
-		/// <remarks>
-		/// The add-in tree structure is loaded from a JSON file located at the specified path.
-		/// The JSON file should contain the serialized representation of the <see cref="AddinTreeStructure"/> object.
-		/// </remarks>
-		/// <param name="path">The path to the JSON file.</param>
-		public void LoadAddinTreeStructure()
-		{
-			string path = Path.Combine(ConfigPath, "AddinTreeStructure.json");
-			AddinTreeStructure = JsonLoader.DeserializeObject<AddinTreeStructure>(path);
+            if (Function2Functions == null)
+                Function2Functions = new List<Function2FunctionAction>();
 
-		}
-		/// <summary>Saves the add-in tree structure to a JSON file.</summary>
-		/// <remarks>
-		/// The add-in tree structure is serialized to a JSON file and saved at the specified path.
-		/// </remarks>
-		public void SaveAddinTreeStructure()
+            var loadedDict = loadedList.ToDictionary(f => f.GuidID);
+
+            // Update existing items or add new ones
+            foreach (var item in loadedList)
+            {
+                var existing = Function2Functions.FirstOrDefault(f => f.GuidID == item.GuidID);
+                if (existing != null)
+                {
+                    UpdateFunction2Function(existing, item);
+                }
+                else
+                {
+                    Function2Functions.Add(item);
+                }
+            }
+
+            // Remove ones that no longer exist in file (optional)
+            //var toRemove = Function2Functions.Where(f => !loadedDict.ContainsKey(f.GuidID)).ToList();
+            //foreach (var item in toRemove)
+            //{
+            //    Function2Functions.Remove(item);
+            //}
+        }
+
+        // Helper method to update fields from source to target
+        private void UpdateFunction2Function(Function2FunctionAction target, Function2FunctionAction source)
+        {
+            target.FromType = source.FromType;
+            target.ToType = source.ToType;
+            target.ActionType = source.ActionType;
+            target.Event = source.Event;
+            target.FromClass = source.FromClass;
+            target.FromMethod = source.FromMethod;
+            target.ToClass = source.ToClass;
+            target.ToMethod = source.ToMethod;
+            target.FromID = source.FromID;
+            target.ToID = source.ToID;
+            target.Param1 = source.Param1;
+            target.Param2 = source.Param2;
+            target.Param3 = source.Param3;
+            target.Param4 = source.Param4;
+            target.Param5 = source.Param5;
+            target.Param6 = source.Param6;
+        }
+
+        /// <summary>Loads the add-in tree structure from a JSON file.</summary>
+        /// <remarks>
+        /// The add-in tree structure is loaded from a JSON file located at the specified path.
+        /// The JSON file should contain the serialized representation of the <see cref="AddinTreeStructure"/> object.
+        /// </remarks>
+        /// <param name="path">The path to the JSON file.</param>
+        public void LoadAddinTreeStructure()
+        {
+            string path = Path.Combine(ConfigPath, "AddinTreeStructure.json");
+            var loadedList = JsonLoader.DeserializeObject<AddinTreeStructure>(path);
+
+            if (AddinTreeStructure == null)
+                AddinTreeStructure = new List<AddinTreeStructure>();
+
+            var loadedDict = loadedList.ToDictionary(a => a.GuidID);
+
+            // Update existing or add new
+            foreach (var item in loadedList)
+            {
+                var existing = AddinTreeStructure.FirstOrDefault(a => a.GuidID == item.GuidID);
+                if (existing != null)
+                {
+                    UpdateAddinTreeStructure(existing, item);
+                }
+                else
+                {
+                    AddinTreeStructure.Add(item);
+                }
+            }
+
+            // Remove missing ones (optional)
+            //var toRemove = AddinTreeStructure.Where(a => !loadedDict.ContainsKey(a.GuidID)).ToList();
+            //foreach (var item in toRemove)
+            //{
+            //    AddinTreeStructure.Remove(item);
+            //}
+        }
+
+        // Helper method to update properties
+        private void UpdateAddinTreeStructure(AddinTreeStructure target, AddinTreeStructure source)
+        {
+            target.NodeName = source.NodeName;
+            target.Imagename = source.Imagename;
+            target.Order = source.Order;
+            target.RootName = source.RootName;
+            target.className = source.className;
+            target.dllname = source.dllname;
+            target.PackageName = source.PackageName;
+            target.ObjectType = source.ObjectType;
+            target.misc = source.misc;
+            target.menu = source.menu;
+            target.iconimage = source.iconimage;
+            target.addinType = source.addinType;
+            target.Showin = source.Showin;
+            target.Roles = source.Roles;
+        }
+
+        /// <summary>Saves the add-in tree structure to a JSON file.</summary>
+        /// <remarks>
+        /// The add-in tree structure is serialized to a JSON file and saved at the specified path.
+        /// </remarks>
+        public void SaveAddinTreeStructure()
 		{
 
 			string path = Path.Combine(ConfigPath, "AddinTreeStructure.json");
@@ -1431,24 +1612,59 @@ namespace TheTechIdea.Beep.ConfigUtil
 			string path = Path.Combine(ConfigPath, "ObjectTypes.json");
 			JsonLoader.Serialize(path, objectTypes);
 		}
-		/// <summary>Loads the object types from a JSON file.</summary>
-		/// <returns>A list of object types.</returns>
-		public List<ObjectTypes> LoadObjectTypes()
-		{
-			string path = Path.Combine(ConfigPath, "ObjectTypes.json");
-			objectTypes = JsonLoader.DeserializeObject<ObjectTypes>(path);
-			return objectTypes;
-		}
-		#endregion
-		#region "WorkFlows L/S"
-		/// <summary>Reads the work flow data from a JSON file.</summary>
-		/// <remarks>
-		/// The method attempts to read the work flow data from a JSON file located in the "WorkFlow" directory
-		/// within the application's executable path. If the file is found and successfully deserialized, the
-		/// work flow data is stored in the "WorkFlows" property. If an exception occurs during the process,
-		/// it is caught and ignored.
-		/// </remarks>
-		public void ReadWork()
+        /// <summary>Loads the object types from a JSON file.</summary>
+        /// <returns>A list of object types.</returns>
+        public List<ObjectTypes> LoadObjectTypes()
+        {
+            string path = Path.Combine(ConfigPath, "ObjectTypes.json");
+            var loadedList = JsonLoader.DeserializeObject<ObjectTypes>(path);
+
+            if (objectTypes == null)
+                objectTypes = new List<ObjectTypes>();
+
+            var loadedDict = loadedList.ToDictionary(o => o.GuidID);
+
+            // Update existing and add new
+            foreach (var item in loadedList)
+            {
+                var existing = objectTypes.FirstOrDefault(o => o.GuidID == item.GuidID);
+                if (existing != null)
+                {
+                    UpdateObjectTypes(existing, item);
+                }
+                else
+                {
+                    objectTypes.Add(item);
+                }
+            }
+
+            //// Remove missing ones (optional)
+            //var toRemove = objectTypes.Where(o => !loadedDict.ContainsKey(o.GuidID)).ToList();
+            //foreach (var item in toRemove)
+            //{
+            //    objectTypes.Remove(item);
+            //}
+
+            return objectTypes;
+        }
+
+        // Helper method to update properties
+        private void UpdateObjectTypes(ObjectTypes target, ObjectTypes source)
+        {
+            target.ObjectName = source.ObjectName;
+            target.ObjectType = source.ObjectType;
+        }
+
+        #endregion
+        #region "WorkFlows L/S"
+        /// <summary>Reads the work flow data from a JSON file.</summary>
+        /// <remarks>
+        /// The method attempts to read the work flow data from a JSON file located in the "WorkFlow" directory
+        /// within the application's executable path. If the file is found and successfully deserialized, the
+        /// work flow data is stored in the "WorkFlows" property. If an exception occurs during the process,
+        /// it is caught and ignored.
+        /// </remarks>
+        public void ReadWork()
 		{
 			try
 			{
@@ -1509,65 +1725,102 @@ namespace TheTechIdea.Beep.ConfigUtil
 
 
 		}
-		/// <summary>Reads a JSON file containing datatype mappings and returns a list of DatatypeMapping objects.</summary>
-		/// <param name="filename">The name of the JSON file to read. Default value is "DataTypeMapping".</param>
-		/// <returns>A list of DatatypeMapping objects representing the datatype mappings.</returns>
-		public List<DatatypeMapping> ReadDataTypeFile(string filename = "DataTypeMapping")
-		{
-			string path = Path.Combine(ConfigPath, $"{filename}.json");
-			DataTypesMap = JsonLoader.DeserializeObject<DatatypeMapping>(path);
-			return DataTypesMap;
-		}
-		#endregion
-		#region "Init Values"
-		/// <summary>Initializes the connection configuration drivers.</summary>
-		/// <returns>An object containing information about any errors that occurred during initialization.</returns>
-		/// <remarks>
-		/// This method loads the connection drivers definitions from a JSON file located at the specified path.
-		/// If the file exists, it calls the LoadConnectionDriversDefinition method to load the definitions.
-		/// If any errors occur during initialization, the ErrorObject is updated with the appropriate error information.
-		/// </remarks>
-		//private IErrorsInfo InitConnectionConfigDrivers()
-		//{
-		//	ErrorObject.Flag = Errors.Ok;
-		//	try
-		//	{
-		//		string path = Path.Combine(ConfigPath, "DriversDefinitions.json");
-		//		//if (File.Exists(path))
-		//		//{
-		//		//	LoadConnectionDriversDefinition();
+        /// <summary>Reads a JSON file containing datatype mappings and returns a list of DatatypeMapping objects.</summary>
+        /// <param name="filename">The name of the JSON file to read. Default value is "DataTypeMapping".</param>
+        /// <returns>A list of DatatypeMapping objects representing the datatype mappings.</returns>
+        public List<DatatypeMapping> ReadDataTypeFile(string filename = "DataTypeMapping")
+        {
+            string path = Path.Combine(ConfigPath, $"{filename}.json");
+            var loadedList = JsonLoader.DeserializeObject<DatatypeMapping>(path);
 
-		//		//}
-		//		path = Path.Combine(ConfigPath, "ConnectionConfig.json");
-		//		if (File.Exists(path))
-		//		{
-		//			LoadConnectionDriversConfigValues();
-		//			//    Databasetypes = (DataSourceType)Enum.Parse(typeof(DataSourceType), );
-		//		}
-		//		else
-		//			DataConnections = new List<ConnectionProperties>();
-		//		SaveConnectionDriversConfigValues();
+            if (DataTypesMap == null)
+                DataTypesMap = new List<DatatypeMapping>();
 
-		//		//LoadConnectionDriversConfigValues
-		//	}
-		//	catch (Exception ex)
-		//	{
+            var loadedDict = loadedList.ToDictionary(d => d.GuidID);
 
-		//		ErrorObject.Flag = Errors.Failed;
-		//		ErrorObject.Ex = ex;
-		//		ErrorObject.Message = ex.Message;
-		//		Logger.WriteLog($"Error Initlization Lists ({ex.Message})");
-		//	}
-		//	return ErrorObject;
-		//}
-		/// <summary>Initializes the data source configuration drivers.</summary>
-		/// <returns>An object containing information about any errors that occurred during initialization.</returns>
-		/// <remarks>
-		/// This method attempts to read the data source configuration drivers from a JSON file located at the specified path.
-		/// If the file exists, it performs the necessary initialization steps.
-		/// If any errors occur during initialization, an error object is returned with the appropriate error information.
-		/// </remarks>
-		private IErrorsInfo InitDataSourceConfigDrivers()
+            // Update existing and add new
+            foreach (var item in loadedList)
+            {
+                var existing = DataTypesMap.FirstOrDefault(d => d.GuidID == item.GuidID);
+                if (existing != null)
+                {
+                    UpdateDatatypeMapping(existing, item);
+                }
+                else
+                {
+                    DataTypesMap.Add(item);
+                }
+            }
+
+            // Remove missing (optional)
+            //var toRemove = DataTypesMap.Where(d => !loadedDict.ContainsKey(d.GuidID)).ToList();
+            //foreach (var item in toRemove)
+            //{
+            //    DataTypesMap.Remove(item);
+            //}
+
+            return DataTypesMap;
+        }
+
+        // Helper method to update properties
+        private void UpdateDatatypeMapping(DatatypeMapping target, DatatypeMapping source)
+        {
+            target.DataType = source.DataType;
+            target.DataSourceName = source.DataSourceName;
+            target.NetDataType = source.NetDataType;
+            target.Fav = source.Fav;
+        }
+
+        #endregion
+        #region "Init Values"
+        /// <summary>Initializes the connection configuration drivers.</summary>
+        /// <returns>An object containing information about any errors that occurred during initialization.</returns>
+        /// <remarks>
+        /// This method loads the connection drivers definitions from a JSON file located at the specified path.
+        /// If the file exists, it calls the LoadConnectionDriversDefinition method to load the definitions.
+        /// If any errors occur during initialization, the ErrorObject is updated with the appropriate error information.
+        /// </remarks>
+        //private IErrorsInfo InitConnectionConfigDrivers()
+        //{
+        //	ErrorObject.Flag = Errors.Ok;
+        //	try
+        //	{
+        //		string path = Path.Combine(ConfigPath, "DriversDefinitions.json");
+        //		//if (File.Exists(path))
+        //		//{
+        //		//	LoadConnectionDriversDefinition();
+
+        //		//}
+        //		path = Path.Combine(ConfigPath, "ConnectionConfig.json");
+        //		if (File.Exists(path))
+        //		{
+        //			LoadConnectionDriversConfigValues();
+        //			//    Databasetypes = (DataSourceType)Enum.Parse(typeof(DataSourceType), );
+        //		}
+        //		else
+        //			DataConnections = new List<ConnectionProperties>();
+        //		SaveConnectionDriversConfigValues();
+
+        //		//LoadConnectionDriversConfigValues
+        //	}
+        //	catch (Exception ex)
+        //	{
+
+        //		ErrorObject.Flag = Errors.Failed;
+        //		ErrorObject.Ex = ex;
+        //		ErrorObject.Message = ex.Message;
+        //		Logger.WriteLog($"Error Initlization Lists ({ex.Message})");
+        //	}
+        //	return ErrorObject;
+        //}
+        /// <summary>Initializes the data source configuration drivers.</summary>
+        /// <returns>An object containing information about any errors that occurred during initialization.</returns>
+        /// <remarks>
+        /// This method attempts to read the data source configuration drivers from a JSON file located at the specified path.
+        /// If the file exists, it performs the necessary initialization steps.
+        /// If any errors occur during initialization, an error object is returned with the appropriate error information.
+        /// </remarks>
+        private IErrorsInfo InitDataSourceConfigDrivers()
 		{
 			ErrorObject.Flag = Errors.Ok;
 			try

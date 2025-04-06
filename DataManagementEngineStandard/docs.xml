@@ -416,6 +416,8 @@
         <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.LoadConnectionDriversConfigValues">
             <summary>Loads the connection drivers configuration values from a JSON file.</summary>
             <returns>A list of ConnectionDriversConfig objects representing the loaded configuration values.</returns>
+            <summary>Loads the connection drivers configuration values from a JSON file and syncs with the in-memory list.</summary>
+            <returns>A list of ConnectionDriversConfig objects representing the synchronized configuration values.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.SaveConnectionDriversConfigValues">
             <summary>Saves the configuration values of connection drivers to a JSON file.</summary>
