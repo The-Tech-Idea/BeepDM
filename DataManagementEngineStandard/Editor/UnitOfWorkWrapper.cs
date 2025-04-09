@@ -174,7 +174,30 @@ namespace TheTechIdea.Beep.Editor
 
         public dynamic Get(string PrimaryKeyid) => _unitOfWork.Get(PrimaryKeyid);
 
+        public void MoveFirst()
+        {
+            _unitOfWork.MoveFirst();
+        }
 
+        public void MoveNext()
+        {
+            _unitOfWork.MoveNext();
+        }
+
+        public void MovePrevious()
+        {
+            _unitOfWork.MovePrevious();
+        }
+
+        public void MoveLast()
+        {
+            _unitOfWork.MoveLast();
+        }
+
+        public void MoveTo(int index)
+        {
+            _unitOfWork.MoveTo(index);
+        }
 
     }
 }
