@@ -119,6 +119,21 @@
             Represents a view for displaying and interacting with DataView  data.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Utilities.CloudProviderType">
+            <summary>
+            Cloud provider types supported by the class creator
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Utilities.ArchitecturalPattern">
+            <summary>
+            Architectural patterns that can be applied to generated code
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Utilities.CodeSuggestion">
+            <summary>
+            Contains a code improvement suggestion
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.IDataSource.ColumnDelimiter">
             <summary>
             Gets or sets the delimiter used to separate columns in queries or data representations.
@@ -655,6 +670,117 @@
             <summary>
             Additional options specific to the messaging system.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateRecordClass(System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates a class with C# record type for immutable data models
+            </summary>
+            <param name="recordName">Name of the record to create</param>
+            <param name="entity">Entity structure to base the record on</param>
+            <param name="outputPath">Output file path</param>
+            <param name="namespaceName">Namespace to use</param>
+            <param name="generateFile">Whether to generate physical file</param>
+            <returns>The generated code as string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateNullableAwareClass(System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates a class with support for nullable reference types
+            </summary>
+            <param name="className">Name of the class</param>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace name</param>
+            <param name="generateNullableAnnotations">Whether to add nullable annotations</param>
+            <returns>The generated code</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateDDDAggregateRoot(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Creates a domain-driven design style aggregate root class from entity
+            </summary>
+            <param name="entity">The entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace</param>
+            <returns>Generated code as string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateGraphQLSchema(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String)">
+            <summary>
+            Generates GraphQL type definitions from entity structures
+            </summary>
+            <param name="entities">The entity structures to convert</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace</param>
+            <returns>The generated GraphQL schema</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateRepositoryImplementation(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates repository pattern implementation for an entity
+            </summary>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace</param>
+            <param name="interfaceOnly">Whether to generate interface only</param>
+            <returns>The generated repository code</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateEntityDocumentation(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Generates XML documentation from entity structure
+            </summary>
+            <param name="entity">Entity structure to document</param>
+            <param name="outputPath">Output path</param>
+            <returns>The XML documentation string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateFluentValidators(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Generates FluentValidation validators for entity
+            </summary>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace</param>
+            <returns>The validator class code</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateEFCoreMigration(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Generates Entity Framework Core migration code for entity
+            </summary>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace</param>
+            <returns>The migration code</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateEntityDiffReport(TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Generates a differenct report between two versions of an entity
+            </summary>
+            <param name="originalEntity">Original entity</param>
+            <param name="newEntity">New entity</param>
+            <returns>Difference report as string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateServerlessFunctions(TheTechIdea.Beep.DataBase.EntityStructure,System.String,TheTechIdea.Beep.Utilities.CloudProviderType)">
+            <summary>
+            Generates serverless function code (Azure Functions/AWS Lambda) for entity operations
+            </summary>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="cloudProvider">Cloud provider type (Azure, AWS, etc)</param>
+            <returns>The serverless function code</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateGrpcService(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Generates gRPC service definitions for entity
+            </summary>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace</param>
+            <returns>The generated proto file and service implementation</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateBlazorComponent(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Generates Blazor component for displaying and editing entity
+            </summary>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Component namespace</param>
+            <returns>The Blazor component code</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Vis.AddinAttribute">
             <summary>

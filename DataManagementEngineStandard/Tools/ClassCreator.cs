@@ -14,6 +14,7 @@ using TheTechIdea.Beep.Roslyn;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Helpers;
 
 namespace TheTechIdea.Beep.Tools
 {
@@ -927,453 +928,1984 @@ namespace TheTechIdea.Beep.Tools
             LogMessage("ClassCreator", $"Generated EF Configuration for {entity.EntityName} at {filePath}", Errors.Ok);
             return filePath;
         }
-        public string GenerateBlazorCRUDWithQuickGrid(string outputPath, string entityName, List<EntityField> fields, string dataSourceName)
+        /// <summary>
+        /// Generates a class with C# record type for immutable data models
+        /// </summary>
+        /// <param name="recordName">Name of the record to create</param>
+        /// <param name="entity">Entity structure to base the record on</param>
+        /// <param name="outputPath">Output file path</param>
+        /// <param name="namespaceName">Namespace to use</param>
+        /// <param name="generateFile">Whether to generate physical file</param>
+        /// <returns>The generated code as string</returns>
+        public string CreateRecordClass(string recordName, EntityStructure entity, string outputPath,
+                                      string namespaceName = "TheTechIdea.ProjectClasses",
+                                      bool generateFile = true)
         {
+            string filepath = Path.Combine(outputPath, $"{recordName}.cs");
+            StringBuilder sb = new StringBuilder();
+
             try
             {
-                var stringBuilder = new StringBuilder();
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
 
                 // Add using directives
-                stringBuilder.AppendLine("@using System.Collections.Generic");
-                stringBuilder.AppendLine("@using System.Threading.Tasks");
-                stringBuilder.AppendLine("@using TheTechIdea.Beep.Utilities");
-                stringBuilder.AppendLine("@inject HttpClient Http");
+                sb.AppendLine("using System;");
+                sb.AppendLine("using System.Collections.Generic;");
+                sb.AppendLine("");
+                sb.AppendLine($"namespace {namespaceName}");
+                sb.AppendLine("{");
 
-                // Add namespace and component name
-                stringBuilder.AppendLine($"<h3>{entityName} Management</h3>");
+                // Create the record declaration
+                sb.AppendLine($"    public record {recordName}(");
 
-                // Search and Filters
-                stringBuilder.AppendLine("<input type=\"text\" class=\"form-control\" placeholder=\"Search...\" @bind-value=\"searchText\" />");
-
-                // Export button
-                stringBuilder.AppendLine("<button @onclick=\"ExportToCsv\" class=\"btn btn-primary\">Export to CSV</button>");
-
-                // Add QuickGrid
-                stringBuilder.AppendLine("<QuickGrid Items=\"@pagedData\" RowsPerPage=\"pageSize\" @bind-CurrentPage=\"currentPage\">");
-
-                // Columns
-                foreach (var field in fields)
+                // Add parameters for each field
+                for (int i = 0; i < entity.Fields.Count; i++)
                 {
-                    stringBuilder.AppendLine($"<PropertyColumn Property=\"@nameof({entityName}.{field.fieldname})\" Title=\"{field.fieldname}\" />");
-                }
+                    EntityField field = entity.Fields[i];
+                    string nullableSuffix = field.fieldtype.Contains("string") ? "" : "?";
 
-                // Add actions column
-                stringBuilder.AppendLine("<TemplateColumn Title=\"Actions\">");
-                stringBuilder.AppendLine("    <Template Context=\"item\">");
-                stringBuilder.AppendLine("        <button class=\"btn btn-primary\" @onclick=\"() => EditItem(item)\">Edit</button>");
-                stringBuilder.AppendLine("        <button class=\"btn btn-danger\" @onclick=\"() => DeleteItem(item)\">Delete</button>");
-                stringBuilder.AppendLine("    </Template>");
-                stringBuilder.AppendLine("</TemplateColumn>");
+                    sb.Append($"        {field.fieldtype}{nullableSuffix} {field.fieldname}");
 
-                stringBuilder.AppendLine("</QuickGrid>");
-
-                // Add Pagination Controls
-                stringBuilder.AppendLine("<Pagination TotalItems=\"totalItems\" ItemsPerPage=\"pageSize\" @bind-CurrentPage=\"currentPage\" />");
-
-                // Add Edit Form
-                stringBuilder.AppendLine("<EditForm Model=\"@currentItem\" OnValidSubmit=\"HandleValidSubmit\">");
-                foreach (var field in fields)
-                {
-                    string inputControl = field.fieldCategory switch
+                    // Add comma if not the last field
+                    if (i < entity.Fields.Count - 1)
                     {
-                        DbFieldCategory.String => $"<InputText id=\"{field.fieldname}\" class=\"form-control\" @bind-Value=\"currentItem.{field.fieldname}\" />",
-                        DbFieldCategory.Numeric => $"<InputNumber id=\"{field.fieldname}\" class=\"form-control\" @bind-Value=\"currentItem.{field.fieldname}\" />",
-                        DbFieldCategory.Date => $"<InputDate id=\"{field.fieldname}\" class=\"form-control\" @bind-Value=\"currentItem.{field.fieldname}\" />",
-                        DbFieldCategory.Boolean => $"<InputCheckbox id=\"{field.fieldname}\" class=\"form-control\" @bind-Value=\"currentItem.{field.fieldname}\" />",
-                        _ => $"<InputText id=\"{field.fieldname}\" class=\"form-control\" @bind-Value=\"currentItem.{field.fieldname}\" />"
-                    };
-
-                    stringBuilder.AppendLine($"<div class=\"form-group\">");
-                    stringBuilder.AppendLine($"    <label for=\"{field.fieldname}\">{field.fieldname}</label>");
-                    stringBuilder.AppendLine($"    {inputControl}");
-                    stringBuilder.AppendLine("</div>");
+                        sb.AppendLine(",");
+                    }
+                    else
+                    {
+                        sb.AppendLine(");");
+                    }
                 }
 
-                stringBuilder.AppendLine("<button type=\"submit\" class=\"btn btn-success\">Save</button>");
-                stringBuilder.AppendLine("</EditForm>");
+                sb.AppendLine("}");
 
-                // Add @code block
-                stringBuilder.AppendLine("@code {");
+                // Write to file if requested
+                if (generateFile)
+                {
+                    File.WriteAllText(filepath, sb.ToString());
+                    DMEEditor.AddLogMessage("ClassCreator", $"Generated record class {recordName} at {filepath}", DateTime.Now, 0, null, Errors.Ok);
+                }
 
-                // Add variables
-                stringBuilder.AppendLine($"    private List<{entityName}> data = new();");
-                stringBuilder.AppendLine($"    private List<{entityName}> pagedData = new();");
-                stringBuilder.AppendLine("    private int totalItems;");
-                stringBuilder.AppendLine("    private int pageSize = 10;");
-                stringBuilder.AppendLine("    private int currentPage = 1;");
-                stringBuilder.AppendLine("    private string searchText;");
-                stringBuilder.AppendLine($"    private {entityName} currentItem = new();");
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("ClassCreator", $"Error creating record class: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+        }
 
-                // Add lifecycle methods
-                stringBuilder.AppendLine("    protected override async Task OnInitializedAsync()");
-                stringBuilder.AppendLine("    {");
-                stringBuilder.AppendLine($"        data = await Http.GetFromJsonAsync<List<{entityName}>>($\"/api/{entityName}\");");
-                stringBuilder.AppendLine("        UpdatePagedData();");
-                stringBuilder.AppendLine("    }");
+        /// <summary>
+        /// Creates a class with support for nullable reference types
+        /// </summary>
+        /// <param name="className">Name of the class</param>
+        /// <param name="entity">Entity structure</param>
+        /// <param name="outputPath">Output path</param>
+        /// <param name="namespaceName">Namespace name</param>
+        /// <param name="generateNullableAnnotations">Whether to add nullable annotations</param>
+        /// <returns>The generated code</returns>
+        public string CreateNullableAwareClass(string className, EntityStructure entity, string outputPath,
+                                             string namespaceName = "TheTechIdea.ProjectClasses",
+                                             bool generateNullableAnnotations = true)
+        {
+            string filepath = Path.Combine(outputPath, $"{className}.cs");
+            StringBuilder sb = new StringBuilder();
 
-                // Add helper methods
-                stringBuilder.AppendLine("    private void UpdatePagedData()");
-                stringBuilder.AppendLine("    {");
-                stringBuilder.AppendLine("        var filteredData = string.IsNullOrWhiteSpace(searchText) ? data : data.Where(d => d.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase)).ToList();");
-                stringBuilder.AppendLine("        totalItems = filteredData.Count;");
-                stringBuilder.AppendLine("        pagedData = filteredData.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();");
-                stringBuilder.AppendLine("    }");
+            try
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
 
-                stringBuilder.AppendLine("    private void EditItem(Entity item)");
-                stringBuilder.AppendLine("    {");
-                stringBuilder.AppendLine("        currentItem = item;");
-                stringBuilder.AppendLine("    }");
+                // Add using directives
+                sb.AppendLine("using System;");
+                sb.AppendLine("using System.Collections.Generic;");
 
-                stringBuilder.AppendLine("    private void DeleteItem(Entity item)");
-                stringBuilder.AppendLine("    {");
-                stringBuilder.AppendLine("        data.Remove(item);");
-                stringBuilder.AppendLine("        UpdatePagedData();");
-                stringBuilder.AppendLine("    }");
+                if (generateNullableAnnotations)
+                {
+                    // Enable nullable reference types 
+                    sb.AppendLine("#nullable enable");
+                    sb.AppendLine("");
+                }
 
-                stringBuilder.AppendLine("    private async Task HandleValidSubmit()");
-                stringBuilder.AppendLine("    {");
-                stringBuilder.AppendLine("        if (!data.Contains(currentItem))");
-                stringBuilder.AppendLine("        {");
-                stringBuilder.AppendLine("            data.Add(currentItem);");
-                stringBuilder.AppendLine("        }");
-                stringBuilder.AppendLine("        UpdatePagedData();");
-                stringBuilder.AppendLine("    }");
+                sb.AppendLine($"namespace {namespaceName}");
+                sb.AppendLine("{");
+                sb.AppendLine($"    public class {className}");
+                sb.AppendLine("    {");
 
-                stringBuilder.AppendLine("    private async Task ExportToCsv()");
-                stringBuilder.AppendLine("    {");
-                stringBuilder.AppendLine("        var csvData = string.Join(\"\\n\", data.Select(d => string.Join(\",\", d.GetType().GetProperties().Select(p => p.GetValue(d))));");
-                stringBuilder.AppendLine("        await File.WriteAllTextAsync(\"export.csv\", csvData);");
-                stringBuilder.AppendLine("    }");
+                // Constructor
+                sb.AppendLine($"        public {className}()");
+                sb.AppendLine("        {");
+                sb.AppendLine("        }");
+                sb.AppendLine("");
 
-                stringBuilder.AppendLine("}");
+                // Properties with nullable annotations
+                foreach (EntityField field in entity.Fields)
+                {
+                    if (generateNullableAnnotations)
+                    {
+                        bool isReferenceType = IsReferenceType(field.fieldtype);
+                        string nullableAnnotation = isReferenceType ? "?" : "";
+
+                        sb.AppendLine($"        public {field.fieldtype}{nullableAnnotation} {field.fieldname} {{ get; set; }}");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"        public {field.fieldtype} {field.fieldname} {{ get; set; }}");
+                    }
+                }
+
+                sb.AppendLine("    }");
+                sb.AppendLine("}");
+
+                if (generateNullableAnnotations)
+                {
+                    sb.AppendLine("");
+                    sb.AppendLine("#nullable restore");
+                }
 
                 // Write to file
-                var filePath = Path.Combine(outputPath, $"{entityName}CRUD.razor");
-                File.WriteAllText(filePath, stringBuilder.ToString());
+                File.WriteAllText(filepath, sb.ToString());
+                DMEEditor.AddLogMessage("ClassCreator", $"Generated nullable aware class {className} at {filepath}", DateTime.Now, 0, null, Errors.Ok);
 
-                return filePath;
+                return sb.ToString();
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("BlazorCRUDGenerator", ex.Message, DateTime.Now, -1, null, Errors.Failed);
+                DMEEditor.AddLogMessage("ClassCreator", $"Error creating nullable aware class: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
                 return null;
             }
         }
-        public string GenerateBlazorDetailedView(string namespaceName, string entityName, List<EntityField> fields)
+
+        /// <summary>
+        /// Determines if a type is a reference type
+        /// </summary>
+        /// <param name="typeName">The name of the type</param>
+        /// <returns>True if it's a reference type, false otherwise</returns>
+        private bool IsReferenceType(string typeName)
         {
-            StringBuilder detailedViewBuilder = new StringBuilder();
+            typeName = typeName.ToLower();
+            return !(typeName == "int" || typeName == "long" || typeName == "float" ||
+                     typeName == "double" || typeName == "decimal" || typeName == "bool" ||
+                     typeName == "byte" || typeName == "sbyte" || typeName == "char" ||
+                     typeName == "short" || typeName == "ushort" || typeName == "uint" ||
+                     typeName == "ulong" || typeName == "int16" || typeName == "int32" ||
+                     typeName == "int64" || typeName == "uint16" || typeName == "uint32" ||
+                     typeName == "uint64" || typeName == "single" || typeName == "boolean" ||
+                     typeName == "datetime" || typeName == "timespan" || typeName == "guid");
+        }
 
-            // Add header and namespace
-            detailedViewBuilder.AppendLine($"@page \"/{entityName.ToLower()}-details/{{id}}\"");
-            detailedViewBuilder.AppendLine($"@using {namespaceName}.Services");
-            detailedViewBuilder.AppendLine($"@inject {entityName}Service {entityName}Service");
-            detailedViewBuilder.AppendLine();
-            detailedViewBuilder.AppendLine($"<h3>{entityName} Details</h3>");
-            detailedViewBuilder.AppendLine();
+        /// <summary>
+        /// Creates a domain-driven design style aggregate root class from entity
+        /// </summary>
+        /// <param name="entity">The entity structure</param>
+        /// <param name="outputPath">Output path</param>
+        /// <param name="namespaceName">Namespace</param>
+        /// <returns>Generated code as string</returns>
+        public string CreateDDDAggregateRoot(EntityStructure entity, string outputPath,
+                                           string namespaceName = "TheTechIdea.ProjectDomain")
+        {
+            string className = $"{entity.EntityName}Aggregate";
+            string filepath = Path.Combine(outputPath, $"{className}.cs");
 
-            // Add code-behind section
-            detailedViewBuilder.AppendLine("@code {");
-            detailedViewBuilder.AppendLine($"    [Parameter] public int Id {{ get; set; }}");
-            detailedViewBuilder.AppendLine($"    private {entityName} currentItem = new {entityName}();");
-            detailedViewBuilder.AppendLine();
-            detailedViewBuilder.AppendLine($"    protected override async Task OnInitializedAsync()");
-            detailedViewBuilder.AppendLine("    {");
-            detailedViewBuilder.AppendLine($"        currentItem = await {entityName}Service.Get{entityName}ByIdAsync(Id);");
-            detailedViewBuilder.AppendLine("    }");
-            detailedViewBuilder.AppendLine();
-            detailedViewBuilder.AppendLine("    private async Task Save()");
-            detailedViewBuilder.AppendLine("    {");
-            detailedViewBuilder.AppendLine($"        await {entityName}Service.Update{entityName}Async(Id, currentItem);");
-            detailedViewBuilder.AppendLine("    }");
-            detailedViewBuilder.AppendLine("}");
+            StringBuilder sb = new StringBuilder();
 
-            // Add table to display entity details
-            detailedViewBuilder.AppendLine("<table class=\"table table-striped\">");
-            detailedViewBuilder.AppendLine("    <tbody>");
-
-            foreach (var field in fields)
+            try
             {
-                detailedViewBuilder.AppendLine("        <tr>");
-                detailedViewBuilder.AppendLine($"            <th>{field.fieldname}</th>");
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
 
-                // Adjust input type based on DbFieldCategory
-                string inputType = field.fieldCategory switch
+                // Add using directives
+                sb.AppendLine("using System;");
+                sb.AppendLine("using System.Collections.Generic;");
+                sb.AppendLine("");
+                sb.AppendLine($"namespace {namespaceName}");
+                sb.AppendLine("{");
+
+                // Interface for the aggregate root
+                sb.AppendLine("    /// <summary>");
+                sb.AppendLine("    /// Marker interface for aggregate roots in the domain");
+                sb.AppendLine("    /// </summary>");
+                sb.AppendLine("    public interface IAggregateRoot { }");
+                sb.AppendLine("");
+
+                // Create the aggregate root class
+                sb.AppendLine("    /// <summary>");
+                sb.AppendLine($"    /// Aggregate root for {entity.EntityName}");
+                sb.AppendLine("    /// </summary>");
+                sb.AppendLine($"    public class {className} : IAggregateRoot");
+                sb.AppendLine("    {");
+
+                // Private fields
+                foreach (EntityField field in entity.Fields)
                 {
-                    DbFieldCategory.String => "text",
-                    DbFieldCategory.Numeric => "number",
-                    DbFieldCategory.Date => "date",
-                    DbFieldCategory.Boolean => "checkbox",
-                    _ => "text"
-                };
+                    sb.AppendLine($"        private {field.fieldtype} _{field.fieldname.ToLower()};");
+                }
+                sb.AppendLine("");
 
-                string inputControl = field.fieldCategory == DbFieldCategory.Boolean
-                    ? $"<InputCheckbox @bind-Value=\"currentItem.{field.fieldname}\" />"
-                    : $"<InputText id=\"{field.fieldname}\" class=\"form-control\" @bind-Value=\"currentItem.{field.fieldname}\" />";
-
-                detailedViewBuilder.AppendLine($"            <td>{inputControl}</td>");
-                detailedViewBuilder.AppendLine("        </tr>");
-            }
-
-            detailedViewBuilder.AppendLine("    </tbody>");
-            detailedViewBuilder.AppendLine("</table>");
-
-            // Add save button
-            detailedViewBuilder.AppendLine("<button class=\"btn btn-primary\" @onclick=\"Save\">Save</button>");
-            detailedViewBuilder.AppendLine("<button class=\"btn btn-secondary\" @onclick=\"NavigateBack\">Back</button>");
-
-            // Add navigate back function
-            detailedViewBuilder.AppendLine("@code {");
-            detailedViewBuilder.AppendLine("    private void NavigateBack()");
-            detailedViewBuilder.AppendLine("    {");
-            detailedViewBuilder.AppendLine("        NavigationManager.NavigateTo(\"/\");");
-            detailedViewBuilder.AppendLine("    }");
-            detailedViewBuilder.AppendLine("}");
-
-            return detailedViewBuilder.ToString();
-        }
-        public string GenerateBlazorDashboardPage(string namespaceName, List<EntityStructure> entities)
-        {
-            StringBuilder dashboardBuilder = new StringBuilder();
-
-            // Add page directive and imports
-            dashboardBuilder.AppendLine("@page \"/dashboard\"");
-            dashboardBuilder.AppendLine($"@using {namespaceName}.Services");
-            dashboardBuilder.AppendLine();
-            dashboardBuilder.AppendLine($"<h3>{namespaceName} Dashboard</h3>");
-            dashboardBuilder.AppendLine("<div class=\"dashboard-container\">");
-
-            // Generate entity widgets
-            foreach (var entity in entities)
-            {
-                dashboardBuilder.AppendLine("    <div class=\"dashboard-widget\">");
-                dashboardBuilder.AppendLine($"        <h4>{entity.EntityName}</h4>");
-                dashboardBuilder.AppendLine("        <button class=\"btn btn-primary\" @onclick=\"() => NavigateToEntityListPage(@$\"/" + $"{entity.EntityName.ToLower()}s" + "\")\">Manage</button>");
-                dashboardBuilder.AppendLine("    </div>");
-            }
-
-            dashboardBuilder.AppendLine("</div>");
-            dashboardBuilder.AppendLine();
-
-            // Add code-behind
-            dashboardBuilder.AppendLine("@code {");
-            dashboardBuilder.AppendLine("    private void NavigateToEntityListPage(string url)");
-            dashboardBuilder.AppendLine("    {");
-            dashboardBuilder.AppendLine("        NavigationManager.NavigateTo(url);");
-            dashboardBuilder.AppendLine("    }");
-            dashboardBuilder.AppendLine("}");
-
-            // Add dashboard styling
-            dashboardBuilder.AppendLine("<style>");
-            dashboardBuilder.AppendLine(".dashboard-container {");
-            dashboardBuilder.AppendLine("    display: flex;");
-            dashboardBuilder.AppendLine("    flex-wrap: wrap;");
-            dashboardBuilder.AppendLine("    gap: 20px;");
-            dashboardBuilder.AppendLine("}");
-            dashboardBuilder.AppendLine(".dashboard-widget {");
-            dashboardBuilder.AppendLine("    flex: 1 1 calc(33.333% - 20px);");
-            dashboardBuilder.AppendLine("    padding: 20px;");
-            dashboardBuilder.AppendLine("    border: 1px solid #ccc;");
-            dashboardBuilder.AppendLine("    border-radius: 8px;");
-            dashboardBuilder.AppendLine("    text-align: center;");
-            dashboardBuilder.AppendLine("}");
-            dashboardBuilder.AppendLine(".dashboard-widget h4 {");
-            dashboardBuilder.AppendLine("    margin-bottom: 15px;");
-            dashboardBuilder.AppendLine("}");
-            dashboardBuilder.AppendLine(".dashboard-widget button {");
-            dashboardBuilder.AppendLine("    margin-top: 10px;");
-            dashboardBuilder.AppendLine("}");
-            dashboardBuilder.AppendLine("</style>");
-
-            return dashboardBuilder.ToString();
-        }
-        #region "React Generator"
-        public string GenerateReactListComponent(string entityName, List<EntityField> fields, string outputPath)
-        {
-            try
-            {
-                string componentName = $"{entityName}List";
-                string fieldHeaders = string.Join("\n", fields.Select(f => $"<th>{f.fieldname}</th>"));
-                string fieldRows = string.Join("\n", fields.Select(f => $"<td>{{{{item.{f.fieldname}}}}}</td>"));
-
-                string reactCode = $@"
-import React, {{ useState, useEffect }} from 'react';
-
-export default function {componentName}() {{
-    const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {{
-        fetch('/api/{entityName.ToLower()}')
-            .then(response => response.json())
-            .then(data => {{
-                setData(data);
-                setLoading(false);
-            }});
-    }}, []);
-
-    if (loading) return <p>Loading...</p>;
-
-    return (
-        <div>
-            <h1>{entityName} List</h1>
-            <table>
-                <thead>
-                    <tr>
-                        {fieldHeaders}
-                    </tr>
-                </thead>
-                <tbody>
-                    {{data.map((item, index) => (
-                        <tr key={{index}}>
-                            {fieldRows}
-                        </tr>
-                    ))}}
-                </tbody>
-            </table>
-        </div>
-    );
-}}
-";
-
-                // Save the generated React file
-                string filePath = Path.Combine(outputPath, $"{componentName}.jsx");
-                File.WriteAllText(filePath, reactCode);
-
-                DMEEditor.AddLogMessage("ReactGenerator", $"Generated List Component for {entityName} at {filePath}", DateTime.Now, -1, null, Errors.Ok);
-                return reactCode;
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("ReactGenerator", $"Error generating List Component for {entityName}: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
-                return null;
-            }
-        }
-        public string GenerateReactDashboardComponent(List<string> entityNames, string outputPath)
-        {
-            try
-            {
-                string componentName = "Dashboard";
-                string quickLinks = string.Join("\n", entityNames.Select(e => $"<li><a href=\"/{e.ToLower()}\">{e} List</a></li>"));
-
-                string reactCode = $@"
-import React from 'react';
-
-export default function {componentName}() {{
-    return (
-        <div>
-            <h1>Dashboard</h1>
-            <ul>
-                {quickLinks}
-            </ul>
-        </div>
-    );
-}}
-";
-
-                // Save the generated React file
-                string filePath = Path.Combine(outputPath, $"{componentName}.jsx");
-                File.WriteAllText(filePath, reactCode);
-
-                DMEEditor.AddLogMessage("ReactGenerator", $"Generated Dashboard Component at {filePath}", DateTime.Now, -1, null, Errors.Ok);
-                return reactCode;
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("ReactGenerator", $"Error generating Dashboard Component: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
-                return null;
-            }
-        }
-        public string GenerateReactDetailComponent(string entityName, List<EntityField> fields, string outputPath)
-        {
-            try
-            {
-                string componentName = $"{entityName}Detail";
-                string detailFields = string.Join("\n", fields.Select(f =>
+                // Add ID field if not present
+                if (!entity.Fields.Any(f => f.fieldname.Equals("Id", StringComparison.OrdinalIgnoreCase)))
                 {
-                    return f.fieldCategory == DbFieldCategory.String
-                        ? $"<div><label>{f.fieldname}</label><p>{{{{data.{f.fieldname}}}}}</p></div>"
-                        : $"<div><label>{f.fieldname}</label><p>{{{{data.{f.fieldname}}}}}</p></div>";
-                }));
+                    sb.AppendLine("        private Guid _id;");
+                    sb.AppendLine("");
+                    sb.AppendLine("        /// <summary>");
+                    sb.AppendLine("        /// Unique identifier for this aggregate");
+                    sb.AppendLine("        /// </summary>");
+                    sb.AppendLine("        public Guid Id => _id;");
+                    sb.AppendLine("");
+                }
 
-                string reactCode = $@"
-import React, {{ useState, useEffect }} from 'react';
-import {{ useParams }} from 'react-router-dom';
+                // Constructor
+                sb.AppendLine($"        public {className}(");
 
-export default function {componentName}() {{
-    const {{ id }} = useParams();
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
+                // Constructor parameters
+                for (int i = 0; i < entity.Fields.Count; i++)
+                {
+                    EntityField field = entity.Fields[i];
+                    sb.Append($"            {field.fieldtype} {field.fieldname.ToLower()}");
 
-    useEffect(() => {{
-        fetch(`/api/{entityName.ToLower()}/${{id}}`)
-            .then(response => response.json())
-            .then(data => {{
-                setData(data);
-                setLoading(false);
-            }});
-    }}, [id]);
+                    if (i < entity.Fields.Count - 1)
+                    {
+                        sb.AppendLine(",");
+                    }
+                    else
+                    {
+                        sb.AppendLine(")");
+                    }
+                }
 
-    if (loading) return <p>Loading...</p>;
+                sb.AppendLine("        {");
 
-    return (
-        <div>
-            <h1>{entityName} Detail</h1>
-            <div>
-                {detailFields}
-            </div>
-        </div>
-    );
-}}
-";
+                // Initialize ID if not in the fields
+                if (!entity.Fields.Any(f => f.fieldname.Equals("Id", StringComparison.OrdinalIgnoreCase)))
+                {
+                    sb.AppendLine("            _id = Guid.NewGuid();");
+                }
 
-                // Save the generated React file
-                string filePath = Path.Combine(outputPath, $"{componentName}.jsx");
-                File.WriteAllText(filePath, reactCode);
+                // Set fields from parameters
+                foreach (EntityField field in entity.Fields)
+                {
+                    sb.AppendLine($"            _{field.fieldname.ToLower()} = {field.fieldname.ToLower()};");
+                }
 
-                DMEEditor.AddLogMessage("ReactGenerator", $"Generated Detail Component for {entityName} at {filePath}", DateTime.Now, -1, null, Errors.Ok);
-                return reactCode;
+                sb.AppendLine("        }");
+                sb.AppendLine("");
+
+                // Properties (getters only for immutability)
+                foreach (EntityField field in entity.Fields)
+                {
+                    sb.AppendLine("        /// <summary>");
+                    sb.AppendLine($"        /// Gets the {field.fieldname}");
+                    sb.AppendLine("        /// </summary>");
+                    sb.AppendLine($"        public {field.fieldtype} {field.fieldname} => _{field.fieldname.ToLower()};");
+                    sb.AppendLine("");
+                }
+
+                // Domain methods (placeholder)
+                sb.AppendLine("        // Domain behavior methods would go here");
+                sb.AppendLine("");
+
+                // Factory method
+                sb.AppendLine("        /// <summary>");
+                sb.AppendLine($"        /// Factory method to create a new {entity.EntityName}");
+                sb.AppendLine("        /// </summary>");
+                sb.Append("        public static ");
+                sb.Append($"{className} Create(");
+
+                // Factory method parameters
+                for (int i = 0; i < entity.Fields.Count; i++)
+                {
+                    EntityField field = entity.Fields[i];
+                    if (!field.fieldname.Equals("Id", StringComparison.OrdinalIgnoreCase))
+                    {
+                        sb.Append($"{field.fieldtype} {field.fieldname.ToLower()}");
+
+                        if (i < entity.Fields.Count - 1 &&
+                            !entity.Fields[i + 1].fieldname.Equals("Id", StringComparison.OrdinalIgnoreCase))
+                        {
+                            sb.Append(", ");
+                        }
+                    }
+                }
+                sb.AppendLine(")");
+                sb.AppendLine("        {");
+
+                // Create and return the aggregate
+                sb.Append("            return new ");
+                sb.Append($"{className}(");
+
+                // Pass constructor parameters
+                for (int i = 0; i < entity.Fields.Count; i++)
+                {
+                    EntityField field = entity.Fields[i];
+                    sb.Append($"{field.fieldname.ToLower()}");
+
+                    if (i < entity.Fields.Count - 1)
+                    {
+                        sb.Append(", ");
+                    }
+                }
+                sb.AppendLine(");");
+                sb.AppendLine("        }");
+
+                sb.AppendLine("    }");
+                sb.AppendLine("}");
+
+                // Write to file
+                File.WriteAllText(filepath, sb.ToString());
+                DMEEditor.AddLogMessage("ClassCreator", $"Generated DDD aggregate root {className} at {filepath}", DateTime.Now, 0, null, Errors.Ok);
+
+                return sb.ToString();
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("ReactGenerator", $"Error generating Detail Component for {entityName}: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+                DMEEditor.AddLogMessage("ClassCreator", $"Error creating DDD aggregate root: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
                 return null;
             }
         }
-        public string GenerateReactNavbarComponent(List<string> entityNames, string outputPath)
+
+        /// <summary>
+        /// Generates GraphQL type definitions from entity structures
+        /// </summary>
+        /// <param name="entities">The entity structures to convert</param>
+        /// <param name="outputPath">Output path</param>
+        /// <param name="namespaceName">Namespace</param>
+        /// <returns>The generated GraphQL schema</returns>
+        public string GenerateGraphQLSchema(List<EntityStructure> entities, string outputPath,
+                                          string namespaceName = "TheTechIdea.ProjectGraphQL")
         {
+            string filePath = Path.Combine(outputPath, "GraphQLSchema.cs");
+            StringBuilder sb = new StringBuilder();
+
             try
             {
-                string componentName = "Navbar";
-                string navLinks = string.Join("\n", entityNames.Select(e => $"<li><a href=\"/{e.ToLower()}\">{e}</a></li>"));
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
 
-                string reactCode = $@"
-import React from 'react';
+                // Add using directives
+                sb.AppendLine("using System;");
+                sb.AppendLine("using HotChocolate.Types;");
+                sb.AppendLine("using HotChocolate;");
+                sb.AppendLine("");
+                sb.AppendLine($"namespace {namespaceName}");
+                sb.AppendLine("{");
 
-export default function {componentName}() {{
-    return (
-        <nav>
-            <ul>
-                {navLinks}
-            </ul>
-        </nav>
-    );
-}}
-";
+                // Generate GraphQL type classes for each entity
+                foreach (EntityStructure entity in entities)
+                {
+                    string typeName = entity.EntityName + "Type";
 
-                // Save the generated React file
-                string filePath = Path.Combine(outputPath, $"{componentName}.jsx");
-                File.WriteAllText(filePath, reactCode);
+                    sb.AppendLine($"    public class {typeName} : ObjectType<{entity.EntityName}>");
+                    sb.AppendLine("    {");
+                    sb.AppendLine("        protected override void Configure(IObjectTypeDescriptor<" + entity.EntityName + "> descriptor)");
+                    sb.AppendLine("        {");
+                    sb.AppendLine("            descriptor.Description(\"" + (string.IsNullOrEmpty(entity.Description) ?
+                                                                             $"Represents a {entity.EntityName} entity" :
+                                                                             entity.Description) + "\");");
 
-                DMEEditor.AddLogMessage("ReactGenerator", $"Generated Navbar Component at {filePath}", DateTime.Now, -1, null, Errors.Ok);
-                return reactCode;
+                    // Configure fields
+                    foreach (EntityField field in entity.Fields)
+                    {
+                        sb.AppendLine("");
+                        sb.AppendLine($"            descriptor.Field(t => t.{field.fieldname})");
+
+                        if (!string.IsNullOrEmpty(field.Description))
+                        {
+                            sb.AppendLine($"                .Description(\"{field.Description}\")");
+                        }
+
+                        // Mark as ID field if it's named Id or has fieldindex 0
+                        if (field.fieldname.Equals("Id", StringComparison.OrdinalIgnoreCase) || field.FieldIndex == 0)
+                        {
+                            sb.AppendLine("                .Type<IdType>()");
+                        }
+
+                        sb.AppendLine("                .Name(\"" + field.fieldname.ToCamelCase() + "\");");
+                    }
+
+                    sb.AppendLine("        }");
+                    sb.AppendLine("    }");
+                    sb.AppendLine();
+                }
+
+                // Generate Query type
+                sb.AppendLine("    public class Query");
+                sb.AppendLine("    {");
+
+                foreach (EntityStructure entity in entities)
+                {
+                    string pluralName = entity.EntityName + "s"; // Simple pluralization
+
+                    sb.AppendLine($"        [GraphQLName(\"{entity.EntityName.ToCamelCase()}\")]");
+                    sb.AppendLine($"        public {entity.EntityName} Get{entity.EntityName}(int id) => throw new NotImplementedException();");
+                    sb.AppendLine();
+                    sb.AppendLine($"        [GraphQLName(\"{pluralName.ToCamelCase()}\")]");
+                    sb.AppendLine($"        public IQueryable<{entity.EntityName}> Get{pluralName}() => throw new NotImplementedException();");
+                    sb.AppendLine();
+                }
+
+                sb.AppendLine("    }");
+                sb.AppendLine();
+
+                // Generate Mutation type
+                sb.AppendLine("    public class Mutation");
+                sb.AppendLine("    {");
+
+                foreach (EntityStructure entity in entities)
+                {
+                    sb.AppendLine($"        [GraphQLName(\"create{entity.EntityName}\")]");
+                    sb.AppendLine($"        public {entity.EntityName} Create{entity.EntityName}({entity.EntityName} input) => throw new NotImplementedException();");
+                    sb.AppendLine();
+                    sb.AppendLine($"        [GraphQLName(\"update{entity.EntityName}\")]");
+                    sb.AppendLine($"        public {entity.EntityName} Update{entity.EntityName}(int id, {entity.EntityName} input) => throw new NotImplementedException();");
+                    sb.AppendLine();
+                    sb.AppendLine($"        [GraphQLName(\"delete{entity.EntityName}\")]");
+                    sb.AppendLine($"        public bool Delete{entity.EntityName}(int id) => throw new NotImplementedException();");
+                    sb.AppendLine();
+                }
+
+                sb.AppendLine("    }");
+                sb.AppendLine();
+
+                // Add extension methods for string conversion to camelCase
+                sb.AppendLine("    internal static class StringExtensions");
+                sb.AppendLine("    {");
+                sb.AppendLine("        public static string ToCamelCase(this string str)");
+                sb.AppendLine("        {");
+                sb.AppendLine("            if (string.IsNullOrEmpty(str)) return str;");
+                sb.AppendLine("            if (str.Length == 1) return str.ToLowerInvariant();");
+                sb.AppendLine("            return char.ToLowerInvariant(str[0]) + str.Substring(1);");
+                sb.AppendLine("        }");
+                sb.AppendLine("    }");
+
+                sb.AppendLine("}");
+
+                // Write to file
+                File.WriteAllText(filePath, sb.ToString());
+                DMEEditor.AddLogMessage("ClassCreator", $"Generated GraphQL schema at {filePath}", DateTime.Now, 0, null, Errors.Ok);
+
+                return sb.ToString();
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("ReactGenerator", $"Error generating Navbar Component: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+                DMEEditor.AddLogMessage("ClassCreator", $"Error generating GraphQL schema: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
                 return null;
             }
         }
 
-        #endregion "React Generator"
+        /// <summary>
+        /// Generates repository pattern implementation for an entity
+        /// </summary>
+        /// <param name="entity">Entity structure</param>
+        /// <param name="outputPath">Output path</param>
+        /// <param name="namespaceName">Namespace</param>
+        /// <param name="interfaceOnly">Whether to generate interface only</param>
+        /// <returns>The generated repository code</returns>
+        public string GenerateRepositoryImplementation(EntityStructure entity, string outputPath,
+                                                    string namespaceName = "TheTechIdea.ProjectRepositories",
+                                                    bool interfaceOnly = false)
+        {
+            StringBuilder sb = new StringBuilder();
+            string repoInterfaceName = $"I{entity.EntityName}Repository";
+            string repoClassName = $"{entity.EntityName}Repository";
+            string filePath;
+
+            try
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
+
+                // Generate interface
+                sb.AppendLine("using System;");
+                sb.AppendLine("using System.Collections.Generic;");
+                sb.AppendLine("using System.Threading.Tasks;");
+                sb.AppendLine("");
+                sb.AppendLine($"namespace {namespaceName}");
+                sb.AppendLine("{");
+
+                // Interface declaration
+                sb.AppendLine($"    public interface {repoInterfaceName}");
+                sb.AppendLine("    {");
+                sb.AppendLine($"        Task<IEnumerable<{entity.EntityName}>> GetAllAsync();");
+                sb.AppendLine($"        Task<{entity.EntityName}> GetByIdAsync(int id);");
+                sb.AppendLine($"        Task<{entity.EntityName}> AddAsync({entity.EntityName} entity);");
+                sb.AppendLine($"        Task<bool> UpdateAsync({entity.EntityName} entity);");
+                sb.AppendLine("        Task<bool> DeleteAsync(int id);");
+                sb.AppendLine("    }");
+
+                if (!interfaceOnly)
+                {
+                    // Repository implementation
+                    sb.AppendLine("");
+                    sb.AppendLine($"    public class {repoClassName} : {repoInterfaceName}");
+                    sb.AppendLine("    {");
+                    sb.AppendLine("        private readonly IDataSource _dataSource;");
+                    sb.AppendLine("");
+
+                    // Constructor
+                    sb.AppendLine($"        public {repoClassName}(IDataSource dataSource)");
+                    sb.AppendLine("        {");
+                    sb.AppendLine("            _dataSource = dataSource;");
+                    sb.AppendLine("        }");
+                    sb.AppendLine("");
+
+                    // GetAllAsync
+                    sb.AppendLine($"        public async Task<IEnumerable<{entity.EntityName}>> GetAllAsync()");
+                    sb.AppendLine("        {");
+                    sb.AppendLine("            return await Task.Run(() => {");
+                    sb.AppendLine($"                var results = _dataSource.GetEntity(\"{entity.EntityName}\", null);");
+                    sb.AppendLine($"                return results as IEnumerable<{entity.EntityName}>;");
+                    sb.AppendLine("            });");
+                    sb.AppendLine("        }");
+                    sb.AppendLine("");
+
+                    // GetByIdAsync
+                    sb.AppendLine($"        public async Task<{entity.EntityName}> GetByIdAsync(int id)");
+                    sb.AppendLine("        {");
+                    sb.AppendLine("            return await Task.Run(() => {");
+                    sb.AppendLine("                var filters = new List<AppFilter> {");
+                    sb.AppendLine("                    new AppFilter { FieldName = \"Id\", Operator = \"=\", FilterValue = id.ToString() }");
+                    sb.AppendLine("                };");
+                    sb.AppendLine($"                var result = _dataSource.GetEntity(\"{entity.EntityName}\", filters);");
+                    sb.AppendLine($"                return result as {entity.EntityName};");
+                    sb.AppendLine("            });");
+                    sb.AppendLine("        }");
+                    sb.AppendLine("");
+
+                    // AddAsync
+                    sb.AppendLine($"        public async Task<{entity.EntityName}> AddAsync({entity.EntityName} entity)");
+                    sb.AppendLine("        {");
+                    sb.AppendLine("            return await Task.Run(() => {");
+                    sb.AppendLine($"                _dataSource.InsertEntity(\"{entity.EntityName}\", entity);");
+                    sb.AppendLine("                return entity;");
+                    sb.AppendLine("            });");
+                    sb.AppendLine("        }");
+                    sb.AppendLine("");
+
+                    // UpdateAsync
+                    sb.AppendLine($"        public async Task<bool> UpdateAsync({entity.EntityName} entity)");
+                    sb.AppendLine("        {");
+                    sb.AppendLine("            return await Task.Run(() => {");
+                    sb.AppendLine("                try");
+                    sb.AppendLine("                {");
+                    sb.AppendLine($"                    _dataSource.UpdateEntity(\"{entity.EntityName}\", entity);");
+                    sb.AppendLine("                    return true;");
+                    sb.AppendLine("                }");
+                    sb.AppendLine("                catch");
+                    sb.AppendLine("                {");
+                    sb.AppendLine("                    return false;");
+                    sb.AppendLine("                }");
+                    sb.AppendLine("            });");
+                    sb.AppendLine("        }");
+                    sb.AppendLine("");
+
+                    // DeleteAsync
+                    sb.AppendLine("        public async Task<bool> DeleteAsync(int id)");
+                    sb.AppendLine("        {");
+                    sb.AppendLine("            return await Task.Run(() => {");
+                    sb.AppendLine("                try");
+                    sb.AppendLine("                {");
+                    sb.AppendLine("                    var filters = new List<AppFilter> {");
+                    sb.AppendLine("                        new AppFilter { FieldName = \"Id\", Operator = \"=\", FilterValue = id.ToString() }");
+                    sb.AppendLine("                    };");
+                    sb.AppendLine($"                    _dataSource.DeleteEntity(\"{entity.EntityName}\", filters);");
+                    sb.AppendLine("                    return true;");
+                    sb.AppendLine("                }");
+                    sb.AppendLine("                catch");
+                    sb.AppendLine("                {");
+                    sb.AppendLine("                    return false;");
+                    sb.AppendLine("                }");
+                    sb.AppendLine("            });");
+                    sb.AppendLine("        }");
+                    sb.AppendLine("    }");
+                }
+
+                sb.AppendLine("}");
+
+                // Determine file path based on whether we're generating interface only
+                if (interfaceOnly)
+                {
+                    filePath = Path.Combine(outputPath, $"{repoInterfaceName}.cs");
+                }
+                else
+                {
+                    filePath = Path.Combine(outputPath, $"{repoClassName}.cs");
+                }
+
+                // Write to file
+                File.WriteAllText(filePath, sb.ToString());
+                DMEEditor.AddLogMessage("ClassCreator", $"Generated repository for {entity.EntityName} at {filePath}", DateTime.Now, 0, null, Errors.Ok);
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("ClassCreator", $"Error generating repository: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Generates serverless function code (Azure Functions/AWS Lambda) for entity operations
+        /// </summary>
+        /// <param name="entity">Entity structure</param>
+        /// <param name="outputPath">Output path</param>
+        /// <param name="cloudProvider">Cloud provider type (Azure, AWS, etc)</param>
+        /// <returns>The serverless function code</returns>
+        public string GenerateServerlessFunctions(EntityStructure entity, string outputPath,
+                                                CloudProviderType cloudProvider = CloudProviderType.Azure)
+        {
+            string className = $"{entity.EntityName}Functions";
+            string filePath = Path.Combine(outputPath, $"{className}.cs");
+            StringBuilder sb = new StringBuilder();
+
+            try
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
+
+                switch (cloudProvider)
+                {
+                    case CloudProviderType.Azure:
+                        GenerateAzureFunctions(entity, sb);
+                        break;
+                    case CloudProviderType.AWS:
+                        GenerateAWSLambdaFunctions(entity, sb);
+                        break;
+                    default:
+                        DMEEditor.AddLogMessage("ClassCreator", $"Unsupported cloud provider type: {cloudProvider}", DateTime.Now, 0, null, Errors.Failed);
+                        return null;
+                }
+
+                // Write to file
+                File.WriteAllText(filePath, sb.ToString());
+                DMEEditor.AddLogMessage("ClassCreator", $"Generated serverless functions for {entity.EntityName} at {filePath}", DateTime.Now, 0, null, Errors.Ok);
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("ClassCreator", $"Error generating serverless functions: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+        }
+
+        private void GenerateAzureFunctions(EntityStructure entity, StringBuilder sb)
+        {
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.IO;");
+            sb.AppendLine("using System.Threading.Tasks;");
+            sb.AppendLine("using Microsoft.AspNetCore.Mvc;");
+            sb.AppendLine("using Microsoft.Azure.WebJobs;");
+            sb.AppendLine("using Microsoft.Azure.WebJobs.Extensions.Http;");
+            sb.AppendLine("using Microsoft.AspNetCore.Http;");
+            sb.AppendLine("using Microsoft.Extensions.Logging;");
+            sb.AppendLine("using Newtonsoft.Json;");
+            sb.AppendLine("using TheTechIdea.Beep.DataBase;");
+            sb.AppendLine("");
+            sb.AppendLine($"namespace TheTechIdea.Functions");
+            sb.AppendLine("{");
+
+            // Class declaration
+            sb.AppendLine($"    public class {entity.EntityName}Functions");
+            sb.AppendLine("    {");
+            sb.AppendLine("        private readonly IDMEEditor _dmeEditor;");
+            sb.AppendLine("");
+
+            // Constructor
+            sb.AppendLine($"        public {entity.EntityName}Functions(IDMEEditor dmeEditor)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            _dmeEditor = dmeEditor;");
+            sb.AppendLine("        }");
+            sb.AppendLine("");
+
+            // GetAll function
+            sb.AppendLine("        [FunctionName(\"Get" + entity.EntityName + "s\")]");
+            sb.AppendLine("        public async Task<IActionResult> GetAll(");
+            sb.AppendLine("            [HttpTrigger(AuthorizationLevel.Function, \"get\", Route = \"" + entity.EntityName.ToLower() + "s\")] HttpRequest req,");
+            sb.AppendLine("            ILogger log)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            log.LogInformation($\"Getting all " + entity.EntityName + "s\");");
+            sb.AppendLine("");
+            sb.AppendLine("            try");
+            sb.AppendLine("            {");
+            sb.AppendLine("                string dataSourceName = req.Query[\"dataSource\"];");
+            sb.AppendLine("                if (string.IsNullOrEmpty(dataSourceName))");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new BadRequestObjectResult(\"Please provide a dataSource query parameter\");");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine("                var dataSource = _dmeEditor.GetDataSource(dataSourceName);");
+            sb.AppendLine("                if (dataSource == null)");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new NotFoundObjectResult($\"Data source '{dataSourceName}' not found\");");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine($"                var result = await Task.Run(() => dataSource.GetEntity(\"{entity.EntityName}\", null));");
+            sb.AppendLine("                return new OkObjectResult(result);");
+            sb.AppendLine("            }");
+            sb.AppendLine("            catch (Exception ex)");
+            sb.AppendLine("            {");
+            sb.AppendLine("                log.LogError(ex, $\"Error getting " + entity.EntityName + "s\");");
+            sb.AppendLine("                return new StatusCodeResult(StatusCodes.Status500InternalServerError);");
+            sb.AppendLine("            }");
+            sb.AppendLine("        }");
+            sb.AppendLine("");
+
+            // GetById function
+            sb.AppendLine("        [FunctionName(\"Get" + entity.EntityName + "ById\")]");
+            sb.AppendLine("        public async Task<IActionResult> GetById(");
+            sb.AppendLine("            [HttpTrigger(AuthorizationLevel.Function, \"get\", Route = \"" + entity.EntityName.ToLower() + "s/{id}\")] HttpRequest req,");
+            sb.AppendLine("            string id,");
+            sb.AppendLine("            ILogger log)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            log.LogInformation($\"Getting " + entity.EntityName + " by id: {id}\");");
+            sb.AppendLine("");
+            sb.AppendLine("            try");
+            sb.AppendLine("            {");
+            sb.AppendLine("                string dataSourceName = req.Query[\"dataSource\"];");
+            sb.AppendLine("                if (string.IsNullOrEmpty(dataSourceName))");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new BadRequestObjectResult(\"Please provide a dataSource query parameter\");");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine("                var dataSource = _dmeEditor.GetDataSource(dataSourceName);");
+            sb.AppendLine("                if (dataSource == null)");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new NotFoundObjectResult($\"Data source '{dataSourceName}' not found\");");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine("                var filters = new List<AppFilter> { new AppFilter { FieldName = \"Id\", Operator = \"=\", FilterValue = id } };");
+            sb.AppendLine($"                var result = await Task.Run(() => dataSource.GetEntity(\"{entity.EntityName}\", filters));");
+            sb.AppendLine("");
+            sb.AppendLine("                if (result == null)");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new NotFoundResult();");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine("                return new OkObjectResult(result);");
+            sb.AppendLine("            }");
+            sb.AppendLine("            catch (Exception ex)");
+            sb.AppendLine("            {");
+            sb.AppendLine("                log.LogError(ex, $\"Error getting " + entity.EntityName + " by id: {id}\");");
+            sb.AppendLine("                return new StatusCodeResult(StatusCodes.Status500InternalServerError);");
+            sb.AppendLine("            }");
+            sb.AppendLine("        }");
+            sb.AppendLine("");
+
+            // Create function
+            sb.AppendLine("        [FunctionName(\"Create" + entity.EntityName + "\")]");
+            sb.AppendLine("        public async Task<IActionResult> Create(");
+            sb.AppendLine("            [HttpTrigger(AuthorizationLevel.Function, \"post\", Route = \"" + entity.EntityName.ToLower() + "s\")] HttpRequest req,");
+            sb.AppendLine("            ILogger log)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            log.LogInformation(\"Creating a new " + entity.EntityName + "\");");
+            sb.AppendLine("");
+            sb.AppendLine("            try");
+            sb.AppendLine("            {");
+            sb.AppendLine("                string dataSourceName = req.Query[\"dataSource\"];");
+            sb.AppendLine("                if (string.IsNullOrEmpty(dataSourceName))");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new BadRequestObjectResult(\"Please provide a dataSource query parameter\");");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine("                var dataSource = _dmeEditor.GetDataSource(dataSourceName);");
+            sb.AppendLine("                if (dataSource == null)");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new NotFoundObjectResult($\"Data source '{dataSourceName}' not found\");");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine("                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();");
+            sb.AppendLine($"                var item = JsonConvert.DeserializeObject<{entity.EntityName}>(requestBody);");
+            sb.AppendLine("");
+            sb.AppendLine($"                await Task.Run(() => dataSource.InsertEntity(\"{entity.EntityName}\", item));");
+            sb.AppendLine("");
+            sb.AppendLine("                return new CreatedResult(\"\", item);");
+            sb.AppendLine("            }");
+            sb.AppendLine("            catch (Exception ex)");
+            sb.AppendLine("            {");
+            sb.AppendLine("                log.LogError(ex, \"Error creating " + entity.EntityName + "\");");
+            sb.AppendLine("                return new StatusCodeResult(StatusCodes.Status500InternalServerError);");
+            sb.AppendLine("            }");
+            sb.AppendLine("        }");
+            sb.AppendLine("");
+
+            // Update function
+            sb.AppendLine("        [FunctionName(\"Update" + entity.EntityName + "\")]");
+            sb.AppendLine("        public async Task<IActionResult> Update(");
+            sb.AppendLine("            [HttpTrigger(AuthorizationLevel.Function, \"put\", Route = \"" + entity.EntityName.ToLower() + "s/{id}\")] HttpRequest req,");
+            sb.AppendLine("            string id,");
+            sb.AppendLine("            ILogger log)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            log.LogInformation($\"Updating " + entity.EntityName + " with id: {id}\");");
+            sb.AppendLine("");
+            sb.AppendLine("            try");
+            sb.AppendLine("            {");
+            sb.AppendLine("                string dataSourceName = req.Query[\"dataSource\"];");
+            sb.AppendLine("                if (string.IsNullOrEmpty(dataSourceName))");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new BadRequestObjectResult(\"Please provide a dataSource query parameter\");");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine("                var dataSource = _dmeEditor.GetDataSource(dataSourceName);");
+            sb.AppendLine("                if (dataSource == null)");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new NotFoundObjectResult($\"Data source '{dataSourceName}' not found\");");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine("                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();");
+            sb.AppendLine($"                var item = JsonConvert.DeserializeObject<{entity.EntityName}>(requestBody);");
+            sb.AppendLine("");
+            sb.AppendLine($"                await Task.Run(() => dataSource.UpdateEntity(\"{entity.EntityName}\", item));");
+            sb.AppendLine("");
+            sb.AppendLine("                return new OkObjectResult(item);");
+            sb.AppendLine("            }");
+            sb.AppendLine("            catch (Exception ex)");
+            sb.AppendLine("            {");
+            sb.AppendLine("                log.LogError(ex, $\"Error updating " + entity.EntityName + " with id: {id}\");");
+            sb.AppendLine("                return new StatusCodeResult(StatusCodes.Status500InternalServerError);");
+            sb.AppendLine("            }");
+            sb.AppendLine("        }");
+            sb.AppendLine("");
+
+            // Delete function
+            sb.AppendLine("        [FunctionName(\"Delete" + entity.EntityName + "\")]");
+            sb.AppendLine("        public async Task<IActionResult> Delete(");
+            sb.AppendLine("            [HttpTrigger(AuthorizationLevel.Function, \"delete\", Route = \"" + entity.EntityName.ToLower() + "s/{id}\")] HttpRequest req,");
+            sb.AppendLine("            string id,");
+            sb.AppendLine("            ILogger log)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            log.LogInformation($\"Deleting " + entity.EntityName + " with id: {id}\");");
+            sb.AppendLine("");
+            sb.AppendLine("            try");
+            sb.AppendLine("            {");
+            sb.AppendLine("                string dataSourceName = req.Query[\"dataSource\"];");
+            sb.AppendLine("                if (string.IsNullOrEmpty(dataSourceName))");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new BadRequestObjectResult(\"Please provide a dataSource query parameter\");");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine("                var dataSource = _dmeEditor.GetDataSource(dataSourceName);");
+            sb.AppendLine("                if (dataSource == null)");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new NotFoundObjectResult($\"Data source '{dataSourceName}' not found\");");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine("                var filters = new List<AppFilter> { new AppFilter { FieldName = \"Id\", Operator = \"=\", FilterValue = id } };");
+            sb.AppendLine($"                await Task.Run(() => dataSource.DeleteEntity(\"{entity.EntityName}\", filters));");
+            sb.AppendLine("");
+            sb.AppendLine("                return new NoContentResult();");
+            sb.AppendLine("            }");
+            sb.AppendLine("            catch (Exception ex)");
+            sb.AppendLine("            {");
+            sb.AppendLine("                log.LogError(ex, $\"Error deleting " + entity.EntityName + " with id: {id}\");");
+            sb.AppendLine("                return new StatusCodeResult(StatusCodes.Status500InternalServerError);");
+            sb.AppendLine("            }");
+            sb.AppendLine("        }");
+
+            sb.AppendLine("    }");
+            sb.AppendLine("}");
+        }
+
+        private void GenerateAWSLambdaFunctions(EntityStructure entity, StringBuilder sb)
+        {
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.Collections.Generic;");
+            sb.AppendLine("using System.Threading.Tasks;");
+            sb.AppendLine("using Amazon.Lambda.Core;");
+            sb.AppendLine("using Amazon.Lambda.APIGatewayEvents;");
+            sb.AppendLine("using Newtonsoft.Json;");
+            sb.AppendLine("using TheTechIdea.Beep.DataBase;");
+            sb.AppendLine("");
+            sb.AppendLine("[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]");
+            sb.AppendLine("");
+            sb.AppendLine($"namespace TheTechIdea.Lambda");
+            sb.AppendLine("{");
+
+            // Class declaration
+            sb.AppendLine($"    public class {entity.EntityName}Functions");
+            sb.AppendLine("    {");
+            sb.AppendLine("        private readonly IDMEEditor _dmeEditor;");
+            sb.AppendLine("");
+
+            // Constructor
+            sb.AppendLine($"        public {entity.EntityName}Functions()");
+            sb.AppendLine("        {");
+            sb.AppendLine("            // Initialize DMEEditor");
+            sb.AppendLine("            // This would typically be done through DI in a real application");
+            sb.AppendLine("            _dmeEditor = new DMEEditor();");
+            sb.AppendLine("        }");
+            sb.AppendLine("");
+
+            // GetAll function
+            sb.AppendLine("        public async Task<APIGatewayProxyResponse> GetAll(APIGatewayProxyRequest request, ILambdaContext context)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            context.Logger.LogLine($\"Getting all " + entity.EntityName + "s\");");
+            sb.AppendLine("");
+            sb.AppendLine("            try");
+            sb.AppendLine("            {");
+            sb.AppendLine("                if (!request.QueryStringParameters.TryGetValue(\"dataSource\", out string dataSourceName))");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new APIGatewayProxyResponse");
+            sb.AppendLine("                    {");
+            sb.AppendLine("                        StatusCode = 400,");
+            sb.AppendLine("                        Body = JsonConvert.SerializeObject(new { message = \"Please provide a dataSource query parameter\" })");
+            sb.AppendLine("                    };");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine("                var dataSource = _dmeEditor.GetDataSource(dataSourceName);");
+            sb.AppendLine("                if (dataSource == null)");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    return new APIGatewayProxyResponse");
+            sb.AppendLine("                    {");
+            sb.AppendLine("                        StatusCode = 404,");
+            sb.AppendLine("                        Body = JsonConvert.SerializeObject(new { message = $\"Data source '{dataSourceName}' not found\" })");
+            sb.AppendLine("                    };");
+            sb.AppendLine("                }");
+            sb.AppendLine("");
+            sb.AppendLine($"                var result = await Task.Run(() => dataSource.GetEntity(\"{entity.EntityName}\", null));");
+            sb.AppendLine("");
+            sb.AppendLine("                return new APIGatewayProxyResponse");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    StatusCode = 200,");
+            sb.AppendLine("                    Body = JsonConvert.SerializeObject(result)");
+            sb.AppendLine("                };");
+            sb.AppendLine("            }");
+            sb.AppendLine("            catch (Exception ex)");
+            sb.AppendLine("            {");
+            sb.AppendLine("                context.Logger.LogLine($\"Error getting " + entity.EntityName + "s: {ex.Message}\");");
+            sb.AppendLine("                return new APIGatewayProxyResponse");
+            sb.AppendLine("                {");
+            sb.AppendLine("                    StatusCode = 500,");
+            sb.AppendLine("                    Body = JsonConvert.SerializeObject(new { message = \"Internal server error\" })");
+            sb.AppendLine("                };");
+            sb.AppendLine("            }");
+            sb.AppendLine("        }");
+            sb.AppendLine("");
+
+            // Add other functions (GetById, Create, Update, Delete) following similar pattern
+            // but using AWS Lambda API Gateway patterns
+
+            sb.AppendLine("    }");
+            sb.AppendLine("}");
+        }
+
+        /// <summary>
+        /// Generates XML documentation from entity structure
+        /// </summary>
+        /// <param name="entity">Entity structure to document</param>
+        /// <param name="outputPath">Output path</param>
+        /// <returns>The XML documentation string</returns>
+        public string GenerateEntityDocumentation(EntityStructure entity, string outputPath)
+        {
+            string filePath = Path.Combine(outputPath, $"{entity.EntityName}Documentation.xml");
+            StringBuilder sb = new StringBuilder();
+
+            try
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
+
+                // XML header
+                sb.AppendLine("<?xml version=\"1.0\"?>");
+                sb.AppendLine("<doc>");
+                sb.AppendLine("    <assembly>");
+                sb.AppendLine($"        <name>{entity.EntityName}</name>");
+                sb.AppendLine("    </assembly>");
+                sb.AppendLine("    <members>");
+
+                // Entity documentation
+                sb.AppendLine($"        <member name=\"T:{entity.EntityName}\">");
+                sb.AppendLine($"            <summary>");
+                sb.AppendLine($"            {(!string.IsNullOrEmpty(entity.Description) ? entity.Description : $"Represents the {entity.EntityName} entity")}");
+                sb.AppendLine($"            </summary>");
+
+                if (entity.Category != null)
+                    sb.AppendLine($"            <remarks>Category: {entity.Category}</remarks>");
+
+                sb.AppendLine("        </member>");
+
+                // Document each field
+                foreach (var field in entity.Fields)
+                {
+                    sb.AppendLine($"        <member name=\"P:{entity.EntityName}.{field.fieldname}\">");
+                    sb.AppendLine("            <summary>");
+                    sb.AppendLine($"            {(!string.IsNullOrEmpty(field.Description) ? field.Description : $"The {field.fieldname} property")}");
+                    sb.AppendLine("            </summary>");
+                    sb.AppendLine($"            <value>A {field.fieldtype} value representing {field.fieldname}</value>");
+
+                    // Add validation info if available
+                    if (!string.IsNullOrEmpty(field.DefaultValue))
+                        sb.AppendLine($"            <remarks>Default value: {field.DefaultValue}</remarks>");
+
+                    if (field.IsRequired)
+                        sb.AppendLine("            <remarks>This field is required</remarks>");
+
+                    // Add additional metadata information
+                    sb.AppendLine("        </member>");
+                }
+
+                // Close XML
+                sb.AppendLine("    </members>");
+                sb.AppendLine("</doc>");
+
+                // Write to file
+                File.WriteAllText(filePath, sb.ToString());
+                DMEEditor.AddLogMessage("ClassCreator", $"Generated XML documentation for {entity.EntityName} at {filePath}", DateTime.Now, 0, null, Errors.Ok);
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("ClassCreator", $"Error generating XML documentation: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Generates FluentValidation validators for entity
+        /// </summary>
+        /// <param name="entity">Entity structure</param>
+        /// <param name="outputPath">Output path</param>
+        /// <param name="namespaceName">Namespace</param>
+        /// <returns>The validator class code</returns>
+        public string GenerateFluentValidators(EntityStructure entity, string outputPath,
+                                             string namespaceName = "TheTechIdea.ProjectValidators")
+        {
+            string className = $"{entity.EntityName}Validator";
+            string filePath = Path.Combine(outputPath, $"{className}.cs");
+            StringBuilder sb = new StringBuilder();
+
+            try
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
+
+                // Add using directives
+                sb.AppendLine("using FluentValidation;");
+                sb.AppendLine("using System;");
+                sb.AppendLine("");
+                sb.AppendLine($"namespace {namespaceName}");
+                sb.AppendLine("{");
+
+                // Class declaration
+                sb.AppendLine($"    public class {className} : AbstractValidator<{entity.EntityName}>");
+                sb.AppendLine("    {");
+                sb.AppendLine($"        public {className}()");
+                sb.AppendLine("        {");
+
+                // Add validation rules for each field
+                foreach (var field in entity.Fields)
+                {
+                    sb.AppendLine($"            RuleFor(x => x.{field.fieldname})");
+
+                    // Apply rules based on field type and properties
+                    if (field.IsRequired)
+                    {
+                        if (field.fieldtype.ToLower().Contains("string"))
+                        {
+                            sb.AppendLine("                .NotEmpty().WithMessage($\"{nameof(" + field.fieldname + ")} is required.\")");
+                        }
+                        else
+                        {
+                            sb.AppendLine("                .NotNull().WithMessage($\"{nameof(" + field.fieldname + ")} is required.\")");
+                        }
+                    }
+
+                    // String-specific validations
+                    if (field.fieldtype.ToLower().Contains("string"))
+                    {
+                        if (field.Size > 0)
+                        {
+                            sb.AppendLine($"                .MaximumLength({field.Size}).WithMessage($\"{{nameof({field.fieldname})}} must not exceed {field.Size} characters.\")");
+                        }
+                    }
+
+                    // Numeric validations
+                    if (IsNumericType(field.fieldtype))
+                    {
+                        if (field.ValueMin != null && !string.IsNullOrEmpty(field.ValueMin.ToString()))
+                        {
+                            sb.AppendLine($"                .GreaterThanOrEqualTo({field.ValueMin}).WithMessage($\"{{nameof({field.fieldname})}} must be greater than or equal to {field.ValueMin}.\")");
+                        }
+
+                        if (field.ValueMax != null && !string.IsNullOrEmpty(field.ValueMax.ToString()))
+                        {
+                            sb.AppendLine($"                .LessThanOrEqualTo({field.ValueMax}).WithMessage($\"{{nameof({field.fieldname})}} must be less than or equal to {field.ValueMax}.\")");
+                        }
+                    }
+
+                    // Email validation
+                    if (field.fieldname.ToLower().Contains("email"))
+                    {
+                        sb.AppendLine("                .EmailAddress().WithMessage($\"{nameof(" + field.fieldname + ")} must be a valid email address.\")");
+                    }
+
+                    sb.AppendLine("                ;"); // End rule
+                    sb.AppendLine("");
+                }
+
+                sb.AppendLine("        }");
+                sb.AppendLine("    }");
+                sb.AppendLine("}");
+
+                // Write to file
+                File.WriteAllText(filePath, sb.ToString());
+                DMEEditor.AddLogMessage("ClassCreator", $"Generated FluentValidator for {entity.EntityName} at {filePath}", DateTime.Now, 0, null, Errors.Ok);
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("ClassCreator", $"Error generating FluentValidation class: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+        }
+
+        private bool IsNumericType(string fieldType)
+        {
+            fieldType = fieldType.ToLower();
+            return fieldType == "int" || fieldType == "int32" || fieldType == "int64" ||
+                   fieldType == "long" || fieldType == "decimal" || fieldType == "double" ||
+                   fieldType == "float" || fieldType == "short" || fieldType == "byte" ||
+                   fieldType == "uint" || fieldType == "ulong" || fieldType == "ushort" ||
+                   fieldType == "sbyte" || fieldType == "single";
+        }
+
+        /// <summary>
+        /// Generates Entity Framework Core migration code for entity
+        /// </summary>
+        /// <param name="entity">Entity structure</param>
+        /// <param name="outputPath">Output path</param>
+        /// <param name="namespaceName">Namespace</param>
+        /// <returns>The migration code</returns>
+        public string GenerateEFCoreMigration(EntityStructure entity, string outputPath,
+                                            string namespaceName = "TheTechIdea.ProjectMigrations")
+        {
+            string migrationName = $"Create{entity.EntityName}Table";
+            string className = $"{migrationName}";
+            string filePath = Path.Combine(outputPath, $"{className}.cs");
+            StringBuilder sb = new StringBuilder();
+
+            try
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
+
+                // Add using directives
+                sb.AppendLine("using Microsoft.EntityFrameworkCore.Migrations;");
+                sb.AppendLine("using Microsoft.EntityFrameworkCore.Metadata;");
+                sb.AppendLine("using System;");
+                sb.AppendLine("");
+                sb.AppendLine($"namespace {namespaceName}");
+                sb.AppendLine("{");
+
+                // Class declaration
+                sb.AppendLine($"    public partial class {className} : Migration");
+                sb.AppendLine("    {");
+
+                // Up method - create tables
+                sb.AppendLine("        protected override void Up(MigrationBuilder migrationBuilder)");
+                sb.AppendLine("        {");
+
+                // Create table
+                sb.AppendLine($"            migrationBuilder.CreateTable(");
+                sb.AppendLine($"                name: \"{entity.EntityName}\",");
+                sb.AppendLine($"                columns: table => new");
+                sb.AppendLine($"                {{");
+
+                // Generate columns based on entity fields
+                bool hasPrimaryKey = false;
+
+                foreach (var field in entity.Fields)
+                {
+                    string columnType = MapFieldTypeToSqlType(field.fieldtype);
+
+                    // Identify primary key field
+                    bool isPrimaryKey = field.fieldname.ToLower() == "id" || field.IsKey;
+
+                    if (isPrimaryKey)
+                    {
+                        hasPrimaryKey = true;
+
+                        sb.Append($"                    table.Column<{field.fieldtype}>(name: \"{field.fieldname}\", nullable: false)");
+
+                        // Add auto-increment for Id column
+                        if (field.fieldname.ToLower() == "id" && IsIntegralType(field.fieldtype))
+                        {
+                            sb.Append($".Annotation(\"SqlServer:ValueGenerationStrategy\", SqlServerValueGenerationStrategy.IdentityColumn)");
+                        }
+
+                        sb.AppendLine(",");
+                    }
+                    else
+                    {
+                        bool isNullable = !field.IsRequired;
+                        sb.AppendLine($"                    table.Column<{field.fieldtype}>(name: \"{field.fieldname}\", nullable: {isNullable.ToString().ToLower()}),");
+                    }
+                }
+
+                sb.AppendLine($"                }},");
+
+                // Create primary key constraint
+                sb.Append($"                constraints: table =>");
+                sb.AppendLine($"                {{");
+
+                if (hasPrimaryKey)
+                {
+                    var pkField = entity.Fields.FirstOrDefault(f => f.fieldname.ToLower() == "id" || f.IsKey);
+                    if (pkField != null)
+                    {
+                        sb.AppendLine($"                    table.PrimaryKey(\"PK_{entity.EntityName}\", x => x.{pkField.fieldname});");
+                    }
+                }
+
+                sb.AppendLine($"                }});");
+
+                // Create indexes if needed
+                var indexableFields = entity.Fields.Where(f => f.IsUnique || f.IsIndexed).ToList();
+                if (indexableFields.Any())
+                {
+                    sb.AppendLine();
+                    foreach (var field in indexableFields)
+                    {
+                        string indexType = field.IsUnique ? "Unique" : "";
+                        sb.AppendLine($"            migrationBuilder.CreateIndex(");
+                        sb.AppendLine($"                name: \"IX_{entity.EntityName}_{field.fieldname}\",");
+                        sb.AppendLine($"                table: \"{entity.EntityName}\",");
+                        sb.AppendLine($"                column: \"{field.fieldname}\",");
+                        sb.AppendLine($"                unique: {field.IsUnique.ToString().ToLower()});");
+                    }
+                }
+
+                sb.AppendLine("        }");
+                sb.AppendLine();
+
+                // Down method - drop tables
+                sb.AppendLine("        protected override void Down(MigrationBuilder migrationBuilder)");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            migrationBuilder.DropTable(");
+                sb.AppendLine($"                name: \"{entity.EntityName}\");");
+                sb.AppendLine("        }");
+                sb.AppendLine("    }");
+                sb.AppendLine("}");
+
+                // Write to file
+                File.WriteAllText(filePath, sb.ToString());
+                DMEEditor.AddLogMessage("ClassCreator", $"Generated EF Core Migration for {entity.EntityName} at {filePath}", DateTime.Now, 0, null, Errors.Ok);
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("ClassCreator", $"Error generating EF Core Migration: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+        }
+
+        private string MapFieldTypeToSqlType(string fieldType)
+        {
+            fieldType = fieldType.ToLower();
+            return fieldType switch
+            {
+                "string" => "nvarchar(max)",
+                "int" or "int32" => "int",
+                "long" or "int64" => "bigint",
+                "short" or "int16" => "smallint",
+                "byte" => "tinyint",
+                "bool" or "boolean" => "bit",
+                "decimal" => "decimal(18, 2)",
+                "double" => "float",
+                "float" or "single" => "real",
+                "datetime" => "datetime2",
+                "guid" => "uniqueidentifier",
+                "byte[]" => "varbinary(max)",
+                _ => "nvarchar(max)"
+            };
+        }
+
+        private bool IsIntegralType(string fieldType)
+        {
+            fieldType = fieldType.ToLower();
+            return fieldType == "int" || fieldType == "int32" || fieldType == "int64" ||
+                   fieldType == "long" || fieldType == "short" || fieldType == "int16" ||
+                   fieldType == "byte" || fieldType == "uint" || fieldType == "ulong" ||
+                   fieldType == "ushort" || fieldType == "sbyte";
+        }
+
+        /// <summary>
+        /// Generates a difference report between two versions of an entity
+        /// </summary>
+        /// <param name="originalEntity">Original entity</param>
+        /// <param name="newEntity">New entity</param>
+        /// <returns>Difference report as string</returns>
+        public string GenerateEntityDiffReport(EntityStructure originalEntity, EntityStructure newEntity)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            try
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
+
+                // Header
+                sb.AppendLine("# Entity Difference Report");
+                sb.AppendLine($"Date: {DateTime.Now}");
+                sb.AppendLine($"Original Entity: {originalEntity.EntityName}");
+                sb.AppendLine($"New Entity: {newEntity.EntityName}");
+                sb.AppendLine();
+
+                // Basic entity property changes
+                if (originalEntity.EntityName != newEntity.EntityName)
+                {
+                    sb.AppendLine($"## Name Change");
+                    sb.AppendLine($"- Original: {originalEntity.EntityName}");
+                    sb.AppendLine($"- New: {newEntity.EntityName}");
+                    sb.AppendLine();
+                }
+
+                if (originalEntity.Description != newEntity.Description)
+                {
+                    sb.AppendLine($"## Description Change");
+                    sb.AppendLine($"- Original: {originalEntity.Description ?? "[None]"}");
+                    sb.AppendLine($"- New: {newEntity.Description ?? "[None]"}");
+                    sb.AppendLine();
+                }
+
+                if (originalEntity.Category != newEntity.Category)
+                {
+                    sb.AppendLine($"## Category Change");
+                    sb.AppendLine($"- Original: {originalEntity.Category ?? "[None]"}");
+                    sb.AppendLine($"- New: {newEntity.Category ?? "[None]"}");
+                    sb.AppendLine();
+                }
+
+                // Field differences
+                sb.AppendLine("## Field Changes");
+
+                // Get lists of fields
+                var originalFields = originalEntity.Fields.ToDictionary(f => f.fieldname);
+                var newFields = newEntity.Fields.ToDictionary(f => f.fieldname);
+
+                // Fields removed
+                var removedFields = originalFields.Keys.Except(newFields.Keys).ToList();
+                if (removedFields.Any())
+                {
+                    sb.AppendLine("### Removed Fields");
+                    foreach (var fieldName in removedFields)
+                    {
+                        var field = originalFields[fieldName];
+                        sb.AppendLine($"- {field.fieldname} ({field.fieldtype})");
+                    }
+                    sb.AppendLine();
+                }
+
+                // Fields added
+                var addedFields = newFields.Keys.Except(originalFields.Keys).ToList();
+                if (addedFields.Any())
+                {
+                    sb.AppendLine("### Added Fields");
+                    foreach (var fieldName in addedFields)
+                    {
+                        var field = newFields[fieldName];
+                        sb.AppendLine($"- {field.fieldname} ({field.fieldtype})");
+                    }
+                    sb.AppendLine();
+                }
+
+                // Fields modified
+                var commonFields = originalFields.Keys.Intersect(newFields.Keys).ToList();
+                var modifiedFields = new List<string>();
+
+                foreach (var fieldName in commonFields)
+                {
+                    var originalField = originalFields[fieldName];
+                    var newField = newFields[fieldName];
+
+                    bool isModified = false;
+                    StringBuilder fieldChanges = new StringBuilder();
+
+                    if (originalField.fieldtype != newField.fieldtype)
+                    {
+                        isModified = true;
+                        fieldChanges.AppendLine($"  - Type: {originalField.fieldtype} -> {newField.fieldtype}");
+                    }
+
+                    if (originalField.IsRequired != newField.IsRequired)
+                    {
+                        isModified = true;
+                        fieldChanges.AppendLine($"  - Required: {originalField.IsRequired} -> {newField.IsRequired}");
+                    }
+
+                    if (originalField.IsKey != newField.IsKey)
+                    {
+                        isModified = true;
+                        fieldChanges.AppendLine($"  - Primary Key: {originalField.IsKey} -> {newField.IsKey}");
+                    }
+
+                    if (originalField.IsUnique != newField.IsUnique)
+                    {
+                        isModified = true;
+                        fieldChanges.AppendLine($"  - Unique: {originalField.IsUnique} -> {newField.IsUnique}");
+                    }
+
+                    if (originalField.Size != newField.Size)
+                    {
+                        isModified = true;
+                        fieldChanges.AppendLine($"  - Size: {originalField.Size} -> {newField.Size}");
+                    }
+
+                    if (originalField.DefaultValue != newField.DefaultValue)
+                    {
+                        isModified = true;
+                        fieldChanges.AppendLine($"  - Default Value: {originalField.DefaultValue ?? "[None]"} -> {newField.DefaultValue ?? "[None]"}");
+                    }
+
+                    if (isModified)
+                    {
+                        modifiedFields.Add(fieldName);
+                        sb.AppendLine($"### Modified: {fieldName}");
+                        sb.Append(fieldChanges.ToString());
+                        sb.AppendLine();
+                    }
+                }
+
+                // Summary
+                sb.AppendLine("## Summary");
+                sb.AppendLine($"- Fields Removed: {removedFields.Count}");
+                sb.AppendLine($"- Fields Added: {addedFields.Count}");
+                sb.AppendLine($"- Fields Modified: {modifiedFields.Count}");
+                sb.AppendLine($"- Total Fields in Original: {originalEntity.Fields.Count}");
+                sb.AppendLine($"- Total Fields in New: {newEntity.Fields.Count}");
+
+                DMEEditor.AddLogMessage("ClassCreator", $"Generated difference report between entities", DateTime.Now, 0, null, Errors.Ok);
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("ClassCreator", $"Error generating entity difference report: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Generates Blazor component for displaying and editing entity
+        /// </summary>
+        /// <param name="entity">Entity structure</param>
+        /// <param name="outputPath">Output path</param>
+        /// <param name="namespaceName">Component namespace</param>
+        /// <returns>The Blazor component code</returns>
+        public string GenerateBlazorComponent(EntityStructure entity, string outputPath,
+                                            string namespaceName = "TheTechIdea.ProjectComponents")
+        {
+            string componentName = $"{entity.EntityName}Component";
+            string filePath = Path.Combine(outputPath, $"{componentName}.razor.cs");
+            string razorFilePath = Path.Combine(outputPath, $"{componentName}.razor");
+
+            // Generate the component code-behind file
+            StringBuilder sb = new StringBuilder();
+
+            try
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
+
+                // Generate code-behind file
+                sb.AppendLine("using Microsoft.AspNetCore.Components;");
+                sb.AppendLine("using System;");
+                sb.AppendLine("using System.Collections.Generic;");
+                sb.AppendLine("using System.Threading.Tasks;");
+                sb.AppendLine("using System.Linq;");
+                sb.AppendLine("using TheTechIdea.Beep.DataBase;");
+                sb.AppendLine("");
+                sb.AppendLine($"namespace {namespaceName}");
+                sb.AppendLine("{");
+                sb.AppendLine($"    public partial class {componentName} : ComponentBase");
+                sb.AppendLine("    {");
+
+                // Parameters
+                sb.AppendLine("        [Inject]");
+                sb.AppendLine("        public IDMEEditor DMEEditor { get; set; }");
+                sb.AppendLine("");
+
+                sb.AppendLine("        [Parameter]");
+                sb.AppendLine($"        public {entity.EntityName} Item {{ get; set; }}");
+                sb.AppendLine("");
+
+                sb.AppendLine("        [Parameter]");
+                sb.AppendLine("        public string DataSourceName { get; set; }");
+                sb.AppendLine("");
+
+                sb.AppendLine("        [Parameter]");
+                sb.AppendLine("        public EventCallback<bool> OnSave { get; set; }");
+                sb.AppendLine("");
+
+                sb.AppendLine("        [Parameter]");
+                sb.AppendLine("        public EventCallback OnCancel { get; set; }");
+                sb.AppendLine("");
+
+                // Error message for validation
+                sb.AppendLine("        private string ErrorMessage { get; set; }");
+                sb.AppendLine("");
+
+                // Loading indicator
+                sb.AppendLine("        private bool IsLoading { get; set; }");
+                sb.AppendLine("");
+
+                // On initialization
+                sb.AppendLine("        protected override void OnInitialized()");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            if (Item == null) Item = new {entity.EntityName}();");
+                sb.AppendLine("        }");
+                sb.AppendLine("");
+
+                // Save method
+                sb.AppendLine("        private async Task SaveItem()");
+                sb.AppendLine("        {");
+                sb.AppendLine("            try");
+                sb.AppendLine("            {");
+                sb.AppendLine("                IsLoading = true;");
+                sb.AppendLine("                ErrorMessage = null;");
+                sb.AppendLine("");
+                sb.AppendLine("                var dataSource = DMEEditor.GetDataSource(DataSourceName);");
+                sb.AppendLine("                if (dataSource == null)");
+                sb.AppendLine("                {");
+                sb.AppendLine("                    ErrorMessage = $\"Data source {DataSourceName} not found\";");
+                sb.AppendLine("                    return;");
+                sb.AppendLine("                }");
+                sb.AppendLine("");
+                sb.AppendLine("                // Determine if this is an insert or update operation");
+                sb.AppendLine($"                bool isNew = Item.Id == default;");
+                sb.AppendLine("");
+                sb.AppendLine("                if (isNew)");
+                sb.AppendLine("                {");
+                sb.AppendLine($"                    await Task.Run(() => dataSource.InsertEntity(\"{entity.EntityName}\", Item));");
+                sb.AppendLine("                }");
+                sb.AppendLine("                else");
+                sb.AppendLine("                {");
+                sb.AppendLine($"                    await Task.Run(() => dataSource.UpdateEntity(\"{entity.EntityName}\", Item));");
+                sb.AppendLine("                }");
+                sb.AppendLine("");
+                sb.AppendLine("                await OnSave.InvokeAsync(isNew);");
+                sb.AppendLine("            }");
+                sb.AppendLine("            catch (Exception ex)");
+                sb.AppendLine("            {");
+                sb.AppendLine("                ErrorMessage = $\"Error saving {entity.EntityName}: {ex.Message}\";");
+                sb.AppendLine("            }");
+                sb.AppendLine("            finally");
+                sb.AppendLine("            {");
+                sb.AppendLine("                IsLoading = false;");
+                sb.AppendLine("            }");
+                sb.AppendLine("        }");
+                sb.AppendLine("");
+
+                // Cancel method
+                sb.AppendLine("        private async Task CancelEdit()");
+                sb.AppendLine("        {");
+                sb.AppendLine("            await OnCancel.InvokeAsync();");
+                sb.AppendLine("        }");
+
+                sb.AppendLine("    }");
+                sb.AppendLine("}");
+
+                // Write code-behind to file
+                File.WriteAllText(filePath, sb.ToString());
+
+                // Generate Razor template file
+                StringBuilder razorSb = new StringBuilder();
+                razorSb.AppendLine("@namespace " + namespaceName);
+                razorSb.AppendLine("");
+                razorSb.AppendLine("<div class=\"card\">");
+                razorSb.AppendLine("    <div class=\"card-header\">");
+                razorSb.AppendLine($"        <h3>{(entity.Caption ?? entity.EntityName)}</h3>");
+                razorSb.AppendLine("    </div>");
+                razorSb.AppendLine("    <div class=\"card-body\">");
+
+                // Show error message if any
+                razorSb.AppendLine("        @if (!string.IsNullOrEmpty(ErrorMessage))");
+                razorSb.AppendLine("        {");
+                razorSb.AppendLine("            <div class=\"alert alert-danger\">");
+                razorSb.AppendLine("                @ErrorMessage");
+                razorSb.AppendLine("            </div>");
+                razorSb.AppendLine("        }");
+                razorSb.AppendLine("");
+
+                // Loading indicator
+                razorSb.AppendLine("        @if (IsLoading)");
+                razorSb.AppendLine("        {");
+                razorSb.AppendLine("            <div class=\"d-flex justify-content-center\">");
+                razorSb.AppendLine("                <div class=\"spinner-border\" role=\"status\">");
+                razorSb.AppendLine("                    <span class=\"sr-only\">Loading...</span>");
+                razorSb.AppendLine("                </div>");
+                razorSb.AppendLine("            </div>");
+                razorSb.AppendLine("        }");
+                razorSb.AppendLine("");
+
+                // Form
+                razorSb.AppendLine("        <form>");
+
+                // Generate form fields based on entity structure
+                foreach (var field in entity.Fields)
+                {
+                    // Skip ID field as it's typically auto-generated
+                    if (field.fieldname.ToLower() == "id" && field.IsKey)
+                    {
+                        continue;
+                    }
+
+                    razorSb.AppendLine("            <div class=\"form-group row\">");
+                    razorSb.AppendLine($"                <label for=\"{field.fieldname}\" class=\"col-sm-4 col-form-label\">{GetDisplayName(field.fieldname)}</label>");
+                    razorSb.AppendLine("                <div class=\"col-sm-8\">");
+
+                    // Generate appropriate input based on field type
+                    switch (field.fieldtype.ToLower())
+                    {
+                        case "bool":
+                        case "boolean":
+                            razorSb.AppendLine($"                    <div class=\"form-check\">");
+                            razorSb.AppendLine($"                        <input class=\"form-check-input\" type=\"checkbox\" id=\"{field.fieldname}\" @bind=\"Item.{field.fieldname}\">");
+                            razorSb.AppendLine($"                    </div>");
+                            break;
+
+                        case "datetime":
+                            razorSb.AppendLine($"                    <input type=\"datetime-local\" class=\"form-control\" id=\"{field.fieldname}\" @bind=\"Item.{field.fieldname}\">");
+                            break;
+
+                        case "int":
+                        case "int32":
+                        case "int64":
+                        case "long":
+                        case "decimal":
+                        case "double":
+                        case "float":
+                            razorSb.AppendLine($"                    <input type=\"number\" class=\"form-control\" id=\"{field.fieldname}\" @bind=\"Item.{field.fieldname}\">");
+                            break;
+
+                        case "string":
+                            if (field.fieldname.ToLower().Contains("password"))
+                            {
+                                razorSb.AppendLine($"                    <input type=\"password\" class=\"form-control\" id=\"{field.fieldname}\" @bind=\"Item.{field.fieldname}\">");
+                            }
+                            else if (field.fieldname.ToLower().Contains("email"))
+                            {
+                                razorSb.AppendLine($"                    <input type=\"email\" class=\"form-control\" id=\"{field.fieldname}\" @bind=\"Item.{field.fieldname}\">");
+                            }
+                            else if (field.Size > 255) // Multiline text
+                            {
+                                razorSb.AppendLine($"                    <textarea class=\"form-control\" id=\"{field.fieldname}\" @bind=\"Item.{field.fieldname}\" rows=\"3\"></textarea>");
+                            }
+                            else // Standard text
+                            {
+                                razorSb.AppendLine($"                    <input type=\"text\" class=\"form-control\" id=\"{field.fieldname}\" @bind=\"Item.{field.fieldname}\">");
+                            }
+                            break;
+
+                        default:
+                            razorSb.AppendLine($"                    <input type=\"text\" class=\"form-control\" id=\"{field.fieldname}\" @bind=\"Item.{field.fieldname}\">");
+                            break;
+                    }
+
+                    razorSb.AppendLine("                </div>");
+                    razorSb.AppendLine("            </div>");
+                    razorSb.AppendLine("");
+                }
+
+                // Form buttons
+                razorSb.AppendLine("            <div class=\"form-group row mt-4\">");
+                razorSb.AppendLine("                <div class=\"col-sm-12 text-right\">");
+                razorSb.AppendLine("                    <button type=\"button\" class=\"btn btn-secondary mr-2\" @onclick=\"CancelEdit\">Cancel</button>");
+                razorSb.AppendLine("                    <button type=\"button\" class=\"btn btn-primary\" @onclick=\"SaveItem\">Save</button>");
+                razorSb.AppendLine("                </div>");
+                razorSb.AppendLine("            </div>");
+
+                razorSb.AppendLine("        </form>");
+                razorSb.AppendLine("    </div>");
+                razorSb.AppendLine("</div>");
+
+                // Write Razor file
+                File.WriteAllText(razorFilePath, razorSb.ToString());
+
+                DMEEditor.AddLogMessage("ClassCreator", $"Generated Blazor component for {entity.EntityName} at {razorFilePath}", DateTime.Now, 0, null, Errors.Ok);
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("ClassCreator", $"Error generating Blazor component: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+        }
+
+        private string GetDisplayName(string fieldName)
+        {
+            if (string.IsNullOrEmpty(fieldName))
+                return string.Empty;
+
+            // Insert a space before each capital letter and then capitalize the first letter
+            var result = System.Text.RegularExpressions.Regex.Replace(fieldName, "([A-Z])", " $1").Trim();
+            return char.ToUpper(result[0]) + result.Substring(1);
+        }
+
+        /// <summary>
+        /// Generates gRPC service definitions for entity
+        /// </summary>
+        /// <param name="entity">Entity structure</param>
+        /// <param name="outputPath">Output path</param>
+        /// <param name="namespaceName">Namespace</param>
+        /// <returns>The generated proto file and service implementation</returns>
+        public (string ProtoFile, string ServiceImplementation) GenerateGrpcService(EntityStructure entity,
+                                                                                  string outputPath,
+                                                                                  string namespaceName)
+        {
+            string serviceName = $"{entity.EntityName}Service";
+            string protoFileName = $"{entity.EntityName.ToLower()}.proto";
+            string protoFilePath = Path.Combine(outputPath, protoFileName);
+            string serviceFilePath = Path.Combine(outputPath, $"{serviceName}.cs");
+
+            StringBuilder protoSb = new StringBuilder();
+            StringBuilder serviceSb = new StringBuilder();
+
+            try
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
+
+                // Generate the proto file
+                protoSb.AppendLine("syntax = \"proto3\";");
+                protoSb.AppendLine("");
+                protoSb.AppendLine($"option csharp_namespace = \"{namespaceName}.Protos\";");
+                protoSb.AppendLine("");
+                protoSb.AppendLine($"package {entity.EntityName.ToLower()};");
+                protoSb.AppendLine("");
+
+                // Service definition
+                protoSb.AppendLine($"service {serviceName} {{");
+                protoSb.AppendLine($"  // Gets a list of all {entity.EntityName}s");
+                protoSb.AppendLine($"  rpc GetAll (Get{entity.EntityName}Request) returns (stream {entity.EntityName}) {{}}");
+                protoSb.AppendLine("");
+                protoSb.AppendLine($"  // Gets a specific {entity.EntityName} by ID");
+                protoSb.AppendLine($"  rpc GetById (Get{entity.EntityName}ByIdRequest) returns ({entity.EntityName}) {{}}");
+                protoSb.AppendLine("");
+                protoSb.AppendLine($"  // Creates a new {entity.EntityName}");
+                protoSb.AppendLine($"  rpc Create (Create{entity.EntityName}Request) returns ({entity.EntityName}) {{}}");
+                protoSb.AppendLine("");
+                protoSb.AppendLine($"  // Updates an existing {entity.EntityName}");
+                protoSb.AppendLine($"  rpc Update (Update{entity.EntityName}Request) returns ({entity.EntityName}) {{}}");
+                protoSb.AppendLine("");
+                protoSb.AppendLine($"  // Deletes a {entity.EntityName}");
+                protoSb.AppendLine($"  rpc Delete (Delete{entity.EntityName}Request) returns (Delete{entity.EntityName}Response) {{}}");
+                protoSb.AppendLine("}");
+                protoSb.AppendLine("");
+
+                // Message for Empty request
+                protoSb.AppendLine($"message Get{entity.EntityName}Request {{");
+                protoSb.AppendLine("  string data_source_name = 1;");
+                protoSb.AppendLine("}");
+                protoSb.AppendLine("");
+
+                // Message for GetById request
+                protoSb.AppendLine($"message Get{entity.EntityName}ByIdRequest {{");
+                protoSb.AppendLine("  string data_source_name = 1;");
+                protoSb.AppendLine("  int32 id = 2;");
+                protoSb.AppendLine("}");
+                protoSb.AppendLine("");
+
+                // Message for Create request
+                protoSb.AppendLine($"message Create{entity.EntityName}Request {{");
+                protoSb.AppendLine("  string data_source_name = 1;");
+                protoSb.AppendLine($"  {entity.EntityName} item = 2;");
+                protoSb.AppendLine("}");
+                protoSb.AppendLine("");
+
+                // Message for Update request
+                protoSb.AppendLine($"message Update{entity.EntityName}Request {{");
+                protoSb.AppendLine("  string data_source_name = 1;");
+                protoSb.AppendLine($"  {entity.EntityName} item = 2;");
+                protoSb.AppendLine("}");
+                protoSb.AppendLine("");
+
+                // Message for Delete request
+                protoSb.AppendLine($"message Delete{entity.EntityName}Request {{");
+                protoSb.AppendLine("  string data_source_name = 1;");
+                protoSb.AppendLine("  int32 id = 2;");
+                protoSb.AppendLine("}");
+                protoSb.AppendLine("");
+
+                // Message for Delete response
+                protoSb.AppendLine($"message Delete{entity.EntityName}Response {{");
+                protoSb.AppendLine("  bool success = 1;");
+                protoSb.AppendLine("  string message = 2;");
+                protoSb.AppendLine("}");
+                protoSb.AppendLine("");
+
+                // Entity message definition
+                protoSb.AppendLine($"message {entity.EntityName} {{");
+
+                int fieldNumber = 1;
+                foreach (var field in entity.Fields)
+                {
+                    string protoType = MapToCSharpToProtoType(field.fieldtype);
+                    protoSb.AppendLine($"  {protoType} {SnakeCaseName(field.fieldname)} = {fieldNumber++};");
+                }
+
+                protoSb.AppendLine("}");
+
+                // Write proto file
+                File.WriteAllText(protoFilePath, protoSb.ToString());
+
+                // Generate the service implementation
+                serviceSb.AppendLine("using Grpc.Core;");
+                serviceSb.AppendLine("using Microsoft.Extensions.Logging;");
+                serviceSb.AppendLine("using System;");
+                serviceSb.AppendLine("using System.Collections.Generic;");
+                serviceSb.AppendLine("using System.Threading.Tasks;");
+                serviceSb.AppendLine("using TheTechIdea.Beep.DataBase;");
+                serviceSb.AppendLine($"using {namespaceName}.Protos;");
+                serviceSb.AppendLine("");
+                serviceSb.AppendLine($"namespace {namespaceName}.Services");
+                serviceSb.AppendLine("{");
+                serviceSb.AppendLine($"    public class {serviceName}Implementation : {serviceName}.{serviceName}Base");
+                serviceSb.AppendLine("    {");
+                serviceSb.AppendLine("        private readonly IDMEEditor _dmeEditor;");
+                serviceSb.AppendLine("        private readonly ILogger<{serviceName}Implementation> _logger;");
+                serviceSb.AppendLine("");
+                serviceSb.AppendLine($"        public {serviceName}Implementation(IDMEEditor dmeEditor, ILogger<{serviceName}Implementation> logger)");
+                serviceSb.AppendLine("        {");
+                serviceSb.AppendLine("            _dmeEditor = dmeEditor;");
+                serviceSb.AppendLine("            _logger = logger;");
+                serviceSb.AppendLine("        }");
+                serviceSb.AppendLine("");
+
+                // GetAll method
+                serviceSb.AppendLine($"        public override async Task GetAll(Get{entity.EntityName}Request request, IServerStreamWriter<{entity.EntityName}> responseStream, ServerCallContext context)");
+                serviceSb.AppendLine("        {");
+                serviceSb.AppendLine("            try");
+                serviceSb.AppendLine("            {");
+                serviceSb.AppendLine("                var dataSource = _dmeEditor.GetDataSource(request.DataSourceName);");
+                serviceSb.AppendLine("                if (dataSource == null)");
+                serviceSb.AppendLine("                {");
+                serviceSb.AppendLine("                    throw new RpcException(new Status(StatusCode.NotFound, $\"Data source '{request.DataSourceName}' not found\"));");
+                serviceSb.AppendLine("                }");
+                serviceSb.AppendLine("");
+                serviceSb.AppendLine($"                var entities = await Task.Run(() => dataSource.GetEntity(\"{entity.EntityName}\", null)) as IEnumerable<dynamic>;");
+                serviceSb.AppendLine("                if (entities == null)");
+                serviceSb.AppendLine("                {");
+                serviceSb.AppendLine("                    return;");
+                serviceSb.AppendLine("                }");
+                serviceSb.AppendLine("");
+                serviceSb.AppendLine("                foreach (var entity in entities)");
+                serviceSb.AppendLine("                {");
+                serviceSb.AppendLine($"                    var protoEntity = new {entity.EntityName}");
+                serviceSb.AppendLine("                    {");
+
+                // Map entity fields
+                foreach (var field in entity.Fields)
+                {
+                    string protoFieldName = StringExtensions.ToPascalCase(SnakeCaseName(field.fieldname));
+                    serviceSb.AppendLine($"                        {protoFieldName} = entity.{field.fieldname},");
+                }
+
+                serviceSb.AppendLine("                    };");
+                serviceSb.AppendLine("                    await responseStream.WriteAsync(protoEntity);");
+                serviceSb.AppendLine("                }");
+                serviceSb.AppendLine("            }");
+                serviceSb.AppendLine("            catch (Exception ex)");
+                serviceSb.AppendLine("            {");
+                serviceSb.AppendLine("                _logger.LogError(ex, \"Error retrieving entities\");");
+                serviceSb.AppendLine("                throw new RpcException(new Status(StatusCode.Internal, $\"Error retrieving entities: {ex.Message}\"));");
+                serviceSb.AppendLine("            }");
+                serviceSb.AppendLine("        }");
+                serviceSb.AppendLine("");
+
+                // GetById method
+                serviceSb.AppendLine($"        public override async Task<{entity.EntityName}> GetById(Get{entity.EntityName}ByIdRequest request, ServerCallContext context)");
+                serviceSb.AppendLine("        {");
+                serviceSb.AppendLine("            try");
+                serviceSb.AppendLine("            {");
+                serviceSb.AppendLine("                var dataSource = _dmeEditor.GetDataSource(request.DataSourceName);");
+                serviceSb.AppendLine("                if (dataSource == null)");
+                serviceSb.AppendLine("                {");
+                serviceSb.AppendLine("                    throw new RpcException(new Status(StatusCode.NotFound, $\"Data source '{request.DataSourceName}' not found\"));");
+                serviceSb.AppendLine("                }");
+                serviceSb.AppendLine("");
+                serviceSb.AppendLine("                var filters = new List<AppFilter> { new AppFilter { FieldName = \"Id\", Operator = \"=\", FilterValue = request.Id.ToString() } };");
+                serviceSb.AppendLine($"                var entity = await Task.Run(() => dataSource.GetEntity(\"{entity.EntityName}\", filters)) as dynamic;");
+                serviceSb.AppendLine("");
+                serviceSb.AppendLine("                if (entity == null)");
+                serviceSb.AppendLine("                {");
+                serviceSb.AppendLine("                    throw new RpcException(new Status(StatusCode.NotFound, \"Entity not found\"));");
+                serviceSb.AppendLine("                }");
+                serviceSb.AppendLine("");
+                serviceSb.AppendLine($"                return new {entity.EntityName}");
+                serviceSb.AppendLine("                {");
+
+                // Map entity fields
+                foreach (var field in entity.Fields)
+                {
+                    string protoFieldName = StringExtensions.ToPascalCase(SnakeCaseName(field.fieldname));
+                    serviceSb.AppendLine($"                    {protoFieldName} = entity.{field.fieldname},");
+                }
+
+                serviceSb.AppendLine("                };");
+                serviceSb.AppendLine("            }");
+                serviceSb.AppendLine("            catch (RpcException)");
+                serviceSb.AppendLine("            {");
+                serviceSb.AppendLine("                throw;");
+                serviceSb.AppendLine("            }");
+                serviceSb.AppendLine("            catch (Exception ex)");
+                serviceSb.AppendLine("            {");
+                serviceSb.AppendLine("                _logger.LogError(ex, \"Error retrieving entity by id\");");
+                serviceSb.AppendLine("                throw new RpcException(new Status(StatusCode.Internal, $\"Error retrieving entity: {ex.Message}\"));");
+                serviceSb.AppendLine("            }");
+                serviceSb.AppendLine("        }");
+                serviceSb.AppendLine("");
+
+                // Add Create, Update, Delete methods following same pattern
+
+                serviceSb.AppendLine("        // TODO: Implement Create, Update, and Delete methods");
+
+                serviceSb.AppendLine("    }");
+                serviceSb.AppendLine("}");
+
+                // Write service implementation file
+                File.WriteAllText(serviceFilePath, serviceSb.ToString());
+
+                DMEEditor.AddLogMessage("ClassCreator", $"Generated gRPC service for {entity.EntityName}", DateTime.Now, 0, null, Errors.Ok);
+
+                return (protoSb.ToString(), serviceSb.ToString());
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("ClassCreator", $"Error generating gRPC service: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return (null, null);
+            }
+        }
+
+        // Helper method to convert camelCase or PascalCase to snake_case
+        private string SnakeCaseName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return name;
+
+            var result = System.Text.RegularExpressions.Regex.Replace(name, "([A-Z])", "_$1").ToLower();
+            if (result.StartsWith("_"))
+                result = result.Substring(1);
+
+            return result;
+        }
+
+      
+
+        // Map C# types to protobuf types
+        private static string MapToCSharpToProtoType(string csharpType)
+        {
+            csharpType = csharpType.ToLower();
+
+            return csharpType switch
+            {
+                "int" or "int32" => "int32",
+                "long" or "int64" => "int64",
+                "float" or "single" => "float",
+                "double" => "double",
+                "bool" or "boolean" => "bool",
+                "string" => "string",
+                "byte[]" => "bytes",
+                "datetime" => "google.protobuf.Timestamp",
+                "guid" => "string",
+                "decimal" => "double", // No direct decimal in protobuf
+                _ => "string" // Default to string for unknown types
+            };
+        }
+
+
+
     }
 }

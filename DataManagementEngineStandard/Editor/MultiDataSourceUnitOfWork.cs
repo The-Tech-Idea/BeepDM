@@ -9,7 +9,7 @@ using TheTechIdea.Beep.Report;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class MultiDataSourceUnitOfWork : IDisposable
+    public partial class MultiDataSourceUnitOfWork : IDisposable
     {
         private readonly IDMEEditor _dmeEditor;
         private readonly Dictionary<string, UnitOfWorkWrapper> _unitsOfWork = new Dictionary<string, UnitOfWorkWrapper>();

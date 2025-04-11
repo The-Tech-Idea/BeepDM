@@ -16,7 +16,7 @@ namespace TheTechIdea.Beep.Editor.Sync
         void SyncSchema(DataSyncSchema schema, IProgress<PassedArgs> progress = null);
     }
 
-    public class DataSyncService : ISyncService
+    public partial class DataSyncService : ISyncService
     {
         private readonly IDMEEditor _editor;
         private readonly ISyncValidator _validator;

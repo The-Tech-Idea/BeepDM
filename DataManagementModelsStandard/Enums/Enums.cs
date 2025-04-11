@@ -1,6 +1,40 @@
 ﻿
 namespace TheTechIdea.Beep.Utilities
-{
+{/// <summary>
+ /// Cloud provider types supported by the class creator
+ /// </summary>
+    public enum CloudProviderType
+    {
+        Azure,
+        AWS,
+        GCP,
+        Custom
+    }
+
+    /// <summary>
+    /// Architectural patterns that can be applied to generated code
+    /// </summary>
+    public enum ArchitecturalPattern
+    {
+        MVVM,
+        CleanArchitecture,
+        CQRS,
+        EventSourcing,
+        Hexagonal,
+        MicroserviceAPI
+    }
+
+    /// <summary>
+    /// Contains a code improvement suggestion
+    /// </summary>
+    public class CodeSuggestion
+    {
+        public string Description { get; set; }
+        public string RecommendedCode { get; set; }
+        public int LineNumber { get; set; }
+        public string SuggestionType { get; set; }
+    }
+
     public enum FolderFileTypes { Addin, DataView, DataFiles, ProjectClass, ConnectionDriver, ProjectData, GFX, OtherDLL,Entities,Mapping ,WorkFlows,Scripts, ScriptsLogs,Config,Reports,Logs,Misc,LoaderExtensions,Projects,Global,Shared,Private,DataSources, Builtin }
 
     public enum BeepConfigType

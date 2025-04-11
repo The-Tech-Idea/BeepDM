@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
+using System.Linq;
 
 
 namespace TheTechIdea.Beep.Helpers
@@ -111,8 +112,13 @@ namespace TheTechIdea.Beep.Helpers
 		public static string GeneratePrimaryKeyQuery(DataSourceType rdbms, string tableName, string primaryKey, string type)
 		{
 			string query = "";
+            if (string.IsNullOrWhiteSpace(tableName))
+                throw new ArgumentException("Table name cannot be null or empty", nameof(tableName));
 
-			switch (rdbms)
+            if (string.IsNullOrWhiteSpace(primaryKey))
+                throw new ArgumentException("Primary key name cannot be null or empty", nameof(primaryKey));
+
+            switch (rdbms)
 			{
 				case DataSourceType.SqlServer:
 					query = $"ALTER TABLE {tableName} ADD {primaryKey} {type} PRIMARY KEY IDENTITY";
@@ -648,14 +654,8 @@ new QuerySqlRepo(DataSourceType.OPC, "READ NODE", Sqlcommandtype.getTable), // C
             string ddl = "";
             switch (dataSourceType)
             {
-                case DataSourceType.MongoDB:
-                    ddl = $"db.{entityName}.drop();";
-                    break;
-                case DataSourceType.LiteDB:
-                    ddl = @$"db.DropCollection(''{entityName}'');";
-            break;
-			case DataSourceType.SqlServer:
-            ddl = $"DROP TABLE IF EXISTS { entityName}; ";
+				case DataSourceType.SqlServer:
+					ddl = $"DROP TABLE IF EXISTS { entityName}; ";
                     break;
                 case DataSourceType.Mysql:
                     ddl = $"DROP TABLE IF EXISTS {entityName};";
@@ -671,16 +671,122 @@ new QuerySqlRepo(DataSourceType.OPC, "READ NODE", Sqlcommandtype.getTable), // C
                     break;
                 case DataSourceType.Couchbase:
                     ddl = $"DROP COLLECTION `{entityName}`;";
-            break;
-			case DataSourceType:
-            ddl = $"DROP MEASUREMENT {entityName};";
-            break;
+				break;
+                case DataSourceType.MongoDB:
+                    ddl = $"db.{entityName}.drop();";
+                    break;
+                case DataSourceType.LiteDB:
+                    ddl = $"db.DropCollection('{entityName}');";
+                    break;
+                case DataSourceType.InfluxDB:
+                    ddl = $"DROP MEASUREMENT {entityName};";
+                    break;
+
+                    
             // Add additional cases for each database type...
             default:
             throw new NotImplementedException($"DataSourceType {dataSourceType} is not supported.");
         }
     return ddl;
 }
+        /// <summary>Generates a query to create an index on a table.</summary>
+        public static string GenerateCreateIndexQuery(DataSourceType rdbms, string tableName, string indexName, string[] columns, bool unique = false)
+        {
+            string columnList = string.Join(", ", columns);
+            string uniqueStr = unique ? "UNIQUE " : "";
 
-}
+            switch (rdbms)
+            {
+                case DataSourceType.SqlServer:
+                case DataSourceType.Mysql:
+                case DataSourceType.Postgre:
+                    return $"CREATE {uniqueStr}INDEX {indexName} ON {tableName} ({columnList})";
+                case DataSourceType.Oracle:
+                    return $"CREATE {uniqueStr}INDEX {indexName} ON {tableName} ({columnList})";
+                // Add cases for other databases
+                default:
+                    return $"CREATE {uniqueStr}INDEX {indexName} ON {tableName} ({columnList})";
+            }
+        }
+        /// <summary>Generates SQL statements to begin, commit, or rollback a transaction.</summary>
+        public static string GetTransactionStatement(DataSourceType rdbms, TransactionOperation operation)
+        {
+            switch (rdbms)
+            {
+                case DataSourceType.SqlServer:
+                case DataSourceType.Mysql:
+                    return operation switch
+                    {
+                        TransactionOperation.Begin => "BEGIN TRANSACTION",
+                        TransactionOperation.Commit => "COMMIT",
+                        TransactionOperation.Rollback => "ROLLBACK",
+                        _ => throw new ArgumentException("Invalid transaction operation")
+                    };
+                // Add cases for other databases
+                default:
+                    throw new NotSupportedException($"Transaction operations not defined for {rdbms}");
+            }
+        }
+
+        private static readonly Dictionary<(DataSourceType, Sqlcommandtype), string> QueryCache =
+     CreateQuerySqlRepos().ToDictionary(
+         q => (q.DatabaseType, q.Sqltype),
+         q => q.Sql);
+
+        public static string GetQuery(DataSourceType dataSourceType, Sqlcommandtype queryType)
+        {
+            if (QueryCache.TryGetValue((dataSourceType, queryType), out string query))
+                return query;
+
+            return string.Empty;
+        }
+
+        public static string SafeQuote(string value, DataSourceType dataSourceType)
+        {
+            switch (dataSourceType)
+            {
+                case DataSourceType.Oracle:
+                case DataSourceType.SqlServer:
+                case DataSourceType.Mysql:
+                    return value?.Replace("'", "''");
+                case DataSourceType.Postgre:
+                    return value?.Replace("'", "''").Replace("\\", "\\\\");
+                default:
+                    return value?.Replace("'", "''");
+            }
+        }
+        /// <summary>Determines if the database type supports specific features.</summary>
+        public static bool SupportsFeature(DataSourceType dataSourceType, DatabaseFeature feature)
+        {
+            return (dataSourceType, feature) switch
+            {
+                (DataSourceType.SqlServer, DatabaseFeature.WindowFunctions) => true,
+                (DataSourceType.SqlServer, DatabaseFeature.Json) => true,
+                (DataSourceType.Mysql, DatabaseFeature.WindowFunctions) => true,
+                (DataSourceType.Mysql, DatabaseFeature.Json) => true,
+                (DataSourceType.SqlLite, DatabaseFeature.WindowFunctions) => false,
+                // Add more combinations
+                _ => false
+            };
+        }
+
+      
+
+    }
+    public enum DatabaseFeature
+    {
+        WindowFunctions,
+        Json,
+        Xml,
+        TemporalTables,
+        FullTextSearch,
+        Partitioning,
+        ColumnStore
+    }
+    public enum TransactionOperation
+    {
+        Begin,
+        Commit,
+        Rollback
+    }
 }

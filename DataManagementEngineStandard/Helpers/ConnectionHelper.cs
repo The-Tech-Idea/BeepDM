@@ -52,108 +52,178 @@ namespace TheTechIdea.Beep.Helpers
         /// <returns>The modified connection string.</returns>
         public static string ReplaceValueFromConnectionString(ConnectionDriversConfig DataSourceDriver, IConnectionProperties ConnectionProp, IDMEEditor DMEEditor)
         {
-            bool IsConnectionString = false;
-            bool IsUrl = false;
-            bool IsFile = false;
-            string rep = "";
-            string input = "";
-            string replacement;
-            string pattern;
-            if(DataSourceDriver==null)
+            if (DataSourceDriver == null)
             {
                 return null;
             }
-            if (string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString))
-            {
-                if (!string.IsNullOrEmpty(DataSourceDriver.ConnectionString))
-                {
-                    IsConnectionString = true;
-                    ConnectionProp.ConnectionString = DataSourceDriver.ConnectionString;
 
-                }
+            // Consolidate flags at the beginning
+            bool hasConnectionString = !string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString);
+            bool hasUrl = !string.IsNullOrWhiteSpace(ConnectionProp.Url);
+            bool hasFile = !string.IsNullOrWhiteSpace(ConnectionProp.FilePath) || !string.IsNullOrWhiteSpace(ConnectionProp.FileName);
+
+            string input = "";
+
+            // Determine input string
+            if (!hasConnectionString && !string.IsNullOrEmpty(DataSourceDriver.ConnectionString))
+            {
+                ConnectionProp.ConnectionString = DataSourceDriver.ConnectionString;
+                hasConnectionString = true;
             }
-            else
-            {
-                IsConnectionString = true;
-            }
 
-            if (!string.IsNullOrWhiteSpace(ConnectionProp.Url))
+            if (hasConnectionString)
             {
-                IsUrl = true;
-
-            }
-            if (!string.IsNullOrWhiteSpace(ConnectionProp.FilePath) || !string.IsNullOrWhiteSpace(ConnectionProp.FileName))
-            {
-
-                IsFile = true;
-            }
-            if (IsConnectionString)
-            {
-
                 input = ConnectionProp.ConnectionString;
-                if (input.Contains("./") )
+
+                // Process relative paths
+                if (input.Contains("./"))
                 {
-                    string fullPath = input.Replace("./Beep", DMEEditor.ConfigEditor.ExePath);
-                    fullPath = fullPath.Replace('/', '\\');
+                    string fullPath = NormalizePath(input, DMEEditor.ConfigEditor.ExePath);
                     ConnectionProp.FilePath = fullPath;
-                    input= fullPath;
-                    //  = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
+                    input = fullPath;
                 }
             }
-
-            if (IsUrl)
+            else if (hasUrl)
             {
                 input = ConnectionProp.Url;
-                pattern = "{Url}";
-                replacement = ConnectionProp.Url ?? string.Empty; ;
-                input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
-
             }
-            //if (IsFile)
-            //{
-               
-            //    // input= Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
-            //}
-
-
-            // Replace other placeholders
-            input = Regex.Replace(input, "{Host}", ConnectionProp.Host ?? string.Empty, RegexOptions.IgnoreCase);
-            input = Regex.Replace(input, "{UserID}", ConnectionProp.UserID ?? string.Empty, RegexOptions.IgnoreCase);
-            input = Regex.Replace(input, "{Password}", ConnectionProp.Password ?? string.Empty, RegexOptions.IgnoreCase);
-            input = Regex.Replace(input, "{DataBase}", ConnectionProp.Database ?? string.Empty, RegexOptions.IgnoreCase);
-            input = Regex.Replace(input, "{Port}", ConnectionProp.Port.ToString() ?? string.Empty, RegexOptions.IgnoreCase);
-
-            if (IsFile)
+            else if (hasFile)
             {
-                if (!string.IsNullOrEmpty(ConnectionProp.FilePath) && !string.IsNullOrEmpty(ConnectionProp.FileName))
-                {
-                    if (ConnectionProp.FilePath.StartsWith(".") || ConnectionProp.FilePath.Equals("/") || ConnectionProp.FilePath.Equals("\\"))
-                    {
-                        string fullPath = Path.Combine(DMEEditor.ConfigEditor.ExePath, ConnectionProp.FilePath.TrimStart('.', '/', '\\'));
-                        ConnectionProp.FilePath = fullPath;
-                        //  = ConnectionProp.FilePath.Replace(".", DMEEditor.ConfigEditor.ExePath);
-                    }
-                    if (!string.IsNullOrWhiteSpace(ConnectionProp.ConnectionString))
-                    {
-                   
-                        pattern = "{File}";
-                        replacement = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName) ?? string.Empty;
-                        input = Regex.Replace(input, pattern, replacement, RegexOptions.IgnoreCase);
-                    }
-                    else
-                    {
-                        input = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
-                    }
-
-                }
-                
+                input = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
             }
 
+            // Replace placeholders using a dictionary approach
+            var replacements = new Dictionary<string, string>
+    {
+        {"{Url}", ConnectionProp.Url ?? string.Empty},
+        {"{Host}", ConnectionProp.Host ?? string.Empty},
+        {"{UserID}", ConnectionProp.UserID ?? string.Empty},
+        {"{Password}", ConnectionProp.Password ?? string.Empty},
+        {"{DataBase}", ConnectionProp.Database ?? string.Empty},
+        {"{Port}", ConnectionProp.Port.ToString() ?? string.Empty}
+    };
 
-            rep = input;
-            return rep;
+            // Process file path if needed
+            if (hasFile)
+            {
+                NormalizeFilePath(ConnectionProp, DMEEditor.ConfigEditor.ExePath);
+
+                if (hasConnectionString)
+                {
+                    replacements["{File}"] = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
+                }
+                else
+                {
+                    input = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
+                }
+            }
+
+            // Apply all replacements
+            foreach (var replacement in replacements)
+            {
+                input = Regex.Replace(input, replacement.Key, replacement.Value, RegexOptions.IgnoreCase);
+            }
+
+            return input;
         }
-        /// <summary>Returns a list of all connection configurations.</summary>
+
+        private static string NormalizePath(string relativePath, string basePath)
+        {
+            string path = relativePath.Replace("./Beep", basePath);
+            return path.Replace('/', '\\');
+        }
+
+        private static void NormalizeFilePath(IConnectionProperties ConnectionProp, string basePath)
+        {
+            if (!string.IsNullOrEmpty(ConnectionProp.FilePath) &&
+                (ConnectionProp.FilePath.StartsWith(".") ||
+                 ConnectionProp.FilePath.Equals("/") ||
+                 ConnectionProp.FilePath.Equals("\\")))
+            {
+                string fullPath = Path.Combine(basePath, ConnectionProp.FilePath.TrimStart('.', '/', '\\'));
+                ConnectionProp.FilePath = fullPath;
+            }
+        }
+        /// <summary>
+        /// Validates a connection string for a specific data source type
+        /// </summary>
+        /// <param name="connectionString">The connection string to validate</param>
+        /// <param name="dataSourceType">The type of the data source</param>
+        /// <returns>True if the connection string is valid, otherwise false</returns>
+        public static bool IsConnectionStringValid(string connectionString, DataSourceType dataSourceType)
+        {
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                return false;
+            }
+
+            // Validate based on data source type
+            switch (dataSourceType)
+            {
+                case DataSourceType.SqlServer:
+                    return ValidateSqlServerConnectionString(connectionString);
+                case DataSourceType.Mysql:
+                    return ValidateMySqlConnectionString(connectionString);
+                case DataSourceType.SqlLite:
+                    return ValidateSQLiteConnectionString(connectionString);
+                // Add more cases for other database types
+                default:
+                    // Basic check for unknown types - check for at least one key-value pair
+                    return connectionString.Contains("=");
+            }
+        }
+        /// <summary>
+        /// Creates a secure version of a connection string by masking sensitive information
+        /// </summary>
+        /// <param name="connectionString">The connection string to secure</param>
+        /// <returns>A secure version of the connection string with sensitive data masked</returns>
+        public static string SecureConnectionString(string connectionString)
+        {
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                return connectionString;
+            }
+
+            // Use regex to mask password
+            string passwordPattern = @"(Password|Pwd)=([^;]*)";
+            string secureConnectionString = Regex.Replace(connectionString,
+                                                        passwordPattern,
+                                                        "$1=********",
+                                                        RegexOptions.IgnoreCase);
+
+            // Mask any API keys
+            string apiKeyPattern = @"(ApiKey|api[-_]?key)=([^;]*)";
+            secureConnectionString = Regex.Replace(secureConnectionString,
+                                                 apiKeyPattern,
+                                                 "$1=********",
+                                                 RegexOptions.IgnoreCase);
+
+            return secureConnectionString;
+        }
+
+        public static bool ValidateSqlServerConnectionString(string connectionString)
+        {
+            // Check for required parameters in SQL Server connection string
+            return connectionString.Contains("Server=") ||
+                   connectionString.Contains("Data Source=") ||
+                   connectionString.Contains("Database=") ||
+                   connectionString.Contains("Initial Catalog=");
+        }
+
+        public static bool ValidateMySqlConnectionString(string connectionString)
+        {
+            // Check for required parameters in MySQL connection string
+            return connectionString.Contains("Server=") ||
+                   connectionString.Contains("Host=") ||
+                   connectionString.Contains("Database=");
+        }
+
+        public static bool ValidateSQLiteConnectionString(string connectionString)
+        {
+            // Check for required parameter in SQLite connection string
+            return connectionString.Contains("Data Source=");
+        }
+
         /// <returns>A list of ConnectionDriversConfig objects representing different connection configurations.</returns>
         public static List<ConnectionDriversConfig> GetAllConnectionConfigs()
         {

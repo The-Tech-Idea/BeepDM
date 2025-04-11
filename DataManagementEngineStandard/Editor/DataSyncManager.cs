@@ -14,7 +14,7 @@ using TheTechIdea.Beep.Addin;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class DataSyncManager : IDisposable
+    public partial class DataSyncManager : IDisposable
     {
         private bool disposedValue;
         private int Errorcount;

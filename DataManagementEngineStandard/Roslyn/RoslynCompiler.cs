@@ -9,6 +9,8 @@ using System.Linq;
 using TheTechIdea.Beep.Editor;
 using System.Text;
 using TheTechIdea.Beep.ConfigUtil;
+using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 
 
@@ -19,6 +21,30 @@ namespace TheTechIdea.Beep.Roslyn
     {
          // Dictionary to store compiled types and their assemblies
           private static readonly Dictionary<string, Tuple<Type, Assembly>> CompiledTypes = new Dictionary<string, Tuple<Type, Assembly>>();
+        // Create a central method for managing references instead of duplicating across multiple methods
+        private static List<MetadataReference> GetCommonReferences(bool includeAdditionalReferences = false)
+        {
+            var references = new List<MetadataReference>
+    {
+        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(System.ComponentModel.INotifyPropertyChanged).GetTypeInfo().Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(Enumerable).GetTypeInfo().Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(Entity).GetTypeInfo().Assembly.Location),
+        MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location), "System.Runtime.dll"))
+    };
+
+            if (includeAdditionalReferences)
+            {
+                // Add commonly used references for your application
+                references.Add(MetadataReference.CreateFromFile(typeof(System.Data.DataTable).Assembly.Location));
+                references.Add(MetadataReference.CreateFromFile(typeof(System.Linq.Expressions.Expression).Assembly.Location));
+                references.Add(MetadataReference.CreateFromFile(typeof(System.Text.Json.JsonSerializer).Assembly.Location));
+                // Add more as needed
+            }
+
+            return references;
+        }
 
         public static bool CompileCodeToDLL(string sourceFile, string outputFile)
         {
@@ -77,7 +103,6 @@ namespace TheTechIdea.Beep.Roslyn
                 return true;
             }
         }
-
         public static bool CompileCodeToDLL(IEnumerable<string> sourceFiles, string outputFile)
         {
             // List to hold the syntax trees
@@ -496,7 +521,6 @@ namespace TheTechIdea.Beep.Roslyn
                 return null;
             }
         }
-
         private static bool CompileToDLL(IEnumerable<SyntaxTree> syntaxTrees, string outputFile)
         {
             // Set up assembly references
@@ -646,6 +670,155 @@ namespace TheTechIdea.Beep.Roslyn
             {
                 Console.WriteLine("Compilation successful! The assembly has been loaded in memory.");
                 return true;
+            }
+        }
+        // Add async compilation methods for better UI responsiveness
+        public static async Task<Assembly> CreateAssemblyAsync(IDMEEditor DMEEditor, string code)
+        {
+            return await Task.Run(() => CreateAssembly(DMEEditor, code));
+        }
+
+        public static async Task<bool> CompileCodeToDLLAsync(string sourceFile, string outputFile)
+        {
+            return await Task.Run(() => CompileCodeToDLL(sourceFile, outputFile));
+        }
+
+        // Improved error reporting that returns structured information
+        public static (bool Success, IEnumerable<Diagnostic> Errors, Assembly Assembly) CompileAndGetDiagnostics(string sourceCode)
+        {
+            var syntaxTree = CSharpSyntaxTree.ParseText(sourceCode);
+            var references = GetCommonReferences();
+
+            var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithOptimizationLevel(OptimizationLevel.Release)
+                .WithPlatform(Platform.AnyCpu);
+
+            var compilation = CSharpCompilation.Create(
+                "InMemoryAssembly",
+                new[] { syntaxTree },
+                references,
+                compilationOptions);
+
+            Assembly resultAssembly = null;
+            using (var ms = new MemoryStream())
+            {
+                var result = compilation.Emit(ms);
+
+                if (result.Success)
+                {
+                    ms.Seek(0, SeekOrigin.Begin);
+                    resultAssembly = Assembly.Load(ms.ToArray());
+                }
+
+                return (result.Success,
+                        result.Diagnostics.Where(d => d.IsWarningAsError || d.Severity == DiagnosticSeverity.Error),
+                        resultAssembly);
+            }
+        }
+        // Improved type caching with thread safety
+      
+        // Add methods to manage the cache
+        public static void ClearCompiledTypeCache()
+        {
+            CompiledTypes.Clear();
+        }
+
+        public static bool RemoveFromCache(string className)
+        {
+            return CompiledTypes.Remove(className, out _);
+        }
+        // Add ability to generate PDB files for debugging capabilities
+        public static bool CompileWithDebuggingInfo(string sourceCode, string outputFile)
+        {
+            var syntaxTree = CSharpSyntaxTree.ParseText(sourceCode);
+            var references = GetCommonReferences();
+
+            var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithOptimizationLevel(OptimizationLevel.Debug) // Use Debug optimization
+                .WithPlatform(Platform.AnyCpu);
+
+            var compilation = CSharpCompilation.Create(
+                Path.GetFileNameWithoutExtension(outputFile),
+                new[] { syntaxTree },
+                references,
+                compilationOptions);
+
+            // Create both DLL and PDB files
+            EmitResult result;
+            using (var dllStream = new FileStream(outputFile, FileMode.Create))
+            using (var pdbStream = new FileStream(Path.ChangeExtension(outputFile, "pdb"), FileMode.Create))
+            {
+                result = compilation.Emit(dllStream, pdbStream);
+            }
+
+            return result.Success;
+        }
+        // Add support for using Source Generators
+        public static Assembly CompileWithSourceGenerators(string code, IEnumerable<ISourceGenerator> generators)
+        {
+            var syntaxTree = CSharpSyntaxTree.ParseText(code);
+            var references = GetCommonReferences();
+
+            var compilation = CSharpCompilation.Create(
+                "GeneratedAssembly",
+                new[] { syntaxTree },
+                references,
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+            // Apply source generators
+            var driver = CSharpGeneratorDriver.Create(generators);
+            driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
+
+            // Emit the compilation
+            using (var ms = new MemoryStream())
+            {
+                var result = outputCompilation.Emit(ms);
+                if (!result.Success)
+                {
+                    return null;
+                }
+
+                ms.Seek(0, SeekOrigin.Begin);
+                return Assembly.Load(ms.ToArray());
+            }
+        }
+        // Compile multiple classes in one go, handling their dependencies
+        public static Dictionary<string, Type> CompileMultipleClassTypes(Dictionary<string, string> classesToCompile)
+        {
+            if (classesToCompile == null || !classesToCompile.Any())
+                return new Dictionary<string, Type>();
+
+            // Parse all source codes
+            var syntaxTrees = classesToCompile.Values.Select(code => CSharpSyntaxTree.ParseText(code)).ToArray();
+
+            // Set up compilation
+            var references = GetCommonReferences(true);
+            var compilation = CSharpCompilation.Create(
+                "MultipleClassesAssembly",
+                syntaxTrees,
+                references,
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+            // Emit assembly
+            using (var ms = new MemoryStream())
+            {
+                var result = compilation.Emit(ms);
+                if (!result.Success)
+                    return new Dictionary<string, Type>();
+
+                ms.Seek(0, SeekOrigin.Begin);
+                var assembly = Assembly.Load(ms.ToArray());
+
+                // Map class names to their compiled types
+                var types = new Dictionary<string, Type>();
+                foreach (var className in classesToCompile.Keys)
+                {
+                    var type = assembly.GetTypes().FirstOrDefault(t => t.Name == className);
+                    if (type != null)
+                        types[className] = type;
+                }
+
+                return types;
             }
         }
 

@@ -36,7 +36,7 @@ namespace TheTechIdea.Beep.Editor
     [ToolboxBitmap(typeof(UnitOfWork<>), "TheTechIdea.Beep.GFX.unitofwork.ico")]
     [DisplayName("Unit of Work")]
 #endif
-    public class UnitofWork<T> : IUnitofWork<T>, INotifyPropertyChanged where T : Entity, new()
+    public partial class UnitofWork<T> : IUnitofWork<T>, INotifyPropertyChanged where T : Entity, new()
     {
         private Stack<ChangeLogEntry<T>> changeLog = new Stack<ChangeLogEntry<T>>();
         

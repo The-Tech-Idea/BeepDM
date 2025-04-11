@@ -11,7 +11,7 @@ using TheTechIdea.Beep.Workflow;
 
 namespace TheTechIdea.Beep.Editor.ETL
 {
-    public class ETLScriptManager
+    public partial class ETLScriptManager
     {
         private readonly IDMEEditor _dmeEditor;
         private readonly string _scriptPath;

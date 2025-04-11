@@ -2669,8 +2669,22 @@
             <param name="DMEEditor">The DME editor.</param>
             <returns>The modified connection string.</returns>
         </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.IsConnectionStringValid(System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Validates a connection string for a specific data source type
+            </summary>
+            <param name="connectionString">The connection string to validate</param>
+            <param name="dataSourceType">The type of the data source</param>
+            <returns>True if the connection string is valid, otherwise false</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.SecureConnectionString(System.String)">
+            <summary>
+            Creates a secure version of a connection string by masking sensitive information
+            </summary>
+            <param name="connectionString">The connection string to secure</param>
+            <returns>A secure version of the connection string with sensitive data masked</returns>
+        </member>
         <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.GetAllConnectionConfigs">
-            <summary>Returns a list of all connection configurations.</summary>
             <returns>A list of ConnectionDriversConfig objects representing different connection configurations.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateSnowFlakeConfig">
@@ -3043,6 +3057,11 @@
             <summary>Returns an array of .NET data types.</summary>
             <returns>An array of .NET data types.</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.Helpers.FileHelper">
+            <summary>
+            Helper class that provides methods for file operations and management.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Helpers.FileHelper.GetFileExtensions(TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
             Retrieves supported file extensions for data drivers.
@@ -3053,20 +3072,86 @@
             Retrieves a list of file-based data sources.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.FileExists(TheTechIdea.Beep.Editor.IDMEEditor,System.String)">
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.GetSupportedFilesInDirectory(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.Boolean)">
             <summary>
-            Checks if a file exists in the configuration.
+            Gets all files with supported extensions in a directory
             </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.LoadFiles(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Generic.List{System.String})">
-            <summary>
-            Loads files and returns their connection properties.
-            </summary>
+            <param name="DMEEditor">The DME editor instance</param>
+            <param name="directoryPath">Directory path to search</param>
+            <param name="searchSubdirectories">Whether to search subdirectories</param>
+            <returns>List of file paths with supported extensions</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.FileHelper.ExtensionExists(TheTechIdea.Beep.Editor.IDMEEditor,System.String)">
             <summary>
             Checks if a specific file extension is supported.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.GetMimeType(System.String)">
+            <summary>
+            Gets the MIME type for a file based on its extension
+            </summary>
+            <param name="filePath">Path to the file</param>
+            <returns>MIME type as string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.FileExists(TheTechIdea.Beep.Editor.IDMEEditor,System.String)">
+            <summary>
+            Checks if a file exists in the configuration.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.IsFileAccessible(System.String)">
+            <summary>
+            Checks if a file is accessible for read/write operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.ValidateCsvStructure(System.String,System.Int32)">
+            <summary>
+            Validates the structure of a CSV file against expected column count
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.GetFileSize(System.String)">
+            <summary>
+            Gets the size of a file in bytes
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.GetFileCreationDate(System.String)">
+            <summary>
+            Gets the creation date of a file
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.GetFileModificationDate(System.String)">
+            <summary>
+            Gets the last modification date of a file
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.ComputeFileHash(System.String)">
+            <summary>
+            Computes the MD5 hash of a file
+            </summary>
+            <param name="filePath">Path to the file</param>
+            <returns>MD5 hash as a string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.CompareFiles(System.String,System.String)">
+            <summary>
+            Compares two files to check if their contents are identical
+            </summary>
+            <param name="filePath1">Path to the first file</param>
+            <param name="filePath2">Path to the second file</param>
+            <returns>True if files are identical, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.LoadFiles(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Generic.List{System.String})">
+            <summary>
+            Loads files and returns their connection properties.
+            </summary>
+            <param name="DMEEditor">The DME editor instance</param>
+            <param name="filenames">List of file paths to load</param>
+            <returns>List of ConnectionProperties for the loaded files</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.GetDataSourceTypeFromExtension(System.String)">
+            <summary>
+            Gets the appropriate DataSourceType based on file extension
+            </summary>
+            <param name="extension">File extension (without dot)</param>
+            <returns>The appropriate DataSourceType for the extension</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.FileHelper.UpdateFileStructure(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Boolean)">
             <summary>
@@ -3077,6 +3162,235 @@
             <summary>
             Adds a column to a CSV file with a default value.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.BackupFile(System.String)">
+            <summary>
+            Creates a backup of a file
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.RestoreFromBackup(System.String,System.String)">
+            <summary>
+            Restores a file from a backup
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.DeleteIfEmpty(System.String)">
+            <summary>
+            Deletes a file if it's empty
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.CleanTemporaryFiles(System.String)">
+            <summary>
+            Cleans temporary files from a directory
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.CompressFile(System.String,System.String)">
+            <summary>
+            Compresses a file into a ZIP archive
+            </summary>
+            <param name="filePath">Path to the file to compress</param>
+            <param name="zipFilePath">Path for the output ZIP file</param>
+            <returns>True if successful, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.ExtractZipFile(System.String,System.String)">
+            <summary>
+            Extracts a file from a ZIP archive
+            </summary>
+            <param name="zipFilePath">Path to the ZIP file</param>
+            <param name="extractPath">Path to extract files to</param>
+            <returns>True if successful, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.CountRows(System.String)">
+            <summary>
+            Counts the number of rows in a text file
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.AppendContentToFile(System.String,System.String)">
+            <summary>
+            Appends content to a file
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.ReadLastNLines(System.String,System.Int32)">
+            <summary>
+            Reads the last N lines from a file
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.ConvertFileEncoding(System.String,System.Text.Encoding,System.Text.Encoding)">
+            <summary>
+            Converts a file's encoding
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.ConvertCsvToJson(System.String)">
+            <summary>
+            Converts a CSV file to a JSON string
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.ConvertJsonToCsv(System.String,System.String)">
+            <summary>
+            Converts a JSON file to CSV format
+            </summary>
+            <param name="jsonFilePath">Path to the JSON file</param>
+            <param name="outputCsvPath">Path to save the CSV file</param>
+            <returns>True if successful, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.ParseJsonFile``1(System.String)">
+            <summary>
+            Parses a JSON file to a generic object structure
+            </summary>
+            <typeparam name="T">Type to deserialize to</typeparam>
+            <param name="jsonFilePath">Path to the JSON file</param>
+            <returns>Deserialized object or default(T) if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.ParseXmlFile(System.String)">
+            <summary>
+            Parses an XML file to an XDocument
+            </summary>
+            <param name="xmlFilePath">Path to the XML file</param>
+            <returns>XDocument or null if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.QueryCsvFile(System.String,System.String,System.String)">
+            <summary>
+            Queries a CSV file for specific data
+            </summary>
+            <param name="csvFilePath">Path to the CSV file</param>
+            <param name="columnName">Column to filter on</param>
+            <param name="filterValue">Value to filter for</param>
+            <returns>List of matching rows as string arrays</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.ReadFileAsync(System.String)">
+            <summary>
+            Asynchronously reads all text from a file
+            </summary>
+            <param name="filePath">Path to the file</param>
+            <returns>File content as string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.WriteFileAsync(System.String,System.String)">
+            <summary>
+            Asynchronously writes text to a file
+            </summary>
+            <param name="filePath">Path to the file</param>
+            <param name="content">Content to write</param>
+            <returns>True if successful, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.CopyFileAsync(System.String,System.String,System.Int32)">
+            <summary>
+            Asynchronously copies a file
+            </summary>
+            <param name="sourceFile">Source file path</param>
+            <param name="destinationFile">Destination file path</param>
+            <param name="bufferSize">Buffer size in bytes</param>
+            <returns>True if successful, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.DataTableToCsvFile(System.Data.DataTable,System.String,System.Boolean)">
+            <summary>
+            Converts a DataTable to a CSV file
+            </summary>
+            <param name="dataTable">DataTable to convert</param>
+            <param name="filePath">Path to save the CSV file</param>
+            <param name="includeHeaders">Whether to include column headers</param>
+            <returns>True if successful, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.ListToCsvFile``1(System.Collections.Generic.IList{``0},System.String)">
+            <summary>
+            Converts a list to a CSV file
+            </summary>
+            <param name="list">List to convert</param>
+            <param name="filePath">Path to save the CSV file</param>
+            <returns>True if successful, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.EscapeCsvField(System.String)">
+            <summary>
+            Escapes a field value for CSV format
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.CreateDataTableFromCsvFile(System.String,System.Boolean)">
+            <summary>
+            Creates a DataTable from a CSV file
+            </summary>
+            <param name="filePath">Path to the CSV file</param>
+            <param name="hasHeader">Whether the CSV file has headers</param>
+            <returns>DataTable with the CSV data</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.SplitCsvLine(System.String)">
+            <summary>
+            Splits a CSV line into individual fields, handling quoted fields correctly
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.DownloadFile(System.String,System.String,System.String)">
+            <summary>
+            Downloads a file from a URL to a local path
+            </summary>
+            <param name="url">URL to download from</param>
+            <param name="downloadFileName">Name of the file to save</param>
+            <param name="downloadFilePath">Path to save the file</param>
+            <returns>True if successful, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.DownloadFileAsync(System.String,System.String,System.String)">
+            <summary>
+            Downloads a file asynchronously from a URL to a local path
+            </summary>
+            <param name="url">URL to download from</param>
+            <param name="downloadFileName">Name of the file to save</param>
+            <param name="downloadFilePath">Path to save the file</param>
+            <returns>True if successful, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.IsFileValid(System.String)">
+            <summary>
+            Checks if a file is valid (exists and not locked)
+            </summary>
+            <param name="filePath">Path to the file</param>
+            <returns>True if the file is valid, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.GetFileInfo(System.String)">
+            <summary>
+            Creates a FileInfo object for the given file path
+            </summary>
+            <param name="filePath">Path to the file</param>
+            <returns>FileInfo object or null if file doesn't exist</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.CreateFileDataConnection(System.String)">
+            <summary>
+            Creates a connection properties object from a file path
+            </summary>
+            <param name="filePath">Path to the file</param>
+            <returns>ConnectionProperties object</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.CreateFileConnections(System.String[])">
+            <summary>
+            Creates a list of connection properties from an array of file paths
+            </summary>
+            <param name="filePaths">Array of file paths</param>
+            <returns>List of ConnectionProperties objects</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.CreateFileExtensionString(System.String)">
+            <summary>
+            Creates a string for use in file dialogs listing all supported extensions
+            </summary>
+            <param name="extensions">Optional list of specific extensions to include</param>
+            <returns>File dialog filter string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.EnsureDirectoryExists(System.String)">
+            <summary>
+            Ensures a directory exists, creating it if necessary
+            </summary>
+            <param name="directoryPath">Path to the directory</param>
+            <returns>True if the directory exists or was created, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.GetDirectorySize(System.String,System.Boolean)">
+            <summary>
+            Gets the size of a directory in bytes
+            </summary>
+            <param name="directoryPath">Path to the directory</param>
+            <param name="includeSubdirectories">Whether to include subdirectories in the calculation</param>
+            <returns>Size of the directory in bytes</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileHelper.CopyDirectory(System.String,System.String,System.Boolean)">
+            <summary>
+            Copies a directory and its contents to another location
+            </summary>
+            <param name="sourceDir">Source directory path</param>
+            <param name="destinationDir">Destination directory path</param>
+            <param name="overwrite">Whether to overwrite existing files</param>
+            <returns>True if successful, false otherwise</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Helpers.RDBMSHelper">
             <summary>
@@ -3140,6 +3454,309 @@
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetPagingSyntax(TheTechIdea.Beep.Utilities.DataSourceType,System.Int32,System.Int32)">
             <summary>Gets the SQL syntax for paging results in a database-agnostic way.</summary>
             
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateCreateIndexQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String,System.String[],System.Boolean)">
+            <summary>Generates a query to create an index on a table.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetTransactionStatement(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Helpers.TransactionOperation)">
+            <summary>Generates SQL statements to begin, commit, or rollback a transaction.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.SupportsFeature(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Helpers.DatabaseFeature)">
+            <summary>Determines if the database type supports specific features.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToList(System.String)">
+            <summary>
+            Converts a string to a list of strings, splitting by commas.
+            </summary>
+            <param name="input">The input string.</param>
+            <returns>A list of strings.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToPascalCase(System.String)">
+            <summary>
+            Converts a snake_case string to PascalCase
+            </summary>
+            <param name="str">The snake_case string to convert</param>
+            <returns>The string in PascalCase format</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToCamelCase(System.String)">
+            <summary>
+            Converts a string to camelCase
+            </summary>
+            <param name="str">The string to convert</param>
+            <returns>The string in camelCase format</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToSnakeCase(System.String)">
+            <summary>
+            Converts a PascalCase or camelCase string to snake_case
+            </summary>
+            <param name="str">The string to convert</param>
+            <returns>The string in snake_case format</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToKebabCase(System.String)">
+            <summary>
+            Converts a PascalCase or camelCase string to kebab-case
+            </summary>
+            <param name="str">The string to convert</param>
+            <returns>The string in kebab-case format</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.Truncate(System.String,System.Int32,System.Boolean)">
+            <summary>
+            Truncates a string to the specified maximum length
+            </summary>
+            <param name="str">The string to truncate</param>
+            <param name="maxLength">Maximum length</param>
+            <param name="appendEllipsis">Whether to append "..." if truncated</param>
+            <returns>The truncated string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.RemoveDiacritics(System.String)">
+            <summary>
+            Removes diacritics (accents) from a string
+            </summary>
+            <param name="text">The string to normalize</param>
+            <returns>String without diacritics</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.IsValidEmail(System.String)">
+            <summary>
+            Checks if a string is a valid email address
+            </summary>
+            <param name="email">String to validate</param>
+            <returns>True if valid email format, otherwise false</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.IsNumeric(System.String)">
+            <summary>
+            Checks if a string contains only numeric characters
+            </summary>
+            <param name="str">The string to check</param>
+            <returns>True if string contains only numbers</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.IsValidDate(System.String,System.String,System.Globalization.CultureInfo)">
+            <summary>
+            Checks if a string is a valid date according to the specified format
+            </summary>
+            <param name="dateString">The date string to validate</param>
+            <param name="format">The expected date format (null for culture default)</param>
+            <param name="culture">The culture to use (null for current culture)</param>
+            <returns>True if valid date, otherwise false</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ExtractNumbers(System.String)">
+            <summary>
+            Extracts all numeric digits from a string
+            </summary>
+            <param name="str">The input string</param>
+            <returns>A string containing only the numeric digits</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.Capitalize(System.String)">
+            <summary>
+            Converts first character of the string to uppercase
+            </summary>
+            <param name="str">The string to capitalize</param>
+            <returns>String with first letter capitalized</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.SplitCamelCase(System.String)">
+            <summary>
+            Splits a string by capital letters (useful for breaking apart identifiers)
+            </summary>
+            <param name="str">The string to split</param>
+            <returns>A string with spaces before capital letters</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.IsValidJson(System.String)">
+            <summary>
+            Checks if a string is valid JSON
+            </summary>
+            <param name="strInput">String to check</param>
+            <returns>True if valid JSON, otherwise false</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToList(System.String,System.Char)">
+            <summary>
+            Converts a delimited string to a list of strings
+            </summary>
+            <param name="input">The delimited string</param>
+            <param name="delimiter">The delimiter character</param>
+            <returns>A list of strings</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ContainsAny(System.String,System.String[])">
+            <summary>
+            Checks if a string contains any of the specified substrings
+            </summary>
+            <param name="str">The string to check</param>
+            <param name="values">The substrings to look for</param>
+            <returns>True if string contains any of the specified substrings</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ContainsAll(System.String,System.String[])">
+            <summary>
+            Checks if a string contains all the specified substrings
+            </summary>
+            <param name="str">The string to check</param>
+            <param name="values">The substrings to look for</param>
+            <returns>True if string contains all the specified substrings</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.DefaultIfEmpty(System.String,System.String)">
+            <summary>
+            Returns the string or a default value if the string is null or empty
+            </summary>
+            <param name="str">The string to check</param>
+            <param name="defaultValue">The default value to return if string is null or empty</param>
+            <returns>The original string or the default value</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.IsValidFilePath(System.String)">
+            <summary>
+            Checks if a string is a valid file path
+            </summary>
+            <param name="path">The path to validate</param>
+            <returns>True if valid file path, otherwise false</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.Between(System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Extracts a substring between two specified strings
+            </summary>
+            <param name="source">The source string</param>
+            <param name="start">The starting string</param>
+            <param name="end">The ending string</param>
+            <param name="includeStartEnd">Whether to include the start and end strings</param>
+            <returns>The extracted substring or empty if not found</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.Reverse(System.String)">
+            <summary>
+            Reverses a string
+            </summary>
+            <param name="str">The string to reverse</param>
+            <returns>The reversed string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.EscapeSql(System.String,System.Char)">
+            <summary>
+            Properly escapes a string for SQL to prevent SQL injection
+            </summary>
+            <param name="str">String to be escaped</param>
+            <param name="quoteChar">Quote character (default is single quote)</param>
+            <returns>SQL-safe string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToSqlInClause(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Creates a delimited SQL string (IN clause) from a list of strings
+            </summary>
+            <param name="values">Collection of string values</param>
+            <returns>Delimited string for SQL IN clause</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToSqlIdentifier(System.String)">
+            <summary>
+            Convert a string to a valid SQL identifier by removing invalid characters
+            </summary>
+            <param name="str">String to convert</param>
+            <returns>Valid SQL identifier</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.FormatAsPhoneNumber(System.String)">
+            <summary>
+            Format a string as a phone number
+            </summary>
+            <param name="phoneNumber">String to format</param>
+            <returns>Formatted phone number</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.FormatAsSSN(System.String)">
+            <summary>
+            Format a string as a social security number (XXX-XX-XXXX)
+            </summary>
+            <param name="ssn">String to format as SSN</param>
+            <returns>Formatted SSN</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.FormatAsCreditCard(System.String,System.Char)">
+            <summary>
+            Format a credit card number with dashes and mask middle digits
+            </summary>
+            <param name="cardNumber">Card number to format</param>
+            <param name="maskChar">Character to use for masking (default '*')</param>
+            <returns>Masked credit card number</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.IsValidUrl(System.String)">
+            <summary>
+            Checks if a string is a valid URL
+            </summary>
+            <param name="url">URL to validate</param>
+            <returns>True if valid URL</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.IsGuid(System.String)">
+            <summary>
+            Validates if a string follows the GUID format
+            </summary>
+            <param name="str">The string to check</param>
+            <returns>True if the string is a valid GUID format</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.IsAlphaOnly(System.String)">
+            <summary>
+            Checks if a string contains only letters (no numbers or special characters)
+            </summary>
+            <param name="str">String to check</param>
+            <returns>True if contains only letters</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.IsValidIpAddress(System.String)">
+            <summary>
+            Checks if a string is a valid IPv4 or IPv6 address
+            </summary>
+            <param name="ipAddress">String to validate</param>
+            <returns>True if valid IP address</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.IsValidCreditCardNumber(System.String)">
+            <summary>
+            Checks if a string is a valid credit card number (using Luhn algorithm)
+            </summary>
+            <param name="cardNumber">Card number to validate</param>
+            <returns>True if valid credit card number</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToEnum``1(System.String,System.Boolean,``0)">
+            <summary>
+            Tries to parse a string to a specific enum type
+            </summary>
+            <typeparam name="TEnum">Type of enum</typeparam>
+            <param name="value">String value to parse</param>
+            <param name="ignoreCase">Whether to ignore case</param>
+            <param name="defaultValue">Default value if parsing fails</param>
+            <returns>Parsed enum value or default</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.FromBase64(System.String)">
+            <summary>
+            Converts a base64 string to bytes
+            </summary>
+            <param name="base64String">Base64 encoded string</param>
+            <returns>Decoded byte array or null if invalid</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToBytes(System.String,System.Text.Encoding)">
+            <summary>
+            Converts a string to bytes using the specified encoding
+            </summary>
+            <param name="str">String to convert</param>
+            <param name="encoding">Text encoding to use (default UTF8)</param>
+            <returns>Byte array</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToDateTime(System.String,System.String,System.DateTime,System.IFormatProvider)">
+            <summary>
+            Attempts to convert a string to a DateTime with specified format and culture
+            </summary>
+            <param name="dateString">Date string to parse</param>
+            <param name="format">Format specifier</param>
+            <param name="defaultValue">Default value if parsing fails</param>
+            <param name="provider">Format provider (culture)</param>
+            <returns>Parsed DateTime or default</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToMD5Hash(System.String)">
+            <summary>
+            Computes MD5 hash of a string (for checksums, not for passwords)
+            </summary>
+            <param name="input">Input string</param>
+            <returns>MD5 hash as a hex string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToSHA256Hash(System.String)">
+            <summary>
+            Computes SHA256 hash of a string
+            </summary>
+            <param name="input">Input string</param>
+            <returns>SHA256 hash as a hex string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.TestConnectionHelper.TestConnectionAsync(TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig,System.Int32)">
+            <summary>
+            Tests a connection configuration to verify it can connect successfully
+            </summary>
+            <param name="config">The connection configuration to test</param>
+            <param name="timeout">Connection timeout in seconds</param>
+            <returns>A tuple with success flag and error message (if any)</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.TypeHelper.GetInstance(System.Type)">
             <summary>
@@ -3677,6 +4294,124 @@
             <param name="namespaceString">The namespace for the configuration class.</param>
             <param name="outputPath">The output path for the generated configuration file.</param>
             <returns>Path to the generated configuration file.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateRecordClass(System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates a class with C# record type for immutable data models
+            </summary>
+            <param name="recordName">Name of the record to create</param>
+            <param name="entity">Entity structure to base the record on</param>
+            <param name="outputPath">Output file path</param>
+            <param name="namespaceName">Namespace to use</param>
+            <param name="generateFile">Whether to generate physical file</param>
+            <returns>The generated code as string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateNullableAwareClass(System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates a class with support for nullable reference types
+            </summary>
+            <param name="className">Name of the class</param>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace name</param>
+            <param name="generateNullableAnnotations">Whether to add nullable annotations</param>
+            <returns>The generated code</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.IsReferenceType(System.String)">
+            <summary>
+            Determines if a type is a reference type
+            </summary>
+            <param name="typeName">The name of the type</param>
+            <returns>True if it's a reference type, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateDDDAggregateRoot(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Creates a domain-driven design style aggregate root class from entity
+            </summary>
+            <param name="entity">The entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace</param>
+            <returns>Generated code as string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateGraphQLSchema(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String)">
+            <summary>
+            Generates GraphQL type definitions from entity structures
+            </summary>
+            <param name="entities">The entity structures to convert</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace</param>
+            <returns>The generated GraphQL schema</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateRepositoryImplementation(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates repository pattern implementation for an entity
+            </summary>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace</param>
+            <param name="interfaceOnly">Whether to generate interface only</param>
+            <returns>The generated repository code</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateServerlessFunctions(TheTechIdea.Beep.DataBase.EntityStructure,System.String,TheTechIdea.Beep.Utilities.CloudProviderType)">
+            <summary>
+            Generates serverless function code (Azure Functions/AWS Lambda) for entity operations
+            </summary>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="cloudProvider">Cloud provider type (Azure, AWS, etc)</param>
+            <returns>The serverless function code</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateEntityDocumentation(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Generates XML documentation from entity structure
+            </summary>
+            <param name="entity">Entity structure to document</param>
+            <param name="outputPath">Output path</param>
+            <returns>The XML documentation string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateFluentValidators(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Generates FluentValidation validators for entity
+            </summary>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace</param>
+            <returns>The validator class code</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateEFCoreMigration(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Generates Entity Framework Core migration code for entity
+            </summary>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace</param>
+            <returns>The migration code</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateEntityDiffReport(TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Generates a difference report between two versions of an entity
+            </summary>
+            <param name="originalEntity">Original entity</param>
+            <param name="newEntity">New entity</param>
+            <returns>Difference report as string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateBlazorComponent(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Generates Blazor component for displaying and editing entity
+            </summary>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Component namespace</param>
+            <returns>The Blazor component code</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateGrpcService(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Generates gRPC service definitions for entity
+            </summary>
+            <param name="entity">Entity structure</param>
+            <param name="outputPath">Output path</param>
+            <param name="namespaceName">Namespace</param>
+            <returns>The generated proto file and service implementation</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Workflow.Actions.ExpressionEvaluator">
             <summary>

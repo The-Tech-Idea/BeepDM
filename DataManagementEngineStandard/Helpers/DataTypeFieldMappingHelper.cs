@@ -49,10 +49,42 @@ namespace TheTechIdea.Beep.Helpers
         /// - System.TimeSpan
         /// - System.DateTimeOffset
         public static string NetDataTypeDef2 = ",System.Byte[],System.SByte[],System.Byte,System.SByte,System.Int32,System.UInt32,System.Int16,System.UInt16,System.Int64,System.UInt64,System.Single,System.Double,System.Char,System.Boolean,System.Object,System.String,System.Decimal,System.DateTime,System.TimeSpan,System.DateTimeOffset,System.Guid,System.Xml";
+
+       
+        //public static string[] GetNetDataTypes()
+        //{
+        //    return _cachedDataTypes.GetOrAdd("NetDataTypeDef1", key => {
+        //        string[] a = NetDataTypeDef1.Split(',');
+        //        Array.Sort(a);
+        //        return a;
+        //    });
+        //}
+        //public static string[] GetNetDataTypes2()
+        //{
+        //    return _cachedDataTypes.GetOrAdd("NetDataTypeDef2", key =>
+        //    {
+        //        string[] a = NetDataTypeDef2.Split(',');
+        //        Array.Sort(a);
+        //        return a;
+        //    });
+        //}
+        private const string NUMERIC_PRECISION_PLACEHOLDER = "(P,S)";
+        private const string STRING_LENGTH_PLACEHOLDER = "(N)";
+
+        public static string GetCustomDataType(string DSname, EntityField fld, IDMEEditor DMEEditor, Func<string, string> customTypeConverter)
+        {
+            string standardType = GetDataType(DSname, fld, DMEEditor);
+            return customTypeConverter?.Invoke(standardType) ?? standardType;
+        }
+        public static bool IsValidFieldMapping(string DSname, EntityField fld, IDMEEditor DMEEditor)
+        {
+            string dataType = GetDataType(DSname, fld, DMEEditor);
+            return !string.IsNullOrEmpty(dataType);
+        }
+
         /// <summary>Returns an array of .NET data types.</summary>
         /// <returns>An array of .NET data types.</returns>
         /// 
-
         public static string[] GetNetDataTypes()
         {
             string[] a = NetDataTypeDef1.Split(',');

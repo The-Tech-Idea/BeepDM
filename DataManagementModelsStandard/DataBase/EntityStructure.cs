@@ -337,7 +337,12 @@ private int _id;
             get { return _fieldtype; }
             set { SetProperty(ref _fieldtype, value); }
         }
-
+        private int _size;
+        public int Size
+        {
+            get { return _size==0 && _size1>0 ? Size1: _size; }
+            set { SetProperty(ref _size, value); }
+        }
         private int _size1;
         public int Size1
         {
@@ -371,6 +376,36 @@ private int _id;
         {
             get { return _fieldcategory; }
             set { SetProperty(ref _fieldcategory, value); }
+        }
+        //IsRequired ValueMin ValueMax IsIndexed
+
+        private int _valuemin;
+        public int ValueMin
+        {
+            get { return _valuemin; }
+            set { SetProperty(ref _valuemin, value); }
+        }
+
+        private int _valuemax;
+        public int ValueMax
+        {
+            get { return _valuemax; }
+            set { SetProperty(ref _valuemax, value); }
+        }
+
+
+        private bool _isrequired;
+        public bool IsRequired
+        {
+            get { return _isrequired; }
+            set { SetProperty(ref _isrequired, value); }
+        }
+
+        private bool _isindexed;
+        public bool IsIndexed
+        {
+            get { return _isindexed; }
+            set { SetProperty(ref _isindexed, value); }
         }
 
         private bool _isautoincrement;

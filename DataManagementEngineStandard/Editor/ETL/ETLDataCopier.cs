@@ -13,7 +13,7 @@ using TheTechIdea.Beep.Workflow.Mapping;
 
 namespace TheTechIdea.Beep.Editor.ETL
 {
-    public class ETLDataCopier
+    public partial class ETLDataCopier
     {
         private IDMEEditor DMEEditor { get; }
         private EntityStructure SourceEntityStructure;

@@ -9,7 +9,7 @@ using TheTechIdea.Beep.ConfigUtil;
 
 namespace TheTechIdea.Beep.Editor.Sync
 {
-    public class SyncManager : IDisposable
+    public partial class SyncManager : IDisposable
     {
         private readonly IDMEEditor _editor;
         private readonly ISchemaRepository _schemaRepository;

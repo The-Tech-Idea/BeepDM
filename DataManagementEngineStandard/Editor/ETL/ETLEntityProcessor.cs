@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TheTechIdea.Beep.Editor.ETL
 {
-    public class ETLEntityProcessor
+    public partial class ETLEntityProcessor
     {
         public delegate object TransformRecordDelegate(object sourceRecord);
 

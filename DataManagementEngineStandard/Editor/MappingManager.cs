@@ -15,7 +15,7 @@ namespace TheTechIdea.Beep.Mapping
     /// <summary>
     /// Provides utility methods to create and manage entity mappings between source and destination entities.
     /// </summary>
-    public static class MappingManager
+    public  static partial class MappingManager
     {
         private const string LogSource = "Beep";
 
