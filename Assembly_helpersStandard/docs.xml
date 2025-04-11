@@ -90,14 +90,6 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.LoadAssembly(System.String,TheTechIdea.Beep.Utilities.FolderFileTypes)">
-            <summary>
-                Method Will Load All Assembly found in the Passed Path
-            </summary>
-            <param name="Path"></param>
-            <param name="FolderFileTypes"></param>
-            <returns></returns>
-        </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.LoadAssemblyFormRunTime">
             <summary>
                 Method Will Load All Assembly found in the Passed Path
@@ -129,13 +121,6 @@
             <returns>A list of ParentChildObjects representing the addins organized in a hierarchical structure.</returns>
         </member>
         <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Tools.AssemblyHandler.ScanAssemblyForDataSources(System.Reflection.Assembly)" -->
-        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.ScanAssembly(System.Reflection.Assembly)">
-            <summary>
-            Scans an assembly to identify various implementations like data sources, loader extensions, workflow actions, and more.
-            </summary>
-            <param name="asm">The assembly to scan.</param>
-            <returns>Returns true if the scanning is successful, otherwise false.</returns>
-        </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetAssemblyClassDefinition(System.Reflection.TypeInfo,System.String)">
             <summary>
             Gets the definition of a class within an assembly, including metadata and methods.
@@ -184,25 +169,11 @@
             <param name="strFullyQualifiedName">The fully qualified name of the type.</param>
             <returns>An instance of the specified type or null if the type cannot be instantiated.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetType(System.String)">
-            <summary>
-            Retrieves a type by its fully qualified name.
-            </summary>
-            <param name="strFullyQualifiedName">The fully qualified name of the type.</param>
-            <returns>The type corresponding to the name, or null if it cannot be found.</returns>
-        </member>
         <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Tools.AssemblyHandler.RunMethod(System.Object,System.String,System.String)" -->
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.CheckDriverAlreadyExistinList">
             <summary>
             Checks and updates the list of driver configurations to ensure no duplicates exist.
             </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetADOTypeDrivers(System.Reflection.Assembly)">
-            <summary>
-            Extracts and configures ADO.NET type driver information from an assembly.
-            </summary>
-            <param name="asm">The assembly to scan for ADO.NET drivers.</param>
-            <returns>True if drivers are successfully extracted, false otherwise.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetDrivers(System.Reflection.Assembly)">
             <summary>
