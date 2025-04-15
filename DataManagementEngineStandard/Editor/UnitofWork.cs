@@ -1637,6 +1637,7 @@ namespace TheTechIdea.Beep.Editor
                     errorsInfo.Message = "Commit Cancelled";
                     return errorsInfo;
                 }
+                Units.ResetAfterCommit();
             }
             catch (Exception ex)
             {
@@ -1773,6 +1774,7 @@ namespace TheTechIdea.Beep.Editor
                     return errorsInfo;
                 }
                 _suppressNotification = false;
+                Units.ResetAfterCommit();
             }
             catch (Exception ex)
             {
@@ -1782,6 +1784,7 @@ namespace TheTechIdea.Beep.Editor
                 DMEEditor.AddLogMessage("UnitofWork", $"Saving and Commiting Changes error {ex.Message}", DateTime.Now, args.ParameterInt1, ex.Message, Errors.Failed);
             }
             _suppressNotification = false;
+            
             return errorsInfo;
         }
         /// <summary>Gets the next value of a sequence.</summary>

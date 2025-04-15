@@ -1016,8 +1016,21 @@ namespace TheTechIdea.Beep.Editor
             ItemRemoved?.Invoke(this, new ItemRemovedEventArgs<T>(removedItem));
             if (tracking != null)
             {
-              Trackings.Remove(tracking);
+                tracking.EntityState = EntityState.Deleted;
+                tracking.IsSaved = false; // Optional, mark as pending
             }
+            else
+            {
+                // Create a tracking record if it doesn't exist yet
+                int originalIndex = originalList.IndexOf(removedItem);
+                var newTracking = new Tracking(Guid.NewGuid(), originalIndex, index)
+                {
+                    EntityState = EntityState.Deleted,
+                    IsSaved = false
+                };
+                Trackings.Add(newTracking);
+            }
+
         }
         protected override void InsertItem(int index, T item)
         {
@@ -1272,6 +1285,59 @@ namespace TheTechIdea.Beep.Editor
             
                 
             return retval;
+        }
+        public void ResetAfterCommit()
+        {
+            SuppressNotification = true;
+            RaiseListChangedEvents = false;
+
+            // 1. Remove deleted items from the actual list
+            if (DeletedList.Count > 0)
+            {
+                foreach (var deletedItem in DeletedList)
+                {
+                    if (Items.Contains(deletedItem))
+                    {
+                        Items.Remove(deletedItem);
+                    }
+
+                    // Also remove from originalList if you wish to clear memory
+                    originalList.Remove(deletedItem);
+                }
+                DeletedList.Clear();
+            }
+
+            // 2. Clear update log (optional: only for entries that are saved)
+            if (UpdateLog != null)
+            {
+                var keysToRemove = UpdateLog
+                    .Where(kvp => kvp.Value.TrackingRecord != null && kvp.Value.TrackingRecord.IsSaved)
+                    .Select(kvp => kvp.Key)
+                    .ToList();
+
+                foreach (var key in keysToRemove)
+                {
+                    UpdateLog.Remove(key);
+                }
+            }
+
+            // 3. Reset tracking state
+            foreach (var track in Trackings)
+            {
+                track.IsSaved = false;
+                track.IsNew = false;
+                track.EntityState = EntityState.Unchanged;
+            }
+
+            // 4. Reset ChangedValues tracking
+            ChangedValues.Clear();
+
+            // 5. Raise bindings and refresh tracking
+            UpdateIndexTrackingAfterFilterorSort();
+            ResetBindings();
+
+            SuppressNotification = false;
+            RaiseListChangedEvents = true;
         }
 
         #endregion
