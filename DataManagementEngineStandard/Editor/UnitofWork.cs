@@ -1558,6 +1558,7 @@ namespace TheTechIdea.Beep.Editor
                         {
                             InsertedKeys.Remove(t);
                             _entityStates.Remove(t);
+                            Units.MarkAsCommitted(Units[t]);
                         }
                         else
                         {
@@ -1583,6 +1584,7 @@ namespace TheTechIdea.Beep.Editor
                         {
                             UpdatedKeys.Remove(t);
                             _entityStates.Remove(t);
+                            Units.MarkAsCommitted(Units[t]);
                         }
                         else
                         {
@@ -1608,6 +1610,7 @@ namespace TheTechIdea.Beep.Editor
                         {
 
                             _deletedentities.Remove(t);
+                            Units.MarkAsCommitted(t);
                         }
                         else
                         {
@@ -1637,7 +1640,7 @@ namespace TheTechIdea.Beep.Editor
                     errorsInfo.Message = "Commit Cancelled";
                     return errorsInfo;
                 }
-                Units.ResetAfterCommit();
+               // Units.ResetAfterCommit();
             }
             catch (Exception ex)
             {
@@ -1696,6 +1699,7 @@ namespace TheTechIdea.Beep.Editor
                             var key= InsertedKeys.Where(x => x.Value == t.ToString()).FirstOrDefault().Key;
                             InsertedKeys.Remove(key);
                             _entityStates.Remove(t);
+                            Units.MarkAsCommitted(Units[t]);
                         }
                         else
                         {
@@ -1717,6 +1721,7 @@ namespace TheTechIdea.Beep.Editor
                             var key = UpdatedKeys.Where(x => x.Value == t.ToString()).FirstOrDefault().Key;
                             UpdatedKeys.Remove(key);
                             _entityStates.Remove(t);
+                            Units.MarkAsCommitted(Units[t]);
                         }
                         else
                         {
@@ -1742,6 +1747,7 @@ namespace TheTechIdea.Beep.Editor
                             {
                                 // Since the entity was never persisted, we can remove it directly
                                 _deletedentities.Remove(entity);
+
                                 continue; // Move to the next entity
                             }
 
@@ -1751,6 +1757,7 @@ namespace TheTechIdea.Beep.Editor
                             {
                                 // Successfully deleted from the database, remove from _deletedentities
                                 _deletedentities.Remove(entity);
+                                Units.MarkAsCommitted(entity);
                             }
                             else
                             {
@@ -1774,7 +1781,7 @@ namespace TheTechIdea.Beep.Editor
                     return errorsInfo;
                 }
                 _suppressNotification = false;
-                Units.ResetAfterCommit();
+               // Units.ResetAfterCommit();
             }
             catch (Exception ex)
             {

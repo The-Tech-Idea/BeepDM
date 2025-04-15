@@ -4,13 +4,12 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
-using System.Collections.ObjectModel;
 using System.Data;
 using System.Reflection;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.ConfigUtil;
 
 namespace TheTechIdea.Beep.Editor
 {
@@ -1286,6 +1285,35 @@ namespace TheTechIdea.Beep.Editor
                 
             return retval;
         }
+        public void MarkAsCommitted(T item)
+        {
+            var tracking = GetTrackingITem(item);
+            if (tracking != null)
+            {
+                tracking.IsSaved = true;
+                tracking.IsNew = false;
+                tracking.EntityState = EntityState.Unchanged;
+
+                // Clean up logs and changed values
+                ChangedValues.Remove(item);
+
+                var log = UpdateLog.Values.FirstOrDefault(x => x.TrackingRecord?.UniqueId == tracking.UniqueId);
+                if (log != null)
+                {
+                    UpdateLog.Remove(log.LogDateandTime);
+                }
+
+                // Optionally remove from lists if it was deleted
+                if (DeletedList.Contains(item))
+                {
+                    DeletedList.Remove(item);
+                    originalList.Remove(item);
+                }
+
+                ResetBindings();
+            }
+        }
+
         public void ResetAfterCommit()
         {
             SuppressNotification = true;
@@ -1339,7 +1367,123 @@ namespace TheTechIdea.Beep.Editor
             SuppressNotification = false;
             RaiseListChangedEvents = true;
         }
+        public async Task<IErrorsInfo> CommitItemAsync(
+    T item,
+    Func<T, Task<IErrorsInfo>> insertAsync,
+    Func<T, Task<IErrorsInfo>> updateAsync,
+    Func<T, Task<IErrorsInfo>> deleteAsync)
+        {
+            var errors = new ErrorsInfo();
+            var tracking = GetTrackingITem(item);
 
+            if (tracking == null)
+            {
+                errors.Flag = Errors.Failed;
+                errors.Message = "Tracking info not found for the item.";
+                return errors;
+            }
+
+            try
+            {
+                switch (tracking.EntityState)
+                {
+                    case EntityState.Added:
+                        var insertResult = await insertAsync(item);
+                        if (insertResult.Flag == Errors.Ok)
+                        {
+                            tracking.EntityState = EntityState.Unchanged;
+                            tracking.IsSaved = true;
+                        }
+                        else
+                        {
+                            return insertResult;
+                        }
+                        break;
+
+                    case EntityState.Modified:
+                        var updateResult = await updateAsync(item);
+                        if (updateResult.Flag == Errors.Ok)
+                        {
+                            tracking.EntityState = EntityState.Unchanged;
+                            tracking.IsSaved = true;
+                        }
+                        else
+                        {
+                            return updateResult;
+                        }
+                        break;
+
+                    case EntityState.Deleted:
+                        var deleteResult = await deleteAsync(item);
+                        if (deleteResult.Flag == Errors.Ok)
+                        {
+                            DeletedList.Remove(item);
+                            originalList.Remove(item);
+                            Items.Remove(item);
+                            tracking.IsSaved = true;
+                        }
+                        else
+                        {
+                            return deleteResult;
+                        }
+                        break;
+
+                    case EntityState.Unchanged:
+                    default:
+                        // Nothing to do
+                        break;
+                }
+
+                // Cleanup: remove update log entry if exists
+                var log = UpdateLog.Values.FirstOrDefault(x => x.TrackingRecord?.UniqueId == tracking.UniqueId);
+                if (log != null)
+                {
+                    UpdateLog.Remove(log.LogDateandTime);
+                }
+
+                // Clear changes
+                ChangedValues.Remove(item);
+            }
+            catch (Exception ex)
+            {
+                errors.Flag = Errors.Failed;
+                errors.Message = $"CommitItem failed: {ex.Message}";
+                errors.Ex = ex;
+            }
+
+            return errors;
+        }
+        public ObservableChanges<T> GetPendingChanges()
+        {
+            var changes = new ObservableChanges<T>();
+
+            foreach (var tracking in Trackings)
+            {
+                if (!tracking.IsSaved)
+                {
+                    var item = tracking.EntityState == EntityState.Deleted
+                        ? DeletedList.FirstOrDefault(d => GetTrackingITem(d)?.UniqueId == tracking.UniqueId)
+                        : Items.FirstOrDefault(i => GetTrackingITem(i)?.UniqueId == tracking.UniqueId);
+
+                    if (item == null) continue;
+
+                    switch (tracking.EntityState)
+                    {
+                        case EntityState.Added:
+                            changes.Added.Add(item);
+                            break;
+                        case EntityState.Modified:
+                            changes.Modified.Add(item);
+                            break;
+                        case EntityState.Deleted:
+                            changes.Deleted.Add(item);
+                            break;
+                    }
+                }
+            }
+
+            return changes;
+        }
         #endregion
         #region "Pagination"
         public void SetPageSize(int pageSize)
@@ -1507,6 +1651,12 @@ namespace TheTechIdea.Beep.Editor
 
             return _direction == ListSortDirection.Ascending ? result : -result;
         }
+    }
+    public class ObservableChanges<T>
+    {
+        public List<T> Added { get; set; } = new();
+        public List<T> Modified { get; set; } = new();
+        public List<T> Deleted { get; set; } = new();
     }
     public class ItemAddedEventArgs<T> : EventArgs
     {
