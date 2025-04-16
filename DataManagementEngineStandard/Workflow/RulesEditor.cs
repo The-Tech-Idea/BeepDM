@@ -5,7 +5,7 @@ using TheTechIdea.Beep;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Beep.Workflow.Interfaces;
+using TheTechIdea.Beep.Rules;
 
 namespace TheTechIdea.Beep.Workflow
 {
@@ -14,7 +14,7 @@ namespace TheTechIdea.Beep.Workflow
         public RulesEditor(IDMEEditor pDMEEditor)
         {
             DMEEditor = pDMEEditor ?? throw new ArgumentNullException(nameof(pDMEEditor));
-            Parser = new RuleParser(DMEEditor);
+            Parser = new RuleParser();
             Rules = new List<IWorkFlowRule>();
         }
 

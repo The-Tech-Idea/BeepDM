@@ -1,9 +1,8 @@
 ﻿using System;
-
+using System.Collections.Generic;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Beep.Workflow.Interfaces;
 
-namespace TheTechIdea.Beep.Workflow
+namespace TheTechIdea.Beep.Rules
 {
     public class RuleStructure : Entity, IRuleStructure
     {
@@ -32,19 +31,26 @@ namespace TheTechIdea.Beep.Workflow
             get { return _rulename; }
             set { SetProperty(ref _rulename, value); }
         }
-
-        private string _fieldname;
-        public string Fieldname
+        private string _ruletype;
+        public string RuleType
         {
-            get { return _fieldname; }
-            set { SetProperty(ref _fieldname, value); }
+            get { return _ruletype; }
+            set { SetProperty(ref _ruletype, value); }
         }
+
+      
 
         private string _expression;
         public string Expression
         {
             get { return _expression; }
             set { SetProperty(ref _expression, value); }
+        }
+        private List<Token> _tokens;
+        public List<Token> Tokens
+        {
+            get { return _tokens; }
+            set { SetProperty(ref _tokens, value); }
         }
     }
 

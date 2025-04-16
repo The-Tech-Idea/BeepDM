@@ -1631,7 +1631,7 @@
             <summary>Gets or sets the DMEEditor instance.</summary>
             <value>The DMEEditor instance.</value>
         </member>
-        <member name="P:TheTechIdea.Beep.Editor.ETLEditor.RulesEditor">
+        <member name="P:TheTechIdea.Beep.Editor.ETLEditor.RulesEngine">
             <summary>Gets or sets the rules editor.</summary>
             <value>The rules editor.</value>
         </member>
@@ -4202,6 +4202,18 @@
               resource lookups using this strongly typed resource class.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Rules.BuiltinRules.GetRecordCount.RuleText">
+            <summary>
+            The textual expression that defines the rule's logic.
+            For example:Rule Test Should be 
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Rules.BuiltinRules.GetSystemDate.RuleText">
+            <summary>
+            The textual expression that defines the rule's logic.
+            For example: ":Entity1.LastName == 'Smith'" or other valid expressions.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateWebApiControllers(System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String)">
             <summary>
             Generates Web API controller classes for the provided entities in a specified data source.
@@ -4418,7 +4430,7 @@
             A simple evaluator for logical expressions.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Workflow.DefaultRules.BaseWorkFlowRule.ExecuteRule(TheTechIdea.Beep.Addin.PassedArgs,TheTechIdea.Beep.Workflow.Interfaces.IRuleStructure)">
+        <member name="M:TheTechIdea.Beep.Workflow.DefaultRules.BaseWorkFlowRule.ExecuteRule(TheTechIdea.Beep.Addin.PassedArgs,TheTechIdea.Beep.Rules.IRuleStructure)">
             <summary>
             Executes the rule logic. Must be implemented by derived classes.
             </summary>
@@ -4426,7 +4438,7 @@
             <param name="rule">The rule structure defining the rule logic.</param>
             <returns>A <see cref="T:TheTechIdea.Beep.Addin.PassedArgs"/> object containing the results of the execution.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Workflow.DefaultRules.BaseWorkFlowRule.GetDefaultValue(TheTechIdea.Beep.Addin.PassedArgs,TheTechIdea.Beep.Workflow.Interfaces.IRuleStructure)">
+        <member name="M:TheTechIdea.Beep.Workflow.DefaultRules.BaseWorkFlowRule.GetDefaultValue(TheTechIdea.Beep.Addin.PassedArgs,TheTechIdea.Beep.Rules.IRuleStructure)">
             <summary>
             Retrieves the default value for the rule based on the provided arguments and rule structure.
             </summary>
@@ -4460,28 +4472,5 @@
             <param name="message">A message describing the running event.</param>
         </member>
         <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Workflow.DefaultRules.ValidateRegexMatch.ExtractRegexPattern(System.String)" -->
-        <member name="M:TheTechIdea.Beep.Workflow.RulesEditor.SolveRule(TheTechIdea.Beep.Workflow.IWorkFlowRule,TheTechIdea.Beep.Addin.IPassedArgs)">
-            <summary>
-            Solves a rule using the provided workflow rule and arguments.
-            </summary>
-            <param name="rule">The workflow rule to execute.</param>
-            <param name="args">The arguments required for the rule execution.</param>
-            <returns>A tuple containing the updated arguments and the result of the rule execution.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Workflow.RulesEditor.SolveRule(System.String,TheTechIdea.Beep.Addin.IPassedArgs)">
-            <summary>
-            Solves a rule based on its name using the provided arguments.
-            </summary>
-            <param name="rulename">The name of the rule to execute.</param>
-            <param name="args">The arguments required for the rule execution.</param>
-            <returns>A tuple containing the updated arguments and the result of the rule execution.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Workflow.RulesEditor.SolveRule(TheTechIdea.Beep.Addin.IPassedArgs)">
-            <summary>
-            Executes a rule based on the arguments provided in <see cref="T:TheTechIdea.Beep.Addin.IPassedArgs"/>.
-            </summary>
-            <param name="args">The arguments that contain the rule name and required data.</param>
-            <returns>The result of the rule execution, if successful.</returns>
-        </member>
     </members>
 </doc>

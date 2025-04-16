@@ -163,11 +163,48 @@ namespace TheTechIdea.Beep.Utilities
     }
     public enum Sqlcommandtype
     { getTable,getlistoftables, getPKforTable, getFKforTable, getChildTable, getParentTable,getFktableValues,CheckTableExist, getlistoftablesfromotherschema }
-    
+
+    /// <summary>
+    /// Enum representing various methods to apply default value rules within Beep DM.
+    /// </summary>
     public enum DefaultValueType
     {
-        DisplayLookup,ReplaceValue,Rule
+        /// <summary>
+        /// Retrieves a default value based on display lookup logic.
+        /// </summary>
+        DisplayLookup,
+
+        /// <summary>
+        /// Directly replaces a value with a predefined default.
+        /// </summary>
+        ReplaceValue,
+
+        /// <summary>
+        /// Applies a standard rule-based default value.
+        /// </summary>
+        Rule,
+
+        /// <summary>
+        /// Computes the default value using calculations or formulas.
+        /// </summary>
+        Computed,
+
+        /// <summary>
+        /// Maps or translates a value from one format or system to another.
+        /// </summary>
+        Mapping,
+
+        /// <summary>
+        /// Provides a default based on specific conditions or context.
+        /// </summary>
+        Conditional,
+
+        /// <summary>
+        /// Allows for custom, user-defined logic to determine the default value.
+        /// </summary>
+        Custom
     }
+
     public enum AddinType
     {
         Form,Control,Class,Page,Link,Branch,Menu,Button,Tab,Panel,Grid,Tree,Chart,

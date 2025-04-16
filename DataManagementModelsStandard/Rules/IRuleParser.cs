@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using TheTechIdea.Beep;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Beep.Workflow.Interfaces;
 
-namespace TheTechIdea.Beep.Workflow
+namespace TheTechIdea.Beep.Rules
 {
     public interface IRuleParser
     {
         List<IRuleStructure> RuleStructures { get; set; } 
-        IDMEEditor DMEEditor { get; set; }
         IRuleStructure ParseRule(string Rule);
-        
+        IRuleStructure ParseRule(IRule rule);
+        void Clear();
+
+
     }
 }

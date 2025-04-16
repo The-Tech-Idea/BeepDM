@@ -15,6 +15,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
 using System.ComponentModel;
 using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Rules;
 
 namespace TheTechIdea.Beep.Editor
 {
@@ -30,7 +31,7 @@ namespace TheTechIdea.Beep.Editor
         public ETLEditor(IDMEEditor _DMEEditor)
         {
             DMEEditor = _DMEEditor;
-            RulesEditor = new RulesEditor(DMEEditor);
+          //  RulesEngine = new RulesEditor(DMEEditor);
         }
         /// <summary>
         /// Event that is raised when a process is passed.
@@ -42,7 +43,7 @@ namespace TheTechIdea.Beep.Editor
         public IDMEEditor DMEEditor { get { return _DMEEditor; } set { _DMEEditor = value; } } //;RulesEditor = new RulesEditor(value);MoveValidator = new EntityDataMoveValidator(DMEEditor);
         /// <summary>Gets or sets the rules editor.</summary>
         /// <value>The rules editor.</value>
-        public IRulesEditor RulesEditor { get; set; }
+        public IRuleEngine RulesEngine { get; set; }
         /// <summary>Gets or sets the PassedArgs object.</summary>
         /// <value>The PassedArgs object.</value>
         public PassedArgs Passedargs { get; set; }
@@ -1013,11 +1014,11 @@ namespace TheTechIdea.Beep.Editor
                             }
                             DMEEditor.Passedarguments.Objects.Add(new ObjectItem() { Name = destentity, obj = retval });
                             DMEEditor.Passedarguments.ParameterString1 = $":{_defaultValue.Rule}.{fieldname}.{_defaultValue.PropertyValue}";
-                            var value = RulesEditor.SolveRule(_defaultValue.Rule,DMEEditor.Passedarguments);
-                            if (value != null)
-                            {
-                                DMEEditor.Utilfunction.SetFieldValueFromObject(fieldname, retval, value);
-                            }
+                            //var value = RulesEngine.SolveRule(_defaultValue.Rule,DMEEditor.Passedarguments);
+                            //if (value != null)
+                            //{
+                            //    DMEEditor.Utilfunction.SetFieldValueFromObject(fieldname, retval, value);
+                            //}
                         }
                     }
                 }

@@ -4,16 +4,15 @@ using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Logger;
-using TheTechIdea.Beep.Utilities;
-using TheTechIdea.Beep.Workflow;
-using TheTechIdea.Beep.Workflow.Interfaces;
+using TheTechIdea.Beep.Rules;
+
 
 namespace TheTechIdea.Beep.Editor
 {
     public static class DefaultsManager 
     {
         private static  IConfigEditor _configEditor;
-        private static  IRulesEditor _rulesEditor;
+        private static  IRuleEngine _rulesEditor;
         private static  IDMLogger _logger;
         private static IDMEEditor _editor;
 
@@ -59,12 +58,12 @@ namespace TheTechIdea.Beep.Editor
                 try
                 {
                     // Parse and execute the rule
-                    var ruleStructure = _rulesEditor.Parser.ParseRule(defaultValue.Rule);
-                    if (ruleStructure != null)
-                    {
-                        // Pass parameters and execute the rule
-                        return _rulesEditor.SolveRule(defaultValue.Rule,parameters);
-                    }
+                    //var ruleStructure = _rulesEditor.SolveRule(defaultValue.Rule);
+                    //if (ruleStructure != null)
+                    //{
+                    //    // Pass parameters and execute the rule
+                    //    return _rulesEditor.SolveRule(defaultValue.Rule,parameters);
+                    //}
                 }
                 catch (Exception ex)
                 {

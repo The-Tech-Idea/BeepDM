@@ -134,6 +134,46 @@
             Contains a code improvement suggestion
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Utilities.DefaultValueType">
+            <summary>
+            Enum representing various methods to apply default value rules within Beep DM.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.DisplayLookup">
+            <summary>
+            Retrieves a default value based on display lookup logic.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.ReplaceValue">
+            <summary>
+            Directly replaces a value with a predefined default.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.Rule">
+            <summary>
+            Applies a standard rule-based default value.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.Computed">
+            <summary>
+            Computes the default value using calculations or formulas.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.Mapping">
+            <summary>
+            Maps or translates a value from one format or system to another.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.Conditional">
+            <summary>
+            Provides a default based on specific conditions or context.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.Custom">
+            <summary>
+            Allows for custom, user-defined logic to determine the default value.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.IDataSource.ColumnDelimiter">
             <summary>
             Gets or sets the delimiter used to separate columns in queries or data representations.
@@ -669,6 +709,49 @@
         <member name="P:TheTechIdea.Beep.Messaging.StreamConfig.AdditionalOptions">
             <summary>
             Additional options specific to the messaging system.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Rules.IRule.RuleText">
+            <summary>
+            The textual expression that defines the rule's logic.
+            For example: ":Entity1.LastName == 'Smith'" or other valid expressions.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Rules.IRule.SolveRule(System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Solves the specified rule using the provided parameters and returns the outputs and the overall result.
+            </summary>
+            <param name="ruleName">The name of the rule to evaluate.</param>
+            <param name="parameters">Parameters required for rule evaluation.</param>
+            <returns>
+            A tuple where:
+            - <c>outputs</c> is a dictionary containing key/value pairs representing the rule outputs.
+            - <c>result</c> is an object representing the overall result of the rule evaluation.
+            </returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Rules.RuleEngine.RegisterRule(TheTechIdea.Beep.Rules.IRule)">
+            <summary>
+            Registers a rule with the engine.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Rules.RuleEngine.SolveRule(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Evaluates a rule by its key, ensuring its structure is tokenized.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Rules.RuleParser">
+            <summary>
+            Implementation of IRuleParser that tokenizes rule text and builds a corresponding RuleStructure.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Rules.RuleParser.ParseRule(System.String)">
+            <summary>
+            Parses the provided rule expression (as a string) into a RuleStructure.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Rules.RuleParser.ParseRule(TheTechIdea.Beep.Rules.IRule)">
+            <summary>
+            Parses the rule by reading its RuleText and extracting metadata from the rule’s attribute.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateRecordClass(System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.Boolean)">
