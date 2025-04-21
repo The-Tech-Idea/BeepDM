@@ -1333,10 +1333,10 @@ namespace TheTechIdea.Beep.Tools
                     string pluralName = entity.EntityName + "s"; // Simple pluralization
 
                     sb.AppendLine($"        [GraphQLName(\"{entity.EntityName.ToCamelCase()}\")]");
-                    sb.AppendLine($"        public {entity.EntityName} Get{entity.EntityName}(int id) => throw new NotImplementedException();");
+                    sb.AppendLine($"        public {entity.EntityName} Get{entity.EntityName}(int id)  ;");
                     sb.AppendLine();
                     sb.AppendLine($"        [GraphQLName(\"{pluralName.ToCamelCase()}\")]");
-                    sb.AppendLine($"        public IQueryable<{entity.EntityName}> Get{pluralName}() => throw new NotImplementedException();");
+                    sb.AppendLine($"        public IQueryable<{entity.EntityName}> Get{pluralName}()  ;");
                     sb.AppendLine();
                 }
 
@@ -1350,13 +1350,13 @@ namespace TheTechIdea.Beep.Tools
                 foreach (EntityStructure entity in entities)
                 {
                     sb.AppendLine($"        [GraphQLName(\"create{entity.EntityName}\")]");
-                    sb.AppendLine($"        public {entity.EntityName} Create{entity.EntityName}({entity.EntityName} input) => throw new NotImplementedException();");
+                    sb.AppendLine($"        public {entity.EntityName} Create{entity.EntityName}({entity.EntityName} input)  ;");
                     sb.AppendLine();
                     sb.AppendLine($"        [GraphQLName(\"update{entity.EntityName}\")]");
-                    sb.AppendLine($"        public {entity.EntityName} Update{entity.EntityName}(int id, {entity.EntityName} input) => throw new NotImplementedException();");
+                    sb.AppendLine($"        public {entity.EntityName} Update{entity.EntityName}(int id, {entity.EntityName} input)  ;");
                     sb.AppendLine();
                     sb.AppendLine($"        [GraphQLName(\"delete{entity.EntityName}\")]");
-                    sb.AppendLine($"        public bool Delete{entity.EntityName}(int id) => throw new NotImplementedException();");
+                    sb.AppendLine($"        public bool Delete{entity.EntityName}(int id)  ;");
                     sb.AppendLine();
                 }
 

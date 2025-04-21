@@ -30,14 +30,14 @@ namespace TheTechIdea.Beep.DataBase
         IErrorsInfo OpenDatabaseInMemory(string databasename);
         string GetConnectionString();
         IErrorsInfo SaveStructure();
-        IErrorsInfo LoadStructure(Progress<PassedArgs> progress, CancellationToken token, bool copydata = false);
+        IErrorsInfo LoadStructure(IProgress<PassedArgs> progress, CancellationToken token, bool copydata = false);
         bool IsStructureCreated { get; set; }
-        IErrorsInfo CreateStructure(Progress<PassedArgs> progress, CancellationToken token);
-        IErrorsInfo LoadData(Progress<PassedArgs> progress,CancellationToken token);
-        IErrorsInfo SyncData(Progress<PassedArgs> progress, CancellationToken token);
-        IErrorsInfo SyncData(string entityname, Progress<PassedArgs> progress, CancellationToken token);
-        IErrorsInfo RefreshData(Progress<PassedArgs> progress, CancellationToken token);
-        IErrorsInfo RefreshData(string entityname,Progress<PassedArgs> progress, CancellationToken token);
+        IErrorsInfo CreateStructure(IProgress<PassedArgs> progress, CancellationToken token);
+        IErrorsInfo LoadData(IProgress<PassedArgs> progress,CancellationToken token);
+        IErrorsInfo SyncData(IProgress<PassedArgs> progress, CancellationToken token);
+        IErrorsInfo SyncData(string entityname, IProgress<PassedArgs> progress, CancellationToken token);
+        IErrorsInfo RefreshData(IProgress<PassedArgs> progress, CancellationToken token);
+        IErrorsInfo RefreshData(string entityname,IProgress<PassedArgs> progress, CancellationToken token);
         List<EntityStructure> InMemoryStructures { get; set; }
 
     }

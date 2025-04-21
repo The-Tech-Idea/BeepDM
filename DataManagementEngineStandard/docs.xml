@@ -2973,6 +2973,43 @@
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.GetAllConnectionConfigs">
             <returns>A list of ConnectionDriversConfig objects representing different connection configurations.</returns>
+            <returns>A list of ConnectionDriversConfig objects representing different connection configurations.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateChromaDBConfig">
+            <summary>Creates a configuration object for ChromaDB connection drivers.</summary>
+            <returns>A configuration object for ChromaDB connection drivers.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreatePineConeConfig">
+            <summary>Creates a configuration object for PineCone connection drivers.</summary>
+            <returns>A configuration object for PineCone connection drivers.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateQdrantConfig">
+            <summary>Creates a configuration object for Qdrant connection drivers.</summary>
+            <returns>A configuration object for Qdrant connection drivers.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateShapVectorConfig">
+            <summary>Creates a configuration object for ShapVector connection drivers.</summary>
+            <returns>A configuration object for ShapVector connection drivers.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateWeaviateConfig">
+            <summary>Creates a configuration object for Weaviate connection drivers.</summary>
+            <returns>A configuration object for Weaviate connection drivers.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateMilvusConfig">
+            <summary>Creates a configuration object for Milvus connection drivers.</summary>
+            <returns>A configuration object for Milvus connection drivers.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateRedisVectorConfig">
+            <summary>Creates a configuration object for RedisVector connection drivers.</summary>
+            <returns>A configuration object for RedisVector connection drivers.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateZillizConfig">
+            <summary>Creates a configuration object for Zilliz connection drivers.</summary>
+            <returns>A configuration object for Zilliz connection drivers.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateVespaConfig">
+            <summary>Creates a configuration object for Vespa connection drivers.</summary>
+            <returns>A configuration object for Vespa connection drivers.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateSnowFlakeConfig">
             <summary>Creates a configuration object for SnowFlake connection drivers.</summary>
@@ -3184,6 +3221,42 @@
         <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetMappings">
             <summary>Returns a list of datatype mappings.</summary>
             <returns>A list of datatype mappings.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetPineConeDataTypesMapping">
+            <summary>Returns a list of datatype mappings for PineCone.</summary>
+            <returns>A list of datatype mappings for PineCone.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetQdrantDataTypesMapping">
+            <summary>Returns a list of datatype mappings for Qdrant.</summary>
+            <returns>A list of datatype mappings for Qdrant.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetShapVectorDataTypesMapping">
+            <summary>Returns a list of datatype mappings for ShapVector.</summary>
+            <returns>A list of datatype mappings for ShapVector.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetWeaviateDataTypesMapping">
+            <summary>Returns a list of datatype mappings for Weaviate.</summary>
+            <returns>A list of datatype mappings for Weaviate.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetMilvusDataTypesMapping">
+            <summary>Returns a list of datatype mappings for Milvus.</summary>
+            <returns>A list of datatype mappings for Milvus.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetRedisVectorDataTypesMapping">
+            <summary>Returns a list of datatype mappings for RedisVector.</summary>
+            <returns>A list of datatype mappings for RedisVector.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetZillizDataTypesMapping">
+            <summary>Returns a list of datatype mappings for Zilliz.</summary>
+            <returns>A list of datatype mappings for Zilliz.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetVespaDataTypesMapping">
+            <summary>Returns a list of datatype mappings for Vespa.</summary>
+            <returns>A list of datatype mappings for Vespa.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetChromaDBDataTypesMapping">
+            <summary>Returns a list of datatype mappings for ChromaDB.</summary>
+            <returns>A list of datatype mappings for ChromaDB.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper.GetCouchDBDataTypeMappings">
             <summary>Returns a list of datatype mappings for CouchDB.</summary>
@@ -4737,6 +4810,59 @@
             <returns> 
             An instance of the given <paramref name="type"/>. 
             </returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.VectorDatabaseHelper.GenerateVectorDatabaseCommand(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Helpers.VectorDatabaseHelper.VectorDatabaseOperation,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates vector database-specific query commands based on database type
+            </summary>
+            <param name="dataSourceType">Vector database type</param>
+            <param name="operationType">Operation to perform (search, insert, delete)</param>
+            <param name="parameters">Dictionary of parameters specific to the operation</param>
+            <returns>A command string for the specified vector database operation</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.VectorDatabaseHelper.IsVectorDatabase(TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Checks if a given data source type is a vector database
+            </summary>
+            <param name="dataSourceType">The data source type to check</param>
+            <returns>True if the data source is a vector database, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.VectorDatabaseHelper.GetVectorDatabaseCollections(TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Generates metadata queries for vector databases to list collections or schemas
+            </summary>
+            <param name="dataSourceType">Vector database type</param>
+            <returns>A query string to list collections/tables in the vector database</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.VectorDatabaseHelper.GenerateVectorSimilaritySearchQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.Int32,System.Int32)">
+            <summary>
+            Generates a vector similarity search query for the specified database
+            </summary>
+            <param name="dataSourceType">Vector database type</param>
+            <param name="collectionName">Name of the collection to search</param>
+            <param name="vectorDimension">Dimension of the vector</param>
+            <param name="topK">Number of results to return</param>
+            <returns>A similarity search query template for the specified vector database</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.VectorDatabaseHelper.CreateVectorDatabaseQueries">
+            <summary>
+            Creates a list of QuerySqlRepo objects for vector databases.
+            </summary>
+            <returns>A list of QuerySqlRepo objects for vector databases.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.VectorDatabaseHelper.VectorDatabaseOperation">
+            <summary>
+            Operations that can be performed on vector databases
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.VectorDatabaseHelper.ValidateVectorDatabaseParameters(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Helpers.VectorDatabaseHelper.VectorDatabaseOperation,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Validates parameters for vector database operations
+            </summary>
+            <param name="dataSourceType">Vector database type</param>
+            <param name="operation">Operation to perform</param>
+            <param name="parameters">Parameters for the operation</param>
+            <returns>Tuple with validation result and error message</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Json.JsonDataSource">
             <summary>

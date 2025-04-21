@@ -55,7 +55,7 @@ namespace TheTechIdea.Beep.InMemory
         {
             return Dataconnection.ConnectionProp.ConnectionString;
         }
-        public IErrorsInfo CreateStructure(Progress<PassedArgs> progress, CancellationToken token)
+        public IErrorsInfo CreateStructure(IProgress<PassedArgs> progress, CancellationToken token)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
@@ -77,7 +77,7 @@ namespace TheTechIdea.Beep.InMemory
             }
             return DMEEditor.ErrorObject;
         }
-        public virtual IErrorsInfo LoadData(Progress<PassedArgs> progress, CancellationToken token)
+        public virtual IErrorsInfo LoadData(IProgress<PassedArgs> progress, CancellationToken token)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
@@ -99,7 +99,7 @@ namespace TheTechIdea.Beep.InMemory
             return DMEEditor.ErrorObject;
         }
 
-        public virtual IErrorsInfo LoadStructure(Progress<PassedArgs> progress, CancellationToken token, bool copydata = false)
+        public virtual IErrorsInfo LoadStructure(IProgress<PassedArgs> progress, CancellationToken token, bool copydata = false)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
@@ -183,7 +183,7 @@ namespace TheTechIdea.Beep.InMemory
         }
 
 
-        public virtual IErrorsInfo SyncData(Progress<PassedArgs> progress, CancellationToken token)
+        public virtual IErrorsInfo SyncData(IProgress<PassedArgs> progress, CancellationToken token)
         {
             return DMEEditor.ErrorObject;
         }
@@ -429,17 +429,17 @@ namespace TheTechIdea.Beep.InMemory
            
         }
 
-        public IErrorsInfo SyncData(string entityname, Progress<PassedArgs> progress, CancellationToken token)
+        public IErrorsInfo SyncData(string entityname, IProgress<PassedArgs> progress, CancellationToken token)
         {
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo RefreshData(Progress<PassedArgs> progress, CancellationToken token)
+        public IErrorsInfo RefreshData(IProgress<PassedArgs> progress, CancellationToken token)
         {
             throw new NotImplementedException();
         }
 
-        public IErrorsInfo RefreshData(string entityname, Progress<PassedArgs> progress, CancellationToken token)
+        public IErrorsInfo RefreshData(string entityname, IProgress<PassedArgs> progress, CancellationToken token)
         {
             throw new NotImplementedException();
         }
