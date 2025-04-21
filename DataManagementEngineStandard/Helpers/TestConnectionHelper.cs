@@ -451,6 +451,78 @@ namespace TheTechIdea.Beep.Helpers
             return (false, "RabbitMQ connection test requires RabbitMQ.Client");
         }
 
+
+        // Additional specific implementations for other data sources can be added here like vector databases , etc.
+        private static async Task<(bool success, string message)> TestDuckDBConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need DuckDB package to be referenced
+            return (false, "DuckDB connection test requires DuckDB");
+        }
+        private static async Task<(bool success, string message)> TestWeaviateConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need Weaviate client to be referenced
+            return (false, "Weaviate connection test requires Weaviate client");
+        }
+        private static async Task<(bool success, string message)> TestMilvusConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need Milvus client to be referenced
+            return (false, "Milvus connection test requires Milvus client");
+        }
+        private static async Task<(bool success, string message)> TestRedisVectorConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need Redis client to be referenced
+            return (false, "Redis Vector connection test requires Redis client");
+        }
+        private static async Task<(bool success, string message)> TestZillizConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need Zilliz client to be referenced
+            return (false, "Zilliz connection test requires Zilliz client");
+        }
+        private static async Task<(bool success, string message)> TestVespaConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need Vespa client to be referenced
+            return (false, "Vespa connection test requires Vespa client");
+        }
+        private static async Task<(bool success, string message)> TestQdrantConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need Qdrant client to be referenced
+            return (false, "Qdrant connection test requires Qdrant client");
+        }
+        private static async Task<(bool success, string message)> TestPineConeConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need PineCone client to be referenced
+            return (false, "PineCone connection test requires PineCone client");
+        }
+        private static async Task<(bool success, string message)> TestShapVectorConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need ShapVector client to be referenced
+            return (false, "ShapVector connection test requires ShapVector client");
+        }
+        private static async Task<(bool success, string message)> TestWebApiConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need HttpClient to be referenced
+            return (false, "Web API connection test requires HttpClient");
+        }
+        private static async Task<(bool success, string message)> TestGraphQLConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need GraphQL client to be referenced
+            return (false, "GraphQL connection test requires GraphQL client");
+        }
+        private static async Task<(bool success, string message)> TestODataConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need OData client to be referenced
+            return (false, "OData connection test requires OData client");
+        }
+        private static async Task<(bool success, string message)> TestODBCConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need ODBC client to be referenced
+            return (false, "ODBC connection test requires ODBC client");
+        }
+        private static async Task<(bool success, string message)> TestOLEDBConnectionAsync(ConnectionDriversConfig config)
+        {
+            // This would need OLEDB client to be referenced
+            return (false, "OLEDB connection test requires OLEDB client");
+        }
         // Helper methods
 
         private static string ExtractFilePathFromConnectionString(string connectionString)
@@ -494,6 +566,51 @@ namespace TheTechIdea.Beep.Helpers
                 return endpoint;
             }
 
+            return null;
+        }
+
+        private static string ExtractDatabaseNameFromConnectionString(string connectionString)
+        {
+            // Extract database name from connection strings like "Database=mydb" or "Initial Catalog=mydb"
+            var dbNameRegex = new Regex(@"(?:Database|Initial Catalog)\s*=\s*([^;]+)", RegexOptions.IgnoreCase);
+            var match = dbNameRegex.Match(connectionString);
+            if (match.Success && match.Groups.Count > 1)
+            {
+                return match.Groups[1].Value.Trim();
+            }
+            return null;
+        }
+        private static string ExtractUserNameFromConnectionString(string connectionString)
+        {
+            // Extract username from connection strings like "User Id=myuser" or "Uid=myuser"
+            var userNameRegex = new Regex(@"(?:User Id|Uid)\s*=\s*([^;]+)", RegexOptions.IgnoreCase);
+            var match = userNameRegex.Match(connectionString);
+            if (match.Success && match.Groups.Count > 1)
+            {
+                return match.Groups[1].Value.Trim();
+            }
+            return null;
+        }
+        private static string ExtractPasswordFromConnectionString(string connectionString)
+        {
+            // Extract password from connection strings like "Password=mypassword" or "Pwd=mypassword"
+            var passwordRegex = new Regex(@"(?:Password|Pwd)\s*=\s*([^;]+)", RegexOptions.IgnoreCase);
+            var match = passwordRegex.Match(connectionString);
+            if (match.Success && match.Groups.Count > 1)
+            {
+                return match.Groups[1].Value.Trim();
+            }
+            return null;
+        }
+        private static string ExtractPortFromConnectionString(string connectionString)
+        {
+            // Extract port from connection strings like "Port=1234" or "Server=myserver,1234"
+            var portRegex = new Regex(@"(?:Port|Server)\s*=\s*([^;,:]+)", RegexOptions.IgnoreCase);
+            var match = portRegex.Match(connectionString);
+            if (match.Success && match.Groups.Count > 1)
+            {
+                return match.Groups[1].Value.Trim();
+            }
             return null;
         }
 

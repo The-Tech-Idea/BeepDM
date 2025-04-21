@@ -4812,7 +4812,6 @@ namespace TheTechIdea.Beep.Helpers
             return query;
         }
         #endregion "Constraints"
-
         #region "Meta Data Queries"
         /// <summary>
         /// Creates a list of QuerySqlRepo objects for all supported database types.

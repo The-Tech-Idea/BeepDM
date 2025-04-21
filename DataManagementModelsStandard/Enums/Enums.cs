@@ -107,7 +107,19 @@ namespace TheTechIdea.Beep.Utilities
         OPC,
 
         // Miscellaneous
-        DuckDB, GoogleSheets, MiModel, Presto, Trino, TimeScale,WebApi, RestApi, GraphQL, OData, ODBC, OLEDB, ADO, EntityFramework
+        DuckDB, GoogleSheets, MiModel, Presto, Trino, TimeScale,WebApi, RestApi, GraphQL, OData, ODBC, OLEDB, ADO, 
+
+        //VectorDB
+         ChromaDB,
+        PineCone,
+        Qdrant,
+        ShapVector,
+        Weaviate,
+        Milvus,
+        RedisVector,
+        Zilliz,
+        Vespa,
+
     }
     public enum DatasourceCategory
     {
@@ -135,7 +147,15 @@ namespace TheTechIdea.Beep.Utilities
         Geospatial,
         IoT,
         Workflow,
-        AnalyticsPlatform
+        AnalyticsPlatform,
+        VectorDB,
+        DataLake,
+        DataWarehouse,
+        DataMart,
+        DataPipeline,
+        DataMesh,
+        DataFabric
+
     }
 
     public enum FileTypes
