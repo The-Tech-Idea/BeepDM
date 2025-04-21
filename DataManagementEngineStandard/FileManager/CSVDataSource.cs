@@ -15,17 +15,37 @@ using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Addin;
+using System.Text;
 
 namespace TheTechIdea.Beep.FileManager
 {
     [AddinAttribute(Category = DatasourceCategory.FILE, DatasourceType = DataSourceType.CSV | DataSourceType.Xls, FileType = "csv")]
     public class CSVDataSource : IDataSource
     {
+        #region "Properties" 
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
+        public DataSourceType DatasourceType { get; set; } = DataSourceType.CSV;
+        public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;
+        public IDataConnection Dataconnection { get; set; }
+        public string DatasourceName { get; set; }
+        public IErrorsInfo ErrorObject { get; set; }
+        public string Id { get; set; }
+        public IDMLogger Logger { get; set; }
+        public List<string> EntitiesNames { get; set; } = new List<string>();
+        public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
+        public List<object> Records { get; set; } = new List<object>();
+        public virtual string ColumnDelimiter { get; set; } = "''";
+        public virtual string ParameterDelimiter { get; set; } = ":";
+        public IDMEEditor DMEEditor { get; set; }
+        ConnectionState pConnectionStatus;
+        bool IsFieldsScanned = false;
+        #endregion "Properties"
         private CsvTextFieldParser fieldParser = null;
         string FileName;
         string FilePath;
         string CombineFilePath;
         char Delimiter;
+        // CSVDataSource constructor with delimiter detection
         public CSVDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType pDatasourceType, IErrorsInfo per)
         {
             DatasourceName = datasourcename;
@@ -39,11 +59,38 @@ namespace TheTechIdea.Beep.FileManager
                 ErrorObject = ErrorObject,
             };
             Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == datasourcename).FirstOrDefault();
-           // System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
             Category = DatasourceCategory.FILE;
             FileName = Dataconnection.ConnectionProp.FileName;
             FilePath = Dataconnection.ConnectionProp.FilePath;
-            if(Openconnection() == ConnectionState.Open)
+
+            // Check for custom delimiter in connection properties
+            if (Dataconnection.ConnectionProp != null )
+            {
+                // Use Delimiter directly as a char instead of accessing it as a string
+                if (Dataconnection.ConnectionProp.Delimiter != '\0')  // Check if delimiter is set
+                {
+                    Delimiter = Dataconnection.ConnectionProp.Delimiter;
+                }
+                else
+                {
+                    Delimiter = ','; // Default to comma
+                }
+            }
+            else
+            {
+                // Auto-detect delimiter
+                string fullPath = Path.Combine(FilePath, FileName);
+                if (File.Exists(fullPath))
+                {
+                    Delimiter = DetectDelimiter(fullPath);
+                }
+                else
+                {
+                    Delimiter = ','; // Default to comma
+                }
+            }
+
+            if (Openconnection() == ConnectionState.Open)
             {
                 Getfields();
             }
@@ -52,24 +99,9 @@ namespace TheTechIdea.Beep.FileManager
                 File.Create(Path.Combine(FilePath, FileName));
                 DMEEditor.AddLogMessage("Fail", $"Error Could not find File {datasourcename} , created empty one", DateTime.Now, 0, null, Errors.Failed);
             }
-
         }
-        public string GuidID { get; set; } = Guid.NewGuid().ToString();
-        public DataSourceType DatasourceType { get; set; } = DataSourceType.CSV;
-        public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;
-        public IDataConnection Dataconnection { get ; set ; }
-        public string DatasourceName { get ; set ; }
-        public IErrorsInfo ErrorObject { get ; set ; }
-        public string Id { get ; set ; }
-        public IDMLogger Logger { get ; set ; }
-        public List<string> EntitiesNames { get; set; } = new List<string>();
-        public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
-        public List<object> Records { get; set; } = new List<object>();
-        public virtual string ColumnDelimiter { get; set; } = "''";
-        public virtual string ParameterDelimiter { get; set; } = ":";
-        public IDMEEditor DMEEditor { get ; set ; }
-        ConnectionState pConnectionStatus;
-        bool IsFieldsScanned = false;
+
+     
         #region "Insert or Update or Delete Objects"
         EntityStructure DataStruct = null;
         IDbCommand command = null;
@@ -591,25 +623,58 @@ namespace TheTechIdea.Beep.FileManager
             return 0;
 
         }
+        // Add better validation for CSV files during opening
         public ConnectionState Openconnection()
         {
-            ConnectionStatus = Dataconnection.OpenConnection();
-
-            if (ConnectionStatus == ConnectionState.Open)
+            try
             {
-                if (DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName) == null)
+                ConnectionStatus = Dataconnection.OpenConnection();
+                if (ConnectionStatus == ConnectionState.Open)
                 {
-                    //GetEntityStructures(true);
+                    CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+
+                    // Validate the CSV file format
+                    if (!File.Exists(CombineFilePath))
+                    {
+                        DMEEditor.AddLogMessage("Warning", $"CSV file does not exist: {CombineFilePath}", DateTime.Now, 0, null, Errors.Failed);
+                        return ConnectionState.Closed;
+                    }
+
+                    // Try reading the first line to ensure it's valid
+                    try
+                    {
+                        using (var reader = new StreamReader(CombineFilePath))
+                        {
+                            if (reader.ReadLine() == null)
+                            {
+                                DMEEditor.AddLogMessage("Warning", "CSV file is empty or cannot be read", DateTime.Now, 0, null, Errors.Failed);
+                                return ConnectionState.Closed;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        DMEEditor.AddLogMessage("Error", $"Cannot read CSV file: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                        return ConnectionState.Closed;
+                    }
+
+                    // Load entity structure
+                    if (DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName) == null)
+                    {
+                        Getfields();
+                    }
+                    else
+                    {
+                        Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
+                    }
                 }
-                else
-                {
-                    Entities = DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName).Entities;
-                };
-                CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+                return ConnectionStatus;
             }
-
-            return ConnectionStatus;
-
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Error", $"Failed to open connection: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return ConnectionState.Closed;
+            }
         }
         public ConnectionState Closeconnection()
         {
@@ -624,7 +689,6 @@ namespace TheTechIdea.Beep.FileManager
             else
                 return false;
         }
-
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
             ErrorObject.Flag = Errors.Ok;
@@ -676,34 +740,191 @@ namespace TheTechIdea.Beep.FileManager
 
             return ErrorObject;
         }
-
-
+        /// <summary>
+        /// Creates a new entity or updates an existing one based on the provided structure.
+        /// If the entity already exists, its fields will be updated (added, removed) to match the new structure.
+        /// </summary>
+        /// <param name="entity">The structure of the entity to create or update</param>
+        /// <returns>True if creation or update is successful, false otherwise</returns>
         public bool CreateEntityAs(EntityStructure entity)
         {
-            Entities.Clear();
-            EntitiesNames.Clear();
-            Entities.Add(entity);
-            EntitiesNames.Add(entity.EntityName);
-            return true;
-        }
+            try
+            {
+                // Check if a file already exists for this entity
+                string entityFilePath = Path.Combine(FilePath, $"{entity.EntityName}.csv");
+                bool entityExists = File.Exists(entityFilePath);
 
-    
+                if (entityExists)
+                {
+                    // Entity exists - update it by modifying its structure
+                    DMEEditor.AddLogMessage("Info", $"Entity {entity.EntityName} already exists - updating structure", DateTime.Now, 0, null, Errors.Ok);
+
+                    // Get the existing entity structure from file
+                    EntityStructure existingEntity = null;
+
+                    // Try to find the entity in our cached list first
+                    if (Entities != null && EntitiesNames != null && EntitiesNames.Contains(entity.EntityName))
+                    {
+                        existingEntity = Entities.FirstOrDefault(e => e.EntityName == entity.EntityName);
+                    }
+
+                    // If not found in cache, try to load it from the file
+                    if (existingEntity == null)
+                    {
+                        // Read the existing structure from file
+                        using (var reader = new StreamReader(entityFilePath))
+                        {
+                            // Get header line
+                            string headerLine = reader.ReadLine();
+                            if (!string.IsNullOrEmpty(headerLine))
+                            {
+                                // Parse headers to get field names
+                                string[] existingFields = headerLine.Split(Delimiter);
+
+                                // Create a temporary entity structure
+                                existingEntity = new EntityStructure
+                                {
+                                    EntityName = entity.EntityName,
+                                    Fields = new List<EntityField>()
+                                };
+
+                                // Create fields from the header
+                                for (int i = 0; i < existingFields.Length; i++)
+                                {
+                                    existingEntity.Fields.Add(new EntityField
+                                    {
+                                        fieldname = existingFields[i],
+                                        EntityName = entity.EntityName,
+                                        fieldtype = "System.String", // Default type
+                                        FieldIndex = i
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    if (existingEntity == null)
+                    {
+                        // Couldn't determine the existing entity structure
+                        DMEEditor.AddLogMessage("Error", $"Could not load structure for existing entity {entity.EntityName}", DateTime.Now, 0, null, Errors.Failed);
+                        return false;
+                    }
+
+                    // Read all data from CSV except header, to preserve it during structure update
+                    List<string[]> existingData = new List<string[]>();
+                    using (var parser = new CsvTextFieldParser(entityFilePath))
+                    {
+                        parser.SetDelimiter(Delimiter);
+
+                        // Skip header
+                        parser.ReadFields();
+
+                        // Read all data rows
+                        while (!parser.EndOfData)
+                        {
+                            existingData.Add(parser.ReadFields());
+                        }
+                    }
+
+                    // Create field mapping between old and new structure
+                    Dictionary<string, string> fieldNameMapping = new Dictionary<string, string>();
+                    Dictionary<string, int> oldFieldIndexes = new Dictionary<string, int>();
+
+                    // Map existing fields by name
+                    for (int i = 0; i < existingEntity.Fields.Count; i++)
+                    {
+                        oldFieldIndexes[existingEntity.Fields[i].fieldname] = i;
+                    }
+
+                    // Create a backup of the file before modifying it
+                    string backupPath = Path.Combine(FilePath, $"{entity.EntityName}_backup_{DateTime.Now:yyyyMMddHHmmss}.csv");
+                    File.Copy(entityFilePath, backupPath);
+                    DMEEditor.AddLogMessage("Info", $"Created backup of entity at {backupPath}", DateTime.Now, 0, null, Errors.Ok);
+
+                    // Write the updated CSV with new structure
+                    using (var writer = new StreamWriter(entityFilePath, false))
+                    {
+                        // Write the new header
+                        writer.WriteLine(string.Join(Delimiter.ToString(), entity.Fields.Select(f => f.fieldname)));
+
+                        // Write existing data with field mapping
+                        foreach (var row in existingData)
+                        {
+                            string[] newRow = new string[entity.Fields.Count];
+
+                            for (int i = 0; i < entity.Fields.Count; i++)
+                            {
+                                string fieldName = entity.Fields[i].fieldname;
+                                if (oldFieldIndexes.TryGetValue(fieldName, out int oldIndex) && oldIndex < row.Length)
+                                {
+                                    // Field exists in old structure, copy the value
+                                    newRow[i] = row[oldIndex];
+                                }
+                                else
+                                {
+                                    // New field, set empty value
+                                    newRow[i] = string.Empty;
+                                }
+                            }
+
+                            writer.WriteLine(string.Join(Delimiter.ToString(), newRow));
+                        }
+                    }
+
+                    // Update our cached lists
+                    Entities.RemoveAll(e => e.EntityName == entity.EntityName);
+                    EntitiesNames.RemoveAll(n => n == entity.EntityName);
+                }
+                else
+                {
+                    // Entity doesn't exist - create it
+                    DMEEditor.AddLogMessage("Info", $"Creating new entity {entity.EntityName}", DateTime.Now, 0, null, Errors.Ok);
+
+                    // Create a new CSV file with just the headers
+                    using (var writer = new StreamWriter(entityFilePath, false))
+                    {
+                        var headerLine = string.Join(Delimiter.ToString(), entity.Fields.Select(f => f.fieldname));
+                        writer.WriteLine(headerLine);
+                    }
+
+                    // Clear existing entities for this datasource - typically only one entity per CSV file
+                    Entities.Clear();
+                    EntitiesNames.Clear();
+                }
+
+                // Update the entity list
+                Entities.Add(entity);
+                EntitiesNames.Add(entity.EntityName);
+
+                // Save the updated entity structure
+                DMEEditor.ConfigEditor.SaveDataSourceEntitiesValues(new DatasourceEntities
+                {
+                    datasourcename = DatasourceName,
+                    Entities = Entities
+                });
+
+                DMEEditor.AddLogMessage("Success", $"Entity {entity.EntityName} created/updated successfully", DateTime.Now, 0, null, Errors.Ok);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Error", $"Failed to create/update entity {entity.EntityName}: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return false;
+            }
+        }
 
         public IErrorsInfo ExecuteSql(string sql)
         {
             return DMEEditor.ErrorObject;
         }
-
         public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
             return null;
         }
-
         public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
            return null;
         }
-
         public List<string> GetEntitesList()
         {
             if(Entities.Count == 0)
@@ -716,81 +937,816 @@ namespace TheTechIdea.Beep.FileManager
           
             return EntitiesNames;
         }
-
+        /// <summary>
+        /// Retrieves data from a CSV file with optional filtering
+        /// </summary>
+        /// <param name="EntityName">Name of the entity (CSV file) to query</param>
+        /// <param name="filter">List of filters to apply to the data</param>
+        /// <returns>An ObservableBindingList containing the filtered data</returns>
         public object GetEntity(string EntityName, List<AppFilter> filter)
         {
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                int noofrows = 0;
-                if (filter!=null)
+                
+
+                var entityStructure = GetEntityStructure(EntityName, false);
+                if (entityStructure == null)
                 {
-                    
-                    
-                    if (filter.Count > 0)
+                    DMEEditor.AddLogMessage("Error", $"Entity structure not found for {EntityName}", DateTime.Now, 0, null, Errors.Failed);
+                    return null;
+                }
+
+                // Create DataTable with proper structure
+                DataTable dataTable = new DataTable();
+                foreach (EntityField field in entityStructure.Fields)
+                {
+                    Type fieldType = Type.GetType(field.fieldtype);
+                    dataTable.Columns.Add(field.fieldname, fieldType ?? typeof(string));
+                }
+
+                // Calculate skip and take for paging
+    
+                int rowCounter = 0;
+                int addedRows = 0;
+
+                using (fieldParser = new CsvTextFieldParser(CombineFilePath))
+                {
+                    fieldParser.SetDelimiter(Delimiter);
+
+                    // Skip header
+                    fieldParser.ReadFields();
+
+                    // Read data rows with paging
+                    while (!fieldParser.EndOfData )
                     {
-                        if (!string.IsNullOrEmpty(filter[0].FilterValue) && !string.IsNullOrWhiteSpace(filter[0].FilterValue))
+                        string[] fields = fieldParser.ReadFields();
+
+                        // Skip rows for paging
+                        rowCounter++;
+                        
+
+                        // Process filter if provided
+                        bool includeRow = true;
+                        if (filter != null && filter.Count > 0)
                         {
-                            noofrows = Convert.ToInt32(filter[0].FilterValue);
+                            foreach (var f in filter.Where(f => !string.IsNullOrEmpty(f.FilterValue)))
+                            {
+                                int columnIndex = entityStructure.Fields.FindIndex(ef => ef.fieldname == f.FieldName);
+                                if (columnIndex >= 0 && columnIndex < fields.Length)
+                                {
+                                    string fieldValue = fields[columnIndex];
+                                    EntityField entityField = entityStructure.Fields[columnIndex];
+                                    Type fieldType = Type.GetType(entityField.fieldtype) ?? typeof(string);
+
+                                    // Apply filter based on operator
+                                    string op = (f.Operator?.ToLower() ?? "equals");
+
+                                    // For empty field values, apply special handling
+                                    if (string.IsNullOrEmpty(fieldValue))
+                                    {
+                                        switch (op)
+                                        {
+                                            case "isnull":
+                                            case "is null":
+                                                includeRow = true;
+                                                break;
+                                            case "isnotnull":
+                                            case "is not null":
+                                                includeRow = false;
+                                                break;
+                                            default:
+                                                // Most operators will exclude rows where the field is null
+                                                includeRow = false;
+                                                break;
+                                        }
+
+                                        // Skip further processing for this filter if field is null
+                                        if (!includeRow) break;
+                                        continue;
+                                    }
+
+                                    // Check if filter value is null operator
+                                    if (f.FilterValue.Equals("null", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        switch (op)
+                                        {
+                                            case "=":
+                                            case "equals":
+                                            case "isnull":
+                                            case "is null":
+                                                includeRow = string.IsNullOrEmpty(fieldValue);
+                                                break;
+                                            case "!=":
+                                            case "<>":
+                                            case "notequals":
+                                            case "not equals":
+                                            case "isnotnull":
+                                            case "is not null":
+                                                includeRow = !string.IsNullOrEmpty(fieldValue);
+                                                break;
+                                            default:
+                                                includeRow = false;
+                                                break;
+                                        }
+
+                                        if (!includeRow) break;
+                                        continue;
+                                    }
+
+                                    // String comparison operators
+                                    if (fieldType == typeof(string))
+                                    {
+                                        switch (op)
+                                        {
+                                            case "=":
+                                            case "equals":
+                                                includeRow = fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "!=":
+                                            case "<>":
+                                            case "notequals":
+                                            case "not equals":
+                                                includeRow = !fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "contains":
+                                                includeRow = fieldValue.Contains(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "notcontains":
+                                            case "not contains":
+                                            case "!contains":
+                                                includeRow = !fieldValue.Contains(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "startswith":
+                                            case "starts with":
+                                                includeRow = fieldValue.StartsWith(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "endswith":
+                                            case "ends with":
+                                                includeRow = fieldValue.EndsWith(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "regex":
+                                            case "matches":
+                                                includeRow = Regex.IsMatch(fieldValue, f.FilterValue);
+                                                break;
+                                            case "in":
+                                                // Process comma separated values
+                                                var values = f.FilterValue.Split(',').Select(v => v.Trim());
+                                                includeRow = values.Any(v => fieldValue.Equals(v, StringComparison.OrdinalIgnoreCase));
+                                                break;
+                                            case "notin":
+                                            case "not in":
+                                                // Process comma separated values
+                                                var excludeValues = f.FilterValue.Split(',').Select(v => v.Trim());
+                                                includeRow = !excludeValues.Any(v => fieldValue.Equals(v, StringComparison.OrdinalIgnoreCase));
+                                                break;
+                                            default:
+                                                includeRow = false;
+                                                break;
+                                        }
+                                    }
+                                    // Numeric comparison operators
+                                    else if (fieldType == typeof(int) || fieldType == typeof(decimal) ||
+                                             fieldType == typeof(double) || fieldType == typeof(float) ||
+                                             fieldType == typeof(long))
+                                    {
+                                        bool parseFieldValue = decimal.TryParse(fieldValue, out decimal numValue);
+                                        bool parseFilterValue = decimal.TryParse(f.FilterValue, out decimal filterValue);
+
+                                        if (parseFieldValue && parseFilterValue)
+                                        {
+                                            switch (op)
+                                            {
+                                                case "=":
+                                                case "equals":
+                                                    includeRow = numValue == filterValue;
+                                                    break;
+                                                case "!=":
+                                                case "<>":
+                                                case "notequals":
+                                                case "not equals":
+                                                    includeRow = numValue != filterValue;
+                                                    break;
+                                                case ">":
+                                                    includeRow = numValue > filterValue;
+                                                    break;
+                                                case ">=":
+                                                case "=>":
+                                                    includeRow = numValue >= filterValue;
+                                                    break;
+                                                case "<":
+                                                    includeRow = numValue < filterValue;
+                                                    break;
+                                                case "<=":
+                                                case "=<":
+                                                    includeRow = numValue <= filterValue;
+                                                    break;
+                                                case "between":
+                                                    // Format: "min,max"
+                                                    if (f.FilterValue.Contains(','))
+                                                    {
+                                                        var parts = f.FilterValue.Split(',');
+                                                        if (parts.Length == 2 &&
+                                                            decimal.TryParse(parts[0], out decimal min) &&
+                                                            decimal.TryParse(parts[1], out decimal max))
+                                                        {
+                                                            includeRow = numValue >= min && numValue <= max;
+                                                        }
+                                                        else
+                                                        {
+                                                            includeRow = false;
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        includeRow = false;
+                                                    }
+                                                    break;
+                                                default:
+                                                    includeRow = false;
+                                                    break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            includeRow = false; // Invalid numeric comparison
+                                        }
+                                    }
+                                    // Date comparison operators
+                                    else if (fieldType == typeof(DateTime))
+                                    {
+                                        bool parseFieldValue = DateTime.TryParse(fieldValue, out DateTime dateValue);
+                                        bool parseFilterValue = DateTime.TryParse(f.FilterValue, out DateTime filterDateValue);
+
+                                        if (parseFieldValue && parseFilterValue)
+                                        {
+                                            switch (op)
+                                            {
+                                                case "=":
+                                                case "equals":
+                                                    includeRow = dateValue.Date == filterDateValue.Date;
+                                                    break;
+                                                case "!=":
+                                                case "<>":
+                                                case "notequals":
+                                                case "not equals":
+                                                    includeRow = dateValue.Date != filterDateValue.Date;
+                                                    break;
+                                                case ">":
+                                                case "after":
+                                                    includeRow = dateValue > filterDateValue;
+                                                    break;
+                                                case ">=":
+                                                case "=>":
+                                                case "on or after":
+                                                    includeRow = dateValue >= filterDateValue;
+                                                    break;
+                                                case "<":
+                                                case "before":
+                                                    includeRow = dateValue < filterDateValue;
+                                                    break;
+                                                case "<=":
+                                                case "=<":
+                                                case "on or before":
+                                                    includeRow = dateValue <= filterDateValue;
+                                                    break;
+                                                case "between":
+                                                    // Format: "startDate,endDate"
+                                                    if (f.FilterValue.Contains(','))
+                                                    {
+                                                        var parts = f.FilterValue.Split(',');
+                                                        if (parts.Length == 2 &&
+                                                            DateTime.TryParse(parts[0], out DateTime startDate) &&
+                                                            DateTime.TryParse(parts[1], out DateTime endDate))
+                                                        {
+                                                            includeRow = dateValue >= startDate && dateValue <= endDate;
+                                                        }
+                                                        else
+                                                        {
+                                                            includeRow = false;
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        includeRow = false;
+                                                    }
+                                                    break;
+                                                default:
+                                                    includeRow = false;
+                                                    break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            includeRow = false; // Invalid date comparison
+                                        }
+                                    }
+                                    // Boolean comparison operators
+                                    else if (fieldType == typeof(bool))
+                                    {
+                                        bool parseFieldValue = bool.TryParse(fieldValue, out bool boolValue);
+
+                                        // Allow flexible boolean parsing (true, yes, 1, etc.)
+                                        bool filterBoolValue;
+                                        string filterValueLower = f.FilterValue.ToLower().Trim();
+                                        filterBoolValue = filterValueLower == "true" || filterValueLower == "yes" || filterValueLower == "1";
+
+                                        if (parseFieldValue)
+                                        {
+                                            switch (op)
+                                            {
+                                                case "=":
+                                                case "equals":
+                                                case "is":
+                                                    includeRow = boolValue == filterBoolValue;
+                                                    break;
+                                                case "!=":
+                                                case "<>":
+                                                case "notequals":
+                                                case "not equals":
+                                                case "is not":
+                                                    includeRow = boolValue != filterBoolValue;
+                                                    break;
+                                                default:
+                                                    includeRow = false;
+                                                    break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            includeRow = false; // Invalid boolean comparison
+                                        }
+                                    }
+                                    // Default fallback for other types
+                                    else
+                                    {
+                                        switch (op)
+                                        {
+                                            case "=":
+                                            case "equals":
+                                                includeRow = fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "!=":
+                                            case "<>":
+                                            case "notequals":
+                                            case "not equals":
+                                                includeRow = !fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "contains":
+                                                includeRow = fieldValue.Contains(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            default:
+                                                includeRow = false;
+                                                break;
+                                        }
+                                    }
+
+                                    if (!includeRow) break;
+                                }
+                            }
+                        }
+
+                        if (includeRow)
+                        {
+                            DataRow newRow = dataTable.NewRow();
+                            for (int i = 0; i < Math.Min(fields.Length, entityStructure.Fields.Count); i++)
+                            {
+                                try
+                                {
+                                    Type targetType = dataTable.Columns[i].DataType;
+                                    newRow[i] = string.IsNullOrEmpty(fields[i]) ?
+                                        DBNull.Value :
+                                        Convert.ChangeType(fields[i], targetType);
+                                }
+                                catch
+                                {
+                                    newRow[i] = DBNull.Value;
+                                }
+                            }
+                            dataTable.Rows.Add(newRow);
+                            addedRows++;
                         }
                     }
-                  
                 }
-                var retval= GetDataTable(0);
+
+                // Convert to requested type
                 enttype = GetEntityType(EntityName);
                 Type uowGenericType = typeof(ObservableBindingList<>).MakeGenericType(enttype);
-                // Prepare the arguments for the constructor
-                object[] constructorArgs = new object[] { retval };
-
-                // Create an instance of UnitOfWork<T> with the specific constructor
-                // Dynamically handle the instance since we can't cast to a specific IUnitofWork<T> at compile time
-                object uowInstance = Activator.CreateInstance(uowGenericType, constructorArgs);
-                return uowInstance;
+                return Activator.CreateInstance(uowGenericType, new object[] { dataTable });
             }
             catch (Exception ex)
             {
-
-                DMEEditor.AddLogMessage("Fail", $"Error in getting File Data({ ex.Message}) ", DateTime.Now, -1, "", Errors.Failed);
-               
+                DMEEditor.AddLogMessage("Fail", $"Error in getting File Data: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
                 return null;
             }
         }
+
+        // Improved implementation of GetEntity with paging support
+        // Improved implementation with extended filtering operators
         public object GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
         {
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                int noofrows = 0;
-                if (filter != null)
+                if (pageNumber <= 0) pageNumber = 1;
+                if (pageSize <= 0) pageSize = int.MaxValue;
+
+                var entityStructure = GetEntityStructure(EntityName, false);
+                if (entityStructure == null)
                 {
+                    DMEEditor.AddLogMessage("Error", $"Entity structure not found for {EntityName}", DateTime.Now, 0, null, Errors.Failed);
+                    return null;
+                }
 
+                // Create DataTable with proper structure
+                DataTable dataTable = new DataTable();
+                foreach (EntityField field in entityStructure.Fields)
+                {
+                    Type fieldType = Type.GetType(field.fieldtype);
+                    dataTable.Columns.Add(field.fieldname, fieldType ?? typeof(string));
+                }
 
-                    if (filter.Count > 0)
+                // Calculate skip and take for paging
+                int skipRows = (pageNumber - 1) * pageSize;
+                int rowCounter = 0;
+                int addedRows = 0;
+
+                using (fieldParser = new CsvTextFieldParser(CombineFilePath))
+                {
+                    fieldParser.SetDelimiter(Delimiter);
+
+                    // Skip header
+                    fieldParser.ReadFields();
+
+                    // Read data rows with paging
+                    while (!fieldParser.EndOfData && (addedRows < pageSize || pageSize <= 0))
                     {
-                        if (!string.IsNullOrEmpty(filter[0].FilterValue) && !string.IsNullOrWhiteSpace(filter[0].FilterValue))
+                        string[] fields = fieldParser.ReadFields();
+
+                        // Skip rows for paging
+                        rowCounter++;
+                        if (rowCounter <= skipRows)
+                            continue;
+
+                        // Process filter if provided
+                        bool includeRow = true;
+                        if (filter != null && filter.Count > 0)
                         {
-                            noofrows = Convert.ToInt32(filter[0].FilterValue);
+                            foreach (var f in filter.Where(f => !string.IsNullOrEmpty(f.FilterValue)))
+                            {
+                                int columnIndex = entityStructure.Fields.FindIndex(ef => ef.fieldname == f.FieldName);
+                                if (columnIndex >= 0 && columnIndex < fields.Length)
+                                {
+                                    string fieldValue = fields[columnIndex];
+                                    EntityField entityField = entityStructure.Fields[columnIndex];
+                                    Type fieldType = Type.GetType(entityField.fieldtype) ?? typeof(string);
+
+                                    // Apply filter based on operator
+                                    string op = (f.Operator?.ToLower() ?? "equals");
+
+                                    // For empty field values, apply special handling
+                                    if (string.IsNullOrEmpty(fieldValue))
+                                    {
+                                        switch (op)
+                                        {
+                                            case "isnull":
+                                            case "is null":
+                                                includeRow = true;
+                                                break;
+                                            case "isnotnull":
+                                            case "is not null":
+                                                includeRow = false;
+                                                break;
+                                            default:
+                                                // Most operators will exclude rows where the field is null
+                                                includeRow = false;
+                                                break;
+                                        }
+
+                                        // Skip further processing for this filter if field is null
+                                        if (!includeRow) break;
+                                        continue;
+                                    }
+
+                                    // Check if filter value is null operator
+                                    if (f.FilterValue.Equals("null", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        switch (op)
+                                        {
+                                            case "=":
+                                            case "equals":
+                                            case "isnull":
+                                            case "is null":
+                                                includeRow = string.IsNullOrEmpty(fieldValue);
+                                                break;
+                                            case "!=":
+                                            case "<>":
+                                            case "notequals":
+                                            case "not equals":
+                                            case "isnotnull":
+                                            case "is not null":
+                                                includeRow = !string.IsNullOrEmpty(fieldValue);
+                                                break;
+                                            default:
+                                                includeRow = false;
+                                                break;
+                                        }
+
+                                        if (!includeRow) break;
+                                        continue;
+                                    }
+
+                                    // String comparison operators
+                                    if (fieldType == typeof(string))
+                                    {
+                                        switch (op)
+                                        {
+                                            case "=":
+                                            case "equals":
+                                                includeRow = fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "!=":
+                                            case "<>":
+                                            case "notequals":
+                                            case "not equals":
+                                                includeRow = !fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "contains":
+                                                includeRow = fieldValue.Contains(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "notcontains":
+                                            case "not contains":
+                                            case "!contains":
+                                                includeRow = !fieldValue.Contains(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "startswith":
+                                            case "starts with":
+                                                includeRow = fieldValue.StartsWith(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "endswith":
+                                            case "ends with":
+                                                includeRow = fieldValue.EndsWith(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "regex":
+                                            case "matches":
+                                                includeRow = Regex.IsMatch(fieldValue, f.FilterValue);
+                                                break;
+                                            case "in":
+                                                // Process comma separated values
+                                                var values = f.FilterValue.Split(',').Select(v => v.Trim());
+                                                includeRow = values.Any(v => fieldValue.Equals(v, StringComparison.OrdinalIgnoreCase));
+                                                break;
+                                            case "notin":
+                                            case "not in":
+                                                // Process comma separated values
+                                                var excludeValues = f.FilterValue.Split(',').Select(v => v.Trim());
+                                                includeRow = !excludeValues.Any(v => fieldValue.Equals(v, StringComparison.OrdinalIgnoreCase));
+                                                break;
+                                            default:
+                                                includeRow = false;
+                                                break;
+                                        }
+                                    }
+                                    // Numeric comparison operators
+                                    else if (fieldType == typeof(int) || fieldType == typeof(decimal) ||
+                                             fieldType == typeof(double) || fieldType == typeof(float) ||
+                                             fieldType == typeof(long))
+                                    {
+                                        bool parseFieldValue = decimal.TryParse(fieldValue, out decimal numValue);
+                                        bool parseFilterValue = decimal.TryParse(f.FilterValue, out decimal filterValue);
+
+                                        if (parseFieldValue && parseFilterValue)
+                                        {
+                                            switch (op)
+                                            {
+                                                case "=":
+                                                case "equals":
+                                                    includeRow = numValue == filterValue;
+                                                    break;
+                                                case "!=":
+                                                case "<>":
+                                                case "notequals":
+                                                case "not equals":
+                                                    includeRow = numValue != filterValue;
+                                                    break;
+                                                case ">":
+                                                    includeRow = numValue > filterValue;
+                                                    break;
+                                                case ">=":
+                                                case "=>":
+                                                    includeRow = numValue >= filterValue;
+                                                    break;
+                                                case "<":
+                                                    includeRow = numValue < filterValue;
+                                                    break;
+                                                case "<=":
+                                                case "=<":
+                                                    includeRow = numValue <= filterValue;
+                                                    break;
+                                                case "between":
+                                                    // Format: "min,max"
+                                                    if (f.FilterValue.Contains(','))
+                                                    {
+                                                        var parts = f.FilterValue.Split(',');
+                                                        if (parts.Length == 2 &&
+                                                            decimal.TryParse(parts[0], out decimal min) &&
+                                                            decimal.TryParse(parts[1], out decimal max))
+                                                        {
+                                                            includeRow = numValue >= min && numValue <= max;
+                                                        }
+                                                        else
+                                                        {
+                                                            includeRow = false;
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        includeRow = false;
+                                                    }
+                                                    break;
+                                                default:
+                                                    includeRow = false;
+                                                    break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            includeRow = false; // Invalid numeric comparison
+                                        }
+                                    }
+                                    // Date comparison operators
+                                    else if (fieldType == typeof(DateTime))
+                                    {
+                                        bool parseFieldValue = DateTime.TryParse(fieldValue, out DateTime dateValue);
+                                        bool parseFilterValue = DateTime.TryParse(f.FilterValue, out DateTime filterDateValue);
+
+                                        if (parseFieldValue && parseFilterValue)
+                                        {
+                                            switch (op)
+                                            {
+                                                case "=":
+                                                case "equals":
+                                                    includeRow = dateValue.Date == filterDateValue.Date;
+                                                    break;
+                                                case "!=":
+                                                case "<>":
+                                                case "notequals":
+                                                case "not equals":
+                                                    includeRow = dateValue.Date != filterDateValue.Date;
+                                                    break;
+                                                case ">":
+                                                case "after":
+                                                    includeRow = dateValue > filterDateValue;
+                                                    break;
+                                                case ">=":
+                                                case "=>":
+                                                case "on or after":
+                                                    includeRow = dateValue >= filterDateValue;
+                                                    break;
+                                                case "<":
+                                                case "before":
+                                                    includeRow = dateValue < filterDateValue;
+                                                    break;
+                                                case "<=":
+                                                case "=<":
+                                                case "on or before":
+                                                    includeRow = dateValue <= filterDateValue;
+                                                    break;
+                                                case "between":
+                                                    // Format: "startDate,endDate"
+                                                    if (f.FilterValue.Contains(','))
+                                                    {
+                                                        var parts = f.FilterValue.Split(',');
+                                                        if (parts.Length == 2 &&
+                                                            DateTime.TryParse(parts[0], out DateTime startDate) &&
+                                                            DateTime.TryParse(parts[1], out DateTime endDate))
+                                                        {
+                                                            includeRow = dateValue >= startDate && dateValue <= endDate;
+                                                        }
+                                                        else
+                                                        {
+                                                            includeRow = false;
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        includeRow = false;
+                                                    }
+                                                    break;
+                                                default:
+                                                    includeRow = false;
+                                                    break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            includeRow = false; // Invalid date comparison
+                                        }
+                                    }
+                                    // Boolean comparison operators
+                                    else if (fieldType == typeof(bool))
+                                    {
+                                        bool parseFieldValue = bool.TryParse(fieldValue, out bool boolValue);
+
+                                        // Allow flexible boolean parsing (true, yes, 1, etc.)
+                                        bool filterBoolValue;
+                                        string filterValueLower = f.FilterValue.ToLower().Trim();
+                                        filterBoolValue = filterValueLower == "true" || filterValueLower == "yes" || filterValueLower == "1";
+
+                                        if (parseFieldValue)
+                                        {
+                                            switch (op)
+                                            {
+                                                case "=":
+                                                case "equals":
+                                                case "is":
+                                                    includeRow = boolValue == filterBoolValue;
+                                                    break;
+                                                case "!=":
+                                                case "<>":
+                                                case "notequals":
+                                                case "not equals":
+                                                case "is not":
+                                                    includeRow = boolValue != filterBoolValue;
+                                                    break;
+                                                default:
+                                                    includeRow = false;
+                                                    break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            includeRow = false; // Invalid boolean comparison
+                                        }
+                                    }
+                                    // Default fallback for other types
+                                    else
+                                    {
+                                        switch (op)
+                                        {
+                                            case "=":
+                                            case "equals":
+                                                includeRow = fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "!=":
+                                            case "<>":
+                                            case "notequals":
+                                            case "not equals":
+                                                includeRow = !fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            case "contains":
+                                                includeRow = fieldValue.Contains(f.FilterValue, StringComparison.OrdinalIgnoreCase);
+                                                break;
+                                            default:
+                                                includeRow = false;
+                                                break;
+                                        }
+                                    }
+
+                                    if (!includeRow) break;
+                                }
+                            }
+                        }
+
+                        if (includeRow)
+                        {
+                            DataRow newRow = dataTable.NewRow();
+                            for (int i = 0; i < Math.Min(fields.Length, entityStructure.Fields.Count); i++)
+                            {
+                                try
+                                {
+                                    Type targetType = dataTable.Columns[i].DataType;
+                                    newRow[i] = string.IsNullOrEmpty(fields[i]) ?
+                                        DBNull.Value :
+                                        Convert.ChangeType(fields[i], targetType);
+                                }
+                                catch
+                                {
+                                    newRow[i] = DBNull.Value;
+                                }
+                            }
+                            dataTable.Rows.Add(newRow);
+                            addedRows++;
                         }
                     }
-
                 }
-                return GetData(noofrows);
+
+                // Convert to requested type
+                enttype = GetEntityType(EntityName);
+                Type uowGenericType = typeof(ObservableBindingList<>).MakeGenericType(enttype);
+                return Activator.CreateInstance(uowGenericType, new object[] { dataTable });
             }
             catch (Exception ex)
             {
-
-                DMEEditor.AddLogMessage("Fail", $"Error in getting File Data({ex.Message}) ", DateTime.Now, -1, "", Errors.Failed);
-
+                DMEEditor.AddLogMessage("Fail", $"Error in getting File Data: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
                 return null;
             }
         }
-
 
         public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             throw new NotImplementedException();
         }
-
         public EntityStructure GetEntityStructure(string EntityName, bool refresh)
         {
             if (Entities != null)
@@ -825,7 +1781,6 @@ namespace TheTechIdea.Beep.FileManager
 
 
         }
-
         public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
             if (Entities != null)
@@ -857,7 +1812,6 @@ namespace TheTechIdea.Beep.FileManager
                 return null;
 
         }
-
         public Type GetEntityType(string EntityName)
         {
             if (Entities != null)
@@ -882,17 +1836,14 @@ namespace TheTechIdea.Beep.FileManager
             DMTypeBuilder.CreateNewObject(DMEEditor, "Beep.CSVDataSource", Entities.FirstOrDefault().EntityName, Entities.FirstOrDefault().Fields);
             return DMTypeBuilder.MyType;
         }
-
          public  object RunQuery( string qrystr)
         {
             return GetEntity(Entities[0].EntityName,new List<AppFilter>() { });
         }
-
         public IErrorsInfo RunScript(ETLScriptDet dDLScripts)
         {
             return DMEEditor.ErrorObject;
         }
-
         public IErrorsInfo UpdateEntities(string EntityName, object UploadData,IProgress<PassedArgs> progress)
         {
             try
@@ -1040,57 +1991,193 @@ namespace TheTechIdea.Beep.FileManager
         }
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
-            throw new NotImplementedException();
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                var entityStructure = GetEntityStructure(EntityName, false);
+                if (entityStructure == null || entityStructure.Fields.Count == 0)
+                {
+                    DMEEditor.AddLogMessage("Error", $"Entity structure not found for {EntityName}", DateTime.Now, 0, null, Errors.Failed);
+                    ErrorObject.Flag = Errors.Failed;
+                    return ErrorObject;
+                }
+
+                // Read all existing data
+                var lines = new List<string>();
+                bool fileExists = File.Exists(CombineFilePath);
+
+                if (fileExists)
+                {
+                    using (var reader = new StreamReader(CombineFilePath))
+                    {
+                        string line;
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            lines.Add(line);
+                        }
+                    }
+                }
+                else
+                {
+                    // Create headers if file doesn't exist
+                    lines.Add(string.Join(Delimiter.ToString(),
+                        entityStructure.Fields.Select(f => f.fieldname)));
+                }
+
+                // Add new data row
+                var newRow = new List<string>();
+                foreach (var field in entityStructure.Fields)
+                {
+                    var prop = InsertedData.GetType().GetProperty(field.fieldname);
+                    if (prop != null)
+                    {
+                        var value = prop.GetValue(InsertedData)?.ToString() ?? string.Empty;
+                        // Escape quotes and add quotes around values with delimiters
+                        if (value.Contains(Delimiter) || value.Contains('"'))
+                        {
+                            value = $"\"{value.Replace("\"", "\"\"")}\"";
+                        }
+                        newRow.Add(value);
+                    }
+                    else
+                    {
+                        newRow.Add(string.Empty);
+                    }
+                }
+
+                lines.Add(string.Join(Delimiter.ToString(), newRow));
+
+                // Write back to file
+                File.WriteAllLines(CombineFilePath, lines);
+
+                DMEEditor.AddLogMessage("Success", $"Record inserted into {EntityName}", DateTime.Now, 0, null, Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Error", $"Failed to insert record: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+            }
+
+            return ErrorObject;
         }
         public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
            var retval =  Task.Run(() => GetEntity(EntityName, Filter)) ;
            return retval;
         }
-        public virtual IErrorsInfo BeginTransaction(PassedArgs args)
+        // Add properties to track transaction state
+        private List<string> _transactionBackupLines;
+        private bool _inTransaction = false;
+
+        public  IErrorsInfo BeginTransaction(PassedArgs args)
         {
             ErrorObject.Flag = Errors.Ok;
             try
             {
+                if (_inTransaction)
+                {
+                    DMEEditor.AddLogMessage("Warning", "Transaction already in progress", DateTime.Now, 0, null, Errors.Failed);
+                    ErrorObject.Flag = Errors.Failed;
+                    return ErrorObject;
+                }
 
+                // Take a snapshot of the current file content
+                _transactionBackupLines = new List<string>();
+                if (File.Exists(CombineFilePath))
+                {
+                    _transactionBackupLines.AddRange(File.ReadAllLines(CombineFilePath));
+                }
+
+                _inTransaction = true;
+                DMEEditor.AddLogMessage("Success", "Transaction started", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-
-                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+                DMEEditor.AddLogMessage("Error", $"Failed to begin transaction: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
             }
-            return DMEEditor.ErrorObject;
+            return ErrorObject;
         }
 
-        public virtual IErrorsInfo EndTransaction(PassedArgs args)
+        public  IErrorsInfo EndTransaction(PassedArgs args)
         {
             ErrorObject.Flag = Errors.Ok;
             try
             {
-
+                // Just clear transaction state - commit happens separately
+                _inTransaction = false;
+                _transactionBackupLines = null;
+                DMEEditor.AddLogMessage("Success", "Transaction ended", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-
-                DMEEditor.AddLogMessage("Beep", $"Error in end Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+                DMEEditor.AddLogMessage("Error", $"Error ending transaction: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
             }
-            return DMEEditor.ErrorObject;
+            return ErrorObject;
         }
 
-        public virtual IErrorsInfo Commit(PassedArgs args)
+        public  IErrorsInfo Commit(PassedArgs args)
         {
             ErrorObject.Flag = Errors.Ok;
             try
             {
+                if (!_inTransaction)
+                {
+                    DMEEditor.AddLogMessage("Warning", "No transaction in progress to commit", DateTime.Now, 0, null, Errors.Failed);
+                    ErrorObject.Flag = Errors.Failed;
+                    return ErrorObject;
+                }
 
+                // Nothing special needed for commit as changes are written directly to file
+                // Just end transaction
+                _inTransaction = false;
+                _transactionBackupLines = null;
+                DMEEditor.AddLogMessage("Success", "Transaction committed", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-
-                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+                DMEEditor.AddLogMessage("Error", $"Failed to commit transaction: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
             }
-            return DMEEditor.ErrorObject;
+            return ErrorObject;
         }
+
+        public IErrorsInfo Rollback(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                if (!_inTransaction)
+                {
+                    DMEEditor.AddLogMessage("Warning", "No transaction in progress to rollback", DateTime.Now, 0, null, Errors.Failed);
+                    ErrorObject.Flag = Errors.Failed;
+                    return ErrorObject;
+                }
+
+                // Restore file from backup
+                if (_transactionBackupLines != null)
+                {
+                    File.WriteAllLines(CombineFilePath, _transactionBackupLines);
+                }
+
+                _inTransaction = false;
+                _transactionBackupLines = null;
+                DMEEditor.AddLogMessage("Success", "Transaction rolled back", DateTime.Now, 0, null, Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Error", $"Failed to rollback transaction: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+            }
+            return ErrorObject;
+        }
+
         #region "dispose"
         private bool disposedValue;
         protected virtual void Dispose(bool disposing)
@@ -1126,6 +2213,364 @@ namespace TheTechIdea.Beep.FileManager
         }
         #endregion
         #region "Helpers"
+        // Helper method to detect delimiter automatically from a CSV file
+        private char DetectDelimiter(string filePath)
+        {
+            try
+            {
+                using (var reader = new StreamReader(filePath))
+                {
+                    string firstLine = reader.ReadLine();
+                    if (string.IsNullOrEmpty(firstLine))
+                        return ','; // Default to comma
+
+                    // Count potential delimiters
+                    int commaCount = firstLine.Count(c => c == ',');
+                    int semicolonCount = firstLine.Count(c => c == ';');
+                    int tabCount = firstLine.Count(c => c == '\t');
+                    int pipeCount = firstLine.Count(c => c == '|');
+
+                    // Return the most frequent delimiter
+                    char mostFrequentDelimiter = ',';
+                    int maxCount = commaCount;
+
+                    if (semicolonCount > maxCount)
+                    {
+                        mostFrequentDelimiter = ';';
+                        maxCount = semicolonCount;
+                    }
+
+                    if (tabCount > maxCount)
+                    {
+                        mostFrequentDelimiter = '\t';
+                        maxCount = tabCount;
+                    }
+
+                    if (pipeCount > maxCount)
+                    {
+                        mostFrequentDelimiter = '|';
+                    }
+
+                    return mostFrequentDelimiter;
+                }
+            }
+            catch
+            {
+                return ','; // Default to comma if detection fails
+            }
+        }
+        public IErrorsInfo BulkInsert(string EntityName, List<object> InsertedData)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                if (InsertedData == null || InsertedData.Count == 0)
+                {
+                    DMEEditor.AddLogMessage("Warning", "No data provided for bulk insert", DateTime.Now, 0, null, Errors.Failed);
+                    ErrorObject.Flag = Errors.Failed;
+                    return ErrorObject;
+                }
+
+                var entityStructure = GetEntityStructure(EntityName, false);
+                if (entityStructure == null || entityStructure.Fields.Count == 0)
+                {
+                    DMEEditor.AddLogMessage("Error", $"Entity structure not found for {EntityName}", DateTime.Now, 0, null, Errors.Failed);
+                    ErrorObject.Flag = Errors.Failed;
+                    return ErrorObject;
+                }
+
+                // Read headers if file exists
+                var lines = new List<string>();
+                bool fileExists = File.Exists(CombineFilePath);
+
+                if (fileExists)
+                {
+                    using (var reader = new StreamReader(CombineFilePath))
+                    {
+                        string header = reader.ReadLine();
+                        lines.Add(header); // Add header line
+                    }
+                }
+                else
+                {
+                    // Create headers if file doesn't exist
+                    lines.Add(string.Join(Delimiter.ToString(),
+                        entityStructure.Fields.Select(f => f.fieldname)));
+                }
+
+                // Add all data rows efficiently
+                foreach (var dataItem in InsertedData)
+                {
+                    var newRow = new List<string>();
+                    foreach (var field in entityStructure.Fields)
+                    {
+                        var prop = dataItem.GetType().GetProperty(field.fieldname);
+                        if (prop != null)
+                        {
+                            var value = prop.GetValue(dataItem)?.ToString() ?? string.Empty;
+                            // Escape quotes and add quotes around values with delimiters
+                            if (value.Contains(Delimiter) || value.Contains('"'))
+                            {
+                                value = $"\"{value.Replace("\"", "\"\"")}\"";
+                            }
+                            newRow.Add(value);
+                        }
+                        else
+                        {
+                            newRow.Add(string.Empty);
+                        }
+                    }
+
+                    lines.Add(string.Join(Delimiter.ToString(), newRow));
+                }
+
+                // Write all at once for better performance
+                File.WriteAllLines(CombineFilePath, lines);
+
+                DMEEditor.AddLogMessage("Success", $"Bulk insert of {InsertedData.Count} records completed", DateTime.Now, 0, null, Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Error", $"Failed in bulk insert: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+            }
+
+            return ErrorObject;
+        }
+        private bool ValidateCSVHeaders(string filePath, EntityStructure entityStructure)
+        {
+            try
+            {
+                using (var reader = new StreamReader(filePath))
+                {
+                    string headerLine = reader.ReadLine();
+                    if (string.IsNullOrEmpty(headerLine))
+                        return false;
+
+                    string[] headers = headerLine.Split(Delimiter);
+                    var entityFieldNames = entityStructure.Fields.Select(f => f.fieldname).ToList();
+
+                    // Check if all entity fields exist in the headers
+                    foreach (var fieldName in entityFieldNames)
+                    {
+                        if (!headers.Contains(fieldName))
+                        {
+                            DMEEditor.AddLogMessage("Warning", $"CSV header missing field: {fieldName}", DateTime.Now, 0, null, Errors.Failed);
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Error", $"Failed to validate CSV headers: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return false;
+            }
+        }
+        public IErrorsInfo ExportDataToCSV(string entityName, string targetFilePath, bool includeHeaders = true, char delimiter = ',')
+        {
+            ErrorObject.Flag = Errors.Ok;
+            try
+            {
+                var entity = GetEntityStructure(entityName, false);
+                if (entity == null)
+                {
+                    DMEEditor.AddLogMessage("Error", $"Entity {entityName} not found", DateTime.Now, 0, null, Errors.Failed);
+                    ErrorObject.Flag = Errors.Failed;
+                    return ErrorObject;
+                }
+
+                // Retrieve the data
+                var data = GetEntity(entityName, null) as DataTable;
+                if (data == null)
+                {
+                    DMEEditor.AddLogMessage("Error", "Failed to retrieve data for export", DateTime.Now, 0, null, Errors.Failed);
+                    ErrorObject.Flag = Errors.Failed;
+                    return ErrorObject;
+                }
+
+                using (var writer = new StreamWriter(targetFilePath, false, Encoding.UTF8))
+                {
+                    // Write headers if requested
+                    if (includeHeaders)
+                    {
+                        string headerLine = string.Join(delimiter.ToString(),
+                            data.Columns.Cast<DataColumn>().Select(column =>
+                                column.ColumnName.Contains(delimiter) ?
+                                $"\"{column.ColumnName.Replace("\"", "\"\"")}\"" :
+                                column.ColumnName));
+                        writer.WriteLine(headerLine);
+                    }
+
+                    // Write data rows
+                    foreach (DataRow row in data.Rows)
+                    {
+                        string dataLine = string.Join(delimiter.ToString(),
+                            row.ItemArray.Select(field =>
+                            {
+                                string value = field?.ToString() ?? string.Empty;
+                                if (value.Contains(delimiter) || value.Contains('"') || value.Contains('\n'))
+                                {
+                                    // Escape double quotes and wrap in quotes
+                                    return $"\"{value.Replace("\"", "\"\"")}\"";
+                                }
+                                return value;
+                            }));
+                        writer.WriteLine(dataLine);
+                    }
+                }
+
+                DMEEditor.AddLogMessage("Success", $"Data exported to {targetFilePath}", DateTime.Now, 0, null, Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Error", $"Failed to export data: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+            }
+            return ErrorObject;
+        }
+        // Support for additional CSV options in the ConnectionProperty
+        /// <summary>
+        /// Sanitizes column names according to configured rules
+        /// </summary>
+        /// <summary>
+        /// Detects file encoding from a CSV file
+        /// </summary>
+        private Encoding DetectEncoding(string filePath)
+        {
+            try
+            {
+                // Try to detect BOM (Byte Order Mark)
+                byte[] bom = new byte[4];
+                using (FileStream file = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    file.Read(bom, 0, 4);
+                }
+
+                // Check for UTF-8 BOM
+                if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
+                    return Encoding.UTF8;
+
+                // Check for UTF-16 LE BOM
+                if (bom[0] == 0xFF && bom[1] == 0xFE)
+                    return Encoding.Unicode;
+
+                // Check for UTF-16 BE BOM
+                if (bom[0] == 0xFE && bom[1] == 0xFF)
+                    return Encoding.BigEndianUnicode;
+
+                // Check for UTF-32 LE BOM
+                if (bom[0] == 0xFF && bom[1] == 0xFE && bom[2] == 0 && bom[3] == 0)
+                    return Encoding.UTF32;
+
+                // If no BOM, try to analyze content
+                using (StreamReader reader = new StreamReader(filePath, Encoding.ASCII, true))
+                {
+                    string sample = reader.ReadToEnd();
+
+                    // Check for UTF-8 patterns
+                    bool couldBeUTF8 = true;
+                    for (int i = 0; i < sample.Length; i++)
+                    {
+                        if (sample[i] > 127)
+                        {
+                            couldBeUTF8 = false;
+                            break;
+                        }
+                    }
+
+                    if (couldBeUTF8)
+                        return Encoding.UTF8;
+                }
+
+                // Default to system default encoding
+                return Encoding.Default;
+            }
+            catch
+            {
+                return Encoding.UTF8; // Default to UTF-8 if detection fails
+            }
+        }
+        /// <summary>
+        /// Validates a data row against the entity structure
+        /// </summary>
+        private (bool IsValid, List<string> Errors) ValidateRow(EntityStructure entityStructure, Dictionary<string, object> dataRow)
+        {
+            var errors = new List<string>();
+            bool isValid = true;
+
+            foreach (var field in entityStructure.Fields)
+            {
+                // Check required fields
+                if (!field.AllowDBNull && (!dataRow.ContainsKey(field.fieldname) || dataRow[field.fieldname] == null))
+                {
+                    errors.Add($"Field '{field.fieldname}' is required but no value was provided");
+                    isValid = false;
+                    continue;
+                }
+
+                // Skip validation for null values in nullable fields
+                if (!dataRow.ContainsKey(field.fieldname) || dataRow[field.fieldname] == null)
+                    continue;
+
+                // Type validation
+                try
+                {
+                    Type fieldType = Type.GetType(field.fieldtype);
+                    if (fieldType != null)
+                    {
+                        Convert.ChangeType(dataRow[field.fieldname], fieldType);
+                    }
+                }
+                catch
+                {
+                    errors.Add($"Field '{field.fieldname}' has an invalid value of '{dataRow[field.fieldname]}' for type {field.fieldtype}");
+                    isValid = false;
+                }
+
+                // Size validation for string fields
+                if (field.fieldtype == "System.String" && field.Size1 > 0)
+                {
+                    string value = dataRow[field.fieldname]?.ToString() ?? string.Empty;
+                    if (value.Length > field.Size1)
+                    {
+                        errors.Add($"Field '{field.fieldname}' value exceeds maximum length of {field.Size1}");
+                        isValid = false;
+                    }
+                }
+            }
+
+            return (isValid, errors);
+        }
+        /// <summary>
+        /// Returns a DataReader-like interface for efficiently working with large CSV files
+        /// </summary>
+        public ICSVDataReader GetDataReader(string entityName, List<string> columnNames = null)
+        {
+            try
+            {
+                var entityStructure = GetEntityStructure(entityName, false);
+                if (entityStructure == null)
+                {
+                    DMEEditor.AddLogMessage("Error", $"Entity structure not found for {entityName}", DateTime.Now, 0, null, Errors.Failed);
+                    return null;
+                }
+
+                return new CSVDataReader(CombineFilePath, Delimiter, entityStructure, columnNames);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Error", $"Failed to create data reader: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return null;
+            }
+        }
+        // Support for additional CSV options in the ConnectionProperty
+      
+
         #endregion "Helpers"
     }
 }

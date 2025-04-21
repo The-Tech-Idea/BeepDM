@@ -14,7 +14,7 @@ namespace TheTechIdea.Beep.Vis
     }
     public enum ShowinType
     {
-        Menu,Toolbar,Both, HorZToolbar
+        Menu,Toolbar,Both, HorZToolbar,ContextMenu
     }
     public enum BeepKeys
     {

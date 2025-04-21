@@ -96,6 +96,11 @@ namespace TheTechIdea.Beep.Vis
         public bool Alt { get; set; } = false;
         public bool Shift { get; set; } = false;
 
+        public string MenuID { get; set; } = null;
+        public string ClassID { get; set; }  // Class ID from the addin usual guid generated
+        public string ClassName { get; set; }  // Class Name from the addin
+        public bool IsClassDistinct { get; set; } = false; // if true the class is distinct and not a part of the addin
+
     }
 
 }

@@ -710,6 +710,293 @@
         <member name="M:TheTechIdea.Beep.Utilities.DMTypeBuilder.LogError(System.String,System.Exception)">
             <summary>Logs errors safely in a thread-safe manner.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.FileManager.CSVAnalyser">
+            <summary>
+            Analyzes CSV files for structure and optimization opportunities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.CSVAnalyser.AnalyzeCSVFile(System.String,System.Char)">
+            <summary>
+            Analyzes a CSV file and returns detailed information and suggestions
+            </summary>
+            <param name="filePath">Path to the CSV file</param>
+            <param name="delimiter">CSV delimiter character</param>
+            <returns>CSV analysis results</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.FileManager.CSVAnalysisResult">
+            <summary>
+            Results of CSV file analysis
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.CSVAnalysisResult.RowCount">
+            <summary>
+            Number of rows in the CSV file
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.CSVAnalysisResult.ColumnCount">
+            <summary>
+            Number of columns in the CSV file
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.CSVAnalysisResult.EstimatedSizeKB">
+            <summary>
+            File size in kilobytes
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.CSVAnalysisResult.HasInconsistentColumnCount">
+            <summary>
+            Whether file has rows with inconsistent column counts
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.CSVAnalysisResult.MaxColumns">
+            <summary>
+            Maximum number of columns in any row
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.CSVAnalysisResult.MinColumns">
+            <summary>
+            Minimum number of columns in any row
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.CSVAnalysisResult.LargeTextFieldCount">
+            <summary>
+            Count of very large text fields
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.CSVAnalysisResult.HasQuotingIssues">
+            <summary>
+            Whether file has quoting issues
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.CSVAnalysisResult.Errors">
+            <summary>
+            List of errors encountered during analysis
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.CSVAnalysisResult.Suggestions">
+            <summary>
+            List of suggestions for optimization
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.CSVAnalysisResult.ColumnAnalysis">
+            <summary>
+            Analysis results by column
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.FileManager.ColumnAnalysis">
+            <summary>
+            Analysis data for a single column
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.ColumnAnalysis.Index">
+            <summary>
+            Column's position in the CSV file
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.ColumnAnalysis.DataType">
+            <summary>
+            Detected data type
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.ColumnAnalysis.NullPercentage">
+            <summary>
+            Percentage of rows where this column is null
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.ColumnAnalysis.MinLength">
+            <summary>
+            Minimum value length
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.ColumnAnalysis.MaxLength">
+            <summary>
+            Maximum value length
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.ColumnAnalysis.UniqueValueCount">
+            <summary>
+            Number of unique values (capped at 100)
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.FileManager.ColumnStats">
+            <summary>
+            Column statistics used during analysis
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.FileManager.DataType">
+            <summary>
+            Data types detected in CSV columns
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.FileManager.DataType.Unknown">
+            <summary>
+            Unknown data type
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.FileManager.DataType.String">
+            <summary>
+            String data type
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.FileManager.DataType.Integer">
+            <summary>
+            Integer data type
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.FileManager.DataType.Decimal">
+            <summary>
+            Decimal data type
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.FileManager.DataType.Boolean">
+            <summary>
+            Boolean data type
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.FileManager.DataType.DateTime">
+            <summary>
+            DateTime data type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.CSVDataSource.CreateEntityAs(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Creates a new entity or updates an existing one based on the provided structure.
+            If the entity already exists, its fields will be updated (added, removed) to match the new structure.
+            </summary>
+            <param name="entity">The structure of the entity to create or update</param>
+            <returns>True if creation or update is successful, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.CSVDataSource.GetEntity(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Retrieves data from a CSV file with optional filtering
+            </summary>
+            <param name="EntityName">Name of the entity (CSV file) to query</param>
+            <param name="filter">List of filters to apply to the data</param>
+            <returns>An ObservableBindingList containing the filtered data</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.CSVDataSource.DetectEncoding(System.String)">
+            <summary>
+            Sanitizes column names according to configured rules
+            </summary>
+            <summary>
+            Detects file encoding from a CSV file
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.CSVDataSource.ValidateRow(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Validates a data row against the entity structure
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.CSVDataSource.GetDataReader(System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            Returns a DataReader-like interface for efficiently working with large CSV files
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.FileManager.CSVTypeMapper">
+            <summary>
+            Provides type conversion utilities for CSV data
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.CSVTypeMapper.MapToCSVType(System.Type)">
+            <summary>
+            Maps a .NET type to a CSV field type string
+            </summary>
+            <param name="dotNetType">The .NET type to map</param>
+            <returns>CSV type string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.CSVTypeMapper.MapToNetType(System.String)">
+            <summary>
+            Maps a CSV field type string to a .NET type
+            </summary>
+            <param name="csvType">CSV type string</param>
+            <returns>.NET type</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.CSVTypeMapper.ConvertValue(System.String,System.Type)">
+            <summary>
+            Converts a string value to the appropriate .NET type
+            </summary>
+            <param name="value">String value to convert</param>
+            <param name="targetType">Target .NET type</param>
+            <returns>Converted value</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.CSVTypeMapper.FormatValueForCSV(System.Object,System.Type)">
+            <summary>
+            Formats a value for CSV output
+            </summary>
+            <param name="value">The value to format</param>
+            <param name="sourceType">The source type</param>
+            <returns>Formatted string value</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.CSVTypeMapper.GetCSharpTypeName(System.String)">
+            <summary>
+            Returns the appropriate C# type name for a given CSV field type
+            </summary>
+            <param name="csvType">CSV field type</param>
+            <returns>C# type name</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.FileManager.ICSVDataReader">
+            <summary>
+            Interface for CSV data reader to provide streaming access to CSV files
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.ICSVDataReader.Read">
+            <summary>
+            Advances the reader to the next record
+            </summary>
+            <returns>True if there are more records, false if at the end</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.ICSVDataReader.GetValue(System.Int32)">
+            <summary>
+            Gets the value at the specified column ordinal
+            </summary>
+            <param name="i">The zero-based column ordinal</param>
+            <returns>The value as an object</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.ICSVDataReader.GetValue(System.String)">
+            <summary>
+            Gets the value for the specified column name
+            </summary>
+            <param name="columnName">The column name</param>
+            <returns>The value as an object</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.ICSVDataReader.IsDBNull(System.Int32)">
+            <summary>
+            Determines if the column contains null value
+            </summary>
+            <param name="i">The zero-based column ordinal</param>
+            <returns>True if null, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.ICSVDataReader.IsDBNull(System.String)">
+            <summary>
+            Determines if the column contains null value
+            </summary>
+            <param name="columnName">The column name</param>
+            <returns>True if null, false otherwise</returns>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.ICSVDataReader.FieldCount">
+            <summary>
+            Gets the number of columns in the current row
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.ICSVDataReader.GetName(System.Int32)">
+            <summary>
+            Gets the name of the column at the specified ordinal
+            </summary>
+            <param name="i">The zero-based column ordinal</param>
+            <returns>The column name</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.ICSVDataReader.GetOrdinal(System.String)">
+            <summary>
+            Gets the ordinal of the specified column name
+            </summary>
+            <param name="name">The column name</param>
+            <returns>The zero-based column ordinal</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.FileManager.CSVDataReader">
+            <summary>
+            Implementation of CSV data reader for streaming large files
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.FileManager.CsvTextFieldParser.#ctor(System.IO.Stream)">
             <summary>
             Constructs a parser from the specified input stream.
@@ -3398,11 +3685,100 @@
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetSchemasorDatabases(TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
-            <summary>Gets the query for fetching the schemas or databased user has privilge.</summary>
-            <param name="rdbms">The type of RDBMS.</param>
-            <param name="userName">The name of the user.</param>
-            <remarks> 
+            <summary>
+            Gets the query for fetching schemas or databases that the specified user has access to.
+            </summary>
+            <param name="rdbms">The type of database system.</param>
+            <param name="userName">The username to check privileges for (can be null for some database systems).</param>
+            <returns>A SQL query string to retrieve accessible schemas or databases, or empty string if not supported.</returns>
+            <remarks>
+            This method generates system-specific queries to list schemas/databases based on the database type.
+            For relational databases, it returns SQL queries that consider user permissions.
+            For NoSQL and other database types, it returns appropriate commands or empty string if listing
+            is not supported through standard queries.
             </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetSchemasorDatabasesSafe(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.Boolean)">
+            <summary>
+            Gets the query for fetching schemas or databases with built-in error handling.
+            </summary>
+            <param name="rdbms">The type of database system.</param>
+            <param name="userName">The username to check privileges for.</param>
+            <param name="throwOnError">Whether to throw exceptions for errors (default: false).</param>
+            <returns>A tuple containing the query string and a success indicator.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.ValidateSchemaQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)">
+            <summary>
+            Validates a generated database schema query and provides error information.
+            </summary>
+            <param name="rdbms">Database type for the query</param>
+            <param name="userName">Username used in the query</param>
+            <param name="query">The generated query string (if already created)</param>
+            <returns>A QueryValidationResult containing validation status and details</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryValidationResult">
+            <summary>
+            Result class for query validation containing error information.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryValidationResult.IsValid">
+            <summary>
+            Gets or sets a value indicating whether the query is valid.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryValidationResult.Query">
+            <summary>
+            Gets or sets the validated query string.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryValidationResult.ErrorMessage">
+            <summary>
+            Gets or sets the error message when validation fails.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryValidationResult.ErrorType">
+            <summary>
+            Gets or sets the type of error encountered.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryValidationResult.Suggestion">
+            <summary>
+            Gets or sets suggestion for resolving the error.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryValidationResult.Warnings">
+            <summary>
+            Gets the list of warnings that don't invalidate the query but should be considered.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryValidationResult.AddWarning(System.String)">
+            <summary>
+            Adds a warning to the validation result.
+            </summary>
+            <param name="warning">Warning message to add</param>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryErrorType">
+            <summary>
+            Defines the types of errors that can occur in query validation.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryErrorType.None">
+            <summary>No error.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryErrorType.UnsupportedDatabase">
+            <summary>The database type is not supported.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryErrorType.SyntaxError">
+            <summary>The query contains syntax errors.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryErrorType.PermissionIssue">
+            <summary>The operation requires permissions the user may not have.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryErrorType.SecurityRisk">
+            <summary>The query contains potential security risks.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.RDBMSHelper.QueryErrorType.Other">
+            <summary>Other error types.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.IsSqlStatementValid(System.String)">
             <summary>Checks if a given SQL statement is valid.</summary>
@@ -3436,21 +3812,6 @@
             <returns>A query string to fetch the last inserted identity value.</returns>
             <exception cref="T:System.ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDropPrimaryKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)" -->
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDropForeignKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)" -->
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDisableForeignKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)" -->
-        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateEnableForeignKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)">
-            <summary>Generates a query to enable a foreign key constraint in a specific RDBMS.</summary>
-            <param name="rdbms">The type of RDBMS.</param>
-            <param name="tableName">The name of the table.</param>
-            <param name="constraintName">The name of the foreign key constraint.</param>
-            <returns>A query to enable the specified foreign key constraint.</returns>
-            <exception cref="T:System.ArgumentException">Thrown when the specified RDBMS is not supported.</exception>
-        </member>
-        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateQuerySqlRepos">
-            <summary>Creates a list of QuerySqlRepo objects.</summary>
-            <returns>A list of QuerySqlRepo objects.</returns>
-        </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetPagingSyntax(TheTechIdea.Beep.Utilities.DataSourceType,System.Int32,System.Int32)">
             <summary>Gets the SQL syntax for paging results in a database-agnostic way.</summary>
             
@@ -3463,6 +3824,541 @@
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.SupportsFeature(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Helpers.DatabaseFeature)">
             <summary>Determines if the database type supports specific features.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateUpdateEntitySQL(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.List{System.String},System.Collections.Generic.List{System.String})">
+            <summary>
+            Generates SQL to update an entity in the database based on an EntityStructure.
+            </summary>
+            <param name="entity">The EntityStructure containing updated information</param>
+            <param name="whereClauseFields">List of field names to use for the WHERE clause (usually primary keys)</param>
+            <param name="fieldsToUpdate">Optional list of specific fields to update. If null, all non-key fields will be updated.</param>
+            <returns>A tuple containing the SQL update statement and parameters information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateUpdateEntityWithValues(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Updates an entity in the database with actual values.
+            </summary>
+            <param name="entity">The EntityStructure defining the entity to update</param>
+            <param name="dataRow">Dictionary containing the actual field values to update</param>
+            <param name="whereValues">Dictionary containing values for the WHERE clause (usually primary key values)</param>
+            <returns>A result object with success status and error information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.ValidateEntityStructure(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Validates an entity structure before performing database operations
+            </summary>
+            <param name="entity">The EntityStructure to validate</param>
+            <returns>Validation result with errors if any were found</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDeleteEntitySQL(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.List{System.String})">
+            <summary>
+            Generates SQL to delete records from an entity in the database based on an EntityStructure.
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="whereClauseFields">List of field names to use for the WHERE clause (usually primary keys)</param>
+            <returns>A tuple containing the SQL delete statement, parameters information, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDeleteEntityWithValues(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Deletes records from an entity based on actual where clause values.
+            </summary>
+            <param name="entity">The EntityStructure defining the entity</param>
+            <param name="whereValues">Dictionary containing values for the WHERE clause (usually primary key values)</param>
+            <returns>A result object with success status and error information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateTruncateEntitySQL(TheTechIdea.Beep.DataBase.EntityStructure,System.Boolean)">
+            <summary>
+            Generates SQL to delete all records from an entity (TRUNCATE or DELETE without WHERE)
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="useTruncate">Whether to use TRUNCATE (faster but may not be allowed in all contexts)</param>
+            <returns>A tuple containing the SQL statement, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDeleteMultipleSQL(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Collections.Generic.List{System.Object})">
+            <summary>
+            Generates SQL to delete multiple records based on a list of IDs
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="idFieldName">The name of the ID field to use in the WHERE clause</param>
+            <param name="ids">List of ID values to delete</param>
+            <returns>A tuple containing the SQL statement, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateInsertEntitySQL(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.List{System.String})">
+            <summary>
+            Generates SQL to insert a new record into an entity in the database based on an EntityStructure.
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="fieldsToInsert">Optional list of specific fields to insert. If null, all non-identity/non-autoincrement fields will be included.</param>
+            <returns>A tuple containing the SQL insert statement, parameters information, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateInsertWithValues(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates SQL to insert a new record with provided values into an entity in the database.
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="fieldValues">Dictionary containing field values to insert</param>
+            <returns>A tuple containing the SQL insert statement, parameters information, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateBulkInsertSQL(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <summary>
+            Generates SQL to insert multiple records into an entity in the database.
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="multipleRecords">List of dictionaries containing field values for multiple records</param>
+            <returns>A tuple containing the SQL insert statement, parameters information, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateInsertWithIdentitySQL(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.Dictionary{System.String,System.Object},System.String)">
+            <summary>
+            Generates SQL to insert a new record and return the identity value.
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="fieldValues">Dictionary containing field values to insert</param>
+            <param name="identityColumn">Name of the identity column (if known)</param>
+            <returns>A tuple containing the SQL insert statement, parameters information, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateAddColumnSQL(TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Generates SQL to add a new column to an existing table
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="field">The field/column to add</param>
+            <returns>A tuple containing the SQL statement and success information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDropColumnSQL(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Generates SQL to drop a column from an existing table
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="fieldName">The name of the field/column to drop</param>
+            <returns>A tuple containing the SQL statement and success information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateModifyColumnSQL(TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Generates SQL to modify the properties of an existing column
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="field">The field with updated properties</param>
+            <returns>A tuple containing the SQL statement and success information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateRenameColumnSQL(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Generates SQL to rename a column in an existing table
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="oldFieldName">The current name of the field</param>
+            <param name="newFieldName">The new name for the field</param>
+            <returns>A tuple containing the SQL statement and success information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateRenameTableSQL(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Generates SQL to rename a table
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="newEntityName">The new name for the table</param>
+            <returns>A tuple containing the SQL statement and success information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateAddPrimaryKeySQL(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            Generates SQL to add a primary key constraint to a table
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="constraintName">The name for the new primary key constraint</param>
+            <param name="primaryKeyColumns">List of column names to include in the primary key</param>
+            <returns>A tuple containing the SQL statement and success information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateAddForeignKeySQL(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Collections.Generic.List{System.String},TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.List{System.String},System.Boolean,System.Boolean)">
+            <summary>
+            Generates SQL to add a foreign key constraint to a table
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="constraintName">The name for the new foreign key constraint</param>
+            <param name="foreignKeyColumns">List of column names from the current table</param>
+            <param name="referencedEntity">The entity being referenced</param>
+            <param name="referencedColumns">List of column names from the referenced table</param>
+            <param name="cascadeDelete">Whether to cascade deletes</param>
+            <param name="cascadeUpdate">Whether to cascade updates</param>
+            <returns>A tuple containing the SQL statement and success information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateAddUniqueConstraintSQL(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            Generates SQL to add a unique constraint to a table
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="constraintName">The name for the new unique constraint</param>
+            <param name="columns">List of column names to include in the unique constraint</param>
+            <returns>A tuple containing the SQL statement and success information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDropConstraintSQL(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Generates SQL to drop a constraint from a table
+            </summary>
+            <param name="entity">The EntityStructure containing entity information</param>
+            <param name="constraintName">The name of the constraint to drop</param>
+            <param name="constraintType">The type of constraint (e.g., PRIMARY KEY, FOREIGN KEY, UNIQUE, etc.)</param>
+            <returns>A tuple containing the SQL statement and success information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateColumnDefinition(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Helper method to generate column definition for different database types
+            </summary>
+            <param name="dbType">Database type</param>
+            <param name="field">Field definition</param>
+            <returns>Column definition string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetPostgreSQLDataType(TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Gets the PostgreSQL data type string for a field
+            </summary>
+            <param name="field">Field definition</param>
+            <returns>PostgreSQL data type string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetDatabaseTypeString(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Maps a common field type to a specific database type string
+            </summary>
+            <param name="dbType">Database type</param>
+            <param name="field">Field definition</param>
+            <returns>Database-specific data type string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateCreateTableSQL(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Generates SQL to create a new table based on an EntityStructure
+            </summary>
+            <param name="entity">The EntityStructure containing entity definition</param>
+            <returns>A tuple containing the SQL statement, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.BuildCreateTableStatement(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.List{System.String},System.String)">
+            <summary>
+            Builds a complete CREATE TABLE statement for a specific database type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetPrimaryKeyConstraintSyntax(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)">
+            <summary>
+            Gets the primary key constraint syntax for a specific database type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetFormattedColumnName(TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
+            <summary>
+            Formats column names according to database syntax conventions
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetFormattedConstraintName(TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
+            <summary>
+            Formats constraint names according to database syntax conventions
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetMongoDBSchemaType(TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Gets MongoDB schema type definition for a field
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateCreateDatabaseSQL(TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
+            <summary>
+            Generates SQL to create a database or schema
+            </summary>
+            <param name="dataSourceType">Database type</param>
+            <param name="databaseName">Name of the database or schema to create</param>
+            <returns>A tuple containing the SQL statement, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateCreateSchemaSQL(TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
+            <summary>
+            Generates SQL to create a schema within a database
+            </summary>
+            <param name="dataSourceType">Database type</param>
+            <param name="schemaName">Name of the schema to create</param>
+            <returns>A tuple containing the SQL statement, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateCreateSequenceSQL(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.Int64,System.Int32,System.String)">
+            <summary>
+            Generates SQL to create a sequence in a database
+            </summary>
+            <param name="dataSourceType">Database type</param>
+            <param name="sequenceName">Name of the sequence to create</param>
+            <param name="startWith">Initial value for the sequence</param>
+            <param name="incrementBy">Increment value for the sequence</param>
+            <param name="schemaName">Optional schema name for the sequence</param>
+            <returns>A tuple containing the SQL statement, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateCreateViewSQL(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates SQL to create a view in a database
+            </summary>
+            <param name="dataSourceType">Database type</param>
+            <param name="viewName">Name of the view to create</param>
+            <param name="selectStatement">The SELECT statement that defines the view</param>
+            <param name="schemaName">Optional schema name for the view</param>
+            <param name="replaceIfExists">Whether to replace the view if it exists</param>
+            <returns>A tuple containing the SQL statement, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetFormattedSchemaObjectName(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)">
+            <summary>
+            Formats a schema-qualified object name according to database syntax conventions
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GetFormattedObjectName(TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
+            <summary>
+            Formats an object name according to database syntax conventions
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateCreateProcedureSQL(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.Collections.Generic.List{System.ValueTuple{System.String,System.String,System.String}},System.String,System.String,System.Boolean)">
+            <summary>
+            Generates SQL to create a stored procedure in a database
+            </summary>
+            <param name="dataSourceType">Database type</param>
+            <param name="procedureName">Name of the stored procedure</param>
+            <param name="parameters">List of parameters with their types</param>
+            <param name="procedureBody">The body of the stored procedure</param>
+            <param name="schemaName">Optional schema name</param>
+            <param name="replaceIfExists">Whether to replace if exists</param>
+            <returns>A tuple containing the SQL statement, success flag, and any error message</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.FormatProcedureParameters(TheTechIdea.Beep.Utilities.DataSourceType,System.Collections.Generic.List{System.ValueTuple{System.String,System.String,System.String}})">
+            <summary>
+            Formats procedure parameters according to the database requirements
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateCreateIndexQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String,System.String[],System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates a SQL query to create an index on a table with advanced options.
+            </summary>
+            <param name="rdbms">Database type for which to generate the SQL</param>
+            <param name="tableName">Name of the table to create the index on</param>
+            <param name="indexName">Name of the index to create</param>
+            <param name="columns">Array of column names to include in the index</param>
+            <param name="options">Optional dictionary of index creation options</param>
+            <returns>A SQL statement for creating the index</returns>
+            <remarks>
+            The options parameter can include:
+            - "unique": bool - Whether to create a unique index
+            - "clustered": bool - For SQL Server, whether to create a clustered index
+            - "concurrently": bool - For PostgreSQL, whether to create the index concurrently 
+            - "includeColumns": string[] - For SQL Server, columns to include but not index
+            - "filterPredicate": string - For SQL Server/PostgreSQL, WHERE clause for filtered indexes
+            - "tablespace": string - For Oracle/PostgreSQL, tablespace for the index
+            - "fillFactor": int - For SQL Server, percentage of fullness for index pages
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDropPrimaryKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)">
+            <summary>
+            Generates a query to drop a primary key constraint from a table.
+            </summary>
+            <param name="rdbms">The type of the database management system.</param>
+            <param name="tableName">The name of the table.</param>
+            <param name="constraintName">The name of the primary key constraint.</param>
+            <returns>A query to drop the primary key constraint.</returns>
+            <remarks>
+            For SQL Server and PostgreSQL, the query will be in the form "ALTER TABLE [tableName] DROP CONSTRAINT [constraintName]".
+            For MySQL, Oracle, and DB2, the query will be in the form "ALTER TABLE [tableName] DROP PRIMARY KEY".
+            For Firebird, the query will drop the named constraint.
+            For SQLite, table recreation is required as it doesn't support direct constraint dropping.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDropForeignKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)">
+            <summary>
+            Generates a SQL query to drop a foreign key constraint in a specified RDBMS.
+            </summary>
+            <param name="rdbms">The type of RDBMS.</param>
+            <param name="tableName">The name of the table.</param>
+            <param name="constraintName">The name of the foreign key constraint.</param>
+            <returns>A SQL query to drop the specified foreign key constraint.</returns>
+            <remarks>
+            The generated query varies depending on the RDBMS:
+            - For SQL Server: ALTER TABLE [tableName] DROP CONSTRAINT [constraintName]
+            - For MySQL: ALTER TABLE `tableName` DROP FOREIGN KEY `constraintName`
+            - For PostgreSQL: ALTER TABLE "tableName" DROP CONSTRAINT "constraintName"
+            - For Oracle: ALTER TABLE "tableName" DROP CONSTRAINT "constraintName"
+            - For DB2: ALTER TABLE "tableName" DROP FOREIGN KEY "constraintName"
+            - For Firebird: ALTER TABLE "tableName" DROP CONSTRAINT "constraintName"
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateDisableForeignKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)">
+            <summary>
+            Generates a query to disable a foreign key constraint in a specific RDBMS.
+            </summary>
+            <param name="rdbms">The type of RDBMS.</param>
+            <param name="tableName">The name of the table.</param>
+            <param name="constraintName">The name of the foreign key constraint.</param>
+            <returns>A query to disable the specified foreign key constraint.</returns>
+            <remarks>
+            The generated query depends on the type of RDBMS specified. The following RDBMS are supported:
+            - SQL Server: ALTER TABLE [tableName] NOCHECK CONSTRAINT [constraintName]
+            - Oracle: ALTER TABLE "tableName" DISABLE CONSTRAINT "constraintName"
+            - PostgreSQL: ALTER TABLE "tableName" DISABLE TRIGGER ALL (disables all FK triggers)
+            - MySQL: SET FOREIGN_KEY_CHECKS = 0 (disables all FK checks globally)
+            - DB2: ALTER TABLE "tableName" ALTER FOREIGN KEY "constraintName" NOT ENFORCED
+            - Firebird: ALTER TABLE "tableName" DISABLE TRIGGER "constraintName"
+            - SQLite: PRAGMA foreign_keys = OFF (disables all FK checks globally)
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateEnableForeignKeyQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)">
+            <summary>
+            Generates a query to enable a foreign key constraint in a specific RDBMS.
+            </summary>
+            <param name="rdbms">The type of RDBMS.</param>
+            <param name="tableName">The name of the table.</param>
+            <param name="constraintName">The name of the foreign key constraint.</param>
+            <returns>A query to enable the specified foreign key constraint.</returns>
+            <remarks>
+            The generated query depends on the type of RDBMS specified. The following RDBMS are supported:
+            - SQL Server: ALTER TABLE [tableName] WITH CHECK CHECK CONSTRAINT [constraintName]
+            - Oracle: ALTER TABLE "tableName" ENABLE CONSTRAINT "constraintName"
+            - PostgreSQL: ALTER TABLE "tableName" ENABLE TRIGGER ALL (enables all FK triggers)
+            - MySQL: SET FOREIGN_KEY_CHECKS = 1 (enables all FK checks globally)
+            - DB2: ALTER TABLE "tableName" ALTER FOREIGN KEY "constraintName" ENFORCED
+            - Firebird: ALTER TABLE "tableName" ENABLE TRIGGER "constraintName"
+            - SQLite: PRAGMA foreign_keys = ON (enables all FK checks globally)
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.GenerateCheckConstraintExistsQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String,System.String)">
+            <summary>
+            Generates a query to check if a constraint exists on a table in a specific RDBMS.
+            </summary>
+            <param name="rdbms">The type of RDBMS.</param>
+            <param name="tableName">The name of the table.</param>
+            <param name="constraintName">The name of the constraint to check.</param>
+            <param name="schemaName">Optional schema name for the table.</param>
+            <returns>A query that will return records if the constraint exists.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateQuerySqlRepos">
+            <summary>
+            Creates a list of QuerySqlRepo objects for all supported database types.
+            </summary>
+            <returns>A list of QuerySqlRepo objects.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateRelationalDatabaseQueries">
+            <summary>
+            Creates queries for relational databases (SQL Server, MySQL, Oracle, PostgreSQL, etc.)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateNoSQLDatabaseQueries">
+            <summary>
+            Creates queries for NoSQL databases (MongoDB, Couchbase, Redis, etc.)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateFileDatabaseQueries">
+            <summary>
+            Creates queries for file-based databases and sources
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateCloudDatabaseQueries">
+            <summary>
+            Creates queries for cloud databases and specialized services
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateTimeSeriesAndSpecializedDBQueries">
+            <summary>
+            Creates queries for time series and specialized databases
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateStreamingPlatformQueries">
+            <summary>
+            Creates queries for streaming and messaging platforms
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateSqlServerQueries">
+            <summary>
+            Creates SQL queries for SQL Server database operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateMySqlQueries">
+            <summary>
+            Creates SQL queries for MySQL database operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateOracleQueries">
+            <summary>
+            Creates SQL queries for Oracle database operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateDuckDBQueries">
+            <summary>
+            Creates SQL queries for DuckDB database operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateVistaDBQueries">
+            <summary>
+            Creates queries for VistaDB
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateHanaQueries">
+            <summary>
+            Creates SQL queries for Hana database operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateTerraDataQueries">
+            <summary>
+            Creates SQL queries for TerraData database operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateVerticaQueries">
+            <summary>
+            Creates SQL queries for Vertica database operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreatePostgreSqlQueries">
+            <summary>
+            Creates PostgreSQL-specific SQL queries
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateSqliteQueries">
+            <summary>
+            Creates SQLite-specific SQL queries
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateDB2Queries">
+            <summary>
+            Creates DB2-specific SQL queries
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateFirebirdQueries">
+            <summary>
+            Creates Firebird-specific SQL queries
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateOtherRelationalDatabaseQueries">
+            <summary>
+            Creates queries for other relational databases not covered by specific methods
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateMongoDBQueries">
+            <summary>
+            Creates MongoDB-specific queries
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateCouchbaseQueries">
+            <summary>
+            Creates Couchbase-specific queries
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateRedisQueries">
+            <summary>
+            Creates Redis-specific queries
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateCassandraQueries">
+            <summary>
+            Creates Cassandra-specific queries
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateElasticSearchQueries">
+            <summary>
+            Creates ElasticSearch-specific queries
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateSnowflakeQueries">
+            <summary>
+            Creates Snowflake-specific queries
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateBigQueryQueries">
+            <summary>
+            Creates Google BigQuery-specific queries
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelper.CreateAWSQueries">
+            <summary>
+            Creates AWS-specific database queries
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.StringExtensions.ToList(System.String)">
             <summary>
