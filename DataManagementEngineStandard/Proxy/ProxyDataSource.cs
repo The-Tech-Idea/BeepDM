@@ -3,6 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -122,6 +123,71 @@ namespace TheTechIdea.Beep.Proxy
         // Retrieves current data source from DMEEditor by name
 
         #region Proxy DataSource Functions
+        private async Task<TResult> ExecAsync<TResult>(
+    string methodName,
+    Func<IDataSource, Task<TResult>> operation,
+    params object[] args)
+        {
+            // Audit: start
+            var argsText = string.Join(", ", args.Select(a => a?.ToString() ?? "<null>"));
+            DMEEditor.Logger.LogTrace(
+              $"[START] {methodName}({argsText})");
+
+            Exception lastEx = null;
+            var sw = Stopwatch.StartNew();
+
+            // Weighted, health-checked, circuit-aware pick
+            var candidates = _dataSourceNames
+                .Where(n => IsHealthy(n) && !IsCircuitOpen(n))
+                .OrderByDescending(n => _dataSourceWeights.GetValueOrDefault(n, 1))
+                .ToList();
+            if (!candidates.Any()) candidates = _dataSourceNames.ToList();
+
+            foreach (var dsName in candidates)
+            {
+                var ds = GetPooledConnection(dsName);
+                for (int attempt = 1; attempt <= MaxRetries; attempt++)
+                {
+                    try
+                    {
+                        var result = await operation(ds).ConfigureAwait(false);
+                        sw.Stop();
+                        RecordSuccess(dsName, sw.Elapsed);
+
+                        // Audit: success
+                        DMEEditor.Logger.LogTrace(
+                          $"[END]   {methodName} on {dsName} succeeded in {sw.ElapsedMilliseconds} ms → {result}");
+                        ReturnConnection(dsName, ds);
+                        return result;
+                    }
+                    catch (Exception ex) when (ex is TimeoutException || ex is IOException)
+                    {
+                        lastEx = ex;
+                        RecordFailure(dsName);
+                        DMEEditor.Logger.LogWarning(
+                          $"Transient error in {methodName} on {dsName} (attempt {attempt}): {ex.Message}");
+                        await Task.Delay(RetryDelayMilliseconds * attempt).ConfigureAwait(false);
+                        continue;
+                    }
+                    catch (Exception ex)
+                    {
+                        lastEx = ex;
+                        RecordFailure(dsName);
+                        DMEEditor.Logger.LogError(
+                            $"Persistent error in {methodName} on {dsName}: {ex.Message}");
+                        OnFailover?.Invoke(this, new FailoverEventArgs
+                        {
+                            FromDataSource = dsName,
+                            ToDataSource = null
+                        });
+                        throw;
+                    }
+                }
+            }
+
+            throw new AggregateException($"All retries failed for {methodName}", lastEx);
+        }
+
 
         public IDataSource Current
         {
