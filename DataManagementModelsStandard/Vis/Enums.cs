@@ -8,14 +8,32 @@ namespace TheTechIdea.Beep.Vis
     {
         Popup, InControl
     }
+    [Flags]
     public enum EnumPointType
     {
-        Genre,Root, DataPoint, Category, Entity, SubEntity, Function, Report,Global
+        None = 0,
+        Genre = 1 << 0,       // 1
+        Root = 1 << 1,        // 2
+        DataPoint = 1 << 2,   // 4
+        Category = 1 << 3,    // 8
+        Entity = 1 << 4,      // 16
+        SubEntity = 1 << 5,   // 32
+        Function = 1 << 6,    // 64
+        Report = 1 << 7,      // 128
+        Global = 1 << 8       // 256
     }
+
+    [Flags]
     public enum ShowinType
     {
-        Menu,Toolbar,Both, HorZToolbar,ContextMenu
+        None = 0,
+        Menu = 1 << 0,        // 1
+        Toolbar = 1 << 1,     // 2
+        Both = Menu | Toolbar, // 3
+        HorZToolbar = 1 << 2,  // 4
+        ContextMenu = 1 << 3   // 8
     }
+
     public enum BeepKeys
     {
         None,

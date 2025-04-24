@@ -1,4 +1,6 @@
 ﻿
+using System;
+
 namespace TheTechIdea.Beep.Utilities
 {/// <summary>
  /// Cloud provider types supported by the class creator
@@ -41,14 +43,27 @@ namespace TheTechIdea.Beep.Utilities
     {
         Application,DataConnector,Container
     }
+    [Flags]
     public enum ProjectFolderType
     {
-        Files,Project,Library
+        None = 0,        // No folder type
+        Files = 1,       // Represents a folder for files
+        Project = 2,     // Represents a folder for projects
+        Library = 4,     // Represents a folder for libraries
     }
+
+    [Flags]
     public enum AppType
     {
-        Web,Winform,Andriod,IOS,Linux,WPF
+        None = 0,          // No app type
+        Web = 1,           // Represents a web application
+        Winform = 2,       // Represents a WinForms application
+        Android = 4,       // Represents an Android application
+        IOS = 8,           // Represents an iOS application
+        Linux = 16,        // Represents a Linux application
+        WPF = 32           // Represents a WPF application
     }
+
     public enum ReportType
     {
         html, xls, csv, pdf, txt
