@@ -1014,7 +1014,7 @@ namespace TheTechIdea.Beep
             assemblyHandler = LLoader;
             classCreator = new ClassCreator(this);
             WorkFlowEditor = new WorkFlowEditor(this);
-         
+            FileConnectionHelper.Initialize(this);
             progress = new Progress<PassedArgs>(percent => {
 
                 if (!string.IsNullOrEmpty(percent.Messege))
@@ -1073,7 +1073,8 @@ namespace TheTechIdea.Beep
                 {
                     foreach (var item in DataSources)
                     {
-                        item.Closeconnection();
+                        if(item.ConnectionStatus== ConnectionState.Open)    item.Closeconnection();
+
                         item.Dispose();
                     }
                     ConfigEditor.Dispose();

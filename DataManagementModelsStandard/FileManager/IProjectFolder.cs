@@ -21,7 +21,7 @@ namespace TheTechIdea.Beep.FileManager
     public interface IObjectCommon
     {
         int ID { get; set; }
-        string GuidID { get; set; }
+        string GuidID { get; }
         string Name { get; set; }
         string Ext { get; set; }
         string Tags { get; set; }

@@ -5458,7 +5458,7 @@ namespace TheTechIdea.Beep.Helpers
             "SELECT * FROM {0} {2}",
             Sqlcommandtype.getTable),
         new QuerySqlRepo(DataSourceType.DuckDB,
-            "SELECT name FROM sqlite_master WHERE type='table'",
+            "SELECT name FROM information_schema.tables WHERE type='table'",
             Sqlcommandtype.getlistoftables),
         new QuerySqlRepo(DataSourceType.DuckDB,
             "SELECT column_name FROM pragma_table_info('{0}') WHERE pk != 0;",

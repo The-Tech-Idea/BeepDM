@@ -17,6 +17,7 @@ using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Composite;
+using System.Runtime.CompilerServices;
 
 namespace TheTechIdea.Beep.ConfigUtil
 {
@@ -91,7 +92,7 @@ namespace TheTechIdea.Beep.ConfigUtil
         bool RemoveConnByName(string pname);
         bool RemoveConnByID(int ID);
         bool RemoveConnByGuidID(string GuidID);
-        bool UpdateDataConnection(ConnectionProperties ls, string category);
+        bool UpdateDataConnection(ConnectionProperties source,string targetguidid );
         List<ConnectionDriversConfig> LoadConnectionDriversConfigValues();
         void SaveConnectionDriversConfigValues();
         void SaveReportsValues();

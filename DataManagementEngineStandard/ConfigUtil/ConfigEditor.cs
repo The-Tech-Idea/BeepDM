@@ -819,46 +819,95 @@ namespace TheTechIdea.Beep.ConfigUtil
 
 
 		}
-		/// <summary>Updates the data connection with the specified properties.</summary>
-		/// <param name="conn">The connection properties to update.</param>
-		/// <param name="category">The category of the connection.</param>
-		/// <returns>True if the update was successful, false otherwise.</returns>
-		public bool UpdateDataConnection(ConnectionProperties conn, string category)
-		{
+        /// <summary>Updates the data connection with the specified properties.</summary>
+        /// <param name="conn">The connection properties to update.</param>
+        /// <param name="category">The category of the connection.</param>
+        /// <returns>True if the update was successful, false otherwise.</returns>
+        public bool UpdateDataConnection(ConnectionProperties source, string targetguidid)
+        {
+            try
+            {
+                if (source == null || string.IsNullOrWhiteSpace(source.ConnectionName))
+                    return false;
 
-			try
-			{
-                if (conn == null) { return false; }
-                if (string.IsNullOrEmpty(conn.ConnectionName)) { return false; }
                 if (DataConnections == null)
-				{
-					DataConnections = new List<ConnectionProperties>();
+                    DataConnections = new List<ConnectionProperties>();
 
-				}
-				int idx = DataConnections.FindIndex(0, p => p.ID == conn.ID);
-				if (idx < 0)
-				{
-					idx = DataConnections.FindIndex(x => x.GuidID.Equals(conn.GuidID, StringComparison.InvariantCultureIgnoreCase));
-				}
-				if (idx == -1)
-				{
-					DataConnections.Add(conn);
-				}
-				else
-					DataConnections[idx] = conn;
+                // Find existing connection by GuidID
+                var existing = DataConnections.Find(conn =>
+                    conn.GuidID.Equals(targetguidid, StringComparison.InvariantCultureIgnoreCase));
 
-			}
-			catch (Exception)
-			{
+                if (existing != null)
+                {
+                    // Update in-place
+                    CopyConnectionProperties(source, existing);
+                }
+                else
+                {
+                    // Not found — add it
+                    DataConnections.Add(source);
+                }
 
-				return false;
-			};
-			return true;
-		}
-		/// <summary>Removes a connection from the list of data connections by its name.</summary>
-		/// <param name="pname">The name of the connection to remove.</param>
-		/// <returns>True if the connection was successfully removed, false otherwise.</returns>
-		public bool RemoveConnByName(string pname)
+                return true;
+            }
+            catch (Exception ex)
+            {
+              //  AddLogMessage("Config", $"Error updating data connection: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return false;
+            }
+        }
+
+        private void CopyConnectionProperties(ConnectionProperties source, ConnectionProperties target)
+        {
+            target.ID = source.ID;
+            target.ConnectionName = source.ConnectionName;
+            target.UserID = source.UserID;
+            target.Password = source.Password;
+            target.ConnectionString = source.ConnectionString;
+            target.Host = source.Host;
+            target.Port = source.Port;
+            target.Database = source.Database;
+            target.Parameters = source.Parameters;
+            target.SchemaName = source.SchemaName;
+            target.OracleSIDorService = source.OracleSIDorService;
+            target.Delimiter = source.Delimiter;
+            target.Ext = source.Ext;
+            target.DatabaseType = source.DatabaseType;
+            target.Category = source.Category;
+            target.DriverName = source.DriverName;
+            target.DriverVersion = source.DriverVersion;
+            target.FilePath = source.FilePath;
+            target.FileName = source.FileName;
+            target.Drawn = source.Drawn;
+            target.CertificatePath = source.CertificatePath;
+            target.Url = source.Url;
+            target.Databases = source.Databases;
+            target.ApiKey = source.ApiKey;
+            target.Entities = source.Entities;
+            target.KeyToken = source.KeyToken;
+            target.Headers = source.Headers;
+            target.CompositeLayerName = source.CompositeLayerName;
+            target.DatasourceDefaults = source.DatasourceDefaults;
+            target.Favourite = source.Favourite;
+            target.GuidID = source.GuidID;
+            target.IsLocal = source.IsLocal;
+            target.IsRemote = source.IsRemote;
+            target.IsWebApi = source.IsWebApi;
+            target.IsFile = source.IsFile;
+            target.IsDatabase = source.IsDatabase;
+            target.IsComposite = source.IsComposite;
+            target.IsCloud = source.IsCloud;
+            target.IsFavourite = source.IsFavourite;
+            target.IsDefault = source.IsDefault;
+            target.IsInMemory = source.IsInMemory;
+            target.Timeout = source.Timeout;
+            target.HttpMethod = source.HttpMethod;
+        }
+
+        /// <summary>Removes a connection from the list of data connections by its name.</summary>
+        /// <param name="pname">The name of the connection to remove.</param>
+        /// <returns>True if the connection was successfully removed, false otherwise.</returns>
+        public bool RemoveConnByName(string pname)
 		{
 			if (DataConnections == null)
 			{

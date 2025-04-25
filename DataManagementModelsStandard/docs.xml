@@ -174,6 +174,173 @@
             Allows for custom, user-defined logic to determine the default value.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.FileManager.RootFolder">
+            <summary>
+            Represents a root folder for a project, containing subfolders and metadata.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.FolderType">
+            <summary>
+            Gets or sets the type of project folder (e.g., Files, Project).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.Folders">
+            <summary>
+            Gets or sets the list of subfolders within the project.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.ID">
+            <summary>
+            Gets or sets the unique identifier for the project.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.GuidID">
+            <summary>
+            Gets the globally unique identifier for the project.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.Name">
+            <summary>
+            Gets or sets the name of the project.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.Ext">
+            <summary>
+            Gets or sets the file extension associated with the project.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.Tags">
+            <summary>
+            Gets or sets the tags associated with the project.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.Url">
+            <summary>
+            Gets or sets the URL or path of the project folder.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.Version">
+            <summary>
+            Gets or sets the version of the project.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.IsActive">
+            <summary>
+            Gets or sets a value indicating whether the project is active.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.Icon">
+            <summary>
+            Gets or sets the icon associated with the project.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.Description">
+            <summary>
+            Gets or sets the description of the project.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.VersionDescription">
+            <summary>
+            Gets or sets the description of the project version.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.AuthorDescription">
+            <summary>
+            Gets or sets the description of the project author.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.Author">
+            <summary>
+            Gets or sets the author of the project.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.AddedDate">
+            <summary>
+            Gets or sets the date the project was added.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.LastModifiedDate">
+            <summary>
+            Gets or sets the date the project was last modified.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.ModificationAuther">
+            <summary>
+            Gets or sets the author who last modified the project.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.RootFolder.IsPrivate">
+            <summary>
+            Gets or sets a value indicating whether the project is private.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.RootFolder.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:TheTechIdea.Beep.FileManager.RootFolder"/> class.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.RootFolder.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TheTechIdea.Beep.FileManager.RootFolder"/> class with a specified URL.
+            </summary>
+            <param name="url">The URL or path of the project folder.</param>
+            <exception cref="T:System.ArgumentException">Thrown if URL is null or empty.</exception>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.RootFolder.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TheTechIdea.Beep.FileManager.RootFolder"/> class with a specified name and URL.
+            </summary>
+            <param name="name">The name of the project.</param>
+            <param name="url">The URL or path of the project folder.</param>
+            <exception cref="T:System.ArgumentException">Thrown if name or URL is null or empty.</exception>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.RootFolder.#ctor(System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.FileManager.Folder},System.String,System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TheTechIdea.Beep.FileManager.RootFolder"/> class with detailed properties.
+            </summary>
+            <param name="author">The author of the project.</param>
+            <param name="description">The description of the project.</param>
+            <param name="folders">The list of subfolders.</param>
+            <param name="name">The name of the project.</param>
+            <param name="tags">The tags associated with the project.</param>
+            <param name="url">The URL or path of the project folder.</param>
+            <param name="version">The version of the project.</param>
+            <exception cref="T:System.ArgumentException">Thrown if name or URL is null or empty.</exception>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.RootFolder.Equals(TheTechIdea.Beep.FileManager.RootFolder)">
+            <summary>
+            Determines whether the specified object is equal to the current <see cref="T:TheTechIdea.Beep.FileManager.RootFolder"/>.
+            </summary>
+            <param name="other">The object to compare with the current object.</param>
+            <returns>True if the specified object is equal to the current object; otherwise, false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.RootFolder.Equals(System.Object)">
+            <summary>
+            Determines whether the specified object is equal to the current <see cref="T:TheTechIdea.Beep.FileManager.RootFolder"/>.
+            </summary>
+            <param name="obj">The object to compare with the current object.</param>
+            <returns>True if the specified object is equal to the current object; otherwise, false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.RootFolder.GetHashCode">
+            <summary>
+            Returns a hash code for the current <see cref="T:TheTechIdea.Beep.FileManager.RootFolder"/>.
+            </summary>
+            <returns>A hash code for the current object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.RootFolder.WithAuthor(System.String)">
+            <summary>
+            Sets the author of the project and returns the current instance.
+            </summary>
+            <param name="author">The author to set.</param>
+            <returns>The current <see cref="T:TheTechIdea.Beep.FileManager.RootFolder"/> instance.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.RootFolder.WithDescription(System.String)">
+            <summary>
+            Sets the description of the project and returns the current instance.
+            </summary>
+            <param name="description">The description to set.</param>
+            <returns>The current <see cref="T:TheTechIdea.Beep.FileManager.RootFolder"/> instance.</returns>
+        </member>
         <member name="P:TheTechIdea.Beep.IDataSource.ColumnDelimiter">
             <summary>
             Gets or sets the delimiter used to separate columns in queries or data representations.

@@ -3417,6 +3417,241 @@
             <summary>Returns an array of .NET data types.</summary>
             <returns>An array of .NET data types.</returns>
         </member>
+        <member name="P:TheTechIdea.Beep.Helpers.FileConnectionHelper.DMEEditor">
+            <summary>
+            Gets the editor instance for configuration and logging.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Helpers.FileConnectionHelper.ProjectCreated">
+            <summary>
+            Event raised when a project is created.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.Initialize(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Initializes the FileConnectionHelper with the required editor.
+            </summary>
+            <param name="editor">The editor instance for configuration and logging.</param>
+            <exception cref="T:System.InvalidOperationException">Thrown if already initialized.</exception>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.Reset">
+            <summary>
+            Resets the FileConnectionHelper, clearing the editor.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.LoadFile(System.String)">
+            <summary>
+            Loads a single file from the provided file path and creates connection properties for it.
+            </summary>
+            <param name="filePath">The path of the file to load.</param>
+            <returns>The connection properties for the loaded file, or null on failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.LoadFileAsync(System.String)">
+            <summary>
+            Asynchronously loads a single file from the provided file path and creates connection properties for it.
+            </summary>
+            <param name="filePath">The path of the file to load.</param>
+            <returns>A task that returns the connection properties for the loaded file, or null on failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.LoadFiles(System.Collections.Generic.List{System.String})">
+            <summary>
+            Loads files from the provided list of file paths and creates connection properties for valid files.
+            </summary>
+            <param name="filenames">List of file paths to load.</param>
+            <returns>A list of connection properties for loaded files, or null on failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.LoadFilesAsync(System.Collections.Generic.List{System.String})">
+            <summary>
+            Asynchronously loads files from the provided list of file paths and creates connection properties for valid files.
+            </summary>
+            <param name="filenames">List of file paths to load.</param>
+            <returns>A task that returns a list of connection properties for loaded files, or null on failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.LoadFiles(System.String[])">
+            <summary>
+            Loads connection properties for the specified file paths.
+            </summary>
+            <param name="filenames">Array of file paths to load.</param>
+            <returns>A list of connection properties for loaded files, or null on failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.LoadFilesAsync(System.String[])">
+            <summary>
+            Asynchronously loads connection properties for the specified file paths.
+            </summary>
+            <param name="filenames">Array of file paths to load.</param>
+            <returns>A task that returns a list of connection properties for loaded files, or null on failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.AddFile(TheTechIdea.Beep.ConfigUtil.ConnectionProperties)">
+            <summary>
+            Adds a single file as a data connection if valid.
+            </summary>
+            <param name="file">The connection properties for the file.</param>
+            <returns>Error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.AddFileAsync(TheTechIdea.Beep.ConfigUtil.ConnectionProperties)">
+            <summary>
+            Asynchronously adds a single file as a data connection if valid.
+            </summary>
+            <param name="file">The connection properties for the file.</param>
+            <returns>A task that returns error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.AddFiles(System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.ConnectionProperties})">
+            <summary>
+            Adds multiple files as data connections if valid.
+            </summary>
+            <param name="files">List of connection properties for the files.</param>
+            <returns>Error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.AddFilesAsync(System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.ConnectionProperties})">
+            <summary>
+            Asynchronously adds multiple files as data connections if valid.
+            </summary>
+            <param name="files">List of connection properties for the files.</param>
+            <returns>A task that returns error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.AddFolder(System.String)">
+            <summary>
+            Adds a folder as a project using the specified folder path.
+            </summary>
+            <param name="foldername">The path of the folder to add as a project.</param>
+            <returns>Error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.AddFolderAsync(System.String)">
+            <summary>
+            Asynchronously adds a folder as a project using the specified folder path.
+            </summary>
+            <param name="foldername">The path of the folder to add as a project.</param>
+            <returns>A task that returns error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.CreateProject(System.String,TheTechIdea.Beep.Utilities.ProjectFolderType)">
+            <summary>
+            Creates a new project from the specified folder path.
+            </summary>
+            <param name="folderpath">The folder path for the new project.</param>
+            <param name="folderType">The type of project folder (e.g., Files, Project).</param>
+            <returns>A tuple containing error information and the created project folder, or null on failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.CreateProjectAsync(System.String,TheTechIdea.Beep.Utilities.ProjectFolderType)">
+            <summary>
+            Asynchronously creates a new project from the specified folder path.
+            </summary>
+            <param name="folderpath">The folder path for the new project.</param>
+            <param name="folderType">The type of project folder (e.g., Files, Project).</param>
+            <returns>A task that returns a tuple containing error information and the created project folder, or null on failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.CreateFolderStructure(System.String)">
+            <summary>
+            Creates a folder structure for the specified path, including files and subfolders.
+            </summary>
+            <param name="path">The folder path to process.</param>
+            <returns>The created folder structure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.CreateFolderStructureAsync(System.String)">
+            <summary>
+            Asynchronously creates a folder structure for the specified path, including files and subfolders.
+            </summary>
+            <param name="path">The folder path to process.</param>
+            <returns>A task that returns the created folder structure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.RefreshProject(System.String)">
+            <summary>
+            Refreshes the metadata for a specified project by re-scanning its folder for new files.
+            </summary>
+            <param name="projectName">The name of the project to refresh.</param>
+            <returns>Error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.RefreshProjectAsync(System.String)">
+            <summary>
+            Asynchronously refreshes the metadata for a specified project by re-scanning its folder for new files.
+            </summary>
+            <param name="projectName">The name of the project to refresh.</param>
+            <returns>A task that returns error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.IsFileValid(System.String)">
+            <summary>
+            Checks if a file has a valid extension supported by the data drivers.
+            </summary>
+            <param name="filename">The name or path of the file to validate.</param>
+            <returns>True if the file extension is supported, false otherwise.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.GetCategoryForFile(System.String,System.String)">
+            <summary>
+            Finds the category folder containing the specified file.
+            </summary>
+            <param name="fileName">The name of the file to check.</param>
+            <param name="rootName">The root name of the category (e.g., "FILE").</param>
+            <returns>The name of the category folder containing the file, or null if not found.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.GetProjects(TheTechIdea.Beep.Utilities.ProjectFolderType)">
+            <summary>
+            Retrieves a list of projects filtered by folder type.
+            </summary>
+            <param name="folderType">The type of project folder to filter (e.g., Files, Project).</param>
+            <returns>A list of projects matching the specified folder type.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.GetAllProjects(System.Boolean)">
+            <summary>
+            Retrieves all projects, optionally filtered by active status.
+            </summary>
+            <param name="onlyActive">If true, returns only active projects.</param>
+            <returns>A list of projects.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.UpdateProjectMetadata(System.String,System.Action{TheTechIdea.Beep.FileManager.RootFolder})">
+            <summary>
+            Updates metadata for a specified project.
+            </summary>
+            <param name="projectName">The name of the project to update.</param>
+            <param name="updateAction">The action to update the project's metadata.</param>
+            <returns>Error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.RemoveProject(System.String)">
+            <summary>
+            Removes a project from the configuration.
+            </summary>
+            <param name="projectName">The name of the project to remove.</param>
+            <returns>Error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.ArchiveProject(System.String)">
+            <summary>
+            Archives a project by marking it as inactive.
+            </summary>
+            <param name="projectName">The name of the project to archive.</param>
+            <returns>Error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.ValidateProjectPath(System.String)">
+            <summary>
+            Validates a project path for existence, write permissions, and valid files.
+            </summary>
+            <param name="path">The folder path to validate.</param>
+            <returns>Error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.AddCategoryFolder(System.String,System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            Adds a new category folder to the configuration.
+            </summary>
+            <param name="folderName">The name of the category folder.</param>
+            <param name="rootName">The root name of the category (e.g., "FILE").</param>
+            <param name="fileNames">Optional list of file names to add to the category.</param>
+            <returns>Error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.RemoveCategoryFolder(System.String,System.String)">
+            <summary>
+            Removes a category folder from the configuration.
+            </summary>
+            <param name="folderName">The name of the category folder to remove.</param>
+            <param name="rootName">The root name of the category (e.g., "FILE").</param>
+            <returns>Error information indicating success or failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.FileConnectionHelper.MoveFileToCategory(System.String,System.String,System.String,System.String)">
+            <summary>
+            Moves a file from one category folder to another.
+            </summary>
+            <param name="fileName">The name of the file to move.</param>
+            <param name="sourceCategory">The source category folder name.</param>
+            <param name="targetCategory">The target category folder name.</param>
+            <param name="rootName">The root name of the categories (e.g., "FILE").</param>
+            <returns>Error information indicating success or failure.</returns>
+        </member>
         <member name="T:TheTechIdea.Beep.Helpers.FileHelper">
             <summary>
             Helper class that provides methods for file operations and management.
