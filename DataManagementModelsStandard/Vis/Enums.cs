@@ -4,6 +4,8 @@ using System.Text;
 
 namespace TheTechIdea.Beep.Vis
 {
+    public enum AddinScopeCreateType
+    { Single,  Multiple }
     public enum DisplayType
     {
         Popup, InControl

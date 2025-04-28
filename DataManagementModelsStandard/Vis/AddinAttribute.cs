@@ -129,7 +129,7 @@ namespace TheTechIdea.Beep.Vis
         /// 
         /// </summary>
         public EnumPointType BranchType { get; set; }= EnumPointType.Global;
-
+        public AddinScopeCreateType ScopeCreateType { get; set; } = AddinScopeCreateType.Single;
         public string ClassID { get; set; }  // Class ID from the addin usual guid generated
         public string ClassName { get; set; }  // Class Name from the addin
         public bool IsClassDistinct { get; set; } = false; // if true the class is distinct and not a part of the addin
