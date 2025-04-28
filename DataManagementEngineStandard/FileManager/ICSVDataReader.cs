@@ -91,11 +91,12 @@ namespace TheTechIdea.Beep.FileManager
             _parser = new CsvTextFieldParser(_reader);
             _parser.SetDelimiter(delimiter);
 
-            // If specific columns requested, find their indexes
+            // always create the index list, even if no filter
+            _columnIndexes = new List<int>();
+
             if (columnNames != null && columnNames.Count > 0)
             {
                 _columnNames = columnNames;
-                _columnIndexes = new List<int>();
             }
         }
 
@@ -103,25 +104,30 @@ namespace TheTechIdea.Beep.FileManager
         {
             if (!_hasReadHeader)
             {
-                // Skip header row
-                _parser.ReadFields();
+                // 1) read header row
+                var headers = _parser.ReadFields();
                 _hasReadHeader = true;
 
-                // If we have column names to filter, find their indexes
-                if (_columnNames?.Count > 0)
+                // 2) clear any old indexes
+                _columnIndexes.Clear();
+
+                if (_columnNames != null && _columnNames.Count > 0)
                 {
-                    string[] headers = _parser.ReadFields();
-                    for (int i = 0; i < _columnNames.Count; i++)
+                    // only the named columns
+                    foreach (var name in _columnNames)
                     {
-                        int index = Array.IndexOf(headers, _columnNames[i]);
-                        if (index >= 0)
-                        {
-                            _columnIndexes.Add(index);
-                        }
+                        int idx = Array.IndexOf(headers, name);
+                        if (idx >= 0) _columnIndexes.Add(idx);
                     }
+                }
+                else
+                {
+                    // no filter → include every column
+                    _columnIndexes.AddRange(Enumerable.Range(0, headers.Length));
                 }
             }
 
+            // 3) now read the next data row
             _currentRow = _parser.ReadFields();
             return _currentRow != null;
         }
@@ -146,9 +152,12 @@ namespace TheTechIdea.Beep.FileManager
                 try
                 {
                     Type fieldType = Type.GetType(field.fieldtype);
-                    if (fieldType != null && !string.IsNullOrEmpty(value))
+                    if (fieldType != null 
+                        && !string.IsNullOrEmpty(value) 
+                        && !string.IsNullOrWhiteSpace(value))
                     {
-                        return Convert.ChangeType(value, fieldType);
+                        return  CSVTypeMapper.ConvertValue(value, fieldType);
+
                     }
                 }
                 catch

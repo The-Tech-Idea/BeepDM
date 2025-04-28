@@ -196,8 +196,9 @@ namespace TheTechIdea.Beep.FileManager
                     int j = 0;
                     if (i <= 100)
                     { // Scan fields in row for Types
-                        foreach (EntityField f in flds)
+                        for (int findex = 0; i < flds.Count() - 1; i++)
                         {
+                            EntityField f = flds[findex];
                             try
                             {
                                 if (f.fieldname.ToLower().Contains("date") || f.fieldname.ToLower().Contains("_dt"))
@@ -381,8 +382,9 @@ namespace TheTechIdea.Beep.FileManager
                     entityData.Id =0;
                    if(flds != null && flds.Count()>0)
                     {
-                        foreach (string field in flds)
+                        for (int i = 0; i < flds.Count()-1; i++)
                         {
+                            string field = flds[i];
                             EntityField f = new EntityField();
                             string entspace = Regex.Replace(field ,@"[\s-.]+", "_");
                             if (entspace.Equals(sheetname, StringComparison.InvariantCultureIgnoreCase))
@@ -1314,7 +1316,7 @@ namespace TheTechIdea.Beep.FileManager
                                 try
                                 {
                                     Type targetType = dataTable.Columns[i].DataType;
-                                    newRow[i] = string.IsNullOrEmpty(fields[i]) ?
+                                    newRow[i] = string.IsNullOrEmpty(fields[i]) || string.IsNullOrWhiteSpace(fields[i]) ?
                                         DBNull.Value :
                                         Convert.ChangeType(fields[i], targetType);
                                 }

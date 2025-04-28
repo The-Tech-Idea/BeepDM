@@ -93,77 +93,132 @@ namespace TheTechIdea.Beep.FileManager
         /// <returns>Converted value</returns>
         public static object ConvertValue(string value, Type targetType)
         {
-            if (string.IsNullOrEmpty(value))
+            // 1) Normalize input
+            value = value?.Trim();
+            if (string.IsNullOrWhiteSpace(value))
             {
-                // Handle special case for value types
-                if (targetType.IsValueType)
-                    return Activator.CreateInstance(targetType);
-                return null;
+                // empty → default(T) or null
+                if (Nullable.GetUnderlyingType(targetType) != null || !targetType.IsValueType)
+                    return null;
+                return Activator.CreateInstance(targetType);
             }
 
+            // 2) Unwrap Nullable<T>
+            var underlying = Nullable.GetUnderlyingType(targetType);
+            if (underlying != null)
+            {
+                var conv = ConvertValue(value, underlying);
+                return conv;
+            }
+
+            // 3) Common strong types
+            if (targetType == typeof(bool))
+            {
+                if (bool.TryParse(value, out var b)) return b;
+                var v = value.ToLower();
+                if (v == "1" || v == "yes" || v == "y" || v == "true") return true;
+                if (v == "0" || v == "no" || v == "n" || v == "false") return false;
+                return false;
+            }
+
+            if (targetType == typeof(DateTime))
+            {
+                if (DateTime.TryParse(value, out var dt)) return dt;
+                return DateTime.MinValue;
+            }
+
+            if (targetType == typeof(TimeSpan))
+            {
+                if (TimeSpan.TryParse(value, out var ts)) return ts;
+                return TimeSpan.Zero;
+            }
+
+            if (targetType == typeof(Guid))
+            {
+                if (Guid.TryParse(value, out var g)) return g;
+                return Guid.Empty;
+            }
+
+            // 4) Numeric types via TypeCode
+            switch (Type.GetTypeCode(targetType))
+            {
+                case TypeCode.Byte:
+                    if (byte.TryParse(value, out var b1)) return b1;
+                    if (decimal.TryParse(value, out var d1)) return (byte)Math.Truncate(d1);
+                    return default(byte);
+
+                case TypeCode.SByte:
+                    if (sbyte.TryParse(value, out var sb)) return sb;
+                    if (decimal.TryParse(value, out var d2)) return (sbyte)Math.Truncate(d2);
+                    return default(sbyte);
+
+                case TypeCode.Int16:
+                    if (short.TryParse(value, out var s2)) return s2;
+                    if (decimal.TryParse(value, out var d3)) return (short)Math.Truncate(d3);
+                    return default(short);
+
+                case TypeCode.UInt16:
+                    if (ushort.TryParse(value, out var us)) return us;
+                    if (decimal.TryParse(value, out var d4)) return (ushort)Math.Truncate(d4);
+                    return default(ushort);
+
+                case TypeCode.Int32:
+                    if (int.TryParse(value, out var i)) return i;
+                    if (decimal.TryParse(value, out var d5)) return (int)Math.Truncate(d5);
+                    return default(int);
+
+                case TypeCode.UInt32:
+                    if (uint.TryParse(value, out var ui)) return ui;
+                    if (decimal.TryParse(value, out var d6)) return (uint)Math.Truncate(d6);
+                    return default(uint);
+
+                case TypeCode.Int64:
+                    if (long.TryParse(value, out var l)) return l;
+                    if (decimal.TryParse(value, out var d7)) return (long)Math.Truncate(d7);
+                    return default(long);
+
+                case TypeCode.UInt64:
+                    if (ulong.TryParse(value, out var ul)) return ul;
+                    if (decimal.TryParse(value, out var d8)) return (ulong)Math.Truncate(d8);
+                    return default(ulong);
+
+                case TypeCode.Single:
+                    if (float.TryParse(value, out var f)) return f;
+                    return default(float);
+
+                case TypeCode.Double:
+                    if (double.TryParse(value, out var dbl)) return dbl;
+                    return default(double);
+
+                case TypeCode.Decimal:
+                    if (decimal.TryParse(value, out var dec)) return dec;
+                    return default(decimal);
+            }
+
+            // 5) Enumerations
+            if (targetType.IsEnum)
+            {
+                return Enum.Parse(targetType, value, ignoreCase: true);
+            }
+
+            // 6) Strings
+            if (targetType == typeof(string))
+            {
+                return value;
+            }
+
+            // 7) Fallback
             try
             {
-                // Handle common types with special cases
-                if (targetType == typeof(bool))
-                {
-                    if (bool.TryParse(value, out bool result))
-                        return result;
-
-                    // Handle common boolean text representations
-                    string lowerValue = value.ToLower().Trim();
-                    if (lowerValue == "1" || lowerValue == "yes" || lowerValue == "y" || lowerValue == "true" || lowerValue == "t")
-                        return true;
-                    if (lowerValue == "0" || lowerValue == "no" || lowerValue == "n" || lowerValue == "false" || lowerValue == "f")
-                        return false;
-
-                    return false; // Default
-                }
-
-                if (targetType == typeof(DateTime))
-                {
-                    if (DateTime.TryParse(value, out DateTime result))
-                        return result;
-                    return DateTime.MinValue;
-                }
-
-                if (targetType == typeof(Guid))
-                {
-                    if (Guid.TryParse(value, out Guid result))
-                        return result;
-                    return Guid.Empty;
-                }
-
-                if (targetType == typeof(TimeSpan))
-                {
-                    if (TimeSpan.TryParse(value, out TimeSpan result))
-                        return result;
-                    return TimeSpan.Zero;
-                }
-
-                // Handle Nullable types
-                if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                {
-                    var underlyingType = Nullable.GetUnderlyingType(targetType);
-                    return ConvertValue(value, underlyingType);
-                }
-
-                // Handle enumerations
-                if (targetType.IsEnum)
-                {
-                    return Enum.Parse(targetType, value, true);
-                }
-
-                // General case - use Convert
                 return Convert.ChangeType(value, targetType);
             }
             catch
             {
-                // Return default value on error
-                if (targetType.IsValueType)
-                    return Activator.CreateInstance(targetType);
-                return null;
+                // give up and return default(T)
+                return Activator.CreateInstance(targetType);
             }
         }
+
 
         /// <summary>
         /// Formats a value for CSV output

@@ -9,8 +9,7 @@ using System.Reflection;
 using System.Text;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Beep.ConfigUtil;
-using TheTechIdea.Beep.Addin;
+
 
 namespace TheTechIdea.Beep.FileManager
 {

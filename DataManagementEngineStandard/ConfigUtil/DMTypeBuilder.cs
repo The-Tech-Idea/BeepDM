@@ -178,7 +178,7 @@ namespace TheTechIdea.Beep.Utilities
         /// <summary>Converts a POCO class definition into an entity class.</summary>
         public static string ConvertPOCOClassToEntity(IDMEEditor editor, EntityStructure entityStructure, string namespaceName)
         {
-            string usingText = "using System;\nusing System.ComponentModel;\nusing System.Runtime.CompilerServices;";
+            string usingText = "using System;\nusing System.ComponentModel;\nusing System.Runtime.CompilerServices;using TheTechIdea.Beep.Editor;";
             return editor.classCreator.CreatEntityClass(entityStructure, usingText, null, null, namespaceName, false);
         }
 

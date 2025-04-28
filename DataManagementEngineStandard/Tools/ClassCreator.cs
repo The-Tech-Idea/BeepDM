@@ -218,99 +218,141 @@ namespace TheTechIdea.Beep.Tools
             template2 += Environment.NewLine + " public :FIELDTYPE :FIELDNAME\r\n    {\r\n        get\r\n        {\r\n            return this.:FIELDNAMEValue;\r\n        }\r\n\r\n        set\r\n        {\r\n    this.:FIELDNAMEValue = value;\r\n                NotifyPropertyChanged();\r\n           \n        }\r\n    }";
             return CreateClassFromTemplate(entity.EntityName,entity, template2, usingheader, implementations2, extracode2, outputpath, nameSpacestring, GenerateCSharpCodeFiles);
         }
-        public string CreatEntityClass(EntityStructure entity, string usingheader, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true)
+        public string CreatEntityClass(
+               EntityStructure entity,
+               string usingHeader,
+               string extraCode,            // ignored; we’ll use our own notification boilerplate
+               string outputPath,
+               string namespaceString = "TheTechIdea.ProjectClasses",
+               bool generateFiles = true
+           )
         {
-            string implementations2 = " Entity ";
+            // inherit both your base Entity and INotifyPropertyChanged
+            const string implementations = "Entity, INotifyPropertyChanged";
 
+            // always inject full INotifyPropertyChanged boilerplate:
+            var notificationCode = @"
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void NotifyPropertyChanged([CallerMemberName] string propertyName = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+";
 
-            string extracode2 = null;//Environment.NewLine + " public event PropertyChangedEventHandler PropertyChanged;\r\n\r\n    // This method is called by the Set accessor of each property.\r\n    // The CallerMemberName attribute that is applied to the optional propertyName\r\n    // parameter causes the property name of the caller to be substituted as an argument.\r\n    private void NotifyPropertyChanged([CallerMemberName] string propertyName = \"\")\r\n    {\r\n        if (PropertyChanged != null)\r\n        {\r\n            PropertyChanged(this, new PropertyChangedEventArgs(propertyName));\r\n        }\r\n    }";
-            //string template2 = null;//Environment.NewLine + " private :FIELDTYPE :FIELDNAMEValue ;";
-            string template2 = Environment.NewLine + $" private :FIELDTYPE  _:FIELDNAMEValue ;\r\n";
-            template2 = template2 +Environment.NewLine + " public :FIELDTYPE :FIELDNAME\r\n    {\r\n        get\r\n        {\r\n            return this._:FIELDNAMEValue;\r\n        }\r\n\r\n        set\r\n        {\r\n       SetProperty(ref _:FIELDNAMEValue, value);\r\n    }\r\n    }";
-            return CreateClassFromTemplate(entity.EntityName, entity, template2, usingheader, implementations2, extracode2, outputpath, nameSpacestring, GenerateCSharpCodeFiles);
+            // per-field template (we ignore the old template2 completely)
+            var fieldTemplate = @"
+private :FIELDTYPE _ :FIELDNAMEValue;
+
+public :FIELDTYPE :FIELDNAME
+{
+    get => _ :FIELDNAMEValue;
+    set => SetProperty(ref _ :FIELDNAMEValue, value);
+}
+";
+
+            return CreateClassFromTemplate(
+                classname: entity.EntityName,
+                entity: entity,
+                template: fieldTemplate,
+                usingheader: usingHeader,
+                implementations: implementations,
+                extracode: notificationCode,
+                outputpath: outputPath,
+                nameSpacestring: namespaceString,
+                GenerateCSharpCodeFiles: generateFiles
+            );
         }
-        public string CreateClassFromTemplate(string classname,EntityStructure entity, string template, string usingheader, string implementations, string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true)
+        public string CreateClassFromTemplate(
+          string classname,
+          EntityStructure entity,
+          string template,
+          string usingheader,
+          string implementations,
+          string extracode,
+          string outputpath,
+          string nameSpacestring = "TheTechIdea.ProjectClasses",
+          bool GenerateCSharpCodeFiles = true
+      )
         {
-            string str = "";
-            string filepath = "";
-            if (string.IsNullOrEmpty(outputpath))
+            // choose class name
+            var cls = string.IsNullOrWhiteSpace(classname)
+                ? entity.EntityName
+                : classname;
+
+            var sb = new StringBuilder();
+
+            sb.AppendLine(usingheader);
+            sb.AppendLine();
+            sb.AppendLine($"namespace {nameSpacestring}");
+            sb.AppendLine("{");
+
+            var inherit = string.IsNullOrWhiteSpace(implementations)
+                ? ""
+                : $" : {implementations}";
+            sb.AppendLine($"    public class {cls}{inherit}");
+            sb.AppendLine("    {");
+            sb.AppendLine($"        public {cls}() {{ }}");
+            sb.AppendLine();
+
+            for (int i = 0; i < entity.Fields.Count; i++)
             {
-                filepath = Path.Combine(DMEEditor.ConfigEditor.Config.ScriptsPath, $"{entity.EntityName}.cs");
-            }else
-                filepath = Path.Combine(outputpath, $"{entity.EntityName}.cs");
-           
-            try
-            {
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-                string clsname = string.Empty;
-                if (string.IsNullOrEmpty(classname))
-                {
-                    clsname = classname;
-                }
-                else
-                {
-                    clsname = entity.EntityName;
-                }
-                str = usingheader + Environment.NewLine;
-                str += $"namespace  {nameSpacestring} " + Environment.NewLine;
-                str += "{ " + Environment.NewLine;
-                if (string.IsNullOrEmpty(implementations))
-                {
-                    str += $"public class {clsname} " + Environment.NewLine;
-                }
-                else
-                {
-                    str += $"public class {clsname} : " + implementations + Environment.NewLine;
-                }
+                var fld = entity.Fields[i];
 
-                str += "{ " + Environment.NewLine; // start of Class
-                // Create CTOR
-                str += $"public  {clsname} ()"+"{}" + Environment.NewLine; 
-                for (int i = 0; i < entity.Fields.Count ; i++)
-                {
-                    EntityField fld = entity.Fields[i];
-                    if (string.IsNullOrEmpty(template))
-                    {
-                        str += $"public {fld.fieldtype}? {fld.fieldname}" + Environment.NewLine;
-                    }
-                    else
-                    {
-                        string extractedtemplate = template.Replace(":FIELDNAME", fld.fieldname);
-                        extractedtemplate = extractedtemplate.Replace(":FIELDTYPE", fld.fieldtype+"?");
-                        str += extractedtemplate + Environment.NewLine;
-                    }
+                // 1) make a safe name (alphanumerics + underscore)
+                var raw = fld.fieldname ?? "";
+                var safe = Regex.Replace(raw, @"[^A-Za-z0-9_]", "_");
 
-                }
+                // 2) if it's now empty, give it a default
+                if (string.IsNullOrWhiteSpace(safe))
+                    safe = "Field" + i;
 
-                str += "} " + Environment.NewLine; // end of Class
-                if (string.IsNullOrEmpty(extracode))
-                {
-                    str += extracode + Environment.NewLine;
-                }
-                str += Environment.NewLine;
+                // 3) if it starts with a digit, prefix underscore
+                if (char.IsDigit(safe[0]))
+                    safe = "_" + safe;
 
-                 str += "} " + Environment.NewLine; // end of namepspace
-                string[] result = Regex.Split(str, "\r\n|\r|\n");
-                if (GenerateCSharpCodeFiles)
-                {
-                    StreamWriter streamWriter = new StreamWriter(filepath);
-                    foreach (string line in result)
-                    {
-                        streamWriter.WriteLine(line);
-                    }
-                    streamWriter.Close();
-                }
-              
-                return str;
-            }
-            catch (Exception ex)
-            {
-                str = null;
-                DMEEditor.AddLogMessage("Beep", $" Error Creating Code {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                // 4) build a lower-camel backing field
+                var prop = safe;
+                var back = "_" +
+                    char.ToLowerInvariant(prop[0]) +
+                    (prop.Length > 1 ? prop.Substring(1) : "") +
+                    "Value";
+
+                // emit backing field
+                sb.AppendLine($"        private {fld.fieldtype}? {back};");
+                sb.AppendLine();
+
+                // emit property
+                sb.AppendLine($"        public {fld.fieldtype}? {prop}");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            get => {back};");
+                sb.AppendLine($"            set => SetProperty(ref {back}, value);");
+                sb.AppendLine("        }");
+                sb.AppendLine();
             }
 
-            return str;
+            // inject INotifyPropertyChanged boilerplate if provided
+            if (!string.IsNullOrWhiteSpace(extracode))
+            {
+                foreach (var line in extracode.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
+                    sb.AppendLine("        " + line.TrimEnd());
+                sb.AppendLine();
+            }
+
+            sb.AppendLine("    }");
+            sb.AppendLine("}");
+
+            var result = sb.ToString();
+
+            if (GenerateCSharpCodeFiles)
+            {
+                var file = string.IsNullOrWhiteSpace(outputpath)
+                    ? Path.Combine(this.DMEEditor.ConfigEditor.Config.ScriptsPath, $"{cls}.cs")
+                    : Path.Combine(outputpath, $"{cls}.cs");
+                File.WriteAllText(file, result);
+            }
+
+            return result;
         }
+
+
         public Assembly CreateAssemblyFromCode(string code)
         {
             Assembly assembly = null;
