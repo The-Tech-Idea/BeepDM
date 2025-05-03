@@ -8,7 +8,8 @@ namespace TheTechIdea.Beep.DataBase
     {
         string EntityPath { get;set; }
         string GuidID { get; set; }
-        bool Created { get; set; }
+        EntityType EntityType { get; set; }
+        string SourceDataSourceID { get; set; }
         string CustomBuildQuery { get; set; }
         DataSourceType DatabaseType { get; set; }
         string DataSourceID { get; set; }

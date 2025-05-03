@@ -15,6 +15,7 @@ namespace TheTechIdea.Beep.DataBase
         bool CreateDB(string filepathandname);
         bool DeleteDB();
         IErrorsInfo DropEntity(string EntityName);
+        string Extension { get; set; }  
         bool CopyDB(string DestDbName,string DesPath);
 
 

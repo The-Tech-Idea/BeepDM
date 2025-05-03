@@ -36,8 +36,15 @@ private int _id;
         get { return _originalentityname; }
         set { SetProperty(ref _originalentityname, value); }
     }
-
-    private string _datasourceentityname;
+        private string _sourceDataSourceID;
+        public string SourceDataSourceID
+        {
+            get { return _sourceDataSourceID; }
+            set { SetProperty(ref _sourceDataSourceID, value); }
+        }
+      
+       
+        private string _datasourceentityname;
     public string DatasourceEntityName
     {
         get { return _datasourceentityname; }
@@ -137,11 +144,11 @@ private int _id;
         set { SetProperty(ref _schemaorownerordatabase, value); }
     }
 
-    private Boolean _created;
-    public Boolean Created
+    private EntityType _entityType= EntityType.Entity;
+    public EntityType EntityType
     {
-        get { return _created; }
-        set { SetProperty(ref _created, value); }
+        get { return _entityType; }
+        set { SetProperty(ref _entityType, value); }
     }
 
     private string _keytoken;

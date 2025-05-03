@@ -145,7 +145,7 @@ namespace TheTechIdea.Beep.Editor
         private ETLScriptDet GenerateScript(EntityStructure item, string destSource, DDLScriptType scriptType)
         {
             ETLScriptDet upscript = new ETLScriptDet();
-            upscript.sourcedatasourcename = item.DataSourceID;
+            upscript.sourcedatasourcename = item.SourceDataSourceID;
             upscript.sourceentityname = item.EntityName;
             upscript.sourceDatasourceEntityName = string.IsNullOrEmpty(item.DatasourceEntityName)? item.EntityName:item.DatasourceEntityName ;
             upscript.destinationDatasourceEntityName = string.IsNullOrEmpty(item.DatasourceEntityName) ? item.EntityName : item.DatasourceEntityName;

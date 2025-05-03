@@ -366,7 +366,7 @@ namespace TheTechIdea.Beep.FileManager
                 {
 
                     fieldParser = new CsvTextFieldParser(Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName));
-                    fieldParser.SetDelimiter(',');
+                    fieldParser.SetDelimiter(Delimiter);
                     flds = fieldParser.ReadFields();
                     int y = 0;
                     List<EntityField> fl = new List<EntityField>();
@@ -382,7 +382,7 @@ namespace TheTechIdea.Beep.FileManager
                     entityData.Id =0;
                    if(flds != null && flds.Count()>0)
                     {
-                        for (int i = 0; i < flds.Count()-1; i++)
+                        for (int i = 0; i < flds.Count(); i++)
                         {
                             string field = flds[i];
                             EntityField f = new EntityField();
@@ -663,6 +663,14 @@ namespace TheTechIdea.Beep.FileManager
                     // Load entity structure
                     if (DMEEditor.ConfigEditor.LoadDataSourceEntitiesValues(FileName) == null)
                     {
+                        if (File.Exists(CombineFilePath))
+                        {
+                            Delimiter = DetectDelimiter(CombineFilePath);
+                        }
+                        else
+                        {
+                            Delimiter = ','; // Default to comma
+                        }
                         Getfields();
                     }
                     else

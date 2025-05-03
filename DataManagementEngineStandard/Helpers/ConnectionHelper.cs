@@ -944,6 +944,7 @@ namespace TheTechIdea.Beep.Helpers
                 CreateLocal = true,
                 InMemory = false,
                 Favourite = true,
+                extensionstoHandle = "s3db",
                 DatasourceCategory = DatasourceCategory.RDBMS, // Assuming appropriate enum value
                 DatasourceType = DataSourceType.SqlLite, // Assuming appropriate enum value
                 IsMissing = false
@@ -967,6 +968,7 @@ namespace TheTechIdea.Beep.Helpers
                 CreateLocal = true,
                 InMemory = false,
                 Favourite = true,
+                extensionstoHandle = "s3db",
                 DatasourceCategory = DatasourceCategory.RDBMS, // Assuming appropriate enum value
                 DatasourceType = DataSourceType.SqlLite, // Assuming appropriate enum value
                 IsMissing = false

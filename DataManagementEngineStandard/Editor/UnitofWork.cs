@@ -2397,53 +2397,59 @@ namespace TheTechIdea.Beep.Editor
             }
             T item = (T)sender;
             Tracking tracking = _units.GetTrackingITem(item);
-            if (item != null)
+         
+            if (tracking != null)
             {
-                if(InsertedKeys.Count>0)
+                if (item != null)
                 {
-                    if (InsertedKeys.ContainsValue(Convert.ToString(tracking.OriginalIndex)))
+                    if (InsertedKeys.Count > 0)
                     {
+                        if (InsertedKeys.ContainsValue(Convert.ToString(tracking.OriginalIndex)))
+                        {
 
-                        return;
+                            return;
+                        }
                     }
+
                 }
-               
-            }
-            if(!InsertedKeys.Any(p => p.Value.Equals(Convert.ToString(tracking.OriginalIndex))))
-            {
-                if (!UpdatedKeys.Any(p => p.Value.Equals(Convert.ToString(tracking.OriginalIndex))))
+                if (!InsertedKeys.Any(p => p.Value.Equals(Convert.ToString(tracking.OriginalIndex))))
                 {
-                    keysidx++;
-                    UpdatedKeys.Add(keysidx, Convert.ToString(tracking.OriginalIndex));
-                    int x = tracking.OriginalIndex;// Getindex(item);
-                    if (!_entityStates.ContainsKey(x))
+                    if (!UpdatedKeys.Any(p => p.Value.Equals(Convert.ToString(tracking.OriginalIndex))))
                     {
-                        _entityStates.Add(x, EntityState.Modified);
+                        keysidx++;
+                        UpdatedKeys.Add(keysidx, Convert.ToString(tracking.OriginalIndex));
+                        int x = tracking.OriginalIndex;// Getindex(item);
+                        if (!_entityStates.ContainsKey(x))
+                        {
+                            _entityStates.Add(x, EntityState.Modified);
+                        }
+                        CurrentProperty = item.GetType().GetProperty(e.PropertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                        UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, PropertyName = e.PropertyName, PropertyValue = Convert.ToString(CurrentProperty.GetValue(item, null)) };
+                        PostEdit?.Invoke(item, ps);
                     }
-                    CurrentProperty = item.GetType().GetProperty(e.PropertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-                    UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, PropertyName = e.PropertyName, PropertyValue = Convert.ToString(CurrentProperty.GetValue(item, null)) };
-                    PostEdit?.Invoke(item, ps);
+
                 }
-
-            }
-            // Get the current property that was changed
-            CurrentProperty = item.GetType().GetProperty(e.PropertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-            if (CurrentProperty != null)
-            {
-                // Get the new value
-                var newValue = CurrentProperty.GetValue(item, null);
-
-                // Get the original item using the tracking index
-                var originalItem = Tempunits.ElementAtOrDefault(tracking.OriginalIndex);
-                var originalValue = originalItem != null ? CurrentProperty.GetValue(originalItem, null) : null;
-                changeLog.Push(new ChangeLogEntry<T>
+                // Get the current property that was changed
+                CurrentProperty = item.GetType().GetProperty(e.PropertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                if (CurrentProperty != null)
                 {
-                    Entity = item,
-                    OriginalValues = { { e.PropertyName, originalValue } },
-                    NewValues = { { e.PropertyName, newValue } },
-                    ChangeType = ChangeType.Update
-                });
+                    // Get the new value
+                    var newValue = CurrentProperty.GetValue(item, null);
+
+                    // Get the original item using the tracking index
+                    var originalItem = Tempunits.ElementAtOrDefault(tracking.OriginalIndex);
+                    var originalValue = originalItem != null ? CurrentProperty.GetValue(originalItem, null) : null;
+                    changeLog.Push(new ChangeLogEntry<T>
+                    {
+                        Entity = item,
+                        OriginalValues = { { e.PropertyName, originalValue } },
+                        NewValues = { { e.PropertyName, newValue } },
+                        ChangeType = ChangeType.Update
+                    });
+                }
             }
+         
+      
 
 
 

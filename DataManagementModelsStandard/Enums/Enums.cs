@@ -2,9 +2,31 @@
 using System;
 
 namespace TheTechIdea.Beep.Utilities
-{/// <summary>
- /// Cloud provider types supported by the class creator
- /// </summary>
+{
+    public enum EntityType
+    {
+        Entity,
+        View,
+        Table,
+        Query,
+        StoredProcedure,
+        Function,
+        Report,
+        DataView,
+        DataSource,
+        DataConnector,
+        DataSet,
+        DataTable,
+        InMemory,
+        Schema,
+        DataBase
+
+    }
+
+
+    /// <summary>
+    /// Cloud provider types supported by the class creator
+    /// </summary>
     public enum CloudProviderType
     {
         Azure,
