@@ -119,6 +119,83 @@
             Represents a view for displaying and interacting with DataView  data.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.WhereContains(System.String,System.String,System.Boolean)">
+            <summary>
+            Finds items where a string property contains the search text
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.FirstOrDefault(System.Func{`0,System.Boolean})">
+            <summary>
+            Finds the first item matching the predicate
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Any(System.Func{`0,System.Boolean})">
+            <summary>
+            Gets whether any item matches the predicate
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchCompleted">
+            <summary>
+            Event triggered when search or filter operations complete
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchWithProgress(System.Func{`0,System.Boolean},System.IProgress{System.Int32})">
+            <summary>
+            Searches with progress reporting
+            </summary>
+            <param name="predicate">Search criteria</param>
+            <param name="progress">Progress reporter</param>
+            <returns>List of matching items</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchCompletedEventArgs`1">
+            <summary>
+            Event arguments for search completion
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchByProperties(System.Collections.Generic.Dictionary{System.String,System.Object},System.String)">
+            <summary>
+            Searches for items matching multiple property conditions with a specific operator between conditions.
+            </summary>
+            <param name="propertyConditions">Dictionary of property names and their values to match</param>
+            <param name="matchOperator">Logical operator to apply between conditions ("AND" or "OR")</param>
+            <returns>List of matching items</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchByText(System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Finds all items with the specified property value matching the search string using 
+            contains, starts with, or ends with matching.
+            </summary>
+            <param name="propertyName">Name of the property to search</param>
+            <param name="searchText">Text to search for</param>
+            <param name="matchType">Type of match: "Contains", "StartsWith", "EndsWith", or "Exact"</param>
+            <param name="ignoreCase">Whether to ignore case when matching</param>
+            <returns>List of matching items</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchAllProperties(System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
+            <summary>
+            Searches across multiple string properties for a search term
+            </summary>
+            <param name="searchText">Text to search for</param>
+            <param name="propertyNames">Optional specific properties to search (searches all string properties if null)</param>
+            <param name="ignoreCase">Whether to ignore case when matching</param>
+            <returns>List of matching items</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.AdvancedSearch(System.String,System.Char,System.String)">
+            <summary>
+            Finds items based on a complex predicate that can include nested property paths
+            </summary>
+            <param name="filter">Filter string in format "Property[.NestedProperty] Operator Value"</param>
+            <param name="separator">Character separating multiple filter conditions</param>
+            <param name="logicalOperator">Logical operator to use between conditions ("AND" or "OR")</param>
+            <returns>List of items matching the complex filter</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.FindAndFilter(System.Func{`0,System.Boolean})">
+            <summary>
+            Applies the search based on a predicate and updates the current view
+            </summary>
+            <param name="predicate">Search predicate function</param>
+            <returns>Number of items found</returns>
+        </member>
         <member name="T:TheTechIdea.Beep.Utilities.CloudProviderType">
             <summary>
             Cloud provider types supported by the class creator
