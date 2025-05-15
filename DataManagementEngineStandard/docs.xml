@@ -4,7 +4,15 @@
         <name>DataManagementEngine</name>
     </assembly>
     <members>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.#ctor(TheTechIdea.Beep.Logger.IDMLogger,TheTechIdea.Beep.ConfigUtil.IErrorsInfo,TheTechIdea.Beep.ConfigUtil.IJsonLoader,System.String,System.String,TheTechIdea.Beep.Utilities.BeepConfigType)" -->
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.#ctor(TheTechIdea.Beep.Logger.IDMLogger,TheTechIdea.Beep.ConfigUtil.IErrorsInfo,TheTechIdea.Beep.ConfigUtil.IJsonLoader,System.String,System.String,TheTechIdea.Beep.Utilities.BeepConfigType)">
+            <summary>Initializes a new instance of the ConfigEditor class.</summary>
+            <param name="logger">The logger object used for logging.</param>
+            <param name="per">The object used for error handling and reporting.</param>
+            <param name="jsonloader">The object used for loading JSON data.</param>
+            <param name="folderpath">The path to the folder containing the configuration files. If null or empty, the folder path will be set to the directory of the entry assembly.</param>
+            <param name="containerfolder">The name of the container folder within the folder path. If null or empty, the container folder will be the same as the folder path.</param>
+            <param name="configType">The type of configuration being edited.</param>
+        </member>
         <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ConfigType">
             <summary>Gets or sets the configuration type for the beep.</summary>
             <value>The configuration type for the beep.</value>
@@ -650,6 +658,12 @@
             If an exception occurs during initialization, the method sets the ErrorObject's Flag to indicate failure,
             stores the exception in the ErrorObject's Ex property, and logs an error message.
             </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Dispose(System.Boolean)">
+            <summary>
+            Releases the unmanaged resources used by the ConfigEditor and optionally releases the managed resources.
+            </summary>
+            <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
         </member>
         <member name="T:TheTechIdea.Beep.Utilities.DMTypeBuilder">
             <summary>

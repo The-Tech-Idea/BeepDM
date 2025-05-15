@@ -6,8 +6,8 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.DataManagementEngine</PackageId>
     <Authors>The Tech Idea</Authors>
-    <Version>2.0.30</Version>
-	<LangVersion>12.0</LangVersion>
+    <Version>2.0.31</Version>
+	<LangVersion>latest</LangVersion>
     <Product>TheTechIdea.Beep.DataManagementEngine</Product>
     <Description>Data Management Library</Description>
     <Copyright>2022</Copyright>
@@ -57,7 +57,7 @@
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.64" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.65" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="CodeDom\" />

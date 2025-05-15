@@ -139,16 +139,33 @@ namespace TheTechIdea.Beep
         /// <param name="pRecordID"></param>
         /// <param name="pMiscData"></param>
         /// <param name="pFlag"></param>
-        public void AddLogMessage(string pLogType, string pLogMessage, DateTime pLogData, int pRecordID, string pMiscData, Errors pFlag)
+        // More consistent error handling with detailed information
+        public void AddLogMessage(string logType, string logMessage, DateTime logDate, int recordId, string miscData, Errors flag)
         {
-            if (Logger != null)
+            try
             {
-                //  LogAndError log = new LogAndError(pLogType, pLogMessage, pLogData, pRecordID, pMiscData);
-                //   Loganderrors.Add(log);
-                string errmsg = pLogType + "," + pLogMessage;
-                ErrorObject.Flag = pFlag;
-                ErrorObject.Message = errmsg;
-                Task.Run(() => Logger.WriteLog(errmsg));
+                if (Logger == null)
+                    return;
+
+                string formattedMessage = $"{logType}: {logMessage}";
+
+                ErrorObject.Flag = flag;
+                ErrorObject.Message = formattedMessage;
+
+                if (flag == Errors.Failed)
+                {
+                    // Include stack trace for errors
+                    formattedMessage += $" | Context: {miscData ?? "N/A"} | ID: {recordId}";
+                    formattedMessage += $" | Stack: {Environment.StackTrace.Split(new[] { Environment.NewLine }, StringSplitOptions.None).FirstOrDefault(s => s.Contains("DMEEditor"))}";
+                }
+
+                // Use Task.Run with ConfigureAwait to prevent blocking
+                Task.Run(() => Logger.WriteLog(formattedMessage)).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                // Fallback logging for logger failures
+                Console.WriteLine($"Logger failed: {ex.Message} | Original message: {logMessage}");
             }
         }
         /// <summary>
@@ -196,6 +213,69 @@ namespace TheTechIdea.Beep
         }
         #endregion "Entity Structure Methods"
         #region "Get Data Methods"
+        // Eliminate duplicate code between GUID and name-based methods
+        public IDataSource GetDataSourceById(string identifier, bool useGuid = false)
+        {
+            if (string.IsNullOrEmpty(identifier))
+                return null;
+
+            // Use existing cached datasource if it matches
+            if (ds1 != null)
+            {
+                bool matches = useGuid
+                    ? identifier.Equals(ds1.GuidID, StringComparison.InvariantCultureIgnoreCase)
+                    : identifier.Equals(ds1.DatasourceName, StringComparison.InvariantCultureIgnoreCase);
+
+                if (matches)
+                    return ds1;
+            }
+
+            // Find in current sources
+            IDataSource dataSource = null;
+            try
+            {
+                dataSource = useGuid
+                    ? DataSources.FirstOrDefault(f => f.GuidID.Equals(identifier, StringComparison.InvariantCultureIgnoreCase))
+                    : DataSources.FirstOrDefault(f => f.DatasourceName.Equals(identifier, StringComparison.InvariantCultureIgnoreCase));
+            }
+            catch (Exception ex)
+            {
+                AddLogMessage(ex.Message, "Could not find data source", DateTime.Now, -1, identifier, Errors.Failed);
+            }
+
+            // Create if not found
+            if (dataSource == null)
+            {
+                dataSource = useGuid
+                    ? CreateNewDataSourceConnectionUsingGuidID(identifier)
+                    : CreateNewDataSourceConnection(identifier);
+            }
+
+            // Load entities if needed
+            if (dataSource?.Entities.Count == 0 && dataSource?.Dataconnection?.ConnectionProp?.IsInMemory == false)
+            {
+                var entitiesData = useGuid
+                    ? ConfigEditor.LoadDataSourceEntitiesValues(dataSource.DatasourceName)
+                    : ConfigEditor.LoadDataSourceEntitiesValues(dataSource.DatasourceName);
+
+                if (entitiesData != null)
+                    dataSource.Entities = entitiesData.Entities;
+            }
+
+            // Cache the result
+            if (dataSource != null)
+            {
+                ds1 = dataSource;
+                if (useGuid && !string.IsNullOrEmpty(dataSource.GuidID))
+                    dataSource.GuidID = identifier;
+            }
+
+            return dataSource;
+        }
+
+        // Then use this method in your existing methods:
+        //public IDataSource GetDataSource(string dataSourceName) => GetDataSourceById(dataSourceName, false);
+       // public IDataSource GetDataSourceUsingGuidID(string guidId) => GetDataSourceById(guidId, true);
         /// <summary>
         /// Run Query on an Opened DataSource 
         /// </summary>
@@ -744,7 +824,43 @@ namespace TheTechIdea.Beep
                 return false;
             };
         }
+        // Implement a more robust factory pattern for data source creation
+        private IDataSource CreateDataSourceFromDefinition(ConnectionProperties connection, AssemblyClassDefinition classDefinition)
+        {
+            try
+            {
+                // Get the appropriate type
+                Type dataSourceType = assemblyHandler.GetType(classDefinition.type.AssemblyQualifiedName);
+                if (dataSourceType == null)
+                    throw new ArgumentException($"Could not load type {classDefinition.type.AssemblyQualifiedName}");
 
+                // Find constructor with the right parameters
+                var constructors = dataSourceType.GetConstructors()
+                    .OrderByDescending(c => c.GetParameters().Length)
+                    .ToList();
+
+                ConstructorInfo constructor = constructors.FirstOrDefault(c =>
+                    c.GetParameters().Length == 5 &&
+                    c.GetParameters()[0].ParameterType == typeof(string) &&
+                    c.GetParameters()[1].ParameterType == typeof(IDMLogger) &&
+                    c.GetParameters()[2].ParameterType == typeof(IDMEEditor));
+
+                if (constructor == null)
+                    constructor = constructors.FirstOrDefault();
+
+                if (constructor == null)
+                    throw new InvalidOperationException($"No suitable constructor found for {dataSourceType.FullName}");
+
+                // Create activator and instance
+                var activator = GetActivator<IDataSource>(constructor);
+                return activator(connection.ConnectionName, Logger, this, connection.DatabaseType, ErrorObject);
+            }
+            catch (Exception ex)
+            {
+                AddLogMessage("Error", $"Failed to create data source: {ex.Message}", DateTime.Now, 0, connection.ConnectionName, Errors.Failed);
+                return null;
+            }
+        }
         #endregion "Data Sources Methods"
         #region "Data Sources Open/Close"
         public async Task<ConnectionState> OpenDataSourceAsync(string dataSourceName)
@@ -1000,57 +1116,46 @@ namespace TheTechIdea.Beep
 
         #endregion "Data Sources Open/Close"
         #region "Constructor"
-        public DMEEditor(IDMLogger logger, IUtil utilfunctions, IErrorsInfo per, IConfigEditor configEditor, IAssemblyHandler LLoader) //,IWorkFlowEditor pworkFlowEditor, IClassCreator pclasscreator, IETL pETL, IAssemblyHandler passemblyHandler, IDataTypesHelper dataTypesHelper,IWorkFlowEditor workFlowEditor,IWorkFlowStepEditor workFlowStepEditor,IRuleParser ruleParser,IRulesEditor rulesEditor
+        // Simplified constructor using dependency injection pattern
+        public DMEEditor(
+            IDMLogger logger,
+            IUtil utilfunctions,
+            IErrorsInfo errorObject,
+            IConfigEditor configEditor,
+            IAssemblyHandler assemblyHandler)
         {
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            Utilfunction = utilfunctions ?? throw new ArgumentNullException(nameof(utilfunctions));
+            ErrorObject = errorObject ?? throw new ArgumentNullException(nameof(errorObject));
+            ConfigEditor = configEditor ?? throw new ArgumentNullException(nameof(configEditor));
+            this.assemblyHandler = assemblyHandler ?? throw new ArgumentNullException(nameof(assemblyHandler));
 
-            logger.WriteLog("init all variables");
-            Logger = logger;
-            Utilfunction = utilfunctions;
+            // Initialize dependent components
             Utilfunction.DME = this;
-            ConfigEditor = configEditor;
-            ErrorObject = per;
             typesHelper = new DataTypesHelper(this);
             ETL = new ETLEditor(this);
-            assemblyHandler = LLoader;
             classCreator = new ClassCreator(this);
             WorkFlowEditor = new WorkFlowEditor(this);
+
+            // Initialize helpers
             FileConnectionHelper.Initialize(this);
-            progress = new Progress<PassedArgs>(percent => {
 
-                if (!string.IsNullOrEmpty(percent.Messege))
-                {
-                    if (percent.IsError)
-                    {
-                        AddLogMessage("Beep", percent.Messege, DateTime.Now, 0, null, Errors.Failed);
-                    }
-                    else
-                        AddLogMessage("Beep", percent.Messege, DateTime.Now, 0, null, Errors.Ok);
+            // Set up progress reporting
+            progress = new Progress<PassedArgs>(ReportProgress);
 
-                }
-
-
-            });
+            // Log initialization
+            logger.WriteLog("DMEEditor initialized");
         }
 
-        public DMEEditor(
-    IDMLogger logger,
-    IUtil utilfunctions,
-    IErrorsInfo errorObject,
-    IConfigEditor configEditor,
-    IAssemblyHandler assemblyHandler,
-    IETL etl,
-    IWorkFlowEditor workFlowEditor)
+        // Helper method for progress reporting
+        private void ReportProgress(PassedArgs progress)
         {
-            Logger = logger;
-            Utilfunction = utilfunctions;
-            ErrorObject = errorObject;
-            ConfigEditor = configEditor;
-            assemblyHandler = assemblyHandler;
-            ETL = etl;
-            WorkFlowEditor = workFlowEditor;
-          
-        }
+            if (string.IsNullOrEmpty(progress.Messege))
+                return;
 
+            AddLogMessage("Beep", progress.Messege, DateTime.Now, 0, null,
+                progress.IsError ? Errors.Failed : Errors.Ok);
+        }
         #endregion "Constructor"
         #region "Default Manager"
         public List<DefaultValue> Getdefaults(string DatasourceName)
@@ -1065,32 +1170,51 @@ namespace TheTechIdea.Beep
         #endregion "Default Manager"
         //----------------- ------------------------------ -----
 
+        // Improved Dispose pattern
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (disposing)
                 {
-                    foreach (var item in DataSources)
+                    // Use safe disposal for DataSources
+                    if (DataSources != null)
                     {
-                        if(item.ConnectionStatus== ConnectionState.Open)    item.Closeconnection();
+                        foreach (var dataSource in DataSources)
+                        {
+                            try
+                            {
+                                if (dataSource?.ConnectionStatus == ConnectionState.Open)
+                                    dataSource.Closeconnection();
 
-                        item.Dispose();
+                                dataSource?.Dispose();
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger?.WriteLog($"Error disposing data source: {ex.Message}");
+                            }
+                        }
+                        DataSources.Clear();
+                        DataSources = null;
                     }
-                    ConfigEditor.Dispose();
-                    ETL.Dispose();
-                    typesHelper.Dispose();
-                    assemblyHandler.Dispose();
-                    // TODO: dispose managed state (managed objects)
+
+                    // Dispose other disposable objects safely
+                    ConfigEditor?.Dispose();
+                    ETL?.Dispose();
+                    typesHelper?.Dispose();
+                    assemblyHandler?.Dispose();
+                    WorkFlowEditor = null;
+                    classCreator = null;
+                    Utilfunction = null;
+                    Logger = null;
+                    ErrorObject = null;
+                    progress = null;
+                    ds1 = null;
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
-               
                 disposedValue = true;
             }
         }
-
         // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
         // ~DMEEditor()
         // {

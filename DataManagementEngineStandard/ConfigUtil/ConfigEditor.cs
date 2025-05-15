@@ -24,14 +24,14 @@ namespace TheTechIdea.Beep.ConfigUtil
 	public class ConfigEditor : IConfigEditor
 	{
 		private bool disposedValue;
-		/// <summary>Initializes a new instance of the ConfigEditor class.</summary>
-		/// <param name="logger">The logger object used for logging.</param>
-		/// <param name="per">The object used for error handling and reporting.</param>
-		/// <param name="jsonloader">The object used for loading JSON data.</param>
-		/// <param name="folderpath">The path to the folder containing the configuration files. If null or empty, the folder path will be set to the directory of the entry assembly.</param>
-		/// <param name="containerfolder">The name of the container folder within the folder path. If null or empty, the container folder will be the same as the folder path.</param>
-		/// <param name
-		public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader, string folderpath = null, string containerfolder = null, BeepConfigType configType = BeepConfigType.Application)
+        /// <summary>Initializes a new instance of the ConfigEditor class.</summary>
+        /// <param name="logger">The logger object used for logging.</param>
+        /// <param name="per">The object used for error handling and reporting.</param>
+        /// <param name="jsonloader">The object used for loading JSON data.</param>
+        /// <param name="folderpath">The path to the folder containing the configuration files. If null or empty, the folder path will be set to the directory of the entry assembly.</param>
+        /// <param name="containerfolder">The name of the container folder within the folder path. If null or empty, the container folder will be the same as the folder path.</param>
+        /// <param name="configType">The type of configuration being edited.</param>
+        public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader, string folderpath = null, string containerfolder = null, BeepConfigType configType = BeepConfigType.Application)
 		{
 			Logger = logger;
 			ErrorObject = per;
@@ -186,48 +186,43 @@ namespace TheTechIdea.Beep.ConfigUtil
 		/// <summary>Gets or sets the list of loaded assemblies.</summary>
 		/// <value>The list of loaded assemblies.</value>
 		public List<Assembly> LoadedAssemblies { get; set; } = new List<Assembly>();
-		#endregion "Properties"
-		#region "Drivers"
-		/// <summary>Adds a driver to the connection drivers configuration.</summary>
-		/// <param name="dr">The driver to add.</param>
-		/// <returns>The index at which the driver was added.</returns>
-		public int AddDriver(ConnectionDriversConfig dr)
-		{
-			if (dr == null)
-			{
-				return -1;
-			}
-			if (string.IsNullOrEmpty(dr.PackageName))
-			{
-				return -1;
-			}
-			ConnectionDriversConfig founddr = null;
-			if (DataDriversClasses.Count == 0)
-			{
-				DataDriversClasses.Add(dr);
-				return 0;
-			}
-			int idx = DataDriversClasses.FindIndex(c => c.PackageName.Equals(dr.PackageName, StringComparison.InvariantCultureIgnoreCase) && c.version == dr.version);
-			if (idx >= 0)
-			{
-				return idx;
+        #endregion "Properties"
+        #region "Drivers"
+        /// <summary>Adds a driver to the connection drivers configuration.</summary>
+        /// <param name="dr">The driver to add.</param>
+        /// <returns>The index at which the driver was added.</returns>
+        public int AddDriver(ConnectionDriversConfig dr)
+        {
+            if (dr == null || string.IsNullOrEmpty(dr.PackageName))
+                return -1;
 
-			}
-			idx = DataDriversClasses.FindIndex(c => c.PackageName.Equals(dr.PackageName, StringComparison.InvariantCultureIgnoreCase));
-			if (idx > -1)
-			{
-				founddr = DataDriversClasses[idx];
-				founddr.version = dr.version;
-				return idx;
-			}
-			return -1;
-		}
-		#endregion "Drivers"
-		#region "Scripts and logs L/S"
-		/// <summary>Saves the values of ETL scripts to a JSON file.</summary>
-		/// <param name="Scripts">The ETLScriptHDR object containing the scripts to be saved.</param>
-		/// <remarks>The values of the ETL scripts are serialized and saved to a JSON file located at the specified path.</remarks>
-		public void SaveScriptsValues(ETLScriptHDR Scripts)
+            if (DataDriversClasses.Count == 0)
+            {
+                DataDriversClasses.Add(dr);
+                return 0;
+            }
+
+            int idx = DataDriversClasses.FindIndex(c => c.PackageName.Equals(dr.PackageName, StringComparison.InvariantCultureIgnoreCase) && c.version == dr.version);
+            if (idx >= 0)
+                return idx;
+
+            idx = DataDriversClasses.FindIndex(c => c.PackageName.Equals(dr.PackageName, StringComparison.InvariantCultureIgnoreCase));
+            if (idx > -1)
+            {
+                DataDriversClasses[idx].version = dr.version;
+                return idx;
+            }
+
+            // This is the bug fix - need to add driver if not found
+            DataDriversClasses.Add(dr);
+            return DataDriversClasses.Count - 1;
+        }
+        #endregion "Drivers"
+        #region "Scripts and logs L/S"
+        /// <summary>Saves the values of ETL scripts to a JSON file.</summary>
+        /// <param name="Scripts">The ETLScriptHDR object containing the scripts to be saved.</param>
+        /// <remarks>The values of the ETL scripts are serialized and saved to a JSON file located at the specified path.</remarks>
+        public void SaveScriptsValues(ETLScriptHDR Scripts)
 		{
 			string path = Path.Combine(Config.ScriptsPath, "Scripts.json");
 			JsonLoader.Serialize(path, Scripts);
@@ -242,39 +237,38 @@ namespace TheTechIdea.Beep.ConfigUtil
 			return Scripts;
 		}
 
-		#endregion "Reports L/S"
-		#region "Reading and writing Query files"
-		/// <summary>Generates a SQL query based on the specified parameters.</summary>
-		/// <param name="CmdType">The type of SQL command.</param>
-		/// <param name="TableName">The name of the table.</param>
-		/// <param name="SchemaName">The name of the schema.</param>
-		/// <param name="Filterparamters">The filter parameters for the query.</param>
-		/// <param name="QueryList">The list of query SQL repositories.</param>
-		/// <param name="DatabaseType">The type of the database.</param>
-		/// <returns>A formatted SQL query string.</returns>
-		public string GetSql(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType) //string TableName,string SchemaName
-		{
-			var ret = (from a in QueryList
-					   where a.DatabaseType == DatabaseType
-					   where a.Sqltype == CmdType
-					   select a.Sql).FirstOrDefault();
+        #endregion "Reports L/S"
+        #region "Reading and writing Query files"
+        /// <summary>Generates a SQL query based on the specified parameters.</summary>
+        /// <param name="CmdType">The type of SQL command.</param>
+        /// <param name="TableName">The name of the table.</param>
+        /// <param name="SchemaName">The name of the schema.</param>
+        /// <param name="Filterparamters">The filter parameters for the query.</param>
+        /// <param name="QueryList">The list of query SQL repositories.</param>
+        /// <param name="DatabaseType">The type of the database.</param>
+        /// <returns>A formatted SQL query string.</returns>
+        public string GetSql(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType)
+        {
+            var ret = (from a in QueryList
+                       where a.DatabaseType == DatabaseType
+                       where a.Sqltype == CmdType
+                       select a.Sql).FirstOrDefault();
 
-			if(ret == null)
-			{
+            if (ret == null)
                 return "";
-            }
-			return String.Format(ret, TableName, SchemaName, Filterparamters); ;
 
-		}
-		/// <summary>Retrieves a list of SQL queries based on the specified parameters.</summary>
-		/// <param name="CmdType">The type of SQL command.</param>
-		/// <param name="TableName">The name of the table.</param>
-		/// <param name="SchemaName">The name of the schema.</param>
-		/// <param name="Filterparamters">The filter parameters.</param>
-		/// <param name="QueryList">The list of QuerySqlRepo objects.</param>
-		/// <param name="DatabaseType">The type of the database.</param>
-		/// <returns>A list of SQL queries.</returns>
-		public List<string> GetSqlList(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType) //string TableName,string SchemaName
+            // Remove the extra semicolon at the end
+            return String.Format(ret, TableName, SchemaName, Filterparamters);
+        }
+        /// <summary>Retrieves a list of SQL queries based on the specified parameters.</summary>
+        /// <param name="CmdType">The type of SQL command.</param>
+        /// <param name="TableName">The name of the table.</param>
+        /// <param name="SchemaName">The name of the schema.</param>
+        /// <param name="Filterparamters">The filter parameters.</param>
+        /// <param name="QueryList">The list of QuerySqlRepo objects.</param>
+        /// <param name="DatabaseType">The type of the database.</param>
+        /// <returns>A list of SQL queries.</returns>
+        public List<string> GetSqlList(Sqlcommandtype CmdType, string TableName, string SchemaName, string Filterparamters, List<QuerySqlRepo> QueryList, DataSourceType DatabaseType) //string TableName,string SchemaName
 		{
 			var ret = (from a in QueryList
 					   where a.DatabaseType == DatabaseType
@@ -859,51 +853,16 @@ namespace TheTechIdea.Beep.ConfigUtil
 
         private void CopyConnectionProperties(ConnectionProperties source, ConnectionProperties target)
         {
-            target.ID = source.ID;
-            target.ConnectionName = source.ConnectionName;
-            target.UserID = source.UserID;
-            target.Password = source.Password;
-            target.ConnectionString = source.ConnectionString;
-            target.Host = source.Host;
-            target.Port = source.Port;
-            target.Database = source.Database;
-            target.Parameters = source.Parameters;
-            target.SchemaName = source.SchemaName;
-            target.OracleSIDorService = source.OracleSIDorService;
-            target.Delimiter = source.Delimiter;
-            target.Ext = source.Ext;
-            target.DatabaseType = source.DatabaseType;
-            target.Category = source.Category;
-            target.DriverName = source.DriverName;
-            target.DriverVersion = source.DriverVersion;
-            target.FilePath = source.FilePath;
-            target.FileName = source.FileName;
-            target.Drawn = source.Drawn;
-            target.CertificatePath = source.CertificatePath;
-            target.Url = source.Url;
-            target.Databases = source.Databases;
-            target.ApiKey = source.ApiKey;
-            target.Entities = source.Entities;
-            target.KeyToken = source.KeyToken;
-            target.Headers = source.Headers;
-            target.CompositeLayerName = source.CompositeLayerName;
-            target.DatasourceDefaults = source.DatasourceDefaults;
-            target.Favourite = source.Favourite;
-            target.GuidID = source.GuidID;
-            target.IsLocal = source.IsLocal;
-            target.IsRemote = source.IsRemote;
-            target.IsWebApi = source.IsWebApi;
-            target.IsFile = source.IsFile;
-            target.IsDatabase = source.IsDatabase;
-            target.IsComposite = source.IsComposite;
-            target.IsCloud = source.IsCloud;
-            target.IsFavourite = source.IsFavourite;
-            target.IsDefault = source.IsDefault;
-            target.IsInMemory = source.IsInMemory;
-            target.Timeout = source.Timeout;
-            target.HttpMethod = source.HttpMethod;
-        }
+            // Instead of manual property-by-property copying, consider:
+            var properties = typeof(ConnectionProperties).GetProperties()
+                .Where(p => p.CanWrite && p.CanRead);
 
+            foreach (var prop in properties)
+            {
+                var value = prop.GetValue(source);
+                prop.SetValue(target, value);
+            }
+        }
         /// <summary>Removes a connection from the list of data connections by its name.</summary>
         /// <param name="pname">The name of the connection to remove.</param>
         /// <returns>True if the connection was successfully removed, false otherwise.</returns>
@@ -934,30 +893,30 @@ namespace TheTechIdea.Beep.ConfigUtil
 
 			return DataConnections.Remove(DataConnections[i]);
 		}
-		/// <summary>Removes a connection from the list of data connections based on its GuidID.</summary>
-		/// <param name="GuidID">The GuidID of the connection to be removed.</param>
-		/// <returns>True if the connection was successfully removed, false otherwise.</returns>
-		public bool RemoveConnByGuidID(string GuidID)
-		{
-			if (DataConnections == null)
-			{
-				DataConnections = new List<ConnectionProperties>();
-				return false;
+        /// <summary>Removes a connection from the list of data connections based on its GuidID.</summary>
+        /// <param name="GuidID">The GuidID of the connection to be removed.</param>
+        /// <returns>True if the connection was successfully removed, false otherwise.</returns>
+        public bool RemoveConnByGuidID(string GuidID)
+        {
+            if (DataConnections == null || string.IsNullOrEmpty(GuidID))
+                return false;
 
-			}
-			int i = DataConnections.FindIndex(x => x.GuidID.Equals(GuidID, StringComparison.InvariantCultureIgnoreCase));
-			return DataConnections.Remove(DataConnections[i]);
-		}
+            int i = DataConnections.FindIndex(x => x.GuidID.Equals(GuidID, StringComparison.InvariantCultureIgnoreCase));
+            if (i < 0)
+                return false;
 
-		/// <summary>Removes a data connection with the specified name.</summary>
-		/// <param name="pname">The name of the data connection to remove.</param>
-		/// <returns>True if the data connection was successfully removed, false otherwise.</returns>
-		/// <remarks>
-		/// If the list of data connections is null, a new list is created and false is returned.
-		/// The method then saves the updated data connections and returns true.
-		/// If an exception occurs during the process, the exception message is stored in a variable and false is returned.
-		/// </remarks>
-		public bool RemoveDataConnection(string pname)
+            return DataConnections.Remove(DataConnections[i]);
+        }
+
+        /// <summary>Removes a data connection with the specified name.</summary>
+        /// <param name="pname">The name of the data connection to remove.</param>
+        /// <returns>True if the data connection was successfully removed, false otherwise.</returns>
+        /// <remarks>
+        /// If the list of data connections is null, a new list is created and false is returned.
+        /// The method then saves the updated data connections and returns true.
+        /// If an exception occurs during the process, the exception message is stored in a variable and false is returned.
+        /// </remarks>
+        public bool RemoveDataConnection(string pname)
 		{
 
 			try
@@ -2363,16 +2322,52 @@ namespace TheTechIdea.Beep.ConfigUtil
 
 			return DMEEditor.ErrorObject;
 		}
-		#endregion"Defaults"
-		//----------------------------------------------------------------------------------------------
-		/// <summary>Initializes the application.</summary>
-		/// <returns>An object containing information about any errors that occurred during initialization.</returns>
-		/// <remarks>
-		/// This method initializes various configuration settings, connection drivers, data source drivers, and database types.
-		/// If an exception occurs during initialization, the method sets the ErrorObject's Flag to indicate failure,
-		/// stores the exception in the ErrorObject's Ex property, and logs an error message.
-		/// </remarks>
-		public IErrorsInfo Init()
+        #endregion"Defaults"
+        #region "Serialization"
+        private void SerializeToFile<T>(string path, T obj)
+        {
+            try
+            {
+                CreateDir(Path.GetDirectoryName(path));
+                JsonLoader.Serialize(path, obj);
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLog($"Error serializing to {path}: {ex.Message}");
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+            }
+        }
+
+        private T DeserializeFromFile<T>(string path) where T : new()
+        {
+            try
+            {
+                if (!File.Exists(path))
+                    return new T();
+
+                return JsonLoader.DeserializeSingleObject<T>(path);
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLog($"Error deserializing from {path}: {ex.Message}");
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+                return new T();
+            }
+        }
+        #endregion "Serialization"
+        //----------------------------------------------------------------------------------------------
+        /// <summary>Initializes the application.</summary>
+        /// <returns>An object containing information about any errors that occurred during initialization.</returns>
+        /// <remarks>
+        /// This method initializes various configuration settings, connection drivers, data source drivers, and database types.
+        /// If an exception occurs during initialization, the method sets the ErrorObject's Flag to indicate failure,
+        /// stores the exception in the ErrorObject's Ex property, and logs an error message.
+        /// </remarks>
+        public IErrorsInfo Init()
 		{
 			ErrorObject.Flag = Errors.Ok;
 			Logger.WriteLog($"Initlization Values and Lists");
@@ -2411,61 +2406,248 @@ namespace TheTechIdea.Beep.ConfigUtil
 			}
 			return ErrorObject;
 		}
-		protected virtual void Dispose(bool disposing)
-		{
-			if (!disposedValue)
-			{
-				if (disposing)
-				{
-					// TODO: dispose managed state (managed objects)
-					QueryList = null;
-					//DriverDefinitionsConfig = null;
-					DataConnections = null;
-					WorkFlows = null;
-					CategoryFolders = null;
-					BranchesClasses = null;
-					GlobalFunctions = null;
-					AppWritersClasses = null;
-					AppComponents = null;
-					ReportWritersClasses = null;
-					PrintManagers = null;
-					DataSourcesClasses = null;
-					WorkFlowActions = null;
-					WorkFlowEditors = null;
-					WorkFlowSteps = null;
-					WorkFlowStepEditors = null;
-					FunctionExtensions = null;
-					Addins = null;
-					Others = null;
-					Rules = null;
-					AddinTreeStructure = null;
-					Function2Functions = null;
-					objectTypes = null;
-					Events = null;
-					ReportsDefinition = null;
-					Reportslist = null;
-					AIScriptslist = null;
-					CompositeQueryLayers = null;
-					EntityCreateObjects = null;
-					DataTypesMap = null;
-					Entities = null;
-					DataDriversClasses = null;
+        /// <summary>
+        /// Releases the unmanaged resources used by the ConfigEditor and optionally releases the managed resources.
+        /// </summary>
+        /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // Clear all collections properly without using ref
+                    if (QueryList != null)
+                    {
+                        QueryList.Clear();
+                        QueryList = null;
+                    }
 
-				}
+                    if (DataConnections != null)
+                    {
+                        DataConnections.Clear();
+                        DataConnections = null;
+                    }
 
-				// TODO: free unmanaged resources (unmanaged objects) and override finalizer
-				// TODO: set large fields to null
-				disposedValue = true;
-			}
-		}
+                    if (WorkFlows != null)
+                    {
+                        WorkFlows.Clear();
+                        WorkFlows = null;
+                    }
 
-		// // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-		// ~ConfigEditor()
-		// {
-		//     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-		//     Dispose(disposing: false);
-		// }
-		public void Dispose()
+                    if (CategoryFolders != null)
+                    {
+                        CategoryFolders.Clear();
+                        CategoryFolders = null;
+                    }
+
+                    if (ViewModels != null)
+                    {
+                        ViewModels.Clear();
+                        ViewModels = null;
+                    }
+
+                    if (BranchesClasses != null)
+                    {
+                        BranchesClasses.Clear();
+                        BranchesClasses = null;
+                    }
+
+                    if (GlobalFunctions != null)
+                    {
+                        GlobalFunctions.Clear();
+                        GlobalFunctions = null;
+                    }
+
+                    if (AppWritersClasses != null)
+                    {
+                        AppWritersClasses.Clear();
+                        AppWritersClasses = null;
+                    }
+
+                    if (AppComponents != null)
+                    {
+                        AppComponents.Clear();
+                        AppComponents = null;
+                    }
+
+                    if (ReportWritersClasses != null)
+                    {
+                        ReportWritersClasses.Clear();
+                        ReportWritersClasses = null;
+                    }
+
+                    if (PrintManagers != null)
+                    {
+                        PrintManagers.Clear();
+                        PrintManagers = null;
+                    }
+
+                    if (DataSourcesClasses != null)
+                    {
+                        DataSourcesClasses.Clear();
+                        DataSourcesClasses = null;
+                    }
+
+                    if (WorkFlowActions != null)
+                    {
+                        WorkFlowActions.Clear();
+                        WorkFlowActions = null;
+                    }
+
+                    if (WorkFlowEditors != null)
+                    {
+                        WorkFlowEditors.Clear();
+                        WorkFlowEditors = null;
+                    }
+
+                    if (WorkFlowSteps != null)
+                    {
+                        WorkFlowSteps.Clear();
+                        WorkFlowSteps = null;
+                    }
+
+                    if (WorkFlowStepEditors != null)
+                    {
+                        WorkFlowStepEditors.Clear();
+                        WorkFlowStepEditors = null;
+                    }
+
+                    if (FunctionExtensions != null)
+                    {
+                        FunctionExtensions.Clear();
+                        FunctionExtensions = null;
+                    }
+
+                    if (Addins != null)
+                    {
+                        Addins.Clear();
+                        Addins = null;
+                    }
+
+                    if (Others != null)
+                    {
+                        Others.Clear();
+                        Others = null;
+                    }
+
+                    if (Rules != null)
+                    {
+                        Rules.Clear();
+                        Rules = null;
+                    }
+
+                    if (AddinTreeStructure != null)
+                    {
+                        AddinTreeStructure.Clear();
+                        AddinTreeStructure = null;
+                    }
+
+                    if (Function2Functions != null)
+                    {
+                        Function2Functions.Clear();
+                        Function2Functions = null;
+                    }
+
+                    if (objectTypes != null)
+                    {
+                        objectTypes.Clear();
+                        objectTypes = null;
+                    }
+
+                    if (Events != null)
+                    {
+                        Events.Clear();
+                        Events = null;
+                    }
+
+                    if (ReportsDefinition != null)
+                    {
+                        ReportsDefinition.Clear();
+                        ReportsDefinition = null;
+                    }
+
+                    if (Reportslist != null)
+                    {
+                        Reportslist.Clear();
+                        Reportslist = null;
+                    }
+
+                    if (AIScriptslist != null)
+                    {
+                        AIScriptslist.Clear();
+                        AIScriptslist = null;
+                    }
+
+                    if (CompositeQueryLayers != null)
+                    {
+                        CompositeQueryLayers.Clear();
+                        CompositeQueryLayers = null;
+                    }
+
+                    if (EntityCreateObjects != null)
+                    {
+                        EntityCreateObjects.Clear();
+                        EntityCreateObjects = null;
+                    }
+
+                    if (DataTypesMap != null)
+                    {
+                        DataTypesMap.Clear();
+                        DataTypesMap = null;
+                    }
+
+                    if (LoadedAssemblies != null)
+                    {
+                        LoadedAssemblies.Clear();
+                        LoadedAssemblies = null;
+                    }
+
+                    if (DataDriversClasses != null)
+                    {
+                        DataDriversClasses.Clear();
+                        DataDriversClasses = null;
+                    }
+
+                    if (Projects != null)
+                    {
+                        Projects.Clear();
+                        Projects = null;
+                    }
+
+                    if (Entities != null)
+                    {
+                        Entities.Clear();
+                        Entities = null;
+                    }
+
+                    // Clear other disposable resources
+                    if (JsonLoader is IDisposable disposableLoader)
+                    {
+                        disposableLoader.Dispose();
+                    }
+
+                    JsonLoader = null;
+                    Config = null;
+                    Logger = null;
+                    ErrorObject = null;
+
+                    // Clear string properties
+                    ExePath = null;
+                    ConfigPath = null;
+                    ContainerName = null;
+                }
+
+                disposedValue = true;
+            }
+        }
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~ConfigEditor()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+        public void Dispose()
 		{
 			// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
 			Dispose(disposing: true);
