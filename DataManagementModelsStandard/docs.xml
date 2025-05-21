@@ -196,6 +196,82 @@
             <param name="predicate">Search predicate function</param>
             <returns>Number of items found</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.Enums.DynamicEnumEntry">
+            <summary>
+            Represents one entry in DynamicEnum.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Enums.DynamicEnum">
+            <summary>
+            A thread-safe, fully featured dynamic enum replacement with flag support, serialization, events, descriptions, and data binding.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Enums.DynamicEnum.Add(System.String,System.Int32,System.String)">
+            <summary>
+            Add or update entry by name and value.
+            Throws if duplicate value for different name.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Enums.DynamicEnum.Remove(System.String)">
+            <summary>
+            Remove entry by name.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Enums.DynamicEnum.Clear">
+            <summary>
+            Clear all entries and reset default to None=0.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Enums.DynamicEnumJsonConverter">
+            <summary>
+            Custom JSON converter for DynamicEnum to handle serialization/deserialization properly.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Enums.EnumExtensions.ToEnum``1(TheTechIdea.Beep.Enums.DynamicEnum,System.String)">
+            <summary>
+            Converts a DynamicEnum value to an enum of type T.
+            </summary>
+            <typeparam name="T">The enum type to convert to</typeparam>
+            <param name="dynamicEnum">The DynamicEnum instance</param>
+            <param name="valueName">The name of the value to convert</param>
+            <returns>The enum value of type T</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Enums.EnumExtensions.TryToEnum``1(TheTechIdea.Beep.Enums.DynamicEnum,System.String,``0@)">
+            <summary>
+            Attempts to convert a DynamicEnum value to an enum of type T.
+            </summary>
+            <typeparam name="T">The enum type to convert to</typeparam>
+            <param name="dynamicEnum">The DynamicEnum instance</param>
+            <param name="valueName">The name of the value to convert</param>
+            <param name="result">When successful, contains the converted enum value</param>
+            <returns>True if conversion succeeded, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Enums.EnumExtensions.CreateEnumMapping``1(TheTechIdea.Beep.Enums.DynamicEnum)">
+            <summary>
+            Creates a dictionary mapping between a standard enum and DynamicEnum.
+            Useful when you need to maintain relationships between them.
+            </summary>
+            <typeparam name="T">The enum type</typeparam>
+            <param name="dynamicEnum">The DynamicEnum instance</param>
+            <returns>Dictionary mapping enum values to their dynamic counterparts</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Enums.EnumExtensions.ToValueDictionary``1(TheTechIdea.Beep.Enums.DynamicEnum,System.Func{TheTechIdea.Beep.Enums.DynamicEnumEntry,``0})">
+            <summary>
+            Adds DynamicEnum entries to a dictionary that can be used in switch statements
+            or other places where enums are expected.
+            </summary>
+            <typeparam name="TResult">The result type of the dictionary values</typeparam>
+            <param name="dynamicEnum">The DynamicEnum instance</param>
+            <param name="valueFactory">Function to create a value for each entry</param>
+            <returns>Dictionary mapping int values to results</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Enums.EnumExtensions.CreateDynamicSwitch(TheTechIdea.Beep.Enums.DynamicEnum)">
+            <summary>
+            Creates a switch-like function that maps DynamicEnum values to actions
+            </summary>
+            <param name="dynamicEnum">The DynamicEnum instance</param>
+            <returns>A function that executes the appropriate action for a given enum value</returns>
+        </member>
         <member name="T:TheTechIdea.Beep.Utilities.CloudProviderType">
             <summary>
             Cloud provider types supported by the class creator
