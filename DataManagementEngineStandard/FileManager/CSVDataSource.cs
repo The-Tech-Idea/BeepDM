@@ -62,33 +62,21 @@ namespace TheTechIdea.Beep.FileManager
             Category = DatasourceCategory.FILE;
             FileName = Dataconnection.ConnectionProp.FileName;
             FilePath = Dataconnection.ConnectionProp.FilePath;
-
-            // Check for custom delimiter in connection properties
-            if (Dataconnection.ConnectionProp != null )
+            string fullPath = Path.Combine(FilePath, FileName);
+            if (File.Exists(fullPath))
             {
-                // Use Delimiter directly as a char instead of accessing it as a string
-                if (Dataconnection.ConnectionProp.Delimiter != '\0')  // Check if delimiter is set
-                {
-                    Delimiter = Dataconnection.ConnectionProp.Delimiter;
-                }
-                else
-                {
-                    Delimiter = ','; // Default to comma
-                }
+                Delimiter = DetectDelimiter(fullPath);
             }
             else
             {
-                // Auto-detect delimiter
-                string fullPath = Path.Combine(FilePath, FileName);
-                if (File.Exists(fullPath))
-                {
-                    Delimiter = DetectDelimiter(fullPath);
-                }
-                else
-                {
-                    Delimiter = ','; // Default to comma
-                }
+                Delimiter = ','; // Default to comma
             }
+            Dataconnection.ConnectionProp.Delimiter = Delimiter;
+            // Save the updated delimiter back to the connection properties
+            DMEEditor.ConfigEditor.DataConnections.Where(c => c.FileName == datasourcename).FirstOrDefault().Delimiter = Delimiter;
+            DMEEditor.ConfigEditor.SaveDataconnectionsValues();
+            // Check for custom delimiter in connection properties
+           
 
             if (Openconnection() == ConnectionState.Open)
             {
@@ -460,7 +448,7 @@ namespace TheTechIdea.Beep.FileManager
 
                 // Initialize the CSV reader
                 fieldParser = new CsvTextFieldParser(Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName));
-                fieldParser.SetDelimiter(',');
+                fieldParser.SetDelimiter(Delimiter);
                 if(nrofrows == 0)
                 {
                     nrofrows = dataTable.Rows.Count ;
@@ -529,7 +517,7 @@ namespace TheTechIdea.Beep.FileManager
                 if (Entities != null)
                 {
                    fieldParser = new CsvTextFieldParser(Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName));
-                   fieldParser.SetDelimiter(',');
+                   fieldParser.SetDelimiter(Delimiter);
 
                   
                     Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
@@ -1859,7 +1847,7 @@ namespace TheTechIdea.Beep.FileManager
             try
             {
                 CsvTextFieldParser fieldParser = new CsvTextFieldParser(Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName));
-                fieldParser.SetDelimiter(',');
+                fieldParser.SetDelimiter(Delimiter);
                 fieldParser.WriteEntityStructureToFile(DMEEditor, Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName), UploadData);
                 
             }
@@ -2234,34 +2222,21 @@ namespace TheTechIdea.Beep.FileManager
                     if (string.IsNullOrEmpty(firstLine))
                         return ','; // Default to comma
 
-                    // Count potential delimiters
-                    int commaCount = firstLine.Count(c => c == ',');
-                    int semicolonCount = firstLine.Count(c => c == ';');
-                    int tabCount = firstLine.Count(c => c == '\t');
-                    int pipeCount = firstLine.Count(c => c == '|');
-
-                    // Return the most frequent delimiter
-                    char mostFrequentDelimiter = ',';
-                    int maxCount = commaCount;
-
-                    if (semicolonCount > maxCount)
+                    // Only count delimiters outside of quotes
+                    Func<char, int> countDelimiter = (delim) =>
                     {
-                        mostFrequentDelimiter = ';';
-                        maxCount = semicolonCount;
-                    }
+                        bool inQuotes = false;
+                        int count = 0;
+                        foreach (char c in firstLine)
+                        {
+                            if (c == '\"') inQuotes = !inQuotes;
+                            else if (c == delim && !inQuotes) count++;
+                        }
+                        return count;
+                    };
 
-                    if (tabCount > maxCount)
-                    {
-                        mostFrequentDelimiter = '\t';
-                        maxCount = tabCount;
-                    }
-
-                    if (pipeCount > maxCount)
-                    {
-                        mostFrequentDelimiter = '|';
-                    }
-
-                    return mostFrequentDelimiter;
+                    var delimiters = new[] { ',', ';', '\t', '|' };
+                    return delimiters.OrderByDescending(d => countDelimiter(d)).First();
                 }
             }
             catch
