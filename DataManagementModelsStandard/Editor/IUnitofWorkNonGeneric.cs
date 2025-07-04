@@ -31,10 +31,11 @@ namespace TheTechIdea.Beep.Editor
         ObservableBindingList<Entity> Units { get; set; }
 
         Dictionary<int, string> UpdatedKeys { get; set; }
-
+        // commit methods
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         Task<IErrorsInfo> Commit();
         Task<IErrorsInfo> Rollback();
+
         void Add(Entity entity);
         void New();
         ErrorsInfo Delete(string id);

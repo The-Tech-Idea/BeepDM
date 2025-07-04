@@ -37,12 +37,10 @@ namespace TheTechIdea.Beep.Editor
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         Task<IErrorsInfo> Commit();
         Task<IErrorsInfo> Rollback();
-        void Add(T entity);
-        void New();
+     
         T Read(Func<T, bool> predicate);
         Task<ObservableBindingList<T>> MultiRead(Func<T, bool> predicate);
-        ErrorsInfo Update(Func<T, bool> predicate, T updatedEntity);
-        ErrorsInfo Delete(Func<T, bool> predicate);
+   
         void UndoLastChange();
         int DocExist(T doc);
         int DocExistByKey(T doc);
@@ -73,10 +71,15 @@ namespace TheTechIdea.Beep.Editor
          void MovePrevious();
          void MoveLast();
          void MoveTo(int index);
+
+        // Crud Operations
+        ErrorsInfo Update(Func<T, bool> predicate, T updatedEntity);
+        ErrorsInfo Delete(Func<T, bool> predicate);
+        void Add(T entity);
+        void New();
         Task<IErrorsInfo> UpdateAsync(T doc);
         Task<IErrorsInfo> InsertAsync(T doc);
         Task<IErrorsInfo> DeleteAsync(T doc);
-
         IErrorsInfo InsertDoc(T doc);
         IErrorsInfo UpdateDoc(T doc);
         IErrorsInfo DeleteDoc(T doc);

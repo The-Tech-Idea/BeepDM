@@ -2242,37 +2242,6 @@
             <param name="entity">The entity to find the Idnetity of.</param>
             <returns>The Identity of the entity in the list of units. Returns -1 if the list is not valid.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.UpdateAsync(`0)">
-            <summary>Updates a document asynchronously.</summary>
-            <param name="doc">The document to be updated.</param>
-            <returns>An object containing information about any errors that occurred during the update.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.InsertAsync(`0)">
-            <summary>Inserts a document asynchronously.</summary>
-            <param name="doc">The document to be inserted.</param>
-            <returns>An object containing information about any errors that occurred during the insertion process.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.DeleteAsync(`0)">
-            <summary>Deletes a document asynchronously.</summary>
-            <param name="doc">The document to be deleted.</param>
-            <returns>An object containing information about any errors that occurred during the deletion process.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.InsertDoc(`0)">
-            <summary>Inserts a document into the data source.</summary>
-            <typeparam name="T">The type of the document.</typeparam>
-            <param name="doc">The document to insert.</param>
-            <returns>An object containing information about any errors that occurred during the insertion.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.UpdateDoc(`0)">
-            <summary>Updates a document and returns information about any errors that occurred.</summary>
-            <param name="doc">The document to update.</param>
-            <returns>An object containing information about any errors that occurred during the update.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.DeleteDoc(`0)">
-            <summary>Deletes a document and returns information about any errors that occurred.</summary>
-            <param name="doc">The document to delete.</param>
-            <returns>An object containing information about any errors that occurred during the deletion process.</returns>
-        </member>
         <member name="M:TheTechIdea.Beep.Editor.UnitofWork`1.New">
             <summary>Adds a new entity to the collection and subscribes to its PropertyChanged event.</summary>
             <param name="entity">The entity to be added.</param>
