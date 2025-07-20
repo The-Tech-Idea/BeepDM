@@ -37,12 +37,10 @@ namespace TheTechIdea.Beep.Editor
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         Task<IErrorsInfo> Commit();
         Task<IErrorsInfo> Rollback();
-        void Add(T entity);
-        void New();
+     
         T Read(Func<T, bool> predicate);
         Task<ObservableBindingList<T>> MultiRead(Func<T, bool> predicate);
-        ErrorsInfo Update(Func<T, bool> predicate, T updatedEntity);
-        ErrorsInfo Delete(Func<T, bool> predicate);
+   
         void UndoLastChange();
         int DocExist(T doc);
         int DocExistByKey(T doc);
@@ -56,34 +54,48 @@ namespace TheTechIdea.Beep.Editor
         Task<ObservableBindingList<T>> Get(List<AppFilter> filters);
         IEnumerable<T> GetDeletedEntities();
         T Get(int key);
+        T Read(string id);
+
+
         object GetIDValue(T entity);
         int Getindex(string id);
         int Getindex(T entity);
         IEnumerable<int> GetModifiedEntities();
         int GetPrimaryKeySequence(T doc);
         int GetSeq(string SeqName);
-        T Read(string id);
+     
         T GetItemFroCurrentList(int index);
 
         Tracking GetTrackingITem(T item);
-        Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
-        bool SaveLog(string pathandname);
+    //    Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
+    //    bool SaveLog(string pathandname);
         void MoveFirst();
          void MoveNext();
          void MovePrevious();
          void MoveLast();
          void MoveTo(int index);
+
+        // Crud Operations
+        ErrorsInfo Update(Func<T, bool> predicate, T updatedEntity);
+        ErrorsInfo Delete(Func<T, bool> predicate);
+     
+        void New();
+        
         Task<IErrorsInfo> UpdateAsync(T doc);
         Task<IErrorsInfo> InsertAsync(T doc);
         Task<IErrorsInfo> DeleteAsync(T doc);
 
-        IErrorsInfo InsertDoc(T doc);
-        IErrorsInfo UpdateDoc(T doc);
-        IErrorsInfo DeleteDoc(T doc);
+        // duplicate ----------- needs refactoring
+        //void Add(T entity);
+        //IErrorsInfo InsertDoc(T doc);
+        //IErrorsInfo UpdateDoc(T doc);
+        //IErrorsInfo Update(T entity);
+        //IErrorsInfo DeleteDoc(T doc);
+        //IErrorsInfo Delete(T doc);
+        //----------------------
+
         IErrorsInfo Delete(string id);
-        IErrorsInfo Delete(T doc);
         IErrorsInfo Delete();
-        IErrorsInfo Update(T entity);
         IErrorsInfo Update(string id, T entity);
 
         event EventHandler<UnitofWorkParams> PreDelete;

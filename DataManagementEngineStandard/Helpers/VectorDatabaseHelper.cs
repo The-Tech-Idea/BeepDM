@@ -67,6 +67,8 @@ namespace TheTechIdea.Beep.Helpers
                     command = GenerateVespaCommand(operationType, parameters);
                     break;
 
+               
+
                 default:
                     command = $"Unsupported vector database: {dataSourceType}";
                     break;
@@ -129,6 +131,7 @@ namespace TheTechIdea.Beep.Helpers
                 case DataSourceType.Vespa:
                     return "GET /document/v1/";
 
+
                 default:
                     return $"Unsupported vector database: {dataSourceType}";
             }
@@ -183,6 +186,7 @@ namespace TheTechIdea.Beep.Helpers
                 case DataSourceType.Vespa:
                     query = $"{{\"yql\": \"select * from {collectionName} where nearestNeighbor(embedding, vector_field)\", \"input.query(vector_field)\": [VECTOR_PLACEHOLDER], \"hits\": {topK}}}";
                     break;
+
 
                 default:
                     query = $"Unsupported vector database: {dataSourceType}";
@@ -311,6 +315,30 @@ namespace TheTechIdea.Beep.Helpers
             return "ShapVector commands not yet implemented";
         }
 
+        private static string GenerateMyVectorDBCommand(VectorDatabaseOperation operationType, Dictionary<string, object> parameters) // NEW
+        {
+            string collection = parameters.ContainsKey("collection") ? parameters["collection"].ToString() : "default";
+
+            switch (operationType)
+            {
+                case VectorDatabaseOperation.CreateCollection:
+                    return $"CREATE COLLECTION {collection}";
+
+                case VectorDatabaseOperation.DeleteCollection:
+                    return $"DROP COLLECTION {collection}";
+
+                case VectorDatabaseOperation.AddVectors:
+                    return $"INSERT INTO {collection} VALUES ([VECTORS])";
+
+                case VectorDatabaseOperation.QueryVectors:
+                    int topK = parameters.ContainsKey("topK") ? Convert.ToInt32(parameters["topK"]) : 10;
+                    return $"SELECT * FROM {collection} ORDER BY SIMILARITY([QUERY_VECTOR]) DESC LIMIT {topK}";
+
+                default:
+                    return $"Unsupported operation: {operationType} for MyVectorDB";
+            }
+        }
+
         /// <summary>
         /// Creates a list of QuerySqlRepo objects for vector databases.
         /// </summary>
@@ -382,6 +410,7 @@ namespace TheTechIdea.Beep.Helpers
         new QuerySqlRepo(DataSourceType.Vespa, "GET /document/v1", Sqlcommandtype.getlistoftables)
     });
 
+   
             return repos;
         }
 
@@ -458,6 +487,8 @@ namespace TheTechIdea.Beep.Helpers
 
                 case DataSourceType.PineCone:
                     return ValidatePineConeParameters(operation, parameters);
+
+             
 
                 // Add other vector database validations as needed
 

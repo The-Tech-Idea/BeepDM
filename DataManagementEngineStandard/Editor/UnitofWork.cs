@@ -11,14 +11,13 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
+
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
-using TheTechIdea.Beep.DriversConfigurations;
-using TheTechIdea.Beep.Connections;
+
 using TheTechIdea.Beep.Addin;
 
 
@@ -679,7 +678,18 @@ namespace TheTechIdea.Beep.Editor
             return identity;
         }
         #endregion
-        #region "CRUD no KEY"
+        #region "Read and Query"
+        /// <summary>Reads an item from a collection based on its ID.</summary>
+        /// <param name="id">The ID of the item to read.</param>
+        /// <returns>The item with the specified ID, or the default value of the item type if the ID is not found or the collection is not valid.</returns>
+        public T Read(string id)
+        {
+            if (!Validateall())
+            {
+                return default(T);
+            }
+            return Units[Getindex(id)];
+        }
         public T Read(Func<T, bool> predicate)
         {
             if (!Validateall())
@@ -696,6 +706,17 @@ namespace TheTechIdea.Beep.Editor
             }
             return  Task.FromResult<ObservableBindingList<T>>(new ObservableBindingList<T>(Units.Where(predicate)));
         }
+        private Dictionary<string, object> GetEntityValues(T entity)
+        {
+            var values = new Dictionary<string, object>();
+            foreach (var prop in typeof(T).GetProperties())
+            {
+                values[prop.Name] = prop.GetValue(entity);
+            }
+            return values;
+        }
+        #endregion "CRUD no KEY"
+        #region "CRUD Operations"
         public ErrorsInfo Update(Func<T, bool> predicate, T updatedEntity)
         {
             ErrorsInfo errorsInfo = new ErrorsInfo();
@@ -756,17 +777,6 @@ namespace TheTechIdea.Beep.Editor
                 return errorsInfo;
             }
         }
-        private Dictionary<string, object> GetEntityValues(T entity)
-        {
-            var values = new Dictionary<string, object>();
-            foreach (var prop in typeof(T).GetProperties())
-            {
-                values[prop.Name] = prop.GetValue(entity);
-            }
-            return values;
-        }
-        #endregion "CRUD no KEY"
-        #region "CRUD Operations"
         /// <summary>Updates a document asynchronously.</summary>
         /// <param name="doc">The document to be updated.</param>
         /// <returns>An object containing information about any errors that occurred during the update.</returns>
@@ -1035,17 +1045,7 @@ namespace TheTechIdea.Beep.Editor
         }
        
 
-        /// <summary>Reads an item from a collection based on its ID.</summary>
-        /// <param name="id">The ID of the item to read.</param>
-        /// <returns>The item with the specified ID, or the default value of the item type if the ID is not found or the collection is not valid.</returns>
-        public T Read(string id)
-        {
-            if (!Validateall())
-            {
-                return default(T);
-            }
-            return Units[Getindex(id)];
-        }
+      
         /// <summary>Deletes an object based on its ID.</summary>
         /// <param name="id">The ID of the object to delete.</param>
         /// <returns>An ErrorsInfo object indicating the result of the delete operation.</returns>
