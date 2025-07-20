@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Examples - Beep Editor Documentation</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        .content-section h3 {
+            color: #555;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .nav-breadcrumb {
+            background: white;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .nav-breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .example-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: -350px;
+            top: 0;
+            width: 350px;
+            height: 100vh;
+            background: rgba(45, 55, 72, 0.95);
+            color: white;
+            padding: 2rem;
+            transition: left 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 1.5rem;
+            color: #f7fafc;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            margin: 0.5rem 0;
+        }
+
+        .sidebar ul li a {
+            color: #cbd5e0;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar ul li a:hover,
+        .sidebar ul li a.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .sidebar ul li a i {
+            width: 16px;
+            text-align: center;
+        }
+
+        .menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 1001;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .menu-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <button class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <div class="overlay" onclick="closeSidebar()"></div>
+    
+    <nav class="sidebar">
+        <h3><i class="fas fa-book"></i> Documentation</h3>
+        <ul>
+            <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="registerbeep.html"><i class="fas fa-user-plus"></i> RegisterBeep</a></li>
+            <li><a href="data-management-examples.html"><i class="fas fa-database"></i> Data Management Examples</a></li>
+            <li><a href="unitofwork.html"><i class="fas fa-layer-group"></i> UnitOfWork</a></li>
+            <li><a href="unitofwork-deep-dive.html"><i class="fas fa-search"></i> UnitOfWork Deep Dive</a></li>
+            <li><a href="multidatasource-unitofwork.html"><i class="fas fa-project-diagram"></i> MultiDataSource UnitOfWork</a></li>
+            <li><a href="unitofwork-factory.html"><i class="fas fa-industry"></i> UnitOfWork Factory</a></li>
+            <li><a href="unitofwork-wrapper.html"><i class="fas fa-box"></i> UnitOfWork Wrapper</a></li>
+            <li><a href="api-reference.html"><i class="fas fa-code"></i> API Reference</a></li>
+            <li><a href="examples.html" class="active"><i class="fas fa-file-code"></i> Code Examples</a></li>
+            <li><a href="best-practices.html"><i class="fas fa-star"></i> Best Practices</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="nav-breadcrumb">
+            <a href="index.html">Home</a> > Code Examples
+        </div>
+
+        <header>
+            <h1>Code Examples</h1>
+            <p>Practical examples for common scenarios</p>
+        </header>
+
+        <div class="content-section">
+            <h2>1. Basic Customer Management System</h2>
+            <p>This example shows how to create a complete customer management system using UnitOfWork.</p>
+            
+            <div class="code-block">
+<pre><code class="language-csharp">using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.DataBase;
+
+public class CustomerManager
+{
+    private readonly IDMEEditor _dmeEditor;
+    private UnitofWork&lt;Customer&gt; _customerUoW;
+    
+    public CustomerManager(IDMEEditor dmeEditor)
+    {
+        _dmeEditor = dmeEditor;
+        InitializeUnitOfWork();
+    }
+    
+    private void InitializeUnitOfWork()
+    {
+        _customerUoW = new UnitofWork&lt;Customer&gt;(_dmeEditor, "SqlServer", "Customers", "CustomerID");
+        
+        // Subscribe to events
+        _customerUoW.PreInsert += ValidateCustomerBeforeInsert;
+        _customerUoW.PostEdit += LogPropertyChanges;
+        _customerUoW.PreCommit += ValidateBeforeCommit;
+    }
+    
+    public async Task&lt;ObservableBindingList&lt;Customer&gt;&gt; LoadCustomersAsync()
+    {
+        return await _customerUoW.Get();
+    }
+    
+    public async Task&lt;Customer&gt; CreateNewCustomerAsync(string name, string email, string phone)
+    {
+        _customerUoW.New();
+        var customer = _customerUoW.CurrentItem;
+        
+        customer.Name = name;
+        customer.Email = email;
+        customer.Phone = phone;
+        customer.CreatedDate = DateTime.Now;
+        customer.Status = "Active";
+        
+        var result = await _customerUoW.InsertAsync(customer);
+        if (result.Flag == Errors.Ok)
+        {
+            return customer;
+        }
+        
+        throw new Exception($"Failed to create customer: {result.Message}");
+    }
+    
+    public async Task&lt;bool&gt; UpdateCustomerAsync(Customer customer)
+    {
+        customer.ModifiedDate = DateTime.Now;
+        var result = await _customerUoW.UpdateAsync(customer);
+        return result.Flag == Errors.Ok;
+    }
+    
+    public async Task&lt;bool&gt; DeleteCustomerAsync(string customerId)
+    {
+        var customer = _customerUoW.Get(customerId);
+        if (customer != null)
+        {
+            var result = await _customerUoW.DeleteAsync(customer);
+            return result.Flag == Errors.Ok;
+        }
+        return false;
+    }
+    
+    public async Task&lt;bool&gt; CommitAllChangesAsync()
+    {
+        if (_customerUoW.IsDirty)
+        {
+            var result = await _customerUoW.Commit();
+            return result.Flag == Errors.Ok;
+        }
+        return true;
+    }
+    
+    // Event handlers
+    private void ValidateCustomerBeforeInsert(object sender, UnitofWorkParams args)
+    {
+        var customer = (Customer)sender;
+        if (string.IsNullOrWhiteSpace(customer.Name))
+        {
+            args.Cancel = true;
+            throw new ValidationException("Customer name is required");
+        }
+        
+        if (string.IsNullOrWhiteSpace(customer.Email))
+        {
+            args.Cancel = true;
+            throw new ValidationException("Customer email is required");
+        }
+    }
+    
+    private void LogPropertyChanges(object sender, UnitofWorkParams args)
+    {
+        var customer = (Customer)sender;
+        Console.WriteLine($"Customer {customer.CustomerID}: {args.PropertyName} changed to {args.PropertyValue}");
+    }
+    
+    private void ValidateBeforeCommit(object sender, UnitofWorkParams args)
+    {
+        // Perform final validation before commit
+        var addedCustomers = _customerUoW.GetAddedEntities();
+        foreach (var index in addedCustomers)
+        {
+            var customer = _customerUoW.Units[index];
+            if (string.IsNullOrWhiteSpace(customer.Email) || !customer.Email.Contains("@"))
+            {
+                args.Cancel = true;
+                throw new ValidationException($"Invalid email for customer: {customer.Name}");
+            }
+        }
+    }
+    
+    public void Dispose()
+    {
+        _customerUoW?.Dispose();
+    }
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>2. Multi-DataSource E-Commerce System</h2>
+            <p>This example demonstrates managing an e-commerce system with customers in SQL Server and orders in MongoDB.</p>
+            
+            <div class="code-block">
+<pre><code class="language-csharp">public class ECommerceManager
+{
+    private readonly IDMEEditor _dmeEditor;
+    private MultiDataSourceUnitOfWork _multiUoW;
+    
+    public ECommerceManager(IDMEEditor dmeEditor)
+    {
+        _dmeEditor = dmeEditor;
+        InitializeMultiDataSource();
+    }
+    
+    private async Task InitializeMultiDataSource()
+    {
+        _multiUoW = new MultiDataSourceUnitOfWork(_dmeEditor);
+        
+        // Add entity types from different data sources
+        await _multiUoW.AddUnitOfWorkAsync&lt;Customer&gt;("SqlServer", "Customers", "CustomerID");
+        await _multiUoW.AddUnitOfWorkAsync&lt;Order&gt;("MongoDB", "Orders", "OrderID");
+        await _multiUoW.AddUnitOfWorkAsync&lt;Product&gt;("SqlServer", "Products", "ProductID");
+        await _multiUoW.AddUnitOfWorkAsync&lt;OrderItem&gt;("MongoDB", "OrderItems", "OrderItemID");
+        
+        // Define relationships
+        _multiUoW.AddRelationship("Customer", "Order", "CustomerID", "CustomerID", 
+                                 RelationshipBehavior.CascadeDelete);
+        _multiUoW.AddRelationship("Order", "OrderItem", "OrderID", "OrderID", 
+                                 RelationshipBehavior.CascadeDelete, true);
+        _multiUoW.AddRelationship("Product", "OrderItem", "ProductID", "ProductID", 
+                                 RelationshipBehavior.Restrict);
+        
+        // Subscribe to child data changes
+        _multiUoW.ChildDataChanged += OnChildDataChanged;
+    }
+    
+    public async Task&lt;string&gt; CreateOrderAsync(string customerId, List&lt;OrderItemData&gt; items)
+    {
+        try
+        {
+            // Create new order
+            var order = new Order
+            {
+                OrderID = Guid.NewGuid().ToString(),
+                CustomerID = customerId,
+                OrderDate = DateTime.Now,
+                Status = "Pending",
+                TotalAmount = 0
+            };
+            
+            await _multiUoW.InsertAsync("Order", order);
+            
+            // Add order items
+            decimal totalAmount = 0;
+            foreach (var itemData in items)
+            {
+                var orderItem = new OrderItem
+                {
+                    OrderItemID = Guid.NewGuid().ToString(),
+                    OrderID = order.OrderID,
+                    ProductID = itemData.ProductID,
+                    Quantity = itemData.Quantity,
+                    UnitPrice = itemData.UnitPrice,
+                    TotalPrice = itemData.Quantity * itemData.UnitPrice
+                };
+                
+                await _multiUoW.InsertAsync("OrderItem", orderItem);
+                totalAmount += orderItem.TotalPrice;
+            }
+            
+            // Update order total
+            order.TotalAmount = totalAmount;
+            await _multiUoW.UpdateAsync("Order", order);
+            
+            // Commit all changes
+            var result = await _multiUoW.CommitAsync();
+            if (result.Flag == Errors.Ok)
+            {
+                return order.OrderID;
+            }
+            
+            throw new Exception($"Failed to create order: {result.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating order: {ex.Message}");
+            throw;
+        }
+    }
+    
+    public async Task&lt;CustomerOrderView&gt; GetCustomerWithOrdersAsync(string customerId)
+    {
+        // Get customer
+        var customers = _multiUoW.GetEntities&lt;Customer&gt;("Customer");
+        var customer = customers.FirstOrDefault(c =&gt; c.CustomerID == customerId);
+        
+        if (customer == null)
+            return null;
+        
+        // Navigate to customer to load related data
+        await _multiUoW.NavigateToParentAsync("Customer", customer);
+        
+        // Get related orders
+        var relatedData = await _multiUoW.GetAllRelatedChildrenAsync&lt;Order, Customer&gt;("Customer", customer);
+        var orders = relatedData.ContainsKey("Order") ? relatedData["Order"] : new ObservableBindingList&lt;Order&gt;();
+        
+        return new CustomerOrderView
+        {
+            Customer = customer,
+            Orders = orders.ToList()
+        };
+    }
+    
+    public async Task&lt;bool&gt; CancelOrderAsync(string orderId)
+    {
+        try
+        {
+            var orders = _multiUoW.GetEntities&lt;Order&gt;("Order");
+            var order = orders.FirstOrDefault(o =&gt; o.OrderID == orderId);
+            
+            if (order == null)
+                return false;
+            
+            if (order.Status == "Shipped" || order.Status == "Delivered")
+            {
+                throw new InvalidOperationException("Cannot cancel shipped or delivered orders");
+            }
+            
+            // Delete order (will cascade to order items)
+            await _multiUoW.DeleteAsync("Order", order);
+            
+            var result = await _multiUoW.CommitAsync();
+            return result.Flag == Errors.Ok;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cancelling order: {ex.Message}");
+            return false;
+        }
+    }
+    
+    public async Task&lt;List&lt;Order&gt;&gt; GetOrdersByStatusAsync(string status)
+    {
+        var orders = _multiUoW.GetEntities&lt;Order&gt;("Order");
+        return orders.Where(o =&gt; o.Status == status).ToList();
+    }
+    
+    private async void OnChildDataChanged(object sender, ChildDataChangedEventArgs args)
+    {
+        Console.WriteLine($"Child data changed: {args.ParentEntityName} -&gt; {args.ChildEntityName}");
+        
+        // Update UI or perform other actions
+        if (args.ChildEntityName == "Order")
+        {
+            await RefreshOrderDisplay();
+        }
+        else if (args.ChildEntityName == "OrderItem")
+        {
+            await RefreshOrderItemDisplay();
+        }
+    }
+    
+    private async Task RefreshOrderDisplay()
+    {
+        // Implement UI refresh logic
+        Console.WriteLine("Refreshing order display...");
+    }
+    
+    private async Task RefreshOrderItemDisplay()
+    {
+        // Implement UI refresh logic
+        Console.WriteLine("Refreshing order item display...");
+    }
+    
+    public void Dispose()
+    {
+        _multiUoW?.Dispose();
+    }
+}
+
+// Supporting classes
+public class OrderItemData
+{
+    public string ProductID { get; set; }
+    public int Quantity { get; set; }
+    public decimal UnitPrice { get; set; }
+}
+
+public class CustomerOrderView
+{
+    public Customer Customer { get; set; }
+    public List&lt;Order&gt; Orders { get; set; }
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>3. Data Synchronization Between Systems</h2>
+            <p>This example shows how to synchronize data between different systems using UnitOfWork.</p>
+            
+            <div class="code-block">
+<pre><code class="language-csharp">public class DataSynchronizer
+{
+    private readonly IDMEEditor _dmeEditor;
+    private UnitofWork&lt;Product&gt; _sourceUoW;
+    private UnitofWork&lt;Product&gt; _targetUoW;
+    
+    public DataSynchronizer(IDMEEditor dmeEditor)
+    {
+        _dmeEditor = dmeEditor;
+        InitializeUnitOfWorks();
+    }
+    
+    private void InitializeUnitOfWorks()
+    {
+        // Source system (e.g., ERP)
+        _sourceUoW = new UnitofWork&lt;Product&gt;(_dmeEditor, "ERPSystem", "Products", "ProductID");
+        
+        // Target system (e.g., E-commerce)
+        _targetUoW = new UnitofWork&lt;Product&gt;(_dmeEditor, "ECommerceDB", "Products", "ProductID");
+    }
+    
+    public async Task&lt;SyncResult&gt; SynchronizeProductsAsync(DateTime? lastSyncDate = null)
+    {
+        var result = new SyncResult();
+        
+        try
+        {
+            // Get products from source system
+            var filters = new List&lt;AppFilter&gt;();
+            if (lastSyncDate.HasValue)
+            {
+                filters.Add(new AppFilter 
+                { 
+                    FieldName = "ModifiedDate", 
+                    Operator = "&gt;", 
+                    FilterValue = lastSyncDate.Value 
+                });
+            }
+            
+            var sourceProducts = await _sourceUoW.Get(filters);
+            var targetProducts = await _targetUoW.Get();
+            
+            foreach (var sourceProduct in sourceProducts)
+            {
+                var targetProduct = targetProducts.FirstOrDefault(p =&gt; p.ProductID == sourceProduct.ProductID);
+                
+                if (targetProduct == null)
+                {
+                    // Insert new product
+                    await InsertProductAsync(sourceProduct, result);
+                }
+                else if (sourceProduct.ModifiedDate &gt; targetProduct.ModifiedDate)
+                {
+                    // Update existing product
+                    await UpdateProductAsync(sourceProduct, targetProduct, result);
+                }
+            }
+            
+            // Handle deletions (products in target but not in source)
+            var deletedProducts = targetProducts.Where(tp =&gt; 
+                !sourceProducts.Any(sp =&gt; sp.ProductID == tp.ProductID)).ToList();
+            
+            foreach (var deletedProduct in deletedProducts)
+            {
+                await DeleteProductAsync(deletedProduct, result);
+            }
+            
+            // Commit all changes
+            var commitResult = await _targetUoW.Commit();
+            if (commitResult.Flag == Errors.Ok)
+            {
+                result.Success = true;
+                result.Message = "Synchronization completed successfully";
+            }
+            else
+            {
+                result.Success = false;
+                result.Message = $"Commit failed: {commitResult.Message}";
+                await _targetUoW.Rollback();
+            }
+        }
+        catch (Exception ex)
+        {
+            result.Success = false;
+            result.Message = $"Synchronization failed: {ex.Message}";
+            await _targetUoW.Rollback();
+        }
+        
+        return result;
+    }
+    
+    private async Task InsertProductAsync(Product sourceProduct, SyncResult result)
+    {
+        try
+        {
+            var newProduct = CloneProduct(sourceProduct);
+            newProduct.SyncDate = DateTime.Now;
+            
+            await _targetUoW.InsertAsync(newProduct);
+            result.InsertedCount++;
+        }
+        catch (Exception ex)
+        {
+            result.Errors.Add($"Failed to insert product {sourceProduct.ProductID}: {ex.Message}");
+        }
+    }
+    
+    private async Task UpdateProductAsync(Product sourceProduct, Product targetProduct, SyncResult result)
+    {
+        try
+        {
+            // Update target product with source data
+            targetProduct.Name = sourceProduct.Name;
+            targetProduct.Description = sourceProduct.Description;
+            targetProduct.Price = sourceProduct.Price;
+            targetProduct.Category = sourceProduct.Category;
+            targetProduct.ModifiedDate = sourceProduct.ModifiedDate;
+            targetProduct.SyncDate = DateTime.Now;
+            
+            await _targetUoW.UpdateAsync(targetProduct);
+            result.UpdatedCount++;
+        }
+        catch (Exception ex)
+        {
+            result.Errors.Add($"Failed to update product {sourceProduct.ProductID}: {ex.Message}");
+        }
+    }
+    
+    private async Task DeleteProductAsync(Product targetProduct, SyncResult result)
+    {
+        try
+        {
+            await _targetUoW.DeleteAsync(targetProduct);
+            result.DeletedCount++;
+        }
+        catch (Exception ex)
+        {
+            result.Errors.Add($"Failed to delete product {targetProduct.ProductID}: {ex.Message}");
+        }
+    }
+    
+    private Product CloneProduct(Product source)
+    {
+        return new Product
+        {
+            ProductID = source.ProductID,
+            Name = source.Name,
+            Description = source.Description,
+            Price = source.Price,
+            Category = source.Category,
+            CreatedDate = source.CreatedDate,
+            ModifiedDate = source.ModifiedDate
+        };
+    }
+    
+    public async Task&lt;SyncResult&gt; SynchronizeWithConflictResolutionAsync()
+    {
+        var result = new SyncResult();
+        
+        try
+        {
+            var sourceProducts = await _sourceUoW.Get();
+            var targetProducts = await _targetUoW.Get();
+            
+            foreach (var sourceProduct in sourceProducts)
+            {
+                var targetProduct = targetProducts.FirstOrDefault(p =&gt; p.ProductID == sourceProduct.ProductID);
+                
+                if (targetProduct == null)
+                {
+                    await InsertProductAsync(sourceProduct, result);
+                }
+                else
+                {
+                    // Conflict resolution logic
+                    var conflictResolution = ResolveConflict(sourceProduct, targetProduct);
+                    
+                    switch (conflictResolution)
+                    {
+                        case ConflictResolution.UseSource:
+                            await UpdateProductAsync(sourceProduct, targetProduct, result);
+                            break;
+                        case ConflictResolution.UseTarget:
+                            // Keep target, do nothing
+                            break;
+                        case ConflictResolution.Merge:
+                            var mergedProduct = MergeProducts(sourceProduct, targetProduct);
+                            await UpdateProductAsync(mergedProduct, targetProduct, result);
+                            break;
+                        case ConflictResolution.Manual:
+                            result.Conflicts.Add(new DataConflict
+                            {
+                                ProductID = sourceProduct.ProductID,
+                                SourceProduct = sourceProduct,
+                                TargetProduct = targetProduct
+                            });
+                            break;
+                    }
+                }
+            }
+            
+            if (result.Conflicts.Any())
+            {
+                result.Success = false;
+                result.Message = $"Synchronization completed with {result.Conflicts.Count} conflicts requiring manual resolution";
+            }
+            else
+            {
+                var commitResult = await _targetUoW.Commit();
+                result.Success = commitResult.Flag == Errors.Ok;
+                result.Message = result.Success ? "Synchronization completed successfully" : $"Commit failed: {commitResult.Message}";
+            }
+        }
+        catch (Exception ex)
+        {
+            result.Success = false;
+            result.Message = $"Synchronization failed: {ex.Message}";
+            await _targetUoU.Rollback();
+        }
+        
+        return result;
+    }
+    
+    private ConflictResolution ResolveConflict(Product source, Product target)
+    {
+        // Simple rule: if source is newer, use source
+        if (source.ModifiedDate > target.ModifiedDate)
+            return ConflictResolution.UseSource;
+        
+        // If target is newer, check for manual intervention
+        if (target.ModifiedDate > source.ModifiedDate.AddHours(1))
+            return ConflictResolution.Manual;
+        
+        return ConflictResolution.UseTarget;
+    }
+    
+    private Product MergeProducts(Product source, Product target)
+    {
+        // Merge logic - take newest non-null values
+        var merged = CloneProduct(target);
+        
+        if (source.ModifiedDate > target.ModifiedDate)
+        {
+            merged.Name = source.Name ?? target.Name;
+            merged.Description = source.Description ?? target.Description;
+            merged.Price = source.Price;
+        }
+        
+        merged.ModifiedDate = DateTime.Now;
+        return merged;
+    }
+    
+    public void Dispose()
+    {
+        _sourceUoW?.Dispose();
+        _targetUoW?.Dispose();
+    }
+}
+
+// Supporting classes
+public class SyncResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; }
+    public int InsertedCount { get; set; }
+    public int UpdatedCount { get; set; }
+    public int DeletedCount { get; set; }
+    public List&lt;string&gt; Errors { get; set; } = new List&lt;string&gt;();
+    public List&lt;DataConflict&gt; Conflicts { get; set; } = new List&lt;DataConflict&gt;();
+}
+
+public class DataConflict
+{
+    public string ProductID { get; set; }
+    public Product SourceProduct { get; set; }
+    public Product TargetProduct { get; set; }
+}
+
+public enum ConflictResolution
+{
+    UseSource,
+    UseTarget,
+    Merge,
+    Manual
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>4. Batch Processing with Progress Reporting</h2>
+            <p>This example demonstrates processing large datasets with progress reporting and error handling.</p>
+            
+            <div class="code-block">
+<pre><code class="language-csharp">public class BatchProcessor
+{
+    private readonly IDMEEditor _dmeEditor;
+    private UnitofWork&lt;ImportRecord&gt; _importUoW;
+    
+    public event EventHandler&lt;BatchProgressEventArgs&gt; ProgressChanged;
+    public event EventHandler&lt;BatchErrorEventArgs&gt; ErrorOccurred;
+    
+    public BatchProcessor(IDMEEditor dmeEditor)
+    {
+        _dmeEditor = dmeEditor;
+        _importUoW = new UnitofWork&lt;ImportRecord&gt;(_dmeEditor, "DataWarehouse", "ImportRecords", "RecordID");
+        
+        // Subscribe to events
+        _importUoW.PreInsert += ValidateRecord;
+        _importUoW.PostInsert += RecordInserted;
+    }
+    
+    public async Task&lt;BatchResult&gt; ProcessBatchAsync(List&lt;ImportData&gt; data, CancellationToken cancellationToken = default)
+    {
+        var result = new BatchResult
+        {
+            TotalRecords = data.Count,
+            StartTime = DateTime.Now
+        };
+        
+        var progress = new Progress&lt;PassedArgs&gt;(args =&gt; ReportProgress(args, result));
+        
+        try
+        {
+            // Process in batches to avoid memory issues
+            const int batchSize = 1000;
+            var totalBatches = (int)Math.Ceiling((double)data.Count / batchSize);
+            
+            for (int batchIndex = 0; batchIndex &lt; totalBatches; batchIndex++)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    result.Status = BatchStatus.Cancelled;
+                    break;
+                }
+                
+                var batch = data.Skip(batchIndex * batchSize).Take(batchSize).ToList();
+                
+                await ProcessSingleBatch(batch, batchIndex + 1, totalBatches, result, cancellationToken);
+                
+                // Commit after each batch
+                var commitResult = await _importUoW.Commit(progress, cancellationToken);
+                if (commitResult.Flag != Errors.Ok)
+                {
+                    result.Status = BatchStatus.Failed;
+                    result.ErrorMessage = $"Commit failed for batch {batchIndex + 1}: {commitResult.Message}";
+                    break;
+                }
+                
+                // Clear processed records from memory
+                _importUoW.Clear();
+            }
+            
+            if (result.Status == BatchStatus.InProgress)
+            {
+                result.Status = result.ErrorCount > 0 ? BatchStatus.CompletedWithErrors : BatchStatus.Completed;
+            }
+        }
+        catch (Exception ex)
+        {
+            result.Status = BatchStatus.Failed;
+            result.ErrorMessage = ex.Message;
+            
+            ErrorOccurred?.Invoke(this, new BatchErrorEventArgs
+            {
+                BatchNumber = 0,
+                Error = ex,
+                Message = "Batch processing failed"
+            });
+        }
+        finally
+        {
+            result.EndTime = DateTime.Now;
+            result.Duration = result.EndTime - result.StartTime;
+        }
+        
+        return result;
+    }
+    
+    private async Task ProcessSingleBatch(List&lt;ImportData&gt; batch, int batchNumber, int totalBatches, 
+                                        BatchResult result, CancellationToken cancellationToken)
+    {
+        for (int i = 0; i &lt; batch.Count; i++)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                break;
+            
+            try
+            {
+                var importData = batch[i];
+                var record = CreateImportRecord(importData, batchNumber);
+                
+                await _importUoW.InsertAsync(record);
+                result.ProcessedRecords++;
+            }
+            catch (Exception ex)
+            {
+                result.ErrorCount++;
+                result.Errors.Add(new BatchError
+                {
+                    BatchNumber = batchNumber,
+                    RecordIndex = i,
+                    Data = batch[i],
+                    Error = ex.Message
+                });
+                
+                ErrorOccurred?.Invoke(this, new BatchErrorEventArgs
+                {
+                    BatchNumber = batchNumber,
+                    RecordIndex = i,
+                    Error = ex,
+                    Message = $"Error processing record {i} in batch {batchNumber}"
+                });
+            }
+            
+            // Report progress
+            if (i % 100 == 0 || i == batch.Count - 1)
+            {
+                ProgressChanged?.Invoke(this, new BatchProgressEventArgs
+                {
+                    BatchNumber = batchNumber,
+                    TotalBatches = totalBatches,
+                    RecordsInBatch = batch.Count,
+                    ProcessedInBatch = i + 1,
+                    TotalProcessed = result.ProcessedRecords,
+                    TotalRecords = result.TotalRecords,
+                    ErrorCount = result.ErrorCount
+                });
+            }
+        }
+    }
+    
+    private ImportRecord CreateImportRecord(ImportData data, int batchNumber)
+    {
+        return new ImportRecord
+        {
+            RecordID = Guid.NewGuid().ToString(),
+            BatchNumber = batchNumber,
+            SourceData = JsonConvert.SerializeObject(data),
+            ProcessedDate = DateTime.Now,
+            Status = "Processed"
+        };
+    }
+    
+    private void ReportProgress(PassedArgs args, BatchResult result)
+    {
+        ProgressChanged?.Invoke(this, new BatchProgressEventArgs
+        {
+            Message = args.Messege,
+            TotalProcessed = result.ProcessedRecords,
+            TotalRecords = result.TotalRecords,
+            ErrorCount = result.ErrorCount
+        });
+    }
+    
+    private void ValidateRecord(object sender, UnitofWorkParams args)
+    {
+        var record = (ImportRecord)sender;
+        
+        // Custom validation logic
+        if (string.IsNullOrWhiteSpace(record.SourceData))
+        {
+            args.Cancel = true;
+            throw new ValidationException("Source data cannot be empty");
+        }
+        
+        if (record.BatchNumber <= 0)
+        {
+            args.Cancel = true;
+            throw new ValidationException("Invalid batch number");
+        }
+    }
+    
+    private void RecordInserted(object sender, UnitofWorkParams args)
+    {
+        var record = (ImportRecord)sender;
+        Console.WriteLine($"Record {record.RecordID} inserted successfully");
+    }
+    
+    public async Task&lt;BatchResult&gt; ReprocessFailedRecordsAsync(BatchResult previousResult)
+    {
+        var failedData = previousResult.Errors.Select(e =&gt; e.Data).ToList();
+        
+        Console.WriteLine($"Reprocessing {failedData.Count} failed records...");
+        
+        var result = await ProcessBatchAsync(failedData);
+        return result;
+    }
+    
+    public void Dispose()
+    {
+        _importUoW?.Dispose();
+    }
+}
+
+// Supporting classes
+public class BatchResult
+{
+    public int TotalRecords { get; set; }
+    public int ProcessedRecords { get; set; }
+    public int ErrorCount { get; set; }
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
+    public TimeSpan Duration { get; set; }
+    public BatchStatus Status { get; set; } = BatchStatus.InProgress;
+    public string ErrorMessage { get; set; }
+    public List&lt;BatchError&gt; Errors { get; set; } = new List&lt;BatchError&gt;();
+}
+
+public class BatchError
+{
+    public int BatchNumber { get; set; }
+    public int RecordIndex { get; set; }
+    public ImportData Data { get; set; }
+    public string Error { get; set; }
+}
+
+public enum BatchStatus
+{
+    InProgress,
+    Completed,
+    CompletedWithErrors,
+    Failed,
+    Cancelled
+}
+
+public class BatchProgressEventArgs : EventArgs
+{
+    public int BatchNumber { get; set; }
+    public int TotalBatches { get; set; }
+    public int RecordsInBatch { get; set; }
+    public int ProcessedInBatch { get; set; }
+    public int TotalProcessed { get; set; }
+    public int TotalRecords { get; set; }
+    public int ErrorCount { get; set; }
+    public string Message { get; set; }
+    public double ProgressPercentage => TotalRecords > 0 ? (double)TotalProcessed / TotalRecords * 100 : 0;
+}
+
+public class BatchErrorEventArgs : EventArgs
+{
+    public int BatchNumber { get; set; }
+    public int RecordIndex { get; set; }
+    public Exception Error { get; set; }
+    public string Message { get; set; }
+}
+
+public class ImportData
+{
+    public string Field1 { get; set; }
+    public string Field2 { get; set; }
+    public DateTime Date { get; set; }
+    public decimal Amount { get; set; }
+}
+
+public class ImportRecord : Entity
+{
+    public string RecordID { get; set; }
+    public int BatchNumber { get; set; }
+    public string SourceData { get; set; }
+    public DateTime ProcessedDate { get; set; }
+    public string Status { get; set; }
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>5. Usage Example: Complete Application</h2>
+            <p>This example shows how to put it all together in a complete application.</p>
+            
+            <div class="code-block">
+<pre><code class="language-csharp">public class Program
+{
+    private static IDMEEditor _dmeEditor;
+    private static CustomerManager _customerManager;
+    private static ECommerceManager _ecommerceManager;
+    private static DataSynchronizer _dataSynchronizer;
+    
+    public static async Task Main(string[] args)
+    {
+        try
+        {
+            // Initialize DME Editor
+            _dmeEditor = InitializeDMEEditor();
+            
+            // Initialize managers
+            _customerManager = new CustomerManager(_dmeEditor);
+            _ecommerceManager = new ECommerceManager(_dmeEditor);
+            _dataSynchronizer = new DataSynchronizer(_dmeEditor);
+            
+            // Run demo scenarios
+            await RunCustomerManagementDemo();
+            await RunECommerceDemo();
+            await RunDataSyncDemo();
+            
+            Console.WriteLine("All demos completed successfully!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+        finally
+        {
+            // Cleanup
+            _customerManager?.Dispose();
+            _ecommerceManager?.Dispose();
+            _dataSynchronizer?.Dispose();
+            _dmeEditor?.Dispose();
+        }
+    }
+    
+    private static async Task RunCustomerManagementDemo()
+    {
+        Console.WriteLine("=== Customer Management Demo ===");
+        
+        // Load existing customers
+        var customers = await _customerManager.LoadCustomersAsync();
+        Console.WriteLine($"Loaded {customers.Count} customers");
+        
+        // Create new customer
+        var newCustomer = await _customerManager.CreateNewCustomerAsync(
+            "Demo Customer", "demo@example.com", "123-456-7890");
+        Console.WriteLine($"Created customer: {newCustomer.CustomerID}");
+        
+        // Update customer
+        newCustomer.Phone = "098-765-4321";
+        await _customerManager.UpdateCustomerAsync(newCustomer);
+        Console.WriteLine("Customer updated");
+        
+        // Commit changes
+        await _customerManager.CommitAllChangesAsync();
+        Console.WriteLine("Changes committed");
+    }
+    
+    private static async Task RunECommerceDemo()
+    {
+        Console.WriteLine("\n=== E-Commerce Demo ===");
+        
+        // Create an order
+        var orderItems = new List&lt;OrderItemData&gt;
+        {
+            new OrderItemData { ProductID = "PROD001", Quantity = 2, UnitPrice = 29.99m },
+            new OrderItemData { ProductID = "PROD002", Quantity = 1, UnitPrice = 49.99m }
+        };
+        
+        var orderId = await _ecommerceManager.CreateOrderAsync("CUST001", orderItems);
+        Console.WriteLine($"Created order: {orderId}");
+        
+        // Get customer with orders
+        var customerView = await _ecommerceManager.GetCustomerWithOrdersAsync("CUST001");
+        Console.WriteLine($"Customer {customerView.Customer.Name} has {customerView.Orders.Count} orders");
+        
+        // Get pending orders
+        var pendingOrders = await _ecommerceManager.GetOrdersByStatusAsync("Pending");
+        Console.WriteLine($"Found {pendingOrders.Count} pending orders");
+    }
+    
+    private static async Task RunDataSyncDemo()
+    {
+        Console.WriteLine("\n=== Data Synchronization Demo ===");
+        
+        // Sync products
+        var syncResult = await _dataSynchronizer.SynchronizeProductsAsync(DateTime.Now.AddDays(-7));
+        
+        Console.WriteLine($"Sync Result: {syncResult.Message}");
+        Console.WriteLine($"Inserted: {syncResult.InsertedCount}");
+        Console.WriteLine($"Updated: {syncResult.UpdatedCount}");
+        Console.WriteLine($"Deleted: {syncResult.DeletedCount}");
+        
+        if (syncResult.Errors.Any())
+        {
+            Console.WriteLine("Errors:");
+            foreach (var error in syncResult.Errors)
+            {
+                Console.WriteLine($"  - {error}");
+            }
+        }
+    }
+    
+    private static IDMEEditor InitializeDMEEditor()
+    {
+        // Initialize your DME Editor here
+        // This is a placeholder - actual initialization depends on your setup
+        var dmeEditor = new DMEEditor();
+        
+        // Configure data sources
+        // dmeEditor.AddDataSource(...);
+        
+        return dmeEditor;
+    }
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <strong>Tips for Using These Examples:</strong>
+            <ul>
+                <li>Adapt the entity classes (Customer, Order, Product, etc.) to match your data models</li>
+                <li>Configure your data sources in the DMEEditor initialization</li>
+                <li>Add proper error handling and logging for production use</li>
+                <li>Consider using dependency injection for better testability</li>
+                <li>Implement proper unit tests for your business logic</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+
+        // Close sidebar when clicking on links
+        document.querySelectorAll('.sidebar a').forEach(link => {
+            link.addEventListener('click', closeSidebar);
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSidebar();
+            }
+            if (e.key === 'm' && e.ctrlKey) {
+                e.preventDefault();
+                toggleSidebar();
+            }
+        });
+    </script>
+</body>
+</html>

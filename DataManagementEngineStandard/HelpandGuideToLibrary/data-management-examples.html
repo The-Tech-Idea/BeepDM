@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Management Examples - Beep Engine</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            margin-left: 280px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        .content-section h3 {
+            color: #444;
+            margin: 1.5rem 0 1rem 0;
+            font-size: 1.3rem;
+        }
+
+        .content-section h4 {
+            color: #555;
+            margin: 1rem 0 0.5rem 0;
+            font-size: 1.1rem;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-left: 4px solid #17a2b8;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 5px;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-left: 4px solid #28a745;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 5px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-left: 4px solid #fdcb6e;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 5px;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100vh;
+            background: #2d3748;
+            color: white;
+            padding: 1rem;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 1rem;
+            color: #fff;
+            font-size: 1.1rem;
+            border-bottom: 1px solid #4a5568;
+            padding-bottom: 0.5rem;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar li {
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar a {
+            color: #cbd5e0;
+            text-decoration: none;
+            display: block;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar a:hover {
+            background-color: #4a5568;
+            color: #fff;
+        }
+
+        .sidebar a.active {
+            background-color: #667eea;
+            color: #fff;
+        }
+
+        .sidebar .sub-menu {
+            margin-left: 1rem;
+        }
+
+        .sidebar .sub-menu a {
+            font-size: 0.85rem;
+            color: #a0aec0;
+            padding: 0.25rem 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin-left: 0;
+                padding: 10px;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .hero h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>Data Management Examples</h3>
+        <ul>
+            <li><a href="#overview" class="active">Overview</a></li>
+            <li><a href="#connection-examples">Connection Examples</a>
+                <ul class="sub-menu">
+                    <li><a href="#sqlite-connection">SQLite Connection</a></li>
+                    <li><a href="#excel-connection">Excel Connection</a></li>
+                    <li><a href="#csv-connection">CSV Connection</a></li>
+                </ul>
+            </li>
+            <li><a href="#data-operations">Data Operations</a>
+                <ul class="sub-menu">
+                    <li><a href="#entity-management">Entity Management</a></li>
+                    <li><a href="#data-retrieval">Data Retrieval</a></li>
+                    <li><a href="#data-movement">Data Movement</a></li>
+                </ul>
+            </li>
+            <li><a href="#shared-functions">Shared Functions</a></li>
+            <li><a href="#ui-integration">UI Integration</a></li>
+            <li><a href="#best-practices">Best Practices</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <header class="hero">
+            <h1>Data Management Examples</h1>
+            <p>Real-world examples from BeepSharedFunctions.cs</p>
+        </header>
+
+        <div class="content-section" id="overview">
+            <h2>Overview</h2>
+            <p>This page showcases actual data management patterns from the Beep.WinForm.Sample.App project. These examples demonstrate how to work directly with the data management engine without complex service orchestration.</p>
+            
+            <div class="info-box">
+                <strong>Focus:</strong> These examples show pure data management operations - creating connections, working with different data sources, and moving data between sources.
+            </div>
+
+            <h3>Key Patterns Demonstrated</h3>
+            <ul>
+                <li><strong>Connection Creation:</strong> Dynamic creation of database and file connections</li>
+                <li><strong>Driver Configuration:</strong> Automatic driver detection and configuration</li>
+                <li><strong>Data Source Management:</strong> Opening, closing, and working with multiple data sources</li>
+                <li><strong>Entity Operations:</strong> Getting entity lists, structures, and data</li>
+                <li><strong>Data Movement:</strong> Moving data between different source types</li>
+            </ul>
+        </div>
+
+        <div class="content-section" id="connection-examples">
+            <h2>Connection Creation Examples</h2>
+            <p>Based on BeepSharedFunctions.cs - real working examples from the sample application.</p>
+
+            <h3 id="sqlite-connection">SQLite Database Connection</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">public static bool CreateConnectionForSqlite()
+{
+    CloseConnections();
+    
+    // Get the connection drivers configuration
+    ConnectionDriversConfig config = GetConnectionDriversConfig(DataSourceType.SqlLite);
+    
+    // Create a new connection configuration
+    ConnectionProperties connectionProperties = new ConnectionProperties
+    {
+        ConnectionString = "Data Source=./Beep/dbfiles/northwind.db",
+        ConnectionName = "northwind.db",
+        DriverName = config.PackageName,
+        DriverVersion = config.version,
+        DatabaseType = DataSourceType.SqlLite,
+        Category = DatasourceCategory.RDBMS
+    };
+    
+    // Add to the list of connections
+    beepService.Config_editor.AddDataConnection(connectionProperties);
+    
+    // Create the connection
+    Sqlite_SampleDB = (SQLiteDataSource?)beepService.DMEEditor.GetDataSource("northwind.db");
+    
+    // Open the connection
+    Sqlite_SampleDB.Openconnection();
+
+    if (Sqlite_SampleDB.ConnectionStatus == System.Data.ConnectionState.Open)
+    {
+        return true;
+    }
+    else
+    {
+        MessageBox.Show("Connection Failed");
+        return false;
+    }
+}</code></pre>
+            </div>
+
+            <h3 id="excel-connection">Excel File Connection</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">public static bool CreateConnectionForXls()
+{
+    CloseConnections();
+    
+    // Get the connection drivers configuration
+    ConnectionDriversConfig config = GetConnectionDriversConfig(DataSourceType.Xls);
+    
+    // Create a new connection configuration
+    ConnectionProperties connectionProperties = new ConnectionProperties
+    {
+        FileName = "country.xls",
+        FilePath = "./dbfiles",
+        ConnectionName = "country.xls",
+        DriverName = config.PackageName,
+        DriverVersion = config.version,
+        DatabaseType = DataSourceType.Xls,
+        Ext = "xls",
+        Category = DatasourceCategory.FILE
+    };
+    
+    // Add to the list of connections
+    beepService.Config_editor.AddDataConnection(connectionProperties);
+    
+    // Create the connection
+    XlsFile = (TxtXlsCSVFileSource?)beepService.DMEEditor.GetDataSource("country.xls");
+    
+    // Open the connection
+    XlsFile.Openconnection();
+
+    if (XlsFile.ConnectionStatus == System.Data.ConnectionState.Open)
+    {
+        return true;
+    }
+    else
+    {
+        MessageBox.Show("Connection Failed");
+        return false;
+    }
+}</code></pre>
+            </div>
+
+            <h3 id="csv-connection">CSV File Connection</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">public static bool CreateConnectionForCSV()
+{
+    CloseConnections();
+    
+    // Get the connection drivers configuration
+    ConnectionDriversConfig config = GetConnectionDriversConfig(DataSourceType.CSV);
+    
+    // Create a new connection configuration
+    ConnectionProperties connectionProperties = new ConnectionProperties
+    {
+        FileName = "iris.csv",
+        FilePath = "./dbfiles",
+        ConnectionName = "iris.csv",
+        DriverName = config.PackageName,
+        DriverVersion = config.version,
+        DatabaseType = DataSourceType.CSV,
+        Ext = "csv",
+        Category = DatasourceCategory.FILE
+    };
+    
+    // Add to the list of connections
+    beepService.Config_editor.AddDataConnection(connectionProperties);
+    
+    // Create the connection
+    CSVFile = (CSVDataSource?)beepService.DMEEditor.GetDataSource("iris.csv");
+    
+    // Open the connection
+    CSVFile.Openconnection();
+
+    if (CSVFile.ConnectionStatus == System.Data.ConnectionState.Open)
+    {
+        return true;
+    }
+    else
+    {
+        MessageBox.Show("Connection Failed");
+        return false;
+    }
+}</code></pre>
+            </div>
+
+            <h3>Driver Configuration Helper</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">public static ConnectionDriversConfig GetConnectionDriversConfig(DataSourceType type)
+{
+    // Get the list of connection drivers
+    return beepService.DMEEditor.ConfigEditor.DataDriversClasses
+        .FirstOrDefault(p => p.DatasourceType == type);
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section" id="data-operations">
+            <h2>Data Operations</h2>
+
+            <h3 id="entity-management">Entity Management</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">// Get all entities from a data source
+var dataSource = beepService.DMEEditor.GetDataSource("northwind.db");
+dataSource.Openconnection();
+
+if (dataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+{
+    // Get list of all entities (tables)
+    var entities = dataSource.GetEntitesList();
+    
+    foreach (string entityName in entities)
+    {
+        Console.WriteLine($"Found entity: {entityName}");
+    }
+}</code></pre>
+            </div>
+
+            <h3 id="data-retrieval">Data Retrieval</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">// Get entity structure and data
+var dataSource = beepService.DMEEditor.GetDataSource("northwind.db");
+dataSource.Openconnection();
+
+if (dataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+{
+    // Get entity structure (schema information)
+    EntityStructure customerStructure = dataSource.GetEntityStructure("Customers", true);
+    
+    // Get actual data
+    var customerData = dataSource.GetEntity("Customers", null);
+    
+    // Work with the data
+    ProcessCustomerData(customerData, customerStructure);
+}</code></pre>
+            </div>
+
+            <h3 id="data-movement">Data Movement Between Sources</h3>
+            <p>This is the actual implementation from BeepSharedFunctions.cs:</p>
+            <div class="code-block">
+<pre><code class="language-csharp">public static IErrorsInfo MoveEntity(string src, string dest, string entityname, Progress&lt;PassedArgs&gt; progress)
+{
+    beepService.DMEEditor.ErrorObject = new ErrorsInfo();
+    
+    if (SourceDataSource == null || DestinationDataSource == null)
+    {
+        beepService.DMEEditor.AddLogMessage("Beep", "Source or Destination not found", 
+            DateTime.Now, 0, "", Errors.Failed);
+        return beepService.DMEEditor.ErrorObject;
+    }
+    
+    if (DestinationDataSource.DatasourceType == DataSourceType.CSV || 
+        DestinationDataSource.DatasourceType == DataSourceType.Xls)
+    {
+        beepService.DMEEditor.AddLogMessage("Beep", "Destination is not a database", 
+            DateTime.Now, 0, "", Errors.Failed);
+        return beepService.DMEEditor.ErrorObject;
+    }
+    
+    SourceDataSource.Openconnection();
+    DestinationDataSource.Openconnection();
+    
+    if (SourceDataSource.ConnectionStatus == System.Data.ConnectionState.Open && 
+        DestinationDataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+    {
+        EntityStructure srcentity = SourceDataSource.GetEntityStructure(entityname, true);
+        EntityStructure destentity = DestinationDataSource.GetEntityStructure(entityname, true);
+        
+        if (srcentity != null && destentity != null)
+        {
+            try
+            {
+                bool er = true;
+                var data = SourceDataSource.GetEntity(entityname, null);
+                
+                if (DestinationDataSource.CheckEntityExist(entityname) == false)
+                {
+                    er = DestinationDataSource.CreateEntityAs(srcentity);
+                }
+                
+                if (er)
+                {
+                    DestinationDataSource.UpdateEntities(entityname, data, progress);
+                }
+            }
+            catch (Exception ex)
+            {
+                beepService.DMEEditor.AddLogMessage("Beep", $" Error {ex.Message}", 
+                    DateTime.Now, 0, "", Errors.Failed);
+                return beepService.DMEEditor.ErrorObject;
+            }
+        }
+        else
+        {
+            beepService.DMEEditor.AddLogMessage("Beep", "Entity not found", 
+                DateTime.Now, 0, "", Errors.Failed);
+            return beepService.DMEEditor.ErrorObject;
+        }
+    }
+    else
+    {
+        beepService.DMEEditor.AddLogMessage("Beep", "Connection failed", 
+            DateTime.Now, 0, "", Errors.Failed);
+        return beepService.DMEEditor.ErrorObject;
+    }
+    
+    return beepService.DMEEditor.ErrorObject;
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section" id="shared-functions">
+            <h2>Shared Functions Pattern</h2>
+            <p>The BeepSharedFunctions class demonstrates a clean pattern for managing data sources:</p>
+
+            <div class="code-block">
+<pre><code class="language-csharp">public static class BeepSharedFunctions
+{
+    // Strongly typed data sources
+    public static SQLiteDataSource Sqlite_SampleDB;
+    public static TxtXlsCSVFileSource XlsFile;
+    public static CSVDataSource CSVFile;
+    public static IBeepService beepService;
+
+    // Generic data source references for operations
+    public static IDataSource DestinationDataSource;
+    public static IDataSource SourceDataSource;
+
+    public static void CloseConnections()
+    {
+        if (Sqlite_SampleDB != null)
+        {
+            Sqlite_SampleDB.Closeconnection();
+        }
+        if (XlsFile != null)
+        {
+            XlsFile.Closeconnection();
+        }
+        if (CSVFile != null)
+        {
+            CSVFile.Closeconnection();
+        }
+    }
+}</code></pre>
+            </div>
+
+            <div class="success-box">
+                <h4>Pattern Benefits:</h4>
+                <ul>
+                    <li><strong>Centralized Management:</strong> All data sources managed in one place</li>
+                    <li><strong>Type Safety:</strong> Strongly typed data source references</li>
+                    <li><strong>Resource Cleanup:</strong> Centralized connection closing</li>
+                    <li><strong>Reusability:</strong> Functions can be used across the application</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="content-section" id="ui-integration">
+            <h2>UI Integration Examples</h2>
+            <p>Examples from the MovingData.cs form showing real Windows Forms integration:</p>
+
+            <h3>Loading Data Sources into ComboBoxes</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">public MovingData(IBeepService bservice)
+{
+    beepService = bservice;
+    InitializeComponent();
+    
+    BeepSharedFunctions.beepService = beepService;
+    
+    // Load file-based data sources
+    foreach (var item in beepService.Config_editor.DataConnections
+        .Where(p => p.Category == DatasourceCategory.FILE))
+    {
+        SourceDataSourcescomboBox.Items.Add(item.ConnectionName);
+    }
+    
+    // Load database data sources
+    foreach (var item in beepService.Config_editor.DataConnections
+        .Where(p => p.Category != DatasourceCategory.FILE))
+    {
+        DestinationDataSourcecomboBox1.Items.Add(item.ConnectionName);
+    }
+}</code></pre>
+            </div>
+
+            <h3>Handling Data Source Selection</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">private void SourceDataSourcescomboBox_SelectedIndexChanged(object sender, EventArgs e)
+{
+    if (SourceDataSourcescomboBox.SelectedItem != null)
+    {
+        // Get the selected data source
+        BeepSharedFunctions.SourceDataSource = beepService.DMEEditor
+            .GetDataSource(SourceDataSourcescomboBox.SelectedItem.ToString());
+        
+        if (BeepSharedFunctions.SourceDataSource != null)
+        {
+            BeepSharedFunctions.SourceDataSource.Openconnection();
+            
+            if (BeepSharedFunctions.SourceDataSource.ConnectionStatus == 
+                System.Data.ConnectionState.Open)
+            {
+                // Load entities for this data source
+                LoadEntitiesForSource();
+            }
+        }
+    }
+}</code></pre>
+            </div>
+
+            <h3>Entity Operations in UI</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">private void DeleteButton_Click(object sender, EventArgs e)
+{
+    if (DestinationDataSourcecomboBox1.SelectedItem != null && 
+        DestEntitiescomboBox.SelectedItem != null)
+    {
+        BeepSharedFunctions.DestinationDataSource = beepService.DMEEditor
+            .GetDataSource(DestinationDataSourcecomboBox1.SelectedItem.ToString());
+        
+        if (BeepSharedFunctions.DestinationDataSource != null)
+        {
+            BeepSharedFunctions.DestinationDataSource.Openconnection();
+            
+            if (BeepSharedFunctions.DestinationDataSource.ConnectionStatus == 
+                System.Data.ConnectionState.Open)
+            {
+                // Execute drop table command
+                var result = BeepSharedFunctions.DestinationDataSource
+                    .ExecuteSql($"Drop Table {DestEntitiescomboBox.SelectedItem}");
+                
+                if (result.Flag == Errors.Ok)
+                {
+                    LogtextBox.AppendText($"Table {DestEntitiescomboBox.SelectedItem} Deleted" + 
+                        Environment.NewLine);
+                    
+                    // Refresh entity list
+                    BeepSharedFunctions.DestinationDataSource.GetEntitesList();
+                }
+            }
+        }
+    }
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section" id="best-practices">
+            <h2>Best Practices from Real Implementation</h2>
+
+            <div class="success-box">
+                <h4>1. Always Close Connections Before Creating New Ones</h4>
+                <div class="code-block">
+<pre><code class="language-csharp">public static bool CreateConnectionForSqlite()
+{
+    CloseConnections(); // Always close existing connections first
+    // ... create new connection
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="success-box">
+                <h4>2. Check Connection Status Before Operations</h4>
+                <div class="code-block">
+<pre><code class="language-csharp">if (dataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+{
+    // Safe to perform operations
+    var data = dataSource.GetEntity("EntityName", null);
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="success-box">
+                <h4>3. Use Proper Error Handling and Logging</h4>
+                <div class="code-block">
+<pre><code class="language-csharp">try
+{
+    var data = SourceDataSource.GetEntity(entityname, null);
+    // Process data...
+}
+catch (Exception ex)
+{
+    beepService.DMEEditor.AddLogMessage("Beep", $" Error {ex.Message}", 
+        DateTime.Now, 0, "", Errors.Failed);
+    return beepService.DMEEditor.ErrorObject;
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>4. Validate Data Sources Before Operations</h4>
+                <div class="code-block">
+<pre><code class="language-csharp">if (SourceDataSource == null || DestinationDataSource == null)
+{
+    beepService.DMEEditor.AddLogMessage("Beep", "Source or Destination not found", 
+        DateTime.Now, 0, "", Errors.Failed);
+    return beepService.DMEEditor.ErrorObject;
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h4>5. Use Progress Reporting for Long Operations</h4>
+                <div class="code-block">
+<pre><code class="language-csharp">public static IErrorsInfo MoveEntity(string src, string dest, string entityname, 
+    Progress&lt;PassedArgs&gt; progress)
+{
+    // ... setup code ...
+    
+    // Use progress parameter to report status
+    DestinationDataSource.UpdateEntities(entityname, data, progress);
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Smooth scrolling for sidebar links
+        document.querySelectorAll('.sidebar a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    
+                    // Update active link
+                    document.querySelectorAll('.sidebar a').forEach(link => 
+                        link.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+
+        // Update active link on scroll
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('[id]');
+            const scrollPos = window.scrollY + 100;
+            
+            sections.forEach(section => {
+                const top = section.offsetTop;
+                const height = section.offsetHeight;
+                const id = section.getAttribute('id');
+                
+                if (scrollPos >= top && scrollPos < top + height) {
+                    document.querySelectorAll('.sidebar a').forEach(link => 
+                        link.classList.remove('active'));
+                    const activeLink = document.querySelector(`.sidebar a[href="#${id}"]`);
+                    if (activeLink) activeLink.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

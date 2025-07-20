@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UnitOfWork&lt;T&gt; - Beep Editor Documentation</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        .content-section h3 {
+            color: #555;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .method-signature {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .parameter-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .parameter-table th,
+        .parameter-table td {
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .parameter-table th {
+            background-color: #667eea;
+            color: white;
+        }
+
+        .parameter-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .nav-breadcrumb {
+            background: white;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .nav-breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .example-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        ul {
+            margin-left: 2rem;
+        }
+
+        li {
+            margin: 0.5rem 0;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: #2d3748;
+            color: white;
+            padding: 2rem;
+            transition: left 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 999;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <button class="menu-toggle" onclick="toggleSidebar()">?</button>
+    
+    <div class="overlay" onclick="closeSidebar()"></div>
+    
+    <nav class="sidebar">
+        <h3>Navigation</h3>
+        <ul style="list-style: none;">
+            <li><a href="index.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">Home</a></li>
+            <li><a href="multidatasource-unitofwork.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">MultiDataSource UnitOfWork</a></li>
+            <li><a href="unitofwork.html" style="color: #fff; text-decoration: none; display: block; padding: 0.5rem 0; background: #4a90e2;">UnitOfWork</a></li>
+            <li><a href="unitofwork-factory.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">UnitOfWork Factory</a></li>
+            <li><a href="unitofwork-wrapper.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">UnitOfWork Wrapper</a></li>
+            <li><a href="api-reference.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">API Reference</a></li>
+            <li><a href="examples.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">Code Examples</a></li>
+            <li><a href="best-practices.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">Best Practices</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="nav-breadcrumb">
+            <a href="index.html">Home</a> > UnitOfWork&lt;T&gt;
+        </div>
+
+        <header>
+            <h1>UnitOfWork&lt;T&gt;</h1>
+            <p>Generic Unit of Work pattern implementation with change tracking and validation</p>
+        </header>
+
+        <div class="content-section">
+            <h2>Overview</h2>
+            <p>The <code>UnitOfWork&lt;T&gt;</code> class implements the Unit of Work pattern for managing a collection of entities of type T. It provides change tracking, validation, CRUD operations, and transaction management for a single entity type within a data source.</p>
+            
+            <div class="info-box">
+                <strong>Key Features:</strong>
+                <ul>
+                    <li>Generic implementation for any Entity type</li>
+                    <li>Automatic change tracking and state management</li>
+                    <li>Observable collections with property change notifications</li>
+                    <li>Filtering and pagination support</li>
+                    <li>Undo/Redo functionality</li>
+                    <li>Async CRUD operations</li>
+                    <li>Event-driven architecture with lifecycle hooks</li>
+                    <li>Validation and error handling</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Constructors</h2>
+            
+            <h3>Basic Constructor</h3>
+            <div class="method-signature">
+                <code>public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, string primarykey)</code>
+            </div>
+            
+            <h3>With Entity Structure</h3>
+            <div class="method-signature">
+                <code>public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure, string primarykey)</code>
+            </div>
+            
+            <h3>List Mode Constructor</h3>
+            <div class="method-signature">
+                <code>public UnitofWork(IDMEEditor dMEEditor, bool isInListMode, ObservableBindingList&lt;T&gt; ts, string primarykey)</code>
+            </div>
+            
+            <table class="parameter-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>dMEEditor</td>
+                        <td>IDMEEditor</td>
+                        <td>Data management editor instance</td>
+                    </tr>
+                    <tr>
+                        <td>datasourceName</td>
+                        <td>string</td>
+                        <td>Name of the data source</td>
+                    </tr>
+                    <tr>
+                        <td>entityName</td>
+                        <td>string</td>
+                        <td>Name of the entity</td>
+                    </tr>
+                    <tr>
+                        <td>primarykey</td>
+                        <td>string</td>
+                        <td>Name of the primary key field</td>
+                    </tr>
+                    <tr>
+                        <td>entityStructure</td>
+                        <td>EntityStructure</td>
+                        <td>Metadata about the entity structure</td>
+                    </tr>
+                    <tr>
+                        <td>isInListMode</td>
+                        <td>bool</td>
+                        <td>True for in-memory operations only</td>
+                    </tr>
+                    <tr>
+                        <td>ts</td>
+                        <td>ObservableBindingList&lt;T&gt;</td>
+                        <td>Initial collection for list mode</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Create UnitOfWork for Customer entities
+var customerUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, "SqlServer", "Customers", "CustomerID");
+
+// Create UnitOfWork with entity structure
+var orderUoW = new UnitofWork&lt;Order&gt;(dmeEditor, "MongoDB", "Orders", orderStructure, "OrderID");
+
+// Create UnitOfWork in list mode (in-memory)
+var tempCustomers = new ObservableBindingList&lt;Customer&gt;();
+var listUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, true, tempCustomers, "CustomerID");</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Core Properties</h2>
+            
+            <table class="parameter-table">
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Units</td>
+                        <td>ObservableBindingList&lt;T&gt;</td>
+                        <td>The main collection of entities (filtered or unfiltered)</td>
+                    </tr>
+                    <tr>
+                        <td>FilteredUnits</td>
+                        <td>ObservableBindingList&lt;T&gt;</td>
+                        <td>Filtered collection when filters are applied</td>
+                    </tr>
+                    <tr>
+                        <td>CurrentItem</td>
+                        <td>T</td>
+                        <td>Currently selected entity in the collection</td>
+                    </tr>
+                    <tr>
+                        <td>IsDirty</td>
+                        <td>bool</td>
+                        <td>True if there are uncommitted changes</td>
+                    </tr>
+                    <tr>
+                        <td>IsInListMode</td>
+                        <td>bool</td>
+                        <td>True for in-memory operations only</td>
+                    </tr>
+                    <tr>
+                        <td>PrimaryKey</td>
+                        <td>string</td>
+                        <td>Name of the primary key field</td>
+                    </tr>
+                    <tr>
+                        <td>EntityName</td>
+                        <td>string</td>
+                        <td>Name of the entity</td>
+                    </tr>
+                    <tr>
+                        <td>DataSource</td>
+                        <td>IDataSource</td>
+                        <td>Associated data source</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="content-section">
+            <h2>Data Retrieval Methods</h2>
+            
+            <h3>Get()</h3>
+            <div class="method-signature">
+                <code>public virtual async Task&lt;ObservableBindingList&lt;T&gt;&gt; Get()</code>
+            </div>
+            <p>Retrieves all entities from the data source.</p>
+
+            <h3>Get(List&lt;AppFilter&gt; filters)</h3>
+            <div class="method-signature">
+                <code>public virtual async Task&lt;ObservableBindingList&lt;T&gt;&gt; Get(List&lt;AppFilter&gt; filters)</code>
+            </div>
+            <p>Retrieves entities with applied filters.</p>
+
+            <h3>GetQuery(string query)</h3>
+            <div class="method-signature">
+                <code>public virtual async Task&lt;ObservableBindingList&lt;T&gt;&gt; GetQuery(string query)</code>
+            </div>
+            <p>Executes a custom query and returns results.</p>
+
+            <h3>Get(string primaryKeyId)</h3>
+            <div class="method-signature">
+                <code>public virtual T Get(string primaryKeyId)</code>
+            </div>
+            <p>Gets a single entity by its primary key value.</p>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Get all customers
+var allCustomers = await customerUoW.Get();
+
+// Get customers with filters
+var filters = new List&lt;AppFilter&gt; 
+{
+    new AppFilter { FieldName = "Country", Operator = "=", FilterValue = "USA" },
+    new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "Active" }
+};
+var filteredCustomers = await customerUoW.Get(filters);
+
+// Get customer by ID
+var customer = customerUoW.Get("CUST001");
+
+// Custom query
+var queryResult = await customerUoW.GetQuery("SELECT * FROM Customers WHERE CreateDate > '2023-01-01'");</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>CRUD Operations</h2>
+            
+            <h3>Create Operations</h3>
+            <div class="method-signature">
+                <code>public void New()</code>
+            </div>
+            <p>Creates a new entity and adds it to the collection.</p>
+
+            <div class="method-signature">
+                <code>public void Add(T entity)</code>
+            </div>
+            <p>Adds an existing entity to the collection.</p>
+
+            <h3>Insert Operations</h3>
+            <div class="method-signature">
+                <code>public async Task&lt;IErrorsInfo&gt; InsertAsync(T doc)</code>
+            </div>
+            <p>Asynchronously inserts an entity to the data source.</p>
+
+            <div class="method-signature">
+                <code>public IErrorsInfo InsertDoc(T doc)</code>
+            </div>
+            <p>Synchronously inserts an entity to the data source.</p>
+
+            <h3>Update Operations</h3>
+            <div class="method-signature">
+                <code>public async Task&lt;IErrorsInfo&gt; UpdateAsync(T doc)</code>
+            </div>
+            <p>Asynchronously updates an entity in the data source.</p>
+
+            <div class="method-signature">
+                <code>public IErrorsInfo Update(T entity)</code>
+            </div>
+            <p>Updates an entity in the collection.</p>
+
+            <h3>Delete Operations</h3>
+            <div class="method-signature">
+                <code>public async Task&lt;IErrorsInfo&gt; DeleteAsync(T doc)</code>
+            </div>
+            <p>Asynchronously deletes an entity from the data source.</p>
+
+            <div class="method-signature">
+                <code>public IErrorsInfo Delete(T entity)</code>
+            </div>
+            <p>Deletes an entity from the collection.</p>
+
+            <div class="method-signature">
+                <code>public IErrorsInfo Delete(string id)</code>
+            </div>
+            <p>Deletes an entity by its primary key.</p>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Create new customer
+customerUoW.New();
+var newCustomer = customerUoW.CurrentItem;
+newCustomer.Name = "John Doe";
+newCustomer.Email = "john@example.com";
+
+// Add existing customer
+var existingCustomer = new Customer { Name = "Jane Smith" };
+customerUoW.Add(existingCustomer);
+
+// Insert to database
+var insertResult = await customerUoW.InsertAsync(newCustomer);
+if (insertResult.Flag == Errors.Ok)
+{
+    Console.WriteLine("Customer inserted successfully");
+}
+
+// Update customer
+newCustomer.Email = "newemail@example.com";
+var updateResult = await customerUoW.UpdateAsync(newCustomer);
+
+// Delete customer
+var deleteResult = await customerUoW.DeleteAsync(newCustomer);
+
+// Delete by ID
+customerUoW.Delete("CUST001");</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Transaction Management</h2>
+            
+            <h3>Commit</h3>
+            <div class="method-signature">
+                <code>public virtual async Task&lt;IErrorsInfo&gt; Commit()</code>
+            </div>
+            <p>Commits all pending changes to the data source.</p>
+
+            <div class="method-signature">
+                <code>public virtual async Task&lt;IErrorsInfo&gt; Commit(IProgress&lt;PassedArgs&gt; progress, CancellationToken token)</code>
+            </div>
+            <p>Commits with progress reporting and cancellation support.</p>
+
+            <h3>Rollback</h3>
+            <div class="method-signature">
+                <code>public Task&lt;IErrorsInfo&gt; Rollback()</code>
+            </div>
+            <p>Rolls back all uncommitted changes.</p>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">try
+{
+    // Make multiple changes
+    customerUoW.New();
+    var customer1 = customerUoW.CurrentItem;
+    customer1.Name = "Customer 1";
+    
+    customerUoW.New();
+    var customer2 = customerUoW.CurrentItem;
+    customer2.Name = "Customer 2";
+    
+    // Commit all changes
+    var result = await customerUoW.Commit();
+    
+    if (result.Flag == Errors.Ok)
+    {
+        Console.WriteLine("All changes committed");
+    }
+    else
+    {
+        Console.WriteLine($"Commit failed: {result.Message}");
+        await customerUoW.Rollback();
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error: {ex.Message}");
+    await customerUoW.Rollback();
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Change Tracking</h2>
+            
+            <p>The UnitOfWork automatically tracks changes to entities:</p>
+
+            <h3>Entity States</h3>
+            <ul>
+                <li><strong>Added:</strong> New entities not yet persisted</li>
+                <li><strong>Modified:</strong> Existing entities with changes</li>
+                <li><strong>Deleted:</strong> Entities marked for deletion</li>
+                <li><strong>Unchanged:</strong> Entities with no modifications</li>
+            </ul>
+
+            <h3>Change Tracking Methods</h3>
+            <div class="method-signature">
+                <code>public IEnumerable&lt;int&gt; GetAddedEntities()</code>
+            </div>
+            
+            <div class="method-signature">
+                <code>public IEnumerable&lt;int&gt; GetModifiedEntities()</code>
+            </div>
+            
+            <div class="method-signature">
+                <code>public IEnumerable&lt;T&gt; GetDeletedEntities()</code>
+            </div>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Check for changes
+if (customerUoW.IsDirty)
+{
+    var added = customerUoW.GetAddedEntities();
+    var modified = customerUoW.GetModifiedEntities();
+    var deleted = customerUoW.GetDeletedEntities();
+    
+    Console.WriteLine($"Added: {added.Count()}, Modified: {modified.Count()}, Deleted: {deleted.Count()}");
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Navigation Methods</h2>
+            
+            <div class="method-signature">
+                <code>public void MoveFirst()</code>
+            </div>
+            
+            <div class="method-signature">
+                <code>public void MoveNext()</code>
+            </div>
+            
+            <div class="method-signature">
+                <code>public void MovePrevious()</code>
+            </div>
+            
+            <div class="method-signature">
+                <code>public void MoveLast()</code>
+            </div>
+            
+            <div class="method-signature">
+                <code>public void MoveTo(int index)</code>
+            </div>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Navigate through records
+customerUoW.MoveFirst();
+Console.WriteLine($"First customer: {customerUoW.CurrentItem.Name}");
+
+customerUoW.MoveNext();
+Console.WriteLine($"Next customer: {customerUoW.CurrentItem.Name}");
+
+// Move to specific position
+customerUoW.MoveTo(5);
+Console.WriteLine($"Customer at position 5: {customerUoW.CurrentItem.Name}");</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Events</h2>
+            
+            <p>The UnitOfWork provides comprehensive event support for lifecycle management:</p>
+
+            <table class="parameter-table">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>When Fired</th>
+                        <th>Cancellable</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>PreCreate</td>
+                        <td>Before creating new entity</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td>PostCreate</td>
+                        <td>After creating new entity</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td>PreInsert</td>
+                        <td>Before inserting to data source</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td>PostInsert</td>
+                        <td>After inserting to data source</td>
+                        <td>No</td>
+                    </tr>
+                    <tr>
+                        <td>PreUpdate</td>
+                        <td>Before updating in data source</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td>PostUpdate</td>
+                        <td>After updating in data source</td>
+                        <td>No</td>
+                    </tr>
+                    <tr>
+                        <td>PreDelete</td>
+                        <td>Before deleting from data source</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td>PostDelete</td>
+                        <td>After deleting from data source</td>
+                        <td>No</td>
+                    </tr>
+                    <tr>
+                        <td>PreCommit</td>
+                        <td>Before committing changes</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td>PostCommit</td>
+                        <td>After committing changes</td>
+                        <td>No</td>
+                    </tr>
+                    <tr>
+                        <td>PostEdit</td>
+                        <td>After property changes</td>
+                        <td>No</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Subscribe to events
+customerUoW.PreInsert += (sender, args) => 
+{
+    var customer = (Customer)sender;
+    if (string.IsNullOrEmpty(customer.Name))
+    {
+        args.Cancel = true;
+        Console.WriteLine("Insert cancelled - Name is required");
+    }
+};
+
+customerUoW.PostEdit += (sender, args) => 
+{
+    Console.WriteLine($"Property {args.PropertyName} changed to {args.PropertyValue}");
+};
+
+customerUoW.PreCommit += (sender, args) => 
+{
+    if (!ValidateAllCustomers())
+    {
+        args.Cancel = true;
+        Console.WriteLine("Commit cancelled - Validation failed");
+    }
+};</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Undo/Redo Functionality</h2>
+            
+            <div class="method-signature">
+                <code>public void UndoLastChange()</code>
+            </div>
+            <p>Undoes the last change made to the collection.</p>
+
+            <div class="method-signature">
+                <code>public void UndoDelete()</code>
+            </div>
+            <p>Undoes the most recent delete operation.</p>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Make a change
+var customer = customerUoW.CurrentItem;
+customer.Name = "New Name";
+
+// Undo the change
+customerUoW.UndoLastChange();
+
+// Delete and undo
+customerUoW.Delete(customer);
+customerUoW.UndoDelete(); // Customer is restored</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Logging</h2>
+            
+            <div class="method-signature">
+                <code>public bool IsLogging { get; set; }</code>
+            </div>
+            
+            <div class="method-signature">
+                <code>public bool SaveLog(string pathandname)</code>
+            </div>
+            <p>Saves the change log to a JSON file.</p>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Enable logging
+customerUoW.IsLogging = true;
+
+// Make changes...
+customerUoW.New();
+// ... more operations ...
+
+// Save log
+var success = customerUoW.SaveLog(@"C:\Logs\customer_changes.json");
+if (success)
+{
+    Console.WriteLine("Log saved successfully");
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Best Practices</h2>
+            
+            <ul>
+                <li><strong>Use using statements:</strong> UnitOfWork implements IDisposable</li>
+                <li><strong>Handle events:</strong> Use lifecycle events for validation and business logic</li>
+                <li><strong>Check IsDirty:</strong> Before closing forms or navigating away</li>
+                <li><strong>Use async methods:</strong> For all database operations</li>
+                <li><strong>Enable logging:</strong> For audit trails and debugging</li>
+                <li><strong>Validate before commit:</strong> Use PreCommit event for final validation</li>
+                <li><strong>Handle exceptions:</strong> Wrap database operations in try-catch blocks</li>
+                <li><strong>Use filters efficiently:</strong> Apply filters at database level when possible</li>
+            </ul>
+
+            <div class="warning-box">
+                <strong>Important:</strong> When using identity columns (IsIdentity = true), the primary key value will be automatically updated after successful insert operations.
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+    </script>
+</body>
+</html>

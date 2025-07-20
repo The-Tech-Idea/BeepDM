@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MultiDataSourceUnitOfWork - Beep Editor Documentation</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        .content-section h3 {
+            color: #555;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .method-signature {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .parameter-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .parameter-table th,
+        .parameter-table td {
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .parameter-table th {
+            background-color: #667eea;
+            color: white;
+        }
+
+        .parameter-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .nav-breadcrumb {
+            background: white;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .nav-breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .example-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        ul {
+            margin-left: 2rem;
+        }
+
+        li {
+            margin: 0.5rem 0;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: #2d3748;
+            color: white;
+            padding: 2rem;
+            transition: left 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 999;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <button class="menu-toggle" onclick="toggleSidebar()">?</button>
+    
+    <div class="overlay" onclick="closeSidebar()"></div>
+    
+    <nav class="sidebar">
+        <h3>Navigation</h3>
+        <ul style="list-style: none;">
+            <li><a href="index.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">Home</a></li>
+            <li><a href="multidatasource-unitofwork.html" style="color: #fff; text-decoration: none; display: block; padding: 0.5rem 0; background: #4a90e2;">MultiDataSource UnitOfWork</a></li>
+            <li><a href="unitofwork.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">UnitOfWork</a></li>
+            <li><a href="unitofwork-factory.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">UnitOfWork Factory</a></li>
+            <li><a href="unitofwork-wrapper.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">UnitOfWork Wrapper</a></li>
+            <li><a href="api-reference.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">API Reference</a></li>
+            <li><a href="examples.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">Code Examples</a></li>
+            <li><a href="best-practices.html" style="color: #4a90e2; text-decoration: none; display: block; padding: 0.5rem 0;">Best Practices</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="nav-breadcrumb">
+            <a href="index.html">Home</a> > MultiDataSource UnitOfWork
+        </div>
+
+        <header>
+            <h1>MultiDataSourceUnitOfWork</h1>
+            <p>Coordinate operations across multiple data sources with relationship management</p>
+        </header>
+
+        <div class="content-section">
+            <h2>Overview</h2>
+            <p>The <code>MultiDataSourceUnitOfWork</code> class provides a unified interface for managing entities across multiple data sources while maintaining relationships and ensuring data consistency. It orchestrates multiple <code>UnitOfWork</code> instances and handles cross-datasource transactions.</p>
+            
+            <div class="info-box">
+                <strong>Key Benefits:</strong>
+                <ul>
+                    <li>Unified interface for multiple data sources</li>
+                    <li>Automatic relationship management</li>
+                    <li>Transaction coordination across data sources</li>
+                    <li>Parent-child navigation with automatic loading</li>
+                    <li>Validation and rollback capabilities</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Constructor</h2>
+            <div class="method-signature">
+                <code>public MultiDataSourceUnitOfWork(IDMEEditor dmeEditor)</code>
+            </div>
+            <p>Initializes a new instance of the MultiDataSourceUnitOfWork class.</p>
+            
+            <table class="parameter-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>dmeEditor</td>
+                        <td>IDMEEditor</td>
+                        <td>The data management editor instance providing access to data sources and configuration</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="content-section">
+            <h2>Core Methods</h2>
+            
+            <h3>AddUnitOfWorkAsync&lt;T&gt;</h3>
+            <div class="method-signature">
+                <code>public async Task AddUnitOfWorkAsync&lt;T&gt;(string dataSourceName, string entityName, string primaryKey) where T : Entity, new()</code>
+            </div>
+            <p>Adds a new UnitOfWork for a specific entity type and data source.</p>
+            
+            <table class="parameter-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>dataSourceName</td>
+                        <td>string</td>
+                        <td>Name of the data source</td>
+                    </tr>
+                    <tr>
+                        <td>entityName</td>
+                        <td>string</td>
+                        <td>Name of the entity</td>
+                    </tr>
+                    <tr>
+                        <td>primaryKey</td>
+                        <td>string</td>
+                        <td>Name of the primary key field</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Add customers from SQL Server
+await multiUoW.AddUnitOfWorkAsync&lt;Customer&gt;("SqlServer", "Customers", "CustomerID");
+
+// Add orders from MongoDB
+await multiUoW.AddUnitOfWorkAsync&lt;Order&gt;("MongoDB", "Orders", "OrderID");</code></pre>
+                </div>
+            </div>
+
+            <h3>AddRelationship</h3>
+            <div class="method-signature">
+                <code>public void AddRelationship(string parentEntityName, string childEntityName, string parentKeyField, string childForeignKeyField, RelationshipBehavior deleteBehavior = RelationshipBehavior.CascadeDelete, bool isRequired = false)</code>
+            </div>
+            <p>Defines a relationship between two entities, potentially across different data sources.</p>
+            
+            <table class="parameter-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>parentEntityName</td>
+                        <td>string</td>
+                        <td>Name of the parent entity</td>
+                    </tr>
+                    <tr>
+                        <td>childEntityName</td>
+                        <td>string</td>
+                        <td>Name of the child entity</td>
+                    </tr>
+                    <tr>
+                        <td>parentKeyField</td>
+                        <td>string</td>
+                        <td>Primary key field in parent entity</td>
+                    </tr>
+                    <tr>
+                        <td>childForeignKeyField</td>
+                        <td>string</td>
+                        <td>Foreign key field in child entity</td>
+                    </tr>
+                    <tr>
+                        <td>deleteBehavior</td>
+                        <td>RelationshipBehavior</td>
+                        <td>How to handle deletes (CascadeDelete, SetNull, Restrict)</td>
+                    </tr>
+                    <tr>
+                        <td>isRequired</td>
+                        <td>bool</td>
+                        <td>Whether the relationship is required for validation</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Define Customer -> Orders relationship with cascade delete
+multiUoW.AddRelationship("Customer", "Order", "CustomerID", "CustomerID", 
+                        RelationshipBehavior.CascadeDelete, false);
+
+// Define Order -> OrderItems relationship that restricts deletion
+multiUoW.AddRelationship("Order", "OrderItem", "OrderID", "OrderID", 
+                        RelationshipBehavior.Restrict, true);</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Data Access Methods</h2>
+            
+            <h3>GetEntities&lt;T&gt;</h3>
+            <div class="method-signature">
+                <code>public ObservableBindingList&lt;T&gt; GetEntities&lt;T&gt;(string entityName) where T : Entity, new()</code>
+            </div>
+            <p>Gets the observable collection of entities for a specific entity type.</p>
+
+            <h3>GetAllRelatedChildrenAsync&lt;TChild, TParent&gt;</h3>
+            <div class="method-signature">
+                <code>public async Task&lt;Dictionary&lt;string, ObservableBindingList&lt;TChild&gt;&gt;&gt; GetAllRelatedChildrenAsync&lt;TChild, TParent&gt;(string parentEntityName, TParent parentEntity)</code>
+            </div>
+            <p>Retrieves all related child entities for a given parent entity across all defined relationships.</p>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Get customer collection
+var customers = multiUoW.GetEntities&lt;Customer&gt;("Customer");
+
+// Get all orders for a specific customer
+var customer = customers.First();
+var relatedChildren = await multiUoW.GetAllRelatedChildrenAsync&lt;Order, Customer&gt;("Customer", customer);
+var orders = relatedChildren["Order"];</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>CRUD Operations</h2>
+            
+            <h3>InsertAsync&lt;T&gt;</h3>
+            <div class="method-signature">
+                <code>public async Task&lt;IErrorsInfo&gt; InsertAsync&lt;T&gt;(string entityName, T entity) where T : Entity, new()</code>
+            </div>
+            <p>Inserts a new entity and handles any related entities according to defined relationships.</p>
+
+            <h3>UpdateAsync&lt;T&gt;</h3>
+            <div class="method-signature">
+                <code>public async Task&lt;IErrorsInfo&gt; UpdateAsync&lt;T&gt;(string entityName, T entity) where T : Entity, new()</code>
+            </div>
+            <p>Updates an existing entity and triggers relationship-based updates if needed.</p>
+
+            <h3>DeleteAsync&lt;T&gt;</h3>
+            <div class="method-signature">
+                <code>public async Task&lt;IErrorsInfo&gt; DeleteAsync&lt;T&gt;(string entityName, T entity) where T : Entity, new()</code>
+            </div>
+            <p>Deletes an entity and handles related entities based on the defined relationship behavior.</p>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Insert a new customer
+var customer = new Customer { Name = "John Doe", Email = "john@example.com" };
+var result = await multiUoW.InsertAsync("Customer", customer);
+
+// Update customer
+customer.Email = "newemail@example.com";
+await multiUoW.UpdateAsync("Customer", customer);
+
+// Delete customer (will cascade to orders if configured)
+await multiUoW.DeleteAsync("Customer", customer);</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Transaction Management</h2>
+            
+            <h3>CommitAsync</h3>
+            <div class="method-signature">
+                <code>public async Task&lt;IErrorsInfo&gt; CommitAsync()</code>
+            </div>
+            <p>Commits all changes across all managed UnitOfWork instances. If any commit fails, all previously committed changes are rolled back.</p>
+
+            <div class="warning-box">
+                <strong>Important:</strong> The commit operation is atomic across all data sources. If any individual UnitOfWork fails to commit, all previously committed changes will be rolled back to maintain consistency.
+            </div>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">try 
+{
+    // Make multiple changes across different data sources
+    await multiUoW.InsertAsync("Customer", newCustomer);
+    await multiUoW.InsertAsync("Order", newOrder);
+    
+    // Commit all changes atomically
+    var result = await multiUoW.CommitAsync();
+    
+    if (result.Flag == Errors.Ok)
+    {
+        Console.WriteLine("All changes committed successfully");
+    }
+    else
+    {
+        Console.WriteLine($"Commit failed: {result.Message}");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error during commit: {ex.Message}");
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Navigation Methods</h2>
+            
+            <p>The MultiDataSourceUnitOfWork provides navigation methods for moving through parent records and automatically loading related children:</p>
+
+            <h3>NavigateToParentAsync&lt;T&gt;</h3>
+            <div class="method-signature">
+                <code>public async Task NavigateToParentAsync&lt;T&gt;(string parentEntityName, T parentEntity) where T : Entity, new()</code>
+            </div>
+
+            <h3>NavigateToNextAsync&lt;T&gt;</h3>
+            <div class="method-signature">
+                <code>public async Task NavigateToNextAsync&lt;T&gt;(string parentEntityName) where T : Entity, new()</code>
+            </div>
+
+            <h3>NavigateToPreviousAsync&lt;T&gt;</h3>
+            <div class="method-signature">
+                <code>public async Task NavigateToPreviousAsync&lt;T&gt;(string parentEntityName) where T : Entity, new()</code>
+            </div>
+
+            <h3>NavigateToFirstAsync&lt;T&gt;</h3>
+            <div class="method-signature">
+                <code>public async Task NavigateToFirstAsync&lt;T&gt;(string parentEntityName) where T : Entity, new()</code>
+            </div>
+
+            <h3>NavigateToLastAsync&lt;T&gt;</h3>
+            <div class="method-signature">
+                <code>public async Task NavigateToLastAsync&lt;T&gt;(string parentEntityName) where T : Entity, new()</code>
+            </div>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">// Subscribe to child data changes
+multiUoW.ChildDataChanged += (sender, args) => {
+    Console.WriteLine($"Child data changed for {args.ChildEntityName}");
+    // Refresh UI or take other actions
+};
+
+// Navigate to first customer
+await multiUoW.NavigateToFirstAsync&lt;Customer&gt;("Customer");
+
+// Move to next customer (will automatically load related orders)
+await multiUoW.NavigateToNextAsync&lt;Customer&gt;("Customer");
+
+// Get current parent entity
+var currentCustomer = multiUoW.CurrentParentEntity;</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Events</h2>
+            
+            <h3>ChildDataChanged</h3>
+            <div class="method-signature">
+                <code>public event EventHandler&lt;ChildDataChangedEventArgs&gt; ChildDataChanged;</code>
+            </div>
+            <p>Fired when navigation changes result in different child data being available. Use this to refresh UI components or perform other related actions.</p>
+
+            <div class="example-box">
+                <strong>Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">multiUoW.ChildDataChanged += async (sender, args) => {
+    // Refresh child collections in UI
+    if (args.ChildEntityName == "Order")
+    {
+        await RefreshOrdersGrid();
+    }
+    else if (args.ChildEntityName == "Address")
+    {
+        await RefreshAddressForm();
+    }
+};</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Relationship Behaviors</h2>
+            
+            <p>The MultiDataSourceUnitOfWork supports three relationship behaviors:</p>
+
+            <h3>RelationshipBehavior.CascadeDelete</h3>
+            <p>When a parent entity is deleted, all related child entities are automatically deleted.</p>
+
+            <h3>RelationshipBehavior.SetNull</h3>
+            <p>When a parent entity is deleted, the foreign key fields in related child entities are set to null.</p>
+
+            <h3>RelationshipBehavior.Restrict</h3>
+            <p>Prevents deletion of a parent entity if related child entities exist.</p>
+
+            <div class="warning-box">
+                <strong>Note:</strong> SetNull behavior only works with nullable foreign key fields. For non-nullable fields, the behavior will fall back to Restrict.
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Best Practices</h2>
+            
+            <ul>
+                <li><strong>Initialize relationships early:</strong> Define all relationships before starting data operations</li>
+                <li><strong>Handle events:</strong> Subscribe to ChildDataChanged for responsive UI updates</li>
+                <li><strong>Validate before commit:</strong> The system validates relationships and required data before committing</li>
+                <li><strong>Use try-catch blocks:</strong> Wrap commit operations in exception handling</li>
+                <li><strong>Dispose properly:</strong> The class implements IDisposable - use using statements or call Dispose</li>
+                <li><strong>Consider performance:</strong> Navigation methods save/validate children before moving - be aware of the cost</li>
+            </ul>
+
+            <div class="example-box">
+                <strong>Complete Example:</strong>
+                <div class="code-block">
+<pre><code class="language-csharp">using (var multiUoW = new MultiDataSourceUnitOfWork(dmeEditor))
+{
+    // Setup entities
+    await multiUoW.AddUnitOfWorkAsync&lt;Customer&gt;("SqlServer", "Customers", "CustomerID");
+    await multiUoW.AddUnitOfWorkAsync&lt;Order&gt;("MongoDB", "Orders", "OrderID");
+    await multiUoW.AddUnitOfWorkAsync&lt;Address&gt;("SqlServer", "Addresses", "AddressID");
+    
+    // Setup relationships
+    multiUoW.AddRelationship("Customer", "Order", "CustomerID", "CustomerID");
+    multiUoW.AddRelationship("Customer", "Address", "CustomerID", "CustomerID", 
+                           RelationshipBehavior.CascadeDelete);
+    
+    // Handle events
+    multiUoW.ChildDataChanged += async (s, e) => await RefreshUI(e.ChildEntityName);
+    
+    // Work with data
+    var customers = multiUoW.GetEntities&lt;Customer&gt;("Customer");
+    
+    // Navigate and auto-load children
+    await multiUoW.NavigateToFirstAsync&lt;Customer&gt;("Customer");
+    
+    // Make changes
+    var newOrder = new Order { CustomerID = customers.Current.CustomerID, /* ... */ };
+    await multiUoW.InsertAsync("Order", newOrder);
+    
+    // Commit all changes
+    var result = await multiUoW.CommitAsync();
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UnitOfWork Deep Dive - Beep Engine</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            margin-left: 280px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        .content-section h3 {
+            color: #444;
+            margin: 1.5rem 0 1rem 0;
+            font-size: 1.3rem;
+        }
+
+        .content-section h4 {
+            color: #555;
+            margin: 1rem 0 0.5rem 0;
+            font-size: 1.1rem;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-left: 4px solid #17a2b8;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 5px;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-left: 4px solid #28a745;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 5px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-left: 4px solid #fdcb6e;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 5px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border-left: 4px solid #667eea;
+        }
+
+        .feature-card h4 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100vh;
+            background: #2d3748;
+            color: white;
+            padding: 1rem;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 1rem;
+            color: #fff;
+            font-size: 1.1rem;
+            border-bottom: 1px solid #4a5568;
+            padding-bottom: 0.5rem;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar li {
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar a {
+            color: #cbd5e0;
+            text-decoration: none;
+            display: block;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar a:hover {
+            background-color: #4a5568;
+            color: #fff;
+        }
+
+        .sidebar a.active {
+            background-color: #667eea;
+            color: #fff;
+        }
+
+        .sidebar .sub-menu {
+            margin-left: 1rem;
+        }
+
+        .sidebar .sub-menu a {
+            font-size: 0.85rem;
+            color: #a0aec0;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .method-signature {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            color: #495057;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin-left: 0;
+                padding: 10px;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .hero h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>UnitOfWork Deep Dive</h3>
+        <ul>
+            <li><a href="#overview" class="active">Overview</a></li>
+            <li><a href="#core-concepts">Core Concepts</a>
+                <ul class="sub-menu">
+                    <li><a href="#change-tracking">Change Tracking</a></li>
+                    <li><a href="#entity-states">Entity States</a></li>
+                    <li><a href="#lifecycle-events">Lifecycle Events</a></li>
+                </ul>
+            </li>
+            <li><a href="#constructors">Constructors</a>
+                <ul class="sub-menu">
+                    <li><a href="#basic-constructor">Basic Constructor</a></li>
+                    <li><a href="#list-mode">List Mode</a></li>
+                    <li><a href="#entity-structure">With Entity Structure</a></li>
+                </ul>
+            </li>
+            <li><a href="#crud-operations">CRUD Operations</a>
+                <ul class="sub-menu">
+                    <li><a href="#create-operations">Create</a></li>
+                    <li><a href="#read-operations">Read</a></li>
+                    <li><a href="#update-operations">Update</a></li>
+                    <li><a href="#delete-operations">Delete</a></li>
+                </ul>
+            </li>
+            <li><a href="#advanced-features">Advanced Features</a>
+                <ul class="sub-menu">
+                    <li><a href="#filtering-paging">Filtering & Paging</a></li>
+                    <li><a href="#undo-redo">Undo/Redo</a></li>
+                    <li><a href="#navigation">Navigation</a></li>
+                    <li><a href="#logging">Logging</a></li>
+                </ul>
+            </li>
+            <li><a href="#multi-datasource">Multi-DataSource UoW</a>
+                <ul class="sub-menu">
+                    <li><a href="#relationships">Relationships</a></li>
+                    <li><a href="#cross-source-ops">Cross-Source Operations</a></li>
+                    <li><a href="#transaction-management">Transaction Management</a></li>
+                </ul>
+            </li>
+            <li><a href="#real-world-examples">Real-World Examples</a></li>
+            <li><a href="#best-practices">Best Practices</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <header class="hero">
+            <h1>UnitOfWork Deep Dive</h1>
+            <p>Comprehensive guide to change tracking and entity management</p>
+        </header>
+
+        <div class="content-section" id="overview">
+            <h2>Overview</h2>
+            <p>The UnitOfWork pattern in Beep provides sophisticated change tracking, entity state management, and transaction coordination for data operations. It acts as an in-memory representation of your data with automatic dirty tracking, undo/redo capabilities, and event-driven lifecycle management.</p>
+            
+            <div class="info-box">
+                <strong>Key Benefits:</strong>
+                <ul>
+                    <li><strong>Automatic Change Tracking:</strong> Monitors all entity modifications automatically</li>
+                    <li><strong>Batch Operations:</strong> Accumulate changes and commit as a single transaction</li>
+                    <li><strong>Entity State Management:</strong> Track Added, Modified, Deleted states</li>
+                    <li><strong>Undo/Redo Support:</strong> Built-in change history and rollback capabilities</li>
+                    <li><strong>Event-Driven Architecture:</strong> Pre/Post operation hooks for business logic</li>
+                    <li><strong>Observable Collections:</strong> UI binding with automatic notifications</li>
+                </ul>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Generic Type Safety</h4>
+                    <p>Strongly typed operations with compile-time safety using <code>UnitofWork&lt;T&gt;</code> where T : Entity</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Multiple Operation Modes</h4>
+                    <p>Database-connected mode for live data or List mode for in-memory operations</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Relationship Management</h4>
+                    <p>Handle parent-child relationships, foreign keys, and referential integrity</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Progress Tracking</h4>
+                    <p>Built-in progress reporting for long-running operations with cancellation support</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section" id="core-concepts">
+            <h2>Core Concepts</h2>
+
+            <h3 id="change-tracking">Change Tracking</h3>
+            <p>The UnitOfWork automatically tracks all changes to entities in the collection:</p>
+
+            <div class="code-block">
+<pre><code class="language-csharp">// Automatic change tracking example
+var customerUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, "MyDB", "Customers", "CustomerID");
+
+// Load data - entities are automatically tracked
+await customerUoW.Get();
+
+// Modify an entity - automatically tracked as "Modified"
+var customer = customerUoW.Units.First();
+customer.Name = "Updated Name";  // Change is automatically detected
+
+// Check if there are uncommitted changes
+if (customerUoW.IsDirty)
+{
+    Console.WriteLine("There are uncommitted changes");
+    
+    // See what entities have been modified
+    var modifiedEntities = customerUoW.GetModifiedEntities();
+    Console.WriteLine($"Modified entities count: {modifiedEntities.Count()}");
+}
+
+// Add new entity - tracked as "Added"
+customerUoW.Add(new Customer { Name = "New Customer" });
+
+// Delete entity - tracked as "Deleted"
+customerUoW.Delete(customer);
+
+// Commit all changes in a single transaction
+await customerUoW.Commit();</code></pre>
+            </div>
+
+            <h3 id="entity-states">Entity States</h3>
+            <p>The UnitOfWork tracks entities in different states:</p>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>State</th>
+                            <th>Description</th>
+                            <th>Commit Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Added</strong></td>
+                            <td>New entities added to the collection</td>
+                            <td>INSERT into database</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Modified</strong></td>
+                            <td>Existing entities with property changes</td>
+                            <td>UPDATE in database</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Deleted</strong></td>
+                            <td>Entities marked for deletion</td>
+                            <td>DELETE from database</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Unchanged</strong></td>
+                            <td>Loaded entities with no modifications</td>
+                            <td>No database operation</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="code-block">
+<pre><code class="language-csharp">// Check entity states
+var addedEntities = customerUoW.GetAddedEntities();
+var modifiedEntities = customerUoW.GetModifiedEntities();
+var deletedEntities = customerUoW.GetDeletedEntities();
+
+Console.WriteLine($"Added: {addedEntities.Count()}, Modified: {modifiedEntities.Count()}, Deleted: {deletedEntities.Count()}");
+
+// Get specific state information
+foreach (var entityIndex in addedEntities)
+{
+    var entity = customerUoW.Units[entityIndex];
+    Console.WriteLine($"New entity: {entity.Name}");
+}</code></pre>
+            </div>
+
+            <h3 id="lifecycle-events">Lifecycle Events</h3>
+            <p>UnitOfWork provides comprehensive event hooks for business logic:</p>
+
+            <div class="code-block">
+<pre><code class="language-csharp">var customerUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, "MyDB", "Customers", "CustomerID");
+
+// Pre-operation events - can cancel operations
+customerUoW.PreCreate += (sender, args) => 
+{
+    var customer = sender as Customer;
+    Console.WriteLine($"About to create customer: {customer.Name}");
+    // args.Cancel = true; // Uncomment to cancel operation
+};
+
+customerUoW.PreUpdate += (sender, args) => 
+{
+    var customer = sender as Customer;
+    Console.WriteLine($"About to update customer: {customer.Name}");
+    
+    // Validate business rules
+    if (string.IsNullOrEmpty(customer.Email))
+    {
+        args.Cancel = true;
+        Console.WriteLine("Update cancelled - Email is required");
+    }
+};
+
+customerUoW.PreDelete += (sender, args) => 
+{
+    var customer = sender as Customer;
+    Console.WriteLine($"About to delete customer: {customer.Name}");
+};
+
+// Post-operation events - for logging, notifications, etc.
+customerUoW.PostCreate += (sender, args) => 
+{
+    var customer = sender as Customer;
+    Console.WriteLine($"Customer created: {customer.Name}");
+    // Send welcome email, log audit trail, etc.
+};
+
+customerUoW.PostUpdate += (sender, args) => 
+{
+    var customer = sender as Customer;
+    Console.WriteLine($"Customer updated: {customer.Name}");
+    // Log changes, send notifications, etc.
+};
+
+customerUoW.PostCommit += (sender, args) => 
+{
+    Console.WriteLine("All changes committed successfully");
+    // Clear caches, send batch notifications, etc.
+};</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section" id="constructors">
+            <h2>Constructors</h2>
+
+            <h3 id="basic-constructor">Basic Constructor</h3>
+            <div class="method-signature">
+                <code>public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, string primarykey)</code>
+            </div>
+
+            <div class="code-block">
+<pre><code class="language-csharp">// Basic constructor - most common usage
+var customerUoW = new UnitofWork&lt;Customer&gt;(
+    dmeEditor,           // Data management editor
+    "MyDatabase",        // Data source name
+    "Customers",         // Entity/table name
+    "CustomerID"         // Primary key field
+);
+
+// Load all data
+await customerUoW.Get();</code></pre>
+            </div>
+
+            <h3 id="list-mode">List Mode Constructor</h3>
+            <div class="method-signature">
+                <code>public UnitofWork(IDMEEditor dMEEditor, bool isInListMode, ObservableBindingList&lt;T&gt; ts, string primarykey)</code>
+            </div>
+
+            <div class="code-block">
+<pre><code class="language-csharp">// List mode - for in-memory operations only
+var existingCustomers = new ObservableBindingList&lt;Customer&gt;
+{
+    new Customer { CustomerID = 1, Name = "John Doe" },
+    new Customer { CustomerID = 2, Name = "Jane Smith" }
+};
+
+var customerUoW = new UnitofWork&lt;Customer&gt;(
+    dmeEditor,
+    true,                // isInListMode = true
+    existingCustomers,   // Initial data
+    "CustomerID"         // Primary key field
+);
+
+// All operations work in-memory only
+customerUoW.Add(new Customer { Name = "New Customer" });
+// No database operations - purely in-memory</code></pre>
+            </div>
+
+            <h3 id="entity-structure">With Entity Structure Constructor</h3>
+            <div class="method-signature">
+                <code>public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure, string primarykey)</code>
+            </div>
+
+            <div class="code-block">
+<pre><code class="language-csharp">// With pre-built entity structure for performance
+EntityStructure customerStructure = dmeEditor.GetEntityStructure("Customers", "MyDatabase");
+
+var customerUoW = new UnitofWork&lt;Customer&gt;(
+    dmeEditor,
+    "MyDatabase",
+    "Customers",
+    customerStructure,   // Pre-built structure
+    "CustomerID"
+);
+
+// Faster initialization since structure is already provided</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section" id="crud-operations">
+            <h2>CRUD Operations</h2>
+
+            <h3 id="create-operations">Create Operations</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">// Method 1: Add existing entity
+var newCustomer = new Customer 
+{ 
+    Name = "John Doe", 
+    Email = "john@example.com",
+    CreatedDate = DateTime.Now
+};
+customerUoW.Add(newCustomer);
+
+// Method 2: Create new entity in place
+customerUoW.New(); // Creates new entity and adds to collection
+
+// Method 3: Direct async insert (immediate database operation)
+var immediateCustomer = new Customer { Name = "Immediate Customer" };
+var result = await customerUoW.InsertAsync(immediateCustomer);
+
+if (result.Flag == Errors.Ok)
+{
+    Console.WriteLine("Customer inserted successfully");
+}</code></pre>
+            </div>
+
+            <h3 id="read-operations">Read Operations</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">// Load all entities
+await customerUoW.Get();
+
+// Load with filters
+var filters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "Country", Operator = "=", FilterValue = "USA" },
+    new AppFilter { FieldName = "Active", Operator = "=", FilterValue = "true" }
+};
+await customerUoW.Get(filters);
+
+// Load with custom query
+await customerUoW.GetQuery("SELECT * FROM Customers WHERE CreatedDate > '2023-01-01'");
+
+// Get specific entity by primary key
+var customer = customerUoW.Get("CUST001"); // Using primary key value
+
+// Get entity by index
+var firstCustomer = customerUoW.Get(0);
+
+// Use LINQ for complex queries (in-memory)
+var expensiveCustomers = customerUoW.Units
+    .Where(c => c.TotalOrders > 10000)
+    .OrderByDescending(c => c.TotalOrders)
+    .ToList();</code></pre>
+            </div>
+
+            <h3 id="update-operations">Update Operations</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">// Method 1: Modify existing entity (automatic tracking)
+var customer = customerUoW.Units.First();
+customer.Email = "newemail@example.com"; // Automatically tracked
+
+// Method 2: Update by primary key
+var result = customerUoW.Update("CUST001", updatedCustomer);
+
+// Method 3: Update specific entity
+var result2 = customerUoW.Update(customerEntity);
+
+// Method 4: Direct async update (immediate database operation)
+customer.Name = "Updated Name";
+var asyncResult = await customerUoW.UpdateAsync(customer);
+
+// Method 5: Functional update with predicate
+var updateResult = customerUoW.Update(
+    c => c.Country == "USA", 
+    new Customer { Country = "United States" }
+);</code></pre>
+            </div>
+
+            <h3 id="delete-operations">Delete Operations</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">// Method 1: Delete by entity reference
+var customerToDelete = customerUoW.Units.First();
+var result = customerUoW.Delete(customerToDelete);
+
+// Method 2: Delete by primary key
+var result2 = customerUoW.Delete("CUST001");
+
+// Method 3: Delete current entity
+customerUoW.MoveTo(5); // Navigate to specific entity
+var result3 = customerUoW.Delete(); // Delete current entity
+
+// Method 4: Direct async delete (immediate database operation)
+var asyncResult = await customerUoW.DeleteAsync(customerToDelete);
+
+// Method 5: Functional delete with predicate
+var deleteResult = customerUoW.Delete(c => c.Active == false);
+
+// Undo delete operations
+customerUoW.UndoDelete(); // Restore last deleted entity</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section" id="advanced-features">
+            <h2>Advanced Features</h2>
+
+            <h3 id="filtering-paging">Filtering and Paging</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">// Complex filtering
+var complexFilters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "CreatedDate", Operator = ">=", FilterValue = "2023-01-01" },
+    new AppFilter { FieldName = "CreatedDate", Operator = "<=", FilterValue = "2023-12-31" },
+    new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "Active" },
+    new AppFilter { FieldName = "Country", Operator = "!=", FilterValue = "Unknown" }
+};
+
+var filteredCustomers = await customerUoW.Get(complexFilters);
+
+// Pagination support
+customerUoW.PageSize = 25;
+customerUoW.PageIndex = 0;
+
+// Get first page
+var firstPage = await customerUoW.Get(filters);
+Console.WriteLine($"Total items: {customerUoW.TotalItemCount}, Page: {customerUoW.PageIndex + 1}");
+
+// Navigate pages
+customerUoW.PageIndex = 1;
+var secondPage = await customerUoW.Get(filters);</code></pre>
+            </div>
+
+            <h3 id="undo-redo">Undo/Redo Operations</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">// All operations are automatically logged for undo
+var customer = customerUoW.Units.First();
+string originalName = customer.Name;
+
+// Make changes
+customer.Name = "Changed Name";
+customer.Email = "changed@email.com";
+
+// Undo last change
+customerUoW.UndoLastChange();
+Console.WriteLine($"Name after undo: {customer.Name}"); // Should be original name
+
+// Delete operation with undo
+customerUoW.Delete(customer);
+Console.WriteLine($"Customer deleted, count: {customerUoW.Units.Count}");
+
+// Undo the delete
+customerUoW.UndoDelete();
+Console.WriteLine($"Customer restored, count: {customerUoW.Units.Count}");
+
+// Rollback all changes to original state
+await customerUoW.Rollback();</code></pre>
+            </div>
+
+            <h3 id="navigation">Navigation Support</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">// Record navigation
+customerUoW.MoveFirst();
+Console.WriteLine($"First customer: {customerUoW.CurrentItem.Name}");
+
+customerUoW.MoveNext();
+Console.WriteLine($"Next customer: {customerUoW.CurrentItem.Name}");
+
+customerUoW.MoveLast();
+Console.WriteLine($"Last customer: {customerUoW.CurrentItem.Name}");
+
+customerUoW.MovePrevious();
+Console.WriteLine($"Previous customer: {customerUoW.CurrentItem.Name}");
+
+// Direct navigation
+customerUoW.MoveTo(10); // Move to 11th record (0-based)
+Console.WriteLine($"Customer at index 10: {customerUoW.CurrentItem.Name}");
+
+// Navigation events
+customerUoW.CurrentChanged += (sender, e) => 
+{
+    Console.WriteLine($"Current customer changed to: {customerUoW.CurrentItem.Name}");
+};</code></pre>
+            </div>
+
+            <h3 id="logging">Change Logging</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">// Enable change logging
+customerUoW.IsLogging = true;
+
+// Make some changes
+var customer = customerUoW.Units.First();
+customer.Name = "Updated Name";
+customer.Email = "updated@email.com";
+
+customerUoW.Add(new Customer { Name = "New Customer" });
+customerUoW.Delete(customerUoW.Units.Last());
+
+// Access the change log
+var updateLog = customerUoW.UpdateLog;
+foreach (var logEntry in updateLog)
+{
+    Console.WriteLine($"Change at {logEntry.Key}: {logEntry.Value.ChangeType}");
+}
+
+// Save log to file
+bool logSaved = customerUoW.SaveLog(@"C:\Logs\CustomerChanges.json");
+if (logSaved)
+{
+    Console.WriteLine("Change log saved successfully");
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section" id="multi-datasource">
+            <h2>Multi-DataSource UnitOfWork</h2>
+            <p>The MultiDataSourceUnitOfWork coordinates operations across multiple data sources while maintaining relationships.</p>
+
+            <h3 id="relationships">Setting Up Relationships</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">var multiUoW = new MultiDataSourceUnitOfWork(dmeEditor);
+
+// Add different entity types from different sources
+await multiUoW.AddUnitOfWorkAsync&lt;Customer&gt;("SqlServerDB", "Customers", "CustomerID");
+await multiUoW.AddUnitOfWorkAsync&lt;Order&gt;("PostgresDB", "Orders", "OrderID");
+await multiUoW.AddUnitOfWorkAsync&lt;OrderDetail&gt;("MongoDatabase", "OrderDetails", "DetailID");
+
+// Define relationships
+multiUoW.AddRelationship(
+    "Customer", "Order",           // Parent -> Child
+    "CustomerID", "CustomerID",    // Parent key -> Foreign key
+    RelationshipBehavior.CascadeDelete,
+    isRequired: false
+);
+
+multiUoW.AddRelationship(
+    "Order", "OrderDetail",
+    "OrderID", "OrderID",
+    RelationshipBehavior.CascadeDelete,
+    isRequired: true  // Orders must have at least one detail
+);</code></pre>
+            </div>
+
+            <h3 id="cross-source-ops">Cross-DataSource Operations</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">// Get entities from different sources
+var customers = multiUoW.GetEntities&lt;Customer&gt;("Customer");
+var orders = multiUoW.GetEntities&lt;Order&gt;("Order");
+
+// Navigate parent-child relationships
+var selectedCustomer = customers.First();
+await multiUoW.NavigateToParentAsync("Customer", selectedCustomer);
+
+// Get all related children automatically
+var relatedOrders = await multiUoW.GetAllRelatedChildrenAsync&lt;Order, Customer&gt;(
+    "Customer", selectedCustomer);
+
+Console.WriteLine($"Customer {selectedCustomer.Name} has {relatedOrders["Order"].Count} orders");
+
+// Cross-source operations with relationship management
+var newOrder = new Order 
+{ 
+    CustomerID = selectedCustomer.CustomerID,
+    OrderDate = DateTime.Now,
+    Total = 299.99m
+};
+
+// Insert automatically updates related entities
+await multiUoW.InsertAsync("Order", newOrder);
+
+// Event handling for relationship changes
+multiUoW.ChildDataChanged += (sender, args) => 
+{
+    Console.WriteLine($"Child data changed: {args.ChildEntityName} for parent {args.ParentEntityName}");
+    // Refresh UI, update calculations, etc.
+};</code></pre>
+            </div>
+
+            <h3 id="transaction-management">Transaction Management</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">// Complex transaction across multiple data sources
+try
+{
+    // Make changes across different sources
+    var customer = customers.First();
+    customer.Status = "Premium";
+    await multiUoW.UpdateAsync("Customer", customer);
+
+    var newOrder = new Order { CustomerID = customer.CustomerID, Total = 500.00m };
+    await multiUoW.InsertAsync("Order", newOrder);
+
+    var orderDetail = new OrderDetail { OrderID = newOrder.OrderID, ProductID = 1, Quantity = 2 };
+    await multiUoW.InsertAsync("OrderDetail", orderDetail);
+
+    // Commit all changes atomically
+    var result = await multiUoW.CommitAsync();
+    
+    if (result.Flag == Errors.Ok)
+    {
+        Console.WriteLine("All changes committed successfully across all data sources");
+    }
+    else
+    {
+        Console.WriteLine($"Commit failed: {result.Message}");
+        // Automatic rollback has occurred
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Transaction failed: {ex.Message}");
+    // All changes are automatically rolled back
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section" id="real-world-examples">
+            <h2>Real-World Examples</h2>
+
+            <h3>Example 1: Customer Management with Validation</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">public class CustomerService
+{
+    private readonly UnitofWork&lt;Customer&gt; _customerUoW;
+    
+    public CustomerService(IDMEEditor dmeEditor)
+    {
+        _customerUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, "CRM_DB", "Customers", "CustomerID");
+        SetupValidation();
+    }
+    
+    private void SetupValidation()
+    {
+        _customerUoW.PreCreate += (sender, args) => 
+        {
+            var customer = sender as Customer;
+            if (string.IsNullOrEmpty(customer.Email))
+            {
+                args.Cancel = true;
+                throw new ValidationException("Email is required");
+            }
+            
+            customer.CreatedDate = DateTime.Now;
+            customer.CustomerID = Guid.NewGuid().ToString();
+        };
+        
+        _customerUoW.PreUpdate += (sender, args) => 
+        {
+            var customer = sender as Customer;
+            customer.ModifiedDate = DateTime.Now;
+            
+            // Business rule: Premium customers can't be downgraded
+            if (customer.Status == "Standard" && args.PropertyName == "Status")
+            {
+                var original = _customerUoW.Units.FirstOrDefault(c => c.CustomerID == customer.CustomerID);
+                if (original?.Status == "Premium")
+                {
+                    args.Cancel = true;
+                    throw new BusinessRuleException("Premium customers cannot be downgraded");
+                }
+            }
+        };
+    }
+    
+    public async Task&lt;Customer&gt; CreateCustomerAsync(string name, string email, string phone)
+    {
+        var customer = new Customer 
+        { 
+            Name = name, 
+            Email = email, 
+            Phone = phone,
+            Status = "Standard"
+        };
+        
+        _customerUoW.Add(customer);
+        await _customerUoW.Commit();
+        
+        return customer;
+    }
+    
+    public async Task&lt;List&lt;Customer&gt;&gt; SearchCustomersAsync(string searchTerm)
+    {
+        var filters = new List&lt;AppFilter&gt;
+        {
+            new AppFilter { FieldName = "Name", Operator = "LIKE", FilterValue = $"%{searchTerm}%" }
+        };
+        
+        await _customerUoW.Get(filters);
+        return _customerUoW.Units.ToList();
+    }
+}</code></pre>
+            </div>
+
+            <h3>Example 2: Order Processing with Multi-DataSource</h3>
+            <div class="code-block">
+<pre><code class="language-csharp">public class OrderProcessingService
+{
+    private readonly MultiDataSourceUnitOfWork _multiUoW;
+    
+    public OrderProcessingService(IDMEEditor dmeEditor)
+    {
+        _multiUoW = new MultiDataSourceUnitOfWork(dmeEditor);
+        SetupEntities().Wait();
+    }
+    
+    private async Task SetupEntities()
+    {
+        await _multiUoW.AddUnitOfWorkAsync&lt;Customer&gt;("CRM_DB", "Customers", "CustomerID");
+        await _multiUoW.AddUnitOfWorkAsync&lt;Order&gt;("Orders_DB", "Orders", "OrderID");
+        await _multiUoW.AddUnitOfWorkAsync&lt;OrderDetail&gt;("Orders_DB", "OrderDetails", "DetailID");
+        await _multiUoW.AddUnitOfWorkAsync&lt;Product&gt;("Inventory_DB", "Products", "ProductID");
+        
+        // Setup relationships
+        _multiUoW.AddRelationship("Customer", "Order", "CustomerID", "CustomerID");
+        _multiUoW.AddRelationship("Order", "OrderDetail", "OrderID", "OrderID", 
+            RelationshipBehavior.CascadeDelete, isRequired: true);
+    }
+    
+    public async Task&lt;Order&gt; CreateOrderAsync(string customerID, List&lt;OrderItem&gt; items)
+    {
+        var customers = _multiUoW.GetEntities&lt;Customer&gt;("Customer");
+        var customer = customers.FirstOrDefault(c => c.CustomerID == customerID);
+        
+        if (customer == null)
+            throw new ArgumentException("Customer not found");
+        
+        var order = new Order
+        {
+            OrderID = Guid.NewGuid().ToString(),
+            CustomerID = customerID,
+            OrderDate = DateTime.Now,
+            Status = "Pending"
+        };
+        
+        await _multiUoW.InsertAsync("Order", order);
+        
+        decimal total = 0;
+        foreach (var item in items)
+        {
+            var detail = new OrderDetail
+            {
+                DetailID = Guid.NewGuid().ToString(),
+                OrderID = order.OrderID,
+                ProductID = item.ProductID,
+                Quantity = item.Quantity,
+                UnitPrice = item.UnitPrice
+            };
+            
+            await _multiUoW.InsertAsync("OrderDetail", detail);
+            total += item.Quantity * item.UnitPrice;
+        }
+        
+        order.Total = total;
+        await _multiUoW.UpdateAsync("Order", order);
+        
+        // Commit all changes across all data sources
+        await _multiUoW.CommitAsync();
+        
+        return order;
+    }
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="content-section" id="best-practices">
+            <h2>Best Practices</h2>
+
+            <div class="success-box">
+                <h4>1. Always Use Using Statements or Dispose</h4>
+                <div class="code-block">
+<pre><code class="language-csharp">using var customerUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, "MyDB", "Customers", "CustomerID");
+// Work with customerUoW
+// Automatic disposal</code></pre>
+                </div>
+            </div>
+
+            <div class="success-box">
+                <h4>2. Handle Events for Business Logic</h4>
+                <div class="code-block">
+<pre><code class="language-csharp">customerUoW.PreCreate += (sender, args) => 
+{
+    var customer = sender as Customer;
+    // Set defaults, validate, generate IDs
+    customer.CreatedDate = DateTime.Now;
+    customer.Status = "Active";
+};</code></pre>
+                </div>
+            </div>
+
+            <div class="success-box">
+                <h4>3. Use Filters for Large Datasets</h4>
+                <div class="code-block">
+<pre><code class="language-csharp">// Don't load all data if you only need specific records
+var filters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "Active", Operator = "=", FilterValue = "true" },
+    new AppFilter { FieldName = "CreatedDate", Operator = ">=", FilterValue = DateTime.Today.AddDays(-30).ToString() }
+};
+await customerUoW.Get(filters);</code></pre>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>4. Be Careful with List Mode</h4>
+                <p>List mode (isInListMode = true) only works in memory. Changes won't be persisted to the database unless you manually handle persistence.</p>
+            </div>
+
+            <div class="success-box">
+                <h4>5. Use Progress Reporting for Long Operations</h4>
+                <div class="code-block">
+<pre><code class="language-csharp">var progress = new Progress&lt;PassedArgs&gt;(args => 
+{
+    Console.WriteLine($"Processing: {args.ParameterInt1}/{args.ParameterInt2} - {args.Messege}");
+});
+
+await customerUoW.Commit(progress, cancellationToken);</code></pre>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>6. Handle Errors in Commit Operations</h4>
+                <div class="code-block">
+<pre><code class="language-csharp">var result = await customerUoW.Commit();
+if (result.Flag != Errors.Ok)
+{
+    // Handle commit failure
+    Console.WriteLine($"Commit failed: {result.Message}");
+    if (result.Ex != null)
+    {
+        // Log full exception details
+        Console.WriteLine($"Exception: {result.Ex}");
+    }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h4>7. Leverage Change Tracking</h4>
+                <p>The automatic change tracking is one of the most powerful features. Trust it to detect modifications and only commit when necessary using the IsDirty property.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Smooth scrolling for sidebar links
+        document.querySelectorAll('.sidebar a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    
+                    // Update active link
+                    document.querySelectorAll('.sidebar a').forEach(link => 
+                        link.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+
+        // Update active link on scroll
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('[id]');
+            const scrollPos = window.scrollY + 100;
+            
+            sections.forEach(section => {
+                const top = section.offsetTop;
+                const height = section.offsetHeight;
+                const id = section.getAttribute('id');
+                
+                if (scrollPos >= top && scrollPos < top + height) {
+                    document.querySelectorAll('.sidebar a').forEach(link => 
+                        link.classList.remove('active'));
+                    const activeLink = document.querySelector(`.sidebar a[href="#${id}"]`);
+                    if (activeLink) activeLink.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
