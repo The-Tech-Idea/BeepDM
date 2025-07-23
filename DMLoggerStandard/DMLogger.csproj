@@ -30,11 +30,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Serilog" Version="4.2.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="2.0.15" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.40" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.Debug" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" />
   </ItemGroup>
 
 </Project>
