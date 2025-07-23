@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Defaults Manager - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>?</span>
+                    <a href="#">Editor Classes</a>
+                    <span>?</span>
+                    <span>Defaults Manager</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>?? Defaults Manager</h1>
+                    <p class="page-subtitle">Centralized default value management with rule-based processing and dynamic value resolution</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>?? Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#default-types">Default Value Types</a></li>
+                        <li><a href="#retrieval-methods">Default Retrieval Methods</a></li>
+                        <li><a href="#value-resolution">Value Resolution</a></li>
+                        <li><a href="#persistence">Defaults Persistence</a></li>
+                        <li><a href="#rule-integration">Rule Engine Integration</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>?? Overview</h2>
+                    <p>
+                        The <code>DefaultsManager</code> is a static utility class that provides centralized management 
+                        of default values for data source fields. It supports both static default values and dynamic 
+                        rule-based value generation, enabling sophisticated data population strategies across different 
+                        data sources and scenarios.
+                    </p>
+                    
+                    <div class="success">
+                        <strong>?? Key Capabilities</strong>
+                        <p>DefaultsManager enables consistent data population with configurable default values, rule-based dynamic generation, and centralized management across all data sources.</p>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>?? Static Defaults</h3>
+                            <p>Configure static default values for consistent data population</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Rule-Based Values</h3>
+                            <p>Dynamic value generation using business rules and expressions</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>??? Data Source Specific</h3>
+                            <p>Configure defaults per data source for targeted application</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Persistent Configuration</h3>
+                            <p>Save and manage default configurations across application sessions</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Default Types -->
+                <section id="default-types" class="section">
+                    <h2>?? Default Value Types</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>DefaultValue Structure</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>PropertyName</td><td>string</td><td>The field/property name to apply the default to</td></tr>
+                                    <tr><td>PropertyValue</td><td>object</td><td>Static default value to use</td></tr>
+                                    <tr><td>Rule</td><td>string</td><td>Rule expression for dynamic value generation</td></tr>
+                                    <tr><td>propertyType</td><td>DefaultValueType</td><td>Type of default (Static, Rule, etc.)</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Default Value Types</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Type</th><th>Usage</th><th>Example</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>Static</td><td>Fixed values that don't change</td><td>PropertyValue = "Active"</td></tr>
+                                    <tr><td>Rule</td><td>Dynamic values generated by rules</td><td>Rule = "CurrentDateTime"</td></tr>
+                                    <tr><td>Expression</td><td>Calculated values based on expressions</td><td>Rule = "UserName + '_' + CurrentDate"</td></tr>
+                                    <tr><td>Function</td><td>Values from custom functions</td><td>Rule = "GenerateUniqueId()"</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tip">
+                        <strong>?? Configuration Strategy</strong>
+                        <ul>
+                            <li>Use static defaults for unchanging values like status codes</li>
+                            <li>Use rule-based defaults for dynamic values like timestamps</li>
+                            <li>Configure defaults at the data source level for consistency</li>
+                            <li>Test rule expressions thoroughly before deployment</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Retrieval Methods -->
+                <section id="retrieval-methods" class="section">
+                    <h2>?? Default Retrieval Methods</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Core Retrieval Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">List&lt;DefaultValue&gt;</span> GetDefaults(IDMEEditor editor, <span class="parameter-type">string</span> dataSourceName)</code>
+                            </div>
+                            <p>Retrieves all default values configured for a specific data source with error handling and validation.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> SaveDefaults(IDMEEditor editor, List&lt;DefaultValue&gt; defaults, <span class="parameter-type">string</span> dataSourceName)</code>
+                            </div>
+                            <p>Saves default value configurations for a data source with comprehensive error reporting.</p>
+                        </div>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Important Considerations</strong>
+                        <ul>
+                            <li>Default retrieval requires a valid data source configuration</li>
+                            <li>Missing data sources will return null and log appropriate errors</li>
+                            <li>Empty default lists are returned as new collections, not null</li>
+                            <li>Data source names are case-insensitive for matching</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Basic Default Retrieval</h3>
+                        <pre><code class="language-csharp">// Retrieve defaults for a specific data source
+var defaults = DefaultsManager.GetDefaults(dmeEditor, "CustomerDatabase");
+
+if (defaults != null && defaults.Any())
+{
+    Console.WriteLine($"Found {defaults.Count} default values for CustomerDatabase:");
+    
+    foreach (var defaultValue in defaults)
+    {
+        Console.WriteLine($"Field: {defaultValue.PropertyName}");
+        Console.WriteLine($"Type: {defaultValue.propertyType}");
+        
+        if (defaultValue.propertyType == DefaultValueType.Rule)
+        {
+            Console.WriteLine($"Rule: {defaultValue.Rule}");
+        }
+        else
+        {
+            Console.WriteLine($"Value: {defaultValue.PropertyValue}");
+        }
+        Console.WriteLine("---");
+    }
+}
+else
+{
+    Console.WriteLine("No defaults found for CustomerDatabase");
+}
+
+// Example of configuring new defaults
+var newDefaults = new List&lt;DefaultValue&gt;
+{
+    new DefaultValue
+    {
+        PropertyName = "CreatedDate",
+        propertyType = DefaultValueType.Rule,
+        Rule = "CurrentDateTime"
+    },
+    new DefaultValue
+    {
+        PropertyName = "Status",
+        propertyType = DefaultValueType.Static,
+        PropertyValue = "Active"
+    },
+    new DefaultValue
+    {
+        PropertyName = "CreatedBy",
+        propertyType = DefaultValueType.Rule,
+        Rule = "CurrentUser"
+    }
+};
+
+// Save the new defaults
+var saveResult = DefaultsManager.SaveDefaults(dmeEditor, newDefaults, "CustomerDatabase");
+
+if (saveResult.Flag == Errors.Ok)
+{
+    Console.WriteLine("Defaults saved successfully");
+}
+else
+{
+    Console.WriteLine($"Failed to save defaults: {saveResult.Message}");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Value Resolution -->
+                <section id="value-resolution" class="section">
+                    <h2>?? Value Resolution</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Value Resolution Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">object</span> ResolveDefaultValue(IDMEEditor editor, DefaultValue defaultValue, IPassedArgs parameters)</code>
+                            </div>
+                            <p>Resolves a specific DefaultValue object, executing rules if present or returning static values.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">object</span> ResolveDefaultValue(IDMEEditor editor, <span class="parameter-type">string</span> dataSourceName, <span class="parameter-type">string</span> fieldName, IPassedArgs parameters)</code>
+                            </div>
+                            <p>Resolves a default value by data source and field name with automatic default lookup.</p>
+                        </div>
+                    </div>
+
+                    <div class="success">
+                        <strong>?? Resolution Features</strong>
+                        <ul>
+                            <li><strong>Rule Execution:</strong> Dynamic rule processing with parameter passing</li>
+                            <li><strong>Static Values:</strong> Direct return of configured static values</li>
+                            <li><strong>Error Handling:</strong> Graceful degradation when rules fail</li>
+                            <li><strong>Parameter Context:</strong> Pass contextual information to rule engine</li>
+                            <li><strong>Null Safety:</strong> Safe handling of missing or invalid configurations</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Value Resolution Examples</h3>
+                        <pre><code class="language-csharp">// Example 1: Resolve specific default value
+var defaults = DefaultsManager.GetDefaults(dmeEditor, "OrderDatabase");
+var createdDateDefault = defaults?.FirstOrDefault(d => d.PropertyName == "CreatedDate");
+
+if (createdDateDefault != null)
+{
+    // Create parameter context for rule execution
+    var parameters = new PassedArgs
+    {
+        ObjectName = "Order",
+        CurrentEntity = "Orders",
+        DatasourceName = "OrderDatabase",
+        Objects = new List&lt;ObjectItem&gt;
+        {
+            new ObjectItem { Name = "CurrentUser", obj = Environment.UserName },
+            new ObjectItem { Name = "OrderData", obj = currentOrder }
+        }
+    };
+    
+    var resolvedValue = DefaultsManager.ResolveDefaultValue(
+        dmeEditor, createdDateDefault, parameters);
+    
+    if (resolvedValue != null)
+    {
+        Console.WriteLine($"Resolved CreatedDate: {resolvedValue}");
+        
+        // Apply to your entity
+        if (currentOrder != null)
+        {
+            dmeEditor.Utilfunction.SetFieldValueFromObject(
+                "CreatedDate", currentOrder, resolvedValue);
+        }
+    }
+}
+
+// Example 2: Direct field-based resolution
+var statusValue = DefaultsManager.ResolveDefaultValue(
+    dmeEditor, "OrderDatabase", "Status", parameters);
+
+if (statusValue != null)
+{
+    Console.WriteLine($"Default status: {statusValue}");
+}
+
+// Example 3: Batch resolution for multiple fields
+var fieldsToResolve = new[] { "CreatedDate", "Status", "CreatedBy", "ModifiedDate" };
+var resolvedValues = new Dictionary&lt;string, object&gt;();
+
+foreach (var fieldName in fieldsToResolve)
+{
+    var value = DefaultsManager.ResolveDefaultValue(
+        dmeEditor, "OrderDatabase", fieldName, parameters);
+    
+    if (value != null)
+    {
+        resolvedValues[fieldName] = value;
+        Console.WriteLine($"{fieldName}: {value}");
+    }
+}
+
+// Apply all resolved defaults to an entity
+if (currentOrder != null)
+{
+    foreach (var kvp in resolvedValues)
+    {
+        try
+        {
+            dmeEditor.Utilfunction.SetFieldValueFromObject(
+                kvp.Key, currentOrder, kvp.Value);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to set {kvp.Key}: {ex.Message}");
+        }
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Persistence -->
+                <section id="persistence" class="section">
+                    <h2>?? Defaults Persistence</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Persistence Management</strong>
+                        </div>
+                        <div class="api-content">
+                            <p>Default values are automatically persisted through the DMEEditor's configuration system:</p>
+                            <ul>
+                                <li><strong>Storage Location:</strong> Defaults are stored in the data source connection configuration</li>
+                                <li><strong>Format:</strong> JSON serialization for easy editing and version control</li>
+                                <li><strong>Automatic Loading:</strong> Defaults are loaded when data source connections are established</li>
+                                <li><strong>Immediate Persistence:</strong> Changes are saved immediately through ConfigEditor</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="tip">
+                        <strong>?? Configuration Management</strong>
+                        <ul>
+                            <li>Defaults are associated with specific data source connections</li>
+                            <li>Configuration changes are automatically saved to persistent storage</li>
+                            <li>Multiple environments can have different default configurations</li>
+                            <li>Version control friendly JSON format enables change tracking</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Advanced Defaults Configuration</h3>
+                        <pre><code class="language-csharp">// Define comprehensive defaults for a customer management system
+public static IErrorsInfo ConfigureCustomerDefaults(IDMEEditor dmeEditor)
+{
+    var customerDefaults = new List&lt;DefaultValue&gt;
+    {
+        // Static defaults
+        new DefaultValue
+        {
+            PropertyName = "Status",
+            propertyType = DefaultValueType.Static,
+            PropertyValue = "Active"
+        },
+        new DefaultValue
+        {
+            PropertyName = "CustomerType",
+            propertyType = DefaultValueType.Static,
+            PropertyValue = "Standard"
+        },
+        new DefaultValue
+        {
+            PropertyName = "Region",
+            propertyType = DefaultValueType.Static,
+            PropertyValue = "North America"
+        },
+        
+        // Rule-based defaults for audit fields
+        new DefaultValue
+        {
+            PropertyName = "CreatedDate",
+            propertyType = DefaultValueType.Rule,
+            Rule = "CurrentDateTime"
+        },
+        new DefaultValue
+        {
+            PropertyName = "CreatedBy",
+            propertyType = DefaultValueType.Rule,
+            Rule = "CurrentUser"
+        },
+        new DefaultValue
+        {
+            PropertyName = "ModifiedDate",
+            propertyType = DefaultValueType.Rule,
+            Rule = "CurrentDateTime"
+        },
+        new DefaultValue
+        {
+            PropertyName = "ModifiedBy",
+            propertyType = DefaultValueType.Rule,
+            Rule = "CurrentUser"
+        },
+        
+        // Business rule-based defaults
+        new DefaultValue
+        {
+            PropertyName = "CustomerCode",
+            propertyType = DefaultValueType.Rule,
+            Rule = "GenerateCustomerCode"
+        },
+        new DefaultValue
+        {
+            PropertyName = "CreditLimit",
+            propertyType = DefaultValueType.Rule,
+            Rule = "CalculateInitialCreditLimit"
+        }
+    };
+    
+    // Save defaults for customer database
+    var result = DefaultsManager.SaveDefaults(
+        dmeEditor, customerDefaults, "CustomerDatabase");
+    
+    if (result.Flag == Errors.Ok)
+    {
+        Console.WriteLine("Customer defaults configured successfully");
+        
+        // Verify the configuration
+        var savedDefaults = DefaultsManager.GetDefaults(dmeEditor, "CustomerDatabase");
+        Console.WriteLine($"Verified {savedDefaults?.Count ?? 0} defaults saved");
+        
+        // Test rule resolution
+        TestDefaultResolution(dmeEditor, "CustomerDatabase");
+    }
+    else
+    {
+        Console.WriteLine($"Failed to configure defaults: {result.Message}");
+    }
+    
+    return result;
+}
+
+private static void TestDefaultResolution(IDMEEditor dmeEditor, string dataSourceName)
+{
+    var testParameters = new PassedArgs
+    {
+        DatasourceName = dataSourceName,
+        CurrentEntity = "Customers",
+        Objects = new List&lt;ObjectItem&gt;
+        {
+            new ObjectItem { Name = "UserContext", obj = new { UserId = "admin", UserName = "Administrator" } }
+        }
+    };
+    
+    // Test each default value resolution
+    var defaults = DefaultsManager.GetDefaults(dmeEditor, dataSourceName);
+    
+    foreach (var defaultValue in defaults)
+    {
+        try
+        {
+            var resolvedValue = DefaultsManager.ResolveDefaultValue(
+                dmeEditor, defaultValue, testParameters);
+            
+            Console.WriteLine($"Default {defaultValue.PropertyName}: {resolvedValue ?? "[NULL]"}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to resolve {defaultValue.PropertyName}: {ex.Message}");
+        }
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Rule Integration -->
+                <section id="rule-integration" class="section">
+                    <h2>?? Rule Engine Integration</h2>
+                    
+                    <div class="warning">
+                        <strong>?? Rule Engine Status</strong>
+                        <p>The rule engine integration is currently under development. Rule-based defaults will use static values as fallbacks until rule processing is fully implemented.</p>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Planned Rule Features</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Rule Type</th><th>Description</th><th>Example</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>CurrentDateTime</td><td>Current system date and time</td><td>DateTime.Now</td></tr>
+                                    <tr><td>CurrentUser</td><td>Current authenticated user</td><td>Environment.UserName</td></tr>
+                                    <tr><td>UniqueId</td><td>Generate unique identifier</td><td>Guid.NewGuid()</td></tr>
+                                    <tr><td>Sequence</td><td>Sequential number generation</td><td>GetNextSequence("CustomerCode")</td></tr>
+                                    <tr><td>Calculation</td><td>Mathematical expressions</td><td>Price * 1.08 (tax calculation)</td></tr>
+                                    <tr><td>Lookup</td><td>Reference data lookup</td><td>GetRegionByZipCode(ZipCode)</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Rule-Based Default Configuration (Future)</h3>
+                        <pre><code class="language-csharp">// Example of planned rule-based default configuration
+var futureRuleDefaults = new List&lt;DefaultValue&gt;
+{
+    // Simple rule expressions
+    new DefaultValue
+    {
+        PropertyName = "OrderNumber",
+        propertyType = DefaultValueType.Rule,
+        Rule = "GenerateOrderNumber()" // Custom function
+    },
+    
+    // Conditional rules
+    new DefaultValue
+    {
+        PropertyName = "ShippingMethod",
+        propertyType = DefaultValueType.Rule,
+        Rule = "IF(OrderValue > 100, 'FreeShipping', 'Standard')"
+    },
+    
+    // Date-based rules
+    new DefaultValue
+    {
+        PropertyName = "DeliveryDate",
+        propertyType = DefaultValueType.Rule,
+        Rule = "AddBusinessDays(CurrentDate, 5)"
+    },
+    
+    // Lookup-based rules
+    new DefaultValue
+    {
+        PropertyName = "TaxRate",
+        propertyType = DefaultValueType.Rule,
+        Rule = "LookupTaxRate(CustomerState)"
+    },
+    
+    // Complex business rules
+    new DefaultValue
+    {
+        PropertyName = "DiscountPercent",
+        propertyType = DefaultValueType.Rule,
+        Rule = "CalculateDiscount(CustomerType, OrderValue, CustomerHistory)"
+    }
+};
+
+// When rule engine is available, this would work:
+/*
+foreach (var ruleDefault in futureRuleDefaults)
+{
+    var resolvedValue = DefaultsManager.ResolveDefaultValue(
+        dmeEditor, ruleDefault, parameters);
+    
+    // Rule engine would process the expression and return appropriate value
+}
+*/</code></pre>
+                    </div>
+                </section>
+
+                <!-- Examples -->
+                <section id="examples" class="section">
+                    <h2>?? Usage Examples</h2>
+                    
+                    <div class="code-example">
+                        <h3>Complete Defaults Management Workflow</h3>
+                        <pre><code class="language-csharp">public class DefaultsManagementExample
+{
+    private readonly IDMEEditor _dmeEditor;
+    
+    public DefaultsManagementExample(IDMEEditor dmeEditor)
+    {
+        _dmeEditor = dmeEditor;
+    }
+    
+    // Configure comprehensive defaults for an order management system
+    public async Task&lt;bool&gt; SetupOrderManagementDefaults()
+    {
+        try
+        {
+            // Define defaults for order processing
+            var orderDefaults = CreateOrderDefaults();
+            var customerDefaults = CreateCustomerDefaults();
+            var productDefaults = CreateProductDefaults();
+            
+            // Save defaults for each data source
+            var orderResult = DefaultsManager.SaveDefaults(
+                _dmeEditor, orderDefaults, "OrderDatabase");
+            var customerResult = DefaultsManager.SaveDefaults(
+                _dmeEditor, customerDefaults, "CustomerDatabase");
+            var productResult = DefaultsManager.SaveDefaults(
+                _dmeEditor, productDefaults, "ProductDatabase");
+            
+            // Verify all saves were successful
+            var allSuccessful = orderResult.Flag == Errors.Ok &&
+                               customerResult.Flag == Errors.Ok &&
+                               productResult.Flag == Errors.Ok;
+            
+            if (allSuccessful)
+            {
+                Console.WriteLine("All defaults configured successfully");
+                
+                // Test the configuration
+                await TestDefaultApplication();
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Some defaults failed to save:");
+                if (orderResult.Flag != Errors.Ok)
+                    Console.WriteLine($"Order defaults: {orderResult.Message}");
+                if (customerResult.Flag != Errors.Ok)
+                    Console.WriteLine($"Customer defaults: {customerResult.Message}");
+                if (productResult.Flag != Errors.Ok)
+                    Console.WriteLine($"Product defaults: {productResult.Message}");
+                
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error setting up defaults: {ex.Message}");
+            return false;
+        }
+    }
+    
+    private List&lt;DefaultValue&gt; CreateOrderDefaults()
+    {
+        return new List&lt;DefaultValue&gt;
+        {
+            new DefaultValue
+            {
+                PropertyName = "OrderDate",
+                propertyType = DefaultValueType.Rule,
+                Rule = "CurrentDateTime"
+            },
+            new DefaultValue
+            {
+                PropertyName = "Status",
+                propertyType = DefaultValueType.Static,
+                PropertyValue = "Pending"
+            },
+            new DefaultValue
+            {
+                PropertyName = "CreatedBy",
+                propertyType = DefaultValueType.Rule,
+                Rule = "CurrentUser"
+            },
+            new DefaultValue
+            {
+                PropertyName = "Priority",
+                propertyType = DefaultValueType.Static,
+                PropertyValue = "Normal"
+            },
+            new DefaultValue
+            {
+                PropertyName = "Source",
+                propertyType = DefaultValueType.Static,
+                PropertyValue = "Web"
+            }
+        };
+    }
+    
+    private List&lt;DefaultValue&gt; CreateCustomerDefaults()
+    {
+        return new List&lt;DefaultValue&gt;
+        {
+            new DefaultValue
+            {
+                PropertyName = "CustomerType",
+                propertyType = DefaultValueType.Static,
+                PropertyValue = "Standard"
+            },
+            new DefaultValue
+            {
+                PropertyName = "Status",
+                propertyType = DefaultValueType.Static,
+                PropertyValue = "Active"
+            },
+            new DefaultValue
+            {
+                PropertyName = "CreditLimit",
+                propertyType = DefaultValueType.Static,
+                PropertyValue = 1000.00m
+            },
+            new DefaultValue
+            {
+                PropertyName = "RegistrationDate",
+                propertyType = DefaultValueType.Rule,
+                Rule = "CurrentDateTime"
+            }
+        };
+    }
+    
+    private List&lt;DefaultValue&gt; CreateProductDefaults()
+    {
+        return new List&lt;DefaultValue&gt;
+        {
+            new DefaultValue
+            {
+                PropertyName = "Status",
+                propertyType = DefaultValueType.Static,
+                PropertyValue = "Active"
+            },
+            new DefaultValue
+            {
+                PropertyName = "Category",
+                propertyType = DefaultValueType.Static,
+                PropertyValue = "General"
+            },
+            new DefaultValue
+            {
+                PropertyName = "CreatedDate",
+                propertyType = DefaultValueType.Rule,
+                Rule = "CurrentDateTime"
+            },
+            new DefaultValue
+            {
+                PropertyName = "MinimumStock",
+                propertyType = DefaultValueType.Static,
+                PropertyValue = 10
+            }
+        };
+    }
+    
+    private async Task TestDefaultApplication()
+    {
+        Console.WriteLine("Testing default value application...");
+        
+        // Test order defaults
+        await TestEntityDefaults("OrderDatabase", "Orders");
+        
+        // Test customer defaults
+        await TestEntityDefaults("CustomerDatabase", "Customers");
+        
+        // Test product defaults
+        await TestEntityDefaults("ProductDatabase", "Products");
+    }
+    
+    private async Task TestEntityDefaults(string dataSourceName, string entityName)
+    {
+        Console.WriteLine($"\nTesting defaults for {entityName} in {dataSourceName}:");
+        
+        var defaults = DefaultsManager.GetDefaults(_dmeEditor, dataSourceName);
+        if (defaults == null || !defaults.Any())
+        {
+            Console.WriteLine("  No defaults found");
+            return;
+        }
+        
+        var parameters = new PassedArgs
+        {
+            DatasourceName = dataSourceName,
+            CurrentEntity = entityName,
+            Objects = new List&lt;ObjectItem&gt;
+            {
+                new ObjectItem { Name = "TestContext", obj = new { TestMode = true } }
+            }
+        };
+        
+        foreach (var defaultValue in defaults)
+        {
+            try
+            {
+                var resolvedValue = DefaultsManager.ResolveDefaultValue(
+                    _dmeEditor, defaultValue, parameters);
+                
+                Console.WriteLine($"  {defaultValue.PropertyName}: {resolvedValue ?? "[NULL]"}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  {defaultValue.PropertyName}: ERROR - {ex.Message}");
+            }
+        }
+    }
+    
+    // Example of applying defaults to a new entity
+    public object ApplyDefaultsToNewOrder(object newOrder)
+    {
+        if (newOrder == null)
+            throw new ArgumentNullException(nameof(newOrder));
+        
+        var defaults = DefaultsManager.GetDefaults(_dmeEditor, "OrderDatabase");
+        if (defaults == null || !defaults.Any())
+            return newOrder;
+        
+        var parameters = new PassedArgs
+        {
+            DatasourceName = "OrderDatabase",
+            CurrentEntity = "Orders",
+            Objects = new List&lt;ObjectItem&gt;
+            {
+                new ObjectItem { Name = "CurrentOrder", obj = newOrder }
+            }
+        };
+        
+        foreach (var defaultValue in defaults)
+        {
+            try
+            {
+                // Only apply if the field doesn't already have a value
+                var currentValue = _dmeEditor.Utilfunction.GetFieldValueFromObject(
+                    defaultValue.PropertyName, newOrder);
+                
+                if (currentValue == null || 
+                    (currentValue is string str && string.IsNullOrEmpty(str)))
+                {
+                    var resolvedValue = DefaultsManager.ResolveDefaultValue(
+                        _dmeEditor, defaultValue, parameters);
+                    
+                    if (resolvedValue != null)
+                    {
+                        _dmeEditor.Utilfunction.SetFieldValueFromObject(
+                            defaultValue.PropertyName, newOrder, resolvedValue);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to apply default for {defaultValue.PropertyName}: {ex.Message}");
+            }
+        }
+        
+        return newOrder;
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section id="best-practices" class="section">
+                    <h2>? Best Practices</h2>
+                    
+                    <div class="tip">
+                        <strong>?? Configuration Strategy</strong>
+                        <ul>
+                            <li>Group related defaults by data source for better organization</li>
+                            <li>Use consistent naming conventions for field names across systems</li>
+                            <li>Document complex rule expressions for maintenance purposes</li>
+                            <li>Test default resolution in development before production deployment</li>
+                        </ul>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Error Handling</strong>
+                        <ul>
+                            <li>Always check for null returns from GetDefaults methods</li>
+                            <li>Implement fallback values for critical fields when rules fail</li>
+                            <li>Log default resolution failures for debugging</li>
+                            <li>Validate default values before applying to entities</li>
+                        </ul>
+                    </div>
+
+                    <div class="success">
+                        <strong>?? Performance Optimization</strong>
+                        <ul>
+                            <li>Cache frequently used defaults to avoid repeated lookups</li>
+                            <li>Use static defaults over rules when values don't change</li>
+                            <li>Batch default applications for multiple entities</li>
+                            <li>Monitor rule execution performance and optimize as needed</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="mappingmanager.html"><i class="bi bi-arrow-left"></i> Mapping Manager</a>
+                    <a href="datasyncmanager.html">Data Sync Manager <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('DefaultsManager documentation page loaded');
+    </script>
+</body>
+</html>

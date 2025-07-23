@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConfigEditor - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>?</span>
+                    <a href="#">Editor Classes</a>
+                    <span>?</span>
+                    <span>ConfigEditor</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>?? ConfigEditor</h1>
+                    <p class="page-subtitle">Centralized configuration management system for all Beep Data Management Engine components</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>?? Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#architecture">Specialized Manager Architecture</a></li>
+                        <li><a href="#initialization">Initialization & Setup</a></li>
+                        <li><a href="#data-connections">Data Connection Management</a></li>
+                        <li><a href="#component-configuration">Component Configuration</a></li>
+                        <li><a href="#entity-mapping">Entity & Mapping Management</a></li>
+                        <li><a href="#query-management">Query Management</a></li>
+                        <li><a href="#configuration-persistence">Configuration Persistence</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>??? Overview</h2>
+                    <p>
+                        The <code>ConfigEditor</code> class is the centralized configuration management system for the 
+                        Beep Data Management Engine. It provides a unified interface for managing data connections, 
+                        component configurations, entity mappings, queries, and application settings. The class has been 
+                        refactored to use specialized managers for different configuration responsibilities, improving 
+                        maintainability and separation of concerns.
+                    </p>
+                    
+                    <div class="success">
+                        <strong>?? Core Purpose</strong>
+                        <p>ConfigEditor serves as the single source of truth for all configuration data, ensuring consistency and providing a structured approach to configuration management across the entire engine.</p>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>?? Connection Management</h3>
+                            <p>Comprehensive data source connection configuration and management</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Component Configuration</h3>
+                            <p>Driver configurations, assembly definitions, and plugin management</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>??? Entity & Mapping</h3>
+                            <p>Entity structure definitions and field mapping configurations</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Query Repository</h3>
+                            <p>Saved queries, SQL repositories, and database-specific query management</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Architecture -->
+                <section id="architecture" class="section">
+                    <h2>??? Specialized Manager Architecture</h2>
+                    <p>ConfigEditor uses a modular architecture with specialized managers that handle specific aspects of configuration:</p>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">?</span>
+                            <strong>Specialized Managers</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Manager</th><th>Responsibility</th><th>Key Operations</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>ConfigPathManager</td>
+                                        <td>Path and directory management</td>
+                                        <td>Directory creation, path resolution, folder structure</td>
+                                    </tr>
+                                    <tr>
+                                        <td>DataConnectionManager</td>
+                                        <td>Data source connections</td>
+                                        <td>Connection CRUD, validation, persistence</td>
+                                    </tr>
+                                    <tr>
+                                        <td>QueryManager</td>
+                                        <td>SQL queries and repositories</td>
+                                        <td>Query storage, SQL generation, query templates</td>
+                                    </tr>
+                                    <tr>
+                                        <td>EntityMappingManager</td>
+                                        <td>Entity structures and mappings</td>
+                                        <td>Entity definitions, field mappings, schema management</td>
+                                    </tr>
+                                    <tr>
+                                        <td>ComponentConfigManager</td>
+                                        <td>Component and driver configurations</td>
+                                        <td>Driver configs, assembly definitions, workflows</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>ConfigEditor Architecture</h3>
+                        <pre><code class="language-csharp">public class ConfigEditor : IConfigEditor
+{
+    // Specialized managers
+    private readonly ConfigPathManager _pathManager;
+    private readonly DataConnectionManager _connectionManager;
+    private readonly QueryManager _queryManager;
+    private readonly EntityMappingManager _entityManager;
+    private readonly ComponentConfigManager _componentManager;
+
+    // Core properties
+    public BeepConfigType ConfigType { get; set; }
+    public string ConfigPath { get; set; }
+    public ConfigandSettings Config { get; set; }
+    
+    // Delegated properties
+    public List<ConnectionProperties> DataConnections { get; set; }
+    public List<ConnectionDriversConfig> DataDriversClasses { get; set; }
+    public List<QuerySqlRepo> QueryList { get; set; }
+    public List<WorkFlow> WorkFlows { get; set; }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Initialization -->
+                <section id="initialization" class="section">
+                    <h2>?? Initialization & Setup</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">?</span>
+                            <strong>Configuration Types</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Configuration Type</th><th>Purpose</th><th>Features Enabled</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>BeepConfigType.Application</td>
+                                        <td>Full-featured application configuration</td>
+                                        <td>All folders, workflows, reports, AI scripts, addins</td>
+                                    </tr>
+                                    <tr>
+                                        <td>BeepConfigType.DataConnector</td>
+                                        <td>Minimal configuration for data operations only</td>
+                                        <td>Connections, drivers, basic config only</td>
+                                    </tr>
+                                    <tr>
+                                        <td>BeepConfigType.SingleApp</td>
+                                        <td>Single application instance</td>
+                                        <td>Application features with single instance support</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>ConfigEditor Initialization</h3>
+                        <pre><code class="language-csharp">// Full application configuration
+var configEditor = new ConfigEditor(
+    logger,                          // IDMLogger instance
+    errorObject,                     // IErrorsInfo for error handling
+    jsonLoader,                      // IJsonLoader for serialization
+    folderPath: @"C:\MyApp\Data",   // Base path (optional)
+    containerFolder: "MyContainer", // Container name (optional)
+    configType: BeepConfigType.Application
+);
+
+// Data connector only (minimal setup)
+var dataConfigEditor = new ConfigEditor(
+    logger, 
+    errorObject, 
+    jsonLoader,
+    configType: BeepConfigType.DataConnector
+);
+
+// The ConfigEditor will automatically:
+// 1. Create necessary directory structure
+// 2. Initialize all specialized managers
+// 3. Load existing configurations
+// 4. Set up default values</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>?? Initialization Features</strong>
+                        <ul>
+                            <li><strong>Automatic Directory Creation:</strong> Creates all necessary folders based on configuration type</li>
+                            <li><strong>Platform-Aware Paths:</strong> Uses appropriate system directories if no path specified</li>
+                            <li><strong>Configuration Migration:</strong> Handles path changes and configuration updates</li>
+                            <li><strong>Error Recovery:</strong> Graceful handling of missing or corrupted configuration files</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Data Connections -->
+                <section id="data-connections" class="section">
+                    <h2>?? Data Connection Management</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">?</span>
+                            <strong>Connection Operations</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">bool</span> AddDataConnection(<span class="parameter-type">ConnectionProperties</span> connection)</code>
+                            </div>
+                            <p>Adds a new data connection to the configuration with validation.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">bool</span> UpdateDataConnection(<span class="parameter-type">ConnectionProperties</span> source, <span class="parameter-type">string</span> targetGuidId)</code>
+                            </div>
+                            <p>Updates an existing connection using GUID identifier for safe updates.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">bool</span> DataConnectionExist(<span class="parameter-type">string</span> connectionName)</code>
+                            </div>
+                            <p>Checks if a connection with the specified name already exists.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">bool</span> RemoveDataConnection(<span class="parameter-type">string</span> connectionName)</code>
+                            </div>
+                            <p>Removes a connection by name with proper cleanup.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> SaveDataconnectionsValues()</code>
+                            </div>
+                            <p>Persists all connection configurations to storage.</p>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Connection Management Examples</h3>
+                        <pre><code class="language-csharp">// Create a new SQL Server connection
+var sqlConnection = new ConnectionProperties
+{
+    ConnectionName = "ProductionDB",
+    DatabaseType = DataSourceType.SqlServer,
+    ConnectionString = "Server=prod-server;Database=ProductionDB;Integrated Security=true;",
+    Category = DatasourceCategory.RDBMS,
+    GuidID = Guid.NewGuid().ToString(),
+    Host = "prod-server",
+    Database = "ProductionDB",
+    Port = 1433
+};
+
+// Add the connection
+if (configEditor.AddDataConnection(sqlConnection))
+{
+    Console.WriteLine("? Connection added successfully");
+    
+    // Save to persistent storage
+    configEditor.SaveDataconnectionsValues();
+}
+
+// Check if a connection exists
+if (configEditor.DataConnectionExist("ProductionDB"))
+{
+    Console.WriteLine("Connection already exists");
+}
+
+// Load all existing connections
+var allConnections = configEditor.LoadDataConnectionsValues();
+foreach (var conn in allConnections)
+{
+    Console.WriteLine($"Found connection: {conn.ConnectionName} ({conn.DatabaseType})");
+}
+
+// Update a connection
+var updatedConnection = new ConnectionProperties
+{
+    ConnectionName = "ProductionDB",
+    DatabaseType = DataSourceType.SqlServer,
+    ConnectionString = "Server=new-server;Database=ProductionDB;Integrated Security=true;",
+    Category = DatasourceCategory.RDBMS,
+    Host = "new-server",
+    Database = "ProductionDB",
+    Port = 1433
+};
+
+if (configEditor.UpdateDataConnection(updatedConnection, sqlConnection.GuidID))
+{
+    Console.WriteLine("? Connection updated successfully");
+    configEditor.SaveDataconnectionsValues();
+}
+
+// Remove a connection
+if (configEditor.RemoveDataConnection("ProductionDB"))
+{
+    Console.WriteLine("? Connection removed successfully");
+    configEditor.SaveDataconnectionsValues();
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Component Configuration -->
+                <section id="component-configuration" class="section">
+                    <h2>?? Component Configuration</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">?</span>
+                            <strong>Driver & Component Management</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">int</span> AddDriver(<span class="parameter-type">ConnectionDriversConfig</span> driver)</code>
+                            </div>
+                            <p>Adds a new data source driver configuration.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> SaveConnectionDriversConfigValues()</code>
+                            </div>
+                            <p>Persists all driver configurations to storage.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">List&lt;ConnectionDriversConfig&gt;</span> LoadConnectionDriversConfigValues()</code>
+                            </div>
+                            <p>Loads all driver configurations from storage.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">?</span>
+                            <strong>Component Collections</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Collection</th><th>Type</th><th>Purpose</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>DataDriversClasses</td><td>List&lt;ConnectionDriversConfig&gt;</td><td>Database driver configurations</td></tr>
+                                    <tr><td>DataSourcesClasses</td><td>List&lt;AssemblyClassDefinition&gt;</td><td>Data source implementation classes</td></tr>
+                                    <tr><td>WorkFlowActions</td><td>List&lt;AssemblyClassDefinition&gt;</td><td>Workflow action components</td></tr>
+                                    <tr><td>Addins</td><td>List&lt;AssemblyClassDefinition&gt;</td><td>Plugin and add-in definitions</td></tr>
+                                    <tr><td>ReportWritersClasses</td><td>List&lt;AssemblyClassDefinition&gt;</td><td>Report generation components</td></tr>
+                                    <tr><td>AppComponents</td><td>List&lt;AssemblyClassDefinition&gt;</td><td>Application-specific components</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Driver Configuration Example</h3>
+                        <pre><code class="language-csharp">// Add a custom driver configuration
+var customDriver = new ConnectionDriversConfig
+{
+    GuidID = Guid.NewGuid().ToString(),
+    PackageName = "CustomPostgreSQLDriver",
+    DriverClass = "CustomPostgreSQLDataSource",
+    version = "1.0.0.0",
+    dllname = "MyCustomDrivers.dll",
+    classHandler = "MyCustomDrivers.CustomPostgreSQLDataSource",
+    DatasourceType = DataSourceType.Postgre,
+    DatasourceCategory = DatasourceCategory.RDBMS,
+    ConnectionString = "Host={Host};Port={Port};Database={Database};Username={UserID};Password={Password}",
+    ADOType = true,
+    CreateLocal = false,
+    InMemory = false
+};
+
+// Add the driver
+int driverIndex = configEditor.AddDriver(customDriver);
+if (driverIndex >= 0)
+{
+    Console.WriteLine($"? Driver added at index {driverIndex}");
+    
+    // Save driver configurations
+    configEditor.SaveConnectionDriversConfigValues();
+}
+
+// Register a data source class
+var dataSourceClass = new AssemblyClassDefinition
+{
+    className = "CustomPostgreSQLDataSource",
+    PackageName = "MyCustomDrivers",
+    type = "TheTechIdea.Beep.DataBase.IDataSource",
+    AddinType = "DataSource",
+    DllPath = "MyCustomDrivers.dll",
+    Order = 1,
+    version = "1.0.0.0"
+};
+
+configEditor.DataSourcesClasses.Add(dataSourceClass);
+
+// Register workflow actions
+var workflowAction = new AssemblyClassDefinition
+{
+    className = "CustomDataValidationAction",
+    PackageName = "MyWorkflowActions",
+    type = "TheTechIdea.Beep.Workflow.IWorkFlowAction",
+    AddinType = "WorkFlowAction",
+    DllPath = "MyWorkflowActions.dll"
+};
+
+configEditor.WorkFlowActions.Add(workflowAction);</code></pre>
+                    </div>
+                </section>
+
+                <!-- Entity Mapping -->
+                <section id="entity-mapping" class="section">
+                    <h2>??? Entity & Mapping Management</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">?</span>
+                            <strong>Entity Structure Operations</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> SaveEntityStructure(<span class="parameter-type">string</span> filePath, <span class="parameter-type">EntityStructure</span> entity)</code>
+                            </div>
+                            <p>Saves an entity structure definition to a specific file path.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">EntityStructure</span> LoadEntityStructure(<span class="parameter-type">string</span> filePath, <span class="parameter-type">string</span> entityName, <span class="parameter-type">string</span> dataSourceId)</code>
+                            </div>
+                            <p>Loads an entity structure from storage with validation.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">bool</span> EntityStructureExist(<span class="parameter-type">string</span> filePath, <span class="parameter-type">string</span> entityName, <span class="parameter-type">string</span> dataSourceId)</code>
+                            </div>
+                            <p>Checks if an entity structure definition exists.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">?</span>
+                            <strong>Mapping Operations</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> SaveMappingValues(<span class="parameter-type">string</span> entityName, <span class="parameter-type">string</span> dataSource, <span class="parameter-type">EntityDataMap</span> mapping)</code>
+                            </div>
+                            <p>Saves entity data mapping configuration for field transformations.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">EntityDataMap</span> LoadMappingValues(<span class="parameter-type">string</span> entityName, <span class="parameter-type">string</span> dataSource)</code>
+                            </div>
+                            <p>Loads entity mapping configuration for data transformations.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> SaveMappingSchemaValue(<span class="parameter-type">string</span> schemaName, <span class="parameter-type">Map_Schema</span> mapping)</code>
+                            </div>
+                            <p>Saves complete schema mapping definitions.</p>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Entity Structure Management</h3>
+                        <pre><code class="language-csharp">// Create an entity structure
+var customerEntity = new EntityStructure
+{
+    EntityName = "Customers",
+    DatasourceEntityName = "Customers",
+    DataSourceID = "ProductionDB",
+    SchemaOrOwnerOrDatabase = "dbo",
+    Fields = new List<EntityField>
+    {
+        new EntityField
+        {
+            fieldname = "CustomerID",
+            fieldtype = "System.Int32",
+            Size1 = 4,
+            AllowDBNull = false,
+            IsKey = true,
+            IsIdentity = true
+        },
+        new EntityField
+        {
+            fieldname = "CustomerName",
+            fieldtype = "System.String",
+            Size1 = 100,
+            AllowDBNull = false
+        },
+        new EntityField
+        {
+            fieldname = "Email",
+            fieldtype = "System.String",
+            Size1 = 255,
+            AllowDBNull = true
+        },
+        new EntityField
+        {
+            fieldname = "CreatedDate",
+            fieldtype = "System.DateTime",
+            AllowDBNull = false,
+            DefaultValue = "GETDATE()"
+        }
+    }
+};
+
+// Save the entity structure
+string entityPath = Path.Combine(configEditor.Config.EntitiesPath, "Customers.json");
+configEditor.SaveEntityStructure(entityPath, customerEntity);
+
+// Check if entity exists
+if (configEditor.EntityStructureExist(entityPath, "Customers", "ProductionDB"))
+{
+    // Load the entity structure
+    var loadedEntity = configEditor.LoadEntityStructure(entityPath, "Customers", "ProductionDB");
+    Console.WriteLine($"? Loaded entity with {loadedEntity.Fields.Count} fields");
+}
+
+// Create a field mapping for ETL operations
+var entityMapping = new EntityDataMap
+{
+    EntityName = "CustomerMapping",
+    SourceEntityName = "LegacyCustomers",
+    DestinationEntityName = "Customers",
+    FieldMapping = new List<EntityDataMap_DTL>
+    {
+        new EntityDataMap_DTL
+        {
+            SourceFieldName = "CUST_ID",
+            DestinationFieldName = "CustomerID",
+            DataType = "System.Int32",
+            MappingType = "Direct"
+        },
+        new EntityDataMap_DTL
+        {
+            SourceFieldName = "CUST_NAME",
+            DestinationFieldName = "CustomerName",
+            DataType = "System.String",
+            MappingType = "Direct"
+        },
+        new EntityDataMap_DTL
+        {
+            SourceFieldName = "EMAIL_ADDR",
+            DestinationFieldName = "Email",
+            DataType = "System.String",
+            MappingType = "Transform",
+            TransformRule = "LOWER(TRIM({value}))"
+        }
+    }
+};
+
+// Save the mapping
+configEditor.SaveMappingValues("Customers", "ProductionDB", entityMapping);
+
+// Load the mapping
+var loadedMapping = configEditor.LoadMappingValues("Customers", "ProductionDB");
+Console.WriteLine($"? Loaded mapping with {loadedMapping.FieldMapping.Count} field mappings");</code></pre>
+                    </div>
+                </section>
+
+                <!-- Query Management -->
+                <section id="query-management" class="section">
+                    <h2>?? Query Management</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">?</span>
+                            <strong>Query Operations</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">string</span> GetSql(<span class="parameter-type">Sqlcommandtype</span> cmdType, <span class="parameter-type">string</span> tableName, <span class="parameter-type">string</span> schemaName, <span class="parameter-type">string</span> filterParameters, <span class="parameter-type">DataSourceType</span> databaseType)</code>
+                            </div>
+                            <p>Generates SQL queries based on command type and database-specific syntax.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">List&lt;string&gt;</span> GetSqlList(<span class="parameter-type">Sqlcommandtype</span> cmdType, <span class="parameter-type">string</span> tableName, <span class="parameter-type">string</span> schemaName, <span class="parameter-type">string</span> filterParameters, <span class="parameter-type">DataSourceType</span> databaseType)</code>
+                            </div>
+                            <p>Returns multiple SQL variations for complex operations.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> SaveQueryFile()</code>
+                            </div>
+                            <p>Persists all query configurations to storage.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">List&lt;QuerySqlRepo&gt;</span> LoadQueryFile()</code>
+                            </div>
+                            <p>Loads saved query repository from storage.</p>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Query Repository Management</h3>
+                        <pre><code class="language-csharp">// Add custom queries to the repository
+var customQueries = new List<QuerySqlRepo>
+{
+    new QuerySqlRepo
+    {
+        ID = Guid.NewGuid().ToString(),
+        QueryName = "ActiveCustomers",
+        SqlQuery = "SELECT * FROM Customers WHERE IsActive = 1",
+        DatabaseType = DataSourceType.SqlServer,
+        CommandType = Sqlcommandtype.SELECT
+    },
+    new QuerySqlRepo
+    {
+        ID = Guid.NewGuid().ToString(),
+        QueryName = "CustomersByRegion",
+        SqlQuery = "SELECT * FROM Customers WHERE Region = @Region",
+        DatabaseType = DataSourceType.SqlServer,
+        CommandType = Sqlcommandtype.SELECT,
+        Parameters = "@Region"
+    },
+    new QuerySqlRepo
+    {
+        ID = Guid.NewGuid().ToString(),
+        QueryName = "InsertCustomer",
+        SqlQuery = "INSERT INTO Customers (CustomerName, Email, Region) VALUES (@Name, @Email, @Region)",
+        DatabaseType = DataSourceType.SqlServer,
+        CommandType = Sqlcommandtype.INSERT,
+        Parameters = "@Name,@Email,@Region"
+    }
+};
+
+// Add queries to the configuration
+configEditor.QueryList.AddRange(customQueries);
+
+// Save the query repository
+configEditor.SaveQueryFile();
+
+// Generate SQL using the repository
+string selectSql = configEditor.GetSql(
+    Sqlcommandtype.SELECT, 
+    "Customers", 
+    "dbo", 
+    "WHERE IsActive = 1", 
+    DataSourceType.SqlServer
+);
+
+Console.WriteLine($"Generated SQL: {selectSql}");
+
+// Get multiple SQL variations
+var sqlVariations = configEditor.GetSqlList(
+    Sqlcommandtype.SELECT,
+    "Orders",
+    "dbo",
+    "WHERE OrderDate >= @StartDate",
+    DataSourceType.SqlServer
+);
+
+foreach (string sql in sqlVariations)
+{
+    Console.WriteLine($"SQL Variation: {sql}");
+}
+
+// Load existing queries
+var loadedQueries = configEditor.LoadQueryFile();
+console.WriteLine($"? Loaded {loadedQueries.Count} saved queries");
+
+// Use custom query with parameters
+string customSql = configEditor.GetSqlFromCustomQuery(
+    Sqlcommandtype.SELECT,
+    "Customers",
+    "SELECT * FROM Customers WHERE Region = '{Region}' AND Status = 'Active'",
+    DataSourceType.SqlServer
+);
+
+Console.WriteLine($"Custom SQL: {customSql}");</code></pre>
+                    </div>
+                </section>
+
+                <!-- Configuration Persistence -->
+                <section id="configuration-persistence" class="section">
+                    <h2>?? Configuration Persistence</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">?</span>
+                            <strong>Persistence Operations</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> SaveConfigValues()</code>
+                            </div>
+                            <p>Saves the main configuration settings to Config.json.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">ConfigandSettings</span> LoadConfigValues()</code>
+                            </div>
+                            <p>Loads configuration settings from storage.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> SaveLocation()</code>
+                            </div>
+                            <p>Saves the configuration location to system registry for application discovery.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">bool</span> IsLocationSaved()</code>
+                            </div>
+                            <p>Checks if the configuration location has been properly saved.</p>
+                        </div>
+                    </div>
+
+                    <div class="success">
+                        <strong>? Configuration Files</strong>
+                        <p>ConfigEditor manages multiple configuration files automatically:</p>
+                        <ul>
+                            <li><strong>Config.json:</strong> Main application configuration</li>
+                            <li><strong>DataConnections.json:</strong> All data source connections</li>
+                            <li><strong>ConnectionDriversConfig.json:</strong> Driver configurations</li>
+                            <li><strong>QuerySqlRepo.json:</strong> Saved query repository</li>
+                            <li><strong>CategoryFolders.json:</strong> Folder organization</li>
+                            <li><strong>WorkFlows.json:</strong> Workflow definitions</li>
+                            <li><strong>Reports.json:</strong> Report configurations</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Configuration Backup & Restore</h3>
+                        <pre><code class="language-csharp">// Create a comprehensive configuration backup
+public static class ConfigurationManager
+{
+    public static void BackupConfiguration(IConfigEditor configEditor, string backupPath)
+    {
+        try
+        {
+            // Create backup directory
+            if (!Directory.Exists(backupPath))
+            {
+                Directory.CreateDirectory(backupPath);
+            }
+
+            // Backup main configuration
+            configEditor.SaveConfigValues();
+            File.Copy(
+                Path.Combine(configEditor.ConfigPath, "Config.json"),
+                Path.Combine(backupPath, $"Config_{DateTime.Now:yyyyMMdd_HHmmss}.json")
+            );
+
+            // Backup data connections
+            configEditor.SaveDataconnectionsValues();
+            File.Copy(
+                Path.Combine(configEditor.ConfigPath, "DataConnections.json"),
+                Path.Combine(backupPath, $"DataConnections_{DateTime.Now:yyyyMMdd_HHmmss}.json")
+            );
+
+            // Backup driver configurations
+            configEditor.SaveConnectionDriversConfigValues();
+            File.Copy(
+                Path.Combine(configEditor.ConfigPath, "ConnectionDriversConfig.json"),
+                Path.Combine(backupPath, $"Drivers_{DateTime.Now:yyyyMMdd_HHmmss}.json")
+            );
+
+            // Backup query repository
+            configEditor.SaveQueryFile();
+            File.Copy(
+                Path.Combine(configEditor.ConfigPath, "QuerySqlRepo.json"),
+                Path.Combine(backupPath, $"Queries_{DateTime.Now:yyyyMMdd_HHmmss}.json")
+            );
+
+            Console.WriteLine($"? Configuration backup completed: {backupPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"? Backup failed: {ex.Message}");
+        }
+    }
+
+    public static void RestoreConfiguration(IConfigEditor configEditor, string backupPath)
+    {
+        try
+        {
+            // Restore configurations from backup
+            var configFiles = Directory.GetFiles(backupPath, "*.json");
+            
+            foreach (var file in configFiles)
+            {
+                var fileName = Path.GetFileName(file);
+                var targetFile = fileName.Split('_')[0] + ".json";
+                var targetPath = Path.Combine(configEditor.ConfigPath, targetFile);
+                
+                File.Copy(file, targetPath, overwrite: true);
+                Console.WriteLine($"? Restored: {targetFile}");
+            }
+
+            // Reload configurations
+            configEditor.LoadConfigValues();
+            configEditor.LoadDataConnectionsValues();
+            configEditor.LoadConnectionDriversConfigValues();
+            configEditor.LoadQueryFile();
+
+            Console.WriteLine("? Configuration restore completed");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"? Restore failed: {ex.Message}");
+        }
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Examples -->
+                <section id="examples" class="section">
+                    <h2>?? Usage Examples</h2>
+                    
+                    <div class="code-example">
+                        <h3>Complete Configuration Workflow</h3>
+                        <pre><code class="language-csharp">// Initialize ConfigEditor for a data-intensive application
+public static class DataApplicationConfigManager
+{
+    private static IConfigEditor _configEditor;
+
+    public static void InitializeConfiguration()
+    {
+        // Create necessary services
+        var logger = new DMLogger();
+        var errorObject = new ErrorsInfo();
+        var jsonLoader = new JsonLoader();
+
+        // Initialize ConfigEditor for full application
+        _configEditor = new ConfigEditor(
+            logger, 
+            errorObject, 
+            jsonLoader,
+            folderPath: @"C:\MyDataApp\Config",
+            containerFolder: "Production",
+            configType: BeepConfigType.Application
+        );
+
+        Console.WriteLine("? ConfigEditor initialized");
+        
+        // Setup data connections
+        SetupDataConnections();
+        
+        // Configure drivers
+        SetupDrivers();
+        
+        // Setup entity mappings
+        SetupEntityMappings();
+        
+        // Create query repository
+        SetupQueryRepository();
+        
+        // Save all configurations
+        PersistAllConfigurations();
+    }
+
+    private static void SetupDataConnections()
+    {
+        var connections = new List<ConnectionProperties>
+        {
+            new ConnectionProperties
+            {
+                ConnectionName = "MainDatabase",
+                DatabaseType = DataSourceType.SqlServer,
+                ConnectionString = "Server=prod-sql;Database=MainDB;Integrated Security=true;",
+                Category = DatasourceCategory.RDBMS,
+                GuidID = Guid.NewGuid().ToString()
+            },
+            new ConnectionProperties
+            {
+                ConnectionName = "AnalyticsDB",
+                DatabaseType = DataSourceType.Postgre,
+                ConnectionString = "Host=analytics-pg;Database=analytics;Username=admin;Password=secret;",
+                Category = DatasourceCategory.RDBMS,
+                GuidID = Guid.NewGuid().ToString()
+            },
+            new ConnectionProperties
+            {
+                ConnectionName = "DocumentStore",
+                DatabaseType = DataSourceType.MongoDB,
+                ConnectionString = "mongodb://localhost:27017/documents",
+                Category = DatasourceCategory.NOSQL,
+                GuidID = Guid.NewGuid().ToString()
+            }
+        };
+
+        foreach (var connection in connections)
+        {
+            if (_configEditor.AddDataConnection(connection))
+            {
+                Console.WriteLine($"? Added connection: {connection.ConnectionName}");
+            }
+        }
+    }
+
+    private static void SetupDrivers()
+    {
+        // Add custom drivers if needed
+        var customDriver = new ConnectionDriversConfig
+        {
+            GuidID = Guid.NewGuid().ToString(),
+            PackageName = "CustomAnalyticsDriver",
+            DriverClass = "CustomAnalyticsDataSource",
+            version = "1.0.0.0",
+            DatasourceType = DataSourceType.Postgre,
+            DatasourceCategory = DatasourceCategory.RDBMS,
+            ConnectionString = "Host={Host};Database={Database};Username={UserID};Password={Password}"
+        };
+
+        _configEditor.AddDriver(customDriver);
+        Console.WriteLine("? Custom driver added");
+    }
+
+    private static void SetupEntityMappings()
+    {
+        // Create entity structures for key entities
+        var customerEntity = new EntityStructure
+        {
+            EntityName = "Customers",
+            DataSourceID = "MainDatabase",
+            Fields = new List<EntityField>
+            {
+                new EntityField { fieldname = "CustomerID", fieldtype = "System.Int32", IsKey = true },
+                new EntityField { fieldname = "CustomerName", fieldtype = "System.String", Size1 = 100 },
+                new EntityField { fieldname = "Email", fieldtype = "System.String", Size1 = 255 }
+            }
+        };
+
+        string entityPath = Path.Combine(_configEditor.Config.EntitiesPath, "Customers.json");
+        _configEditor.SaveEntityStructure(entityPath, customerEntity);
+        Console.WriteLine("? Customer entity structure saved");
+    }
+
+    private static void SetupQueryRepository()
+    {
+        var commonQueries = new List<QuerySqlRepo>
+        {
+            new QuerySqlRepo
+            {
+                ID = Guid.NewGuid().ToString(),
+                QueryName = "GetActiveCustomers",
+                SqlQuery = "SELECT * FROM Customers WHERE IsActive = 1",
+                DatabaseType = DataSourceType.SqlServer,
+                CommandType = Sqlcommandtype.SELECT
+            },
+            new QuerySqlRepo
+            {
+                ID = Guid.NewGuid().ToString(),
+                QueryName = "GetOrdersByDateRange",
+                SqlQuery = "SELECT * FROM Orders WHERE OrderDate BETWEEN @StartDate AND @EndDate",
+                DatabaseType = DataSourceType.SqlServer,
+                CommandType = Sqlcommandtype.SELECT,
+                Parameters = "@StartDate,@EndDate"
+            }
+        };
+
+        _configEditor.QueryList.AddRange(commonQueries);
+        Console.WriteLine("? Query repository populated");
+    }
+
+    private static void PersistAllConfigurations()
+    {
+        _configEditor.SaveConfigValues();
+        _configEditor.SaveDataconnectionsValues();
+        _configEditor.SaveConnectionDriversConfigValues();
+        _configEditor.SaveQueryFile();
+        
+        Console.WriteLine("? All configurations persisted");
+    }
+
+    // Usage in application
+    public static void UseConfiguredConnections()
+    {
+        // Check available connections
+        foreach (var connection in _configEditor.DataConnections)
+        {
+            Console.WriteLine($"Available: {connection.ConnectionName} ({connection.DatabaseType})");
+        }
+
+        // Get SQL for a specific operation
+        string sql = _configEditor.GetSql(
+            Sqlcommandtype.SELECT,
+            "Customers",
+            "dbo",
+            "WHERE Region = 'North'",
+            DataSourceType.SqlServer
+        );
+
+        Console.WriteLine($"Generated SQL: {sql}");
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section id="best-practices" class="section">
+                    <h2>?? Best Practices</h2>
+                    
+                    <div class="tip">
+                        <strong>?? Configuration Management</strong>
+                        <ul>
+                            <li><strong>Use GUIDs for Connections:</strong> Always assign unique GUIDs to connections for safe updates</li>
+                            <li><strong>Environment-Specific Configs:</strong> Use different container folders for dev/test/production</li>
+                            <li><strong>Regular Backups:</strong> Implement automated configuration backups</li>
+                            <li><strong>Version Control:</strong> Keep configuration templates in version control</li>
+                        </ul>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Security Considerations</strong>
+                        <ul>
+                            <li><strong>Secure Connection Strings:</strong> Use Windows Authentication or secure credential storage</li>
+                            <li><strong>File Permissions:</strong> Restrict access to configuration directories</li>
+                            <li><strong>Sensitive Data:</strong> Never store plain text passwords in configuration files</li>
+                            <li><strong>Audit Trail:</strong> Log configuration changes for security auditing</li>
+                        </ul>
+                    </div>
+
+                    <div class="success">
+                        <strong>? Performance Optimization</strong>
+                        <ul>
+                            <li><strong>Lazy Loading:</strong> ConfigEditor loads configurations on-demand</li>
+                            <li><strong>Caching:</strong> Configurations are cached in memory after first load</li>
+                            <li><strong>Batch Operations:</strong> Use batch save operations for multiple changes</li>
+                            <li><strong>Minimal Config:</strong> Use DataConnector type for lightweight scenarios</li>
+                        </ul>
+                    </div>
+
+                    <div class="note">
+                        <strong>?? Maintenance Guidelines</strong>
+                        <ul>
+                            <li><strong>Regular Cleanup:</strong> Remove unused connections and obsolete configurations</li>
+                            <li><strong>Schema Evolution:</strong> Plan for configuration schema changes and migrations</li>
+                            <li><strong>Documentation:</strong> Document custom drivers and configurations</li>
+                            <li><strong>Testing:</strong> Test configuration changes in non-production environments first</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="datasyncmanager.html"><i class="bi bi-arrow-left"></i> Data Sync Manager</a>
+                    <a href="api-reference.html">API Reference <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('ConfigEditor documentation page loaded');
+    </script>
+</body>
+</html>

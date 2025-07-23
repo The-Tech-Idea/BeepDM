@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UnitOfWork Deep Dive - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>→</span>
+                    <a href="unitofwork.html">UnitOfWork Pattern</a>
+                    <span>→</span>
+                    <span>Deep Dive</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>🔬 UnitOfWork Deep Dive</h1>
+                    <p class="page-subtitle">Comprehensive guide to change tracking, entity management, and advanced patterns</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>📚 Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview & Architecture</a></li>
+                        <li><a href="#change-tracking">Change Tracking System</a></li>
+                        <li><a href="#entity-states">Entity State Management</a></li>
+                        <li><a href="#lifecycle-events">Lifecycle Events</a></li>
+                        <li><a href="#constructors">Constructor Patterns</a></li>
+                        <li><a href="#advanced-crud">Advanced CRUD Operations</a></li>
+                        <li><a href="#filtering-paging">Filtering & Paging</a></li>
+                        <li><a href="#undo-redo">Undo/Redo System</a></li>
+                        <li><a href="#navigation">Navigation & Positioning</a></li>
+                        <li><a href="#logging">Change Logging</a></li>
+                        <li><a href="#multi-datasource">Multi-DataSource UoW</a></li>
+                        <li><a href="#real-world-examples">Real-World Examples</a></li>
+                        <li><a href="#performance">Performance Optimization</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>🏗️ Overview & Architecture</h2>
+                    <p>
+                        The UnitOfWork pattern in Beep provides sophisticated change tracking, entity state management, and transaction coordination 
+                        for data operations. It acts as an in-memory representation of your data with automatic dirty tracking, undo/redo capabilities, 
+                        and event-driven lifecycle management.
+                    </p>
+                    
+                    <div class="success">
+                        <strong>🎯 Key Benefits</strong>
+                        <ul>
+                            <li><strong>Automatic Change Tracking:</strong> Monitors all entity modifications automatically</li>
+                            <li><strong>Batch Operations:</strong> Accumulate changes and commit as a single transaction</li>
+                            <li><strong>Entity State Management:</strong> Track Added, Modified, Deleted states</li>
+                            <li><strong>Undo/Redo Support:</strong> Built-in change history and rollback capabilities</li>
+                            <li><strong>Event-Driven Architecture:</strong> Pre/Post operation hooks for business logic</li>
+                            <li><strong>Observable Collections:</strong> UI binding with automatic notifications</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔧 Generic Type Safety</h3>
+                            <p>Strongly typed operations with compile-time safety using <code>UnitofWork&lt;T&gt;</code> where T : Entity</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>💾 Multiple Operation Modes</h3>
+                            <p>Database-connected mode for live data or List mode for in-memory operations</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔗 Relationship Management</h3>
+                            <p>Handle parent-child relationships, foreign keys, and referential integrity</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📊 Progress Tracking</h3>
+                            <p>Built-in progress reporting for long-running operations with cancellation support</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Change Tracking -->
+                <section id="change-tracking" class="section">
+                    <h2>🔍 Change Tracking System</h2>
+                    
+                    <p>The UnitOfWork automatically tracks all changes to entities in the collection using a sophisticated change detection mechanism:</p>
+
+                    <div class="code-example">
+                        <h3>Automatic Change Detection</h3>
+                        <pre><code class="language-csharp">// Automatic change tracking example
+var customerUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, "MyDB", "Customers", "CustomerID");
+
+// Load data - entities are automatically tracked
+await customerUoW.Get();
+
+// Modify an entity - automatically tracked as "Modified"
+var customer = customerUoW.Units.First();
+customer.Name = "Updated Name";  // Change is automatically detected
+
+// Check if there are uncommitted changes
+if (customerUoW.IsDirty)
+{
+    Console.WriteLine("There are uncommitted changes");
+    
+    // See what entities have been modified
+    var modifiedEntities = customerUoW.GetModifiedEntities();
+    Console.WriteLine($"Modified entities count: {modifiedEntities.Count()}");
+}
+
+// Add new entity - tracked as "Added"
+customerUoW.Add(new Customer { Name = "New Customer" });
+
+// Delete entity - tracked as "Deleted"
+customerUoW.Delete(customer);
+
+// Commit all changes in a single transaction
+var result = await customerUoW.Commit();
+if (result.Flag == Errors.Ok)
+{
+    Console.WriteLine("All changes committed successfully");
+}</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>💡 Change Detection Mechanism</strong>
+                        <p>The UnitOfWork uses <code>ObservableBindingList&lt;T&gt;</code> and property change notifications to automatically detect when entities are modified. This happens transparently without requiring explicit tracking calls.</p>
+                    </div>
+                </section>
+
+                <!-- Entity States -->
+                <section id="entity-states" class="section">
+                    <h2>📋 Entity State Management</h2>
+                    
+                    <p>The UnitOfWork tracks entities in different states based on their lifecycle:</p>
+
+                    <table class="property-table">
+                        <thead>
+                            <tr><th>State</th><th>Description</th><th>Commit Action</th><th>Methods</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="status-badge added">Added</span></td>
+                                <td>New entities added to the collection</td>
+                                <td>INSERT into database</td>
+                                <td><code>Add(), New()</code></td>
+                            </tr>
+                            <tr>
+                                <td><span class="status-badge modified">Modified</span></td>
+                                <td>Existing entities with property changes</td>
+                                <td>UPDATE in database</td>
+                                <td>Property assignments</td>
+                            </tr>
+                            <tr>
+                                <td><span class="status-badge deleted">Deleted</span></td>
+                                <td>Entities marked for deletion</td>
+                                <td>DELETE from database</td>
+                                <td><code>Delete()</code></td>
+                            </tr>
+                            <tr>
+                                <td><span class="status-badge unchanged">Unchanged</span></td>
+                                <td>Loaded entities with no modifications</td>
+                                <td>No database operation</td>
+                                <td>Initial state after <code>Get()</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Entity State Inspection</h3>
+                        <pre><code class="language-csharp">// Check entity states
+var addedEntities = customerUoW.GetAddedEntities();
+var modifiedEntities = customerUoW.GetModifiedEntities();
+var deletedEntities = customerUoW.GetDeletedEntities();
+
+Console.WriteLine($"State Summary:");
+Console.WriteLine($"  Added: {addedEntities.Count()}");
+Console.WriteLine($"  Modified: {modifiedEntities.Count()}"); 
+Console.WriteLine($"  Deleted: {deletedEntities.Count()}");
+
+// Get specific state information
+foreach (var entityIndex in addedEntities)
+{
+    var entity = customerUoW.Units[entityIndex];
+    Console.WriteLine($"  New entity: {entity.Name} (ID: {entity.CustomerID})");
+}
+
+foreach (var entityIndex in modifiedEntities)
+{
+    var entity = customerUoW.Units[entityIndex];
+    Console.WriteLine($"  Modified entity: {entity.Name} (ID: {entity.CustomerID})");
+}
+
+foreach (var entity in deletedEntities)
+{
+    Console.WriteLine($"  Deleted entity: {entity.Name} (ID: {entity.CustomerID})");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Lifecycle Events -->
+                <section id="lifecycle-events" class="section">
+                    <h2>⚡ Lifecycle Events</h2>
+                    
+                    <p>UnitOfWork provides comprehensive event hooks for business logic implementation:</p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔄 Pre-Operation Events</h3>
+                            <p>Cancellable events fired before operations</p>
+                            <ul>
+                                <li>PreCreate</li>
+                                <li>PreInsert</li>
+                                <li>PreUpdate</li>
+                                <li>PreDelete</li>
+                                <li>PreCommit</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>✅ Post-Operation Events</h3>
+                            <p>Notification events fired after operations</p>
+                            <ul>
+                                <li>PostCreate</li>
+                                <li>PostInsert</li>
+                                <li>PostUpdate</li>
+                                <li>PostDelete</li>
+                                <li>PostCommit</li>
+                                <li>PostEdit</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Comprehensive Event Handling</h3>
+                        <pre><code class="language-csharp">var customerUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, "MyDB", "Customers", "CustomerID");
+
+// Validation and business logic in pre-events
+customerUoW.PreCreate += (sender, args) => 
+{
+    var customer = sender as Customer;
+    Console.WriteLine($"About to create customer: {customer.Name}");
+    
+    // Set default values
+    customer.CreatedDate = DateTime.Now;
+    customer.Status = "Active";
+    
+    // Generate unique ID if needed
+    if (string.IsNullOrEmpty(customer.CustomerID))
+    {
+        customer.CustomerID = Guid.NewGuid().ToString();
+    }
+};
+
+customerUoW.PreUpdate += (sender, args) => 
+{
+    var customer = sender as Customer;
+    Console.WriteLine($"About to update: {customer.Name}");
+    
+    // Business rule validation
+    if (string.IsNullOrEmpty(customer.Email))
+    {
+        args.Cancel = true;
+        args.ErrorMessage = "Email is required for customer updates";
+        return;
+    }
+    
+    // Audit fields
+    customer.ModifiedDate = DateTime.Now;
+    customer.ModifiedBy = GetCurrentUser();
+    
+    // Business rule: Premium customers can't be downgraded
+    if (customer.Status == "Standard" && args.PropertyName == "Status")
+    {
+        var original = customerUoW.Units.FirstOrDefault(c => c.CustomerID == customer.CustomerID);
+        if (original?.Status == "Premium")
+        {
+            args.Cancel = true;
+            args.ErrorMessage = "Premium customers cannot be downgraded to Standard";
+            return;
+        }
+    }
+};
+
+customerUoW.PreDelete += (sender, args) => 
+{
+    var customer = sender as Customer;
+    Console.WriteLine($"About to delete: {customer.Name}");
+    
+    // Prevent deletion of customers with orders
+    if (HasActiveOrders(customer.CustomerID))
+    {
+        args.Cancel = true;
+        args.ErrorMessage = "Cannot delete customers with active orders";
+        return;
+    }
+};
+
+// Logging and notifications in post-events
+customerUoW.PostCreate += (sender, args) => 
+{
+    var customer = sender as Customer;
+    Console.WriteLine($"Customer created: {customer.Name}");
+    
+    // Send welcome email
+    SendWelcomeEmail(customer);
+    
+    // Log to audit trail
+    LogAuditEvent("Customer Created", customer.CustomerID, customer.Name);
+};
+
+customerUoW.PostUpdate += (sender, args) => 
+{
+    var customer = sender as Customer;
+    Console.WriteLine($"Customer updated: {customer.Name}");
+    
+    // Send update notification if email changed
+    if (args.PropertyName == "Email")
+    {
+        SendEmailChangeNotification(customer);
+    }
+    
+    // Log changes
+    LogAuditEvent("Customer Updated", customer.CustomerID, $"{args.PropertyName} changed to {args.PropertyValue}");
+};
+
+customerUoW.PostCommit += (sender, args) => 
+{
+    Console.WriteLine("All changes committed successfully");
+    
+    // Clear caches
+    ClearCustomerCache();
+    
+    // Send batch notifications
+    SendBatchNotifications();
+    
+    // Refresh UI
+    RefreshCustomerGrid();
+};
+
+// Property-level change tracking
+customerUoW.PostEdit += (sender, args) => 
+{
+    var customer = sender as Customer;
+    Console.WriteLine($"Property changed: {args.PropertyName} = {args.PropertyValue}");
+    
+    // Real-time validation
+    ValidatePropertyChange(customer, args.PropertyName, args.PropertyValue);
+    
+    // Update calculated fields
+    if (args.PropertyName == "TotalOrders" || args.PropertyName == "TotalSpent")
+    {
+        UpdateCustomerTier(customer);
+    }
+};</code></pre>
+                    </div>
+
+                    <div class="warning">
+                        <strong>⚠️ Event Best Practices</strong>
+                        <ul>
+                            <li>Use Pre-events for validation and business rules</li>
+                            <li>Use Post-events for logging, notifications, and side effects</li>
+                            <li>Always check <code>args.Cancel</code> in pre-events before proceeding</li>
+                            <li>Set meaningful error messages when cancelling operations</li>
+                            <li>Avoid heavy operations in event handlers to prevent performance issues</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Constructor Patterns -->
+                <section id="constructors" class="section">
+                    <h2>🔧 Constructor Patterns</h2>
+
+                    <div class="code-example">
+                        <h3>1. Database-Connected Constructor</h3>
+                        <pre><code class="language-csharp">// Most common usage - connects to specific data source
+var customerUoW = new UnitofWork&lt;Customer&gt;(
+    dmeEditor,           // Data management editor
+    "MyDatabase",        // Data source name (must exist in DME configuration)
+    "Customers",         // Entity/table name
+    "CustomerID"         // Primary key field name
+);
+
+// Load all data from database
+await customerUoW.Get();
+Console.WriteLine($"Loaded {customerUoW.Units.Count} customers from database");</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>2. In-Memory List Constructor</h3>
+                        <pre><code class="language-csharp">// For in-memory operations only - no database connectivity
+var existingCustomers = new ObservableBindingList&lt;Customer&gt;
+{
+    new Customer { CustomerID = 1, Name = "John Doe", Email = "john@example.com" },
+    new Customer { CustomerID = 2, Name = "Jane Smith", Email = "jane@example.com" },
+    new Customer { CustomerID = 3, Name = "Bob Johnson", Email = "bob@example.com" }
+};
+
+var customerUoW = new UnitofWork&lt;Customer&gt;(
+    dmeEditor,
+    true,                // isInListMode = true (in-memory only)
+    existingCustomers,   // Initial data collection
+    "CustomerID"         // Primary key field name
+);
+
+// All operations work in-memory only
+customerUoW.Add(new Customer { CustomerID = 4, Name = "New Customer" });
+Console.WriteLine($"In-memory collection now has {customerUoW.Units.Count} customers");
+
+// Note: Changes won't persist to database automatically in list mode</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>3. Pre-Built Entity Structure Constructor</h3>
+                        <pre><code class="language-csharp">// For performance optimization - avoids structure lookup
+EntityStructure customerStructure = dmeEditor.GetEntityStructure("Customers", "MyDatabase");
+
+// Verify structure was loaded
+if (customerStructure == null)
+{
+    throw new InvalidOperationException("Customer entity structure not found");
+}
+
+var customerUoW = new UnitofWork&lt;Customer&gt;(
+    dmeEditor,
+    "MyDatabase",
+    "Customers",
+    customerStructure,   // Pre-built structure for faster initialization
+    "CustomerID"
+);
+
+// Faster initialization since structure is already provided
+await customerUoW.Get();</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>💡 Constructor Selection Guide</strong>
+                        <ul>
+                            <li><strong>Database-Connected:</strong> Use for normal CRUD operations with database persistence</li>
+                            <li><strong>In-Memory List:</strong> Use for temporary data manipulation, previews, or offline scenarios</li>
+                            <li><strong>Pre-Built Structure:</strong> Use when creating multiple UoW instances for the same entity type</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Advanced CRUD -->
+                <section id="advanced-crud" class="section">
+                    <h2>🚀 Advanced CRUD Operations</h2>
+
+                    <div class="code-example">
+                        <h3>Bulk Operations with Batch Processing</h3>
+                        <pre><code class="language-csharp">// Create multiple customers efficiently
+var newCustomers = new List&lt;Customer&gt;
+{
+    new Customer { Name = "Customer 1", Email = "customer1@example.com" },
+    new Customer { Name = "Customer 2", Email = "customer2@example.com" },
+    new Customer { Name = "Customer 3", Email = "customer3@example.com" }
+};
+
+// Add all customers to UoW (in-memory, not yet persisted)
+foreach (var customer in newCustomers)
+{
+    customerUoW.Add(customer);
+}
+
+// Single commit for all changes
+var progress = new Progress&lt;PassedArgs&gt;(args => 
+{
+    Console.WriteLine($"Progress: {args.ParameterInt1}/{args.ParameterInt2} - {args.Messege}");
+});
+
+var result = await customerUoW.Commit(progress, cancellationToken);
+if (result.Flag == Errors.Ok)
+{
+    Console.WriteLine($"Successfully inserted {newCustomers.Count} customers");
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Conditional Operations with LINQ</h3>
+                        <pre><code class="language-csharp">// Load customers
+await customerUoW.Get();
+
+// Update multiple entities based on conditions
+var inactiveCustomers = customerUoW.Units
+    .Where(c => c.LastOrderDate < DateTime.Now.AddMonths(-6))
+    .ToList();
+
+foreach (var customer in inactiveCustomers)
+{
+    customer.Status = "Inactive";
+    customer.ModifiedDate = DateTime.Now;
+}
+
+Console.WriteLine($"Marked {inactiveCustomers.Count} customers as inactive");
+
+// Delete customers with no orders (using custom business logic)
+var customersToDelete = customerUoW.Units
+    .Where(c => c.TotalOrders == 0 && c.CreatedDate < DateTime.Now.AddDays(-30))
+    .ToList();
+
+foreach (var customer in customersToDelete)
+{
+    customerUoW.Delete(customer);
+}
+
+Console.WriteLine($"Deleted {customersToDelete.Count} customers with no orders");
+
+// Commit all changes
+await customerUoW.Commit();</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Transaction Safety with Error Handling</h3>
+                        <pre><code class="language-csharp">try
+{
+    // Begin complex operation
+    var customer = customerUoW.Units.FirstOrDefault(c => c.CustomerID == "CUST001");
+    if (customer != null)
+    {
+        // Update customer
+        customer.Email = "newemail@example.com";
+        customer.Status = "Premium";
+        
+        // Add related data
+        var newOrder = new Order 
+        { 
+            CustomerID = customer.CustomerID,
+            OrderDate = DateTime.Now,
+            Total = 299.99m
+        };
+        
+        // If you have a related UoW for orders
+        orderUoW.Add(newOrder);
+        
+        // Commit both changes
+        var customerResult = await customerUoW.Commit();
+        var orderResult = await orderUoW.Commit();
+        
+        if (customerResult.Flag == Errors.Ok && orderResult.Flag == Errors.Ok)
+        {
+            Console.WriteLine("Both customer and order changes committed successfully");
+        }
+        else
+        {
+            // Rollback if either failed
+            await customerUoW.Rollback();
+            await orderUoW.Rollback();
+            Console.WriteLine("Transaction failed, rolled back all changes");
+        }
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error during operation: {ex.Message}");
+    await customerUoW.Rollback();
+    await orderUoW.Rollback();
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Filtering & Paging -->
+                <section id="filtering-paging" class="section">
+                    <h2>🔍 Advanced Filtering & Paging</h2>
+
+                    <div class="code-example">
+                        <h3>Complex Filtering Scenarios</h3>
+                        <pre><code class="language-csharp">// Multi-field filtering with various operators
+var complexFilters = new List&lt;AppFilter&gt;
+{
+    // Date range filtering
+    new AppFilter { FieldName = "CreatedDate", Operator = ">=", FilterValue = "2023-01-01" },
+    new AppFilter { FieldName = "CreatedDate", Operator = "<=", FilterValue = "2023-12-31" },
+    
+    // Status filtering
+    new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "Active" },
+    
+    // Exclude specific values
+    new AppFilter { FieldName = "Country", Operator = "!=", FilterValue = "Unknown" },
+    
+    // Numeric comparisons
+    new AppFilter { FieldName = "TotalOrders", Operator = ">", FilterValue = "5" },
+    new AppFilter { FieldName = "TotalSpent", Operator = ">=", FilterValue = "1000.00" },
+    
+    // Text searching (depends on database support)
+    new AppFilter { FieldName = "Name", Operator = "LIKE", FilterValue = "%Smith%" },
+    new AppFilter { FieldName = "Email", Operator = "LIKE", FilterValue = "%@gmail.com" }
+};
+
+var filteredCustomers = await customerUoW.Get(complexFilters);
+Console.WriteLine($"Found {filteredCustomers.Count} customers matching criteria");</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Dynamic Filter Building</h3>
+                        <pre><code class="language-csharp">// Build filters dynamically based on user input
+public List&lt;AppFilter&gt; BuildCustomerFilters(CustomerSearchCriteria criteria)
+{
+    var filters = new List&lt;AppFilter&gt;();
+    
+    // Only add filters for non-empty criteria
+    if (!string.IsNullOrEmpty(criteria.Name))
+    {
+        filters.Add(new AppFilter 
+        { 
+            FieldName = "Name", 
+            Operator = "LIKE", 
+            FilterValue = $"%{criteria.Name}%" 
+        });
+    }
+    
+    if (!string.IsNullOrEmpty(criteria.Email))
+    {
+        filters.Add(new AppFilter 
+        { 
+            FieldName = "Email", 
+            Operator = "LIKE", 
+            FilterValue = $"%{criteria.Email}%" 
+        });
+    }
+    
+    if (criteria.Status != CustomerStatus.All)
+    {
+        filters.Add(new AppFilter 
+        { 
+            FieldName = "Status", 
+            Operator = "=", 
+            FilterValue = criteria.Status.ToString() 
+        });
+    }
+    
+    if (criteria.MinOrderCount.HasValue)
+    {
+        filters.Add(new AppFilter 
+        { 
+            FieldName = "TotalOrders", 
+            Operator = ">=", 
+            FilterValue = criteria.MinOrderCount.Value.ToString() 
+        });
+    }
+    
+    if (criteria.CreatedAfter.HasValue)
+    {
+        filters.Add(new AppFilter 
+        { 
+            FieldName = "CreatedDate", 
+            Operator = ">=", 
+            FilterValue = criteria.CreatedAfter.Value.ToString("yyyy-MM-dd") 
+        });
+    }
+    
+    return filters;
+}
+
+// Usage
+var searchCriteria = new CustomerSearchCriteria
+{
+    Name = "John",
+    Status = CustomerStatus.Active,
+    MinOrderCount = 3,
+    CreatedAfter = DateTime.Now.AddMonths(-12)
+};
+
+var filters = BuildCustomerFilters(searchCriteria);
+await customerUoW.Get(filters);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Pagination Implementation</h3>
+                        <pre><code class="language-csharp">// Configure pagination
+customerUoW.PageSize = 25;    // 25 records per page
+customerUoW.PageIndex = 0;    // Start with first page (0-based)
+
+// Load first page
+var firstPageResults = await customerUoW.Get(filters);
+Console.WriteLine($"Page {customerUoW.PageIndex + 1} of {Math.Ceiling((double)customerUoW.TotalItemCount / customerUoW.PageSize)}");
+Console.WriteLine($"Showing {firstPageResults.Count} of {customerUoW.TotalItemCount} total items");
+
+// Navigate through pages
+public async Task NavigateToPage(int pageNumber)
+{
+    customerUoW.PageIndex = pageNumber - 1; // Convert to 0-based
+    await customerUoW.Get(filters);
+    
+    Console.WriteLine($"Navigated to page {pageNumber}");
+    Console.WriteLine($"Items on this page: {customerUoW.Units.Count}");
+}
+
+// Helper method for pagination info
+public PaginationInfo GetPaginationInfo()
+{
+    return new PaginationInfo
+    {
+        CurrentPage = customerUoW.PageIndex + 1,
+        PageSize = customerUoW.PageSize,
+        TotalItems = customerUoW.TotalItemCount,
+        TotalPages = (int)Math.Ceiling((double)customerUoW.TotalItemCount / customerUoW.PageSize),
+        HasNextPage = (customerUoW.PageIndex + 1) * customerUoW.PageSize < customerUoW.TotalItemCount,
+        HasPreviousPage = customerUoW.PageIndex > 0
+    };
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="unitofwork.html"><i class="bi bi-arrow-left"></i> UnitOfWork Pattern</a>
+                    <a href="multidatasource-unitofwork.html">Multi-DataSource UnitOfWork <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="examples.html">Examples</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('UnitOfWork Deep Dive documentation page loaded');
+    </script>
+</body>
+</html>

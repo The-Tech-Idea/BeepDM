@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Management Examples - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>→</span>
+                    <span>Data Management Examples</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>🗄️ Data Management Examples</h1>
+                    <p class="page-subtitle">Real-world examples from BeepSharedFunctions.cs demonstrating direct data management patterns</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>📚 Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#connection-examples">Connection Examples</a></li>
+                        <li><a href="#data-operations">Data Operations</a></li>
+                        <li><a href="#shared-functions">Shared Functions Pattern</a></li>
+                        <li><a href="#ui-integration">UI Integration</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>📋 Overview</h2>
+                    <p>
+                        This page showcases actual data management patterns from the <strong>Beep.WinForm.Sample.App</strong> project. 
+                        These examples demonstrate how to work directly with the data management engine without complex service orchestration.
+                    </p>
+                    
+                    <div class="tip">
+                        <strong>🎯 Focus</strong>
+                        <p>These examples show pure data management operations - creating connections, working with different data sources, and moving data between sources.</p>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔗 Connection Creation</h3>
+                            <p>Dynamic creation of database and file connections</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>⚙️ Driver Configuration</h3>
+                            <p>Automatic driver detection and configuration</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📊 Data Source Management</h3>
+                            <p>Opening, closing, and working with multiple data sources</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔄 Entity Operations</h3>
+                            <p>Getting entity lists, structures, and data</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🚀 Data Movement</h3>
+                            <p>Moving data between different source types</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🖥️ UI Integration</h3>
+                            <p>Real Windows Forms integration patterns</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Connection Examples -->
+                <section id="connection-examples" class="section">
+                    <h2>🔗 Connection Creation Examples</h2>
+                    <p>Based on <code>BeepSharedFunctions.cs</code> - real working examples from the sample application.</p>
+
+                    <div class="code-example">
+                        <h3>SQLite Database Connection</h3>
+                        <pre><code class="language-csharp">public static bool CreateConnectionForSqlite()
+{
+    CloseConnections();
+    
+    // Get the connection drivers configuration
+    ConnectionDriversConfig config = GetConnectionDriversConfig(DataSourceType.SqlLite);
+    
+    // Create a new connection configuration
+    ConnectionProperties connectionProperties = new ConnectionProperties
+    {
+        ConnectionString = "Data Source=./Beep/dbfiles/northwind.db",
+        ConnectionName = "northwind.db",
+        DriverName = config.PackageName,
+        DriverVersion = config.version,
+        DatabaseType = DataSourceType.SqlLite,
+        Category = DatasourceCategory.RDBMS
+    };
+    
+    // Add to the list of connections
+    dmeEditor.ConfigEditor.AddDataConnection(connectionProperties);
+    
+    // Create the connection
+    Sqlite_SampleDB = (SQLiteDataSource?)dmeEditor.GetDataSource("northwind.db");
+    
+    // Open the connection
+    Sqlite_SampleDB.Openconnection();
+
+    if (Sqlite_SampleDB.ConnectionStatus == System.Data.ConnectionState.Open)
+    {
+        return true;
+    }
+    else
+    {
+        MessageBox.Show("Connection Failed");
+        return false;
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Excel File Connection</h3>
+                        <pre><code class="language-csharp">public static bool CreateConnectionForXls()
+{
+    CloseConnections();
+    
+    // Get the connection drivers configuration
+    ConnectionDriversConfig config = GetConnectionDriversConfig(DataSourceType.Xls);
+    
+    // Create a new connection configuration
+    ConnectionProperties connectionProperties = new ConnectionProperties
+    {
+        FileName = "country.xls",
+        FilePath = "./dbfiles",
+        ConnectionName = "country.xls",
+        DriverName = config.PackageName,
+        DriverVersion = config.version,
+        DatabaseType = DataSourceType.Xls,
+        Ext = "xls",
+        Category = DatasourceCategory.FILE
+    };
+    
+    // Add to the list of connections
+    dmeEditor.ConfigEditor.AddDataConnection(connectionProperties);
+    
+    // Create the connection
+    XlsFile = (TxtXlsCSVFileSource?)dmeEditor.GetDataSource("country.xls");
+    
+    // Open the connection
+    XlsFile.Openconnection();
+
+    if (XlsFile.ConnectionStatus == System.Data.ConnectionState.Open)
+    {
+        return true;
+    }
+    else
+    {
+        MessageBox.Show("Connection Failed");
+        return false;
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>CSV File Connection</h3>
+                        <pre><code class="language-csharp">public static bool CreateConnectionForCSV()
+{
+    CloseConnections();
+    
+    // Get the connection drivers configuration
+    ConnectionDriversConfig config = GetConnectionDriversConfig(DataSourceType.CSV);
+    
+    // Create a new connection configuration
+    ConnectionProperties connectionProperties = new ConnectionProperties
+    {
+        FileName = "iris.csv",
+        FilePath = "./dbfiles",
+        ConnectionName = "iris.csv",
+        DriverName = config.PackageName,
+        DriverVersion = config.version,
+        DatabaseType = DataSourceType.CSV,
+        Ext = "csv",
+        Category = DatasourceCategory.FILE
+    };
+    
+    // Add to the list of connections
+    dmeEditor.ConfigEditor.AddDataConnection(connectionProperties);
+    
+    // Create the connection
+    CSVFile = (CSVDataSource?)dmeEditor.GetDataSource("iris.csv");
+    
+    // Open the connection
+    CSVFile.Openconnection();
+
+    if (CSVFile.ConnectionStatus == System.Data.ConnectionState.Open)
+    {
+        return true;
+    }
+    else
+    {
+        MessageBox.Show("Connection Failed");
+        return false;
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Driver Configuration Helper</h3>
+                        <pre><code class="language-csharp">public static ConnectionDriversConfig GetConnectionDriversConfig(DataSourceType type)
+{
+    // Get the list of connection drivers
+    return dmeEditor.ConfigEditor.DataDriversClasses
+        .FirstOrDefault(p => p.DatasourceType == type);
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>✅ Connection Pattern Benefits</strong>
+                        <ul>
+                            <li><strong>Dynamic Configuration:</strong> Automatically detects and configures drivers</li>
+                            <li><strong>Type Safety:</strong> Strongly typed data source references</li>
+                            <li><strong>Resource Management:</strong> Proper connection lifecycle management</li>
+                            <li><strong>Error Handling:</strong> Built-in connection status validation</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Data Operations -->
+                <section id="data-operations" class="section">
+                    <h2>💾 Data Operations</h2>
+
+                    <div class="code-example">
+                        <h3>Entity Management</h3>
+                        <pre><code class="language-csharp">// Get all entities from a data source
+var dataSource = dmeEditor.GetDataSource("northwind.db");
+dataSource.Openconnection();
+
+if (dataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+{
+    // Get list of all entities (tables)
+    var entities = dataSource.GetEntitesList();
+    
+    foreach (string entity in entities)
+    {
+        Console.WriteLine(entity);
+    }
+}
+else
+{
+    MessageBox.Show("Connection Failed");
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Data Retrieval</h3>
+                        <pre><code class="language-csharp">// Retrieving data using a SQL query
+var dataSource = dmeEditor.GetDataSource("northwind.db");
+dataSource.Openconnection();
+
+if (dataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+{
+    string sql = "SELECT * FROM Customers";
+    var resultSet = dataSource.ExecuteSQL(sql);
+    
+    foreach (var row in resultSet)
+    {
+        Console.WriteLine(row["CustomerID"] + " - " + row["CompanyName"]);
+    }
+}
+else
+{
+    MessageBox.Show("Connection Failed");
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Data Insertion</h3>
+                        <pre><code class="language-csharp">// Inserting data into a table
+var dataSource = dmeEditor.GetDataSource("northwind.db");
+dataSource.Openconnection();
+
+if (dataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+{
+    string sql = "INSERT INTO Customers (CustomerID, CompanyName) VALUES ('ALFKI', 'Alfreds Futterkiste')";
+    dataSource.ExecuteSQL(sql);
+}
+else
+{
+    MessageBox.Show("Connection Failed");
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Data Update</h3>
+                        <pre><code class="language-csharp">// Updating data in a table
+var dataSource = dmeEditor.GetDataSource("northwind.db");
+dataSource.Openconnection();
+
+if (dataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+{
+    string sql = "UPDATE Customers SET ContactName = 'Alfred' WHERE CustomerID = 'ALFKI' ";
+    dataSource.ExecuteSQL(sql);
+}
+else
+{
+    MessageBox.Show("Connection Failed");
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Data Delete</h3>
+                        <pre><code class="language-csharp">// Deleting data from a table
+var dataSource = dmeEditor.GetDataSource("northwind.db");
+dataSource.Openconnection();
+
+if (dataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+{
+    string sql = "DELETE FROM Customers WHERE CustomerID = 'ALFKI' ";
+    dataSource.ExecuteSQL(sql);
+}
+else
+{
+    MessageBox.Show("Connection Failed");
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>✅ Data Operation Benefits</strong>
+                        <ul>
+                            <li><strong>Simplicity:</strong> Direct and easy-to-understand data manipulations</li>
+                            <li><strong>Flexibility:</strong> Works with various data sources and structures</li>
+                            <li><strong>Efficiency:</strong> Lightweight operations with minimal overhead</li>
+                            <li><strong>Integration:</strong> Seamlessly integrates with application logic</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Shared Functions Pattern -->
+                <section id="shared-functions" class="section">
+                    <h2>🔄 Shared Functions Pattern</h2>
+
+                    <div class="code-example">
+                        <h3>BeepSharedFunctions Class Structure</h3>
+                        <pre><code class="language-csharp">public static class BeepSharedFunctions
+{
+    // Strongly typed data sources
+    public static SQLiteDataSource Sqlite_SampleDB;
+    public static TxtXlsCSVFileSource XlsFile;
+    public static CSVDataSource CSVFile;
+    public static IDMEEditor dmeEditor;
+
+    // Generic data source references for operations
+    public static IDataSource DestinationDataSource;
+    public static IDataSource SourceDataSource;
+
+    public static void CloseConnections()
+    {
+        if (Sqlite_SampleDB != null)
+        {
+            Sqlite_SampleDB.Closeconnection();
+        }
+        if (XlsFile != null)
+        {
+            XlsFile.Closeconnection();
+        }
+        if (CSVFile != null)
+        {
+            CSVFile.Closeconnection();
+        }
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage of Shared Functions</h3>
+                        <pre><code class="language-csharp">// Using the shared functions for data operations
+BeepSharedFunctions.CreateConnectionForSqlite();
+var dataSource = BeepSharedFunctions.Sqlite_SampleDB;
+</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>✅ Shared Functions Pattern Benefits</strong>
+                        <ul>
+                            <li><strong>Reusability:</strong> Common functions can be reused across the application</li>
+                            <li><strong>Maintainability:</strong> Centralized updates and maintenance for data operations</li>
+                            <li><strong>Readability:</strong> Clear and descriptive function names improve code readability</li>
+                            <li><strong>Efficiency:</strong> Reduces code duplication and improves performance</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- UI Integration -->
+                <section id="ui-integration" class="section">
+                    <h2>🖥️ UI Integration Examples</h2>
+                    <p>Examples of how data management operations are integrated into the UI layer of the application.</p>
+
+                    <div class="code-example">
+                        <h3>Form Data Binding</h3>
+                        <pre><code class="language-csharp">// Binding data to a WinForms DataGridView
+var dataSource = dmeEditor.GetDataSource("northwind.db");
+dataSource.Openconnection();
+
+if (dataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+{
+    string sql = "SELECT * FROM Customers";
+    var resultSet = dataSource.ExecuteSQL(sql);
+    
+    dataGridView1.DataSource = resultSet;
+}
+else
+{
+    MessageBox.Show("Connection Failed");
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Form Controls Update</h3>
+                        <pre><code class="language-csharp">// Updating form controls based on data source
+var dataSource = dmeEditor.GetDataSource("northwind.db");
+dataSource.Openconnection();
+
+if (dataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+{
+    string sql = "SELECT TOP 1 * FROM Customers";
+    var row = dataSource.ExecuteSQL(sql).FirstOrDefault();
+    
+    if (row != null)
+    {
+        textBoxCustomerID.Text = row["CustomerID"].ToString();
+        textBoxCompanyName.Text = row["CompanyName"].ToString();
+    }
+}
+else
+{
+    MessageBox.Show("Connection Failed");
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Data Submission</h3>
+                        <pre><code class="language-csharp">// Submitting data from a form to the database
+var dataSource = dmeEditor.GetDataSource("northwind.db");
+dataSource.Openconnection();
+
+if (dataSource.ConnectionStatus == System.Data.ConnectionState.Open)
+{
+    string sql = "INSERT INTO Customers (CustomerID, CompanyName) VALUES (@CustomerID, @CompanyName)";
+    var parameters = new { CustomerID = "NEWID", CompanyName = "New Company" };
+    dataSource.ExecuteSQL(sql, parameters);
+}
+else
+{
+    MessageBox.Show("Connection Failed");
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Loading Data Sources into ComboBoxes</h3>
+                        <pre><code class="language-csharp">public MovingData(IDMEEditor editor)
+{
+    dmeEditor = editor;
+    InitializeComponent();
+    
+    BeepSharedFunctions.dmeEditor = dmeEditor;
+    
+    // Load file-based data sources
+    foreach (var item in dmeEditor.ConfigEditor.DataConnections
+        .Where(p => p.Category == DatasourceCategory.FILE))
+    {
+        SourceDataSourcescomboBox.Items.Add(item.ConnectionName);
+    }
+    
+    // Load database data sources
+    foreach (var item in dmeEditor.ConfigEditor.DataConnections
+        .Where(p => p.Category != DatasourceCategory.FILE))
+    {
+        DestinationDataSourcecomboBox1.Items.Add(item.ConnectionName);
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Handling Data Source Selection</h3>
+                        <pre><code class="language-csharp">private void SourceDataSourcescomboBox_SelectedIndexChanged(object sender, EventArgs e)
+{
+    if (SourceDataSourcescomboBox.SelectedItem != null)
+    {
+        // Get the selected data source
+        BeepSharedFunctions.SourceDataSource = dmeEditor
+            .GetDataSource(SourceDataSourcescomboBox.SelectedItem.ToString());
+        
+        if (BeepSharedFunctions.SourceDataSource != null)
+        {
+            BeepSharedFunctions.SourceDataSource.Openconnection();
+            
+            if (BeepSharedFunctions.SourceDataSource.ConnectionStatus == 
+                System.Data.ConnectionState.Open)
+            {
+                // Load entities for this data source
+                LoadEntitiesForSource();
+            }
+        }
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Entity Operations in UI</h3>
+                        <pre><code class="language-csharp">private void DeleteButton_Click(object sender, EventArgs e)
+{
+    if (DestinationDataSourcecomboBox1.SelectedItem != null && 
+        DestEntitiescomboBox.SelectedItem != null)
+    {
+        BeepSharedFunctions.DestinationDataSource = dmeEditor
+            .GetDataSource(DestinationDataSourcecomboBox1.SelectedItem.ToString());
+        
+        if (BeepSharedFunctions.DestinationDataSource != null)
+        {
+            BeepSharedFunctions.DestinationDataSource.Openconnection();
+            
+            if (BeepSharedFunctions.DestinationDataSource.ConnectionStatus == 
+                System.Data.ConnectionStatus.Open)
+            {
+                // Execute drop table command
+                var result = BeepSharedFunctions.DestinationDataSource
+                    .ExecuteSql($"Drop Table {DestEntitiescomboBox.SelectedItem}");
+                
+                if (result.Flag == Errors.Ok)
+                {
+                    LogtextBox.AppendText($"Table {DestEntitiescomboBox.SelectedItem} Deleted" + 
+                        Environment.NewLine);
+                    
+                    // Refresh entity list
+                    BeepSharedFunctions.DestinationDataSource.GetEntitesList();
+                }
+            }
+        }
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>✅ UI Integration Benefits</strong>
+                        <ul>
+                            <li><strong>Seamless:</strong> Smooth integration between data and UI layers</li>
+                            <li><strong>Responsive:</strong> Immediate UI updates based on data changes</li>
+                            <li><strong>User-friendly:</strong> Intuitive interfaces that reflect real-time data</li>
+                            <li><strong>Efficient:</strong> Optimized data loading and submission processes</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section id="best-practices" class="section">
+                    <h2>✅ Best Practices for Data Management</h2>
+                    <p>Recommendations and best practices for effective data management using the Beep Data Management Engine.</p>
+
+                    <div class="tip">
+                        <strong>🔑 Key Recommendations</strong>
+                        <ul>
+                            <li>Use connection pooling for better performance</li>
+                            <li>Always close connections to release resources</li>
+                            <li>Prefer using transactions for batch operations</li>
+                            <li>Validate and sanitize all external inputs</li>
+                        </ul>
+                    </div>
+
+                    <div class="important">
+                        <strong>🛑 Important Considerations</strong>
+                        <ul>
+                            <li>Be aware of the security implications of data access</li>
+                            <li>Monitor and optimize performance regularly</li>
+                            <li>Ensure compatibility of data types across sources</li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script>
+        // Page-specific functionality can go here
+        console.log('Data Management Examples documentation page loaded');
+    </script>
+</body>
+</html>

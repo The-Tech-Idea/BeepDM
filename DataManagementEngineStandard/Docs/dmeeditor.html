@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DMEEditor - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>?</span>
+                    <a href="#">Editor Classes</a>
+                    <span>?</span>
+                    <span>DMEEditor</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>??? DMEEditor</h1>
+                    <p class="page-subtitle">The core Data Management Enterprise Editor that orchestrates all data operations</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>?? Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#core-properties">Core Properties</a></li>
+                        <li><a href="#data-source-management">Data Source Management</a></li>
+                        <li><a href="#logging-and-errors">Logging and Error Handling</a></li>
+                        <li><a href="#etl-operations">ETL Operations</a></li>
+                        <li><a href="#configuration">Configuration Management</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>?? Overview</h2>
+                    <p>
+                        The <code>DMEEditor</code> class is the central orchestrator of the Beep Data Management Engine. 
+                        It serves as the main entry point for all data operations, providing a unified interface to 
+                        manage data sources, execute ETL processes, handle configurations, and coordinate complex 
+                        data operations across multiple systems.
+                    </p>
+                    
+                    <div class="success">
+                        <strong>?? Core Purpose</strong>
+                        <p>DMEEditor encapsulates all functionality of data management into a single, powerful interface that can handle enterprise-level scenarios with ease.</p>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>?? Data Source Management</h3>
+                            <p>Create, manage, and coordinate multiple data sources simultaneously</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? ETL Operations</h3>
+                            <p>Extract, Transform, and Load data between different systems</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Logging & Monitoring</h3>
+                            <p>Comprehensive logging and error tracking across all operations</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Configuration</h3>
+                            <p>Centralized configuration management for all components</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Core Properties -->
+                <section id="core-properties" class="section">
+                    <h2>??? Core Properties</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Essential Components</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>DataSources</td><td>List&lt;IDataSource&gt;</td><td>Collection of all managed data sources</td></tr>
+                                    <tr><td>ETL</td><td>IETL</td><td>Extract, Transform, Load processing engine</td></tr>
+                                    <tr><td>ConfigEditor</td><td>IConfigEditor</td><td>Configuration management interface</td></tr>
+                                    <tr><td>Logger</td><td>IDMLogger</td><td>Centralized logging system</td></tr>
+                                    <tr><td>ErrorObject</td><td>IErrorsInfo</td><td>Global error tracking and reporting</td></tr>
+                                    <tr><td>WorkFlowEditor</td><td>IWorkFlowEditor</td><td>Workflow and process management</td></tr>
+                                    <tr><td>typesHelper</td><td>IDataTypesHelper</td><td>Data type mapping and conversion utilities</td></tr>
+                                    <tr><td>assemblyHandler</td><td>IAssemblyHandler</td><td>Dynamic assembly loading and management</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Container & Multi-Tenancy</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>ContainerMode</td><td>bool</td><td>Enable multi-tenant application support</td></tr>
+                                    <tr><td>ContainerName</td><td>string</td><td>Name of the current container/tenant</td></tr>
+                                    <tr><td>progress</td><td>IProgress&lt;PassedArgs&gt;</td><td>Progress reporting for long-running operations</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Source Management -->
+                <section id="data-source-management" class="section">
+                    <h2>??? Data Source Management</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Core Data Source Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">IDataSource</span> GetDataSource(<span class="parameter-type">string</span> dataSourceName)</code>
+                            </div>
+                            <p>Retrieves or creates a data source by name. Automatically handles connection creation and entity loading.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">IDataSource</span> GetDataSourceUsingGuidID(<span class="parameter-type">string</span> guidId)</code>
+                            </div>
+                            <p>Retrieves or creates a data source using its GUID identifier for more robust identification.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">ConnectionState</span> OpenDataSource(<span class="parameter-type">string</span> dataSourceName)</code>
+                            </div>
+                            <p>Opens a connection to the specified data source and returns the connection state.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">bool</span> CloseDataSource(<span class="parameter-type">string</span> dataSourceName)</code>
+                            </div>
+                            <p>Safely closes a data source connection and releases resources.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Data Source Creation</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">IDataSource</span> CreateNewDataSourceConnection(<span class="parameter-type">string</span> dataSourceName)</code>
+                            </div>
+                            <p>Creates a new data source connection using existing configuration.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">IDataSource</span> CreateNewDataSourceConnection(ConnectionProperties connectionProps, <span class="parameter-type">string</span> dataSourceName)</code>
+                            </div>
+                            <p>Creates a new data source with custom connection properties.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">IDataSource</span> CreateLocalDataSourceConnection(ConnectionProperties dataConnection, <span class="parameter-type">string</span> dataSourceName, <span class="parameter-type">string</span> classHandler)</code>
+                            </div>
+                            <p>Creates a local database data source with specified class handler.</p>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Data Source Management Example</h3>
+                        <pre><code class="language-csharp">// Get or create a data source
+IDataSource customerDb = dmeEditor.GetDataSource("CustomerDatabase");
+
+// Check if data source exists
+if (dmeEditor.CheckDataSourceExist("CustomerDatabase"))
+{
+    // Open the connection
+    var connectionState = dmeEditor.OpenDataSource("CustomerDatabase");
+    
+    if (connectionState == ConnectionState.Open)
+    {
+        // Get entity structure
+        var customerStructure = dmeEditor.GetEntityStructure("Customers", "CustomerDatabase");
+        
+        // Perform operations...
+        
+        // Close when done
+        dmeEditor.CloseDataSource("CustomerDatabase");
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Logging and Error Handling -->
+                <section id="logging-and-errors" class="section">
+                    <h2>?? Logging and Error Handling</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Logging Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> AddLogMessage(<span class="parameter-type">string</span> logType, <span class="parameter-type">string</span> message, DateTime logDate, <span class="parameter-type">int</span> recordId, <span class="parameter-type">string</span> miscData, Errors flag)</code>
+                            </div>
+                            <p>Comprehensive logging method with detailed context information and error classification.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> AddLogMessage(<span class="parameter-type">string</span> message)</code>
+                            </div>
+                            <p>Simple logging method for basic message recording.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> RaiseEvent(<span class="parameter-type">object</span> sender, PassedArgs args)</code>
+                            </div>
+                            <p>Raises global events for component communication and notification.</p>
+                        </div>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Error Handling Best Practice</strong>
+                        <p>Always check the <code>ErrorObject.Flag</code> property after operations to ensure proper error handling and logging.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Logging Example</h3>
+                        <pre><code class="language-csharp">try
+{
+    // Perform data operation
+    var result = dmeEditor.GetDataSource("CustomerDB");
+    
+    if (dmeEditor.ErrorObject.Flag == Errors.Ok)
+    {
+        dmeEditor.AddLogMessage("Success", "Data source loaded successfully", 
+                              DateTime.Now, 0, "CustomerDB", Errors.Ok);
+    }
+}
+catch (Exception ex)
+{
+    dmeEditor.AddLogMessage("Error", $"Failed to load data source: {ex.Message}", 
+                          DateTime.Now, 0, "CustomerDB", Errors.Failed);
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- ETL Operations -->
+                <section id="etl-operations" class="section">
+                    <h2>?? ETL Operations</h2>
+                    
+                    <p>DMEEditor provides direct access to ETL operations through its <code>ETL</code> property:</p>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>ETL Access Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Method</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>ETL.CopyEntityData()</td><td>Copy data between entities</td></tr>
+                                    <tr><td>ETL.CreateScriptHeader()</td><td>Generate ETL script headers</td></tr>
+                                    <tr><td>ETL.RunCreateScript()</td><td>Execute entity creation scripts</td></tr>
+                                    <tr><td>ETL.RunImportScript()</td><td>Execute data import operations</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>ETL Operation Example</h3>
+                        <pre><code class="language-csharp">// Create ETL script for data migration
+var sourceDs = dmeEditor.GetDataSource("SourceDB");
+var destDs = dmeEditor.GetDataSource("DestinationDB");
+
+// Generate create entity scripts
+var entities = new List&lt;string&gt; { "Customers", "Orders", "Products" };
+var scripts = dmeEditor.ETL.GetCreateEntityScript(sourceDs, entities, 
+                                                 progress, cancellationToken, true);
+
+// Set up the ETL script
+dmeEditor.ETL.Script.ScriptDTL.AddRange(scripts);
+
+// Execute the migration
+var result = await dmeEditor.ETL.RunCreateScript(progress, cancellationToken);</code></pre>
+                    </div>
+                </section>
+
+                <!-- Configuration -->
+                <section id="configuration" class="section">
+                    <h2>?? Configuration Management</h2>
+                    
+                    <p>DMEEditor provides centralized configuration management through the <code>ConfigEditor</code> property:</p>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Configuration Properties</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Property</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>ConfigEditor.DataConnections</td><td>Manage data source connections</td></tr>
+                                    <tr><td>ConfigEditor.DataSourcesClasses</td><td>Data source class definitions</td></tr>
+                                    <tr><td>ConfigEditor.DataDriversClasses</td><td>Driver configurations</td></tr>
+                                    <tr><td>ConfigEditor.JsonLoader</td><td>JSON serialization utilities</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Examples -->
+                <section id="examples" class="section">
+                    <h2>?? Usage Examples</h2>
+                    
+                    <div class="code-example">
+                        <h3>Complete DMEEditor Workflow</h3>
+                        <pre><code class="language-csharp">// Initialize DMEEditor (typically done through dependency injection)
+var dmeEditor = new DMEEditor(logger, utilFunction, errorObject, 
+                             configEditor, assemblyHandler);
+
+// Create and configure a new data connection
+var connectionProps = new ConnectionProperties
+{
+    ConnectionName = "ProductionDB",
+    DatabaseType = DataSourceType.SqlServer,
+    ConnectionString = "Server=prod-server;Database=Production;Integrated Security=true;",
+    GuidID = Guid.NewGuid().ToString()
+};
+
+// Add connection to configuration
+dmeEditor.ConfigEditor.AddDataConnection(connectionProps);
+
+// Get and open the data source
+var dataSource = dmeEditor.GetDataSource("ProductionDB");
+var connectionState = dmeEditor.OpenDataSource("ProductionDB");
+
+if (connectionState == ConnectionState.Open)
+{
+    // Get entity structure
+    var customerStructure = dmeEditor.GetEntityStructure("Customers", "ProductionDB");
+    
+    // Retrieve data with error handling
+    var customerData = dmeEditor.GetData(dataSource, customerStructure);
+    
+    if (dmeEditor.ErrorObject.Flag == Errors.Ok)
+    {
+        dmeEditor.AddLogMessage("Success", "Customer data retrieved successfully", 
+                              DateTime.Now, 0, null, Errors.Ok);
+        
+        // Process data...
+    }
+    else
+    {
+        dmeEditor.AddLogMessage("Error", "Failed to retrieve customer data", 
+                              DateTime.Now, 0, null, Errors.Failed);
+    }
+    
+    // Clean up
+    dmeEditor.CloseDataSource("ProductionDB");
+}
+
+// Dispose when done
+dmeEditor.Dispose();</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Multi-DataSource Operations</h3>
+                        <pre><code class="language-csharp">// Working with multiple data sources
+var sourceDb = dmeEditor.GetDataSource("LegacySystem");
+var targetDb = dmeEditor.GetDataSource("ModernSystem");
+
+// Open both connections
+dmeEditor.OpenDataSource("LegacySystem");
+dmeEditor.OpenDataSource("ModernSystem");
+
+// Copy data between systems
+var result = dmeEditor.ETL.CopyEntityData(
+    sourceDb, targetDb, 
+    "LegacyCustomers", "NewCustomers", 
+    progress, cancellationToken);
+
+if (dmeEditor.ErrorObject.Flag == Errors.Ok)
+{
+    dmeEditor.AddLogMessage("ETL", "Data migration completed successfully", 
+                          DateTime.Now, 0, null, Errors.Ok);
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section id="best-practices" class="section">
+                    <h2>? Best Practices</h2>
+                    
+                    <div class="tip">
+                        <strong>?? Resource Management</strong>
+                        <ul>
+                            <li>Always dispose of DMEEditor instances when done</li>
+                            <li>Close data source connections explicitly</li>
+                            <li>Use using statements for automatic disposal</li>
+                            <li>Monitor memory usage in long-running operations</li>
+                        </ul>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Error Handling</strong>
+                        <ul>
+                            <li>Check <code>ErrorObject.Flag</code> after every operation</li>
+                            <li>Use comprehensive logging for debugging</li>
+                            <li>Implement proper exception handling</li>
+                            <li>Use progress reporting for long operations</li>
+                        </ul>
+                    </div>
+
+                    <div class="success">
+                        <strong>?? Performance Optimization</strong>
+                        <ul>
+                            <li>Reuse DMEEditor instances when possible</li>
+                            <li>Keep data source connections open for batch operations</li>
+                            <li>Use async methods for I/O operations</li>
+                            <li>Implement proper caching strategies</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="index.html"><i class="bi bi-arrow-left"></i> Home</a>
+                    <a href="etleditor.html">ETL Editor <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('DMEEditor documentation page loaded');
+    </script>
+</body>
+</html>

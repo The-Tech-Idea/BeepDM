@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Best Practices - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>→</span>
+                    <span>Best Practices</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>Best Practices</h1>
+                    <p class="page-subtitle">Guidelines for effective use of Beep Data Management Engine components</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>⭐ Table of Contents</h3>
+                    <ul>
+                        <li><a href="#general-principles">General Principles</a></li>
+                        <li><a href="#unitofwork-practices">UnitOfWork Best Practices</a></li>
+                        <li><a href="#multidatasource-practices">MultiDataSource Best Practices</a></li>
+                        <li><a href="#performance">Performance Optimization</a></li>
+                        <li><a href="#error-handling">Error Handling</a></li>
+                        <li><a href="#testing">Testing Strategies</a></li>
+                        <li><a href="#security">Security Guidelines</a></li>
+                        <li><a href="#anti-patterns">Common Anti-Patterns</a></li>
+                        <li><a href="#deployment">Deployment Checklist</a></li>
+                    </ul>
+                </div>
+
+                <!-- General Principles -->
+                <section id="general-principles" class="section">
+                    <h2>General Principles</h2>
+                    
+                    <div class="success">
+                        <strong>✅ Follow SOLID Principles</strong>
+                        <p>Design your data access layer following SOLID principles. Each UnitOfWork should have a single responsibility, and dependencies should be injected rather than created directly.</p>
+                    </div>
+
+                    <div class="success">
+                        <strong>✅ Always Use Using Statements</strong>
+                        <p>UnitOfWork implements IDisposable. Always use using statements or explicitly call Dispose() to ensure proper resource cleanup.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Proper Resource Management</h3>
+                        <pre><code class="language-csharp">// Good - Using statement ensures disposal
+using (var uow = new UnitofWork&lt;Customer&gt;(dmeEditor, "SqlServer", "Customers", "CustomerID"))
+{
+    // Work with UnitOfWork
+    await uow.Get();
+    uow.New();
+    // ... work with data
+    await uow.CommitAsync();
+} // Automatically disposed here
+
+// Also Good - Explicit disposal
+var uow = new UnitOfWork&lt;Customer&gt;(dmeEditor, "SqlServer", "Customers", "CustomerID");
+try
+{
+    // Work with UnitOfWork
+    await uow.Get();
+    await uow.CommitAsync();
+}
+finally
+{
+    uow.Dispose();
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>⚡ Use Async/Await Consistently</strong>
+                        <p>Always use async versions of methods for database operations to avoid blocking the UI thread.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Async Best Practices</h3>
+                        <pre><code class="language-csharp">// Good - Proper async usage
+public async Task ProcessCustomerAsync(Customer customer)
+{
+    await customerUoW.InsertAsync(customer);
+    var result = await customerUoW.CommitAsync();
+    
+    if (result.Flag == Errors.Ok)
+    {
+        await NotifySuccess();
+    }
+}
+
+// Bad - Don't block async calls
+public void ProcessCustomer(Customer customer)
+{
+    customerUoW.InsertAsync(customer).Wait();  // Can cause deadlocks
+    var result = customerUoW.CommitAsync().Result;  // Can cause deadlocks
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- UnitOfWork Best Practices -->
+                <section id="unitofwork-practices" class="section">
+                    <h2>UnitOfWork Best Practices</h2>
+
+                    <div class="success">
+                        <strong>🔄 Initialize Early, Use Throughout</strong>
+                        <p>Initialize UnitOfWork instances early in your application lifecycle and reuse them throughout the session.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Service Pattern Implementation</h3>
+                        <pre><code class="language-csharp">public class CustomerService : IDisposable
+{
+    private readonly UnitofWork&lt;Customer&gt; _customerUoW;
+    private readonly IDMEEditor _dmeEditor;
+    
+    public CustomerService(IDMEEditor dmeEditor)
+    {
+        _dmeEditor = dmeEditor;
+        _customerUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, "SqlServer", "Customers", "CustomerID");
+        
+        // Setup event handlers once
+        _customerUoW.PreInsert += ValidateCustomer;
+        _customerUoW.PostEdit += LogChanges;
+        _customerUoW.PreDelete += CheckDeletePermission;
+    }
+    
+    public async Task&lt;List&lt;Customer&gt;&gt; GetActiveCustomersAsync()
+    {
+        var filters = new List&lt;AppFilter&gt;
+        {
+            new AppFilter { FieldName = "IsActive", Operator = "=", FilterValue = true }
+        };
+        
+        var result = await _customerUoW.Get(filters);
+        return result.ToList();
+    }
+    
+    public async Task&lt;bool&gt; CreateCustomerAsync(Customer customer)
+    {
+        try
+        {
+            await _customerUoW.InsertAsync(customer);
+            var result = await _customerUoW.CommitAsync();
+            return result.Flag == Errors.Ok;
+        }
+        catch (Exception ex)
+        {
+            await _customerUoW.Rollback();
+            throw;
+        }
+    }
+    
+    public void Dispose()
+    {
+        _customerUoW?.Dispose();
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>✔️ Implement Proper Validation</strong>
+                        <p>Use event handlers to implement validation logic at appropriate lifecycle points.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Validation Event Handlers</h3>
+                        <pre><code class="language-csharp">private void ValidateCustomer(object sender, UnitofWorkParams args)
+{
+    var customer = args.CurrentEntity as Customer;
+    
+    // Basic validation
+    if (string.IsNullOrWhiteSpace(customer.Email))
+    {
+        args.Cancel = true;
+        args.ErrorMessage = "Email is required";
+        return;
+    }
+    
+    // Format validation
+    if (!IsValidEmail(customer.Email))
+    {
+        args.Cancel = true;
+        args.ErrorMessage = "Invalid email format";
+        return;
+    }
+    
+    // Business rule validation
+    if (customer.CreditLimit &gt; 100000 && customer.CustomerType != "Premium")
+    {
+        args.Cancel = true;
+        args.ErrorMessage = "High credit limits require Premium customer type";
+        return;
+    }
+}
+
+private void LogChanges(object sender, UnitofWorkParams args)
+{
+    var customer = args.CurrentEntity as Customer;
+    
+    _logger.LogInformation($"Customer {customer.CustomerID} modified: {args.PropertyName} = {args.PropertyValue}");
+    
+    // Optional: Track changes for audit
+    if (args.PropertyName != null)
+    {
+        _auditService.LogChange(customer.CustomerID, args.PropertyName, args.PropertyValue);
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>🔍 Check IsDirty Before Operations</strong>
+                        <p>Always check IsDirty before committing or closing to avoid data loss.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Unsaved Changes Handling</h3>
+                        <pre><code class="language-csharp">public async Task&lt;bool&gt; CloseFormAsync()
+{
+    if (_customerUoW.IsDirty)
+    {
+        var result = MessageBox.Show(
+            "You have unsaved changes. Would you like to save them?", 
+            "Unsaved Changes", 
+            MessageBoxButtons.YesNoCancel,
+            MessageBoxIcon.Question);
+        
+        switch (result)
+        {
+            case DialogResult.Yes:
+                var commitResult = await _customerUoW.CommitAsync();
+                if (commitResult.Flag != Errors.Ok)
+                {
+                    MessageBox.Show($"Failed to save changes: {commitResult.Message}");
+                    return false;
+                }
+                return true;
+                
+            case DialogResult.No:
+                await _customerUoW.Rollback();
+                return true;
+                
+            case DialogResult.Cancel:
+                return false;
+                
+            default:
+                return false;
+        }
+    }
+    
+    return true;
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>↩️ Handle Rollback Scenarios</strong>
+                        <p>Implement proper rollback handling for error scenarios.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Transaction Rollback</h3>
+                        <pre><code class="language-csharp">public async Task&lt;bool&gt; ProcessBatchAsync(List&lt;Customer&gt; customers)
+{
+    var addedCustomers = new List&lt;Customer&gt;();
+    
+    try
+    {
+        foreach (var customer in customers)
+        {
+            // Validate before adding
+            ValidateCustomerData(customer);
+            
+            await _customerUoW.InsertAsync(customer);
+            addedCustomers.Add(customer);
+            
+            // Optional: Progress reporting
+            OnProgressUpdate?.Invoke(addedCustomers.Count, customers.Count);
+        }
+        
+        var result = await _customerUoW.CommitAsync();
+        if (result.Flag != Errors.Ok)
+        {
+            await _customerUoW.Rollback();
+            return false;
+        }
+        
+        return true;
+    }
+    catch (ValidationException ex)
+    {
+        await _customerUoW.Rollback();
+        _logger.LogWarning($"Batch processing failed due to validation: {ex.Message}");
+        throw;
+    }
+    catch (Exception ex)
+    {
+        await _customerUoW.Rollback();
+        _logger.LogError(ex, "Batch processing failed unexpectedly");
+        return false;
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Multi-DataSource Best Practices -->
+                <section id="multidatasource-practices" class="section">
+                    <h2>MultiDataSourceUnitOfWork Best Practices</h2>
+
+                    <div class="success">
+                        <strong>🔗 Setup Relationships Early</strong>
+                        <p>Define all relationships before starting data operations to ensure proper coordination.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Relationship Configuration</h3>
+                        <pre><code class="language-csharp">private async Task InitializeMultiUoWAsync()
+{
+    _multiUoW = new MultiDataSourceUnitOfWork(_dmeEditor);
+    
+    // Add all entity types first
+    await _multiUoW.AddUnitOfWorkAsync&lt;Customer&gt;("SqlServer", "Customers", "CustomerID");
+    await _multiUoW.AddUnitOfWorkAsync&lt;Order&gt;("MongoDB", "Orders", "OrderID");
+    await _multiUoW.AddUnitOfWorkAsync&lt;Address&gt;("SqlServer", "Addresses", "AddressID");
+    await _multiUoW.AddUnitOfWorkAsync&lt;AuditLog&gt;("DocumentDB", "AuditLogs", "LogID");
+    
+    // Define relationships with appropriate behaviors
+    _multiUoW.AddRelationship("Customer", "Order", "CustomerID", "CustomerID", 
+                             RelationshipBehavior.Restrict, false);
+    
+    _multiUoW.AddRelationship("Customer", "Address", "CustomerID", "CustomerID", 
+                             RelationshipBehavior.CascadeDelete, false);
+    
+    _multiUoW.AddRelationship("Order", "AuditLog", "OrderID", "EntityID", 
+                             RelationshipBehavior.CascadeDelete, true);
+    
+    // Setup event handlers
+    _multiUoW.ChildDataChanged += OnChildDataChanged;
+    
+    // Load initial data
+    await LoadInitialDataAsync();
+}
+
+private async Task LoadInitialDataAsync()
+{
+    // Load customers first (parent entities)
+    var customers = _multiUoW.GetEntities&lt;Customer&gt;("Customer");
+    await customers.LoadAsync();
+    
+    // Then load related data
+    if (customers.Any())
+    {
+        var firstCustomer = customers.First();
+        await _multiUoW.NavigateToParentAsync("Customer", firstCustomer);
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>📡 Use Events for UI Updates</strong>
+                        <p>Subscribe to ChildDataChanged events to keep UI synchronized with data changes.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Event-Driven UI Updates</h3>
+                        <pre><code class="language-csharp">private async void OnChildDataChanged(object sender, ChildDataChangedEventArgs args)
+{
+    // Update UI based on which child data changed
+    switch (args.ChildEntityName)
+    {
+        case "Order":
+            await RefreshOrdersGrid();
+            UpdateOrderSummary();
+            break;
+            
+        case "Address":
+            await RefreshAddressControls();
+            break;
+            
+        case "AuditLog":
+            // Don't refresh UI for audit logs to avoid performance issues
+            break;
+    }
+    
+    // Update any aggregate displays
+    UpdateCustomerSummary();
+}
+
+private async Task RefreshOrdersGrid()
+{
+    var currentCustomer = _multiUoW.CurrentParentEntity as Customer;
+    if (currentCustomer != null)
+    {
+        var orders = await _multiUoW.GetAllRelatedChildrenAsync&lt;Order, Customer&gt;("Customer", currentCustomer);
+        
+        // Update data binding
+        ordersDataGridView.DataSource = orders["Order"];
+        
+        // Update status
+        lblOrderCount.Text = $"Orders: {orders["Order"].Count}";
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>⚙️ Choose Appropriate Relationship Behaviors</strong>
+                        <p>Select relationship behaviors based on business requirements, not technical convenience.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Relationship Behavior Selection</h3>
+                        <pre><code class="language-csharp">// For optional relationships (customer notes)
+_multiUoW.AddRelationship("Customer", "Note", "CustomerID", "CustomerID", 
+                         RelationshipBehavior.SetNull, false);
+
+// For required audit trails (prevent deletion if history exists)
+_multiUoW.AddRelationship("Order", "OrderHistory", "OrderID", "OrderID", 
+                         RelationshipBehavior.Restrict, true);
+
+// For true parent-child relationships (invoice lines)
+_multiUoW.AddRelationship("Invoice", "InvoiceLine", "InvoiceID", "InvoiceID", 
+                         RelationshipBehavior.CascadeDelete, true);
+
+// For lookup relationships (don't delete customer if orders exist)
+_multiUoW.AddRelationship("Customer", "Order", "CustomerID", "CustomerID", 
+                         RelationshipBehavior.Restrict, false);</code></pre>
+                    </div>
+                </section>
+
+                <!-- Performance Best Practices -->
+                <section id="performance" class="section">
+                    <h2>Performance Optimization</h2>
+
+                    <div class="success">
+                        <strong>🔍 Use Filtering at Database Level</strong>
+                        <p>Apply filters at the database level rather than in memory to improve performance.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Efficient Filtering</h3>
+                        <pre><code class="language-csharp">// Good - Database filtering
+public async Task&lt;List&lt;Customer&gt;&gt; GetActiveCustomersAsync(DateTime since)
+{
+    var filters = new List&lt;AppFilter&gt;
+    {
+        new AppFilter { FieldName = "IsActive", Operator = "=", FilterValue = true },
+        new AppFilter { FieldName = "LastOrderDate", Operator = "&gt;=", FilterValue = since },
+        new AppFilter { FieldName = "CustomerType", Operator = "IN", FilterValue = new[] { "Premium", "Gold" } }
+    };
+    
+    var result = await _customerUoW.Get(filters);
+    return result.ToList();
+}
+
+// Bad - In-memory filtering (loads all customers first)
+public async Task&lt;List&lt;Customer&gt;&gt; GetActiveCustomersSlow(DateTime since)
+{
+    var allCustomers = await _customerUoW.Get(); // Loads everything!
+    
+    return allCustomers
+        .Where(c =&gt; c.IsActive && 
+                   c.LastOrderDate &gt;= since && 
+                   (c.CustomerType == "Premium" || c.CustomerType == "Gold"))
+        .ToList();
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>📦 Batch Operations When Possible</strong>
+                        <p>For large datasets, process data in batches to avoid memory issues.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Batch Processing</h3>
+                        <pre><code class="language-csharp">public async Task ProcessLargeDatasetAsync(IEnumerable&lt;ImportData&gt; data, 
+                                                   IProgress&lt;int&gt; progress = null)
+{
+    const int batchSize = 1000;
+    var batch = new List&lt;Customer&gt;();
+    var totalProcessed = 0;
+    
+    foreach (var item in data)
+    {
+        var customer = CreateCustomerFromImport(item);
+        batch.Add(customer);
+        
+        if (batch.Count >= batchSize)
+        {
+            await ProcessBatchAsync(batch);
+            
+            totalProcessed += batch.Count;
+            progress?.Report(totalProcessed);
+            
+            batch.Clear();
+            
+            // Optional: Allow for cancellation and cleanup
+            if (_cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+            
+            // Optional: Brief pause to prevent overwhelming the database
+            await Task.Delay(10, _cancellationToken);
+        }
+    }
+    
+    // Process remaining items
+    if (batch.Any())
+    {
+        await ProcessBatchAsync(batch);
+        totalProcessed += batch.Count;
+        progress?.Report(totalProcessed);
+    }
+}
+
+private async Task ProcessBatchAsync(List&lt;Customer&gt; batch)
+{
+    try
+    {
+        foreach (var customer in batch)
+        {
+            await _customerUoW.InsertAsync(customer);
+        }
+        
+        await _customerUoW.CommitAsync();
+    }
+    catch
+    {
+        await _customerUoW.Rollback();
+        throw;
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>📊 Use Progress Reporting for Long Operations</strong>
+                        <p>Implement progress reporting for operations that might take significant time.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Progress Reporting</h3>
+                        <pre><code class="language-csharp">public async Task ImportDataWithProgressAsync(List&lt;ImportData&gt; data)
+{
+    var progress = new Progress&lt;PassedArgs&gt;(args =&gt; 
+    {
+        // Update progress bar
+        progressBar.Value = args.ParameterInt1;
+        progressBar.Maximum = args.ParameterInt2;
+        
+        // Update status label
+        lblStatus.Text = args.ParameterString1;
+        
+        // Allow UI to refresh
+        Application.DoEvents();
+    });
+
+    var cancellationTokenSource = new CancellationTokenSource();
+    btnCancel.Click += (s, e) =&gt; cancellationTokenSource.Cancel();
+
+    try
+    {
+        var result = await _customerUoW.Commit(progress, cancellationTokenSource.Token);
+        
+        if (result.Flag == Errors.Ok)
+        {
+            MessageBox.Show("Import completed successfully!");
+        }
+    }
+    catch (OperationCanceledException)
+    {
+        MessageBox.Show("Import was cancelled.");
+        await _customerUoU.Rollback();
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Error Handling -->
+                <section id="error-handling" class="section">
+                    <h2>Error Handling Best Practices</h2>
+
+                    <div class="error">
+                        <strong>🛡️ Implement Comprehensive Error Handling</strong>
+                        <p>Handle different types of errors appropriately and provide meaningful feedback.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Comprehensive Error Handling</h3>
+                        <pre><code class="language-csharp">public async Task&lt;ServiceResult&gt; CreateCustomerAsync(CustomerData data)
+{
+    try
+    {
+        var customer = MapToEntity(data);
+        
+        // Pre-validation
+        ValidateCustomerData(customer);
+        
+        await _customerUoW.InsertAsync(customer);
+        var result = await _customerUoW.CommitAsync();
+        
+        if (result.Flag == Errors.Ok)
+        {
+            _logger.LogInformation($"Customer created successfully: {customer.CustomerID}");
+            return ServiceResult.Success(customer.CustomerID);
+        }
+        else
+        {
+            _logger.LogWarning($"Database error creating customer: {result.Message}");
+            return ServiceResult.Failure($"Database error: {result.Message}");
+        }
+    }
+    catch (ValidationException ex)
+    {
+        _logger.LogWarning($"Validation error creating customer: {ex.Message}");
+        return ServiceResult.ValidationError(ex.Message);
+    }
+    catch (SqlException ex) when (ex.Number == 2) // Timeout
+    {
+        _logger.LogError(ex, "Database timeout creating customer");
+        return ServiceResult.Failure("Database timeout. Please try again later.");
+    }
+    catch (SqlException ex) when (ex.Number == 2627) // Duplicate key
+    {
+        _logger.LogWarning($"Duplicate customer creation attempt: {ex.Message}");
+        return ServiceResult.Failure("A customer with this information already exists.");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Unexpected error creating customer");
+        return ServiceResult.Failure("An unexpected error occurred. Please contact support.");
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="warning">
+                        <strong>📝 Log Important Operations</strong>
+                        <p>Enable logging for audit trails and debugging purposes.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Audit Logging</h3>
+                        <pre><code class="language-csharp">public void ConfigureLogging()
+{
+    // Enable logging
+    _customerUoW.IsLogging = true;
+    
+    // Setup periodic log saving
+    _logTimer = new Timer(SaveLogsToFile, null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
+}
+
+private void SaveLogsToFile(object state)
+{
+    try
+    {
+        var logPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+            "MyApp", "Logs", $"customer-changes-{DateTime.Now:yyyyMMdd}.json");
+        
+        Directory.CreateDirectory(Path.GetDirectoryName(logPath));
+        
+        _customerUoW.SaveLog(logPath);
+        
+        _logger.LogDebug($"Change log saved to {logPath}");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to save change log");
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Testing Best Practices -->
+                <section id="testing" class="section">
+                    <h2>Testing Strategies</h2>
+
+                    <div class="success">
+                        <strong>🧪 Use List Mode for Unit Testing</strong>
+                        <p>Use list mode for unit testing to avoid database dependencies.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Unit Testing with List Mode</h3>
+                        <pre><code class="language-csharp">[TestFixture]
+public class CustomerUnitOfWorkTests
+{
+    private UnitofWork&lt;Customer&gt; _uow;
+    private ObservableBindingList&lt;Customer&gt; _testData;
+    private Mock&lt;IDMEEditor&gt; _mockDMEEditor;
+
+    [SetUp]
+    public void Setup()
+    {
+        _mockDMEEditor = new Mock&lt;IDMEEditor&gt;();
+        _testData = new ObservableBindingList&lt;Customer&gt;();
+        
+        // Create UnitOfWork in list mode (no database)
+        _uow = new UnitofWork&lt;Customer&gt;(_mockDMEEditor.Object, true, _testData, "CustomerID");
+    }
+
+    [Test]
+    public void Should_Track_New_Entity_As_Added()
+    {
+        // Arrange & Act
+        _uow.New();
+        var customer = _uow.CurrentItem;
+        customer.Name = "Test Customer";
+        customer.Email = "test@example.com";
+        
+        // Assert
+        Assert.IsTrue(_uow.IsDirty);
+        Assert.AreEqual(1, _uow.GetAddedEntities().Count());
+        Assert.AreEqual("Test Customer", customer.Name);
+    }
+
+    [Test]
+    public void Should_Track_Modified_Entity()
+    {
+        // Arrange
+        var existingCustomer = new Customer { CustomerID = 1, Name = "Original Name" };
+        _testData.Add(existingCustomer);
+        _uow.MoveTo(0);
+        
+        // Act
+        _uow.CurrentItem.Name = "Modified Name";
+        
+        // Assert
+        Assert.IsTrue(_uow.IsDirty);
+        Assert.AreEqual(1, _uow.GetModifiedEntities().Count());
+    }
+
+    [Test]
+    public void Should_Track_Deleted_Entity()
+    {
+        // Arrange
+        var customerToDelete = new Customer { CustomerID = 1, Name = "To Delete" };
+        _testData.Add(customerToDelete);
+        
+        // Act
+        _uow.Delete(customerToDelete);
+        
+        // Assert
+        Assert.IsTrue(_uow.IsDirty);
+        Assert.AreEqual(1, _uow.GetDeletedEntities().Count());
+        Assert.AreEqual(0, _testData.Count);
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        _uow?.Dispose();
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>🎭 Mock Dependencies</strong>
+                        <p>Mock IDMEEditor and IDataSource for isolated unit testing.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Mocking Dependencies</h3>
+                        <pre><code class="language-csharp">[TestFixture]
+public class CustomerServiceTests
+{
+    private CustomerService _customerService;
+    private Mock&lt;IDMEEditor&gt; _mockDMEEditor;
+    private Mock&lt;IDataSource&gt; _mockDataSource;
+    private Mock&lt;ILogger&gt; _mockLogger;
+
+    [SetUp]
+    public void Setup()
+    {
+        _mockDMEEditor = new Mock&lt;IDMEEditor&gt;();
+        _mockDataSource = new Mock&lt;IDataSource&gt;();
+        _mockLogger = new Mock&lt;ILogger&gt;();
+        
+        // Setup mock returns
+        _mockDMEEditor.Setup(x =&gt; x.GetDataSource(It.IsAny&lt;string&gt;()))
+                      .Returns(_mockDataSource.Object);
+        
+        _mockDataSource.Setup(x =&gt; x.GetEntity(It.IsAny&lt;string&gt;(), It.IsAny&lt;List&lt;AppFilter&gt;&gt;()))
+                       .Returns(new List&lt;Customer&gt;());
+        
+        _mockDataSource.Setup(x =&gt; x.InsertEntity(It.IsAny&lt;string&gt;(), It.IsAny&lt;object&gt;()))
+                       .Returns(new ErrorsInfo { Flag = Errors.Ok });
+        
+        _customerService = new CustomerService(_mockDMEEditor.Object, _mockLogger.Object);
+    }
+
+    [Test]
+    public async Task Should_Create_Customer_Successfully()
+    {
+        // Arrange
+        var customer = new Customer { Name = "Test Customer", Email = "test@example.com" };
+        
+        // Act
+        var result = await _customerService.CreateCustomerAsync(customer);
+        
+        // Assert
+        Assert.IsTrue(result.IsSuccess);
+        _mockDataSource.Verify(x =&gt; x.InsertEntity("Customers", It.IsAny&lt;object&gt;()), Times.Once);
+    }
+
+    [Test]
+    public async Task Should_Handle_Validation_Errors()
+    {
+        // Arrange
+        var invalidCustomer = new Customer { Name = "", Email = "invalid-email" };
+        
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync&lt;ValidationException&gt;(
+            () =&gt; _customerService.CreateCustomerAsync(invalidCustomer));
+        
+        Assert.That(exception.Message, Contains.Substring("Name is required"));
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Security -->
+                <section id="security" class="section">
+                    <h2>Security Guidelines</h2>
+
+                    <div class="warning">
+                        <strong>🔒 Validate Input Data</strong>
+                        <p>Always validate input data before processing to prevent injection attacks and data corruption.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Input Validation</h3>
+                        <pre><code class="language-csharp">private void ValidateCustomerInput(Customer customer)
+{
+    // Required field validation
+    if (string.IsNullOrWhiteSpace(customer.Name))
+        throw new ValidationException("Name is required");
+    
+    // Length validation
+    if (customer.Name.Length > 100)
+        throw new ValidationException("Name cannot exceed 100 characters");
+    
+    // Format validation
+    if (!string.IsNullOrEmpty(customer.Email) && !IsValidEmail(customer.Email))
+        throw new ValidationException("Invalid email format");
+    
+    // SQL injection prevention (if building dynamic queries)
+    if (ContainsSqlInjectionPatterns(customer.Name))
+        throw new ValidationException("Invalid characters detected");
+    
+    // XSS prevention
+    customer.Name = HttpUtility.HtmlEncode(customer.Name?.Trim());
+    customer.Email = customer.Email?.Trim().ToLowerInvariant();
+}
+
+private bool IsValidEmail(string email)
+{
+    return Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+}
+
+private bool ContainsSqlInjectionPatterns(string input)
+{
+    var patterns = new[] { "--", ";", "/*", "*/", "xp_", "sp_", "exec", "execute" };
+    return patterns.Any(pattern =&gt; input.ToLower().Contains(pattern));
+}</code></pre>
+                    </div>
+
+                    <div class="warning">
+                        <strong>🛡️ Implement Authorization Checks</strong>
+                        <p>Check user permissions before allowing data operations.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Authorization Implementation</h3>
+                        <pre><code class="language-csharp">private void CheckPermissions(string operation, Customer customer)
+{
+    var currentUser = _securityService.GetCurrentUser();
+    
+    // Check general permissions
+    if (!currentUser.HasPermission($"Customer.{operation}"))
+    {
+        throw new UnauthorizedAccessException($"User not authorized for {operation} operation");
+    }
+    
+    // Check record-level security
+    switch (operation)
+    {
+        case "Delete":
+            if (customer.CreatedBy != currentUser.UserId && !currentUser.HasRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Can only delete own records");
+            }
+            break;
+            
+        case "Update":
+            if (customer.IsLocked && !currentUser.HasRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Cannot modify locked records");
+            }
+            break;
+            
+        case "View":
+            if (customer.IsConfidential && !currentUser.HasPermission("Customer.ViewConfidential"))
+            {
+                throw new UnauthorizedAccessException("Cannot view confidential records");
+            }
+            break;
+    }
+    
+    // Log access for audit
+    _auditService.LogAccess(currentUser.UserId, operation, customer.CustomerID);
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Anti-Patterns -->
+                <section id="anti-patterns" class="section">
+                    <h2>Common Anti-Patterns to Avoid</h2>
+
+                    <div class="error">
+                        <strong>❌ Don't Create UnitOfWork in Loops</strong>
+                        <p>Creating new UnitOfWork instances in loops is inefficient and can cause resource issues.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Loop Anti-Pattern</h3>
+                        <pre><code class="language-csharp">// BAD - Don't do this
+public async Task ImportCustomersBadAsync(List&lt;ImportData&gt; importData)
+{
+    foreach (var customerData in importData)
+    {
+        // Creates new connection each time - VERY INEFFICIENT
+        using (var uow = new UnitofWork&lt;Customer&gt;(dmeEditor, "SqlServer", "Customers", "CustomerID"))
+        {
+            await uow.InsertAsync(CreateCustomer(customerData));
+            await uow.CommitAsync();  // Individual commits - slow and not transactional
+        }
+    }
+}
+
+// GOOD - Reuse UnitOfWork
+public async Task ImportCustomersGoodAsync(List&lt;ImportData&gt; importData)
+{
+    using (var uow = new UnitofWork&lt;Customer&gt;(dmeEditor, "SqlServer", "Customers", "CustomerID"))
+    {
+        foreach (var customerData in importData)
+        {
+            var customer = CreateCustomer(customerData);
+            await uow.InsertAsync(customer);
+        }
+        
+        // Single commit for all operations - faster and transactional
+        await uow.CommitAsync();
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="error">
+                        <strong>❌ Don't Ignore Event Cancellation</strong>
+                        <p>Always respect the Cancel flag in event handlers.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Event Cancellation Anti-Pattern</h3>
+                        <pre><code class="language-csharp">// BAD - Ignoring cancellation
+private void OnPreInsert_Bad(object sender, UnitofWorkParams args)
+{
+    var customer = args.CurrentEntity as Customer;
+    if (customer.Email == null)
+    {
+        args.Cancel = true;  // Set cancel but continue processing
+        customer.Email = "unknown@example.com";  // This shouldn't happen after cancel
+        
+        // Continue with other operations that should be skipped
+        ValidateOtherFields(customer);
+    }
+}
+
+// GOOD - Respect cancellation
+private void OnPreInsert_Good(object sender, UnitofWorkParams args)
+{
+    var customer = args.CurrentEntity as Customer;
+    
+    if (customer.Email == null)
+    {
+        args.Cancel = true;
+        args.ErrorMessage = "Email is required";
+        return;  // Stop processing immediately
+    }
+    
+    // Only continue if not cancelled
+    ValidateOtherFields(customer);
+}</code></pre>
+                    </div>
+
+                    <div class="error">
+                        <strong>❌ Don't Mix Synchronous and Asynchronous Calls</strong>
+                        <p>Mixing sync and async calls can lead to deadlocks and performance issues.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <h3>Async/Sync Mixing Anti-Pattern</h3>
+                        <pre><code class="language-csharp">// BAD - Blocking async calls (can cause deadlocks)
+public void ProcessCustomer_Bad(Customer customer)
+{
+    try
+    {
+        _customerUoW.InsertAsync(customer).Wait();  // DANGEROUS!
+        var result = _customerUoW.CommitAsync().Result;  // DANGEROUS!
+        
+        if (result.Flag == Errors.Ok)
+        {
+            UpdateUI();  // May never be reached due to deadlock
+        }
+    }
+    catch (AggregateException ex)
+    {
+        // Have to unwrap aggregate exceptions
+        HandleException(ex.InnerException);
+    }
+}
+
+// GOOD - Async all the way
+public async Task ProcessCustomer_Good(Customer customer)
+{
+    try
+    {
+        await _customerUoW.InsertAsync(customer);
+        var result = await _customerUoW.CommitAsync();
+        
+        if (result.Flag == Errors.Ok)
+        {
+            await UpdateUIAsync();
+        }
+    }
+    catch (Exception ex)
+    {
+        // Direct exception handling
+        HandleException(ex);
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Deployment Checklist -->
+                <section id="deployment" class="section">
+                    <h2>Deployment and Production Checklist</h2>
+                    
+                    <div class="tip">
+                        <strong>📋 Pre-Deployment Checklist</strong>
+                        <p>Ensure these items are verified before deploying to production:</p>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔧 Configuration</h3>
+                            <ul>
+                                <li>✅ Connection timeouts configured appropriately</li>
+                                <li>✅ Batch sizes optimized for data volume</li>
+                                <li>✅ Relationship behaviors documented</li>
+                                <li>✅ Environment-specific settings applied</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📝 Logging & Monitoring</h3>
+                            <ul>
+                                <li>✅ Logging levels configured correctly</li>
+                                <li>✅ Error alerting system in place</li>
+                                <li>✅ Performance monitoring enabled</li>
+                                <li>✅ Audit trail configuration verified</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🧪 Testing</h3>
+                            <ul>
+                                <li>✅ Load testing completed</li>
+                                <li>✅ Rollback scenarios tested</li>
+                                <li>✅ Error handling verified</li>
+                                <li>✅ Resource disposal confirmed</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔒 Security</h3>
+                            <ul>
+                                <li>✅ Input validation implemented</li>
+                                <li>✅ Authorization checks in place</li>
+                                <li>✅ SQL injection prevention verified</li>
+                                <li>✅ Sensitive data protection confirmed</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🏥 Health Checks</h3>
+                            <ul>
+                                <li>✅ Data source health monitoring</li>
+                                <li>✅ Connection pool monitoring</li>
+                                <li>✅ Memory usage tracking</li>
+                                <li>✅ Performance baseline established</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📚 Documentation</h3>
+                            <ul>
+                                <li>✅ Support procedures documented</li>
+                                <li>✅ Common error scenarios documented</li>
+                                <li>✅ Backup/recovery procedures ready</li>
+                                <li>✅ Troubleshooting guide available</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Final Note -->
+                <div class="note">
+                    <strong>💡 Remember</strong>
+                    <p>These best practices are guidelines based on common scenarios. Always adapt them to your specific requirements and constraints. Regular code reviews and performance testing will help ensure your implementation remains optimal as your application evolves.</p>
+                </div>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="examples.html"><i class="bi bi-arrow-left"></i> Code Examples</a>
+                    <a href="api-reference.html">API Reference <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="examples.html">Examples</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('Best Practices documentation page loaded');
+    </script>
+</body>
+</html>

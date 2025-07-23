@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Import Manager - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>?</span>
+                    <a href="#">Editor Classes</a>
+                    <span>?</span>
+                    <span>Data Import Manager</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>?? Data Import Manager</h1>
+                    <p class="page-subtitle">Advanced data import orchestration with mapping, validation, and batch processing capabilities</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>?? Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#core-properties">Core Properties</a></li>
+                        <li><a href="#configuration">Import Configuration</a></li>
+                        <li><a href="#async-operations">Async Import Operations</a></li>
+                        <li><a href="#data-transformation">Data Transformation</a></li>
+                        <li><a href="#batch-processing">Batch Processing</a></li>
+                        <li><a href="#progress-control">Progress Control & Monitoring</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>?? Overview</h2>
+                    <p>
+                        The <code>DataImportManager</code> class provides sophisticated data import capabilities with 
+                        advanced features including data mapping, transformation, validation, batch processing, and 
+                        comprehensive progress monitoring. It's designed to handle large-scale data imports efficiently 
+                        while maintaining data integrity and providing detailed operational insights.
+                    </p>
+                    
+                    <div class="success">
+                        <strong>?? Key Features</strong>
+                        <p>DataImportManager combines high-performance batch processing with flexible data transformation and comprehensive error handling for enterprise-level data import operations.</p>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>?? Smart Mapping</h3>
+                            <p>Advanced field mapping and data transformation capabilities</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>? Batch Processing</h3>
+                            <p>Configurable batch sizes for optimal performance and memory management</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Async Operations</h3>
+                            <p>Full async/await support with pause/resume and cancellation capabilities</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Progress Monitoring</h3>
+                            <p>Real-time progress reporting and detailed operation logging</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Core Properties -->
+                <section id="core-properties" class="section">
+                    <h2>??? Core Properties</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Entity Configuration</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>SourceEntityName</td><td>string</td><td>Name of the source entity to import from</td></tr>
+                                    <tr><td>DestEntityName</td><td>string</td><td>Name of the destination entity to import to</td></tr>
+                                    <tr><td>SourceDataSourceName</td><td>string</td><td>Source data source identifier</td></tr>
+                                    <tr><td>DestDataSourceName</td><td>string</td><td>Destination data source identifier</td></tr>
+                                    <tr><td>SourceEntityStructure</td><td>EntityStructure</td><td>Metadata structure of source entity</td></tr>
+                                    <tr><td>DestEntityStructure</td><td>EntityStructure</td><td>Metadata structure of destination entity</td></tr>
+                                    <tr><td>SourceData</td><td>IDataSource</td><td>Source data source instance</td></tr>
+                                    <tr><td>DestData</td><td>IDataSource</td><td>Destination data source instance</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Import Configuration</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>Mapping</td><td>EntityDataMap</td><td>Data mapping configuration for field transformations</td></tr>
+                                    <tr><td>SourceFilters</td><td>List&lt;AppFilter&gt;</td><td>Filters to apply to source data selection</td></tr>
+                                    <tr><td>SelectedFields</td><td>List&lt;string&gt;</td><td>Specific fields to include in the import</td></tr>
+                                    <tr><td>ImportLogData</td><td>List&lt;Importlogdata&gt;</td><td>Detailed import operation logging</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Core Components</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>DMEEditor</td><td>IDMEEditor</td><td>Reference to the main data management editor</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Configuration -->
+                <section id="configuration" class="section">
+                    <h2>?? Import Configuration</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Entity Structure Loading</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> LoadDestEntityStructure(<span class="parameter-type">string</span> destEntityName, <span class="parameter-type">string</span> destDataSourceName)</code>
+                            </div>
+                            <p>Loads and configures the destination entity structure for import operations with connection validation.</p>
+                        </div>
+                    </div>
+
+                    <div class="tip">
+                        <strong>?? Configuration Best Practices</strong>
+                        <ul>
+                            <li>Always load destination entity structure before starting imports</li>
+                            <li>Verify data source connections are open and accessible</li>
+                            <li>Configure appropriate filters to limit source data scope</li>
+                            <li>Set up field selections to optimize data transfer</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Basic Configuration Example</h3>
+                        <pre><code class="language-csharp">// Initialize Data Import Manager
+var importManager = new DataImportManager(dmeEditor);
+
+// Configure source and destination
+importManager.SourceEntityName = "SourceCustomers";
+importManager.SourceDataSourceName = "ExternalSystem";
+importManager.DestEntityName = "Customers";
+importManager.DestDataSourceName = "MainDatabase";
+
+// Load destination entity structure
+var result = importManager.LoadDestEntityStructure("Customers", "MainDatabase");
+
+if (result.Flag == Errors.Ok)
+{
+    Console.WriteLine("Destination entity structure loaded successfully");
+}
+
+// Configure filters (optional)
+importManager.SourceFilters.Add(new AppFilter 
+{ 
+    FieldName = "CreatedDate", 
+    Operator = ">=", 
+    FilterValue = DateTime.Today.AddDays(-30).ToString() 
+});
+
+// Configure field selection (optional)
+importManager.SelectedFields = new List&lt;string&gt; 
+{ 
+    "CustomerName", "Email", "Phone", "Address" 
+};</code></pre>
+                    </div>
+                </section>
+
+                <!-- Async Operations -->
+                <section id="async-operations" class="section">
+                    <h2>? Async Import Operations</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Main Import Method</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> RunImportAsync(IProgress&lt;IPassedArgs&gt; progress, CancellationToken token, Func&lt;object, object&gt; transformation = null, <span class="parameter-type">int</span> batchSize = 50)</code>
+                            </div>
+                            <p>Executes the complete import operation with advanced features including progress reporting, cancellation support, optional data transformation, and configurable batch processing.</p>
+                        </div>
+                    </div>
+
+                    <div class="success">
+                        <strong>?? Advanced Features</strong>
+                        <ul>
+                            <li><strong>Entity Validation:</strong> Automatic validation of entity mappings before import</li>
+                            <li><strong>Destination Creation:</strong> Automatic destination entity creation if it doesn't exist</li>
+                            <li><strong>Batch Processing:</strong> Configurable batch sizes for optimal performance</li>
+                            <li><strong>Data Transformation:</strong> Custom transformation functions for complex data processing</li>
+                            <li><strong>Progress Reporting:</strong> Real-time progress updates and detailed logging</li>
+                            <li><strong>Cancellation Support:</strong> Graceful cancellation with proper cleanup</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Async Import with Progress Monitoring</h3>
+                        <pre><code class="language-csharp">// Set up progress reporting
+var progress = new Progress&lt;IPassedArgs&gt;(args =&gt; 
+{
+    Console.WriteLine($"Import Progress: {args.Messege}");
+    if (args.ParameterInt1 > 0)
+    {
+        Console.WriteLine($"Records processed: {args.ParameterInt1}");
+    }
+});
+
+// Set up cancellation
+using var cancellationTokenSource = new CancellationTokenSource();
+var cancellationToken = cancellationTokenSource.Token;
+
+// Optional: Define custom transformation
+Func&lt;object, object&gt; customTransformation = (sourceRecord) =&gt; 
+{
+    // Apply business logic transformations
+    // Example: Convert phone number format, validate email, etc.
+    return sourceRecord;
+};
+
+try
+{
+    // Execute the import
+    var result = await importManager.RunImportAsync(
+        progress: progress,
+        token: cancellationToken,
+        transformation: customTransformation,
+        batchSize: 100);
+    
+    if (result.Flag == Errors.Ok)
+    {
+        Console.WriteLine("Import completed successfully!");
+        
+        // Review import logs
+        foreach (var log in importManager.ImportLogData)
+        {
+            Console.WriteLine($"[{log.Timestamp}] {log.Message}");
+        }
+    }
+    else
+    {
+        Console.WriteLine($"Import failed: {result.Message}");
+    }
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("Import was cancelled by user request.");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Data Transformation -->
+                <section id="data-transformation" class="section">
+                    <h2>?? Data Transformation</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Field Filtering and Mapping</strong>
+                        </div>
+                        <div class="api-content">
+                            <p>The Data Import Manager provides multiple levels of data transformation:</p>
+                            <ul>
+                                <li><strong>Field Selection:</strong> Use <code>SelectedFields</code> to include only specific fields</li>
+                                <li><strong>Entity Mapping:</strong> Configure <code>Mapping</code> for complex field transformations</li>
+                                <li><strong>Default Values:</strong> Automatic application of configured default values</li>
+                                <li><strong>Custom Transformations:</strong> User-defined transformation functions</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Transformation Order</strong>
+                        <p>Transformations are applied in the following order:</p>
+                        <ol>
+                            <li>Field filtering (SelectedFields)</li>
+                            <li>Entity mapping (if configured)</li>
+                            <li>Default value application</li>
+                            <li>Custom transformation function (if provided)</li>
+                        </ol>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Advanced Data Transformation Example</h3>
+                        <pre><code class="language-csharp">// Configure entity mapping for complex field transformations
+var mapping = MappingManager.CreateEntityMap(
+    dmeEditor, "SourceCustomers", "ExternalSystem", 
+    "Customers", "MainDatabase");
+
+importManager.Mapping = mapping.Item2;
+
+// Define custom transformation with business logic
+Func&lt;object, object&gt; businessTransformation = (record) =&gt; 
+{
+    // Example: Apply business rules and data cleansing
+    if (record is Dictionary&lt;string, object&gt; dict)
+    {
+        // Normalize phone numbers
+        if (dict.ContainsKey("Phone"))
+        {
+            var phone = dict["Phone"]?.ToString();
+            dict["Phone"] = NormalizePhoneNumber(phone);
+        }
+        
+        // Validate and format email addresses
+        if (dict.ContainsKey("Email"))
+        {
+            var email = dict["Email"]?.ToString();
+            if (!IsValidEmail(email))
+            {
+                dict["Email"] = null; // Clear invalid emails
+            }
+        }
+        
+        // Set audit fields
+        dict["ImportedDate"] = DateTime.Now;
+        dict["ImportedBy"] = Environment.UserName;
+    }
+    
+    return record;
+};
+
+// Execute import with transformation
+var result = await importManager.RunImportAsync(
+    progress, cancellationToken, businessTransformation, 50);
+
+// Helper methods
+static string NormalizePhoneNumber(string phone)
+{
+    if (string.IsNullOrWhiteSpace(phone)) return null;
+    
+    // Remove all non-numeric characters
+    var digits = new string(phone.Where(char.IsDigit).ToArray());
+    
+    // Format as (xxx) xxx-xxxx for 10-digit numbers
+    if (digits.Length == 10)
+    {
+        return $"({digits.Substring(0, 3)}) {digits.Substring(3, 3)}-{digits.Substring(6)}";
+    }
+    
+    return phone; // Return original if not 10 digits
+}
+
+static bool IsValidEmail(string email)
+{
+    if (string.IsNullOrWhiteSpace(email)) return false;
+    
+    try
+    {
+        var addr = new System.Net.Mail.MailAddress(email);
+        return addr.Address == email;
+    }
+    catch
+    {
+        return false;
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Batch Processing -->
+                <section id="batch-processing" class="section">
+                    <h2>?? Batch Processing</h2>
+                    
+                    <div class="tip">
+                        <strong>?? Batch Processing Benefits</strong>
+                        <ul>
+                            <li><strong>Memory Management:</strong> Process large datasets without overwhelming memory</li>
+                            <li><strong>Performance Optimization:</strong> Reduce database round trips</li>
+                            <li><strong>Error Isolation:</strong> Isolate errors to specific batches</li>
+                            <li><strong>Progress Visibility:</strong> Provide granular progress reporting</li>
+                        </ul>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Batch Configuration Guidelines</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Scenario</th><th>Recommended Batch Size</th><th>Considerations</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>Small datasets (&lt;1K records)</td><td>50-100</td><td>Lower overhead, simpler processing</td></tr>
+                                    <tr><td>Medium datasets (1K-100K)</td><td>100-500</td><td>Balance between performance and memory</td></tr>
+                                    <tr><td>Large datasets (&gt;100K)</td><td>500-1000</td><td>Optimize for throughput</td></tr>
+                                    <tr><td>Memory-constrained environments</td><td>25-50</td><td>Minimize memory footprint</td></tr>
+                                    <tr><td>High-latency networks</td><td>200-500</td><td>Reduce network round trips</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Adaptive Batch Processing</h3>
+                        <pre><code class="language-csharp">// Determine optimal batch size based on data characteristics
+int GetOptimalBatchSize(int totalRecords, long estimatedRecordSize)
+{
+    // Target 10MB per batch for optimal performance
+    const long targetBatchMemory = 10 * 1024 * 1024; // 10MB
+    
+    int calculatedBatchSize = (int)(targetBatchMemory / estimatedRecordSize);
+    
+    // Apply bounds based on total record count
+    if (totalRecords &lt; 1000)
+        return Math.Min(calculatedBatchSize, 100);
+    else if (totalRecords &lt; 100000)
+        return Math.Min(calculatedBatchSize, 500);
+    else
+        return Math.Min(calculatedBatchSize, 1000);
+}
+
+// Usage example
+var estimatedRecordSize = 2048; // 2KB per record estimate
+var totalRecords = 50000;
+var optimalBatchSize = GetOptimalBatchSize(totalRecords, estimatedRecordSize);
+
+var result = await importManager.RunImportAsync(
+    progress, cancellationToken, transformation, optimalBatchSize);</code></pre>
+                    </div>
+                </section>
+
+                <!-- Progress Control -->
+                <section id="progress-control" class="section">
+                    <h2>?? Progress Control & Monitoring</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Import Logging</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">List&lt;Importlogdata&gt;</span> ImportLogData { get; private set; }</code>
+                            </div>
+                            <p>Comprehensive logging of all import operations with timestamps, messages, and record numbers for detailed audit trails and troubleshooting.</p>
+                        </div>
+                    </div>
+
+                    <div class="success">
+                        <strong>?? Monitoring Features</strong>
+                        <ul>
+                            <li><strong>Real-time Progress:</strong> Live updates on import progress</li>
+                            <li><strong>Detailed Logging:</strong> Comprehensive operation logs with timestamps</li>
+                            <li><strong>Error Tracking:</strong> Detailed error information and context</li>
+                            <li><strong>Performance Metrics:</strong> Track throughput and processing times</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Advanced Progress Monitoring</h3>
+                        <pre><code class="language-csharp">// Enhanced progress reporting with metrics
+class ImportProgressTracker
+{
+    private DateTime _startTime;
+    private int _totalRecords;
+    private int _processedRecords;
+    
+    public void StartTracking(int totalRecords)
+    {
+        _startTime = DateTime.Now;
+        _totalRecords = totalRecords;
+        _processedRecords = 0;
+    }
+    
+    public void UpdateProgress(IPassedArgs args)
+    {
+        _processedRecords = args.ParameterInt1;
+        
+        var elapsed = DateTime.Now - _startTime;
+        var recordsPerSecond = _processedRecords / elapsed.TotalSeconds;
+        var estimatedTimeRemaining = TimeSpan.FromSeconds(
+            (_totalRecords - _processedRecords) / Math.Max(recordsPerSecond, 1));
+        
+        Console.WriteLine($"Progress: {_processedRecords}/{_totalRecords} " +
+                         $"({_processedRecords * 100.0 / _totalRecords:F1}%)");
+        Console.WriteLine($"Rate: {recordsPerSecond:F1} records/sec");
+        Console.WriteLine($"ETA: {estimatedTimeRemaining:hh\\:mm\\:ss}");
+        Console.WriteLine($"Message: {args.Messege}");
+        Console.WriteLine("---");
+    }
+}
+
+// Usage
+var tracker = new ImportProgressTracker();
+tracker.StartTracking(50000); // Assuming 50K records
+
+var progress = new Progress&lt;IPassedArgs&gt;(tracker.UpdateProgress);
+
+var result = await importManager.RunImportAsync(
+    progress, cancellationToken, transformation, 100);
+
+// Post-import analysis
+Console.WriteLine("\n=== Import Summary ===");
+foreach (var log in importManager.ImportLogData.TakeLast(10))
+{
+    Console.WriteLine($"[{log.Timestamp:HH:mm:ss}] {log.Message}");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Examples -->
+                <section id="examples" class="section">
+                    <h2>?? Usage Examples</h2>
+                    
+                    <div class="code-example">
+                        <h3>Complete Import Workflow</h3>
+                        <pre><code class="language-csharp">// Complete data import example with error handling
+public async Task&lt;bool&gt; PerformCustomerImport()
+{
+    var importManager = new DataImportManager(dmeEditor);
+    
+    try
+    {
+        // Configure the import
+        importManager.SourceEntityName = "ExternalCustomers";
+        importManager.SourceDataSourceName = "CRMSystem";
+        importManager.DestEntityName = "Customers";
+        importManager.DestDataSourceName = "MainDatabase";
+        
+        // Load destination structure
+        var structureResult = importManager.LoadDestEntityStructure(
+            "Customers", "MainDatabase");
+        
+        if (structureResult.Flag != Errors.Ok)
+        {
+            Console.WriteLine($"Failed to load destination structure: {structureResult.Message}");
+            return false;
+        }
+        
+        // Configure filters for incremental import
+        importManager.SourceFilters.Add(new AppFilter
+        {
+            FieldName = "ModifiedDate",
+            Operator = ">=",
+            FilterValue = GetLastImportDate().ToString("yyyy-MM-dd")
+        });
+        
+        // Set up progress tracking
+        var progress = new Progress&lt;IPassedArgs&gt;(args =&gt; 
+        {
+            if (args.ParameterInt1 > 0)
+            {
+                var percentage = (args.ParameterInt1 * 100.0) / 
+                               (importManager.ImportLogData?.Count ?? 1);
+                Console.WriteLine($"Import Progress: {percentage:F1}% - {args.Messege}");
+            }
+        });
+        
+        // Define business transformation
+        Func&lt;object, object&gt; transformation = ApplyBusinessRules;
+        
+        // Execute import with optimal batch size
+        using var cts = new CancellationTokenSource(TimeSpan.FromHours(2)); // 2-hour timeout
+        
+        var result = await importManager.RunImportAsync(
+            progress: progress,
+            token: cts.Token,
+            transformation: transformation,
+            batchSize: 200);
+        
+        if (result.Flag == Errors.Ok)
+        {
+            Console.WriteLine("Import completed successfully!");
+            UpdateLastImportDate();
+            
+            // Log summary
+            var importLogs = importManager.ImportLogData;
+            Console.WriteLine($"Total operations logged: {importLogs.Count}");
+            
+            return true;
+        }
+        else
+        {
+            Console.WriteLine($"Import failed: {result.Message}");
+            LogImportErrors(importManager.ImportLogData);
+            return false;
+        }
+    }
+    catch (OperationCanceledException)
+    {
+        Console.WriteLine("Import was cancelled due to timeout or user request.");
+        return false;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Unexpected error during import: {ex.Message}");
+        return false;
+    }
+}
+
+private object ApplyBusinessRules(object record)
+{
+    // Apply custom business logic
+    // Example: data validation, transformation, enrichment
+    return record;
+}
+
+private DateTime GetLastImportDate()
+{
+    // Return the last successful import date from configuration
+    return DateTime.Today.AddDays(-1);
+}
+
+private void UpdateLastImportDate()
+{
+    // Update the last import date in configuration
+}
+
+private void LogImportErrors(List&lt;Importlogdata&gt; logs)
+{
+    // Log errors to monitoring system
+    var errors = logs.Where(log =&gt; log.Message.Contains("Error") || 
+                                   log.Message.Contains("Failed"));
+    
+    foreach (var error in errors)
+    {
+        Console.WriteLine($"[ERROR] {error.Timestamp}: {error.Message}");
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section id="best-practices" class="section">
+                    <h2>? Best Practices</h2>
+                    
+                    <div class="tip">
+                        <strong>?? Performance Optimization</strong>
+                        <ul>
+                            <li>Choose appropriate batch sizes based on data volume and memory constraints</li>
+                            <li>Use filters to limit source data and reduce processing overhead</li>
+                            <li>Implement custom transformations efficiently to avoid bottlenecks</li>
+                            <li>Monitor memory usage during large imports</li>
+                        </ul>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Error Handling</strong>
+                        <ul>
+                            <li>Always validate entity structures before starting imports</li>
+                            <li>Implement proper cancellation token handling</li>
+                            <li>Use try-catch blocks around import operations</li>
+                            <li>Log detailed error information for troubleshooting</li>
+                        </ul>
+                    </div>
+
+                    <div class="success">
+                        <strong>?? Operational Excellence</strong>
+                        <ul>
+                            <li>Configure comprehensive progress reporting for user feedback</li>
+                            <li>Use incremental imports with filters for large datasets</li>
+                            <li>Implement backup and rollback strategies for critical imports</li>
+                            <li>Monitor and audit all import operations</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="etleditor.html"><i class="bi bi-arrow-left"></i> ETL Editor</a>
+                    <a href="mappingmanager.html">Mapping Manager <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('Data Import Manager documentation page loaded');
+    </script>
+</body>
+</html>

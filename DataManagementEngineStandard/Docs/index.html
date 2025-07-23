@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beep Data Management Engine - Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>Beep Data Management Engine</h1>
+                    <p class="page-subtitle">Enterprise-grade data management solution for .NET 6, 7, 8, and 9 applications</p>
+                </div>
+
+                <!-- Overview -->
+                <section class="section">
+                    <h2>Overview</h2>
+                    <p>
+                        The <strong>Beep Data Management Engine</strong> is a comprehensive, multi-target framework 
+                        that provides powerful data access patterns, unit of work implementations, change tracking, 
+                        and enterprise-level data management capabilities for modern .NET applications.
+                    </p>
+                    <p>
+                        Built with extensibility in mind, the engine supports a wide variety of data sources 
+                        from traditional relational databases to modern vector databases, file formats, 
+                        and custom data providers through its plugin-based architecture.
+                    </p>
+                </section>
+
+                <!-- Quick Start Section -->
+                <section class="section">
+                    <div class="quick-start">
+                        <h2>🚀 Quick Start</h2>
+                        <p>Get started with the Beep Data Management Engine in just a few minutes</p>
+                        <div class="quick-start-buttons">
+                            <a href="registerbeep.html" class="btn-beep">📦 Setup & Registration</a>
+                            <a href="unitofwork.html" class="btn-beep">⚡ Unit of Work</a>
+                            <a href="examples.html" class="btn-beep">📖 View Examples</a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Key Features -->
+                <section class="section">
+                    <h2>Key Features</h2>
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🗄️ Multi-DataSource Support</h3>
+                            <p>Connect to SQL Server, SQLite, Oracle, MySQL, PostgreSQL, Excel, CSV, and vector databases</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔄 Unit of Work Pattern</h3>
+                            <p>Advanced implementation with change tracking, validation, and transaction management</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📊 Change Tracking</h3>
+                            <p>Automatic monitoring of entity changes with undo/redo capabilities and audit trails</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>⚡ Async Operations</h3>
+                            <p>Full async/await support for all CRUD operations with progress reporting</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔒 Enterprise Security</h3>
+                            <p>Built-in security features, connection pooling, and enterprise authentication</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔗 Relationship Management</h3>
+                            <p>Sophisticated parent-child relationship handling with cascade operations</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Library Statistics -->
+                <section class="section">
+                    <h2>Engine Statistics</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-number">4</span>
+                            <span class="stat-label">.NET Versions Supported</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number">39</span>
+                            <span class="stat-label">Data Sources</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number">50+</span>
+                            <span class="stat-label">Core Classes</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number">15+</span>
+                            <span class="stat-label">Manager Classes</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Installation Example -->
+                <section class="section">
+                    <h2>Installation</h2>
+                    <p>Install the package using one of the following methods:</p>
+                    
+                    <div class="code-example">
+                        <h3>Package Manager Console</h3>
+                        <pre><code class="language-powershell">Install-Package TheTechIdea.Beep.DataManagementEngine</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>.NET CLI</h3>
+                        <pre><code class="language-bash">dotnet add package TheTechIdea.Beep.DataManagementEngine</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Package Reference</h3>
+                        <pre><code class="language-xml">&lt;PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="2.0.32" /&gt;</code></pre>
+                    </div>
+                </section>
+
+                <!-- Basic Usage Example -->
+                <section class="section">
+                    <h2>Basic Usage</h2>
+                    <p>Here's a simple example to get you started:</p>
+                    
+                    <div class="code-example">
+                        <h3>Creating Your First UnitOfWork</h3>
+                        <pre><code class="language-csharp">using Autofac;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Logger;
+using TheTechIdea.Util;
+
+// Initialize DME Editor using Autofac
+var builder = new ContainerBuilder();
+builder.RegisterType&lt;DMEEditor&gt;().As&lt;IDMEEditor&gt;().SingleInstance();
+builder.RegisterType&lt;ConfigEditor&gt;().As&lt;IConfigEditor&gt;().SingleInstance();
+builder.RegisterType&lt;DMLogger&gt;().As&lt;IDMLogger&gt;().SingleInstance();
+builder.RegisterType&lt;Util&gt;().As&lt;IUtil&gt;().SingleInstance();
+builder.RegisterType&lt;ErrorsInfo&gt;().As&lt;IErrorsInfo&gt;().SingleInstance();
+builder.RegisterType&lt;JsonLoader&gt;().As&lt;IJsonLoader&gt;().SingleInstance();
+builder.RegisterType&lt;AssemblyHandler&gt;().As&lt;IAssemblyHandler&gt;().SingleInstance();
+
+var container = builder.Build();
+var dmeEditor = container.Resolve&lt;IDMEEditor&gt;();
+
+// Initialize required configurations for IDataSource support
+InitializeBeepDefaults(dmeEditor);
+
+// Create a data connection
+ConnectionProperties connectionProps = new ConnectionProperties
+{
+    ConnectionName = "MyDatabase",
+    DatabaseType = DataSourceType.SqlServer,
+    ConnectionString = "Server=localhost;Database=MyDB;Integrated Security=true;"
+};
+
+// Add connection to configuration
+dmeEditor.ConfigEditor.AddDataConnection(connectionProps);
+
+// Get data source and open connection
+IDataSource dataSource = dmeEditor.GetDataSource("MyDatabase");
+dataSource.Openconnection();
+
+// Create UnitOfWork for your entity
+var unitOfWork = new UnitofWork&lt;Customer&gt;(
+    dmeEditor, 
+    "MyDatabase", 
+    "Customers", 
+    "CustomerId"
+);
+
+// Load data
+await unitOfWork.Get();
+
+// Work with your data
+unitOfWork.New(); // Create new customer
+var newCustomer = unitOfWork.CurrentItem;
+newCustomer.Name = "John Doe";
+newCustomer.Email = "john@example.com";
+
+// Save changes
+await unitOfWork.Commit();</code></pre>
+                    </div>
+                </section>
+
+                <!-- Supported Data Sources -->
+                <section class="section">
+                    <h2>Supported Data Sources</h2>
+                    <p>The Beep Data Management Engine supports a wide variety of data sources:</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🏢 Enterprise Databases</h3>
+                            <p>SQL Server, Oracle, PostgreSQL, MySQL, DB2</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📱 Embedded Databases</h3>
+                            <p>SQLite, LiteDB, DuckDB</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📄 File Formats</h3>
+                            <p>Excel, CSV, JSON, XML</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🧠 Vector Databases</h3>
+                            <p>ChromaDB, Pinecone, Milvus</p>
+                        </div>
+            
+                        <div class="feature-card">
+                            <h3>☁️ Cloud Services</h3>
+                            <p>Azure SQL, AWS RDS, Google Cloud SQL</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔧 Custom Sources</h3>
+                            <p>Extensible architecture for any data source</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Documentation Sections -->
+                <section class="section">
+                    <h2>Documentation Sections</h2>
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🚀 Getting Started</h3>
+                            <p>Registration, setup, and your first data operations</p>
+                            <a href="registerbeep.html" class="btn-beep">Get Started</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔄 Unit of Work</h3>
+                            <p>Master the powerful Unit of Work pattern implementation</p>
+                            <a href="unitofwork.html" class="btn-beep">Learn UoW</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🗄️ Multi-DataSource</h3>
+                            <p>Handle complex scenarios with multiple data sources</p>
+                            <a href="multidatasource-unitofwork.html" class="btn-beep">Multi-Source</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🏭 Factory Patterns</h3>
+                            <p>Dynamic type handling and simplified API access</p>
+                            <a href="unitofwork-factory.html" class="btn-beep">Factories</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>⚙️ Editor Classes</h3>
+                            <p>Core engine components: DMEEditor, ETL Editor, Import/Sync Managers, and mapping utilities</p>
+                            <a href="dmeeditor.html" class="btn-beep">Editor Classes</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📚 Code Examples</h3>
+                            <p>Practical implementation samples and real-world scenarios</p>
+                            <a href="examples.html" class="btn-beep">Examples</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>⭐ Best Practices</h3>
+                            <p>Expert tips, performance optimization, and guidelines</p>
+                            <a href="best-practices.html" class="btn-beep">Best Practices</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📋 API Reference</h3>
+                            <p>Complete API documentation for all components</p>
+                            <a href="api-reference.html" class="btn-beep">API Reference</a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Latest Updates -->
+                <section class="section">
+                    <h2>Latest Updates</h2>
+                    <div class="tip">
+                        <strong>📅 December 2024 - v2.0.32</strong>
+                        <p><strong>.NET 9 Support:</strong> Full compatibility with .NET 9 and latest performance optimizations</p>
+                    </div>
+                    
+                    <div class="success">
+                        <strong>📅 November 2024</strong>
+                        <p><strong>Enhanced Multi-DataSource UnitOfWork:</strong> Improved relationship management and cross-datasource operations</p>
+                    </div>
+                    
+                    <div class="note">
+                        <strong>📅 October 2024</strong>
+                        <p><strong>Vector Database Support:</strong> Added support for ChromaDB, Pinecone, and Milvus vector databases</p>
+                    </div>
+                </section>
+
+                <!-- Editor Classes Overview -->
+                <section class="section">
+                    <h2>🛠️ Data Management Editor Classes</h2>
+                    <p>The Beep Data Management Engine includes a comprehensive suite of editor classes that provide specialized functionality for different aspects of data management:</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🎛️ DMEEditor</h3>
+                            <p>The core orchestrator that manages all data operations, connections, and workflows</p>
+                            <a href="dmeeditor.html" class="btn-beep">DMEEditor</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔄 ETL Editor</h3>
+                            <p>Extract, Transform, Load operations with advanced data processing capabilities</p>
+                            <a href="etleditor.html" class="btn-beep">ETL Editor</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📥 Data Import Manager</h3>
+                            <p>Sophisticated data import operations with validation and transformation</p>
+                            <a href="dataimportmanager.html" class="btn-beep">Import Manager</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🗺️ Mapping Manager</h3>
+                            <p>Field and entity mapping between different data sources and formats</p>
+                            <a href="mappingmanager.html" class="btn-beep">Mapping Manager</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>⚙️ Defaults Manager</h3>
+                            <p>Configuration and default value management for data operations</p>
+                            <a href="defaultsmanager.html" class="btn-beep">Defaults Manager</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔄 Data Sync Manager</h3>
+                            <p>Real-time data synchronization between multiple systems and databases</p>
+                            <a href="datasyncmanager.html" class="btn-beep">Sync Manager</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>⚙️ ConfigEditor</h3>
+                            <p>Centralized configuration management with specialized manager architecture</p>
+                            <a href="configeditor.html" class="btn-beep">ConfigEditor</a>
+                        </div>
+                    </div>
+
+                    <div class="success">
+                        <strong>✅ Editor Classes Features</strong>
+                        <ul>
+                            <li><strong>Unified Architecture:</strong> All editors work seamlessly together</li>
+                            <li><strong>Extensible Design:</strong> Easy to extend and customize for specific needs</li>
+                            <li><strong>Enterprise Ready:</strong> Built for large-scale data operations</li>
+                            <li><strong>Event-Driven:</strong> Rich event system for monitoring and integration</li>
+                            <li><strong>Async Support:</strong> Full async/await support for all operations</li>
+                            <li><strong>Error Handling:</strong> Comprehensive error tracking and recovery</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Helper Classes Overview -->
+                <section class="section">
+                    <h2>🔧 Helper Classes & Utilities</h2>
+                    <p>BeepDM includes a comprehensive collection of helper classes that extend core functionality and simplify common data management tasks:</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔌 ConnectionHelper</h3>
+                            <p>39 predefined data source configurations including traditional databases, NoSQL, file formats, and vector databases</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🧩 DataTypeFieldMappingHelper</h3>
+                            <p>Comprehensive data type mapping between .NET types and database-specific types</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🧪 TestConnectionHelper</h3>
+                            <p>Async connection testing and validation utilities for all supported data sources</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🧠 VectorDatabaseHelper</h3>
+                            <p>Specialized support for vector databases like ChromaDB, Pinecone, Qdrant, and Milvus</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📁 FileHelper & FileConnectionHelper</h3>
+                            <p>File operations, path resolution, and file-based data source utilities</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🏗️ RDBMSHelper</h3>
+                            <p>SQL generation and relational database-specific operation helpers</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔤 StringExtensions</h3>
+                            <p>Extended string manipulation and processing utilities</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔌 ConnectionHelper - Comprehensive Data Source Support</h3>
+                            <p>ConnectionHelper provides 39 pre-configured data source setups covering enterprise databases, NoSQL systems, file formats, and cutting-edge vector databases. Each configuration includes proper connection strings, driver mappings, and database-specific settings.</p>
+                            
+                            <div class="feature-grid">
+                                <div class="feature-card">
+                                    <h4>🏢 Enterprise RDBMS (8 systems)</h4>
+                                    <p><strong>SQL Server, Oracle, PostgreSQL, MySQL, DB2, Firebird, VistaDB, SQL Compact</strong></p>
+                                    <p>Full ADO.NET support with connection pooling, transactions, and advanced features</p>
+                                </div>
+                                
+                                <div class="feature-card">
+                                    <h4>📱 Embedded & Lightweight (4 systems)</h4>
+                                    <p><strong>SQLite, LiteDB, DuckDB, Realm</strong></p>
+                                    <p>Perfect for mobile apps, desktop applications, and edge computing scenarios</p>
+                                </div>
+                                
+                                <div class="feature-card">
+                                    <h4>🗄️ NoSQL & Document (8 systems)</h4>
+                                    <p><strong>MongoDB, CouchDB, Couchbase, Firebase, RavenDB, Cassandra, Elasticsearch</strong></p>
+                                    <p>Modern document, graph, and wide-column databases for scalable applications</p>
+                                </div>
+                                
+                                <div class="feature-card">
+                                    <h4>📄 File Formats (5 formats)</h4>
+                                    <p><strong>CSV, JSON, Excel (XLS/XLSX), Text Files, DataView</strong></p>
+                                    <p>Direct file processing with intelligent schema detection and type mapping</p>
+                                </div>
+                                
+                                <div class="feature-card">
+                                    <h4>🧠 Vector Databases (9 systems)</h4>
+                                    <p><strong>ChromaDB, Pinecone, Qdrant, Milvus, Weaviate, Redis Vector, Zilliz, Vespa, ShapVector</strong></p>
+                                    <p>AI and machine learning ready vector storage with similarity search capabilities</p>
+                                </div>
+                                
+                                <div class="feature-card">
+                                    <h4>🌐 Streaming & Cloud (5 systems)</h4>
+                                    <p><strong>Redis, Kafka, Hadoop, Snowflake, OPC</strong></p>
+                                    <p>Real-time data streams, big data platforms, and cloud analytics solutions</p>
+                                </div>
+                            </div>
+
+                            <div class="code-example">
+                                <h5>Getting All Available Configurations</h5>
+                                <pre><code class="language-csharp">// Get all 39 predefined connection configurations
+var allConfigs = ConnectionHelper.GetAllConnectionConfigs();
+
+// Filter by category
+var vectorDatabases = allConfigs.Where(c => c.DatasourceCategory == DatasourceCategory.VectorDB).ToList();
+var rdbmsSystems = allConfigs.Where(c => c.DatasourceCategory == DatasourceCategory.RDBMS).ToList();
+var fileSources = allConfigs.Where(c => c.DatasourceCategory == DatasourceCategory.FILE).ToList();
+
+Console.WriteLine($"Found {vectorDatabases.Count} vector databases");
+Console.WriteLine($"Found {rdbmsSystems.Count} RDBMS systems");
+Console.WriteLine($"Found {fileSources.Count} file formats");
+
+                        // Add all configurations to your DME setup
+                        foreach (var config in allConfigs)
+{
+    if (!dmeEditor.ConfigEditor.DataDriversClasses.Any(d => d.GuidID == config.GuidID))
+    {
+        dmeEditor.ConfigEditor.DataDriversClasses.Add(config);
+    }
+}</code></pre>
+                            </div>
+
+                            <div class="success">
+                                <strong>✅ ConnectionHelper Key Features</strong>
+                                <ul>
+                                    <li><strong>39 Data Sources:</strong> Comprehensive coverage from traditional to cutting-edge systems</li>
+                                    <li><strong>Production Ready:</strong> All configurations tested and optimized for enterprise use</li>
+                                    <li><strong>Vector Database Support:</strong> 9 vector databases for AI/ML applications</li>
+                                    <li><strong>Connection String Management:</strong> Parameterized templates with automatic substitution</li>
+                                    <li><strong>Security Features:</strong> Built-in connection string masking and validation</li>
+                                    <li><strong>File Format Intelligence:</strong> Automatic schema detection and type mapping</li>
+                                </ul>
+                            </div>
+
+                            <div class="tip">
+                                <strong>💡 ConnectionHelper Utilities</strong>
+                                <ul>
+                                    <li><strong>LinkConnection2Drivers():</strong> Automatically links connections to appropriate drivers</li>
+                                    <li><strong>ReplaceValueFromConnectionString():</strong> Dynamic parameter substitution in connection strings</li>
+                                    <li><strong>IsConnectionStringValid():</strong> Validates connection strings for different database types</li>
+                                    <li><strong>SecureConnectionString():</strong> Masks sensitive information like passwords and API keys</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Core Infrastructure Classes -->
+                <section class="section">
+                    <h2>🏗️ Core Infrastructure Classes</h2>
+                    <p>Essential infrastructure components that provide foundational services across the engine:</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔧 AssemblyHandler</h3>
+                            <p>Dynamic assembly loading, plugin management, and runtime type resolution</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📝 DMLogger</h3>
+                            <p>Comprehensive logging system with multiple output targets and log levels</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📄 JsonLoader</h3>
+                            <p>High-performance JSON serialization and configuration file management</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔧 Util</h3>
+                            <p>Common utility functions, string processing, and system operations</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>❌ ErrorsInfo</h3>
+                            <p>Centralized error tracking, exception handling, and diagnostic information</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📊 ObservableBindingList</h3>
+                            <p>Enhanced data binding collections with change notification and tracking</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- UnitOfWork Ecosystem -->
+                <section class="section">
+                    <h2>🔄 UnitOfWork Ecosystem</h2>
+                    <p>Complete suite of classes supporting the Unit of Work pattern implementation:</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🏭 UnitOfWorkFactory</h3>
+                            <p>Dynamic creation of strongly-typed and generic UnitOfWork instances</p>
+                            <a href="unitofwork-factory.html" class="btn-beep">Factory Pattern</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📦 UnitOfWorkWrapper</h3>
+                            <p>Simplified API wrapper for easier UnitOfWork integration</p>
+                            <a href="unitofwork-wrapper.html" class="btn-beep">Wrapper Pattern</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🎛️ UnitofWorksManager</h3>
+                            <p>Manager for multiple UnitOfWork instances and cross-entity operations</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🗄️ MultiDataSourceUnitOfWork</h3>
+                            <p>Advanced UnitOfWork supporting operations across multiple data sources</p>
+                            <a href="multidatasource-unitofwork.html" class="btn-beep">Multi-Source</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>✅ EntityDataMoveValidator</h3>
+                            <p>Validation engine for entity operations and data integrity</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📋 EntityTrackingData</h3>
+                            <p>Comprehensive change tracking and audit trail management</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ETL & Data Processing -->
+                <section class="section">
+                    <h2>🔄 ETL & Data Processing</h2>
+                    <p>Comprehensive Extract, Transform, Load capabilities and data processing tools:</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>⚙️ ETLEditor</h3>
+                            <p>Main ETL orchestration engine for data migration and transformation</p>
+                            <a href="etleditor.html" class="btn-beep">ETL Editor</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📋 ETLScriptManager</h3>
+                            <p>ETL script generation, execution, and management</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔄 ETLDataCopier</h3>
+                            <p>High-performance data copying between different data sources</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🏭 ETLEntityProcessor</h3>
+                            <p>Entity-level processing for complex data transformations</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>✅ ETLValidator</h3>
+                            <p>Data validation and quality checks during ETL operations</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📊 BatchExtensions</h3>
+                            <p>Batch processing extensions for large-scale data operations</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- File Management System -->
+                <section class="section">
+                    <h2>📁 File Management System</h2>
+                    <p>Comprehensive file processing and data source capabilities:</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>📊 CSVDataSource</h3>
+                            <p>Full-featured CSV file data source with advanced parsing</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔍 CSVAnalyser</h3>
+                            <p>Intelligent CSV structure analysis and schema detection</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🧩 CSVTypeMapper</h3>
+                            <p>Automatic data type mapping and conversion for CSV data</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📄 TextFieldParser</h3>
+                            <p>Advanced text field parsing with delimiter detection</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📈 ExcelSheetDefinition</h3>
+                            <p>Excel worksheet structure definition and metadata</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📁 ProjectFolder</h3>
+                            <p>Project-based file organization and management</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Workflow & Rules Engine -->
+                <section class="section">
+                    <h2>⚙️ Workflow & Rules Engine</h2>
+                    <p>Powerful workflow orchestration and business rules processing:</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔧 WorkFlowEditor</h3>
+                            <p>Visual workflow design and execution engine</p>
+                            <a href="etl-workflow-engine.html" class="btn-beep">Workflow Engine</a>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🏭 RuleParserFactory</h3>
+                            <p>Business rules parsing and expression evaluation</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔄 SyncManager</h3>
+                            <p>Real-time data synchronization and conflict resolution</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📊 ReportDataManager</h3>
+                            <p>Report data aggregation and processing engine</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🏢 AppManager</h3>
+                            <p>Application lifecycle management and component coordination</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📋 AppTemplate</h3>
+                            <p>Application templates and scaffolding system</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Specialized Manager Classes -->
+                <section class="section">
+                    <h2>🎛️ Specialized Manager Classes</h2>
+                    <p>ConfigEditor's specialized managers providing focused functionality:</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>📁 ConfigPathManager</h3>
+                            <p>Configuration path and directory structure management</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔗 DataConnectionManager</h3>
+                            <p>Data source connection lifecycle and configuration management</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📝 QueryManager</h3>
+                            <p>SQL query repository and database-specific query generation</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🗺️ EntityMappingManager</h3>
+                            <p>Entity structure and field mapping configuration management</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🧩 ComponentConfigManager</h3>
+                            <p>Component, driver, and plugin configuration management</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🏭 CantainerManager</h3>
+                            <p>Dependency injection container management and service registration</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Architecture Overview -->
+                <section class="section">
+                    <h2>🏛️ Architecture Overview</h2>
+                    <p>The Beep Data Management Engine follows a modular, layered architecture designed for scalability, maintainability, and extensibility:</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🎛️ Core Layer</h3>
+                            <p><strong>DMEEditor, ConfigEditor, UnitOfWork Ecosystem</strong><br>
+                            Central orchestration and configuration management</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔄 Processing Layer</h3>
+                            <p><strong>ETL Engine, Workflow Engine, Sync Managers</strong><br>
+                            Data transformation and business process automation</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🗄️ Data Access Layer</h3>
+                            <p><strong>Data Sources, Connection Management, Query Engine</strong><br>
+                            Unified access to diverse data storage systems</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔧 Infrastructure Layer</h3>
+                            <p><strong>Logging, Error Handling, Assembly Management</strong><br>
+                            Cross-cutting concerns and system services</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🏗️ Helper Layer</h3>
+                            <p><strong>Utilities, Extensions, Type Mapping</strong><br>
+                            Reusable components and development accelerators</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📦 Container Layer</h3>
+                            <p><strong>Dependency Injection, Service Management</strong><br>
+                            Service composition and lifecycle management</p>
+                        </div>
+                    </div>
+
+                    <div class="note">
+                        <strong>🎯 Design Principles</strong>
+                        <ul>
+                            <li><strong>Separation of Concerns:</strong> Each layer has distinct responsibilities</li>
+                            <li><strong>Dependency Injection:</strong> Loose coupling through container management</li>
+                            <li><strong>Extensibility:</strong> Plugin architecture for custom components</li>
+                            <li><strong>Configuration-Driven:</strong> Behavior controlled through configuration</li>
+                            <li><strong>Multi-Target Support:</strong> .NET 6, 7, 8, and 9 compatibility</li>
+                            <li><strong>Enterprise Ready:</strong> Scalable for production workloads</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="api-reference.html">API Reference</a>
+                            <a href="https://github.com/The-Tech-Idea/BeepDM">GitHub</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Copy code functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const codeBlocks = document.querySelectorAll('pre code');
+            
+            codeBlocks.forEach(block => {
+                const button = document.createElement('button');
+                button.textContent = 'Copy';
+                button.style.cssText = `
+                    position: absolute;
+                    top: 8px;
+                    right: 8px;
+                    background: var(--color-brand-primary);
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    padding: 4px 8px;
+                    font-size: 12px;
+                    cursor: pointer;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                `;
+                
+                const pre = block.parentElement;
+                pre.style.position = 'relative';
+                pre.appendChild(button);
+                
+                pre.addEventListener('mouseenter', () => {
+                    button.style.opacity = '1';
+                });
+                
+                pre.addEventListener('mouseleave', () => {
+                    button.style.opacity = '0';
+                });
+                
+                button.addEventListener('click', () => {
+                    navigator.clipboard.writeText(block.textContent).then(() => {
+                        button.textContent = 'Copied!';
+                        setTimeout(() => {
+                            button.textContent = 'Copy';
+                        }, 2000);
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

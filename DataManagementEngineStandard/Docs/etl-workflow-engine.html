@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETL & Workflow Engine - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>?</span>
+                    <span>ETL & Workflow Engine</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>?? ETL & Workflow Engine</h1>
+                    <p class="page-subtitle">Enterprise-grade Extract, Transform, Load operations and workflow automation for .NET 6, 7, 8, and 9</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>?? Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#etl-editor">ETLEditor</a></li>
+                        <li><a href="#workflow-editor">WorkFlowEditor</a></li>
+                        <li><a href="#data-import-manager">DataImportManager</a></li>
+                        <li><a href="#data-sync-manager">DataSyncManager</a></li>
+                        <li><a href="#workflow-actions">Workflow Actions</a></li>
+                        <li><a href="#workflow-rules">Workflow Rules</a></li>
+                        <li><a href="#practical-examples">Practical Examples</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>?? Overview</h2>
+                    <p>
+                        The Beep Data Management Engine includes a powerful ETL (Extract, Transform, Load) and Workflow system 
+                        that provides enterprise-grade data processing capabilities. This system supports complex data transformations, 
+                        automated workflows, and multi-source data synchronization.
+                    </p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>?? ETL Operations</h3>
+                            <p>Extract, Transform, and Load data between different sources with validation and error handling</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>? Workflow Automation</h3>
+                            <p>Define and execute complex business workflows with conditional logic and branching</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Data Import</h3>
+                            <p>Advanced data import capabilities with mapping, validation, and progress reporting</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Data Synchronization</h3>
+                            <p>Keep data sources synchronized with conflict resolution and change detection</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>??? Custom Actions</h3>
+                            <p>Extensible framework for creating custom workflow actions and transformations</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Rule Engine</h3>
+                            <p>Flexible rule system for data validation, transformation, and business logic</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ETL Editor -->
+                <section id="etl-editor" class="section">
+                    <h2>?? ETLEditor</h2>
+                    <p>The <code>ETLEditor</code> is the core component for managing Extract, Transform, Load operations.</p>
+
+                    <div class="code-example">
+                        <h3>ETLEditor Interface</h3>
+                        <pre><code class="language-csharp">public interface IETL
+{
+    IDMEEditor DMEEditor { get; set; }
+    List&lt;ETLScriptDet&gt; Script { get; set; }
+    List&lt;ETLScriptHDR&gt; Scripts { get; set; }
+    
+    IErrorsInfo CreateScript();
+    IErrorsInfo RunScript(IProgress&lt;PassedArgs&gt; progress, CancellationToken token);
+    IErrorsInfo StopScript();
+    IErrorsInfo SaveScript(ETLScriptHDR script);
+    IErrorsInfo LoadScript();
+    
+    List&lt;EntityDataMap&gt; GetEntityDataMaps(string SourceEntityName, string DestEntityName);
+    IErrorsInfo GenerateMappingFromTwoEntity(EntityStructure srcentity, EntityStructure destentity);
+    IErrorsInfo CreateEntityAs(EntityStructure srcentity, string destdatasourcename, string destentityname);
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Basic ETL Operations</h3>
+                        <pre><code class="language-csharp">// Initialize ETL Editor
+var etlEditor = dmeEditor.ETL;
+
+// Create a new ETL script
+var script = etlEditor.CreateScript();
+
+// Configure source and destination
+var mapping = etlEditor.GetEntityDataMaps("SourceTable", "DestinationTable");
+
+// Execute ETL operation with progress reporting
+var progress = new Progress&lt;PassedArgs&gt;(args =&gt; Console.WriteLine(args.Messege));
+var cancellationToken = new CancellationToken();
+
+var result = await Task.Run(() =&gt; etlEditor.RunScript(progress, cancellationToken));
+
+if (result.Flag == Errors.Ok)
+{
+    Console.WriteLine("ETL operation completed successfully");
+}
+else
+{
+    Console.WriteLine($"ETL operation failed: {result.Message}");
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>? ETL Features</strong>
+                        <ul>
+                            <li><strong>Data Mapping:</strong> Automatic field mapping between source and destination</li>
+                            <li><strong>Validation:</strong> Built-in data validation and error handling</li>
+                            <li><strong>Progress Tracking:</strong> Real-time progress reporting and cancellation support</li>
+                            <li><strong>Script Management:</strong> Save and load ETL scripts for reuse</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Workflow Editor -->
+                <section id="workflow-editor" class="section">
+                    <h2>? WorkFlowEditor</h2>
+                    <p>The <code>WorkFlowEditor</code> manages business workflows and automated processes.</p>
+
+                    <div class="code-example">
+                        <h3>WorkFlowEditor Interface</h3>
+                        <pre><code class="language-csharp">public interface IWorkFlowEditor
+{
+    IDMEEditor DMEEditor { get; set; }
+    List&lt;IWorkFlow&gt; WorkFlows { get; set; }
+    List&lt;IWorkFlowAction&gt; Actions { get; set; }
+    List&lt;IWorkFlowRule&gt; Rules { get; set; }
+    
+    IErrorsInfo RunWorkFlow(string WorkFlowName, IProgress&lt;PassedArgs&gt; progress, CancellationToken token);
+    IErrorsInfo StopWorkFlow();
+    IErrorsInfo SaveWorkFlow(string WorkFlowName);
+    IErrorsInfo LoadWorkFlow(string WorkFlowName);
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Creating and Running Workflows</h3>
+                        <pre><code class="language-csharp">// Access the workflow editor
+var workflowEditor = dmeEditor.WorkFlowEditor;
+
+// Create a new workflow
+var workflow = new WorkFlow
+{
+    Name = "DataProcessingWorkflow",
+    Description = "Process customer data and generate reports"
+};
+
+// Add actions to the workflow
+workflow.Actions.Add(new ExportDataToFileAction
+{
+    SourceDataSource = "CustomerDB",
+    SourceEntity = "Customers",
+    DestinationFile = "CustomerExport.csv"
+});
+
+workflow.Actions.Add(new CleanseDataAction
+{
+    DataSource = "CustomerDB",
+    Entity = "Customers",
+    CleansingRules = new[] { "RemoveNulls", "TrimWhitespace", "ValidateEmails" }
+});
+
+// Save the workflow
+workflowEditor.SaveWorkFlow(workflow.Name);
+
+// Execute the workflow
+var progress = new Progress&lt;PassedArgs&gt;(args =&gt; 
+{
+    Console.WriteLine($"Workflow Progress: {args.Messege}");
+});
+
+var result = workflowEditor.RunWorkFlow("DataProcessingWorkflow", progress, CancellationToken.None);
+
+if (result.Flag == Errors.Ok)
+{
+    Console.WriteLine("Workflow completed successfully");
+}
+else
+{
+    Console.WriteLine($"Workflow failed: {result.Message}");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Data Import Manager -->
+                <section id="data-import-manager" class="section">
+                    <h2>?? DataImportManager</h2>
+                    <p>The <code>DataImportManager</code> provides advanced data import capabilities with mapping and validation.</p>
+
+                    <div class="code-example">
+                        <h3>DataImportManager Usage</h3>
+                        <pre><code class="language-csharp">// Initialize the import manager
+var importManager = new DataImportManager(dmeEditor);
+
+// Configure source and destination
+importManager.LoadSourceEntityStructure("SourceTable", "SourceDataSource");
+importManager.LoadDestEntityStructure("DestinationTable", "DestinationDataSource");
+
+// Set up field mapping
+var mapping = new EntityDataMap
+{
+    EntityName = "CustomerImport",
+    MappedEntities = new List&lt;EntityDataMap_DTL&gt;
+    {
+        new EntityDataMap_DTL 
+        { 
+            FromFieldName = "CustomerName", 
+            ToFieldName = "Name",
+            FieldType = "string"
+        },
+        new EntityDataMap_DTL 
+        { 
+            FromFieldName = "CustomerEmail", 
+            ToFieldName = "EmailAddress",
+            FieldType = "string"
+        }
+    }
+};
+
+importManager.Mapping = mapping;
+
+// Set up filters if needed
+importManager.SourceFilters.Add(new AppFilter
+{
+    FieldName = "Status",
+    Operator = "=",
+    FilterValue = "Active"
+});
+
+// Execute the import
+var result = await importManager.ExecuteImportAsync();
+
+if (result.Flag == Errors.Ok)
+{
+    Console.WriteLine($"Import completed. {importManager.ImportLogData.Count} records processed");
+}
+else
+{
+    Console.WriteLine($"Import failed: {result.Message}");
+    
+    // Review import logs
+    foreach (var logEntry in importManager.ImportLogData)
+    {
+        Console.WriteLine($"{logEntry.Timestamp}: {logEntry.Message} (Record {logEntry.RecordNumber})");
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>?? Import Features</strong>
+                        <ul>
+                            <li><strong>Field Mapping:</strong> Map fields between source and destination with type conversion</li>
+                            <li><strong>Data Validation:</strong> Validate data before import with custom rules</li>
+                            <li><strong>Progress Tracking:</strong> Real-time progress updates and detailed logging</li>
+                            <li><strong>Error Handling:</strong> Continue processing with detailed error reporting</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Data Sync Manager -->
+                <section id="data-sync-manager" class="section">
+                    <h2>?? DataSyncManager</h2>
+                    <p>The <code>DataSyncManager</code> handles data synchronization between different systems.</p>
+
+                    <div class="code-example">
+                        <h3>DataSyncService Usage</h3>
+                        <pre><code class="language-csharp">// Initialize the sync service
+var syncService = new DataSyncService(dmeEditor);
+
+// Configure sync parameters
+var syncConfig = new DataSyncConfiguration
+{
+    SourceDataSource = "ProductionDB",
+    TargetDataSource = "ReportingDB",
+    SyncMode = SyncMode.Incremental,
+    ConflictResolution = ConflictResolutionStrategy.SourceWins,
+    BatchSize = 1000
+};
+
+// Add entities to sync
+syncConfig.EntitiesToSync.Add(new EntitySyncConfig
+{
+    EntityName = "Customers",
+    SyncDirection = SyncDirection.Bidirectional,
+    KeyFields = new[] { "CustomerID" },
+    LastSyncField = "ModifiedDate"
+});
+
+syncConfig.EntitiesToSync.Add(new EntitySyncConfig
+{
+    EntityName = "Orders",
+    SyncDirection = SyncDirection.SourceToTarget,
+    KeyFields = new[] { "OrderID" },
+    LastSyncField = "CreatedDate"
+});
+
+// Execute synchronization
+var progress = new Progress&lt;SyncProgressArgs&gt;(args =&gt;
+{
+    Console.WriteLine($"Syncing {args.EntityName}: {args.ProcessedRecords}/{args.TotalRecords}");
+});
+
+var result = await syncService.SynchronizeAsync(syncConfig, progress, CancellationToken.None);
+
+Console.WriteLine($"Sync completed. {result.SyncedEntities} entities synchronized");
+Console.WriteLine($"Conflicts: {result.ConflictsResolved}, Errors: {result.ErrorCount}");</code></pre>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Sync Considerations</strong>
+                        <ul>
+                            <li><strong>Conflict Resolution:</strong> Choose appropriate strategy for data conflicts</li>
+                            <li><strong>Performance:</strong> Use batch processing for large datasets</li>
+                            <li><strong>Monitoring:</strong> Implement proper logging and alerting</li>
+                            <li><strong>Recovery:</strong> Plan for sync failures and resumption</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Workflow Actions -->
+                <section id="workflow-actions" class="section">
+                    <h2>??? Workflow Actions</h2>
+                    <p>Built-in workflow actions for common data processing tasks.</p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>?? ExportDataToFileAction</h3>
+                            <p>Export data from any source to files (CSV, Excel, JSON)</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">new ExportDataToFileAction
+{
+    SourceDataSource = "CustomerDB",
+    SourceEntity = "Customers",
+    DestinationFile = "customers.csv",
+    Format = ExportFormat.CSV,
+    IncludeHeaders = true
+}</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? CleanseDataAction</h3>
+                            <p>Clean and standardize data using predefined or custom rules</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">new CleanseDataAction
+{
+    DataSource = "CustomerDB",
+    Entity = "Customers",
+    CleansingRules = new[]
+    {
+                        "TrimWhitespace",
+                        "RemoveNulls",
+                        "ValidateEmails",
+                        "StandardizePhoneNumbers"
+                    }
+}</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? ConditionalExecutionAction</h3>
+                            <p>Execute actions based on conditions and business rules</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">new ConditionalExecutionAction
+{
+    Condition = "CustomerType = 'Premium'",
+    TrueActions = new[] { sendWelcomeEmail },
+    FalseActions = new[] { sendStandardEmail }
+}</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? ArchiveOldDataAction</h3>
+                            <p>Archive old data based on date criteria</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">new ArchiveOldDataAction
+{
+    SourceDataSource = "TransactionDB",
+    SourceEntity = "Transactions",
+    ArchiveDataSource = "ArchiveDB",
+    DateField = "TransactionDate",
+    ArchiveThreshold = TimeSpan.FromDays(365)
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Workflow Rules -->
+                <section id="workflow-rules" class="section">
+                    <h2>?? Workflow Rules</h2>
+                    <p>Built-in workflow rules for data validation and transformation.</p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>?? FormatDate</h3>
+                            <p>Format dates according to specified patterns</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">new FormatDate
+{
+                    InputFormat = "MM/dd/yyyy",
+                    OutputFormat = "yyyy-MM-dd",
+                    HandleInvalidDates = true
+}</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? GetGUID</h3>
+                            <p>Generate unique identifiers for records</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">new GetGUID
+{
+                    TargetField = "RecordID",
+                    GuidFormat = GuidFormat.Standard
+}</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? GetNow</h3>
+                            <p>Set current timestamp for audit fields</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">new GetNow
+{
+                    TargetField = "LastModified",
+                    DateTimeFormat = "yyyy-MM-dd HH:mm:ss"
+}</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? GetRecordCount</h3>
+                            <p>Count records in entities for reporting</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">new GetRecordCount
+{
+                    DataSource = "CustomerDB",
+                    Entity = "Customers",
+                    FilterCondition = "Status = 'Active'"
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Practical Examples -->
+                <section id="practical-examples" class="section">
+                    <h2>?? Practical Examples</h2>
+
+                    <div class="code-example">
+                        <h3>Complete Data Processing Workflow</h3>
+                        <pre><code class="language-csharp">public class DataProcessingWorkflow
+{
+    private readonly IDMEEditor _dmeEditor;
+    
+    public DataProcessingWorkflow(IDMEEditor dmeEditor)
+    {
+        _dmeEditor = dmeEditor;
+    }
+    
+    public async Task&lt;IErrorsInfo&gt; ProcessCustomerDataAsync()
+    {
+        try
+        {
+            // Step 1: Import data from external source
+            var importManager = new DataImportManager(_dmeEditor);
+            importManager.LoadSourceEntityStructure("Customers", "ExternalSystem");
+            importManager.LoadDestEntityStructure("Customers", "MainDatabase");
+            
+            var importResult = await importManager.ExecuteImportAsync();
+            if (importResult.Flag != Errors.Ok)
+                return importResult;
+            
+            // Step 2: Run data cleansing workflow
+            var workflowEditor = _dmeEditor.WorkFlowEditor;
+            var cleansingResult = workflowEditor.RunWorkFlow("CustomerDataCleansing", 
+                new Progress&lt;PassedArgs&gt;(), CancellationToken.None);
+            
+            if (cleansingResult.Flag != Errors.Ok)
+                return cleansingResult;
+            
+            // Step 3: Synchronize with reporting database
+            var syncService = new DataSyncService(_dmeEditor);
+            var syncConfig = new DataSyncConfiguration
+            {
+                SourceDataSource = "MainDatabase",
+                TargetDataSource = "ReportingDB",
+                SyncMode = SyncMode.Incremental
+            };
+            
+            var syncResult = await syncService.SynchronizeAsync(syncConfig, 
+                new Progress&lt;SyncProgressArgs&gt;(), CancellationToken.None);
+            
+            // Step 4: Generate completion report
+            await GenerateProcessingReportAsync(importResult, cleansingResult, syncResult);
+            
+            return _dmeEditor.ErrorObject;
+        }
+        catch (Exception ex)
+        {
+            _dmeEditor.AddLogMessage("DataProcessing", $"Workflow failed: {ex.Message}", 
+                DateTime.Now, -1, ex.StackTrace, Errors.Failed);
+            return _dmeEditor.ErrorObject;
+        }
+    }
+    
+    private async Task GenerateProcessingReportAsync(params IErrorsInfo[] results)
+    {
+        var reportData = new
+        {
+            ProcessingDate = DateTime.Now,
+            ImportedRecords = results[0].Flag == Errors.Ok ? "Success" : "Failed",
+            CleansingStatus = results[1].Flag == Errors.Ok ? "Success" : "Failed",
+            SyncStatus = results[2].Flag == Errors.Ok ? "Success" : "Failed",
+            OverallStatus = results.All(r =&gt; r.Flag == Errors.Ok) ? "Success" : "Failed"
+        };
+        
+        // Export report to file or send notification
+        var exportAction = new ExportDataToFileAction
+        {
+            Data = new[] { reportData },
+            DestinationFile = $"ProcessingReport_{DateTime.Now:yyyyMMdd_HHmmss}.json",
+            Format = ExportFormat.JSON
+        };
+        
+        await exportAction.ExecuteAsync();
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>?? Best Practices</strong>
+                        <ul>
+                            <li><strong>Error Handling:</strong> Always check return values and handle errors appropriately</li>
+                            <li><strong>Progress Reporting:</strong> Use progress callbacks for long-running operations</li>
+                            <li><strong>Logging:</strong> Implement comprehensive logging for troubleshooting</li>
+                            <li><strong>Testing:</strong> Test workflows with sample data before production</li>
+                            <li><strong>Monitoring:</strong> Set up monitoring and alerting for critical workflows</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="unitofwork-wrapper.html"><i class="bi bi-arrow-left"></i> UnitOfWork Wrapper</a>
+                    <a href="advanced-tools-utilities.html">Advanced Tools & Utilities <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('ETL & Workflow Engine documentation page loaded');
+    </script>
+</body>
+</html>

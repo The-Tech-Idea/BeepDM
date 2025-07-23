@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETL Editor - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>?</span>
+                    <a href="#">Editor Classes</a>
+                    <span>?</span>
+                    <span>ETL Editor</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>?? ETL Editor</h1>
+                    <p class="page-subtitle">Powerful Extract, Transform, Load processing engine for data migration and synchronization</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>?? Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#core-properties">Core Properties</a></li>
+                        <li><a href="#script-generation">Script Generation</a></li>
+                        <li><a href="#data-copying">Data Copying Operations</a></li>
+                        <li><a href="#script-execution">Script Execution</a></li>
+                        <li><a href="#import-operations">Import Operations</a></li>
+                        <li><a href="#error-handling">Error Handling & Validation</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>?? Overview</h2>
+                    <p>
+                        The <code>ETLEditor</code> class is the core component for Extract, Transform, Load operations 
+                        in the Beep Data Management Engine. It provides comprehensive functionality for data migration, 
+                        synchronization, and transformation between different data sources with advanced error handling, 
+                        progress tracking, and validation capabilities.
+                    </p>
+                    
+                    <div class="success">
+                        <strong>?? Key Capabilities</strong>
+                        <p>ETLEditor handles complex data migration scenarios with entity creation, data validation, relationship management, and comprehensive error tracking.</p>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>?? Script Generation</h3>
+                            <p>Automated DDL script generation for entity creation and data migration</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Data Transformation</h3>
+                            <p>Advanced data mapping and transformation capabilities</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>? Async Processing</h3>
+                            <p>Full async/await support with progress reporting and cancellation</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>??? Error Management</h3>
+                            <p>Comprehensive error tracking, validation, and recovery mechanisms</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Core Properties -->
+                <section id="core-properties" class="section">
+                    <h2>??? Core Properties</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Essential Properties</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>DMEEditor</td><td>IDMEEditor</td><td>Reference to the main data management editor</td></tr>
+                                    <tr><td>RulesEngine</td><td>IRuleEngine</td><td>Business rules processing engine</td></tr>
+                                    <tr><td>Script</td><td>ETLScriptHDR</td><td>Current ETL script header with all operations</td></tr>
+                                    <tr><td>LoadDataLogs</td><td>List&lt;LoadDataLogResult&gt;</td><td>Detailed logging of data load operations</td></tr>
+                                    <tr><td>StopErrorCount</td><td>decimal</td><td>Maximum errors allowed before stopping (default: 10)</td></tr>
+                                    <tr><td>ScriptCount</td><td>int</td><td>Total number of scripts to process</td></tr>
+                                    <tr><td>CurrentScriptRecord</td><td>int</td><td>Current record being processed</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Events</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Event</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>PassEvent</td><td>EventHandler&lt;PassedArgs&gt;</td><td>Event raised during ETL processing for progress reporting</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Script Generation -->
+                <section id="script-generation" class="section">
+                    <h2>?? Script Generation</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Script Creation Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> CreateScriptHeader(IDataSource sourceDs, IProgress&lt;PassedArgs&gt; progress, CancellationToken token)</code>
+                            </div>
+                            <p>Creates a comprehensive ETL script header for migrating all entities from a source data source.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">List&lt;ETLScriptDet&gt;</span> GetCreateEntityScript(IDataSource ds, List&lt;string&gt; entities, IProgress&lt;PassedArgs&gt; progress, CancellationToken token, <span class="parameter-type">bool</span> copydata = false)</code>
+                            </div>
+                            <p>Generates ETL script details for creating specific entities with optional data copying.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">List&lt;ETLScriptDet&gt;</span> GetCreateEntityScript(IDataSource dest, List&lt;EntityStructure&gt; entities, IProgress&lt;PassedArgs&gt; progress, CancellationToken token, <span class="parameter-type">bool</span> copydata = false)</code>
+                            </div>
+                            <p>Generates scripts from entity structures for more control over the creation process.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">List&lt;ETLScriptDet&gt;</span> GetCopyDataEntityScript(IDataSource dest, List&lt;EntityStructure&gt; entities, IProgress&lt;PassedArgs&gt; progress, CancellationToken token)</code>
+                            </div>
+                            <p>Creates scripts specifically for data copying operations between entities.</p>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Script Generation Example</h3>
+                        <pre><code class="language-csharp">// Initialize ETL Editor
+var etlEditor = new ETLEditor(dmeEditor);
+
+// Create source and destination data sources
+var sourceDs = dmeEditor.GetDataSource("SourceDatabase");
+var destDs = dmeEditor.GetDataSource("DestinationDatabase");
+
+// Generate create entity scripts for specific entities
+var entities = new List&lt;string&gt; { "Customers", "Orders", "Products" };
+var createScripts = etlEditor.GetCreateEntityScript(
+    destDs, entities, progress, cancellationToken, true);
+
+// Set up the ETL script
+etlEditor.Script.ScriptDTL.AddRange(createScripts);
+
+// Save the script for later use
+etlEditor.SaveETL("MigrationProject");</code></pre>
+                    </div>
+                </section>
+
+                <!-- Data Copying Operations -->
+                <section id="data-copying" class="section">
+                    <h2>?? Data Copying Operations</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Entity Structure Copying</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> CopyEntitiesStructure(IDataSource sourceDs, IDataSource destDs, List&lt;string&gt; entities, IProgress&lt;PassedArgs&gt; progress, CancellationToken token, <span class="parameter-type">bool</span> createMissingEntity = true)</code>
+                            </div>
+                            <p>Copies the structure of multiple entities between data sources with optional entity creation.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> CopyEntityStructure(IDataSource sourceDs, IDataSource destDs, <span class="parameter-type">string</span> srcEntity, <span class="parameter-type">string</span> destEntity, IProgress&lt;PassedArgs&gt; progress, CancellationToken token, <span class="parameter-type">bool</span> createMissingEntity = true)</code>
+                            </div>
+                            <p>Copies the structure of a single entity with foreign key constraint management.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Data Copying Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> CopyDatasourceData(IDataSource sourceDs, IDataSource destDs, IProgress&lt;PassedArgs&gt; progress, CancellationToken token, <span class="parameter-type">bool</span> createMissingEntity = true, EntityDataMap_DTL map_DTL = null)</code>
+                            </div>
+                            <p>Copies all data from source to destination data source with optional mapping.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> CopyEntitiesData(IDataSource sourceDs, IDataSource destDs, List&lt;string&gt; entities, IProgress&lt;PassedArgs&gt; progress, CancellationToken token, <span class="parameter-type">bool</span> createMissingEntity = true, EntityDataMap_DTL map_DTL = null)</code>
+                            </div>
+                            <p>Copies data for specific entities with advanced mapping and transformation support.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> CopyEntityData(IDataSource sourceDs, IDataSource destDs, <span class="parameter-type">string</span> srcEntity, <span class="parameter-type">string</span> destEntity, IProgress&lt;PassedArgs&gt; progress, CancellationToken token, <span class="parameter-type">bool</span> createMissingEntity = true, EntityDataMap_DTL map_DTL = null)</code>
+                            </div>
+                            <p>Copies data for a single entity with comprehensive error handling and validation.</p>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Data Copying Example</h3>
+                        <pre><code class="language-csharp">// Copy entity structures first
+var structureResult = etlEditor.CopyEntitiesStructure(
+    sourceDs, destDs, 
+    new List&lt;string&gt; { "Customers", "Orders" },
+    progress, cancellationToken, true);
+
+if (structureResult.Flag == Errors.Ok)
+{
+    // Then copy the data
+    var dataResult = etlEditor.CopyEntitiesData(
+        sourceDs, destDs,
+        new List&lt;string&gt; { "Customers", "Orders" },
+        progress, cancellationToken, true);
+        
+    if (dataResult.Flag == Errors.Ok)
+    {
+        Console.WriteLine("Data migration completed successfully!");
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Script Execution -->
+                <section id="script-execution" class="section">
+                    <h2>? Script Execution</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Script Execution Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> RunCreateScript(IProgress&lt;PassedArgs&gt; progress, CancellationToken token, <span class="parameter-type">bool</span> copydata = true, <span class="parameter-type">bool</span> useEntityStructure = true)</code>
+                            </div>
+                            <p>Executes the complete ETL script with entity creation and optional data copying.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> RunChildScriptAsync(ETLScriptDet parentScript, IDataSource srcDs, IDataSource destDs, IProgress&lt;PassedArgs&gt; progress, CancellationToken token)</code>
+                            </div>
+                            <p>Executes child scripts for complex hierarchical ETL operations.</p>
+                        </div>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Script Execution Considerations</strong>
+                        <ul>
+                            <li>Always check data source connections before execution</li>
+                            <li>Monitor the <code>StopErrorCount</code> to prevent runaway processes</li>
+                            <li>Use progress reporting for long-running operations</li>
+                            <li>Implement proper cancellation token handling</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Script Execution Example</h3>
+                        <pre><code class="language-csharp">// Set up progress reporting
+var progress = new Progress&lt;PassedArgs&gt;(args =&gt; 
+{
+    Console.WriteLine($"Progress: {args.ParameterInt1}/{args.ParameterInt2} - {args.Messege}");
+});
+
+// Set up cancellation
+using var cancellationTokenSource = new CancellationTokenSource();
+var cancellationToken = cancellationTokenSource.Token;
+
+try
+{
+    // Execute the ETL script
+    var result = await etlEditor.RunCreateScript(
+        progress, cancellationToken, 
+        copydata: true, useEntityStructure: true);
+    
+    if (result.Flag == Errors.Ok)
+    {
+        Console.WriteLine("ETL script executed successfully!");
+        
+        // Review the logs
+        foreach (var log in etlEditor.LoadDataLogs)
+        {
+            Console.WriteLine(log.InputLine);
+        }
+    }
+    else
+    {
+        Console.WriteLine($"ETL script failed: {result.Message}");
+    }
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("ETL operation was cancelled.");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Import Operations -->
+                <section id="import-operations" class="section">
+                    <h2>?? Import Operations</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Import Script Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> CreateImportScript(EntityDataMap mapping, EntityDataMap_DTL selectedMapping)</code>
+                            </div>
+                            <p>Creates an import script based on entity mappings for data transformation and import.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> RunImportScript(IProgress&lt;PassedArgs&gt; progress, CancellationToken token, <span class="parameter-type">bool</span> useEntityStructure = true)</code>
+                            </div>
+                            <p>Executes import operations with advanced mapping and transformation capabilities.</p>
+                        </div>
+                    </div>
+
+                    <div class="success">
+                        <strong>?? Import Features</strong>
+                        <ul>
+                            <li>Entity mapping and field transformation</li>
+                            <li>Default value resolution and application</li>
+                            <li>Relationship validation and parent entity creation</li>
+                            <li>Comprehensive error tracking and logging</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Error Handling -->
+                <section id="error-handling" class="section">
+                    <h2>??? Error Handling & Validation</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Entity Insertion & Validation</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> InsertEntity(IDataSource destDs, EntityStructure destEntityStructure, <span class="parameter-type">string</span> destEntity, EntityDataMap_DTL map_DTL, <span class="parameter-type">object</span> record, IProgress&lt;PassedArgs&gt; progress, CancellationToken token)</code>
+                            </div>
+                            <p>Inserts entities with comprehensive validation, mapping application, and relationship management.</p>
+                        </div>
+                    </div>
+
+                    <div class="tip">
+                        <strong>?? Error Management Features</strong>
+                        <ul>
+                            <li><strong>Configurable Error Thresholds:</strong> Set <code>StopErrorCount</code> to control when operations should halt</li>
+                            <li><strong>Detailed Logging:</strong> <code>LoadDataLogs</code> captures all operation details</li>
+                            <li><strong>Relationship Validation:</strong> Automatic parent entity creation for referential integrity</li>
+                            <li><strong>Default Value Application:</strong> Rule-based default value resolution</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Error Handling Configuration</h3>
+                        <pre><code class="language-csharp">// Configure error handling
+etlEditor.StopErrorCount = 50; // Allow up to 50 errors before stopping
+
+// Monitor errors during execution
+etlEditor.PassEvent += (sender, args) =&gt; 
+{
+    if (args.EventType == "Stop")
+    {
+        Console.WriteLine("ETL stopped due to error threshold reached");
+    }
+    else if (args.EventType == "Update")
+    {
+        Console.WriteLine($"Processing: {args.ParameterInt1}/{args.ParameterInt2}");
+    }
+};
+
+// Review detailed logs after execution
+foreach (var log in etlEditor.LoadDataLogs)
+{
+    if (log.InputLine.Contains("Failed"))
+    {
+        Console.WriteLine($"Error: {log.InputLine}");
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Examples -->
+                <section id="examples" class="section">
+                    <h2>?? Usage Examples</h2>
+                    
+                    <div class="code-example">
+                        <h3>Complete ETL Migration Workflow</h3>
+                        <pre><code class="language-csharp">// Initialize ETL Editor
+var etlEditor = new ETLEditor(dmeEditor);
+
+// Set up data sources
+var sourceDs = dmeEditor.GetDataSource("LegacySystem");
+var destDs = dmeEditor.GetDataSource("ModernSystem");
+
+// Open connections
+dmeEditor.OpenDataSource("LegacySystem");
+dmeEditor.OpenDataSource("ModernSystem");
+
+// Configure error handling
+etlEditor.StopErrorCount = 100;
+
+// Create comprehensive migration script
+etlEditor.CreateScriptHeader(sourceDs, progress, cancellationToken);
+
+// Execute the migration
+try 
+{
+    var result = await etlEditor.RunCreateScript(
+        progress, cancellationToken, 
+        copydata: true, useEntityStructure: true);
+    
+    if (result.Flag == Errors.Ok)
+    {
+        Console.WriteLine($"Migration completed! Processed {etlEditor.CurrentScriptRecord} records.");
+        
+        // Save script for future reference
+        etlEditor.SaveETL("LegacyToModernMigration");
+    }
+    else
+    {
+        Console.WriteLine($"Migration failed: {result.Message}");
+        
+        // Review error logs
+        var errorLogs = etlEditor.LoadDataLogs
+            .Where(log =&gt; log.InputLine.Contains("Failed"))
+            .ToList();
+            
+        foreach (var errorLog in errorLogs)
+        {
+            Console.WriteLine($"Error: {errorLog.InputLine}");
+        }
+    }
+}
+finally
+{
+    // Clean up connections
+    dmeEditor.CloseDataSource("LegacySystem");
+    dmeEditor.CloseDataSource("ModernSystem");
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Selective Entity Migration</h3>
+                        <pre><code class="language-csharp">// Migrate specific entities with custom mapping
+var etlEditor = new ETLEditor(dmeEditor);
+
+// Define entities to migrate
+var entitiesToMigrate = new List&lt;string&gt; 
+{ 
+    "Customers", "Orders", "OrderDetails", "Products" 
+};
+
+// Generate creation scripts
+var createScripts = etlEditor.GetCreateEntityScript(
+    destDs, entitiesToMigrate, progress, cancellationToken, false);
+
+// Generate data copy scripts separately for more control
+var copyScripts = etlEditor.GetCopyDataEntityScript(
+    destDs, 
+    createScripts.Select(s =&gt; s.SourceEntity).ToList(),
+    progress, cancellationToken);
+
+// Combine scripts
+etlEditor.Script.ScriptDTL.AddRange(createScripts);
+etlEditor.Script.ScriptDTL.AddRange(copyScripts);
+
+// Execute with detailed monitoring
+var result = await etlEditor.RunCreateScript(
+    progress, cancellationToken, copydata: false, useEntityStructure: true);</code></pre>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section id="best-practices" class="section">
+                    <h2>? Best Practices</h2>
+                    
+                    <div class="tip">
+                        <strong>?? Performance Optimization</strong>
+                        <ul>
+                            <li>Disable foreign key constraints during bulk operations</li>
+                            <li>Use batch processing for large datasets</li>
+                            <li>Monitor memory usage during long-running operations</li>
+                            <li>Implement proper connection pooling</li>
+                        </ul>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Data Integrity</strong>
+                        <ul>
+                            <li>Always backup destination data before major migrations</li>
+                            <li>Test scripts on sample data first</li>
+                            <li>Validate entity relationships before data copying</li>
+                            <li>Implement transaction boundaries for critical operations</li>
+                        </ul>
+                    </div>
+
+                    <div class="success">
+                        <strong>?? Operational Excellence</strong>
+                        <ul>
+                            <li>Use progress reporting for user feedback</li>
+                            <li>Implement proper cancellation token handling</li>
+                            <li>Save ETL scripts for repeatability and auditing</li>
+                            <li>Monitor and log all operations comprehensively</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="dmeeditor.html"><i class="bi bi-arrow-left"></i> DMEEditor</a>
+                    <a href="dataimportmanager.html">Data Import Manager <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('ETL Editor documentation page loaded');
+    </script>
+</body>
+</html>

@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Tools & Utilities - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>?</span>
+                    <span>Advanced Tools & Utilities</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>??? Advanced Tools & Utilities</h1>
+                    <p class="page-subtitle">Comprehensive toolkit for advanced data management, code generation, and system utilities</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>?? Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#class-creator">ClassCreator</a></li>
+                        <li><a href="#config-editor">ConfigEditor</a></li>
+                        <li><a href="#data-types-helper">DataTypesHelper</a></li>
+                        <li><a href="#assembly-handler">AssemblyHandler</a></li>
+                        <li><a href="#file-utilities">File Utilities</a></li>
+                        <li><a href="#circuit-breaker">CircuitBreaker</a></li>
+                        <li><a href="#batch-extensions">BatchExtensions</a></li>
+                        <li><a href="#csv-analyzer">CSV Analyzer & Tools</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>?? Overview</h2>
+                    <p>
+                        The Beep Data Management Engine includes a comprehensive set of advanced tools and utilities 
+                        that support various aspects of data management, from dynamic code generation to sophisticated 
+                        configuration management and type handling.
+                    </p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>??? Code Generation</h3>
+                            <p>Dynamic class creation and code generation for entities and data models</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Configuration Management</h3>
+                            <p>Advanced configuration editing and management with specialized managers</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Type Utilities</h3>
+                            <p>Comprehensive type handling and conversion utilities</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Assembly Management</h3>
+                            <p>Dynamic assembly loading and plugin management</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? File Processing</h3>
+                            <p>Advanced file processing and analysis tools</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>??? Resilience Patterns</h3>
+                            <p>Circuit breaker and fault tolerance utilities</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Class Creator -->
+                <section id="class-creator" class="section">
+                    <h2>??? ClassCreator</h2>
+                    <p>The <code>ClassCreator</code> component provides dynamic class generation capabilities for creating entity classes from database schemas.</p>
+
+                    <div class="code-example">
+                        <h3>IClassCreator Interface</h3>
+                        <pre><code class="language-csharp">public interface IClassCreator
+{
+    IDMEEditor DMEEditor { get; set; }
+    
+    string CreateClass(EntityStructure entity, string nameSpace);
+    string CreatePOCOClass(EntityStructure entity, string nameSpace);
+    Assembly CompileTOAssembly(List&lt;EntityStructure&gt; entities, string nameSpace);
+    string CreateDLL(List&lt;EntityStructure&gt; entities, string outputPath, string nameSpace);
+    Type CreatePOCOType(EntityStructure entity, string nameSpace);
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Dynamic Class Generation</h3>
+                        <pre><code class="language-csharp">// Access the class creator
+var classCreator = dmeEditor.classCreator;
+
+// Get entity structure from data source
+var dataSource = dmeEditor.GetDataSource("CustomerDB");
+var customerEntity = dataSource.GetEntityStructure("Customers", true);
+
+// Generate POCO class code
+string classCode = classCreator.CreatePOCOClass(customerEntity, "MyCompany.DataModels");
+
+Console.WriteLine("Generated Class:");
+Console.WriteLine(classCode);
+
+// Output:
+// namespace MyCompany.DataModels
+// {
+//     public class Customer
+//     {
+//         public int CustomerID { get; set; }
+//         public string Name { get; set; }
+//         public string Email { get; set; }
+//         public DateTime CreatedDate { get; set; }
+//     }
+// }
+
+// Create runtime type
+Type customerType = classCreator.CreatePOCOType(customerEntity, "MyCompany.DataModels");
+
+// Create instance dynamically
+var customerInstance = Activator.CreateInstance(customerType);
+
+// Set properties using reflection
+customerType.GetProperty("Name")?.SetValue(customerInstance, "John Doe");
+customerType.GetProperty("Email")?.SetValue(customerInstance, "john@example.com");</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Batch Class Generation</h3>
+                        <pre><code class="language-csharp">// Generate classes for multiple entities
+var entities = new List&lt;EntityStructure&gt;();
+
+// Get all entities from a data source
+var dataSource = dmeEditor.GetDataSource("NorthwindDB");
+var entityNames = dataSource.GetEntitesList();
+
+foreach (var entityName in entityNames)
+{
+    var entity = dataSource.GetEntityStructure(entityName, true);
+    entities.Add(entity);
+}
+
+// Compile to assembly
+Assembly generatedAssembly = classCreator.CompileTOAssembly(entities, "NorthwindModels");
+
+
+// Or create DLL file
+string dllPath = classCreator.CreateDLL(entities, @"C:\Output", "NorthwindModels");
+
+Console.WriteLine($"Generated assembly with {entities.Count} entity classes");
+Console.WriteLine($"DLL created at: {dllPath}");</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>? ClassCreator Features</strong>
+                        <ul>
+                            <li><strong>POCO Generation:</strong> Create Plain Old CLR Objects from database schemas</li>
+                            <li><strong>Runtime Compilation:</strong> Compile classes to assemblies at runtime</li>
+                            <li><strong>Type Creation:</strong> Dynamically create .NET types for use in applications</li>
+                            <li><strong>Batch Processing:</strong> Generate multiple classes in a single operation</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Config Editor -->
+                <section id="config-editor" class="section">
+                    <h2>?? ConfigEditor</h2>
+                    <p>The refactored <code>ConfigEditor</code> uses specialized managers for different configuration responsibilities.</p>
+
+                    <div class="code-example">
+                        <h3>ConfigEditor Structure</h3>
+                        <pre><code class="language-csharp">public class ConfigEditor : IConfigEditor
+{
+    // Specialized managers
+    private readonly ConfigPathManager _pathManager;
+    private readonly DataConnectionManager _connectionManager;
+    private readonly QueryManager _queryManager;
+    private readonly EntityMappingManager _entityManager;
+    private readonly ComponentConfigManager _componentManager;
+    
+    // Configuration properties
+    public BeepConfigType ConfigType { get; set; }
+    public string ConfigPath { get; set; }
+    public List&lt;ConnectionProperties&gt; DataConnections { get; set; }
+    public List&lt;AssemblyClassDefinition&gt; DataSourcesClasses { get; set; }
+    public List&lt;ConnectionDriversConfig&gt; DataDriversClasses { get; set; }
+    public List&lt;EntityDataMap&gt; EntityMaps { get; set; }
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Configuration Management</h3>
+                        <pre><code class="language-csharp">// Initialize ConfigEditor
+var configEditor = dmeEditor.ConfigEditor;
+
+// Data Connection Management
+var connection = new ConnectionProperties
+{
+    ConnectionName = "ProductionDB",
+    DatabaseType = DataSourceType.SqlServer,
+    ConnectionString = "Server=prod;Database=MyDB;Integrated Security=true;",
+    Category = DatasourceCategory.RDBMS
+};
+
+configEditor.AddDataConnection(connection);
+configEditor.SaveDataconnectionsValues();
+
+// Component Configuration
+var componentConfig = new AssemblyClassDefinition
+{
+    className = "SqlServerDataSource",
+    PackageName = "TheTechIdea.Beep.SqlServer",
+    AddinType = "DataSource"
+};
+
+configEditor.DataSourcesClasses.Add(componentConfig);
+
+// Entity Mapping Configuration
+var entityMap = new EntityDataMap
+{
+    EntityName = "CustomerMapping",
+    SourceEntityName = "Customers",
+    DestinationEntityName = "Customer_Archive"
+};
+
+configEditor.EntityMaps.Add(entityMap);
+configEditor.SaveEntityMaps();
+
+// Query Management
+var savedQuery = new QuerySqlRepo
+{
+    ID = Guid.NewGuid().ToString(),
+    QueryName = "ActiveCustomers",
+    SqlQuery = "SELECT * FROM Customers WHERE Status = 'Active'",
+    DataSourceName = "ProductionDB"
+};
+
+configEditor.AddQuery(savedQuery);
+configEditor.SaveQueryFile();</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>?? Specialized Managers</strong>
+                        <ul>
+                            <li><strong>ConfigPathManager:</strong> Manages configuration file paths and directories</li>
+                            <li><strong>DataConnectionManager:</strong> Handles data connection configurations</li>
+                            <li><strong>QueryManager:</strong> Manages saved queries and SQL repositories</li>
+                            <li><strong>EntityMappingManager:</strong> Handles entity mapping configurations</li>
+                            <li><strong>ComponentConfigManager:</strong> Manages component and assembly configurations</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Data Types Helper -->
+                <section id="data-types-helper" class="section">
+                    <h2>?? DataTypesHelper</h2>
+                    <p>The <code>DataTypesHelper</code> provides comprehensive type handling and conversion utilities.</p>
+
+                    <div class="code-example">
+                        <h3>Type Conversion and Validation</h3>
+                        <pre><code class="language-csharp">// Access the types helper
+var typesHelper = dmeEditor.typesHelper;
+
+// Convert between .NET types and database types
+string sqlServerType = typesHelper.GetDataType("SqlServer", typeof(string), 255);
+// Returns: "NVARCHAR(255)"
+
+Type netType = typesHelper.GetNetType("SqlServer", "INT");
+// Returns: typeof(int)
+
+// Validate data type compatibility
+bool isCompatible = typesHelper.ValidateDataType(typeof(DateTime), "SqlServer", "DATETIME");
+// Returns: true
+
+// Get field size for type
+int fieldSize = typesHelper.GetFieldSize(typeof(string), "This is a test string");
+// Returns: 19
+
+// Convert values between types
+object convertedValue = typesHelper.ConvertValue("123", typeof(int));
+// Returns: 123 (as int)
+
+// Handle null values safely
+object safeValue = typesHelper.GetDefaultValueForType(typeof(DateTime));
+// Returns: DateTime.MinValue</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Database-Specific Type Mapping</h3>
+                        <pre><code class="language-csharp">// Map .NET types to different database systems
+var fieldMappings = new Dictionary&lt;string, string&gt;();
+
+fieldMappings["SqlServer"] = typesHelper.GetDataType("SqlServer", typeof(decimal), 18, 2);
+// Returns: "DECIMAL(18,2)"
+
+fieldMappings["MySQL"] = typesHelper.GetDataType("MySQL", typeof(decimal), 18, 2);
+// Returns: "DECIMAL(18,2)"
+
+fieldMappings["Oracle"] = typesHelper.GetDataType("Oracle", typeof(decimal), 18, 2);
+// Returns: "NUMBER(18,2)"
+
+fieldMappings["PostgreSQL"] = typesHelper.GetDataType("PostgreSQL", typeof(decimal), 18, 2);
+// Returns: "NUMERIC(18,2)"
+
+// Validate type mappings
+foreach (var mapping in fieldMappings)
+{
+    bool isValid = typesHelper.IsValidDataType(mapping.Key, mapping.Value);
+    Console.WriteLine($"{mapping.Key}: {mapping.Value} - Valid: {isValid}");
+}</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>?? Type Helper Benefits</strong>
+                        <ul>
+                            <li><strong>Cross-Platform:</strong> Handles type differences between database systems</li>
+                            <li><strong>Validation:</strong> Validates type compatibility and constraints</li>
+                            <li><strong>Conversion:</strong> Safe type conversion with error handling</li>
+                            <li><strong>Metadata:</strong> Provides detailed type information and constraints</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Assembly Handler -->
+                <section id="assembly-handler" class="section">
+                    <h2>?? AssemblyHandler</h2>
+                    <p>The <code>AssemblyHandler</code> manages dynamic assembly loading and plugin management.</p>
+
+                    <div class="code-example">
+                        <h3>Dynamic Assembly Loading</h3>
+                        <pre><code class="language-csharp">// Access the assembly handler
+var assemblyHandler = dmeEditor.assemblyHandler;
+
+// Load assembly from file
+Assembly loadedAssembly = assemblyHandler.LoadAssembly(@"C:\Plugins\CustomDataSource.dll");
+
+// Get types from assembly
+var dataSourceTypes = assemblyHandler.GetTypesFromAssembly(loadedAssembly, typeof(IDataSource));
+
+foreach (Type type in dataSourceTypes)
+{
+    Console.WriteLine($"Found DataSource type: {type.FullName}");
+    
+    // Create instance
+    var instance = assemblyHandler.CreateInstance(type);
+    if (instance is IDataSource dataSource)
+    {
+        Console.WriteLine($"Created instance of {type.Name}");
+    }
+}
+
+// Load plugins from directory
+var pluginDirectory = @"C:\Application\Plugins";
+var loadedPlugins = assemblyHandler.LoadPluginsFromDirectory(pluginDirectory);
+
+Console.WriteLine($"Loaded {loadedPlugins.Count} plugin assemblies");
+
+// Get all classes implementing a specific interface
+var addinClasses = assemblyHandler.GetClassesImplementingInterface&lt;IDataSource&gt;();
+
+foreach (var addinClass in addinClasses)
+{
+    Console.WriteLine($"Available DataSource: {addinClass.className}");
+    Console.WriteLine($"  Assembly: {addinClass.PackageName}");
+    Console.WriteLine($"  Version: {addinClass.version}");
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Plugin Management</h3>
+                        <pre><code class="language-csharp">// Register plugin assembly
+var pluginInfo = new AssemblyClassDefinition
+{
+    className = "CustomSqlDataSource",
+    PackageName = "CustomPlugins.DataSources",
+    version = "1.0.0",
+    AddinType = "DataSource",
+    dllname = "CustomDataSource.dll",
+    AssemblyName = "CustomDataSource"
+};
+
+assemblyHandler.RegisterPlugin(pluginInfo);
+
+// Get available plugins by type
+var dataSourcePlugins = assemblyHandler.GetPluginsByType("DataSource");
+var workflowPlugins = assemblyHandler.GetPluginsByType("WorkflowAction");
+
+// Create plugin instance by name
+var customDataSource = assemblyHandler.CreatePluginInstance("CustomSqlDataSource");
+
+if (customDataSource is IDataSource ds)
+{
+    // Configure and use the custom data source
+    ds.DMEEditor = dmeEditor;
+    ds.Dataconnection = new DefaulDataConnection();
+    // ... configure connection properties
+}
+
+// Validate plugin dependencies
+bool hasAllDependencies = assemblyHandler.ValidatePluginDependencies(pluginInfo);
+
+if (!hasAllDependencies)
+{
+    Console.WriteLine("Plugin has missing dependencies");
+    var missingDeps = assemblyHandler.GetMissingDependencies(pluginInfo);
+    foreach (var dep in missingDeps)
+    {
+        Console.WriteLine($"Missing: {dep}");
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- File Utilities -->
+                <section id="file-utilities" class="section">
+                    <h2>?? File Utilities</h2>
+                    <p>Advanced file processing utilities for various file formats and operations.</p>
+
+                    <div class="code-example">
+                        <h3>FileHelper Utilities</h3>
+                        <pre><code class="language-csharp">// File operation utilities
+var fileHelper = new FileHelper(dmeEditor);
+
+// Detect file encoding
+Encoding encoding = fileHelper.DetectFileEncoding(@"C:\Data\customers.csv");
+Console.WriteLine($"File encoding: {encoding.EncodingName}");
+
+// Get file metadata
+var fileInfo = fileHelper.GetFileMetadata(@"C:\Data\customers.csv");
+Console.WriteLine($"Size: {fileInfo.Size} bytes");
+Console.WriteLine($"Created: {fileInfo.CreatedDate}");
+Console.WriteLine($"Modified: {fileInfo.ModifiedDate}");
+
+// Validate file format
+bool isValidCsv = fileHelper.ValidateFileFormat(@"C:\Data\customers.csv", "CSV");
+bool isValidExcel = fileHelper.ValidateFileFormat(@"C:\Data\customers.xlsx", "Excel");
+
+// Copy file with progress
+var progress = new Progress&lt;FileProgressArgs&gt;(args =&gt;
+{
+    Console.WriteLine($"Copying: {args.BytesCopied}/{args.TotalBytes} ({args.PercentComplete:F1}%)");
+});
+
+await fileHelper.CopyFileAsync(@"C:\Source\largefile.dat", @"C:\Destination\largefile.dat", progress);
+
+// Split large file into chunks
+var chunks = await fileHelper.SplitFileAsync(@"C:\Data\hugefile.csv", 1024 * 1024 * 100); // 100MB chunks
+Console.WriteLine($"File split into {chunks.Count} chunks");
+
+// Merge chunks back
+await fileHelper.MergeChunksAsync(chunks, @"C:\Data\merged_hugefile.csv");</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>FileConnectionHelper</h3>
+                        <pre><code class="language-csharp">// File connection utilities
+FileConnectionHelper.Initialize(dmeEditor);
+
+// Create file-based data source connection
+var csvConnection = FileConnectionHelper.CreateFileConnection(
+    @"C:\Data\customers.csv", 
+    DataSourceType.CSV,
+    true // Has headers
+);
+
+dmeEditor.ConfigEditor.AddDataConnection(csvConnection);
+
+// Auto-detect file type and create appropriate connection
+var autoConnection = FileConnectionHelper.AutoDetectAndCreateConnection(@"C:\Data\unknown_file.dat");
+
+if (autoConnection != null)
+{
+    Console.WriteLine($"Auto-detected as: {autoConnection.DatabaseType}");
+}
+
+// Batch create connections for directory
+var directory = @"C:\Data\Files";
+var connections = FileConnectionHelper.CreateConnectionsForDirectory(directory, "*.csv");
+
+Console.WriteLine($"Created {connections.Count} connections for CSV files");
+
+foreach (var conn in connections)
+{
+    dmeEditor.ConfigEditor.AddDataConnection(conn);
+}
+
+// Validate file accessibility
+bool canAccess = FileConnectionHelper.ValidateFileAccess(@"C:\Data\protected_file.csv");
+if (!canAccess)
+{
+    Console.WriteLine("File is not accessible or does not exist");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Circuit Breaker -->
+                <section id="circuit-breaker" class="section">
+                    <h2>??? CircuitBreaker</h2>
+                    <p>The <code>CircuitBreaker</code> pattern provides fault tolerance for external service calls.</p>
+
+                    <div class="code-example">
+                        <h3>CircuitBreaker Usage</h3>
+                        <pre><code class="language-csharp">// Create circuit breaker with configuration
+var circuitBreaker = new CircuitBreaker(
+    name: "DatabaseCircuitBreaker",
+    failureThreshold: 5,           // Fail after 5 consecutive failures
+    timeout: TimeSpan.FromMinutes(2), // Stay open for 2 minutes
+    retryTimeout: TimeSpan.FromSeconds(30) // Try again after 30 seconds
+);
+
+// Execute operation with circuit breaker protection
+async Task&lt;List&lt;Customer&gt;&gt; GetCustomersWithProtection()
+{
+    return await circuitBreaker.ExecuteAsync(async () =&gt;
+    {
+        var dataSource = dmeEditor.GetDataSource("CustomerDB");
+        
+        if (dataSource.ConnectionStatus != ConnectionState.Open)
+        {
+            dataSource.Openconnection();
+        }
+        
+        var customers = await dataSource.GetEntityAsync("Customers", null);
+        return customers.Cast&lt;Customer&gt;().ToList();
+    });
+}
+
+// Handle circuit breaker events
+circuitBreaker.OnCircuitOpened += (sender, args) =&gt;
+{
+    Console.WriteLine($"Circuit breaker opened: {args.Reason}");
+    // Send alert, switch to cache, etc.
+};
+
+circuitBreaker.OnCircuitClosed += (sender, args) =&gt;
+{
+    Console.WriteLine("Circuit breaker closed - service recovered");
+};
+
+circuitBreaker.OnCircuitHalfOpened += (sender, args) =&gt;
+{
+    Console.WriteLine("Circuit breaker half-open - testing service");
+};
+
+// Use the protected method
+try
+{
+    var customers = await GetCustomersWithProtection();
+    Console.WriteLine($"Retrieved {customers.Count} customers");
+}
+catch (CircuitBreakerOpenException)
+{
+    Console.WriteLine("Service is currently unavailable - circuit breaker is open");
+    // Fallback to cached data or alternative service
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Operation failed: {ex.Message}");
+}</code></pre>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Circuit Breaker Best Practices</strong>
+                        <ul>
+                            <li><strong>Appropriate Thresholds:</strong> Set failure thresholds based on service characteristics</li>
+                            <li><strong>Fallback Strategies:</strong> Always have fallback mechanisms when circuit is open</li>
+                            <li><strong>Monitoring:</strong> Monitor circuit breaker state and performance</li>
+                            <li><strong>Testing:</strong> Test circuit breaker behavior under various failure scenarios</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Batch Extensions -->
+                <section id="batch-extensions" class="section">
+                    <h2>? BatchExtensions</h2>
+                    <p>The <code>BatchExtensions</code> provide high-performance batch processing capabilities.</p>
+
+                    <div class="code-example">
+                        <h3>Batch Processing Extensions</h3>
+                        <pre><code class="language-csharp">// Batch insert with progress reporting
+var customers = new List&lt;Customer&gt;
+{
+    new Customer { Name = "John Doe", Email = "john@example.com" },
+    new Customer { Name = "Jane Smith", Email = "jane@example.com" },
+    // ... thousands more records
+};
+
+var dataSource = dmeEditor.GetDataSource("CustomerDB");
+
+// Configure batch settings
+var batchConfig = new BatchConfiguration
+{
+    BatchSize = 1000,
+    MaxConcurrency = 4,
+    ContinueOnError = true,
+    EnableProgressReporting = true
+}
+
+// Progress reporting
+var progress = new Progress&lt;BatchProgressArgs&gt;(args =&gt;
+{
+    Console.WriteLine($"Batch Progress: {args.ProcessedCount}/{args.TotalCount} " +
+                     $"({args.ProgressPercentage:F1}%) - Errors: {args.ErrorCount}");
+});
+
+// Execute batch insert
+var result = await dataSource.BatchInsertAsync("Customers", customers, batchConfig, progress);
+
+Console.WriteLine($"Batch insert completed:");
+Console.WriteLine($"  Processed: {result.ProcessedCount}");
+Console.WriteLine($"  Successful: {result.SuccessCount}");
+Console.WriteLine($"  Errors: {result.ErrorCount}");
+Console.WriteLine($"  Duration: {result.Duration}");
+
+// Review errors if any
+if (result.Errors.Any())
+{
+    Console.WriteLine("Errors encountered:");
+    foreach (var error in result.Errors.Take(10)) // Show first 10 errors
+    {
+        Console.WriteLine($"  Record {error.RecordIndex}: {error.ErrorMessage}");
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Parallel Batch Processing</h3>
+                        <pre><code class="language-csharp">// Process multiple entities in parallel
+var entityBatches = new Dictionary&lt;string, IEnumerable&lt;object&gt;&gt;
+{
+    ["Customers"] = customers,
+    ["Orders"] = orders,
+    ["Products"] = products
+};
+
+var parallelResults = await dataSource.BatchProcessParallelAsync(
+    entityBatches,
+    new ParallelBatchConfiguration
+    {
+        MaxDegreeOfParallelism = Environment.ProcessorCount,
+        BatchSize = 500,
+        ContinueOnError = true
+    },
+    progress
+);
+
+foreach (var result in parallelResults)
+{
+    Console.WriteLine($"{result.Key}: {result.Value.SuccessCount} successful, {result.Value.ErrorCount} errors");
+}
+
+// Bulk update with conditions
+var updateCriteria = new BatchUpdateCriteria
+{
+    WhereClause = "Status = 'Pending'",
+    UpdateFields = new Dictionary&lt;string, object&gt
+    {
+        ["Status"] = "Processed",
+        ["ProcessedDate"] = DateTime.Now
+    }
+};
+
+var updateResult = await dataSource.BatchUpdateAsync("Orders", updateCriteria, batchConfig);
+Console.WriteLine($"Updated {updateResult.AffectedRows} records");</code></pre>
+                    </div>
+                </section>
+
+                <!-- CSV Analyzer -->
+                <section id="csv-analyzer" class="section">
+                    <h2>?? CSV Analyzer & Tools</h2>
+                    <p>Advanced CSV analysis and processing tools for data import and validation.</p>
+
+                    <div class="code-example">
+                        <h3>CSVAnalyser Usage</h3>
+                        <pre><code class="language-csharp">// Initialize CSV analyzer
+var csvAnalyzer = new CSVAnalyser(dmeEditor);
+
+// Analyze CSV file structure
+var analysisResult = await csvAnalyzer.AnalyzeFileAsync(@"C:\Data\customers.csv");
+
+Console.WriteLine($"CSV Analysis Results:");
+Console.WriteLine($"  Rows: {analysisResult.TotalRows}");
+Console.WriteLine($"  Columns: {analysisResult.ColumnCount}");
+Console.WriteLine($"  Encoding: {analysisResult.DetectedEncoding}");
+Console.WriteLine($"  Delimiter: '{analysisResult.DetectedDelimiter}'");
+Console.WriteLine($"  Has Headers: {analysisResult.HasHeaders}");
+
+// Column analysis
+foreach (var column in analysisResult.Columns)
+{
+    Console.WriteLine($"Column '{column.Name}':");
+    Console.WriteLine($"  Type: {column.DetectedType}");
+    Console.WriteLine($"  Null Count: {column.NullCount}");
+    Console.WriteLine($"  Unique Values: {column.UniqueValueCount}");
+    Console.WriteLine($"  Max Length: {column.MaxLength}");
+}
+
+// Validate data quality
+var qualityReport = csvAnalyzer.ValidateDataQuality(analysisResult);
+
+Console.WriteLine($"Data Quality Report:");
+Console.WriteLine($"  Overall Score: {qualityReport.OverallScore:F2}/10");
+Console.WriteLine($"  Issues Found: {qualityReport.Issues.Count}");
+
+foreach (var issue in qualityReport.Issues.Take(5))
+{
+    Console.WriteLine($"  - {issue.IssueType}: {issue.Description} (Severity: {issue.Severity})");
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>CSVTypeMapper</h3>
+                        <pre><code class="language-csharp">// Initialize type mapper
+var typeMapper = new CSVTypeMapper(dmeEditor);
+
+// Auto-detect column types
+var columnMappings = typeMapper.DetectColumnTypes(@"C:\Data\customers.csv");
+
+foreach (var mapping in columnMappings)
+{
+    Console.WriteLine($"Column: {mapping.ColumnName}");
+    Console.WriteLine($"  Detected Type: {mapping.DetectedType}");
+    Console.WriteLine($"  Confidence: {mapping.Confidence:F2}");
+    Console.WriteLine($"  Suggested .NET Type: {mapping.SuggestedNetType}");
+    Console.WriteLine($"  Suggested SQL Type: {mapping.SuggestedSqlType}");
+}
+
+// Create entity structure from CSV
+var entityStructure = typeMapper.CreateEntityStructureFromCSV(
+    @"C:\Data\customers.csv",
+    "Customer",
+    "CustomerDB"
+);
+
+Console.WriteLine($"Generated Entity Structure:");
+Console.WriteLine($"  Entity Name: {entityStructure.EntityName}");
+Console.WriteLine($"  Fields: {entityStructure.Fields.Count}");
+
+foreach (var field in entityStructure.Fields)
+{
+    Console.WriteLine($"  - {field.fieldname}: {field.fieldtype} (Size: {field.Size1})");
+}
+
+// Generate CREATE TABLE script
+string createTableScript = typeMapper.GenerateCreateTableScript(entityStructure, "SqlServer");
+Console.WriteLine($"Generated SQL Script:");
+Console.WriteLine(createTableScript);</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>?? CSV Tools Benefits</strong>
+                        <ul>
+                            <li><strong>Smart Detection:</strong> Automatically detect delimiters, encodings, and data types</li>
+                            <li><strong>Quality Analysis:</strong> Comprehensive data quality assessment</li>
+                            <li><strong>Schema Generation:</strong> Generate database schemas from CSV files</li>
+                            <li><strong>Type Mapping:</strong> Intelligent type mapping for different database systems</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="etl-workflow-engine.html"><i class="bi bi-arrow-left"></i> ETL & Workflow Engine</a>
+                    <a href="api-reference.html">API Reference <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="examples.html">Examples</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('Advanced Tools & Utilities documentation page loaded');
+    </script>
+</body>
+</html>

@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Sync Manager - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>?</span>
+                    <a href="#">Editor Classes</a>
+                    <span>?</span>
+                    <span>Data Sync Manager</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>?? Data Sync Manager</h1>
+                    <p class="page-subtitle">Advanced data synchronization orchestrator leveraging ETL Editor, Data Import Manager, and Mapping Manager</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>?? Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#architecture">Sync Architecture</a></li>
+                        <li><a href="#sync-strategies">Synchronization Strategies</a></li>
+                        <li><a href="#component-integration">Component Integration</a></li>
+                        <li><a href="#conflict-resolution">Conflict Resolution</a></li>
+                        <li><a href="#monitoring">Monitoring & Logging</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>?? Overview</h2>
+                    <p>
+                        The <code>Data Sync Manager</code> represents the orchestration layer that combines the powerful 
+                        capabilities of ETL Editor, Data Import Manager, and Mapping Manager to provide comprehensive 
+                        data synchronization solutions. While not a standalone class, it represents the architectural 
+                        pattern and best practices for implementing robust data synchronization workflows using the 
+                        Beep Data Management Engine components.
+                    </p>
+                    
+                    <div class="success">
+                        <strong>?? Synchronization Capabilities</strong>
+                        <p>Data Sync Manager provides enterprise-grade synchronization with real-time change detection, conflict resolution, bidirectional sync, and comprehensive audit trails.</p>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>?? Bidirectional Sync</h3>
+                            <p>Two-way data synchronization between multiple systems</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>? Real-time Processing</h3>
+                            <p>Change detection and immediate synchronization capabilities</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>??? Conflict Resolution</h3>
+                            <p>Intelligent conflict detection and resolution strategies</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>?? Comprehensive Monitoring</h3>
+                            <p>Detailed logging, progress tracking, and sync analytics</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Architecture -->
+                <section id="architecture" class="section">
+                    <h2>??? Sync Architecture</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Core Components Integration</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Component</th><th>Role in Synchronization</th><th>Key Features</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>ETL Editor</td><td>Schema synchronization and bulk operations</td><td>Entity creation, structure validation, batch processing</td></tr>
+                                    <tr><td>Data Import Manager</td><td>Incremental data synchronization</td><td>Async imports, progress tracking, transformation</td></tr>
+                                    <tr><td>Mapping Manager</td><td>Data transformation and field mapping</td><td>Object mapping, type conversion, relationship handling</td></tr>
+                                    <tr><td>Defaults Manager</td><td>Consistent data population</td><td>Rule-based defaults, static values, audit fields</td></tr>
+                                    <tr><td>DMEEditor</td><td>Coordination and resource management</td><td>Data source management, logging, configuration</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tip">
+                        <strong>?? Architectural Benefits</strong>
+                        <ul>
+                            <li><strong>Modular Design:</strong> Each component handles specific aspects of synchronization</li>
+                            <li><strong>Reusable Components:</strong> Same components used for different sync scenarios</li>
+                            <li><strong>Scalable Processing:</strong> Async operations and batch processing for performance</li>
+                            <li><strong>Extensible Framework:</strong> Easy to add new sync strategies and transformations</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Data Sync Manager Implementation</h3>
+                        <pre><code class="language-csharp">public class DataSyncManager
+{
+    private readonly IDMEEditor _dmeEditor;
+    private readonly ETLEditor _etlEditor;
+    private readonly List&lt;DataImportManager&gt; _importManagers;
+    private readonly Dictionary&lt;string, EntityDataMap&gt; _mappingCache;
+    
+    public DataSyncManager(IDMEEditor dmeEditor)
+    {
+        _dmeEditor = dmeEditor;
+        _etlEditor = new ETLEditor(dmeEditor);
+        _importManagers = new List&lt;DataImportManager&gt;();
+        _mappingCache = new Dictionary&lt;string, EntityDataMap&gt;();
+    }
+    
+    // Core properties for sync management
+    public SyncConfiguration Configuration { get; set; }
+    public List&lt;SyncLog&gt; SyncHistory { get; private set; } = new List&lt;SyncLog&gt;();
+    public SyncStatus CurrentStatus { get; private set; } = SyncStatus.Idle;
+    
+    // Events for monitoring and notification
+    public event EventHandler&lt;SyncProgressEventArgs&gt; ProgressUpdated;
+    public event EventHandler&lt;SyncCompleteEventArgs&gt; SyncCompleted;
+    public event EventHandler&lt;SyncErrorEventArgs&gt; ErrorOccurred;
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Sync Strategies -->
+                <section id="sync-strategies" class="section">
+                    <h2>?? Synchronization Strategies</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Full Synchronization</strong>
+                        </div>
+                        <div class="api-content">
+                            <p>Complete data synchronization using ETL Editor for comprehensive data migration:</p>
+                            <ul>
+                                <li><strong>Schema Sync:</strong> Ensure destination schema matches source requirements</li>
+                                <li><strong>Data Migration:</strong> Transfer all data with validation and transformation</li>
+                                <li><strong>Relationship Preservation:</strong> Maintain referential integrity during sync</li>
+                                <li><strong>Validation:</strong> Comprehensive data validation and error reporting</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Incremental Synchronization</strong>
+                        </div>
+                        <div class="api-content">
+                            <p>Efficient synchronization of only changed data using Data Import Manager:</p>
+                            <ul>
+                                <li><strong>Change Detection:</strong> Identify modified records since last sync</li>
+                                <li><strong>Delta Processing:</strong> Process only changed records</li>
+                                <li><strong>Timestamp Tracking:</strong> Use modification timestamps for change detection</li>
+                                <li><strong>Conflict Detection:</strong> Identify potential data conflicts</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Bidirectional Synchronization</strong>
+                        </div>
+                        <div class="api-content">
+                            <p>Two-way synchronization with conflict resolution:</p>
+                            <ul>
+                                <li><strong>Master-Master Sync:</strong> Handle changes from multiple sources</li>
+                                <li><strong>Conflict Resolution:</strong> Automated and manual conflict resolution strategies</li>
+                                <li><strong>Change Vectors:</strong> Track change direction and precedence</li>
+                                <li><strong>Rollback Support:</strong> Ability to rollback synchronization changes</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Sync Strategy Implementation</h3>
+                        <pre><code class="language-csharp">public enum SyncStrategy
+{
+    FullSync,
+    IncrementalSync,
+    BidirectionalSync,
+    RealTimeSync
+}
+
+public class SyncConfiguration
+{
+    public SyncStrategy Strategy { get; set; }
+    public string SourceDataSourceName { get; set; }
+    public string DestinationDataSourceName { get; set; }
+    public List&lt;string&gt; EntitiesToSync { get; set; }
+    public Dictionary&lt;string, EntityDataMap&gt; EntityMappings { get; set; }
+    public ConflictResolutionStrategy ConflictResolution { get; set; }
+    public TimeSpan SyncInterval { get; set; }
+    public DateTime LastSyncTime { get; set; }
+    public bool EnableRealTimeSync { get; set; }
+}
+
+public async Task&lt;SyncResult&gt; ExecuteSync(SyncConfiguration config)
+{
+    CurrentStatus = SyncStatus.Running;
+    var syncResult = new SyncResult { StartTime = DateTime.Now };
+    
+    try
+    {
+        switch (config.Strategy)
+        {
+            case SyncStrategy.FullSync:
+                syncResult = await ExecuteFullSync(config);
+                break;
+                
+            case SyncStrategy.IncrementalSync:
+                syncResult = await ExecuteIncrementalSync(config);
+                break;
+                
+            case SyncStrategy.BidirectionalSync:
+                syncResult = await ExecuteBidirectionalSync(config);
+                break;
+                
+            case SyncStrategy.RealTimeSync:
+                syncResult = await ExecuteRealTimeSync(config);
+                break;
+        }
+        
+        syncResult.EndTime = DateTime.Now;
+        syncResult.Duration = syncResult.EndTime - syncResult.StartTime;
+        
+        // Log sync completion
+        SyncHistory.Add(new SyncLog
+        {
+            Timestamp = DateTime.Now,
+            Strategy = config.Strategy,
+            Result = syncResult,
+            Message = $"Sync completed: {syncResult.RecordsProcessed} records processed"
+        });
+        
+        SyncCompleted?.Invoke(this, new SyncCompleteEventArgs(syncResult));
+        return syncResult;
+    }
+    catch (Exception ex)
+    {
+        syncResult.Success = false;
+        syncResult.ErrorMessage = ex.Message;
+        
+        ErrorOccurred?.Invoke(this, new SyncErrorEventArgs(ex, config));
+        return syncResult;
+    }
+    finally
+    {
+        CurrentStatus = SyncStatus.Idle;
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Component Integration -->
+                <section id="component-integration" class="section">
+                    <h2>?? Component Integration</h2>
+                    
+                    <div class="code-example">
+                        <h3>Full Synchronization Implementation</h3>
+                        <pre><code class="language-csharp">private async Task&lt;SyncResult&gt; ExecuteFullSync(SyncConfiguration config)
+{
+    var result = new SyncResult();
+    var progress = new Progress&lt;PassedArgs&gt;(args =&gt; 
+    {
+        ProgressUpdated?.Invoke(this, new SyncProgressEventArgs
+        {
+            CurrentEntity = args.CurrentEntity,
+            ProcessedRecords = args.ParameterInt1,
+            TotalRecords = args.ParameterInt2,
+            Message = args.Messege
+        });
+    });
+    
+    using var cancellationTokenSource = new CancellationTokenSource();
+    
+    try
+    {
+        // Step 1: Prepare data sources
+        var sourceDs = _dmeEditor.GetDataSource(config.SourceDataSourceName);
+        var destDs = _dmeEditor.GetDataSource(config.DestinationDataSourceName);
+        
+        _dmeEditor.OpenDataSource(config.SourceDataSourceName);
+        _dmeEditor.OpenDataSource(config.DestinationDataSourceName);
+        
+        // Step 2: Create comprehensive ETL script
+        _etlEditor.CreateScriptHeader(sourceDs, progress, cancellationTokenSource.Token);
+        
+        // Step 3: Filter entities if specified
+        if (config.EntitiesToSync?.Any() == true)
+        {
+            _etlEditor.Script.ScriptDTL = _etlEditor.Script.ScriptDTL
+                .Where(s =&gt; config.EntitiesToSync.Contains(s.sourceEntityName))
+                .ToList();
+        }
+        
+        // Step 4: Apply entity mappings if configured
+        foreach (var mapping in config.EntityMappings ?? new Dictionary&lt;string, EntityDataMap&gt;())
+        {
+            ApplyMappingToETLScript(mapping.Key, mapping.Value);
+        }
+        
+        // Step 5: Execute ETL script
+        var etlResult = await _etlEditor.RunCreateScript(
+            progress, cancellationTokenSource.Token, copydata: true, useEntityStructure: true);
+        
+        result.Success = etlResult.Flag == Errors.Ok;
+        result.ErrorMessage = etlResult.Message;
+        result.RecordsProcessed = _etlEditor.CurrentScriptRecord;
+        
+        // Step 6: Collect detailed logs
+        result.DetailedLogs = _etlEditor.LoadDataLogs
+            .Select(log =&gt; log.InputLine)
+            .ToList();
+        
+        return result;
+    }
+    catch (Exception ex)
+    {
+        result.Success = false;
+        result.ErrorMessage = ex.Message;
+        return result;
+    }
+    finally
+    {
+        _dmeEditor.CloseDataSource(config.SourceDataSourceName);
+        _dmeEditor.CloseDataSource(config.DestinationDataSourceName);
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Incremental Synchronization Implementation</h3>
+                        <pre><code class="language-csharp">private async Task&lt;SyncResult&gt; ExecuteIncrementalSync(SyncConfiguration config)
+{
+    var result = new SyncResult();
+    var totalProcessed = 0;
+    
+    try
+    {
+        foreach (var entityName in config.EntitiesToSync)
+        {
+            var importManager = new DataImportManager(_dmeEditor);
+            
+            // Configure import manager for incremental sync
+            importManager.SourceEntityName = entityName;
+            importManager.SourceDataSourceName = config.SourceDataSourceName;
+            importManager.DestEntityName = entityName;
+            importManager.DestDataSourceName = config.DestinationDataSourceName;
+            
+            // Load destination structure
+            var structureResult = importManager.LoadDestEntityStructure(
+                entityName, config.DestinationDataSourceName);
+            
+            if (structureResult.Flag != Errors.Ok)
+            {
+                result.ErrorMessage += $"Failed to load structure for {entityName}: {structureResult.Message}\n";
+                continue;
+            }
+            
+            // Configure incremental filters
+            ConfigureIncrementalFilters(importManager, config.LastSyncTime);
+            
+            // Apply entity mapping if configured
+            if (config.EntityMappings?.ContainsKey(entityName) == true)
+            {
+                importManager.Mapping = config.EntityMappings[entityName];
+            }
+            
+            // Set up progress tracking
+            var progress = new Progress&lt;IPassedArgs&gt;(args =&gt; 
+            {
+                ProgressUpdated?.Invoke(this, new SyncProgressEventArgs
+                {
+                    CurrentEntity = entityName,
+                    ProcessedRecords = args.ParameterInt1,
+                    Message = args.Messege
+                });
+            });
+            
+            // Execute incremental import
+            using var cancellationTokenSource = new CancellationTokenSource();
+            var importResult = await importManager.RunImportAsync(
+                progress, cancellationTokenSource.Token, 
+                transformation: ApplyBusinessRules, batchSize: 100);
+            
+            if (importResult.Flag == Errors.Ok)
+            {
+                var processedCount = importManager.ImportLogData?.Count ?? 0;
+                totalProcessed += processedCount;
+                
+                result.EntityResults[entityName] = new EntitySyncResult
+                {
+                    Success = true,
+                    RecordsProcessed = processedCount,
+                    Message = $"Successfully synced {processedCount} records"
+                };
+            }
+            else
+            {
+                result.EntityResults[entityName] = new EntitySyncResult
+                {
+                    Success = false,
+                    Message = importResult.Message
+                };
+            }
+        }
+        
+        result.Success = result.EntityResults.Values.All(r =&gt; r.Success);
+        result.RecordsProcessed = totalProcessed;
+        
+        // Update last sync time if successful
+        if (result.Success)
+        {
+            config.LastSyncTime = DateTime.Now;
+        }
+        
+        return result;
+    }
+    catch (Exception ex)
+    {
+        result.Success = false;
+        result.ErrorMessage = ex.Message;
+        return result;
+    }
+}
+
+private void ConfigureIncrementalFilters(DataImportManager importManager, DateTime lastSyncTime)
+{
+    // Add filter for records modified since last sync
+    importManager.SourceFilters.Add(new AppFilter
+    {
+        FieldName = "ModifiedDate",
+        Operator = "&gt;=",
+        FilterValue = lastSyncTime.ToString("yyyy-MM-dd HH:mm:ss")
+    });
+    
+    // You can add additional filters based on your requirements
+    // For example, only sync active records:
+    importManager.SourceFilters.Add(new AppFilter
+    {
+        FieldName = "IsActive",
+        Operator = "=",
+        FilterValue = "true"
+    });
+}
+
+private object ApplyBusinessRules(object record)
+{
+    // Apply business transformation rules
+    // This could include data validation, cleansing, enrichment, etc.
+    
+    // Example: Apply defaults for audit fields
+    if (record is Dictionary&lt;string, object&gt; dict)
+    {
+        // Apply sync-specific metadata
+        dict["LastSyncDate"] = DateTime.Now;
+        dict["SyncSource"] = "DataSyncManager";
+        
+        // Apply any business rules or transformations
+        // based on your specific requirements
+    }
+    
+    return record;
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Conflict Resolution -->
+                <section id="conflict-resolution" class="section">
+                    <h2>??? Conflict Resolution</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">�</span>
+                            <strong>Conflict Resolution Strategies</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Strategy</th><th>Description</th><th>Use Case</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>SourceWins</td><td>Source data always takes precedence</td><td>Master-slave replication</td></tr>
+                                    <tr><td>DestinationWins</td><td>Destination data is preserved</td><td>Local data protection</td></tr>
+                                    <tr><td>TimestampBased</td><td>Most recent change wins</td><td>Concurrent editing scenarios</td></tr>
+                                    <tr><td>ManualResolution</td><td>Flag conflicts for manual review</td><td>Critical data integrity</td></tr>
+                                    <tr><td>FieldLevel</td><td>Resolve conflicts at field level</td><td>Granular conflict handling</td></tr>
+                                    <tr><td>BusinessRules</td><td>Custom business logic determines winner</td><td>Complex business scenarios</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Conflict Detection Challenges</strong>
+                        <ul>
+                            <li>Timestamp precision and time zone differences</li>
+                            <li>Partial record updates vs. full record synchronization</li>
+                            <li>Cascading changes in related entities</li>
+                            <li>Data type conversion conflicts</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Conflict Resolution Implementation</h3>
+                        <pre><code class="language-csharp">public enum ConflictResolutionStrategy
+{
+    SourceWins,
+    DestinationWins,
+    TimestampBased,
+    ManualResolution,
+    FieldLevel,
+    BusinessRules
+}
+
+public class ConflictResolver
+{
+    private readonly IDMEEditor _dmeEditor;
+    private readonly List&lt;DataConflict&gt; _pendingConflicts;
+    
+    public ConflictResolver(IDMEEditor dmeEditor)
+    {
+        _dmeEditor = dmeEditor;
+        _pendingConflicts = new List&lt;DataConflict&gt;();
+    }
+    
+    public ConflictResolutionResult ResolveConflict(
+        DataConflict conflict, 
+        ConflictResolutionStrategy strategy)
+    {
+        var result = new ConflictResolutionResult
+        {
+            ConflictId = conflict.Id,
+            Strategy = strategy,
+            Timestamp = DateTime.Now
+        };
+        
+        try
+        {
+            switch (strategy)
+            {
+                case ConflictResolutionStrategy.SourceWins:
+                    result.ResolvedData = conflict.SourceData;
+                    result.Resolution = "Source data selected";
+                    break;
+                    
+                case ConflictResolutionStrategy.DestinationWins:
+                    result.ResolvedData = conflict.DestinationData;
+                    result.Resolution = "Destination data preserved";
+                    break;
+                    
+                case ConflictResolutionStrategy.TimestampBased:
+                    result = ResolveByTimestamp(conflict);
+                    break;
+                    
+                case ConflictResolutionStrategy.FieldLevel:
+                    result = ResolveFieldLevel(conflict);
+                    break;
+                    
+                case ConflictResolutionStrategy.BusinessRules:
+                    result = ResolveByBusinessRules(conflict);
+                    break;
+                    
+                case ConflictResolutionStrategy.ManualResolution:
+                    _pendingConflicts.Add(conflict);
+                    result.RequiresManualIntervention = true;
+                    result.Resolution = "Flagged for manual resolution";
+                    break;
+            }
+            
+            result.Success = !result.RequiresManualIntervention;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            result.Success = false;
+            result.ErrorMessage = ex.Message;
+            return result;
+        }
+    }
+    
+    private ConflictResolutionResult ResolveByTimestamp(DataConflict conflict)
+    {
+        var result = new ConflictResolutionResult();
+        
+        var sourceTimestamp = GetTimestamp(conflict.SourceData);
+        var destTimestamp = GetTimestamp(conflict.DestinationData);
+        
+        if (sourceTimestamp > destTimestamp)
+        {
+            result.ResolvedData = conflict.SourceData;
+            result.Resolution = $"Source data is newer ({sourceTimestamp})";
+        }
+        else
+        {
+            result.ResolvedData = conflict.DestinationData;
+            result.Resolution = $"Destination data is newer ({destTimestamp})";
+        }
+        
+        return result;
+    }
+    
+    private ConflictResolutionResult ResolveFieldLevel(DataConflict conflict)
+    {
+        var result = new ConflictResolutionResult();
+        var resolvedData = new Dictionary&lt;string, object&gt;();
+        var resolutionDetails = new List&lt;string&gt;();
+        
+        // Compare each field and resolve individually
+        var sourceDict = ConvertToDict(conflict.SourceData);
+        var destDict = ConvertToDict(conflict.DestinationData);
+        
+        var allFields = sourceDict.Keys.Union(destDict.Keys);
+        
+        foreach (var field in allFields)
+        {
+            var sourceValue = sourceDict.ContainsKey(field) ? sourceDict[field] : null;
+            var destValue = destDict.ContainsKey(field) ? destDict[field] : null;
+            
+            if (Equals(sourceValue, destValue))
+            {
+                resolvedData[field] = sourceValue;
+                resolutionDetails.Add($"{field}: No conflict");
+            }
+            else
+            {
+                // Apply field-specific resolution logic
+                var fieldResolution = ResolveFieldConflict(field, sourceValue, destValue);
+                resolvedData[field] = fieldResolution.Value;
+                resolutionDetails.Add($"{field}: {fieldResolution.Reason}");
+            }
+        }
+        
+        result.ResolvedData = resolvedData;
+        result.Resolution = string.Join("; ", resolutionDetails);
+        
+        return result;
+    }
+    
+    private FieldResolution ResolveFieldConflict(string fieldName, object sourceValue, object destValue)
+    {
+        // Implement field-specific resolution logic
+        // This could be based on business rules, data types, etc.
+        
+        // Example business rules:
+        if (fieldName.EndsWith("Date") || fieldName.EndsWith("Timestamp"))
+        {
+            // For date fields, use the most recent
+            if (sourceValue is DateTime sourceDate && destValue is DateTime destDate)
+            {
+                return sourceDate > destDate 
+                    ? new FieldResolution { Value = sourceValue, Reason = "More recent date" }
+                    : new FieldResolution { Value = destValue, Reason = "More recent date" };
+            }
+        }
+        
+        if (fieldName.Contains("Amount") || fieldName.Contains("Price"))
+        {
+            // For monetary fields, might want to use the higher value or apply specific business logic
+            // This is just an example - real logic would depend on business requirements
+        }
+        
+        // Default to source value
+        return new FieldResolution { Value = sourceValue, Reason = "Default to source" };
+    }
+    
+    private ConflictResolutionResult ResolveByBusinessRules(DataConflict conflict)
+    {
+        // Implement custom business rules for conflict resolution
+        // This would integrate with your business rule engine
+        
+        var result = new ConflictResolutionResult();
+        
+        // Example business rule: Customer data conflicts
+        if (conflict.EntityName == "Customers")
+        {
+            result = ResolveCustomerConflict(conflict);
+        }
+        else if (conflict.EntityName == "Orders")
+        {
+            result = ResolveOrderConflict(conflict);
+        }
+        else
+        {
+            // Default resolution strategy
+            result.ResolvedData = conflict.SourceData;
+            result.Resolution = "Applied default business rule (source wins)";
+        }
+        
+        return result;
+    }
+    
+    private DateTime GetTimestamp(object data)
+    {
+        // Extract timestamp from data object
+        // This would depend on your data structure
+        if (data is Dictionary&lt;string, object&gt; dict)
+        {
+            if (dict.ContainsKey("ModifiedDate") && dict["ModifiedDate"] is DateTime modifiedDate)
+                return modifiedDate;
+            if (dict.ContainsKey("Timestamp") && dict["Timestamp"] is DateTime timestamp)
+                return timestamp;
+        }
+        
+        return DateTime.MinValue;
+    }
+}
+
+public class DataConflict
+{
+    public string Id { get; set; }
+    public string EntityName { get; set; }
+    public string KeyField { get; set; }
+    public object KeyValue { get; set; }
+    public object SourceData { get; set; }
+    public object DestinationData { get; set; }
+    public List&lt;string&gt; ConflictingFields { get; set; }
+    public DateTime DetectedAt { get; set; }
+}
+
+public class ConflictResolutionResult
+{
+    public string ConflictId { get; set; }
+    public bool Success { get; set; }
+    public object ResolvedData { get; set; }
+    public string Resolution { get; set; }
+    public ConflictResolutionStrategy Strategy { get; set; }
+    public bool RequiresManualIntervention { get; set; }
+    public string ErrorMessage { get; set; }
+    public DateTime Timestamp { get; set; }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Monitoring -->
+                <section id="monitoring" class="section">
+                    <h2>?? Monitoring & Logging</h2>
+                    
+                    <div class="success">
+                        <strong>?? Comprehensive Monitoring</strong>
+                        <ul>
+                            <li><strong>Real-time Progress:</strong> Live updates on sync progress and performance</li>
+                            <li><strong>Detailed Logging:</strong> Comprehensive operation logs with timestamps and context</li>
+                            <li><strong>Error Tracking:</strong> Detailed error information and resolution suggestions</li>
+                            <li><strong>Performance Metrics:</strong> Throughput, latency, and resource utilization tracking</li>
+                            <li><strong>Audit Trails:</strong> Complete history of all synchronization operations</li>
+                            <li><strong>Alerting:</strong> Configurable alerts for failures and performance issues</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Monitoring and Logging Implementation</h3>
+                        <pre><code class="language-csharp">public class SyncMonitor
+{
+    private readonly IDMEEditor _dmeEditor;
+    private readonly List&lt;SyncMetric&gt; _metrics;
+    private readonly Timer _metricsTimer;
+    
+    public SyncMonitor(IDMEEditor dmeEditor)
+    {
+        _dmeEditor = dmeEditor;
+        _metrics = new List&lt;SyncMetric&gt;();
+        
+        // Set up periodic metrics collection
+        _metricsTimer = new Timer(CollectMetrics, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+    }
+    
+    public void LogSyncStart(SyncConfiguration config)
+    {
+        var logEntry = new SyncLogEntry
+        {
+            Timestamp = DateTime.Now,
+            EventType = SyncEventType.SyncStarted,
+            Configuration = config,
+            Message = $"Starting {config.Strategy} sync from {config.SourceDataSourceName} to {config.DestinationDataSourceName}"
+        };
+        
+        _dmeEditor.AddLogMessage("SyncManager", logEntry.Message, DateTime.Now, 0, null, Errors.Ok);
+        
+        // Also log to specialized sync log
+        WriteSyncLog(logEntry);
+    }
+    
+    public void LogSyncProgress(string entityName, int processed, int total, TimeSpan elapsed)
+    {
+        var throughput = processed / elapsed.TotalSeconds;
+        
+        var logEntry = new SyncLogEntry
+        {
+            Timestamp = DateTime.Now,
+            EventType = SyncEventType.Progress,
+            EntityName = entityName,
+            RecordsProcessed = processed,
+            TotalRecords = total,
+            Throughput = throughput,
+            Message = $"Progress: {processed}/{total} records processed for {entityName} (Rate: {throughput:F1} records/sec)"
+        };
+        
+        _dmeEditor.AddLogMessage("SyncProgress", logEntry.Message, DateTime.Now, processed, entityName, Errors.Ok);
+        WriteSyncLog(logEntry);
+        
+        // Update metrics
+        UpdateMetrics(entityName, processed, throughput);
+    }
+    
+    public void LogSyncCompletion(SyncResult result)
+    {
+        var logEntry = new SyncLogEntry
+        {
+            Timestamp = DateTime.Now,
+            EventType = result.Success ? SyncEventType.SyncCompleted : SyncEventType.SyncFailed,
+            RecordsProcessed = result.RecordsProcessed,
+            Duration = result.Duration,
+            Success = result.Success,
+            ErrorMessage = result.ErrorMessage,
+            Message = result.Success 
+                ? $"Sync completed successfully: {result.RecordsProcessed} records in {result.Duration.TotalMinutes:F1} minutes"
+                : $"Sync failed: {result.ErrorMessage}"
+        };
+        
+        var errorFlag = result.Success ? Errors.Ok : Errors.Failed;
+        _dmeEditor.AddLogMessage("SyncManager", logEntry.Message, DateTime.Now, result.RecordsProcessed, null, errorFlag);
+        
+        WriteSyncLog(logEntry);
+        
+        // Generate summary metrics
+        GenerateSyncSummary(result);
+    }
+    
+    public void LogConflictResolution(DataConflict conflict, ConflictResolutionResult resolution)
+    {
+        var logEntry = new SyncLogEntry
+        {
+            Timestamp = DateTime.Now,
+            EventType = SyncEventType.ConflictResolved,
+            EntityName = conflict.EntityName,
+            Message = $"Conflict resolved for {conflict.EntityName} key {conflict.KeyValue}: {resolution.Resolution}"
+        };
+        
+        _dmeEditor.AddLogMessage("ConflictResolution", logEntry.Message, DateTime.Now, 0, conflict.EntityName, Errors.Ok);
+        WriteSyncLog(logEntry);
+    }
+    
+    private void UpdateMetrics(string entityName, int processed, double throughput)
+    {
+        var metric = new SyncMetric
+        {
+            Timestamp = DateTime.Now,
+            EntityName = entityName,
+            RecordsProcessed = processed,
+            Throughput = throughput,
+            MemoryUsage = GC.GetTotalMemory(false)
+        };
+        
+        _metrics.Add(metric);
+        
+        // Keep only recent metrics to manage memory
+        if (_metrics.Count > 10000)
+        {
+            _metrics.RemoveRange(0, 1000);
+        }
+    }
+    
+    private void CollectMetrics(object state)
+    {
+        // Collect system metrics
+        var systemMetric = new SystemMetric
+        {
+            Timestamp = DateTime.Now,
+            CpuUsage = GetCpuUsage(),
+            MemoryUsage = GC.GetTotalMemory(false),
+            ActiveSyncOperations = GetActiveSyncCount()
+        };
+        
+        // Log system metrics
+        _dmeEditor.AddLogMessage("SystemMetrics", 
+            $"CPU: {systemMetric.CpuUsage:F1}%, Memory: {systemMetric.MemoryUsage / 1024 / 1024:F1}MB, Active Syncs: {systemMetric.ActiveSyncOperations}",
+            DateTime.Now, 0, null, Errors.Ok);
+    }
+    
+    private void GenerateSyncSummary(SyncResult result)
+    {
+        var summary = new SyncSummary
+        {
+            Timestamp = DateTime.Now,
+            Duration = result.Duration,
+            RecordsProcessed = result.RecordsProcessed,
+            Success = result.Success,
+            ThroughputAverage = result.RecordsProcessed / result.Duration.TotalSeconds,
+            EntityResults = result.EntityResults
+        };
+        
+        // Generate summary report
+        var summaryMessage = $"""
+            Sync Summary:
+            - Duration: {summary.Duration.TotalMinutes:F1} minutes
+            - Records Processed: {summary.RecordsProcessed:N0}
+            - Average Throughput: {summary.ThroughputAverage:F1} records/second
+            - Success Rate: {(summary.Success ? "100%" : "Failed")}
+            - Entities Processed: {summary.EntityResults.Count}
+            """;
+        
+        _dmeEditor.AddLogMessage("SyncSummary", summaryMessage, DateTime.Now, summary.RecordsProcessed, null, Errors.Ok);
+    }
+    
+    public List&lt;SyncMetric&gt; GetRecentMetrics(TimeSpan period)
+    {
+        var cutoff = DateTime.Now - period;
+        return _metrics.Where(m =&gt; m.Timestamp >= cutoff).ToList();
+    }
+    
+    public SyncHealthReport GenerateHealthReport()
+    {
+        var recentMetrics = GetRecentMetrics(TimeSpan.FromHours(24));
+        
+        return new SyncHealthReport
+        {
+            GeneratedAt = DateTime.Now,
+            AverageThroughput = recentMetrics.Average(m =&gt; m.Throughput),
+            TotalRecordsProcessed = recentMetrics.Sum(m =&gt; m.RecordsProcessed),
+            ErrorRate = CalculateErrorRate(recentMetrics),
+            SystemHealth = AssessSystemHealth(),
+            Recommendations = GenerateRecommendations(recentMetrics)
+        };
+    }
+}
+
+// Supporting classes for monitoring
+public class SyncLogEntry
+{
+    public DateTime Timestamp { get; set; }
+    public SyncEventType EventType { get; set; }
+    public string EntityName { get; set; }
+    public int RecordsProcessed { get; set; }
+    public int TotalRecords { get; set; }
+    public double Throughput { get; set; }
+    public TimeSpan Duration { get; set; }
+    public bool Success { get; set; }
+    public string ErrorMessage { get; set; }
+    public string Message { get; set; }
+    public SyncConfiguration Configuration { get; set; }
+}
+
+public enum SyncEventType
+{
+    SyncStarted,
+    Progress,
+    ConflictDetected,
+    ConflictResolved,
+    EntityCompleted,
+    SyncCompleted,
+    SyncFailed,
+    Warning,
+    Error
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Examples -->
+                <section id="examples" class="section">
+                    <h2>?? Usage Examples</h2>
+                    
+                    <div class="code-example">
+                        <h3>Complete Sync Manager Implementation</h3>
+                        <pre><code class="language-csharp">// Example usage of the complete Data Sync Manager
+public class SyncManagerExample
+{
+    public static async Task Main(string[] args)
+    {
+        // Initialize DME Editor using Autofac
+        var dmeEditor = InitializeDMEEditor();
+        
+        // Create sync manager
+        var syncManager = new DataSyncManager(dmeEditor);
+        var monitor = new SyncMonitor(dmeEditor);
+        
+        // Configure synchronization
+        var config = new SyncConfiguration
+        {
+            Strategy = SyncStrategy.IncrementalSync,
+            SourceDataSourceName = "SourceCRM",
+            DestinationDataSourceName = "DataWarehouse",
+            EntitiesToSync = new List&lt;string&gt; { "Customers", "Orders", "Products" },
+            ConflictResolution = ConflictResolutionStrategy.TimestampBased,
+            SyncInterval = TimeSpan.FromHours(6),
+            LastSyncTime = DateTime.Today,
+            EnableRealTimeSync = false
+        };
+        
+        // Set up event handlers
+        syncManager.ProgressUpdated += (sender, args) =&gt;
+        {
+            Console.WriteLine($"Progress: {args.CurrentEntity} - {args.ProcessedRecords} records processed");
+            monitor.LogSyncProgress(args.CurrentEntity, args.ProcessedRecords, args.TotalRecords ?? 0, TimeSpan.FromSeconds(60));
+        };
+        
+        syncManager.SyncCompleted += (sender, args) =&gt;
+        {
+            Console.WriteLine($"Sync completed: {args.Result.Success}");
+            monitor.LogSyncCompletion(args.Result);
+        };
+        
+        syncManager.ErrorOccurred += (sender, args) =&gt;
+        {
+            Console.WriteLine($"Sync error: {args.Exception.Message}");
+        };
+        
+        try
+        {
+            // Execute synchronization
+            monitor.LogSyncStart(config);
+            var result = await syncManager.ExecuteSync(config);
+            
+            // Display results
+            Console.WriteLine($"Sync Result:");
+            Console.WriteLine($"  Success: {result.Success}");
+            Console.WriteLine($"  Records Processed: {result.RecordsProcessed}");
+            Console.WriteLine($"  Duration: {result.Duration.TotalMinutes:F1} minutes");
+            
+            if (!result.Success)
+            {
+                Console.WriteLine($"  Error: {result.ErrorMessage}");
+            }
+            
+            // Generate health report
+            var healthReport = monitor.GenerateHealthReport();
+            Console.WriteLine($"Health Report:");
+            Console.WriteLine($"  Average Throughput: {healthReport.AverageThroughput:F1} records/sec");
+            Console.WriteLine($"  System Health: {healthReport.SystemHealth}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Sync failed with exception: {ex.Message}");
+        }
+    }
+    
+    private static IDMEEditor InitializeDMEEditor()
+    {
+        // Initialize using Autofac pattern from README
+        var builder = new ContainerBuilder();
+        
+        // Register core services
+        builder.RegisterType&lt;DMEEditor&gt;().As&lt;IDMEEditor&gt;().SingleInstance();
+        builder.RegisterType&lt;ConfigEditor&gt;().As&lt;IConfigEditor&gt;().SingleInstance();
+        builder.RegisterType&lt;DMLogger&gt;().As&lt;IDMLogger&gt;().SingleInstance();
+        builder.RegisterType&lt;Util&gt;().As&lt;IUtil&gt;().SingleInstance();
+        builder.RegisterType&lt;ErrorsInfo&gt;().As&lt;IErrorsInfo&gt;().SingleInstance();
+        builder.RegisterType&lt;JsonLoader&gt;().As&lt;IJsonLoader&gt;().SingleInstance();
+        builder.RegisterType&lt;AssemblyHandler&gt;().As&lt;IAssemblyHandler&gt;().SingleInstance();
+        
+        var container = builder.Build();
+        var dmeEditor = container.Resolve&lt;IDMEEditor&gt;();
+        
+        // Add required configurations for IDataSource support
+        AddAllConnectionConfigurations(dmeEditor);
+        AddAllDataSourceMappings(dmeEditor);
+        AddAllDataSourceQueryConfigurations(dmeEditor);
+        
+        return dmeEditor;
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section id="best-practices" class="section">
+                    <h2>? Best Practices</h2>
+                    
+                    <div class="tip">
+                        <strong>?? Sync Strategy Selection</strong>
+                        <ul>
+                            <li>Use full sync for initial data loads and complete refreshes</li>
+                            <li>Use incremental sync for regular updates with minimal data changes</li>
+                            <li>Use bidirectional sync carefully with robust conflict resolution</li>
+                            <li>Consider real-time sync only for critical, low-volume scenarios</li>
+                        </ul>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Performance Considerations</strong>
+                        <ul>
+                            <li>Monitor memory usage during large sync operations</li>
+                            <li>Use appropriate batch sizes based on data volume and complexity</li>
+                            <li>Implement connection pooling and resource management</li>
+                            <li>Consider network latency and bandwidth in sync timing</li>
+                        </ul>
+                    </div>
+
+                    <div class="success">
+                        <strong>?? Operational Excellence</strong>
+                        <ul>
+                            <li>Implement comprehensive monitoring and alerting</li>
+                            <li>Plan for disaster recovery and sync rollback scenarios</li>
+                            <li>Test sync operations thoroughly in non-production environments</li>
+                            <li>Document sync processes and troubleshooting procedures</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="defaultsmanager.html"><i class="bi bi-arrow-left"></i> Defaults Manager</a>
+                    <a href="api-reference.html">API Reference <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('Data Sync Manager documentation page loaded');
+    </script>
+</body>
+</html>

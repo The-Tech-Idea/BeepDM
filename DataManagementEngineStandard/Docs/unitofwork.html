@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UnitOfWork&lt;T&gt; - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>→</span>
+                    <span>UnitOfWork Pattern</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>UnitOfWork&lt;T&gt;</h1>
+                    <p class="page-subtitle">Generic Unit of Work pattern implementation with change tracking and validation
+                    </p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>📚 Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#constructors">Constructors</a></li>
+                        <li><a href="#core-properties">Core Properties</a></li>
+                        <li><a href="#data-retrieval">Data Retrieval</a></li>
+                        <li><a href="#crud-operations">CRUD Operations</a></li>
+                        <li><a href="#transaction-management">Transaction Management</a></li>
+                        <li><a href="#change-tracking">Change Tracking</a></li>
+                        <li><a href="#navigation">Navigation</a></li>
+                        <li><a href="#events">Events</a></li>
+                        <li><a href="#undo-redo">Undo/Redo</a></li>
+                        <li><a href="#logging">Logging</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p>
+                        The <code>UnitOfWork&lt;T&gt;</code> class implements the Unit of Work pattern for managing a collection of
+                        entities of type T. It provides change tracking, validation, CRUD operations, and transaction management for
+                        a single entity type within a data source.
+                    </p>
+
+                    <div class="success">
+                        <strong>🎯 Key Features</strong>
+                        <ul>
+                            <li>Generic implementation for any Entity type</li>
+                            <li>Automatic change tracking and state management</li>
+                            <li>Observable collections with property change notifications</li>
+                            <li>Filtering and pagination support</li>
+                            <li>Undo/Redo functionality</li>
+                            <li>Async CRUD operations</li>
+                            <li>Event-driven architecture with lifecycle hooks</li>
+                            <li>Validation and error handling</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Constructors -->
+                <section id="constructors" class="section">
+                    <h2>Constructors</h2>
+
+                    <div class="code-example">
+                        <h3>Basic Constructor</h3>
+                        <pre><code class="language-csharp">public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, string primarykey)</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>With Entity Structure</h3>
+                        <pre><code class="language-csharp">public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName, EntityStructure entityStructure, string primarykey)</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>List Mode Constructor</h3>
+                        <pre><code class="language-csharp">public UnitofWork(IDMEEditor dMEEditor, bool isInListMode, ObservableBindingList&lt;T&gt; ts, string primarykey)</code></pre>
+                    </div>
+
+                    <table class="property-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>dMEEditor</td>
+                                <td>IDMEEditor</td>
+                                <td>Data management editor instance</td>
+                            </tr>
+                            <tr>
+                                <td>datasourceName</td>
+                                <td>string</td>
+                                <td>Name of the data source</td>
+                            </tr>
+                            <tr>
+                                <td>entityName</td>
+                                <td>string</td>
+                                <td>Name of the entity</td>
+                            </tr>
+                            <tr>
+                                <td>primarykey</td>
+                                <td>string</td>
+                                <td>Name of the primary key field</td>
+                            </tr>
+                            <tr>
+                                <td>entityStructure</td>
+                                <td>EntityStructure</td>
+                                <td>Metadata about the entity structure</td>
+                            </tr>
+                            <tr>
+                                <td>isInListMode</td>
+                                <td>bool</td>
+                                <td>True for in-memory operations only</td>
+                            </tr>
+                            <tr>
+                                <td>ts</td>
+                                <td>ObservableBindingList&lt;T&gt;</td>
+                                <td>Initial collection for list mode</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Usage Examples</h3>
+                        <pre><code class="language-csharp">// Create UnitOfWork for Customer entities
+var customerUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, "SqlServer", "Customers", "CustomerID");
+
+// Create UnitOfWork with entity structure
+var orderUoW = new UnitofWork&lt;Order&gt;(dmeEditor, "MongoDB", "Orders", orderStructure, "OrderID");
+
+// Create UnitOfWork in list mode (in-memory)
+var tempCustomers = new ObservableBindingList&lt;Customer&gt;();
+var listUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, true, tempCustomers, "CustomerID");</code></pre>
+                    </div>
+                </section>
+
+                <!-- Core Properties -->
+                <section id="core-properties" class="section">
+                    <h2>Core Properties</h2>
+
+                    <table class="property-table">
+                        <thead>
+                            <tr>
+                                <th>Property</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Units</td>
+                                <td>ObservableBindingList&lt;T&gt;</td>
+                                <td>The main collection of entities (filtered or unfiltered)</td>
+                            </tr>
+                            <tr>
+                                <td>FilteredUnits</td>
+                                <td>ObservableBindingList&lt;T&gt;</td>
+                                <td>Filtered collection when filters are applied</td>
+                            </tr>
+                            <tr>
+                                <td>CurrentItem</td>
+                                <td>T</td>
+                                <td>Currently selected entity in the collection</td>
+                            </tr>
+                            <tr>
+                                <td>IsDirty</td>
+                                <td>bool</td>
+                                <td>True if there are uncommitted changes</td>
+                            </tr>
+                            <tr>
+                                <td>IsInListMode</td>
+                                <td>bool</td>
+                                <td>True for in-memory operations only</td>
+                            </tr>
+                            <tr>
+                                <td>PrimaryKey</td>
+                                <td>string</td>
+                                <td>Name of the primary key field</td>
+                            </tr>
+                            <tr>
+                                <td>EntityName</td>
+                                <td>string</td>
+                                <td>Name of the entity</td>
+                            </tr>
+                            <tr>
+                                <td>DataSource</td>
+                                <td>IDataSource</td>
+                                <td>Associated data source</td>
+                            </tr>
+                            <tr>
+                                <td>IsIdentity</td>
+                                <td>bool</td>
+                                <td>True if primary key is auto-generated</td>
+                            </tr>
+                            <tr>
+                                <td>IsLogging</td>
+                                <td>bool</td>
+                                <td>Enable/disable change logging</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Data Retrieval -->
+                <section id="data-retrieval" class="section">
+                    <h2>Data Retrieval Methods</h2>
+
+                    <div class="code-example">
+                        <h3>Get All Entities</h3>
+                        <pre><code class="language-csharp">public virtual async Task&lt;ObservableBindingList&lt;T&gt;&gt; Get()</code></pre>
+                        <p>Retrieves all entities from the data source.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Get with Filters</h3>
+                        <pre><code class="language-csharp">public virtual async Task&lt;ObservableBindingList&lt;T&gt;&gt; Get(List&lt;AppFilter&gt; filters)</code></pre>
+                        <p>Retrieves entities with applied filters.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Custom Query</h3>
+                        <pre><code class="language-csharp">public virtual async Task&lt;ObservableBindingList&lt;T&gt;&gt; GetQuery(string query)</code></pre>
+                        <p>Executes a custom query and returns results.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Get by Primary Key</h3>
+                        <pre><code class="language-csharp">public virtual T Get(string primaryKeyId)</code></pre>
+                        <p>Gets a single entity by its primary key value.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Practical Examples</h3>
+                        <pre><code class="language-csharp">// Get all customers
+var allCustomers = await customerUoW.Get();
+
+// Get customers with filters
+var filters = new List&lt;AppFilter&gt; 
+{
+    new AppFilter { FieldName = "Country", Operator = "=", FilterValue = "USA" },
+    new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "Active" }
+};
+var filteredCustomers = await customerUoW.Get(filters);
+
+// Get customer by ID
+var customer = customerUoW.Get("CUST001");
+
+// Custom query
+var queryResult = await customerUoW.GetQuery("SELECT * FROM Customers WHERE CreateDate > '2023-01-01'");</code></pre>
+                    </div>
+                </section>
+
+                <!-- CRUD Operations -->
+                <section id="crud-operations" class="section">
+                    <h2>CRUD Operations</h2>
+
+                    <h3>Create Operations</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">public void New()        // Creates a new entity and adds it to the collection
+public void Add(T entity) // Adds an existing entity to the collection</code></pre>
+                    </div>
+
+                    <h3>Insert Operations</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">public async Task&lt;IErrorsInfo&gt; InsertAsync(T doc)  // Async insert to data source
+public IErrorsInfo InsertDoc(T doc)               // Sync insert to data source</code></pre>
+                    </div>
+
+                    <h3>Update Operations</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">public async Task&lt;IErrorsInfo&gt; UpdateAsync(T doc)  // Async update in data source
+public IErrorsInfo Update(T entity)               // Update entity in collection</code></pre>
+                    </div>
+
+                    <h3>Delete Operations</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">public async Task&lt;IErrorsInfo&gt; DeleteAsync(T doc)  // Async delete from data source
+public IErrorsInfo Delete(T entity)               // Delete entity from collection
+public IErrorsInfo Delete(string id)              // Delete entity by primary key</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Complete CRUD Example</h3>
+                        <pre><code class="language-csharp">using (var customerUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, "SqlServer", "Customers", "CustomerID"))
+{
+    // Create new customer
+    customerUoW.New();
+    var newCustomer = customerUoW.CurrentItem;
+    newCustomer.Name = "John Doe";
+    newCustomer.Email = "john@example.com";
+
+    // Add existing customer
+    var existingCustomer = new Customer { Name = "Jane Smith" };
+    customerUoW.Add(existingCustomer);
+
+    // Insert to database
+    var insertResult = await customerUoW.InsertAsync(newCustomer);
+    if (insertResult.Flag == Errors.Ok)
+    {
+        Console.WriteLine("Customer inserted successfully");
+    }
+
+    // Update customer
+    newCustomer.Email = "newemail@example.com";
+    var updateResult = await customerUoW.UpdateAsync(newCustomer);
+
+    // Delete customer
+    var deleteResult = await customerUoW.DeleteAsync(newCustomer);
+
+    // Delete by ID
+    customerUoW.Delete("CUST001");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Transaction Management -->
+                <section id="transaction-management" class="section">
+                    <h2>Transaction Management</h2>
+
+                    <div class="code-example">
+                        <h3>Commit Operations</h3>
+                        <pre><code class="language-csharp">public virtual async Task&lt;IErrorsInfo&gt; Commit()
+public virtual async Task&lt;IErrorsInfo&gt; Commit(IProgress&lt;PassedArgs&gt; progress, CancellationToken token)</code></pre>
+                        <p>Commits all pending changes to the data source with optional progress reporting and cancellation support.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Rollback Operations</h3>
+                        <pre><code class="language-csharp">public Task&lt;IErrorsInfo&gt; Rollback()</code></pre>
+                        <p>Rolls back all uncommitted changes.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Transaction Example</h3>
+                        <pre><code class="language-csharp">try
+{
+    // Make multiple changes
+    customerUoW.New();
+    var customer1 = customerUoW.CurrentItem;
+    customer1.Name = "Customer 1";
+    
+    customerUoW.New();
+    var customer2 = customerUoW.CurrentItem;
+    customer2.Name = "Customer 2";
+    
+    // Commit all changes
+    var result = await customerUoW.Commit();
+    
+    if (result.Flag == Errors.Ok)
+    {
+        Console.WriteLine("All changes committed");
+    }
+    else
+    {
+        Console.WriteLine($"Commit failed: {result.Message}");
+        await customerUoW.Rollback();
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error: {ex.Message}");
+    await customerUoW.Rollback();
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Change Tracking -->
+                <section id="change-tracking" class="section">
+                    <h2>Change Tracking</h2>
+
+                    <p>The UnitOfWork automatically tracks changes to entities with the following states:</p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>➕ Added</h3>
+                            <p>New entities not yet persisted to the data source</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>✏️ Modified</h3>
+                            <p>Existing entities with property changes</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>🗑️ Deleted</h3>
+                            <p>Entities marked for removal from data source</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>➖ Unchanged</h3>
+                            <p>Entities with no modifications since last commit</p>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Change Tracking Methods</h3>
+                        <pre><code class="language-csharp">public IEnumerable&lt;int&gt; GetAddedEntities()      // Get indexes of added entities
+public IEnumerable&lt;int&gt; GetModifiedEntities()   // Get indexes of modified entities
+public IEnumerable&lt;T&gt; GetDeletedEntities()      // Get deleted entities
+public bool GetIsDirty()                        // Check if there are uncommitted changes</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Change Tracking Example</h3>
+                        <pre><code class="language-csharp">// Check for changes
+if (customerUoW.IsDirty)
+{
+    var added = customerUoW.GetAddedEntities();
+    var modified = customerUoW.GetModifiedEntities();
+    var deleted = customerUoW.GetDeletedEntities();
+    
+    Console.WriteLine($"Changes: Added={added.Count()}, Modified={modified.Count()}, Deleted={deleted.Count()}");
+    
+    // Detailed tracking
+    foreach (var addedIndex in added)
+    {
+        var entity = customerUoW.Units[addedIndex];
+        Console.WriteLine($"Added: {entity.Name}");
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <section id="navigation" class="section">
+                    <h2>Navigation Methods</h2>
+
+                    <div class="code-example">
+                        <h3>Navigation API</h3>
+                        <pre><code class="language-csharp">public void MoveFirst()           // Move to first entity
+public void MoveNext()            // Move to next entity
+public void MovePrevious()        // Move to previous entity
+public void MoveLast()            // Move to last entity
+public void MoveTo(int index)     // Move to specific position</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Navigation Example</h3>
+                        <pre><code class="language-csharp">// Navigate through records
+customerUoW.MoveFirst();
+Console.WriteLine($"First customer: {customerUoW.CurrentItem.Name}");
+
+customerUoW.MoveNext();
+Console.WriteLine($"Next customer: {customerUoW.CurrentItem.Name}");
+
+// Move to specific position
+customerUoW.MoveTo(5);
+Console.WriteLine($"Customer at position 5: {customerUoW.CurrentItem.Name}");
+
+// Check current position
+Console.WriteLine($"Current position: {customerUoW.Units.IndexOf(customerUoW.CurrentItem)}");
+Console.WriteLine($"Total records: {customerUoW.Units.Count}");</code></pre>
+                    </div>
+                </section>
+
+                <!-- Events -->
+                <section id="events" class="section">
+                    <h2>Events</h2>
+
+                    <p>The UnitOfWork provides comprehensive event support for lifecycle management:</p>
+
+                    <table class="property-table">
+                        <thead>
+                            <tr>
+                                <th>Event</th>
+                                <th>When Fired</th>
+                                <th>Cancellable</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>PreCreate</td>
+                                <td>Before creating new entity</td>
+                                <td>✅ Yes</td>
+                            </tr>
+                            <tr>
+                                <td>PostCreate</td>
+                                <td>After creating new entity</td>
+                                <td>✅ Yes</td>
+                            </tr>
+                            <tr>
+                                <td>PreInsert</td>
+                                <td>Before inserting to data source</td>
+                                <td>✅ Yes</td>
+                            </tr>
+                            <tr>
+                                <td>PostInsert</td>
+                                <td>After inserting to data source</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td>PreUpdate</td>
+                                <td>Before updating in data source</td>
+                                <td>✅ Yes</td>
+                            </tr>
+                            <tr>
+                                <td>PostUpdate</td>
+                                <td>After updating in data source</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td>PreDelete</td>
+                                <td>Before deleting from data source</td>
+                                <td>✅ Yes</td>
+                            </tr>
+                            <tr>
+                                <td>PostDelete</td>
+                                <td>After deleting from data source</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td>PreCommit</td>
+                                <td>Before committing changes</td>
+                                <td>✅ Yes</td>
+                            </tr>
+                            <tr>
+                                <td>PostCommit</td>
+                                <td>After committing changes</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td>PostEdit</td>
+                                <td>After property changes</td>
+                                <td>❌ No</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Event Handling Example</h3>
+                        <pre><code class="language-csharp">// Subscribe to validation events
+customerUoW.PreInsert += (sender, args) => 
+{
+    var customer = (Customer)sender;
+    if (string.IsNullOrEmpty(customer.Name))
+    {
+        args.Cancel = true;
+        args.ErrorMessage = "Customer name is required";
+    }
+};
+
+// Track property changes
+customerUoW.PostEdit += (sender, args) => 
+{
+    Console.WriteLine($"Property {args.PropertyName} changed to {args.PropertyValue}");
+    
+    // Log to audit trail
+    auditService.LogChange(customerUoW.CurrentItem.CustomerID, args.PropertyName, args.PropertyValue);
+};
+
+// Final validation before commit
+customerUoW.PreCommit += (sender, args) => 
+{
+    if (!ValidateAllCustomers())
+    {
+        args.Cancel = true;
+        args.ErrorMessage = "Validation failed - please fix errors before saving";
+    }
+};
+
+// Success notification
+customerUoW.PostCommit += (sender, args) => 
+{
+    MessageBox.Show("Changes saved successfully!");
+    RefreshUI();
+};</code></pre>
+                    </div>
+                </section>
+
+                <!-- Undo/Redo -->
+                <section id="undo-redo" class="section">
+                    <h2>Undo/Redo Functionality</h2>
+
+                    <div class="code-example">
+                        <h3>Undo Methods</h3>
+                        <pre><code class="language-csharp">public void UndoLastChange()    // Undoes the last change made to the collection
+public void UndoDelete()         // Undoes the most recent delete operation</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Undo Example</h3>
+                        <pre><code class="language-csharp">// Make a change
+var customer = customerUoW.CurrentItem;
+var originalName = customer.Name;
+customer.Name = "New Name";
+
+Console.WriteLine($"Changed name from '{originalName}' to '{customer.Name}'");
+
+// Undo the change
+customerUoW.UndoLastChange();
+Console.WriteLine($"Name restored to: '{customer.Name}'");
+
+// Delete and undo example
+var customerToDelete = customerUoW.CurrentItem;
+customerUoW.Delete(customerToDelete);
+Console.WriteLine($"Customer {customerToDelete.Name} deleted");
+
+// Restore deleted customer
+customerUoW.UndoDelete();
+Console.WriteLine($"Customer {customerToDelete.Name} restored");</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>💡 Tip:</strong>
+                        <p>Undo functionality is limited to the current session. Once you commit changes to the database, use the
+                            Rollback method to revert uncommitted changes.</p>
+                    </div>
+                </section>
+
+                <!-- Logging -->
+                <section id="logging" class="section">
+                    <h2>Logging</h2>
+
+                    <div class="code-example">
+                        <h3>Logging Properties & Methods</h3>
+                        <pre><code class="language-csharp">public bool IsLogging { get; set; }           // Enable/disable change logging
+public bool SaveLog(string pathandname)       // Save change log to JSON file</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Logging Example</h3>
+                        <pre><code class="language-csharp">// Enable logging
+customerUoW.IsLogging = true;
+
+// Make changes
+customerUoW.New();
+var customer = customerUoW.CurrentItem;
+customer.Name = "John Doe";
+customer.Email = "john@example.com";
+
+customerUoW.CurrentItem.Name = "John Smith"; // This change will be logged
+
+// Save log to file
+var logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+                          "MyApp", "Logs", $"customer_changes_{DateTime.Now:yyyyMMdd}.json");
+
+Directory.CreateDirectory(Path.GetDirectoryName(logPath));
+
+var success = customerUoW.SaveLog(logPath);
+if (success)
+{
+    Console.WriteLine($"Change log saved to: {logPath}");
+}</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>📝 Log Format:</strong>
+                        <p>The log is saved as JSON and includes timestamps, entity information, property changes, and operation
+                            types. This is useful for auditing and debugging purposes.</p>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section id="best-practices" class="section">
+                    <h2>Best Practices</h2>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔒 Resource Management</h3>
+                            <p>Always use <code>using</code> statements since UnitOfWork implements IDisposable</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>📡 Event Handling</h3>
+                            <p>Use lifecycle events for validation and business logic implementation</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>💾 Change Detection</h3>
+                            <p>Always check <code>IsDirty</code> before closing forms or navigating away</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>⚡ Async Operations</h3>
+                            <p>Use async methods for all database operations to prevent UI blocking</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>📊 Audit Trails</h3>
+                            <p>Enable logging for audit trails and debugging purposes</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>✅ Validation</h3>
+                            <p>Use PreCommit event for final validation before persisting changes</p>
+                        </div>
+                    </div>
+
+                    <div class="warning">
+                        <strong>⚠️ Important Notes:</strong>
+                        <ul>
+                            <li>When using identity columns (<code>IsIdentity = true</code>), the primary key value will be
+                                automatically updated after successful insert operations</li>
+                            <li>Always handle exceptions when working with database operations</li>
+                            <li>Use filters efficiently - apply them at the database level when possible</li>
+                            <li>In list mode, changes are only in memory until explicitly persisted</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="registerbeep.html"><i class="bi bi-arrow-left"></i> Registration & Setup</a>
+                    <a href="unitofwork-deep-dive.html">UnitOfWork Deep Dive <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="examples.html">Examples</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('UnitOfWork documentation page loaded');
+    </script>
+</body>
+
+</html>

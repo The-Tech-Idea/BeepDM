@@ -1,0 +1,65 @@
+<!-- Beep Data Management Engine - Shared Navigation Component -->
+<div class="logo">
+    <img src="assets/beep-logo.svg" alt="Beep Data Management Engine Logo">
+    <div class="logo-text">
+        <h2>Beep DME</h2>
+        <span class="version">v2.0.32</span>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="search-container">
+    <input type="text" class="search-input" placeholder="Search documentation..." onkeyup="searchDocs(this.value)">
+</div>
+
+<nav>
+    <ul class="nav-menu">
+        <li><a href="index.html" id="nav-home"><i class="bi bi-house"></i> Home</a></li>
+        <li class="has-submenu" id="nav-getting-started">
+            <a href="#"><i class="bi bi-rocket"></i> Getting Started</a>
+            <ul class="submenu">
+                <li><a href="registerbeep.html" id="nav-registration">Registration & Setup</a></li>
+                <li><a href="unitofwork.html" id="nav-tutorial">Quick Start Tutorial</a></li>
+                <li><a href="data-management-examples.html" id="nav-data-sources">Data Sources</a></li>
+            </ul>
+        </li>
+        <li class="has-submenu" id="nav-core-concepts">
+            <a href="#"><i class="bi bi-layers"></i> Core Concepts</a>
+            <ul class="submenu">
+                <li><a href="unitofwork.html" id="nav-unitofwork">UnitOfWork Pattern</a></li>
+                <li><a href="unitofwork-deep-dive.html" id="nav-unitofwork-deep">UnitOfWork Deep Dive</a></li>
+                <li><a href="multidatasource-unitofwork.html" id="nav-multidatasource">Multi-DataSource UnitOfWork</a></li>
+            </ul>
+        </li>
+        <li class="has-submenu" id="nav-data-management">
+            <a href="#"><i class="bi bi-database"></i> Data Management</a>
+            <ul class="submenu">
+                <li><a href="data-management-examples.html" id="nav-data-examples">Data Sources</a></li>
+                <li><a href="examples.html" id="nav-examples">Code Examples</a></li>
+                <li><a href="best-practices.html" id="nav-best-practices">Best Practices</a></li>
+            </ul>
+        </li>
+        <li class="has-submenu" id="nav-editor-classes">
+            <a href="#"><i class="bi bi-gear"></i> Editor Classes</a>
+            <ul class="submenu">
+                <li><a href="dmeeditor.html" id="nav-dmeeditor">DMEEditor</a></li>
+                <li><a href="etleditor.html" id="nav-etleditor">ETL Editor</a></li>
+                <li><a href="dataimportmanager.html" id="nav-dataimport">Data Import Manager</a></li>
+                <li><a href="mappingmanager.html" id="nav-mapping">Mapping Manager</a></li>
+                <li><a href="defaultsmanager.html" id="nav-defaults">Defaults Manager</a></li>
+                <li><a href="datasyncmanager.html" id="nav-datasync">Data Sync Manager</a></li>
+                <li><a href="configeditor.html" id="nav-configeditor">ConfigEditor</a></li>
+            </ul>
+        </li>
+        <li class="has-submenu" id="nav-advanced-topics">
+            <a href="#"><i class="bi bi-tools"></i> Advanced Topics</a>
+            <ul class="submenu">
+                <li><a href="etl-workflow-engine.html" id="nav-etl-workflow">ETL & Workflow Engine</a></li>
+                <li><a href="advanced-tools-utilities.html" id="nav-advanced-tools">Advanced Tools & Utilities</a></li>
+                <li><a href="creating-custom-datasources.html" id="nav-custom-datasources">Creating Custom Data Sources</a></li>
+                <li><a href="api-reference.html" id="nav-api-reference">API Reference</a></li>
+            </ul>
+        </li>
+        <li><a href="api-reference.html" id="nav-api"><i class="bi bi-code-square"></i> API Reference</a></li>
+    </ul>
+</nav>

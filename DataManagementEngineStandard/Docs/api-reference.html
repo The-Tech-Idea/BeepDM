@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>→</span>
+                    <span>API Reference</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>API Reference</h1>
+                    <p class="page-subtitle">Complete API documentation for all Data Management Engine components</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>📚 Table of Contents</h3>
+                    <ul>
+                        <li><a href="#multidatasource-unitofwork">MultiDataSourceUnitOfWork</a></li>
+                        <li><a href="#unitofwork-generic">UnitOfWork&lt;T&gt;</a></li>
+                        <li><a href="#unitofwork-factory">UnitOfWorkFactory</a></li>
+                        <li><a href="#unitofwork-wrapper">UnitOfWorkWrapper</a></li>
+                        <li><a href="#supporting-types">Supporting Types</a></li>
+                        <li><a href="#interfaces">Core Interfaces</a></li>
+                    </ul>
+                </div>
+
+                <!-- MultiDataSourceUnitOfWork -->
+                <section id="multidatasource-unitofwork" class="section">
+                    <h2>MultiDataSourceUnitOfWork Class</h2>
+                    <p>
+                        The <code>MultiDataSourceUnitOfWork</code> class manages multiple related entities across different data sources, 
+                        providing sophisticated relationship management and navigation capabilities.
+                    </p>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Constructor</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code>public MultiDataSourceUnitOfWork(IDMEEditor dmeEditor)</code>
+                            </div>
+                            <p>Initializes a new instance of the MultiDataSourceUnitOfWork class.</p>
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>dmeEditor</td><td>IDMEEditor</td><td>The data management editor instance</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Properties</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Property</th><th>Type</th><th>Access</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>CurrentParentEntity</td><td>dynamic</td><td class="property-readonly">get</td><td>Gets the currently selected parent entity</td></tr>
+                                    <tr><td>ChildDataChanged</td><td>EventHandler&lt;ChildDataChangedEventArgs&gt;</td><td class="property-readwrite">get/set</td><td>Event fired when child data changes due to navigation</td></tr>
+                                    <tr><td>UnitOfWorks</td><td>Dictionary&lt;string, object&gt;</td><td class="property-readonly">get</td><td>Collection of managed UnitOfWork instances</td></tr>
+                                    <tr><td>Relationships</td><td>List&lt;EntityRelationship&gt;</td><td class="property-readonly">get</td><td>Defined relationships between entities</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Core Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">Task</span> AddUnitOfWorkAsync&lt;T&gt;(<span class="parameter-type">string</span> dataSourceName, <span class="parameter-type">string</span> entityName, <span class="parameter-type">string</span> primaryKey)</code>
+                            </div>
+                            <p>Adds a new UnitOfWork for the specified entity type.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> AddRelationship(<span class="parameter-type">string</span> parentEntityName, <span class="parameter-type">string</span> childEntityName, <span class="parameter-type">string</span> parentKeyField, <span class="parameter-type">string</span> childForeignKeyField, <span class="parameter-type">RelationshipBehavior</span> deleteBehavior, <span class="parameter-type">bool</span> isRequired)</code>
+                            </div>
+                            <p>Defines a relationship between two entities.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">ObservableBindingList&lt;T&gt;</span> GetEntities&lt;T&gt;(<span class="parameter-type">string</span> entityName)</code>
+                            </div>
+                            <p>Gets the observable collection of entities for the specified entity type.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;Dictionary&lt;string, ObservableBindingList&lt;TChild&gt;&gt;&gt;</span> GetAllRelatedChildrenAsync&lt;TChild, TParent&gt;(<span class="parameter-type">string</span> parentEntityName, <span class="parameter-type">TParent</span> parentEntity)</code>
+                            </div>
+                            <p>Retrieves all related child entities for a given parent entity.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>CRUD Operations</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> InsertAsync&lt;T&gt;(<span class="parameter-type">string</span> entityName, <span class="parameter-type">T</span> entity)</code>
+                            </div>
+                            <p>Inserts a new entity and handles relationship updates.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> UpdateAsync&lt;T&gt;(<span class="parameter-type">string</span> entityName, <span class="parameter-type">T</span> entity)</code>
+                            </div>
+                            <p>Updates an existing entity.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> DeleteAsync&lt;T&gt;(<span class="parameter-type">string</span> entityName, <span class="parameter-type">T</span> entity)</code>
+                            </div>
+                            <p>Deletes an entity and handles related entities based on relationship behavior.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> CommitAsync()</code>
+                            </div>
+                            <p>Commits all changes across all managed UnitOfWork instances.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Navigation Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">Task</span> NavigateToParentAsync&lt;T&gt;(<span class="parameter-type">string</span> parentEntityName, <span class="parameter-type">T</span> parentEntity)</code>
+                            </div>
+                            <p>Navigates to a specific parent entity and loads related children.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task</span> NavigateToNextAsync&lt;T&gt;(<span class="parameter-type">string</span> parentEntityName)</code>
+                            </div>
+                            <p>Navigates to the next parent entity in the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task</span> NavigateToPreviousAsync&lt;T&gt;(<span class="parameter-type">string</span> parentEntityName)</code>
+                            </div>
+                            <p>Navigates to the previous parent entity in the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task</span> NavigateToFirstAsync&lt;T&gt;(<span class="parameter-type">string</span> parentEntityName)</code>
+                            </div>
+                            <p>Navigates to the first parent entity in the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task</span> NavigateToLastAsync&lt;T&gt;(<span class="parameter-type">string</span> parentEntityName)</code>
+                            </div>
+                            <p>Navigates to the last parent entity in the collection.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- UnitOfWork<T> -->
+                <section id="unitofwork-generic" class="section">
+                    <h2>UnitOfWork&lt;T&gt; Class</h2>
+                    <p>
+                        The generic <code>UnitOfWork&lt;T&gt;</code> class provides a complete implementation of the Unit of Work pattern 
+                        with change tracking, validation, and transaction management for a specific entity type.
+                    </p>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Constructors</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code>public UnitofWork(IDMEEditor dMEEditor, <span class="parameter-type">string</span> datasourceName, <span class="parameter-type">string</span> entityName, <span class="parameter-type">string</span> primarykey)</code>
+                            </div>
+                            <p>Creates a UnitOfWork instance connected to a data source.</p>
+                            
+                            <div class="method-signature">
+                                <code>public UnitofWork(IDMEEditor dMEEditor, <span class="parameter-type">string</span> datasourceName, <span class="parameter-type">string</span> entityName, EntityStructure entityStructure, <span class="parameter-type">string</span> primarykey)</code>
+                            </div>
+                            <p>Creates a UnitOfWork instance with a pre-defined entity structure.</p>
+                            
+                            <div class="method-signature">
+                                <code>public UnitofWork(IDMEEditor dMEEditor, <span class="parameter-type">bool</span> isInListMode, ObservableBindingList&lt;T&gt; ts, <span class="parameter-type">string</span> primarykey)</code>
+                            </div>
+                            <p>Creates a UnitOfWork instance for in-memory operations only.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Core Properties</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Property</th><th>Type</th><th>Access</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>Units</td><td>ObservableBindingList&lt;T&gt;</td><td class="property-readwrite">get/set</td><td>The main collection of entities</td></tr>
+                                    <tr><td>FilteredUnits</td><td>ObservableBindingList&lt;T&gt;</td><td class="property-readwrite">get/set</td><td>Filtered collection when filters are applied</td></tr>
+                                    <tr><td>CurrentItem</td><td>T</td><td class="property-readonly">get</td><td>Currently selected entity</td></tr>
+                                    <tr><td>IsDirty</td><td>bool</td><td class="property-readonly">get</td><td>True if there are uncommitted changes</td></tr>
+                                    <tr><td>IsInListMode</td><td>bool</td><td class="property-readwrite">get/set</td><td>True for in-memory operations only</td></tr>
+                                    <tr><td>PrimaryKey</td><td>string</td><td class="property-readwrite">get/set</td><td>Name of the primary key field</td></tr>
+                                    <tr><td>EntityName</td><td>string</td><td class="property-readwrite">get/set</td><td>Name of the entity</td></tr>
+                                    <tr><td>DataSource</td><td>IDataSource</td><td class="property-readwrite">get/set</td><td>Associated data source</td></tr>
+                                    <tr><td>IsIdentity</td><td>bool</td><td class="property-readwrite">get/set</td><td>True if primary key is auto-generated</td></tr>
+                                    <tr><td>IsLogging</td><td>bool</td><td class="property-readwrite">get/set</td><td>Enable/disable change logging</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Data Retrieval Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;ObservableBindingList&lt;T&gt;&gt;</span> Get()</code>
+                            </div>
+                            <p>Retrieves all entities from the data source.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;ObservableBindingList&lt;T&gt;&gt;</span> Get(List&lt;AppFilter&gt; filters)</code>
+                            </div>
+                            <p>Retrieves entities with applied filters.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;ObservableBindingList&lt;T&gt;&gt;</span> GetQuery(<span class="parameter-type">string</span> query)</code>
+                            </div>
+                            <p>Executes a custom query and returns results.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">T</span> Get(<span class="parameter-type">string</span> primaryKeyId)</code>
+                            </div>
+                            <p>Gets a single entity by its primary key value.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">T</span> Get(<span class="parameter-type">int</span> key)</code>
+                            </div>
+                            <p>Gets entity at the specified index.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>CRUD Operations</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> New()</code>
+                            </div>
+                            <p>Creates a new entity and adds it to the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> Add(<span class="parameter-type">T</span> entity)</code>
+                            </div>
+                            <p>Adds an existing entity to the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> InsertAsync(<span class="parameter-type">T</span> doc)</code>
+                            </div>
+                            <p>Asynchronously inserts an entity to the data source.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> UpdateAsync(<span class="parameter-type">T</span> doc)</code>
+                            </div>
+                            <p>Asynchronously updates an entity in the data source.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> DeleteAsync(<span class="parameter-type">T</span> doc)</code>
+                            </div>
+                            <p>Asynchronously deletes an entity from the data source.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> Update(<span class="parameter-type">T</span> entity)</code>
+                            </div>
+                            <p>Updates an entity in the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> Delete(<span class="parameter-type">T</span> entity)</code>
+                            </div>
+                            <p>Deletes an entity from the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> Delete(<span class="parameter-type">string</span> id)</code>
+                            </div>
+                            <p>Deletes an entity by its primary key.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Transaction Management</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> Commit()</code>
+                            </div>
+                            <p>Commits all pending changes to the data source.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> Commit(IProgress&lt;PassedArgs&gt; progress, CancellationToken token)</code>
+                            </div>
+                            <p>Commits with progress reporting and cancellation support.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> Rollback()</code>
+                            </div>
+                            <p>Rolls back all uncommitted changes.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Change Tracking</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">IEnumerable&lt;int&gt;</span> GetAddedEntities()</code>
+                            </div>
+                            <p>Gets indexes of entities that have been added.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">IEnumerable&lt;int&gt;</span> GetModifiedEntities()</code>
+                            </div>
+                            <p>Gets indexes of entities that have been modified.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">IEnumerable&lt;T&gt;</span> GetDeletedEntities()</code>
+                            </div>
+                            <p>Gets entities that have been deleted.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">bool</span> GetIsDirty()</code>
+                            </div>
+                            <p>Checks if there are any uncommitted changes.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Navigation Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> MoveFirst()</code>
+                            </div>
+                            <p>Moves to the first entity in the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> MoveNext()</code>
+                            </div>
+                            <p>Moves to the next entity in the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> MovePrevious()</code>
+                            </div>
+                            <p>Moves to the previous entity in the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> MoveLast()</code>
+                            </div>
+                            <p>Moves to the last entity in the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> MoveTo(<span class="parameter-type">int</span> index)</code>
+                            </div>
+                            <p>Moves to the entity at the specified index.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Events</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Event</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>PreCreate</td><td>EventHandler&lt;UnitofWorkParams&gt;</td><td>Before creating new entity</td></tr>
+                                    <tr><td>PostCreate</td><td>EventHandler&lt;UnitofWorkParams&gt;</td><td>After creating new entity</td></tr>
+                                    <tr><td>PreInsert</td><td>EventHandler&lt;UnitofWorkParams&gt;</td><td>Before inserting to data source</td></tr>
+                                    <tr><td>PostInsert</td><td>EventHandler&lt;UnitofWorkParams&gt;</td><td>After inserting to data source</td></tr>
+                                    <tr><td>PreUpdate</td><td>EventHandler&lt;UnitofWorkParams&gt;</td><td>Before updating in data source</td></tr>
+                                    <tr><td>PostUpdate</td><td>EventHandler&lt;UnitofWorkParams&gt;</td><td>After updating in data source</td></tr>
+                                    <tr><td>PreDelete</td><td>EventHandler&lt;UnitofWorkParams&gt;</td><td>Before deleting from data source</td></tr>
+                                    <tr><td>PostDelete</td><td>EventHandler&lt;UnitofWorkParams&gt;</td><td>After deleting from data source</td></tr>
+                                    <tr><td>PreCommit</td><td>EventHandler&lt;UnitofWorkParams&gt;</td><td>Before committing changes</td></tr>
+                                    <tr><td>PostCommit</td><td>EventHandler&lt;UnitofWorkParams&gt;</td><td>After committing changes</td></tr>
+                                    <tr><td>PostEdit</td><td>EventHandler&lt;UnitofWorkParams&gt;</td><td>After property changes</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Utility Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> UndoLastChange()</code>
+                            </div>
+                            <p>Undoes the last change made to the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> UndoDelete()</code>
+                            </div>
+                            <p>Undoes the most recent delete operation.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">bool</span> SaveLog(<span class="parameter-type">string</span> pathandname)</code>
+                            </div>
+                            <p>Saves the change log to a JSON file.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">void</span> Clear()</code>
+                            </div>
+                            <p>Clears all data from the collection.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">int</span> Getindex(<span class="parameter-type">string</span> id)</code>
+                            </div>
+                            <p>Gets the index of an entity by its ID.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">int</span> Getindex(<span class="parameter-type">T</span> entity)</code>
+                            </div>
+                            <p>Gets the index of a specific entity.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- UnitOfWorkFactory -->
+                <section id="unitofwork-factory" class="section">
+                    <h2>UnitOfWorkFactory Class</h2>
+                    <p>
+                        The <code>UnitOfWorkFactory</code> provides static methods for creating UnitOfWork instances dynamically 
+                        based on runtime type information.
+                    </p>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Static Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">object</span> CreateUnitOfWork(<span class="parameter-type">Type</span> entityType, IDMEEditor dMEEditor, <span class="parameter-type">string</span> datasourceName, <span class="parameter-type">string</span> entityName, <span class="parameter-type">string</span> primarykey)</code>
+                            </div>
+                            <p>Creates a new UnitOfWork instance for the specified entity type.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">object</span> CreateUnitOfWork(<span class="parameter-type">Type</span> entityType, IDMEEditor dMEEditor, <span class="parameter-type">string</span> datasourceName, <span class="parameter-type">string</span> entityName, EntityStructure entityStructure, <span class="parameter-type">string</span> primarykey)</code>
+                            </div>
+                            <p>Creates a new UnitOfWork instance with entity structure.</p>
+                            
+                            <div class="method-signature">
+                                <code><span class="return-type">object</span> GetUnitOfWork(<span class="parameter-type">string</span> entityName, <span class="parameter-type">string</span> dataSourceName, IDMEEditor DMEEditor)</code>
+                            </div>
+                            <p>Gets a UnitOfWork instance for the specified entity name.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- UnitOfWorkWrapper -->
+                <section id="unitofwork-wrapper" class="section">
+                    <h2>UnitOfWorkWrapper Class</h2>
+                    <p>
+                        The <code>UnitOfWorkWrapper</code> provides a dynamic wrapper around UnitOfWork instances, 
+                        allowing access to strongly-typed UnitOfWork methods without compile-time type knowledge.
+                    </p>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Constructor</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code>public UnitOfWorkWrapper(<span class="parameter-type">object</span> unitOfWork)</code>
+                            </div>
+                            <p>Initializes a new wrapper around a UnitOfWork instance.</p>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Dynamic Properties</strong>
+                        </div>
+                        <div class="api-content">
+                            <p>The UnitOfWorkWrapper exposes all properties of the wrapped UnitOfWork instance dynamically. Key properties include:</p>
+                            <ul>
+                                <li><strong>Units:</strong> The entity collection</li>
+                                <li><strong>IsDirty:</strong> Change tracking status</li>
+                                <li><strong>PrimaryKey:</strong> Primary key field name</li>
+                                <li><strong>EntityName:</strong> Entity name</li>
+                                <li><strong>DataSource:</strong> Associated data source</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>Dynamic Methods</strong>
+                        </div>
+                        <div class="api-content">
+                            <p>The UnitOfWorkWrapper forwards all method calls to the wrapped UnitOfWork instance. All CRUD operations, navigation methods, and utility functions are available through the wrapper.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Supporting Types -->
+                <section id="supporting-types" class="section">
+                    <h2>Supporting Enums and Classes</h2>
+                    
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>RelationshipBehavior Enum</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Value</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>CascadeDelete</td><td>Deletes related child entities when parent is deleted</td></tr>
+                                    <tr><td>SetNull</td><td>Sets foreign key to null when parent is deleted</td></tr>
+                                    <tr><td>Restrict</td><td>Prevents deletion if related children exist</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>EntityState Enum</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Value</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>Added</td><td>Entity is new and not yet persisted</td></tr>
+                                    <tr><td>Modified</td><td>Entity has been changed</td></tr>
+                                    <tr><td>Deleted</td><td>Entity is marked for deletion</td></tr>
+                                    <tr><td>Unchanged</td><td>Entity has no modifications</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>ChildDataChangedEventArgs Class</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>ParentEntityName</td><td>string</td><td>Name of the parent entity</td></tr>
+                                    <tr><td>ChildEntityName</td><td>string</td><td>Name of the child entity</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">›</span>
+                            <strong>UnitofWorkParams Class</strong>
+                        </div>
+                        <div class="api-content">
+                            <table class="property-table">
+                                <thead>
+                                    <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>Cancel</td><td>bool</td><td>Set to true to cancel the operation</td></tr>
+                                    <tr><td>EventAction</td><td>EventAction</td><td>The type of event being fired</td></tr>
+                                    <tr><td>PropertyName</td><td>string</td><td>Name of the property that changed</td></tr>
+                                    <tr><td>PropertyValue</td><td>string</td><td>New value of the property</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="unitofwork-wrapper.html"><i class="bi bi-arrow-left"></i> UnitOfWork Wrapper</a>
+                    <a href="best-practices.html">Best Practices <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="examples.html">Examples</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('API Reference documentation page loaded');
+    </script>
+</body>
+</html>

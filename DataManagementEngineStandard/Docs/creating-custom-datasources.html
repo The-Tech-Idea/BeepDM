@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creating Custom Data Sources - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>?</span>
+                    <span>Advanced Topics</span>
+                    <span>?</span>
+                    <span>Creating Custom Data Sources</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>?? Creating Custom Data Sources</h1>
+                    <p class="page-subtitle">Learn how to extend the Beep Data Management Engine by implementing the IDataSource interface to create custom data source connectors</p>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>?? Overview</h2>
+                    <p>The Beep Data Management Engine supports extensibility through the <code>IDataSource</code> interface, allowing developers to create custom data source connectors for any type of data store or service. This guide covers the complete process of implementing a custom data source.</p>
+                    
+                    <div class="info">
+                        <strong>?? Key Benefits</strong>
+                        <ul>
+                            <li>Support for any data source type (databases, APIs, files, cloud services)</li>
+                            <li>Seamless integration with existing Beep infrastructure</li>
+                            <li>Automatic connection management and error handling</li>
+                            <li>Consistent interface across all data sources</li>
+                            <li>Built-in support for ETL operations and data synchronization</li>
+                        </ul>
+                    </div>
+
+                    <div class="warning">
+                        <strong>?? Important Note</strong>
+                        <p>When creating a new data source that doesn't exist in the Beep engine's built-in configurations, you <strong>must</strong> create a corresponding <code>ConnectionDriversConfig</code> to register your data source. This is covered in the next section and is essential for proper integration.</p>
+                    </div>
+                </section>
+
+                <!-- Creating ConnectionDriversConfig - MOVED TO TOP -->
+                <section id="connection-drivers-config" class="section">
+                    <h2>?? Creating Your ConnectionDriversConfig</h2>
+                    
+                    <div class="info">
+                        <strong>?? Essential First Step</strong>
+                        <p>Before implementing your <code>IDataSource</code>, you must understand and create a <code>ConnectionDriversConfig</code>. This configuration tells the Beep Data Management Engine how to identify, load, and instantiate your custom data source. Without this, your data source cannot be discovered or used by the engine.</p>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>?? Understanding ConnectionDriversConfig</h3>
+                        <p>The <code>ConnectionDriversConfig</code> class serves as the bridge between your custom data source implementation and the Beep engine. When a user requests a data source that doesn't exist in <code>ConnectionHelper.GetAllConnectionConfigs()</code>, the engine requires this configuration to:</p>
+                        
+                        <ul>
+                            <li><strong>Identify:</strong> Your custom data source type and category</li>
+                            <li><strong>Load:</strong> The appropriate driver assembly and class</li>
+                            <li><strong>Map:</strong> Connection properties to your implementation</li>
+                            <li><strong>Format:</strong> Connection strings with proper placeholders</li>
+                            <li><strong>Display:</strong> UI metadata like icons and categories</li>
+                        </ul>
+
+                        <div class="code-example">
+                            <h4>ConnectionDriversConfig Structure</h4>
+                            <pre><code class="language-csharp">public class ConnectionDriversConfig : Entity
+{
+    public string GuidID { get; set; }           // Unique identifier
+    public string PackageName { get; set; }      // Package/namespace name
+    public string DriverClass { get; set; }      // Driver class name
+    public string version { get; set; }          // Version information
+    public string dllname { get; set; }          // DLL assembly name
+    public string classHandler { get; set; }     // IDataSource implementation class
+    public string ConnectionString { get; set; } // Connection string template
+    public string iconname { get; set; }         // Icon for UI
+    public DataSourceType DatasourceType { get; set; }     // Data source type enum
+    public DatasourceCategory DatasourceCategory { get; set; } // Category enum
+    public bool ADOType { get; set; }            // Whether it uses ADO.NET
+    public bool CreateLocal { get; set; }        // Can create local databases
+    public bool InMemory { get; set; }           // In-memory database
+    public string extensionstoHandle { get; set; } // File extensions (for file sources)
+    
+    // Additional ADO.NET specific properties
+    public string AdapterType { get; set; }      // DataAdapter type
+    public string CommandBuilderType { get; set; } // CommandBuilder type
+    public string DbConnectionType { get; set; }  // Connection type
+    public string DbTransactionType { get; set; } // Transaction type
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>?? Creating Configuration Examples</h3>
+                        
+                        <div class="code-example">
+                            <h4>Example 1: Custom REST API Data Source Config</h4>
+                            <pre><code class="language-csharp">public static ConnectionDriversConfig CreateCustomRestApiConfig()
+{
+    return new ConnectionDriversConfig
+    {
+        // Unique identifier - always generate a new GUID
+        GuidID = Guid.NewGuid().ToString(),
+        
+        // Package and assembly information
+        PackageName = "MyCustomDataSources",
+        DriverClass = "MyCustomDataSources.CustomRestApiDataSource",
+        version = "1.0.0.0",
+        dllname = "MyCustomDataSources.dll",
+        
+        // Core handler class (your IDataSource implementation)
+        classHandler = "CustomRestApiDataSource",
+        
+        // Connection string template with placeholders
+        ConnectionString = "BaseUrl={Url};ApiKey={Password};Timeout={Port}",
+        
+        // UI and categorization
+        iconname = "api.svg",
+        DatasourceCategory = DatasourceCategory.WEBAPI,
+        DatasourceType = DataSourceType.WEBAPI, // Use appropriate enum value
+        
+        // Behavior flags
+        ADOType = false,        // Not using ADO.NET
+        CreateLocal = false,    // Cannot create local instances
+        InMemory = false,       // Not an in-memory database
+        Favourite = false,      // Not marked as favorite by default
+        IsMissing = false       // Driver is available
+    };
+}</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h4>Example 2: Custom File-Based Data Source Config</h4>
+                            <pre><code class="language-csharp">public static ConnectionDriversConfig CreateCustomFileConfig()
+{
+    return new ConnectionDriversConfig
+    {
+        GuidID = Guid.NewGuid().ToString(),
+        PackageName = "MyCustomDataSources",
+        DriverClass = "MyCustomDataSources.CustomFileDataSource",
+        version = "1.0.0.0",
+        dllname = "MyCustomDataSources.dll",
+        classHandler = "CustomFileDataSource",
+        
+        // For file sources, connection string is usually the file path
+        ConnectionString = "{File}",
+        
+        iconname = "file.svg",
+        DatasourceCategory = DatasourceCategory.FILE,
+        DatasourceType = DataSourceType.Text, // Or create custom enum value
+        
+        ADOType = false,
+        CreateLocal = false,
+        InMemory = false,
+        Favourite = true,
+        IsMissing = false,
+        
+        // Specify which file extensions this driver handles
+        extensionstoHandle = "myformat,dat,custom"
+    };
+}</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h4>Example 3: Custom Database Data Source Config</h4>
+                            <pre><code class="language-csharp">public static ConnectionDriversConfig CreateCustomDatabaseConfig()
+{
+    return new ConnectionDriversConfig
+    {
+        GuidID = Guid.NewGuid().ToString(),
+        PackageName = "MyCustomDatabase.Client",
+        DriverClass = "MyCustomDatabase.Client",
+        version = "2.1.0.0",
+        dllname = "MyCustomDatabase.Client.dll",
+        classHandler = "CustomDatabaseDataSource",
+        
+        // ADO.NET style connection string
+        ConnectionString = "Server={Host};Port={Port};Database={Database};Username={UserID};Password={Password};",
+        
+        // ADO.NET types (if using ADO.NET pattern)
+        AdapterType = "MyCustomDatabase.Client.CustomDataAdapter",
+        CommandBuilderType = "MyCustomDatabase.Client.CustomCommandBuilder", 
+        DbConnectionType = "MyCustomDatabase.Client.CustomConnection",
+        DbTransactionType = "MyCustomDatabase.Client.CustomTransaction",
+        
+        iconname = "customdb.svg",
+        DatasourceCategory = DatasourceCategory.RDBMS, // or NOSQL
+        DatasourceType = DataSourceType.CustomDB, // Define in enum
+        
+        ADOType = true,         // Uses ADO.NET pattern
+        CreateLocal = true,     // Can create local databases
+        InMemory = false,
+        Favourite = true,
+        IsMissing = false
+    };
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>?? Registration Methods</h3>
+                        <p>There are several ways to register your <code>ConnectionDriversConfig</code> with the Beep engine:</p>
+                        
+                        <div class="code-example">
+                            <h4>Method 1: Direct Registration at Startup</h4>
+                            <pre><code class="language-csharp">// During application initialization
+public void RegisterCustomDataSources(IDMEEditor dmeEditor)
+{
+    // Create your custom config
+    var customConfig = CreateCustomRestApiConfig();
+    
+    // Add to the data drivers classes collection
+    dmeEditor.ConfigEditor.DataDriversClasses.Add(customConfig);
+    
+    // Also register the assembly class definition
+    var assemblyClassDef = new AssemblyClassDefinition
+    {
+        className = "CustomRestApiDataSource",
+        type = typeof(CustomRestApiDataSource),
+        PackageName = "MyCustomDataSources"
+    };
+    
+    dmeEditor.ConfigEditor.DataSourcesClasses.Add(assemblyClassDef);
+}</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h4>Method 2: Extend ConnectionHelper</h4>
+                            <pre><code class="language-csharp">// Create a helper extension class
+public static class CustomConnectionHelper
+{
+    public static List&lt;ConnectionDriversConfig&gt; GetCustomConnectionConfigs()
+    {
+        var configs = new List&lt;ConnectionDriversConfig&gt;();
+        
+        // Add all your custom configurations
+        configs.Add(CreateCustomRestApiConfig());
+        configs.Add(CreateCustomFileConfig());
+        configs.Add(CreateCustomDatabaseConfig());
+        
+        return configs;
+    }
+    
+    public static void RegisterCustomConfigs(IDMEEditor dmeEditor)
+    {
+        var customConfigs = GetCustomConnectionConfigs();
+        foreach (var config in customConfigs)
+        {
+            // Check if not already registered
+            if (!dmeEditor.ConfigEditor.DataDriversClasses.Any(d => d.GuidID == config.GuidID))
+            {
+                dmeEditor.ConfigEditor.DataDriversClasses.Add(config);
+            }
+        }
+    }
+}</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h4>Method 3: Plugin/Extension Pattern</h4>
+                            <pre><code class="language-csharp">// Create an extension method for IBeepService (if using DI container)
+public static class BeepServiceExtensions
+{
+    public static void AddCustomDataSources(this IBeepService beepService)
+    {
+        // Register configurations
+        var customConfigs = CustomConnectionHelper.GetCustomConnectionConfigs();
+        beepService.DMEEditor.ConfigEditor.DataDriversClasses.AddRange(customConfigs);
+        
+        // Register assembly definitions
+        RegisterCustomAssemblyDefinitions(beepService.DMEEditor);
+    }
+    
+    private static void RegisterCustomAssemblyDefinitions(IDMEEditor dmeEditor)
+    {
+        var definitions = new[]
+        {
+            new AssemblyClassDefinition
+            {
+                className = "CustomRestApiDataSource",
+                type = typeof(CustomRestApiDataSource),
+                PackageName = "MyCustomDataSources"
+            },
+            new AssemblyClassDefinition
+            {
+                className = "CustomFileDataSource", 
+                type = typeof(CustomFileDataSource),
+                PackageName = "MyCustomDataSources"
+            }
+            // Add more as needed
+        };
+        
+        foreach (var def in definitions)
+        {
+            if (!dmeEditor.ConfigEditor.DataSourcesClasses.Any(d => d.className == def.className))
+            {
+                dmeEditor.ConfigEditor.DataSourcesClasses.Add(def);
+            }
+        }
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>?? How Beep Resolves Your Data Source</h3>
+                        <p>Understanding how Beep finds and instantiates your data source helps ensure proper registration:</p>
+                        
+                        <div class="info">
+                            <strong>?? Resolution Process</strong>
+                            <ol>
+                                <li><strong>Connection Request:</strong> User requests data source by name</li>
+                                <li><strong>Find Connection Properties:</strong> Beep looks up connection in <code>ConfigEditor.DataConnections</code></li>
+                                <li><strong>Link to Driver:</strong> <code>Utilfunction.LinkConnection2Drivers()</code> finds matching <code>ConnectionDriversConfig</code></li>
+                                <li><strong>Find Assembly Class:</strong> Beep looks up <code>AssemblyClassDefinition</code> by <code>classHandler</code> name</li>
+                                <li><strong>Load Type:</strong> <code>assemblyHandler.GetType()</code> loads the actual .NET type</li>
+                                <li><strong>Create Instance:</strong> Reflection creates instance using constructor</li>
+                                <li><strong>Configure:</strong> Sets connection properties and driver config</li>
+                            </ol>
+                        </div>
+
+                        <div class="code-example">
+                            <h4>Driver Resolution Logic (from DMEEditor)</h4>
+                            <pre><code class="language-csharp">// This is how Beep finds your driver configuration
+public IDataSource CreateNewDataSourceConnection(ConnectionProperties cn, string datasourcename)
+{
+    // 1. Link connection to driver config
+    ConnectionDriversConfig driversConfig = Utilfunction.LinkConnection2Drivers(cn);
+    
+    // 2. Find assembly class definition
+    AssemblyClassDefinition ase = ConfigEditor.DataSourcesClasses
+        .FirstOrDefault(x => x.className.Equals(driversConfig.classHandler, 
+                            StringComparison.InvariantCultureIgnoreCase));
+    
+    // 3. Load the actual type
+    Type adc = assemblyHandler.GetType(ase.type.AssemblyQualifiedName);
+    
+    // 4. Create instance using reflection
+    ConstructorInfo ctor = adc.GetConstructors()
+        .FirstOrDefault(c => c.GetParameters().Length == 5);
+    ObjectActivator&lt;IDataSource&gt; createdActivator = GetActivator&lt;IDataSource&gt;(ctor);
+    IDataSource ds = createdActivator(cn.ConnectionName, Logger, this, cn.DatabaseType, ErrorObject);
+    
+    // 5. Configure the data source
+    ds.Dataconnection.ConnectionProp = cn;
+    ds.Dataconnection.DataSourceDriver = driversConfig;
+    
+    return ds;
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="success">
+                        <strong>? Configuration Checklist</strong>
+                        <p>Before proceeding to implement your IDataSource:</p>
+                        <ul>
+                            <li>? <code>ConnectionDriversConfig</code> created with unique GUID</li>
+                            <li>? <code>PackageName</code> matches what you'll use in connection properties</li>
+                            <li>? <code>classHandler</code> matches your class name exactly</li>
+                            <li>? <code>ConnectionString</code> template has correct placeholders</li>
+                            <li>? <code>DatasourceType</code> and <code>DatasourceCategory</code> are appropriate</li>
+                            <li>? Config will be registered before creating data source instances</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Understanding IDataSource -->
+                <section id="understanding-idatasource" class="section">
+                    <h2>?? Understanding the IDataSource Interface</h2>
+                    
+                    <p>The <code>IDataSource</code> interface is located in the <code>DataManagementModels</code> project and defines the contract that all data sources must implement.</p>
+
+                    <div class="code-example">
+                        <h3>Core Interface Properties</h3>
+                        <pre><code class="language-csharp">public interface IDataSource : IDisposable
+{
+    // Identity and Configuration
+    string GuidID { get; set; }
+    string DatasourceName { get; set; }
+    string Id { get; set; }
+    DataSourceType DatasourceType { get; set; }
+    DatasourceCategory Category { get; set; }
+    
+    // Connection Management
+    IDataConnection Dataconnection { get; set; }
+    ConnectionState ConnectionStatus { get; set; }
+    
+    // Data Structure
+    List&lt;EntityStructure&gt; Entities { get; set; }
+    List&lt;string&gt; EntitiesNames { get; set; }
+    
+    // Services and Utilities
+    IDMEEditor DMEEditor { get; set; }
+    IDMLogger Logger { get; set; }
+    IErrorsInfo ErrorObject { get; set; }
+    
+    // Query Configuration
+    string ColumnDelimiter { get; set; }
+    string ParameterDelimiter { get; set; }
+    
+    // Events
+    event EventHandler&lt;PassedArgs&gt; PassEvent;
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Essential Methods to Implement</h3>
+                        <pre><code class="language-csharp">// Connection Management
+ConnectionState Openconnection();
+ConnectionState Closeconnection();
+
+// Entity Discovery and Management
+List&lt;string&gt; GetEntitesList();
+EntityStructure GetEntityStructure(string EntityName, bool refresh);
+bool CheckEntityExist(string EntityName);
+bool CreateEntityAs(EntityStructure entity);
+
+// Data Operations
+object GetEntity(string EntityName, List&lt;AppFilter&gt; filter);
+Task&lt;object&gt; GetEntityAsync(string EntityName, List&lt;AppFilter&gt; Filter);
+object RunQuery(string qrystr);
+IErrorsInfo ExecuteSql(string sql);
+
+// CRUD Operations
+IErrorsInfo InsertEntity(string EntityName, object InsertedData);
+IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow);
+IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow);
+
+// Transaction Management
+IErrorsInfo BeginTransaction(PassedArgs args);
+IErrorsInfo Commit(PassedArgs args);
+IErrorsInfo EndTransaction(PassedArgs args);</code></pre>
+                    </div>
+                </section>
+
+                <!-- Implementation Steps -->
+                <section id="implementation-steps" class="section">
+                    <h2>??? Implementation Steps</h2>
+
+                    <div class="step">
+                        <h3>Step 1: Create the Data Source Class</h3>
+                        <p>Create a new class that implements the <code>IDataSource</code> interface:</p>
+                        
+                        <div class="code-example">
+                            <pre><code class="language-csharp">using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
+using TheTechIdea.Beep;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Addin;
+
+namespace MyCustomDataSources
+{
+    public class CustomDataSource : IDataSource
+    {
+        #region Properties
+        public string GuidID { get; set; } = Guid.NewGuid().ToString();
+        public string DatasourceName { get; set; }
+        public string Id { get; set; }
+        public DataSourceType DatasourceType { get; set; }
+        public DatasourceCategory Category { get; set; }
+        public IDataConnection Dataconnection { get; set; }
+        public ConnectionState ConnectionStatus { get; set; }
+        public List&lt;EntityStructure&gt; Entities { get; set; } = new List&lt;EntityStructure&gt;();
+        public List&lt;string&gt; EntitiesNames { get; set; } = new List&lt;string&gt;();
+        public IDMEEditor DMEEditor { get; set; }
+        public IDMLogger Logger { get; set; }
+        public IErrorsInfo ErrorObject { get; set; }
+        public string ColumnDelimiter { get; set; } = "'";
+        public string ParameterDelimiter { get; set; } = ":";
+        
+        public event EventHandler&lt;PassedArgs&gt; PassEvent;
+        #endregion
+
+        #region Constructor
+        public CustomDataSource(string datasourcename, IDMLogger logger, 
+                               IDMEEditor dmeEditor, DataSourceType databasetype, 
+                               IErrorsInfo errorObject)
+        {
+            DatasourceName = datasourcename;
+            Logger = logger;
+            DMEEditor = dmeEditor;
+            DatasourceType = databasetype;
+            ErrorObject = errorObject;
+            Category = DatasourceCategory.NOSQL; // Set appropriate category
+        }
+        #endregion
+
+        #region Connection Management
+        public ConnectionState Openconnection()
+        {
+            try
+            {
+                ErrorObject.Flag = Errors.Ok;
+                
+                // Initialize your connection here
+                // Example: Connect to your custom data source
+                if (Dataconnection?.ConnectionProp?.ConnectionString != null)
+                {
+                    // Perform actual connection logic
+                    // var connectionString = Dataconnection.ConnectionProp.ConnectionString;
+                    // _customClient = new CustomClient(connectionString);
+                    // _customClient.Connect();
+                    
+                    ConnectionStatus = ConnectionState.Open;
+                    Logger?.WriteLog($"Successfully opened connection to {DatasourceName}");
+                    
+                    // Load entities after successful connection
+                    LoadEntities();
+                }
+                else
+                {
+                    ConnectionStatus = ConnectionState.Broken;
+                    ErrorObject.Flag = Errors.Failed;
+                    ErrorObject.Message = "Connection string is null or empty";
+                }
+            }
+            catch (Exception ex)
+            {
+                ConnectionStatus = ConnectionState.Broken;
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+                Logger?.WriteLog($"Failed to open connection to {DatasourceName}: {ex.Message}");
+            }
+            
+            return ConnectionStatus;
+        }
+
+        public ConnectionState Closeconnection()
+        {
+            try
+            {
+                if (ConnectionStatus == ConnectionState.Open)
+                {
+                    // Close your custom connection
+                    // _customClient?.Disconnect();
+                    
+                    ConnectionStatus = ConnectionState.Closed;
+                    Logger?.WriteLog($"Successfully closed connection to {DatasourceName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger?.WriteLog($"Error closing connection to {DatasourceName}: {ex.Message}");
+            }
+            
+            return ConnectionStatus;
+        }
+        #endregion
+
+        #region Entity Discovery
+        public List&lt;string&gt; GetEntitesList()
+        {
+            try
+            {
+                if (ConnectionStatus != ConnectionState.Open)
+                    return new List&lt;string&gt;();
+                    
+                // Discover entities from your data source
+                var entityNames = new List&lt;string&gt;();
+                
+                // Example: Query your data source for available entities
+                // entityNames = _customClient.GetTableNames();
+                
+                EntitiesNames = entityNames;
+                return entityNames;
+            }
+            catch (Exception ex)
+            {
+                Logger?.WriteLog($"Error getting entities list: {ex.Message}");
+                return new List&lt;string&gt;();
+            }
+        }
+
+        public EntityStructure GetEntityStructure(string EntityName, bool refresh)
+        {
+            try
+            {
+                if (refresh || !Entities.Any(e => e.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    // Build entity structure from your data source
+                    var entity = new EntityStructure
+                    {
+                        EntityName = EntityName,
+                        DataSourceID = DatasourceName,
+                        DatabaseType = DatasourceType,
+                        Fields = new List&lt;EntityField&gt;()
+                    };
+                    
+                    // Example: Get column information from your data source
+                    // var columns = _customClient.GetColumns(EntityName);
+                    // foreach (var column in columns)
+                    // {
+                    //     entity.Fields.Add(new EntityField
+                    //     {
+                    //         fieldname = column.Name,
+                    //         fieldtype = column.DataType,
+                    //         Size1 = column.Size,
+                    //         AllowDBNull = column.IsNullable
+                    //     });
+                    // }
+                    
+                    // Update entities list
+                    var existingEntity = Entities.FirstOrDefault(e => 
+                        e.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase));
+                    if (existingEntity != null)
+                        Entities.Remove(existingEntity);
+                    Entities.Add(entity);
+                    
+                    return entity;
+                }
+                
+                return Entities.FirstOrDefault(e => 
+                    e.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase));
+            }
+            catch (Exception ex)
+            {
+                Logger?.WriteLog($"Error getting entity structure for {EntityName}: {ex.Message}");
+                return null;
+            }
+        }
+
+        public bool CheckEntityExist(string EntityName)
+        {
+            try
+            {
+                return GetEntitesList().Any(e => 
+                    e.Equals(EntityName, StringComparison.OrdinalIgnoreCase));
+            }
+            catch (Exception ex)
+            {
+                Logger?.WriteLog($"Error checking entity existence for {EntityName}: {ex.Message}");
+                return false;
+            }
+        }
+        #endregion
+
+        #region Data Retrieval
+        public object GetEntity(string EntityName, List&lt;AppFilter&gt; filter)
+        {
+            try
+            {
+                if (ConnectionStatus != ConnectionState.Open)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    ErrorObject.Message = "Connection is not open";
+                    return null;
+                }
+                
+                // Convert filters to your data source's query format
+                var queryFilters = ConvertFilters(filter);
+                
+                // Execute query against your data source
+                // var result = _customClient.Query(EntityName, queryFilters);
+                
+                // Convert result to DataTable or List&lt;T&gt;
+                // return ConvertToDataTable(result);
+                
+                return new DataTable(); // Placeholder
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+                Logger?.WriteLog($"Error getting entity {EntityName}: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task&lt;object&gt; GetEntityAsync(string EntityName, List&lt;AppFilter&gt; Filter)
+        {
+            return await Task.Run(() =&gt; GetEntity(EntityName, Filter));
+        }
+
+        public object RunQuery(string qrystr)
+        {
+            try
+            {
+                if (ConnectionStatus != ConnectionState.Open)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    ErrorObject.Message = "Connection is not open";
+                    return null;
+                }
+                
+                // Execute custom query
+                // var result = _customClient.ExecuteQuery(qrystr);
+                // return ConvertToDataTable(result);
+                
+                return new DataTable(); // Placeholder
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+                Logger?.WriteLog($"Error executing query: {ex.Message}");
+                return null;
+            }
+        }
+        #endregion
+
+        #region CRUD Operations
+        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
+        {
+            try
+            {
+                // Simple insert - in real implementation, you'd want to 
+                // persist changes back to file
+                ErrorObject.Flag = Errors.Ok;
+                ErrorObject.Message = "Insert operation completed";
+                return ErrorObject;
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+                return ErrorObject;
+            }
+        }
+
+        public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
+        {
+            try
+            {
+                ErrorObject.Flag = Errors.Ok;
+                ErrorObject.Message = "Update operation completed";
+                return ErrorObject;
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+                return ErrorObject;
+            }
+        }
+
+        public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow)
+        {
+            try
+            {
+                ErrorObject.Flag = Errors.Ok;
+                ErrorObject.Message = "Delete operation completed";
+                return ErrorObject;
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Ex = ex;
+                ErrorObject.Message = ex.Message;
+                return ErrorObject;
+            }
+        }
+
+        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress&lt;PassedArgs&gt; progress)
+        {
+            return UpdateEntity(EntityName, UploadData);
+        }
+        #endregion
+
+        #region Not Implemented Methods
+        public bool CreateEntityAs(EntityStructure entity) =&gt; false;
+        public List&lt;ChildRelation&gt; GetChildTablesList(string tablename, string SchemaName, string Filterparamters) =&gt; new List&lt;ChildRelation&gt;();
+        public List&lt;RelationShipKeys&gt; GetEntityforeignkeys(string entityname, string SchemaName) =&gt; new List&lt;RelationShipKeys&gt;();
+        public List&lt;ETLScriptDet&gt; GetCreateEntityScript(List&lt;EntityStructure&gt; entities = null) =&gt; new List&lt;ETLScriptDet&gt;();
+        public IErrorsInfo CreateEntities(List&lt;EntityStructure&gt; entities) =&gt; new ErrorsInfo { Flag = Errors.Ok, Message = "Not implemented" };
+        public IErrorsInfo RunScript(ETLScriptDet dDLScripts) =&gt; new ErrorsInfo { Flag = Errors.Ok, Message = "Not implemented" };
+        public IErrorsInfo ExecuteSql(string sql) =&gt; new ErrorsInfo { Flag = Errors.Ok, Message = "Not implemented" };
+        public IErrorsInfo BeginTransaction(PassedArgs args) =&gt; new ErrorsInfo { Flag = Errors.Ok, Message = "Not implemented" };
+        public IErrorsInfo Commit(PassedArgs args) =&gt; new ErrorsInfo { Flag = Errors.Ok, Message = "Not implemented" };
+        public IErrorsInfo EndTransaction(PassedArgs args) =&gt; new ErrorsInfo { Flag = Errors.Ok, Message = "Not implemented" };
+        #endregion
+
+        #region Dispose
+        public void Dispose()
+        {
+            _data?.Clear();
+            _data = null;
+        }
+        #endregion
+    }
+}
+</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Using the Simple Data Source</h3>
+                        <p>Here's how to register and use the simple text file data source:</p>
+                        
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// 1. Register the data source
+var assemblyClassDef = new AssemblyClassDefinition
+{
+    className = "SimpleTextFileDataSource",
+    type = typeof(SimpleTextFileDataSource),
+    PackageName = "SimpleDataSources"
+};
+dmeEditor.ConfigEditor.DataSourcesClasses.Add(assemblyClassDef);
+
+// 2. Create connection properties
+var connectionProps = new ConnectionProperties
+{
+    ConnectionName = "MyTextFile",
+    ConnectionString = @"C:\Data\sample.txt", // Path to your text file
+    DatabaseType = DataSourceType.Text,
+    Category = DatasourceCategory.FILE,
+    DriverName = "SimpleTextFile"
+};
+dmeEditor.ConfigEditor.DataConnections.Add(connectionProps);
+
+// 3. Use the data source
+var dataSource = dmeEditor.GetDataSource("MyTextFile");
+var state = dmeEditor.OpenDataSource("MyTextFile");
+
+if (state == ConnectionState.Open)
+{
+    var entities = dataSource.GetEntitesList();
+    Console.WriteLine($"Found entities: {string.Join(", ", entities)}");
+    
+    foreach (var entityName in entities)
+    {
+        var data = dataSource.GetEntity(entityName, null);
+        Console.WriteLine($"Retrieved data for {entityName}");
+        
+        if (data is DataTable dt)
+        {
+            Console.WriteLine($"Rows: {dt.Rows.Count}, Columns: {dt.Columns.Count}");
+        }
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Sample Text File Format</h3>
+                        <p>Create a text file with pipe-separated values:</p>
+                        
+                        <div class="code-example">
+                            <pre><code class="language-text">Name|Age|Email|Department
+John Doe|30|john.doe@company.com|Engineering
+Jane Smith|25|jane.smith@company.com|Marketing
+Bob Johnson|35|bob.johnson@company.com|Sales
+Alice Brown|28|alice.brown@company.com|Engineering</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="advanced-tools-utilities.html"><i class="bi bi-arrow-left"></i> Advanced Tools & Utilities</a>
+                    <a href="api-reference.html">API Reference <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        console.log('Creating Custom Data Sources documentation page loaded');
+    </script>
+</body>
+</html>

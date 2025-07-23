@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-DataSource UnitOfWork - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>→</span>
+                    <a href="unitofwork.html">UnitOfWork Pattern</a>
+                    <span>→</span>
+                    <span>Multi-DataSource UnitOfWork</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>🌐 Multi-DataSource UnitOfWork</h1>
+                    <p class="page-subtitle">Coordinate operations across multiple data sources with relationship management and transaction coordination</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>📚 Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview & Benefits</a></li>
+                        <li><a href="#constructor">Constructor</a></li>
+                        <li><a href="#setup">Setting Up Entities & Relationships</a></li>
+                        <li><a href="#data-access">Data Access Methods</a></li>
+                        <li><a href="#crud-operations">CRUD Operations</a></li>
+                        <li><a href="#transaction-management">Transaction Management</a></li>
+                        <li><a href="#navigation">Navigation & Parent-Child</a></li>
+                        <li><a href="#relationship-behaviors">Relationship Behaviors</a></li>
+                        <li><a href="#events">Events & Notifications</a></li>
+                        <li><a href="#real-world-example">Real-World Example</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>🏗️ Overview & Benefits</h2>
+                    <p>
+                        The <code>MultiDataSourceUnitOfWork</code> class provides a unified interface for managing entities across multiple data sources
+                        while maintaining relationships and ensuring data consistency. It orchestrates multiple <code>UnitOfWork</code> instances and
+                        handles cross-datasource transactions, enabling you to work with complex data architectures seamlessly.
+                    </p>
+
+                    <div class="success">
+                        <strong>🎯 Key Benefits</strong>
+                        <ul>
+                            <li><strong>Unified Interface:</strong> Work with multiple data sources through a single API</li>
+                            <li><strong>Automatic Relationship Management:</strong> Define relationships once, navigate automatically</li>
+                            <li><strong>Transaction Coordination:</strong> Atomic commits across all data sources</li>
+                            <li><strong>Parent-Child Navigation:</strong> Automatic loading of related entities</li>
+                            <li><strong>Cross-Source Relationships:</strong> Maintain referential integrity across different databases</li>
+                            <li><strong>Validation & Rollback:</strong> Comprehensive error handling and rollback capabilities</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔗 Cross-Platform Support</h3>
+                            <p>Connect SQL Server, PostgreSQL, MongoDB, SQLite, and more in a single transaction</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>⚡ Automatic Loading</h3>
+                            <p>Related entities are loaded automatically when navigating parent records</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>🛡️ Data Integrity</h3>
+                            <p>Enforce referential integrity and business rules across multiple systems</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>🎯 Event-Driven</h3>
+                            <p>Responsive UI updates through comprehensive event notifications</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Constructor -->
+                <section id="constructor" class="section">
+                    <h2>🔧 Constructor</h2>
+
+                    <div class="code-example">
+                        <h3>Basic Initialization</h3>
+                        <pre><code class="language-csharp">public MultiDataSourceUnitOfWork(IDMEEditor dmeEditor)</code></pre>
+                        <p>Initializes a new instance of the MultiDataSourceUnitOfWork class.</p>
+                    </div>
+
+                    <table class="property-table">
+                        <thead>
+                            <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>dmeEditor</td>
+                                <td>IDMEEditor</td>
+                                <td>The data management editor instance providing access to data sources and configuration</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Basic Usage</h3>
+                        <pre><code class="language-csharp">// Initialize the multi-datasource UnitOfWork
+using var multiUoW = new MultiDataSourceUnitOfWork(dmeEditor);
+
+// Now ready to add entities and relationships
+Console.WriteLine("Multi-DataSource UnitOfWork initialized successfully");</code></pre>
+                    </div>
+                </section>
+
+                <!-- Setup -->
+                <section id="setup" class="section">
+                    <h2>🔧 Setting Up Entities & Relationships</h2>
+
+                    <div class="code-example">
+                        <h3>Adding Entity Types</h3>
+                        <pre><code class="language-csharp">public async Task AddUnitOfWorkAsync&lt;T&gt;(string dataSourceName, string entityName, string primaryKey) 
+    where T : Entity, new()</code></pre>
+                        <p>Adds a new UnitOfWork for a specific entity type and data source.</p>
+                    </div>
+
+                    <table class="property-table">
+                        <thead>
+                            <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>dataSourceName</td><td>string</td><td>Name of the data source (must exist in DME configuration)</td></tr>
+                            <tr><td>entityName</td><td>string</td><td>Name of the entity/table</td></tr>
+                            <tr><td>primaryKey</td><td>string</td><td>Name of the primary key field</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Adding Multiple Entity Types</h3>
+                        <pre><code class="language-csharp">// Set up entities from different data sources
+await multiUoW.AddUnitOfWorkAsync&lt;Customer&gt;("SqlServer_CRM", "Customers", "CustomerID");
+await multiUoW.AddUnitOfWorkAsync&lt;Order&gt;("MongoDB_Orders", "Orders", "OrderID");
+await multiUoW.AddUnitOfWorkAsync&lt;OrderDetail&gt;("MongoDB_Orders", "OrderDetails", "DetailID");
+await multiUoW.AddUnitOfWorkAsync&lt;Product&gt;("PostgreSQL_Inventory", "Products", "ProductID");
+await multiUoW.AddUnitOfWorkAsync&lt;Address&gt;("SqlServer_CRM", "Addresses", "AddressID");
+
+Console.WriteLine("All entity types configured across multiple data sources");</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Defining Relationships</h3>
+                        <pre><code class="language-csharp">public void AddRelationship(
+    string parentEntityName, 
+    string childEntityName, 
+    string parentKeyField, 
+    string childForeignKeyField, 
+    RelationshipBehavior deleteBehavior = RelationshipBehavior.CascadeDelete, 
+    bool isRequired = false)</code></pre>
+                    </div>
+
+                    <table class="property-table">
+                        <thead>
+                            <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>parentEntityName</td><td>string</td><td>Name of the parent entity</td></tr>
+                            <tr><td>childEntityName</td><td>string</td><td>Name of the child entity</td></tr>
+                            <tr><td>parentKeyField</td><td>string</td><td>Primary key field in parent entity</td></tr>
+                            <tr><td>childForeignKeyField</td><td>string</td><td>Foreign key field in child entity</td></tr>
+                            <tr><td>deleteBehavior</td><td>RelationshipBehavior</td><td>How to handle deletes (CascadeDelete, SetNull, Restrict)</td></tr>
+                            <tr><td>isRequired</td><td>bool</td><td>Whether the relationship is required for validation</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Comprehensive Relationship Setup</h3>
+                        <pre><code class="language-csharp">// Define Customer -> Orders relationship (across SQL Server and MongoDB)
+multiUoW.AddRelationship(
+    "Customer", "Order",           // Parent -> Child
+    "CustomerID", "CustomerID",    // Key mapping
+    RelationshipBehavior.CascadeDelete,  // Delete orders when customer is deleted
+    isRequired: false              // Customers can exist without orders
+);
+
+// Define Customer -> Addresses relationship (within SQL Server)
+multiUoW.AddRelationship(
+    "Customer", "Address",
+    "CustomerID", "CustomerID",
+    RelationshipBehavior.CascadeDelete,
+    isRequired: false
+);
+
+// Define Order -> OrderDetails relationship (within MongoDB)
+multiUoW.AddRelationship(
+    "Order", "OrderDetail",
+    "OrderID", "OrderID",
+    RelationshipBehavior.CascadeDelete,
+    isRequired: true               // Orders must have at least one detail
+);
+
+// Define OrderDetail -> Product relationship (across MongoDB and PostgreSQL)
+multiUoW.AddRelationship(
+    "Product", "OrderDetail",      // Product is parent of OrderDetail
+    "ProductID", "ProductID",
+    RelationshipBehavior.Restrict, // Can't delete products that are referenced
+    isRequired: true               // OrderDetails must reference a valid product
+);
+
+Console.WriteLine("Cross-datasource relationships configured successfully");</code></pre>
+                    </div>
+                </section>
+
+                <!-- Data Access -->
+                <section id="data-access" class="section">
+                    <h2>📊 Data Access Methods</h2>
+
+                    <div class="code-example">
+                        <h3>Getting Entity Collections</h3>
+                        <pre><code class="language-csharp">public ObservableBindingList&lt;T&gt; GetEntities&lt;T&gt;(string entityName) where T : Entity, new()</code></pre>
+                        <p>Gets the observable collection of entities for a specific entity type.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Getting Related Children</h3>
+                        <pre><code class="language-csharp">public async Task&lt;Dictionary&lt;string, ObservableBindingList&lt;TChild&gt;&gt;&gt; GetAllRelatedChildrenAsync&lt;TChild, TParent&gt;(
+    string parentEntityName, 
+    TParent parentEntity)</code></pre>
+                        <p>Retrieves all related child entities for a given parent entity across all defined relationships.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Data Access Examples</h3>
+                        <pre><code class="language-csharp">// Get entity collections
+var customers = multiUoW.GetEntities&lt;Customer&gt;("Customer");
+var orders = multiUoW.GetEntities&lt;Order&gt;("Order");
+var products = multiUoW.GetEntities&lt;Product&gt;("Product");
+
+Console.WriteLine($"Loaded {customers.Count} customers, {orders.Count} orders, {products.Count} products");
+
+// Get all related children for a specific customer
+var selectedCustomer = customers.FirstOrDefault(c => c.CustomerID == "CUST001");
+if (selectedCustomer != null)
+{
+    // This will return a dictionary with all related child collections
+    var relatedChildren = await multiUoW.GetAllRelatedChildrenAsync&lt;object, Customer&gt;(
+        "Customer", selectedCustomer);
+    
+    // Access specific child collections
+    if (relatedChildren.ContainsKey("Order"))
+    {
+        var customerOrders = relatedChildren["Order"];
+        Console.WriteLine($"Customer {selectedCustomer.Name} has {customerOrders.Count} orders");
+    }
+    
+    if (relatedChildren.ContainsKey("Address"))
+    {
+        var customerAddresses = relatedChildren["Address"];
+        Console.WriteLine($"Customer {selectedCustomer.Name} has {customerAddresses.Count} addresses");
+    }
+}
+
+// Access current parent entity (for navigation scenarios)
+var currentParent = multiUoW.CurrentParentEntity;
+if (currentParent != null)
+{
+    Console.WriteLine($"Current parent: {currentParent}");
+}</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>💡 Performance Tips</strong>
+                        <ul>
+                            <li>Entity collections are cached and reused across calls</li>
+                            <li>Related children are loaded on-demand when navigating</li>
+                            <li>Use specific generic types when possible for better performance</li>
+                            <li>Consider using filters at the data source level for large datasets</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- CRUD Operations -->
+                <section id="crud-operations" class="section">
+                    <h2>🔄 CRUD Operations</h2>
+
+                    <div class="code-example">
+                        <h3>Insert Operations</h3>
+                        <pre><code class="language-csharp">public async Task&lt;IErrorsInfo&gt; InsertAsync&lt;T&gt;(string entityName, T entity) where T : Entity, new()</code></pre>
+                        <p>Inserts a new entity and handles any related entities according to defined relationships.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Update Operations</h3>
+                        <pre><code class="language-csharp">public async Task&lt;IErrorsInfo&gt; UpdateAsync&lt;T&gt;(string entityName, T entity) where T : Entity, new()</code></pre>
+                        <p>Updates an existing entity and triggers relationship-based updates if needed.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Delete Operations</h3>
+                        <pre><code class="language-csharp">public async Task&lt;IErrorsInfo&gt; DeleteAsync&lt;T&gt;(string entityName, T entity) where T : Entity, new()</code></pre>
+                        <p>Deletes an entity and handles related entities based on the defined relationship behavior.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Complete CRUD Example</h3>
+                        <pre><code class="language-csharp">// INSERT: Create a new customer with address
+var newCustomer = new Customer 
+{ 
+    CustomerID = Guid.NewGuid().ToString(),
+    Name = "John Doe", 
+    Email = "john@example.com",
+    Status = "Active"
+};
+
+var insertResult = await multiUoW.InsertAsync("Customer", newCustomer);
+if (insertResult.Flag == Errors.Ok)
+{
+    Console.WriteLine($"Customer {newCustomer.Name} inserted successfully");
+    
+    // Add an address for the customer
+    var address = new Address
+    {
+        AddressID = Guid.NewGuid().ToString(),
+        CustomerID = newCustomer.CustomerID,
+        Street = "123 Main St",
+        City = "Anytown",
+        State = "CA",
+        ZipCode = "12345"
+    };
+    
+    await multiUoW.InsertAsync("Address", address);
+    Console.WriteLine("Customer address added");
+}
+
+// UPDATE: Modify customer information
+newCustomer.Email = "john.doe@example.com";
+newCustomer.Status = "Premium";
+
+var updateResult = await multiUoW.UpdateAsync("Customer", newCustomer);
+if (updateResult.Flag == Errors.Ok)
+{
+    Console.WriteLine("Customer updated successfully");
+}
+
+// INSERT: Create an order for the customer
+var newOrder = new Order
+{
+    OrderID = Guid.NewGuid().ToString(),
+    CustomerID = newCustomer.CustomerID,
+    OrderDate = DateTime.Now,
+    Status = "Pending",
+    Total = 299.99m
+};
+
+await multiUoW.InsertAsync("Order", newOrder);
+
+// INSERT: Add order details
+var orderDetail = new OrderDetail
+{
+    DetailID = Guid.NewGuid().ToString(),
+    OrderID = newOrder.OrderID,
+    ProductID = "PROD001", // Assuming this product exists
+    Quantity = 2,
+    UnitPrice = 149.99m
+};
+
+await multiUoW.InsertAsync("OrderDetail", orderDetail);
+Console.WriteLine("Order with details created");
+
+// DELETE: Remove an order (will cascade to details if configured)
+var orderToDelete = orders.FirstOrDefault(o => o.Status == "Cancelled");
+if (orderToDelete != null)
+{
+    var deleteResult = await multiUoW.DeleteAsync("Order", orderToDelete);
+    if (deleteResult.Flag == Errors.Ok)
+    {
+        Console.WriteLine("Cancelled order deleted (with cascade to details)");
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="warning">
+                        <strong>⚠️ Important Notes</strong>
+                        <ul>
+                            <li>All operations respect the defined relationships and behaviors</li>
+                            <li>Changes are tracked but not persisted until <code>CommitAsync()</code> is called</li>
+                            <li>Failed operations will provide detailed error information</li>
+                            <li>Use the entity name exactly as defined when adding the UnitOfWork</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Transaction Management -->
+                <section id="transaction-management" class="section">
+                    <h2>💾 Transaction Management</h2>
+
+                    <div class="code-example">
+                        <h3>Atomic Commits</h3>
+                        <pre><code class="language-csharp">public async Task&lt;IErrorsInfo&gt; CommitAsync()</code></pre>
+                        <p>Commits all changes across all managed UnitOfWork instances. If any commit fails, all previously committed changes are rolled back.</p>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Transaction Safety Example</h3>
+                        <pre><code class="language-csharp">try 
+{
+    // Make multiple changes across different data sources
+    var customer = new Customer 
+    { 
+        CustomerID = "CUST123",
+        Name = "Jane Smith", 
+        Email = "jane@example.com" 
+    };
+    await multiUoW.InsertAsync("Customer", customer);
+    
+    var order = new Order 
+    { 
+        OrderID = "ORD456",
+        CustomerID = customer.CustomerID,
+        OrderDate = DateTime.Now,
+        Total = 150.00m
+    };
+    await multiUoW.InsertAsync("Order", order);
+    
+    var address = new Address
+    {
+        AddressID = "ADDR789",
+        CustomerID = customer.CustomerID,
+        Street = "456 Oak Ave",
+        City = "Somewhere"
+    };
+    await multiUoW.InsertAsync("Address", address);
+    
+    // Commit all changes atomically across all data sources
+    var result = await multiUoW.CommitAsync();
+    
+    if (result.Flag == Errors.Ok)
+    {
+        Console.WriteLine("✅ All changes committed successfully across:");
+        Console.WriteLine("   - SQL Server (Customer, Address)");
+        Console.WriteLine("   - MongoDB (Order)");
+        Console.WriteLine("   - Transaction completed atomically");
+    }
+    else
+    {
+        Console.WriteLine($"❌ Commit failed: {result.Message}");
+        Console.WriteLine("All changes have been rolled back automatically");
+        
+        // Detailed error information
+        if (result.Ex != null)
+        {
+            Console.WriteLine($"Exception details: {result.Ex.Message}");
+        }
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"❌ Transaction error: {ex.Message}");
+    Console.WriteLine("All changes have been rolled back automatically");
+}</code></pre>
+                    </div>
+
+                    <div class="success">
+                        <strong>🛡️ Transaction Guarantees</strong>
+                        <ul>
+                            <li><strong>Atomicity:</strong> All changes succeed or all fail</li>
+                            <li><strong>Consistency:</strong> Relationships are validated before commit</li>
+                            <li><strong>Isolation:</strong> Changes are isolated until commit</li>
+                            <li><strong>Durability:</strong> Committed changes are persisted across all data sources</li>
+                        </ul>
+                    </div>
+
+                    <div class="note">
+                        <strong>📝 Rollback Behavior</strong>
+                        <p>If any individual UnitOfWork fails to commit, the system automatically rolls back all previously committed changes to maintain consistency across all data sources. This ensures your data remains in a valid state even when working with multiple databases.</p>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <section id="navigation" class="section">
+                    <h2>🧭 Navigation & Parent-Child Management</h2>
+
+                    <p>The MultiDataSourceUnitOfWork provides sophisticated navigation methods that automatically load related children when moving through parent records:</p>
+
+                    <div class="code-example">
+                        <h3>Navigation Methods</h3>
+                        <pre><code class="language-csharp">// Navigate to specific parent entity
+public async Task NavigateToParentAsync&lt;T&gt;(string parentEntityName, T parentEntity) where T : Entity, new()
+
+// Navigation through collection
+public async Task NavigateToNextAsync&lt;T&gt;(string parentEntityName) where T : Entity, new()
+public async Task NavigateToPreviousAsync&lt;T&gt;(string parentEntityName) where T : Entity, new()
+public async Task NavigateToFirstAsync&lt;T&gt;(string parentEntityName) where T : Entity, new()
+public async Task NavigateToLastAsync&lt;T&gt;(string parentEntityName) where T : Entity, new()</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Navigation with Automatic Child Loading</h3>
+                        <pre><code class="language-csharp">// Subscribe to navigation events
+multiUoW.ChildDataChanged += async (sender, args) 
+{
+    Console.WriteLine($"🔄 Child data changed for {args.ChildEntityName}");
+    Console.WriteLine($"   Parent: {args.ParentEntityName}");
+    Console.WriteLine($"   Operation: {args.Operation}");
+    
+    // Update UI components based on which child data changed
+    if (args.ChildEntityName == "Order")
+    {
+        await RefreshOrdersGrid();
+        await UpdateOrderSummary();
+    }
+    else if (args.ChildEntityName == "Address")
+    {
+        await RefreshAddressForm();
+    }
+};
+
+// Navigate to first customer - automatically loads all related data
+await multiUoW.NavigateToFirstAsync&lt;Customer&gt;("Customer");
+Console.WriteLine("📍 Navigated to first customer");
+
+// Get current customer and their related data
+var currentCustomer = multiUoW.CurrentParentEntity as Customer;
+if (currentCustomer != null)
+{
+    Console.WriteLine($"Current customer: {currentCustomer.Name}");
+    
+    // Related children are automatically available
+    var relatedData = await multiUoW.GetAllRelatedChildrenAsync&lt;object, Customer&gt;("Customer", currentCustomer);
+    
+    foreach (var kvp in relatedData)
+    {
+        Console.WriteLine($"  {kvp.Key}: {kvp.Value.Count} items");
+    }
+}
+
+// Navigate through customers
+Console.WriteLine("\n🔄 Navigating through customers...");
+
+while (true)
+{
+    var customer = multiUoW.CurrentParentEntity as Customer;
+    if (customer == null) break;
+    
+    Console.WriteLine($"Customer: {customer.Name}");
+    
+    // Get order count for current customer
+    var orderData = await multiUoW.GetAllRelatedChildrenAsync&lt;Order, Customer&gt;("Customer", customer);
+    if (orderData.ContainsKey("Order"))
+    {
+        Console.WriteLine($"  Orders: {orderData["Order"].Count}");
+    }
+    
+    // Move to next customer
+    try
+    {
+        await multiUoW.NavigateToNextAsync&lt;Customer&gt;("Customer");
+    }
+    catch (InvalidOperationException)
+    {
+        Console.WriteLine("📍 Reached end of customer list");
+        break;
+    }
+}
+
+// Navigate to a specific customer
+var targetCustomer = multiUoW.GetEntities&lt;Customer&gt;("Customer")
+    .FirstOrDefault(c => c.Email.Contains("@gmail.com"));
+
+if (targetCustomer != null)
+{
+    await multiUoW.NavigateToParentAsync("Customer", targetCustomer);
+    Console.WriteLine($"📍 Navigated to specific customer: {targetCustomer.Name}");
+}</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>💡 Navigation Benefits</strong>
+                        <ul>
+                            <li><strong>Automatic Loading:</strong> Related children are loaded automatically</li>
+                            <li><strong>Performance Optimized:</strong> Only loads data for the current parent</li>
+                            <li><strong>Event-Driven:</strong> UI can respond to navigation changes immediately</li>
+                            <li><strong>Cross-DataSource:</strong> Works seamlessly across different data sources</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Relationship Behaviors -->
+                <section id="relationship-behaviors" class="section">
+                    <h2>🔗 Relationship Behaviors</h2>
+
+                    <p>The MultiDataSourceUnitOfWork supports three relationship behaviors that determine how related entities are handled during delete operations:</p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🗑️ CascadeDelete</h3>
+                            <p>When a parent entity is deleted, all related child entities are automatically deleted</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">// Customer -> Orders with cascade delete
+multiUoW.AddRelationship(
+    "Customer", "Order", 
+    "CustomerID", "CustomerID",
+    RelationshipBehavior.CascadeDelete
+);
+
+// Deleting customer will delete all their orders</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>🚫 Restrict</h3>
+                            <p>Prevents deletion of a parent entity if related child entities exist</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">// Product -> OrderDetails with restrict
+multiUoW.AddRelationship(
+    "Product", "OrderDetail", 
+    "ProductID", "ProductID",
+                            RelationshipBehavior.Restrict
+);
+
+// Cannot delete products that are referenced in orders</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>🔄 SetNull</h3>
+                            <p>When a parent entity is deleted, the foreign key fields in related child entities are set to null</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">// Manager -> Employees with set null
+multiUoW.AddRelationship(
+    "Manager", "Employee", 
+    "ManagerID", "ManagerID",
+    RelationshipBehavior.SetNull
+);
+
+// Deleting manager sets ManagerID to null in employees</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Relationship Behavior in Action</h3>
+                        <pre><code class="language-csharp">// Set up different relationship behaviors
+multiUoW.AddRelationship("Customer", "Order", "CustomerID", "CustomerID", 
+                        RelationshipBehavior.CascadeDelete);
+
+multiUoW.AddRelationship("Order", "OrderDetail", "OrderID", "OrderID", 
+                        RelationshipBehavior.CascadeDelete);
+
+multiUoW.AddRelationship("Product", "OrderDetail", "ProductID", "ProductID", 
+                        RelationshipBehavior.Restrict);
+
+// Attempt to delete a customer
+var customerToDelete = customers.FirstOrDefault(c => c.Status == "Inactive");
+if (customerToDelete != null)
+{
+    try
+    {
+        var result = await multiUoW.DeleteAsync("Customer", customerToDelete);
+        
+        if (result.Flag == Errors.Ok)
+        {
+            Console.WriteLine("✅ Customer deleted successfully");
+            Console.WriteLine("   → All customer orders were cascade deleted");
+            Console.WriteLine("   → All order details were cascade deleted");
+        }
+        else
+        {
+            Console.WriteLine($"❌ Delete failed: {result.Message}");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Delete prevented by relationship constraint: {ex.Message}");
+    }
+}
+
+// Attempt to delete a product that's referenced in orders
+var productToDelete = products.FirstOrDefault();
+if (productToDelete != null)
+{
+    try
+    {
+        var result = await multiUoW.DeleteAsync("Product", productToDelete);
+        
+        if (result.Flag != Errors.Ok)
+        {
+            Console.WriteLine($"❌ Product deletion restricted: {result.Message}");
+            Console.WriteLine("   → Product is referenced in existing order details");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Delete prevented: {ex.Message}");
+    }
+}</code></pre>
+                    </div>
+
+                    <div class="warning">
+                        <strong>⚠️ SetNull Behavior Notes</strong>
+                        <ul>
+                            <li>SetNull only works with nullable foreign key fields</li>
+                            <li>For non-nullable fields, the behavior will fall back to Restrict</li>
+                            <li>Always consider the business implications of orphaned records</li>
+                            <li>Test relationship behaviors thoroughly in development</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Real-World Example -->
+                <section id="real-world-example" class="section">
+                    <h2>🌟 Real-World Example: E-Commerce System</h2>
+
+                    <div class="code-example">
+                        <h3>Complete E-Commerce Implementation</h3>
+                        <pre><code class="language-csharp">public class ECommerceService : IDisposable
+{
+    private readonly MultiDataSourceUnitOfWork _multiUoW;
+    
+    public ECommerceService(IDMEEditor dmeEditor)
+    {
+        _multiUoW = new MultiDataSourceUnitOfWork(dmeEditor);
+        SetupDataStructure().Wait();
+    }
+    
+    private async Task SetupDataStructure()
+    {
+        // Setup entities across multiple data sources
+        await _multiUoW.AddUnitOfWorkAsync&lt;Customer&gt;("CRM_SqlServer", "Customers", "CustomerID");
+        await _multiUoW.AddUnitOfWorkAsync&lt;Order&gt;("Orders_MongoDB", "Orders", "OrderID");
+        await _multiUoW.AddUnitOfWorkAsync&lt;OrderDetail&gt;("Orders_MongoDB", "OrderDetails", "DetailID");
+        await _multiUoW.AddUnitOfWorkAsync&lt;Product&gt;("Inventory_PostgreSQL", "Products", "ProductID");
+        await _multiUoW.AddUnitOfWorkAsync&lt;Address&gt;("CRM_SqlServer", "Addresses", "AddressID");
+        await _multiUoW.AddUnitOfWorkAsync&lt;Payment&gt;("Payments_Oracle", "Payments", "PaymentID");
+        
+        // Define business relationships
+        _multiUoW.AddRelationship("Customer", "Order", "CustomerID", "CustomerID",
+                                 RelationshipBehavior.CascadeDelete, false);
+        
+        _multiUoW.AddRelationship("Customer", "Address", "CustomerID", "CustomerID",
+                                 RelationshipBehavior.CascadeDelete, false);
+        
+        _multiUoW.AddRelationship("Order", "OrderDetail", "OrderID", "OrderID",
+                                 RelationshipBehavior.CascadeDelete, true);
+        
+        _multiUoW.AddRelationship("Order", "Payment", "OrderID", "OrderID",
+                                 RelationshipBehavior.Restrict, false);
+        
+        _multiUoW.AddRelationship("Product", "OrderDetail", "ProductID", "ProductID",
+                                 RelationshipBehavior.Restrict, true);
+        
+        // Setup event handling
+        _multiUoW.ChildDataChanged += OnChildDataChanged;
+        
+        Console.WriteLine("🎯 E-Commerce data structure configured across:");
+        Console.WriteLine("   📊 SQL Server: Customers, Addresses");
+        Console.WriteLine("   📊 MongoDB: Orders, OrderDetails");
+        Console.WriteLine("   📊 PostgreSQL: Products");
+        Console.WriteLine("   📊 Oracle: Payments");
+    }
+    
+    private async void OnChildDataChanged(object sender, ChildDataChangedEventArgs e)
+    {
+        Console.WriteLine($"🔄 Data changed: {e.ChildEntityName} for {e.ParentEntityName}");
+        
+        // Update UI or trigger business logic
+        switch (e.ChildEntityName)
+        {
+            case "Order":
+                await UpdateCustomerOrderSummary();
+                break;
+            case "Address":
+                await ValidateShippingOptions();
+                break;
+            case "Payment":
+                await UpdateOrderStatus();
+                break;
+        }
+    }
+    
+    public async Task&lt;string&gt; ProcessOrderAsync(OrderRequest request)
+    {
+        try
+        {
+            // 1. Validate customer
+            var customers = _multiUoW.GetEntities&lt;Customer&gt;("Customer");
+            var customer = customers.FirstOrDefault(c => c.CustomerID == request.CustomerID);
+            
+            if (customer == null)
+            {
+                throw new BusinessException("Customer not found");
+            }
+            
+            // 2. Create order
+            var order = new Order
+            {
+                OrderID = Guid.NewGuid().ToString(),
+                CustomerID = request.CustomerID,
+                OrderDate = DateTime.Now,
+                Status = "Pending",
+                ShippingAddress = request.ShippingAddress,
+                Total = 0
+            };
+            
+            await _multiUoW.InsertAsync("Order", order);
+            
+            // 3. Add order details and calculate total
+            decimal orderTotal = 0;
+            var products = _multiUoW.GetEntities&lt;Product&gt;("Product");
+            
+            foreach (var item in request.Items)
+            {
+                var product = products.FirstOrDefault(p => p.ProductID == item.ProductID);
+                if (product == null)
+                {
+                    throw new BusinessException($"Product {item.ProductID} not found");
+                }
+                
+                if (product.StockQuantity < item.Quantity)
+                {
+                    throw new BusinessException($"Insufficient stock for {product.Name}");
+                }
+                
+                var detail = new OrderDetail
+                {
+                    DetailID = Guid.NewGuid().ToString(),
+                    OrderID = order.OrderID,
+                    ProductID = item.ProductID,
+                    Quantity = item.Quantity,
+                    UnitPrice = product.Price,
+                    LineTotal = item.Quantity * product.Price
+                };
+                
+                await _multiUoW.InsertAsync("OrderDetail", detail);
+                orderTotal += detail.LineTotal;
+                
+                // Update product stock
+                product.StockQuantity -= item.Quantity;
+                await _multiUoW.UpdateAsync("Product", product);
+            }
+            
+            // 4. Update order total
+            order.Total = orderTotal;
+            await _multiUoW.UpdateAsync("Order", order);
+            
+            // 5. Process payment
+            var payment = new Payment
+            {
+                PaymentID = Guid.NewGuid().ToString(),
+                OrderID = order.OrderID,
+                Amount = orderTotal,
+                PaymentMethod = request.PaymentMethod,
+                PaymentDate = DateTime.Now,
+                Status = "Processed"
+            };
+            
+            await _multiUoW.InsertAsync("Payment", payment);
+            
+            // 6. Update order status
+            order.Status = "Confirmed";
+            await _multiUoW.UpdateAsync("Order", order);
+            
+            // 7. Commit all changes across all data sources
+            var result = await _multiUoW.CommitAsync();
+            
+            if (result.Flag == Errors.Ok)
+            {
+                Console.WriteLine("✅ Order processed successfully across all systems:");
+                Console.WriteLine($"   📦 Order: {order.OrderID}");
+                Console.WriteLine($"   💰 Total: ${orderTotal:F2}");
+                Console.WriteLine($"   🏪 Items: {request.Items.Count}");
+                Console.WriteLine($"   🎯 Customer: {customer.Name}");
+                
+                return order.OrderID;
+            }
+            else
+            {
+                throw new BusinessException($"Order processing failed: {result.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Order processing failed: {ex.Message}");
+            Console.WriteLine("🔄 All changes have been rolled back automatically");
+            throw;
+        }
+    }
+    
+    public async Task&lt;CustomerOrderSummary&gt; GetCustomerOrderSummaryAsync(string customerID)
+    {
+        // Navigate to the customer
+        var customers = _multiUoW.GetEntities&lt;Customer&gt;("Customer");
+        var customer = customers.FirstOrDefault(c => c.CustomerID == customerID);
+        
+        if (customer == null)
+        {
+            throw new ArgumentException("Customer not found");
+        }
+        
+        // Navigate to load all related data
+        await _multiUoW.NavigateToParentAsync("Customer", customer);
+        
+        // Get all related children
+        var relatedData = await _multiUoW.GetAllRelatedChildrenAsync&lt;object, Customer&gt;("Customer", customer);
+        
+        var summary = new CustomerOrderSummary
+        {
+            Customer = customer,
+            OrderCount = relatedData.ContainsKey("Order") ? relatedData["Order"].Count : 0,
+            AddressCount = relatedData.ContainsKey("Address") ? relatedData["Address"].Count : 0
+        };
+        
+        if (relatedData.ContainsKey("Order"))
+        {
+            var orders = relatedData["Order"].Cast&lt;Order&gt;();
+            summary.TotalSpent = orders.Sum(o => o.Total);
+            summary.LastOrderDate = orders.Max(o => o.OrderDate);
+        }
+        
+        return summary;
+    }
+    
+    private async Task UpdateCustomerOrderSummary()
+    {
+        // Business logic for updating customer metrics
+        Console.WriteLine("📊 Updating customer order summary...");
+    }
+    
+    private async Task ValidateShippingOptions()
+    {
+        // Business logic for shipping validation
+        Console.WriteLine("🚚 Validating shipping options...");
+    }
+    
+    private async Task UpdateOrderStatus()
+    {
+        // Business logic for order status updates
+        Console.WriteLine("📋 Updating order status...");
+    }
+    
+    public void Dispose()
+    {
+        _multiUoW?.Dispose();
+    }
+}
+
+// Usage
+public class OrderRequest
+{
+    public string CustomerID { get; set; }
+    public string ShippingAddress { get; set; }
+    public string PaymentMethod { get; set; }
+    public List&lt;OrderItem&gt; Items { get; set; } = new List&lt;OrderItem&gt;();
+}
+
+public class OrderItem
+{
+    public string ProductID { get; set; }
+    public int Quantity { get; set; }
+}
+
+public class CustomerOrderSummary
+{
+    public Customer Customer { get; set; }
+    public int OrderCount { get; set; }
+    public int AddressCount { get; set; }
+    public decimal TotalSpent { get; set; }
+    public DateTime? LastOrderDate { get; set; }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section id="best-practices" class="section">
+                    <h2>🏆 Best Practices</h2>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🏗️ Setup Phase</h3>
+                            <ul>
+                                <li>Define all entities and relationships before starting operations</li>
+                                <li>Use meaningful entity names that match your domain</li>
+                                <li>Consider relationship behaviors carefully for each business rule</li>
+                                <li>Test relationship constraints in development</li>
+                            </ul>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>⚡ Performance</h3>
+                            <ul>
+                                <li>Use specific generic types when possible</li>
+                                <li>Leverage caching of entity collections</li>
+                                <li>Consider pagination for large datasets</li>
+                                <li>Monitor cross-datasource query performance</li>
+                            </ul>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>🛡️ Error Handling</h3>
+                            <ul>
+                                <li>Always wrap commits in try-catch blocks</li>
+                                <li>Handle relationship constraint violations gracefully</li>
+                                <li>Provide meaningful error messages to users</li>
+                                <li>Log detailed error information for debugging</li>
+                            </ul>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>🔧 Resource Management</h3>
+                            <ul>
+                                <li>Use <code>using</code> statements for automatic disposal</li>
+                                <li>Subscribe to events appropriately</li>
+                                <li>Unsubscribe from events when disposing</li>
+                                <li>Monitor memory usage with large datasets</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="warning">
+                        <strong>⚠️ Common Pitfalls to Avoid</strong>
+                        <ul>
+                            <li><strong>Missing Relationships:</strong> Not defining relationships can lead to data inconsistencies</li>
+                            <li><strong>Wrong Behaviors:</strong> Using CascadeDelete inappropriately can cause unintended data loss</li>
+                            <li><strong>Performance Issues:</strong> Loading too much related data at once</li>
+                            <li><strong>Transaction Scope:</strong> Making changes outside the UoW that aren't part of the transaction</li>
+                            <li><strong>Event Leaks:</strong> Not unsubscribing from events can cause memory leaks</li>
+                        </ul>
+                    </div>
+
+                    <div class="success">
+                        <strong>✅ Success Checklist</strong>
+                        <ul>
+                            <li>All data sources are properly configured in DME</li>
+                            <li>Entity relationships are clearly defined and tested</li>
+                            <li>Business rules are implemented through relationship behaviors</li>
+                            <li>Error handling is comprehensive and user-friendly</li>
+                            <li>Performance has been tested with realistic data volumes</li>
+                            <li>UI responds appropriately to data change events</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="unitofwork-deep-dive.html"><i class="bi bi-arrow-left"></i> UnitOfWork Deep Dive</a>
+                    <a href="api-reference.html">API Reference <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="examples.html">Examples</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Page-specific functionality can go here
+        console.log('Multi-DataSource UnitOfWork documentation page loaded');
+    </script>
+</body>
+
+</html>

@@ -3,237 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Examples - Beep Editor Documentation</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f5f5f5;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-align: center;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .content-section {
-            background: white;
-            border-radius: 10px;
-            padding: 2rem;
-            margin: 2rem 0;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .content-section h2 {
-            color: #333;
-            margin-bottom: 1rem;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 0.5rem;
-        }
-
-        .content-section h3 {
-            color: #555;
-            margin: 1.5rem 0 1rem 0;
-        }
-
-        .code-block {
-            background: #2d3748;
-            color: #e2e8f0;
-            padding: 1rem;
-            border-radius: 5px;
-            overflow-x: auto;
-            margin: 1rem 0;
-        }
-
-        .nav-breadcrumb {
-            background: white;
-            padding: 1rem;
-            border-radius: 5px;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .nav-breadcrumb a {
-            color: #667eea;
-            text-decoration: none;
-        }
-
-        .nav-breadcrumb a:hover {
-            text-decoration: underline;
-        }
-
-        .warning-box {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 1rem;
-            border-radius: 5px;
-            margin: 1rem 0;
-        }
-
-        .info-box {
-            background: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-            padding: 1rem;
-            border-radius: 5px;
-            margin: 1rem 0;
-        }
-
-        .example-box {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-            padding: 1rem;
-            border-radius: 5px;
-            margin: 1rem 0;
-        }
-
-        .sidebar {
-            position: fixed;
-            left: -350px;
-            top: 0;
-            width: 350px;
-            height: 100vh;
-            background: rgba(45, 55, 72, 0.95);
-            color: white;
-            padding: 2rem;
-            transition: left 0.3s ease;
-            z-index: 1000;
-            overflow-y: auto;
-            backdrop-filter: blur(10px);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .sidebar.open {
-            left: 0;
-        }
-
-        .sidebar h3 {
-            margin-bottom: 1.5rem;
-            color: #f7fafc;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .sidebar ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .sidebar ul li {
-            margin: 0.5rem 0;
-        }
-
-        .sidebar ul li a {
-            color: #cbd5e0;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 0.75rem;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar ul li a:hover,
-        .sidebar ul li a.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .sidebar ul li a i {
-            width: 16px;
-            text-align: center;
-        }
-
-        .menu-toggle {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            padding: 0.75rem;
-            border-radius: 8px;
-            cursor: pointer;
-            z-index: 1001;
-            font-size: 1.2rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        .menu-toggle:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.05);
-        }
-    </style>
+    <title>Code Examples - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body>
-    <button class="menu-toggle" onclick="toggleSidebar()">
-        <i class="fas fa-bars"></i>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
     </button>
-    
-    <div class="overlay" onclick="closeSidebar()"></div>
-    
-    <nav class="sidebar">
-        <h3><i class="fas fa-book"></i> Documentation</h3>
-        <ul>
-            <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
-            <li><a href="registerbeep.html"><i class="fas fa-user-plus"></i> RegisterBeep</a></li>
-            <li><a href="data-management-examples.html"><i class="fas fa-database"></i> Data Management Examples</a></li>
-            <li><a href="unitofwork.html"><i class="fas fa-layer-group"></i> UnitOfWork</a></li>
-            <li><a href="unitofwork-deep-dive.html"><i class="fas fa-search"></i> UnitOfWork Deep Dive</a></li>
-            <li><a href="multidatasource-unitofwork.html"><i class="fas fa-project-diagram"></i> MultiDataSource UnitOfWork</a></li>
-            <li><a href="unitofwork-factory.html"><i class="fas fa-industry"></i> UnitOfWork Factory</a></li>
-            <li><a href="unitofwork-wrapper.html"><i class="fas fa-box"></i> UnitOfWork Wrapper</a></li>
-            <li><a href="api-reference.html"><i class="fas fa-code"></i> API Reference</a></li>
-            <li><a href="examples.html" class="active"><i class="fas fa-file-code"></i> Code Examples</a></li>
-            <li><a href="best-practices.html"><i class="fas fa-star"></i> Best Practices</a></li>
-        </ul>
-    </nav>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
 
     <div class="container">
-        <div class="nav-breadcrumb">
-            <a href="index.html">Home</a> > Code Examples
-        </div>
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
 
-        <header>
-            <h1>Code Examples</h1>
-            <p>Practical examples for common scenarios</p>
-        </header>
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>→</span>
+                    <span>Code Examples</span>
+                </nav>
 
-        <div class="content-section">
-            <h2>1. Basic Customer Management System</h2>
-            <p>This example shows how to create a complete customer management system using UnitOfWork.</p>
-            
-            <div class="code-block">
-<pre><code class="language-csharp">using TheTechIdea.Beep.Editor;
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>💻 Code Examples</h1>
+                    <p class="page-subtitle">Practical examples and real-world scenarios for using the Beep Data Management Engine</p>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>📚 Table of Contents</h3>
+                    <ul>
+                        <li><a href="#customer-management">Customer Management System</a></li>
+                        <li><a href="#ecommerce-system">Multi-DataSource E-Commerce</a></li>
+                        <li><a href="#data-synchronization">Data Synchronization</a></li>
+                        <li><a href="#batch-processing">Batch Processing</a></li>
+                        <li><a href="#complete-application">Complete Application</a></li>
+                    </ul>
+                </div>
+
+                <!-- Customer Management -->
+                <section id="customer-management" class="section">
+                    <h2>🛒 Basic Customer Management System</h2>
+                    <p>This example shows how to create a complete customer management system using UnitOfWork.</p>
+                    
+                    <div class="code-example">
+                        <h3>CustomerManager Class</h3>
+                        <pre><code class="language-csharp">using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.DataBase;
 
 public class CustomerManager
@@ -353,15 +183,27 @@ public class CustomerManager
         _customerUoW?.Dispose();
     }
 }</code></pre>
-            </div>
-        </div>
+                    </div>
 
-        <div class="content-section">
-            <h2>2. Multi-DataSource E-Commerce System</h2>
-            <p>This example demonstrates managing an e-commerce system with customers in SQL Server and orders in MongoDB.</p>
-            
-            <div class="code-block">
-<pre><code class="language-csharp">public class ECommerceManager
+                    <div class="tip">
+                        <strong>💡 Key Features</strong>
+                        <ul>
+                            <li>Event-driven validation using PreInsert and PreCommit events</li>
+                            <li>Property change logging with PostEdit event</li>
+                            <li>Async operations for better performance</li>
+                            <li>Proper error handling and resource disposal</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- E-Commerce System -->
+                <section id="ecommerce-system" class="section">
+                    <h2>🛍️ Multi-DataSource E-Commerce System</h2>
+                    <p>This example demonstrates managing an e-commerce system with customers in SQL Server and orders in MongoDB.</p>
+                    
+                    <div class="code-example">
+                        <h3>ECommerceManager Class</h3>
+                        <pre><code class="language-csharp">public class ECommerceManager
 {
     private readonly IDMEEditor _dmeEditor;
     private MultiDataSourceUnitOfWork _multiUoW;
@@ -385,7 +227,7 @@ public class CustomerManager
         // Define relationships
         _multiUoW.AddRelationship("Customer", "Order", "CustomerID", "CustomerID", 
                                  RelationshipBehavior.CascadeDelete);
-        _multiUoW.AddRelationship("Order", "OrderItem", "OrderID", "OrderID", 
+        _multiUoU.addRelationship("Order", "OrderItem", "OrderID", "OrderID", 
                                  RelationshipBehavior.CascadeDelete, true);
         _multiUoW.AddRelationship("Product", "OrderItem", "ProductID", "ProductID", 
                                  RelationshipBehavior.Restrict);
@@ -471,7 +313,7 @@ public class CustomerManager
         };
     }
     
-    public async Task&lt;bool&gt; CancelOrderAsync(string orderId)
+    public async Task&lt;bool&gt; CancelOrderAsync(String orderId)
     {
         try
         {
@@ -499,15 +341,9 @@ public class CustomerManager
         }
     }
     
-    public async Task&lt;List&lt;Order&gt;&gt; GetOrdersByStatusAsync(string status)
-    {
-        var orders = _multiUoW.GetEntities&lt;Order&gt;("Order");
-        return orders.Where(o =&gt; o.Status == status).ToList();
-    }
-    
     private async void OnChildDataChanged(object sender, ChildDataChangedEventArgs args)
     {
-        Console.WriteLine($"Child data changed: {args.ParentEntityName} -&gt; {args.ChildEntityName}");
+        Console.WriteLine($"Child data changed: {args.ParentEntityName} → {args.ChildEntityName}");
         
         // Update UI or perform other actions
         if (args.ChildEntityName == "Order")
@@ -518,18 +354,6 @@ public class CustomerManager
         {
             await RefreshOrderItemDisplay();
         }
-    }
-    
-    private async Task RefreshOrderDisplay()
-    {
-        // Implement UI refresh logic
-        Console.WriteLine("Refreshing order display...");
-    }
-    
-    private async Task RefreshOrderItemDisplay()
-    {
-        // Implement UI refresh logic
-        Console.WriteLine("Refreshing order item display...");
     }
     
     public void Dispose()
@@ -551,15 +375,27 @@ public class CustomerOrderView
     public Customer Customer { get; set; }
     public List&lt;Order&gt; Orders { get; set; }
 }</code></pre>
-            </div>
-        </div>
+                    </div>
 
-        <div class="content-section">
-            <h2>3. Data Synchronization Between Systems</h2>
-            <p>This example shows how to synchronize data between different systems using UnitOfWork.</p>
-            
-            <div class="code-block">
-<pre><code class="language-csharp">public class DataSynchronizer
+                    <div class="success">
+                        <strong>✅ Advanced Features</strong>
+                        <ul>
+                            <li>Cross-database relationships between SQL Server and MongoDB</li>
+                            <li>Automatic relationship management with cascade operations</li>
+                            <li>Event-driven UI updates when related data changes</li>
+                            <li>Transaction consistency across multiple data sources</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Data Synchronization -->
+                <section id="data-synchronization" class="section">
+                    <h2>🔄 Data Synchronization Between Systems</h2>
+                    <p>This example shows how to synchronize data between different systems with conflict resolution.</p>
+                    
+                    <div class="code-example">
+                        <h3>DataSynchronizer Class</h3>
+                        <pre><code class="language-csharp">public class DataSynchronizer
 {
     private readonly IDMEEditor _dmeEditor;
     private UnitofWork&lt;Product&gt; _sourceUoW;
@@ -650,70 +486,6 @@ public class CustomerOrderView
         return result;
     }
     
-    private async Task InsertProductAsync(Product sourceProduct, SyncResult result)
-    {
-        try
-        {
-            var newProduct = CloneProduct(sourceProduct);
-            newProduct.SyncDate = DateTime.Now;
-            
-            await _targetUoW.InsertAsync(newProduct);
-            result.InsertedCount++;
-        }
-        catch (Exception ex)
-        {
-            result.Errors.Add($"Failed to insert product {sourceProduct.ProductID}: {ex.Message}");
-        }
-    }
-    
-    private async Task UpdateProductAsync(Product sourceProduct, Product targetProduct, SyncResult result)
-    {
-        try
-        {
-            // Update target product with source data
-            targetProduct.Name = sourceProduct.Name;
-            targetProduct.Description = sourceProduct.Description;
-            targetProduct.Price = sourceProduct.Price;
-            targetProduct.Category = sourceProduct.Category;
-            targetProduct.ModifiedDate = sourceProduct.ModifiedDate;
-            targetProduct.SyncDate = DateTime.Now;
-            
-            await _targetUoW.UpdateAsync(targetProduct);
-            result.UpdatedCount++;
-        }
-        catch (Exception ex)
-        {
-            result.Errors.Add($"Failed to update product {sourceProduct.ProductID}: {ex.Message}");
-        }
-    }
-    
-    private async Task DeleteProductAsync(Product targetProduct, SyncResult result)
-    {
-        try
-        {
-            await _targetUoW.DeleteAsync(targetProduct);
-            result.DeletedCount++;
-        }
-        catch (Exception ex)
-        {
-            result.Errors.Add($"Failed to delete product {targetProduct.ProductID}: {ex.Message}");
-        }
-    }
-    
-    private Product CloneProduct(Product source)
-    {
-        return new Product
-        {
-            ProductID = source.ProductID,
-            Name = source.Name,
-            Description = source.Description,
-            Price = source.Price,
-            Category = source.Category,
-            CreatedDate = source.CreatedDate,
-            ModifiedDate = source.ModifiedDate
-        };
-    }
-    
     public async Task&lt;SyncResult&gt; SynchronizeWithConflictResolutionAsync()
     {
         var result = new SyncResult();
@@ -776,7 +548,7 @@ public class CustomerOrderView
         {
             result.Success = false;
             result.Message = $"Synchronization failed: {ex.Message}";
-            await _targetUoU.Rollback();
+            await _targetUoW.Rollback();
         }
         
         return result;
@@ -785,30 +557,14 @@ public class CustomerOrderView
     private ConflictResolution ResolveConflict(Product source, Product target)
     {
         // Simple rule: if source is newer, use source
-        if (source.ModifiedDate > target.ModifiedDate)
+        if (source.ModifiedDate &gt; target.ModifiedDate)
             return ConflictResolution.UseSource;
         
         // If target is newer, check for manual intervention
-        if (target.ModifiedDate > source.ModifiedDate.AddHours(1))
+        if (target.ModifiedDate &gt; source.ModifiedDate.AddHours(1))
             return ConflictResolution.Manual;
         
         return ConflictResolution.UseTarget;
-    }
-    
-    private Product MergeProducts(Product source, Product target)
-    {
-        // Merge logic - take newest non-null values
-        var merged = CloneProduct(target);
-        
-        if (source.ModifiedDate > target.ModifiedDate)
-        {
-            merged.Name = source.Name ?? target.Name;
-            merged.Description = source.Description ?? target.Description;
-            merged.Price = source.Price;
-        }
-        
-        merged.ModifiedDate = DateTime.Now;
-        return merged;
     }
     
     public void Dispose()
@@ -830,13 +586,6 @@ public class SyncResult
     public List&lt;DataConflict&gt; Conflicts { get; set; } = new List&lt;DataConflict&gt;();
 }
 
-public class DataConflict
-{
-    public string ProductID { get; set; }
-    public Product SourceProduct { get; set; }
-    public Product TargetProduct { get; set; }
-}
-
 public enum ConflictResolution
 {
     UseSource,
@@ -844,15 +593,27 @@ public enum ConflictResolution
     Merge,
     Manual
 }</code></pre>
-            </div>
-        </div>
+                    </div>
 
-        <div class="content-section">
-            <h2>4. Batch Processing with Progress Reporting</h2>
-            <p>This example demonstrates processing large datasets with progress reporting and error handling.</p>
-            
-            <div class="code-block">
-<pre><code class="language-csharp">public class BatchProcessor
+                    <div class="note">
+                        <strong>🔍 Conflict Resolution Strategies</strong>
+                        <ul>
+                            <li><strong>UseSource:</strong> Source system data takes precedence</li>
+                            <li><strong>UseTarget:</strong> Target system data is preserved</li>
+                            <li><strong>Merge:</strong> Intelligent merging of both versions</li>
+                            <li><strong>Manual:</strong> Requires human intervention to resolve</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Batch Processing -->
+                <section id="batch-processing" class="section">
+                    <h2>⚡ Batch Processing with Progress Reporting</h2>
+                    <p>This example demonstrates processing large datasets with progress reporting and error handling.</p>
+                    
+                    <div class="code-example">
+                        <h3>BatchProcessor Class</h3>
+                        <pre><code class="language-csharp">public class BatchProcessor
 {
     private readonly IDMEEditor _dmeEditor;
     private UnitofWork&lt;ImportRecord&gt; _importUoW;
@@ -913,20 +674,13 @@ public enum ConflictResolution
             
             if (result.Status == BatchStatus.InProgress)
             {
-                result.Status = result.ErrorCount > 0 ? BatchStatus.CompletedWithErrors : BatchStatus.Completed;
+                result.Status = result.ErrorCount &gt; 0 ? BatchStatus.CompletedWithErrors : BatchStatus.Completed;
             }
         }
         catch (Exception ex)
         {
             result.Status = BatchStatus.Failed;
             result.ErrorMessage = ex.Message;
-            
-            ErrorOccurred?.Invoke(this, new BatchErrorEventArgs
-            {
-                BatchNumber = 0,
-                Error = ex,
-                Message = "Batch processing failed"
-            });
         }
         finally
         {
@@ -990,63 +744,6 @@ public enum ConflictResolution
         }
     }
     
-    private ImportRecord CreateImportRecord(ImportData data, int batchNumber)
-    {
-        return new ImportRecord
-        {
-            RecordID = Guid.NewGuid().ToString(),
-            BatchNumber = batchNumber,
-            SourceData = JsonConvert.SerializeObject(data),
-            ProcessedDate = DateTime.Now,
-            Status = "Processed"
-        };
-    }
-    
-    private void ReportProgress(PassedArgs args, BatchResult result)
-    {
-        ProgressChanged?.Invoke(this, new BatchProgressEventArgs
-        {
-            Message = args.Messege,
-            TotalProcessed = result.ProcessedRecords,
-            TotalRecords = result.TotalRecords,
-            ErrorCount = result.ErrorCount
-        });
-    }
-    
-    private void ValidateRecord(object sender, UnitofWorkParams args)
-    {
-        var record = (ImportRecord)sender;
-        
-        // Custom validation logic
-        if (string.IsNullOrWhiteSpace(record.SourceData))
-        {
-            args.Cancel = true;
-            throw new ValidationException("Source data cannot be empty");
-        }
-        
-        if (record.BatchNumber <= 0)
-        {
-            args.Cancel = true;
-            throw new ValidationException("Invalid batch number");
-        }
-    }
-    
-    private void RecordInserted(object sender, UnitofWorkParams args)
-    {
-        var record = (ImportRecord)sender;
-        Console.WriteLine($"Record {record.RecordID} inserted successfully");
-    }
-    
-    public async Task&lt;BatchResult&gt; ReprocessFailedRecordsAsync(BatchResult previousResult)
-    {
-        var failedData = previousResult.Errors.Select(e =&gt; e.Data).ToList();
-        
-        Console.WriteLine($"Reprocessing {failedData.Count} failed records...");
-        
-        var result = await ProcessBatchAsync(failedData);
-        return result;
-    }
-    
     public void Dispose()
     {
         _importUoW?.Dispose();
@@ -1067,14 +764,6 @@ public class BatchResult
     public List&lt;BatchError&gt; Errors { get; set; } = new List&lt;BatchError&gt;();
 }
 
-public class BatchError
-{
-    public int BatchNumber { get; set; }
-    public int RecordIndex { get; set; }
-    public ImportData Data { get; set; }
-    public string Error { get; set; }
-}
-
 public enum BatchStatus
 {
     InProgress,
@@ -1082,54 +771,29 @@ public enum BatchStatus
     CompletedWithErrors,
     Failed,
     Cancelled
-}
-
-public class BatchProgressEventArgs : EventArgs
-{
-    public int BatchNumber { get; set; }
-    public int TotalBatches { get; set; }
-    public int RecordsInBatch { get; set; }
-    public int ProcessedInBatch { get; set; }
-    public int TotalProcessed { get; set; }
-    public int TotalRecords { get; set; }
-    public int ErrorCount { get; set; }
-    public string Message { get; set; }
-    public double ProgressPercentage => TotalRecords > 0 ? (double)TotalProcessed / TotalRecords * 100 : 0;
-}
-
-public class BatchErrorEventArgs : EventArgs
-{
-    public int BatchNumber { get; set; }
-    public int RecordIndex { get; set; }
-    public Exception Error { get; set; }
-    public string Message { get; set; }
-}
-
-public class ImportData
-{
-    public string Field1 { get; set; }
-    public string Field2 { get; set; }
-    public DateTime Date { get; set; }
-    public decimal Amount { get; set; }
-}
-
-public class ImportRecord : Entity
-{
-    public string RecordID { get; set; }
-    public int BatchNumber { get; set; }
-    public string SourceData { get; set; }
-    public DateTime ProcessedDate { get; set; }
-    public string Status { get; set; }
 }</code></pre>
-            </div>
-        </div>
+                    </div>
 
-        <div class="content-section">
-            <h2>5. Usage Example: Complete Application</h2>
-            <p>This example shows how to put it all together in a complete application.</p>
-            
-            <div class="code-block">
-<pre><code class="language-csharp">public class Program
+                    <div class="warning">
+                        <strong>⚠️ Batch Processing Best Practices</strong>
+                        <ul>
+                            <li>Process data in manageable chunks to avoid memory issues</li>
+                            <li>Provide progress reporting for long-running operations</li>
+                            <li>Support cancellation tokens for user control</li>
+                            <li>Handle errors gracefully without stopping the entire batch</li>
+                            <li>Commit frequently to avoid transaction timeouts</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Complete Application -->
+                <section id="complete-application" class="section">
+                    <h2>🏗️ Complete Application Example</h2>
+                    <p>This example shows how to put it all together in a complete application.</p>
+                    
+                    <div class="code-example">
+                        <h3>Program.cs - Application Entry Point</h3>
+                        <pre><code class="language-csharp">public class Program
 {
     private static IDMEEditor _dmeEditor;
     private static CustomerManager _customerManager;
@@ -1203,7 +867,7 @@ public class ImportRecord : Entity
             new OrderItemData { ProductID = "PROD002", Quantity = 1, UnitPrice = 49.99m }
         };
         
-        var orderId = await _ecommerceManager.CreateOrderAsync("CUST001", orderItems);
+        var orderId = await _ecommerceManager.CreateOrderAsync "CUST001", orderItems);
         Console.WriteLine($"Created order: {orderId}");
         
         // Get customer with orders
@@ -1239,66 +903,84 @@ public class ImportRecord : Entity
     
     private static IDMEEditor InitializeDMEEditor()
     {
-        // Initialize your DME Editor here
-        // This is a placeholder - actual initialization depends on your setup
-        var dmeEditor = new DMEEditor();
+        // Initialize using Autofac pattern
+        var builder = new ContainerBuilder();
         
-        // Configure data sources
-        // dmeEditor.AddDataSource(...);
+        // Register core services
+        builder.RegisterType<DMEEditor>().As<IDMEEditor>().SingleInstance();
+        builder.RegisterType<ConfigEditor>().As<IConfigEditor>().SingleInstance();
+        builder.RegisterType<DMLogger>().As<IDMLogger>().SingleInstance();
+        builder.RegisterType<Util>().As<IUtil>().SingleInstance();
+        builder.RegisterType<ErrorsInfo>().As<IErrorsInfo>().SingleInstance();
+        builder.RegisterType<JsonLoader>().As<IJsonLoader>().SingleInstance();
+        builder.RegisterType<AssemblyHandler>().As<IAssemblyHandler>().SingleInstance();
+        
+        var container = builder.Build();
+        var dmeEditor = container.Resolve<IDMEEditor>();
+        
+        // Initialize default configurations for IDataSource support
+        InitializeBeepDefaults(dmeEditor);
         
         return dmeEditor;
     }
 }</code></pre>
-            </div>
-        </div>
+                    </div>
 
-        <div class="info-box">
-            <strong>Tips for Using These Examples:</strong>
-            <ul>
-                <li>Adapt the entity classes (Customer, Order, Product, etc.) to match your data models</li>
-                <li>Configure your data sources in the DMEEditor initialization</li>
-                <li>Add proper error handling and logging for production use</li>
-                <li>Consider using dependency injection for better testability</li>
-                <li>Implement proper unit tests for your business logic</li>
-            </ul>
-        </div>
+                    <div class="success">
+                        <strong>✅ Application Architecture Benefits</strong>
+                        <ul>
+                            <li>Modular design with separate managers for different concerns</li>
+                            <li>Proper dependency injection and resource management</li>
+                            <li>Comprehensive error handling and logging</li>
+                            <li>Demonstration of multiple advanced patterns</li>
+                            <li>Clean separation between data management and business logic</li>
+                        </ul>
+                    </div>
+
+                    <div class="tip">
+                        <strong>💡 Customization Tips</strong>
+                        <ul>
+                            <li>Adapt entity classes (Customer, Order, Product) to match your data models</li>
+                            <li>Configure your data sources in the DMEEditor initialization</li>
+                            <li>Add proper error handling and logging for production use</li>
+                            <li>Consider using dependency injection for better testability</li>
+                            <li>Implement comprehensive unit tests for your business logic</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="data-management-examples.html"><i class="bi bi-arrow-left"></i> Data Management Examples</a>
+                    <a href="best-practices.html">Best Practices <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
     </div>
 
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
     
     <script>
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.querySelector('.overlay');
-            
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
-        }
-
-        function closeSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.querySelector('.overlay');
-            
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-        }
-
-        // Close sidebar when clicking on links
-        document.querySelectorAll('.sidebar a').forEach(link => {
-            link.addEventListener('click', closeSidebar);
-        });
-
-        // Keyboard navigation
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeSidebar();
-            }
-            if (e.key === 'm' && e.ctrlKey) {
-                e.preventDefault();
-                toggleSidebar();
-            }
-        });
+        // Page-specific functionality can go here
+        console.log('Examples documentation page loaded');
     </script>
 </body>
 </html>
