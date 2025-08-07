@@ -1,0 +1,545 @@
+<!--
+    AssemblyClassDefinition Class Documentation
+    Professional-grade documentation for the AssemblyClassDefinition class.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssemblyClassDefinition - Assembly Helpers Documentation</title>
+    <link rel="stylesheet" href="../sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="../assets/beep-logo.svg" alt="Beep Assembly Helpers Logo">
+                <div class="logo-text">
+                    <h2>Assembly Helpers</h2>
+                    <span class="version">v1.0.0</span>
+                </div>
+            </div>
+            
+            <!-- Search -->
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search documentation..." onkeyup="searchDocs(this.value)">
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="../index.html"><i class="bi bi-house"></i> Home</a></li>
+                    <li class="has-submenu open">
+                        <a href="#"><i class="bi bi-gear"></i> Core Classes</a>
+                        <ul class="submenu">
+                            <li><a href="assembly-handler.html">AssemblyHandler</a></li>
+                            <li><a href="assembly-class-definition.html" class="active">AssemblyClassDefinition</a></li>
+                            <li><a href="assemblies-rep.html">assemblies_rep</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-plug"></i> Extensions</a>
+                        <ul class="submenu">
+                            <li><a href="../extensions/loader-extensions.html">Loader Extensions</a></li>
+                            <li><a href="../extensions/scanning-extensions.html">Scanning Extensions</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-database"></i> Drivers</a>
+                        <ul class="submenu">
+                            <li><a href="../drivers/connection-drivers.html">Connection Drivers</a></li>
+                            <li><a href="../drivers/data-sources.html">Data Sources</a></li>
+                            <li><a href="../drivers/ado-drivers.html">ADO.NET Drivers</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-book"></i> Guides</a>
+                        <ul class="submenu">
+                            <li><a href="../guides/getting-started.html">Getting Started</a></li>
+                            <li><a href="../guides/assembly-loading.html">Assembly Loading</a></li>
+                            <li><a href="../guides/extension-scanning.html">Extension Scanning</a></li>
+                            <li><a href="../guides/driver-management.html">Driver Management</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="../api/reference.html"><i class="bi bi-code-square"></i> API Reference</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>AssemblyClassDefinition</h1>
+                    <p class="page-subtitle">Model class representing metadata and configuration for discovered assembly classes</p>
+                    
+                    <!-- Class Info -->
+                    <div class="class-info">
+                        <div class="info-item">
+                            <span class="label">Namespace:</span>
+                            <span class="value">TheTechIdea.Beep.ConfigUtil</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Assembly:</span>
+                            <span class="value">DataManagementModels.dll</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Inherits:</span>
+                            <span class="value">Entity</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Target Framework:</span>
+                            <span class="value">.NET 8, .NET 9</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overview -->
+                <section class="section">
+                    <h2>Overview</h2>
+                    <p>
+                        The <code>AssemblyClassDefinition</code> class is a comprehensive model that represents metadata 
+                        and configuration information for classes discovered during assembly scanning operations. 
+                        It stores detailed information about each class including its type information, 
+                        attributes, methods, and visual schema properties.
+                    </p>
+                    <p>
+                        This class is essential for the plugin architecture as it provides a structured way to 
+                        catalog and access information about loaded components, extensions, and data sources.
+                    </p>
+                </section>
+
+                <!-- Class Declaration -->
+                <section class="section">
+                    <h2>Class Declaration</h2>
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">public class AssemblyClassDefinition : Entity
+{
+    // Comprehensive metadata for discovered assembly classes
+    // including type information, attributes, and methods
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Properties -->
+                <section class="section">
+                    <h2>Properties</h2>
+                    
+                    <div class="property-list">
+                        <div class="property-item">
+                            <h3>ID</h3>
+                            <div class="property-info">
+                                <span class="type">string</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the unique identifier for the class definition.</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>GuidID</h3>
+                            <div class="property-info">
+                                <span class="type">string</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the globally unique identifier, automatically generated on creation.</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>className</h3>
+                            <div class="property-info">
+                                <span class="type">string</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the name of the class.</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">var definition = new AssemblyClassDefinition();
+definition.className = "MyDataSource";
+Console.WriteLine($"Class: {definition.className}");</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>dllname</h3>
+                            <div class="property-info">
+                                <span class="type">string</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the name of the DLL containing the class.</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>PackageName</h3>
+                            <div class="property-info">
+                                <span class="type">string</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the fully qualified package/namespace name of the class.</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>Order</h3>
+                            <div class="property-info">
+                                <span class="type">int</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the display order for the class (used in UI ordering).</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>type</h3>
+                            <div class="property-info">
+                                <span class="type">Type</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the .NET Type object representing the class.</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">// Access the actual type for reflection operations
+if (definition.type != null)
+{
+    var instance = Activator.CreateInstance(definition.type);
+    Console.WriteLine($"Created instance of {definition.type.Name}");
+}</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>componentType</h3>
+                            <div class="property-info">
+                                <span class="type">string</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the type of component (e.g., "IDataSource", "IWorkFlowAction", etc.).</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>LocalDB</h3>
+                            <div class="property-info">
+                                <span class="type">bool</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets whether this class represents a local database implementation.</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>InMemory</h3>
+                            <div class="property-info">
+                                <span class="type">bool</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets whether this class represents an in-memory database implementation.</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>IsDataSource</h3>
+                            <div class="property-info">
+                                <span class="type">bool</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets whether this class implements the IDataSource interface.</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>classProperties</h3>
+                            <div class="property-info">
+                                <span class="type">AddinAttribute</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the addin attribute information containing metadata about the class.</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">if (definition.classProperties != null)
+{
+    Console.WriteLine($"Category: {definition.classProperties.Category}");
+    Console.WriteLine($"Description: {definition.classProperties.Description}");
+    Console.WriteLine($"File Types: {definition.classProperties.FileType}");
+}</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>VisSchema</h3>
+                            <div class="property-info">
+                                <span class="type">AddinVisSchema</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the visual schema information for UI display and organization.</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>Methods</h3>
+                            <div class="property-info">
+                                <span class="type">List&lt;MethodsClass&gt;</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the collection of methods with command attributes discovered in the class.</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">// Access available methods with command attributes
+foreach (var method in definition.Methods)
+{
+    Console.WriteLine($"Method: {method.Name}");
+    Console.WriteLine($"Caption: {method.Caption}");
+    Console.WriteLine($"Category: {method.Category}");
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Usage Examples -->
+                <section class="section">
+                    <h2>Usage Examples</h2>
+
+                    <div class="method-item">
+                        <h3>Creating a Class Definition</h3>
+                        <p>Example of creating and populating an AssemblyClassDefinition:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">// Create a new class definition
+var definition = new AssemblyClassDefinition
+{
+    className = "SqlServerDataSource",
+    dllname = "SqlServerDriver.dll",
+    PackageName = "MyCompany.DataSources.SqlServerDataSource",
+    componentType = "IDataSource",
+    IsDataSource = true,
+    LocalDB = false,
+    InMemory = false,
+    Order = 1
+};
+
+// Set the actual type
+definition.type = typeof(SqlServerDataSource);
+
+// Configure properties if attributes are available
+if (definition.classProperties != null)
+{
+    definition.classProperties.Category = DatasourceCategory.RDBMS;
+    definition.classProperties.Description = "SQL Server data source implementation";
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="method-item">
+                        <h3>Filtering by Component Type</h3>
+                        <p>Example of filtering class definitions by component type:</p>
+                        
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Filter data sources
+var dataSources = assemblyClassDefinitions
+    .Where(def => def.componentType == "IDataSource" && def.IsDataSource)
+    .ToList();
+
+// Filter workflow actions
+var workflowActions = assemblyClassDefinitions
+    .Where(def => def.componentType == "IWorkFlowAction")
+    .ToList();
+
+// Filter by category
+var fileSources = assemblyClassDefinitions
+    .Where(def => def.classProperties?.Category == DatasourceCategory.FILE)
+    .ToList();</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="method-item">
+                        <h3>Creating Instances</h3>
+                        <p>Example of using the class definition to create instances:</p>
+                        
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Create instance using the stored type
+if (definition.type != null)
+{
+    // Create with default constructor
+    var instance = Activator.CreateInstance(definition.type);
+    
+    // Create with parameters if needed
+    var parameters = new object[] { connectionString, configEditor };
+    var configuredInstance = Activator.CreateInstance(definition.type, parameters);
+    
+    // Cast to specific interface if needed
+    if (instance is IDataSource dataSource)
+    {
+        // Use the data source
+        var tables = dataSource.GetEntitesList();
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="method-item">
+                        <h3>Method Execution</h3>
+                        <p>Example of accessing and executing methods with command attributes:</p>
+                        
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Find a specific method
+var connectMethod = definition.Methods
+    .FirstOrDefault(m => m.Name == "Connect");
+
+if (connectMethod != null && definition.type != null)
+{
+    // Create instance
+    var instance = Activator.CreateInstance(definition.type);
+    
+    // Execute the method
+    var result = connectMethod.Info.Invoke(instance, null);
+    
+    Console.WriteLine($"Method '{connectMethod.Caption}' executed");
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Integration Patterns -->
+                <section class="section">
+                    <h2>Integration Patterns</h2>
+
+                    <div class="usage-pattern">
+                        <h3>Plugin Registration</h3>
+                        <p>How AssemblyClassDefinition is used in plugin registration:</p>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// During assembly scanning
+foreach (var type in assembly.GetTypes())
+{
+    if (typeof(IDataSource).IsAssignableFrom(type))
+                            {
+                                var definition = new AssemblyClassDefinition
+                                {
+                                    className = type.Name,
+                                    PackageName = type.FullName,
+                                    type = type,
+                                    componentType = "IDataSource",
+                                    IsDataSource = true
+                                };
+                                
+                                // Extract attributes
+                                var addinAttr = type.GetCustomAttribute<AddinAttribute>();
+                                if (addinAttr != null)
+                                {
+                                    definition.classProperties = addinAttr;
+                                    definition.Order = addinAttr.order;
+                                }
+                                
+                                // Register the definition
+                                registeredDataSources.Add(definition);
+                            }</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="usage-pattern">
+                        <h3>UI Generation</h3>
+                        <p>Using class definitions for dynamic UI generation:</p>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Generate menu items from class definitions
+foreach (var definition in definitions.OrderBy(d => d.Order))
+{
+    var menuItem = new MenuItem
+    {
+        Text = definition.classProperties?.Caption ?? definition.className,
+        Image = GetIcon(definition.classProperties?.iconimage),
+        Tag = definition
+    };
+    
+    // Add command methods as sub-items
+    foreach (var method in definition.Methods.Where(m => !m.Hidden))
+    {
+        var subItem = new MenuItem
+        {
+            Text = method.Caption,
+            Tag = new { Definition = definition, Method = method }
+        };
+        menuItem.DropDownItems.Add(subItem);
+    }
+    
+    mainMenu.Items.Add(menuItem);
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section class="section">
+                    <h2>Best Practices</h2>
+                    
+                    <div class="best-practices">
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Use Meaningful Names</h3>
+                            <p>Always set descriptive className and PackageName values for better identification and debugging.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Populate Metadata</h3>
+                            <p>Extract and populate classProperties and VisSchema information for better UI integration.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Set Component Types</h3>
+                            <p>Always specify the componentType to enable proper filtering and categorization.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Handle Null Types</h3>
+                            <p>Always check if the type property is not null before attempting to create instances.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Related Topics -->
+                <section class="section">
+                    <h2>Related Topics</h2>
+                    <div class="related-links">
+                        <a href="assembly-handler.html" class="related-link">
+                            <i class="bi bi-gear"></i>
+                            <span>AssemblyHandler</span>
+                        </a>
+                        <a href="assemblies-rep.html" class="related-link">
+                            <i class="bi bi-file-code"></i>
+                            <span>assemblies_rep</span>
+                        </a>
+                        <a href="../extensions/loader-extensions.html" class="related-link">
+                            <i class="bi bi-plug"></i>
+                            <span>Loader Extensions</span>
+                        </a>
+                        <a href="../guides/getting-started.html" class="related-link">
+                            <i class="bi bi-book"></i>
+                            <span>Getting Started Guide</span>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="../scripts/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,1170 @@
+<!--
+    Data Sources Documentation
+    Professional-grade documentation for data source discovery and management.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Sources - Assembly Helpers Documentation</title>
+    <link rel="stylesheet" href="../sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="../assets/beep-logo.svg" alt="Beep Assembly Helpers Logo">
+                <div class="logo-text">
+                    <h2>Assembly Helpers</h2>
+                    <span class="version">v1.0.0</span>
+                </div>
+            </div>
+            
+            <!-- Search -->
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search documentation..." onkeyup="searchDocs(this.value)">
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="../index.html"><i class="bi bi-house"></i> Home</a></li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-gear"></i> Core Classes</a>
+                        <ul class="submenu">
+                            <li><a href="../classes/assembly-handler.html">AssemblyHandler</a></li>
+                            <li><a href="../classes/assembly-class-definition.html">AssemblyClassDefinition</a></li>
+                            <li><a href="../classes/assemblies-rep.html">assemblies_rep</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-plug"></i> Extensions</a>
+                        <ul class="submenu">
+                            <li><a href="../extensions/loader-extensions.html">Loader Extensions</a></li>
+                            <li><a href="../extensions/scanning-extensions.html">Scanning Extensions</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu open">
+                        <a href="#"><i class="bi bi-database"></i> Drivers</a>
+                        <ul class="submenu">
+                            <li><a href="connection-drivers.html">Connection Drivers</a></li>
+                            <li><a href="data-sources.html" class="active">Data Sources</a></li>
+                            <li><a href="ado-drivers.html">ADO.NET Drivers</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="../guides/getting-started.html"><i class="bi bi-rocket"></i> Getting Started</a></li>
+                    <li><a href="../api/reference.html"><i class="bi bi-code-square"></i> API Reference</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>Data Sources</h1>
+                    <p class="page-subtitle">Discovery, configuration, and management of data source implementations</p>
+                </div>
+
+                <!-- Overview -->
+                <section class="section">
+                    <div class="admonition note">
+                        <p class="admonition-title">Note</p>
+                        <p>Data sources are implementations of the IDataSource interface that provide connectivity to various data stores. The AssemblyHandler automatically discovers and catalogs data source implementations.</p>
+                    </div>
+
+                    <h2>Data Source Architecture</h2>
+                    
+                    <p>Data sources in Beep implement the <code>IDataSource</code> interface and are automatically discovered through assembly scanning:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">public interface IDataSource : IDisposable
+{
+    // Core properties
+    string DatasourceName { get; set; }
+    DataSourceType DatasourceType { get; set; }
+    DatasourceCategory Category { get; set; }
+    IConnectionProperties Dataconnection { get; set; }
+    
+    // Data operations
+    IErrorsInfo OpenConnection();
+    IErrorsInfo CloseConnection();
+    ConnectionState ConnectionStatus { get; set; }
+    
+    // Schema operations
+    List<string> GetEntitesList();
+    List<EntityStructure> GetEntitiesNames();
+    EntityStructure GetEntityStructure(string EntityName, bool refresh);
+    
+    // Data retrieval
+    object GetEntity(string EntityName, List<AppFilter> filter);
+    object RunQuery(string qrystr);
+    
+    // Data modification
+    IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow);
+    IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow);
+    IErrorsInfo InsertEntity(string EntityName, object InsertedData);
+    
+    // Transaction support
+    IErrorsInfo BeginTransaction(PassedArgs args);
+    IErrorsInfo EndTransaction(PassedArgs args);
+    IErrorsInfo Commit(PassedArgs args);
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Discovery Process -->
+                <section class="section">
+                    <h2>Data Source Discovery</h2>
+                    
+                    <div class="subsection">
+                        <h3>Automatic Scanning</h3>
+                        <p>The <code>ScanAssemblyForDataSources</code> method identifies IDataSource implementations:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">private bool ScanAssemblyForDataSources(Assembly asm)
+{
+    Type[] types;
+    
+    try
+    {
+        // Get types from assembly
+        try
+        {
+            types = asm.GetTypes();
+        }
+        catch (Exception)
+        {
+            // Fallback to exported types if GetTypes() fails
+            try
+            {
+                types = asm.GetExportedTypes();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        if (types != null)
+        {
+            foreach (var mytype in types)
+            {
+                TypeInfo type = mytype.GetTypeInfo();
+                
+                // Look for IDataSource implementations
+                if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
+                {
+                    // Create assembly class definition
+                    AssemblyClassDefinition xcls = GetAssemblyClassDefinition(type, "IDataSource");
+                    
+                    // Add to collections
+                    DataSourcesClasses.Add(xcls);
+                    ConfigEditor.DataSourcesClasses.Add(xcls);
+                    
+                    Logger?.WriteLog($"Discovered data source: {type.FullName}");
+                }
+            }
+        }
+
+        return true;
+    }
+    catch (Exception ex)
+    {
+        Logger?.WriteLog($"Failed to scan assembly for data sources: {asm.GetName().Name} - {ex.Message}");
+        return false;
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Assembly Class Definition Creation</h3>
+                        <p>Each discovered data source is wrapped in an <code>AssemblyClassDefinition</code>:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">public AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type, string typename)
+{
+    var xcls = new AssemblyClassDefinition
+    {
+        className = type.Name,
+        dllname = type.Module.Name,
+        PackageName = type.FullName,
+        componentType = typename,
+        type = type,
+        Methods = new List<MethodsClass>()
+    };
+
+    // Check for special data source characteristics
+    if (type.ImplementedInterfaces.Contains(typeof(ILocalDB)))
+    {
+        xcls.LocalDB = true;
+    }
+    
+    if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
+    {
+        xcls.IsDataSource = true;
+    }
+    
+    if (type.ImplementedInterfaces.Contains(typeof(IInMemoryDB)))
+    {
+        xcls.InMemory = true;
+    }
+
+    // Get attributes for metadata
+    xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
+    
+    if (xcls.classProperties != null)
+    {
+        xcls.Order = xcls.classProperties.order;
+        xcls.RootName = xcls.classProperties.misc;
+        
+        // Process visualization schema
+        xcls.VisSchema = (AddinVisSchema)type.GetCustomAttribute(typeof(AddinVisSchema), false);
+        
+        // Process methods with command attributes
+        ProcessMethodsWithAttributes(type, xcls);
+        
+        // Handle ordering interface
+        if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
+        {
+            try
+            {
+                IOrder cls = (IOrder)Activator.CreateInstance(type);
+                xcls.Order = cls.Order;
+            }
+            catch (Exception ex)
+            {
+                Logger?.WriteLog($"Failed to get order from {type.Name}: {ex.Message}");
+            }
+        }
+    }
+
+    return xcls;
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Source Categories -->
+                <section class="section">
+                    <h2>Data Source Categories</h2>
+                    
+                    <div class="subsection">
+                        <h3>Relational Database Sources (RDBMS)</h3>
+                        <p>Traditional SQL databases with ACID properties:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">[Addin(Category = DatasourceCategory.RDBMS, DatasourceType = DataSourceType.SqlServer)]
+public class SqlServerDataSource : IDataSource
+{
+    public string DatasourceName { get; set; }
+    public DataSourceType DatasourceType { get; set; } = DataSourceType.SqlServer;
+    public DatasourceCategory Category { get; set; } = DatasourceCategory.RDBMS;
+    
+    // ADO.NET connection management
+    private SqlConnection _connection;
+    private SqlDataAdapter _adapter;
+    
+    public IErrorsInfo OpenConnection()
+    {
+        try
+        {
+            _connection = new SqlConnection(Dataconnection.ConnectionString);
+            _connection.Open();
+            ConnectionStatus = ConnectionState.Open;
+            return new ErrorsInfo { Flag = Errors.Ok };
+        }
+        catch (Exception ex)
+        {
+            return new ErrorsInfo 
+            { 
+                Flag = Errors.Failed, 
+                Message = ex.Message 
+            };
+        }
+    }
+    
+    // Implementation of other IDataSource methods...
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>File-Based Sources</h3>
+                        <p>Data sources that read from files (CSV, JSON, Excel, etc.):</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">[Addin(Category = DatasourceCategory.FILE, 
+       DatasourceType = DataSourceType.CSV,
+       FileType = "csv,txt,tsv")]
+public class CsvDataSource : IDataSource
+{
+    public string DatasourceName { get; set; }
+    public DataSourceType DatasourceType { get; set; } = DataSourceType.CSV;
+    public DatasourceCategory Category { get; set; } = DatasourceCategory.FILE;
+    
+    private string _filePath;
+    private List<string> _headers;
+    private List<Dictionary<string, object>> _data;
+    
+    public IErrorsInfo OpenConnection()
+    {
+        try
+        {
+            _filePath = Dataconnection.ConnectionString.Replace("{File}", Dataconnection.DatabaseName);
+            
+            if (!File.Exists(_filePath))
+            {
+                return new ErrorsInfo 
+                { 
+                    Flag = Errors.Failed, 
+                    Message = $"File not found: {_filePath}" 
+                };
+            }
+            
+            // Parse CSV file
+            LoadCsvData();
+            ConnectionStatus = ConnectionState.Open;
+            
+            return new ErrorsInfo { Flag = Errors.Ok };
+        }
+        catch (Exception ex)
+        {
+            return new ErrorsInfo { Flag = Errors.Failed, Message = ex.Message };
+        }
+    }
+    
+    private void LoadCsvData()
+    {
+        var lines = File.ReadAllLines(_filePath);
+        if (lines.Length == 0) return;
+        
+        // Parse headers
+        _headers = lines[0].Split(',').Select(h => h.Trim('"')).ToList();
+        
+        // Parse data rows
+        _data = new List<Dictionary<string, object>>();
+        for (int i = 1; i < lines.Length; i++)
+        {
+            var values = lines[i].Split(',');
+            var row = new Dictionary<string, object>();
+            
+            for (int j = 0; j < _headers.Count && j < values.Length; j++)
+            {
+                row[_headers[j]] = values[j].Trim('"');
+            }
+            
+            _data.Add(row);
+        }
+    }
+    
+    public List<string> GetEntitesList()
+    {
+        // For CSV, the file itself is the entity
+        return new List<string> { Path.GetFileNameWithoutExtension(_filePath) };
+    }
+    
+    // Implementation of other IDataSource methods...
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>NoSQL Sources</h3>
+                        <p>Document databases, key-value stores, and other NoSQL systems:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">[Addin(Category = DatasourceCategory.NOSQL, DatasourceType = DataSourceType.MongoDB)]
+public class MongoDBDataSource : IDataSource
+{
+    public string DatasourceName { get; set; }
+    public DataSourceType DatasourceType { get; set; } = DataSourceType.MongoDB;
+    public DatasourceCategory Category { get; set; } = DatasourceCategory.NOSQL;
+    
+    private MongoClient _client;
+    private IMongoDatabase _database;
+    
+    public IErrorsInfo OpenConnection()
+    {
+        try
+        {
+            var connectionString = Dataconnection.ConnectionString;
+            _client = new MongoClient(connectionString);
+            _database = _client.GetDatabase(Dataconnection.DatabaseName);
+            
+            // Test connection
+            var pingResult = _database.RunCommand<BsonDocument>(new BsonDocument("ping", 1));
+            ConnectionStatus = ConnectionState.Open;
+            
+            return new ErrorsInfo { Flag = Errors.Ok };
+        }
+        catch (Exception ex)
+        {
+            return new ErrorsInfo { Flag = Errors.Failed, Message = ex.Message };
+        }
+    }
+    
+    public List<string> GetEntitesList()
+    {
+        try
+        {
+            var collections = _database.ListCollectionNames().ToList();
+            return collections;
+        }
+        catch (Exception ex)
+        {
+            Logger?.WriteLog($"Error getting collections: {ex.Message}");
+            return new List<string>();
+        }
+    }
+    
+    public object GetEntity(string EntityName, List<AppFilter> filter)
+    {
+        try
+        {
+            var collection = _database.GetCollection<BsonDocument>(EntityName);
+            
+            // Build filter
+            var filterBuilder = Builders<BsonDocument>.Filter;
+            var mongoFilter = filterBuilder.Empty;
+            
+            if (filter != null && filter.Any())
+            {
+                foreach (var f in filter)
+                {
+                    mongoFilter = mongoFilter & filterBuilder.Eq(f.FieldName, f.FilterValue);
+                }
+            }
+            
+            var documents = collection.Find(mongoFilter).ToList();
+            return ConvertToDataTable(documents);
+        }
+        catch (Exception ex)
+        {
+            Logger?.WriteLog($"Error getting entity {EntityName}: {ex.Message}");
+            return null;
+        }
+    }
+    
+    // Implementation of other IDataSource methods...
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>In-Memory Sources</h3>
+                        <p>Data sources that operate entirely in memory for fast processing:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">[Addin(Category = DatasourceCategory.INMEMORY, 
+       DatasourceType = DataSourceType.InMemory)]
+public class DuckDBDataSource : IDataSource, IInMemoryDB, ILocalDB
+{
+    public string DatasourceName { get; set; }
+    public DataSourceType DatasourceType { get; set; } = DataSourceType.InMemory;
+    public DatasourceCategory Category { get; set; } = DatasourceCategory.INMEMORY;
+    
+    private DuckDBConnection _connection;
+    private bool _isInMemory;
+    
+    public IErrorsInfo OpenConnection()
+    {
+        try
+        {
+            var connectionString = Dataconnection.ConnectionString;
+            
+            // Check if in-memory or file-based
+            _isInMemory = connectionString.Contains(":memory:");
+            
+            _connection = new DuckDBConnection(connectionString);
+            _connection.Open();
+            
+            ConnectionStatus = ConnectionState.Open;
+            return new ErrorsInfo { Flag = Errors.Ok };
+        }
+        catch (Exception ex)
+        {
+            return new ErrorsInfo { Flag = Errors.Failed, Message = ex.Message };
+        }
+    }
+    
+    public IErrorsInfo CreateDatabase()
+    {
+        try
+        {
+            // DuckDB creates database automatically on connection
+            // For in-memory, this is a no-op
+            if (!_isInMemory)
+            {
+                var dbPath = Dataconnection.DatabaseName;
+                if (File.Exists(dbPath))
+                {
+                    return new ErrorsInfo 
+                    { 
+                        Flag = Errors.Failed, 
+                        Message = "Database already exists" 
+                    };
+                }
+            }
+            
+            return OpenConnection();
+        }
+        catch (Exception ex)
+        {
+            return new ErrorsInfo { Flag = Errors.Failed, Message = ex.Message };
+        }
+    }
+    
+    public IErrorsInfo LoadData(string tableName, DataTable data)
+    {
+        try
+        {
+            // Create table schema
+            var createTableSql = GenerateCreateTableSql(tableName, data);
+            using (var cmd = new DuckDBCommand(createTableSql, _connection))
+            {
+                cmd.ExecuteNonQuery();
+            }
+            
+            // Insert data
+            foreach (DataRow row in data.Rows)
+            {
+                var insertSql = GenerateInsertSql(tableName, row);
+                using (var cmd = new DuckDBCommand(insertSql, _connection))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            
+            return new ErrorsInfo { Flag = Errors.Ok };
+        }
+        catch (Exception ex)
+        {
+            return new ErrorsInfo { Flag = Errors.Failed, Message = ex.Message };
+        }
+    }
+    
+    // Implementation of other IDataSource, IInMemoryDB, ILocalDB methods...
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Web API Sources</h3>
+                        <p>Data sources that consume REST APIs and web services:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">[Addin(Category = DatasourceCategory.WEBAPI, 
+       DatasourceType = DataSourceType.WebAPI)]
+public class RestApiDataSource : IDataSource
+{
+    public string DatasourceName { get; set; }
+    public DataSourceType DatasourceType { get; set; } = DataSourceType.WebAPI;
+    public DatasourceCategory Category { get; set; } = DatasourceCategory.WEBAPI;
+    
+    private HttpClient _httpClient;
+    private string _baseUrl;
+    private string _apiKey;
+    
+    public IErrorsInfo OpenConnection()
+    {
+        try
+        {
+            // Parse connection string for API parameters
+            var connParams = ParseConnectionString(Dataconnection.ConnectionString);
+            _baseUrl = connParams.GetValueOrDefault("BaseUrl", "");
+            _apiKey = connParams.GetValueOrDefault("ApiKey", "");
+            
+            _httpClient = new HttpClient();
+            _httpClient.BaseAddress = new Uri(_baseUrl);
+            
+            // Add API key to headers if provided
+            if (!string.IsNullOrEmpty(_apiKey))
+            {
+                _httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
+            }
+            
+            // Test connection with a simple request
+            var response = _httpClient.GetAsync("/").Result;
+            ConnectionStatus = response.IsSuccessStatusCode ? 
+                ConnectionState.Open : ConnectionState.Broken;
+            
+            return new ErrorsInfo 
+            { 
+                Flag = response.IsSuccessStatusCode ? Errors.Ok : Errors.Failed,
+                Message = response.ReasonPhrase 
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ErrorsInfo { Flag = Errors.Failed, Message = ex.Message };
+        }
+    }
+    
+    public List<string> GetEntitesList()
+    {
+        try
+        {
+            // For REST APIs, entities are typically endpoints
+            // This would need to be customized based on the specific API
+            var response = _httpClient.GetAsync("/api/endpoints").Result;
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var content = response.Content.ReadAsStringAsync().Result;
+                var endpoints = JsonConvert.DeserializeObject<List<string>>(content);
+                return endpoints;
+            }
+            
+            return new List<string>();
+        }
+        catch (Exception ex)
+        {
+            Logger?.WriteLog($"Error getting API endpoints: {ex.Message}");
+            return new List<string>();
+        }
+    }
+    
+    public object GetEntity(string EntityName, List<AppFilter> filter)
+    {
+        try
+        {
+            var url = $"/api/{EntityName}";
+            
+            // Add query parameters from filters
+            if (filter != null && filter.Any())
+            {
+                var queryParams = string.Join("&", 
+                    filter.Select(f => $"{f.FieldName}={Uri.EscapeDataString(f.FilterValue?.ToString() ?? "")}"));
+                url += $"?{queryParams}";
+            }
+            
+            var response = _httpClient.GetAsync(url).Result;
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var json = response.Content.ReadAsStringAsync().Result;
+                return ConvertJsonToDataTable(json);
+            }
+            
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logger?.WriteLog($"Error getting entity {EntityName}: {ex.Message}");
+            return null;
+        }
+    }
+    
+    private Dictionary<string, string> ParseConnectionString(string connectionString)
+    {
+        var result = new Dictionary<string, string>();
+        var pairs = connectionString.Split(';');
+        
+        foreach (var pair in pairs)
+        {
+            var keyValue = pair.Split('=');
+            if (keyValue.Length == 2)
+            {
+                result[keyValue[0].Trim()] = keyValue[1].Trim();
+            }
+        }
+        
+        return result;
+    }
+    
+    // Implementation of other IDataSource methods...
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Source Registration -->
+                <section class="section">
+                    <h2>Data Source Registration</h2>
+                    
+                    <div class="subsection">
+                        <h3>Automatic Registration</h3>
+                        <p>Data sources are automatically registered during assembly scanning:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">// Called during LoadAllAssembly process
+public void ScanAssembliesForDataSources()
+{
+    foreach (assemblies_rep item in Assemblies.Where(c => 
+        c.FileTypes == FolderFileTypes.DataSources).ToList())
+    {
+        ScanAssemblyForDataSources(item.DllLib);
+        Logger?.WriteLog($"Scanned {item.DllName} for data sources");
+    }
+    
+    // Also scan built-in assemblies
+    foreach (assemblies_rep item in Assemblies.Where(c => 
+        c.FileTypes == FolderFileTypes.Builtin).ToList())
+    {
+        ScanAssemblyForDataSources(item.DllLib);
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Manual Registration</h3>
+                        <p>Data sources can also be manually registered:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">public void RegisterDataSource<T>() where T : IDataSource
+{
+    var type = typeof(T);
+    var typeInfo = type.GetTypeInfo();
+    
+    // Create assembly class definition
+    var assemblyClassDef = GetAssemblyClassDefinition(typeInfo, "IDataSource");
+    
+    // Add to collections
+    DataSourcesClasses.Add(assemblyClassDef);
+    ConfigEditor.DataSourcesClasses.Add(assemblyClassDef);
+    
+    // Create corresponding driver configuration
+    var driverConfig = CreateDriverConfigFromDataSource(assemblyClassDef);
+    if (driverConfig != null)
+    {
+        ConfigEditor.AddDriver(driverConfig);
+    }
+    
+    Logger?.WriteLog($"Manually registered data source: {type.Name}");
+}
+
+private ConnectionDriversConfig CreateDriverConfigFromDataSource(AssemblyClassDefinition classDef)
+{
+    if (classDef.classProperties == null) return null;
+    
+    return new ConnectionDriversConfig
+    {
+        PackageName = classDef.PackageName,
+        DriverClass = classDef.className,
+        classHandler = classDef.className,
+        version = "1.0.0",
+        dllname = classDef.dllname,
+        
+        ADOType = false,
+        DatasourceCategory = classDef.classProperties.Category,
+        DatasourceType = classDef.classProperties.DatasourceType,
+        
+        extensionstoHandle = classDef.classProperties.FileType,
+        CreateLocal = classDef.LocalDB,
+        InMemory = classDef.InMemory,
+        
+        iconname = $"{classDef.className.ToLower()}.png"
+    };
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Source Querying -->
+                <section class="section">
+                    <h2>Querying Data Sources</h2>
+                    
+                    <div class="subsection">
+                        <h3>Get Data Sources by Category</h3>
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">// Get all file-based data sources
+public List<AssemblyClassDefinition> GetFileDataSources()
+{
+    return DataSourcesClasses
+        .Where(ds => ds.classProperties?.Category == DatasourceCategory.FILE)
+        .OrderBy(ds => ds.className)
+        .ToList();
+}
+
+// Get all database data sources
+public List<AssemblyClassDefinition> GetDatabaseDataSources()
+{
+    return DataSourcesClasses
+        .Where(ds => ds.classProperties?.Category == DatasourceCategory.RDBMS)
+        .OrderBy(ds => ds.className)
+        .ToList();
+}
+
+// Get all in-memory data sources
+public List<AssemblyClassDefinition> GetInMemoryDataSources()
+{
+    return DataSourcesClasses
+        .Where(ds => ds.InMemory == true)
+        .OrderBy(ds => ds.className)
+        .ToList();
+}
+
+// Get all NoSQL data sources
+public List<AssemblyClassDefinition> GetNoSQLDataSources()
+{
+    return DataSourcesClasses
+        .Where(ds => ds.classProperties?.Category == DatasourceCategory.NOSQL)
+        .OrderBy(ds => ds.className)
+        .ToList();
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Get Data Sources by File Extension</h3>
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">public List<AssemblyClassDefinition> GetDataSourcesForExtension(string extension)
+{
+    return DataSourcesClasses
+        .Where(ds => ds.classProperties?.FileType != null &&
+                    ds.classProperties.FileType.Split(',')
+                      .Contains(extension, StringComparer.OrdinalIgnoreCase))
+        .ToList();
+}
+
+// Usage examples
+var csvSources = GetDataSourcesForExtension("csv");
+var jsonSources = GetDataSourcesForExtension("json");
+var excelSources = GetDataSourcesForExtension("xlsx");</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Get Available Data Sources</h3>
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">public List<AssemblyClassDefinition> GetAvailableDataSources()
+{
+    var availableSources = new List<AssemblyClassDefinition>();
+    
+    foreach (var dataSource in DataSourcesClasses)
+    {
+        try
+        {
+            // Check if the assembly and type are available
+            var assembly = Assembly.LoadFrom(dataSource.dllname);
+            var type = assembly.GetType(dataSource.PackageName);
+            
+            if (type != null && typeof(IDataSource).IsAssignableFrom(type))
+            {
+                availableSources.Add(dataSource);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.WriteLog($"Data source {dataSource.className} not available: {ex.Message}");
+        }
+    }
+    
+    return availableSources;
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Source Instantiation -->
+                <section class="section">
+                    <h2>Data Source Instantiation</h2>
+                    
+                    <div class="subsection">
+                        <h3>Creating Data Source Instances</h3>
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">public IDataSource CreateDataSource(string className, IConnectionProperties connectionProps)
+{
+    try
+    {
+        // Find the data source class definition
+        var classDef = DataSourcesClasses
+            .FirstOrDefault(ds => ds.className.Equals(className, StringComparison.OrdinalIgnoreCase));
+            
+        if (classDef == null)
+        {
+            Logger?.WriteLog($"Data source class not found: {className}");
+            return null;
+        }
+        
+        // Create instance using reflection
+        var dataSource = Activator.CreateInstance(classDef.type) as IDataSource;
+        
+        if (dataSource != null)
+        {
+            // Configure the data source
+            dataSource.DatasourceName = connectionProps.ConnectionName;
+            dataSource.Dataconnection = connectionProps;
+            
+            Logger?.WriteLog($"Created data source instance: {className}");
+            return dataSource;
+        }
+        
+        return null;
+    }
+    catch (Exception ex)
+    {
+        Logger?.WriteLog($"Error creating data source {className}: {ex.Message}");
+        return null;
+    }
+}
+
+// Generic version
+public T CreateDataSource<T>(IConnectionProperties connectionProps) where T : IDataSource
+{
+    try
+    {
+        var dataSource = Activator.CreateInstance<T>();
+        dataSource.DatasourceName = connectionProps.ConnectionName;
+        dataSource.Dataconnection = connectionProps;
+        
+        return dataSource;
+    }
+    catch (Exception ex)
+    {
+        Logger?.WriteLog($"Error creating data source {typeof(T).Name}: {ex.Message}");
+        return default(T);
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Data Source Factory Pattern</h3>
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">public class DataSourceFactory
+{
+    private readonly AssemblyHandler _assemblyHandler;
+    private readonly Dictionary<string, Type> _dataSourceTypes;
+    
+    public DataSourceFactory(AssemblyHandler assemblyHandler)
+    {
+        _assemblyHandler = assemblyHandler;
+        _dataSourceTypes = new Dictionary<string, Type>();
+        
+        // Cache data source types for faster instantiation
+        CacheDataSourceTypes();
+    }
+    
+    private void CacheDataSourceTypes()
+    {
+        foreach (var classDef in _assemblyHandler.DataSourcesClasses)
+        {
+            _dataSourceTypes[classDef.className] = classDef.type;
+        }
+    }
+    
+    public IDataSource CreateDataSource(DataSourceType dataSourceType, IConnectionProperties connectionProps)
+    {
+        try
+        {
+            // Find matching data source by type
+            var classDef = _assemblyHandler.DataSourcesClasses
+                .FirstOrDefault(ds => ds.classProperties?.DatasourceType == dataSourceType);
+                
+            if (classDef == null)
+            {
+                throw new InvalidOperationException($"No data source found for type: {dataSourceType}");
+            }
+            
+            return CreateDataSourceInstance(classDef.type, connectionProps);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to create data source for type {dataSourceType}: {ex.Message}", ex);
+        }
+    }
+    
+    public IDataSource CreateDataSourceForFile(string fileExtension, IConnectionProperties connectionProps)
+    {
+        try
+        {
+            // Find data source that handles this file extension
+            var classDef = _assemblyHandler.DataSourcesClasses
+                .FirstOrDefault(ds => ds.classProperties?.FileType != null &&
+                               ds.classProperties.FileType.Split(',')
+                                 .Contains(fileExtension, StringComparer.OrdinalIgnoreCase));
+                                 
+            if (classDef == null)
+            {
+                throw new InvalidOperationException($"No data source found for file extension: {fileExtension}");
+            }
+            
+            return CreateDataSourceInstance(classDef.type, connectionProps);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to create data source for extension {fileExtension}: {ex.Message}", ex);
+        }
+    }
+    
+    private IDataSource CreateDataSourceInstance(Type dataSourceType, IConnectionProperties connectionProps)
+    {
+        var dataSource = Activator.CreateInstance(dataSourceType) as IDataSource;
+        
+        if (dataSource != null)
+        {
+            dataSource.DatasourceName = connectionProps.ConnectionName;
+            dataSource.Dataconnection = connectionProps;
+        }
+        
+        return dataSource;
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section class="section">
+                    <h2>Best Practices for Data Source Development</h2>
+                    
+                    <div class="admonition tip">
+                        <p class="admonition-title">Data Source Development Best Practices</p>
+                        <ul>
+                            <li><strong>Interface Implementation:</strong> Fully implement all IDataSource methods</li>
+                            <li><strong>Error Handling:</strong> Provide meaningful error messages and proper exception handling</li>
+                            <li><strong>Resource Management:</strong> Properly dispose of connections and resources</li>
+                            <li><strong>Metadata Attributes:</strong> Use AddinAttribute to provide rich metadata</li>
+                            <li><strong>Connection String Parsing:</strong> Implement robust connection string parsing</li>
+                            <li><strong>Schema Discovery:</strong> Provide accurate entity structure information</li>
+                            <li><strong>Performance:</strong> Implement efficient data retrieval and caching where appropriate</li>
+                            <li><strong>Transaction Support:</strong> Implement transaction methods when supported by the underlying store</li>
+                            <li><strong>Filtering:</strong> Support AppFilter for data filtering capabilities</li>
+                            <li><strong>Logging:</strong> Use the logging infrastructure for debugging and monitoring</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Related Topics -->
+                <section class="section">
+                    <h2>Related Topics</h2>
+                    <div class="related-links">
+                        <a href="connection-drivers.html" class="related-link">
+                            <i class="bi bi-database"></i>
+                            <span>Connection Drivers</span>
+                        </a>
+                        <a href="../classes/assembly-handler.html" class="related-link">
+                            <i class="bi bi-gear"></i>
+                            <span>AssemblyHandler</span>
+                        </a>
+                        <a href="../guides/driver-management.html" class="related-link">
+                            <i class="bi bi-book"></i>
+                            <span>Driver Management Guide</span>
+                        </a>
+                        <a href="../guides/getting-started.html" class="related-link">
+                            <i class="bi bi-play-circle"></i>
+                            <span>Getting Started Guide</span>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="../scripts/docs.js"></script>
+</body>
+</html>

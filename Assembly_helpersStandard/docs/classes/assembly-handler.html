@@ -1,0 +1,795 @@
+<!--
+    AssemblyHandler Class Documentation
+    Professional-grade documentation for the AssemblyHandler class.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssemblyHandler - Assembly Helpers Documentation</title>
+    <link rel="stylesheet" href="../sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="../assets/beep-logo.svg" alt="Beep Assembly Helpers Logo">
+                <div class="logo-text">
+                    <h2>Assembly Helpers</h2>
+                    <span class="version">v1.0.0</span>
+                </div>
+            </div>
+            
+            <!-- Search -->
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search documentation..." onkeyup="searchDocs(this.value)">
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="../index.html"><i class="bi bi-house"></i> Home</a></li>
+                    <li class="has-submenu open">
+                        <a href="#"><i class="bi bi-gear"></i> Core Classes</a>
+                        <ul class="submenu">
+                            <li><a href="assembly-handler.html" class="active">AssemblyHandler</a></li>
+                            <li><a href="assembly-class-definition.html">AssemblyClassDefinition</a></li>
+                            <li><a href="assemblies-rep.html">assemblies_rep</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-plug"></i> Extensions</a>
+                        <ul class="submenu">
+                            <li><a href="../extensions/loader-extensions.html">Loader Extensions</a></li>
+                            <li><a href="../extensions/scanning-extensions.html">Scanning Extensions</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-database"></i> Drivers</a>
+                        <ul class="submenu">
+                            <li><a href="../drivers/connection-drivers.html">Connection Drivers</a></li>
+                            <li><a href="../drivers/data-sources.html">Data Sources</a></li>
+                            <li><a href="../drivers/ado-drivers.html">ADO.NET Drivers</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-book"></i> Guides</a>
+                        <ul class="submenu">
+                            <li><a href="../guides/getting-started.html">Getting Started</a></li>
+                            <li><a href="../guides/assembly-loading.html">Assembly Loading</a></li>
+                            <li><a href="../guides/extension-scanning.html">Extension Scanning</a></li>
+                            <li><a href="../guides/driver-management.html">Driver Management</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="../api/reference.html"><i class="bi bi-code-square"></i> API Reference</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>AssemblyHandler</h1>
+                    <p class="page-subtitle">Core class for dynamic assembly loading, scanning, and management</p>
+                    
+                    <!-- Class Info -->
+                    <div class="class-info">
+                        <div class="info-item">
+                            <span class="label">Namespace:</span>
+                            <span class="value">TheTechIdea.Beep.Tools</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Assembly:</span>
+                            <span class="value">Assembly_helpers.dll</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Implements:</span>
+                            <span class="value">IAssemblyHandler, IDisposable</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Target Framework:</span>
+                            <span class="value">.NET 8, .NET 9</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overview -->
+                <section class="section">
+                    <h2>Overview</h2>
+                    <p>
+                        The <code>AssemblyHandler</code> class is the core component for managing assembly operations 
+                        in the Beep framework. It provides comprehensive functionality for loading assemblies, 
+                        scanning for extensions, discovering data sources and drivers, and organizing components 
+                        into hierarchical structures.
+                    </p>
+                    <p>
+                        This class handles complex scenarios including assembly resolution, type caching, 
+                        parallel processing for performance optimization, and sophisticated error handling 
+                        for robust plugin architectures.
+                    </p>
+                </section>
+
+                <!-- Class Declaration -->
+                <section class="section">
+                    <h2>Class Declaration</h2>
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">public class AssemblyHandler : IAssemblyHandler
+{
+    // Core functionality for assembly operations, extension scanning,
+    // driver management, and hierarchical organization
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Constructor -->
+                <section class="section">
+                    <h2>Constructor</h2>
+                    <div class="method-signature">
+                        <h3>AssemblyHandler(IConfigEditor, IErrorsInfo, IDMLogger, IUtil)</h3>
+                        <p>Initializes a new instance of the AssemblyHandler class with required dependencies.</p>
+                    </div>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">public AssemblyHandler(
+    IConfigEditor pConfigEditor, 
+    IErrorsInfo pErrorObject, 
+    IDMLogger pLogger, 
+    IUtil pUtilfunction
+)</code></pre>
+                    </div>
+
+                    <div class="parameters">
+                        <h4>Parameters</h4>
+                        <table class="params-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>pConfigEditor</code></td>
+                                    <td><code>IConfigEditor</code></td>
+                                    <td>Configuration editor interface for managing application configuration</td>
+                                </tr>
+                                <tr>
+                                    <td><code>pErrorObject</code></td>
+                                    <td><code>IErrorsInfo</code></td>
+                                    <td>Error handling object for tracking and managing errors</td>
+                                </tr>
+                                <tr>
+                                    <td><code>pLogger</code></td>
+                                    <td><code>IDMLogger</code></td>
+                                    <td>Logging interface for tracking activities and debugging</td>
+                                </tr>
+                                <tr>
+                                    <td><code>pUtilfunction</code></td>
+                                    <td><code>IUtil</code></td>
+                                    <td>Utility functions for common operations</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="example">
+                        <h4>Example</h4>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">var configEditor = new ConfigEditor();
+var errorObject = new ErrorsInfo();
+var logger = new DMLogger();
+var utilFunction = new Util();
+
+var assemblyHandler = new AssemblyHandler(
+    configEditor, 
+    errorObject, 
+    logger, 
+    utilFunction
+);</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Key Properties -->
+                <section class="section">
+                    <h2>Key Properties</h2>
+                    
+                    <div class="property-list">
+                        <div class="property-item">
+                            <h3>NamespacestoIgnore</h3>
+                            <div class="property-info">
+                                <span class="type">List&lt;string&gt;</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets a list of namespaces to ignore during assembly scanning operations.</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">assemblyHandler.NamespacestoIgnore.Add("System");
+assemblyHandler.NamespacestoIgnore.Add("Microsoft");</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>CurrentDomain</h3>
+                            <div class="property-info">
+                                <span class="type">AppDomain</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the current application domain for assembly operations.</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>LoaderExtensionClasses</h3>
+                            <div class="property-info">
+                                <span class="type">List&lt;AssemblyClassDefinition&gt;</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the list of discovered loader extension class definitions.</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>Assemblies</h3>
+                            <div class="property-info">
+                                <span class="type">List&lt;assemblies_rep&gt;</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the list of loaded assembly representations.</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>DataSourcesClasses</h3>
+                            <div class="property-info">
+                                <span class="type">List&lt;AssemblyClassDefinition&gt;</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the list of discovered data source class definitions.</p>
+                        </div>
+
+                        <div class="property-item">
+                            <h3>LoadedAssemblies</h3>
+                            <div class="property-info">
+                                <span class="type">List&lt;Assembly&gt;</span>
+                                <span class="access">Public</span>
+                            </div>
+                            <p>Gets or sets the list of currently loaded .NET assemblies.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Core Methods -->
+                <section class="section">
+                    <h2>Core Methods</h2>
+
+                    <!-- LoadAllAssembly -->
+                    <div class="method-item">
+                        <h3>LoadAllAssembly</h3>
+                        <div class="method-signature">
+                            <code>IErrorsInfo LoadAllAssembly(IProgress&lt;PassedArgs&gt; progress, CancellationToken token)</code>
+                        </div>
+                        <p>Comprehensive method that loads all assemblies from configured folders and scans them for various components.</p>
+                        
+                        <div class="parameters">
+                            <h4>Parameters</h4>
+                            <table class="params-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>progress</code></td>
+                                        <td><code>IProgress&lt;PassedArgs&gt;</code></td>
+                                        <td>Progress reporting mechanism for operation updates</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>token</code></td>
+                                        <td><code>CancellationToken</code></td>
+                                        <td>Token for canceling the operation</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="returns">
+                            <h4>Returns</h4>
+                            <p><code>IErrorsInfo</code> - Information about the operation success or failure</p>
+                        </div>
+
+                        <div class="example">
+                            <h4>Example</h4>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">var progress = new Progress&lt;PassedArgs&gt;(args => {
+    Console.WriteLine($"Progress: {args.Messege}");
+});
+
+var cancellationToken = new CancellationTokenSource();
+var result = assemblyHandler.LoadAllAssembly(
+    progress, 
+    cancellationToken.Token
+);
+
+if (result.Flag == Errors.Ok)
+{
+    Console.WriteLine("All assemblies loaded successfully");
+}
+else
+{
+    Console.WriteLine($"Error: {result.Message}");
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LoadAssembly -->
+                    <div class="method-item">
+                        <h3>LoadAssembly</h3>
+                        <div class="method-signature">
+                            <code>string LoadAssembly(string path, FolderFileTypes fileTypes)</code>
+                        </div>
+                        <p>Loads all assemblies from a specified directory path with error handling and caching.</p>
+                        
+                        <div class="parameters">
+                            <h4>Parameters</h4>
+                            <table class="params-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>path</code></td>
+                                        <td><code>string</code></td>
+                                        <td>Directory path containing assemblies to load</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>fileTypes</code></td>
+                                        <td><code>FolderFileTypes</code></td>
+                                        <td>Classification of the assemblies being loaded</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="example">
+                            <h4>Example</h4>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">// Load data source assemblies
+var result = assemblyHandler.LoadAssembly(
+    @"C:\MyApp\DataSources", 
+    FolderFileTypes.DataSources
+);
+
+// Load plugin assemblies
+var pluginResult = assemblyHandler.LoadAssembly(
+    @"C:\MyApp\Plugins", 
+    FolderFileTypes.Addin
+);</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CreateInstanceFromString -->
+                    <div class="method-item">
+                        <h3>CreateInstanceFromString</h3>
+                        <div class="method-signature">
+                            <code>object CreateInstanceFromString(string typeName, params object[] args)</code>
+                        </div>
+                        <p>Creates an instance of a class from its fully qualified type name with constructor arguments.</p>
+                        
+                        <div class="parameters">
+                            <h4>Parameters</h4>
+                            <table class="params-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>typeName</code></td>
+                                        <td><code>string</code></td>
+                                        <td>Fully qualified name of the type to instantiate</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>args</code></td>
+                                        <td><code>object[]</code></td>
+                                        <td>Constructor arguments for the type</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="example">
+                            <h4>Example</h4>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">// Create instance with no parameters
+var instance = assemblyHandler.CreateInstanceFromString(
+    "MyNamespace.MyDataSource"
+);
+
+// Create instance with constructor parameters
+var configuredInstance = assemblyHandler.CreateInstanceFromString(
+    "MyNamespace.MyConfigurableClass",
+    "connectionString",
+    true,
+    1000
+);</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GetType -->
+                    <div class="method-item">
+                        <h3>GetType</h3>
+                        <div class="method-signature">
+                            <code>Type GetType(string strFullyQualifiedName)</code>
+                        </div>
+                        <p>Retrieves a type by its fully qualified name with intelligent caching and resolution.</p>
+                        
+                        <div class="parameters">
+                            <h4>Parameters</h4>
+                            <table class="params-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>strFullyQualifiedName</code></td>
+                                        <td><code>string</code></td>
+                                        <td>Fully qualified name of the type to retrieve</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="example">
+                            <h4>Example</h4>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">// Get type with caching
+var type = assemblyHandler.GetType("MyNamespace.MyClass");
+if (type != null)
+{
+    // Use reflection or create instances
+    var instance = Activator.CreateInstance(type);
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Assembly Management -->
+                <section class="section">
+                    <h2>Assembly Management Methods</h2>
+
+                    <div class="method-item">
+                        <h3>GetBuiltinClasses</h3>
+                        <div class="method-signature">
+                            <code>IErrorsInfo GetBuiltinClasses()</code>
+                        </div>
+                        <p>Scans the current executing assembly and entry assembly for built-in classes and components.</p>
+                        
+                        <div class="example">
+                            <h4>Example</h4>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">var result = assemblyHandler.GetBuiltinClasses();
+if (result.Flag == Errors.Ok)
+{
+    // Built-in classes are now available in the collections
+    var builtinAssemblies = assemblyHandler.Assemblies
+        .Where(a => a.FileTypes == FolderFileTypes.Builtin);
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="method-item">
+                        <h3>LoadAssemblySafely</h3>
+                        <div class="method-signature">
+                            <code>Assembly LoadAssemblySafely(string assemblyPath)</code>
+                        </div>
+                        <p>Safely loads an assembly from a file path with caching and error handling.</p>
+                        
+                        <div class="example">
+                            <h4>Example</h4>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">var assembly = assemblyHandler.LoadAssemblySafely(@"C:\MyAssembly.dll");
+if (assembly != null)
+{
+    Console.WriteLine($"Loaded: {assembly.FullName}");
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="method-item">
+                        <h3>ScanAssembly</h3>
+                        <div class="method-signature">
+                            <code>bool ScanAssembly(Assembly asm)</code>
+                        </div>
+                        <p>Scans an assembly for various interface implementations with parallel processing optimization.</p>
+                        
+                        <div class="example">
+                            <h4>Example</h4>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">var assembly = Assembly.LoadFrom(@"C:\MyPlugin.dll");
+var success = assemblyHandler.ScanAssembly(assembly);
+if (success)
+{
+    // Assembly has been scanned and components are cataloged
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Driver Management -->
+                <section class="section">
+                    <h2>Driver Management Methods</h2>
+
+                    <div class="method-item">
+                        <h3>GetDrivers</h3>
+                        <div class="method-signature">
+                            <code>List&lt;ConnectionDriversConfig&gt; GetDrivers(Assembly asm)</code>
+                        </div>
+                        <p>Retrieves and configures database driver information from an assembly.</p>
+                        
+                        <div class="example">
+                            <h4>Example</h4>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">var assembly = Assembly.LoadFrom(@"C:\SqlDrivers.dll");
+var drivers = assemblyHandler.GetDrivers(assembly);
+foreach (var driver in drivers)
+{
+    Console.WriteLine($"Found driver: {driver.DriverClass}");
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="method-item">
+                        <h3>AddEngineDefaultDrivers</h3>
+                        <div class="method-signature">
+                            <code>bool AddEngineDefaultDrivers()</code>
+                        </div>
+                        <p>Adds default engine drivers and file extension handlers to the configuration.</p>
+                        
+                        <div class="example">
+                            <h4>Example</h4>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">var success = assemblyHandler.AddEngineDefaultDrivers();
+if (success)
+{
+    Console.WriteLine("Default drivers added successfully");
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="method-item">
+                        <h3>CreateFileExtensionString</h3>
+                        <div class="method-signature">
+                            <code>List&lt;string&gt; CreateFileExtensionString()</code>
+                        </div>
+                        <p>Creates a list of file extensions supported by the discovered data sources.</p>
+                        
+                        <div class="example">
+                            <h4>Example</h4>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">var extensions = assemblyHandler.CreateFileExtensionString();
+foreach (var ext in extensions)
+{
+    Console.WriteLine($"Supported extension: {ext}");
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Hierarchical Organization -->
+                <section class="section">
+                    <h2>Hierarchical Organization Methods</h2>
+
+                    <div class="method-item">
+                        <h3>GetAddinObjects</h3>
+                        <div class="method-signature">
+                            <code>List&lt;ParentChildObject&gt; GetAddinObjects(Assembly asm)</code>
+                        </div>
+                        <p>Retrieves and organizes addin objects from an assembly into a hierarchical structure.</p>
+                        
+                        <div class="example">
+                            <h4>Example</h4>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">var assembly = Assembly.LoadFrom(@"C:\Addins.dll");
+var hierarchy = assemblyHandler.GetAddinObjects(assembly);
+foreach (var item in hierarchy)
+{
+    Console.WriteLine($"Addin: {item.id}, Parent: {item.ParentID}");
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="method-item">
+                        <h3>RearrangeAddin</h3>
+                        <div class="method-signature">
+                            <code>ParentChildObject RearrangeAddin(string id, string parentId, string objType)</code>
+                        </div>
+                        <p>Organizes addins into hierarchical structures for navigation and management.</p>
+                    </div>
+                </section>
+
+                <!-- Performance Features -->
+                <section class="section">
+                    <h2>Performance Features</h2>
+                    
+                    <div class="feature-highlight">
+                        <h3><i class="bi bi-lightning-fill"></i> Type Caching</h3>
+                        <p>The AssemblyHandler uses sophisticated caching mechanisms to improve performance:</p>
+                        <ul>
+                            <li><strong>Type Cache:</strong> Case-insensitive dictionary for fast type resolution</li>
+                            <li><strong>Assembly Cache:</strong> Thread-safe concurrent dictionary for loaded assemblies</li>
+                            <li><strong>Namespace Filtering:</strong> Configurable namespace exclusion for focused scanning</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-highlight">
+                        <h3><i class="bi bi-cpu-fill"></i> Parallel Processing</h3>
+                        <p>Large assemblies are processed in parallel for optimal performance:</p>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Automatic parallel processing for assemblies with >100 types
+if (types.Length > 100)
+{
+    var typeInfoCollection = new ConcurrentBag&lt;TypeInfo&gt;();
+    Parallel.ForEach(types, type => {
+        // Process types in parallel
+    });
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Error Handling -->
+                <section class="section">
+                    <h2>Error Handling</h2>
+                    
+                    <p>The AssemblyHandler provides comprehensive error handling:</p>
+                    
+                    <div class="error-handling-example">
+                        <h3>Assembly Loading Errors</h3>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">try
+{
+    var result = assemblyHandler.LoadAssembly(path, fileTypes);
+    if (assemblyHandler.ErrorObject.Flag == Errors.Failed)
+    {
+        Console.WriteLine($"Error: {assemblyHandler.ErrorObject.Message}");
+    }
+}
+catch (FileLoadException ex)
+{
+    // Handle assembly already loaded
+}
+catch (BadImageFormatException ex)
+{
+    // Handle invalid assembly format
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="error-handling-example">
+                        <h3>Type Resolution Errors</h3>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">var type = assemblyHandler.GetType("MyNamespace.MyClass");
+if (type == null)
+{
+    Console.WriteLine("Type not found in loaded assemblies");
+}
+else
+{
+    // Safe to use type
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section class="section">
+                    <h2>Best Practices</h2>
+                    
+                    <div class="best-practices">
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Use Progress Reporting</h3>
+                            <p>Always provide progress reporting for long-running operations to improve user experience.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Configure Namespace Filtering</h3>
+                            <p>Set up NamespacestoIgnore to exclude system assemblies and improve scanning performance.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Handle Cancellation</h3>
+                            <p>Use CancellationToken for operations that might need to be cancelled by the user.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Check Error States</h3>
+                            <p>Always check ErrorObject.Flag after operations to handle failures gracefully.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Related Topics -->
+                <section class="section">
+                    <h2>Related Topics</h2>
+                    <div class="related-links">
+                        <a href="../guides/getting-started.html" class="related-link">
+                            <i class="bi bi-book"></i>
+                            <span>Getting Started Guide</span>
+                        </a>
+                        <a href="../drivers/connection-drivers.html" class="related-link">
+                            <i class="bi bi-database"></i>
+                            <span>Connection Drivers</span>
+                        </a>
+                        <a href="../extensions/loader-extensions.html" class="related-link">
+                            <i class="bi bi-plug"></i>
+                            <span>Loader Extensions</span>
+                        </a>
+                        <a href="assembly-class-definition.html" class="related-link">
+                            <i class="bi bi-file-code"></i>
+                            <span>AssemblyClassDefinition</span>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="../scripts/docs.js"></script>
+</body>
+</html>

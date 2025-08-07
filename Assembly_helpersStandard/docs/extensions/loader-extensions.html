@@ -1,0 +1,924 @@
+<!--
+    Loader Extensions Documentation
+    Professional-grade documentation for ILoaderExtention and extension patterns.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loader Extensions - Assembly Helpers Documentation</title>
+    <link rel="stylesheet" href="../sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="../assets/beep-logo.svg" alt="Beep Assembly Helpers Logo">
+                <div class="logo-text">
+                    <h2>Assembly Helpers</h2>
+                    <span class="version">v1.0.0</span>
+                </div>
+            </div>
+            
+            <!-- Search -->
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search documentation..." onkeyup="searchDocs(this.value)">
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="../index.html"><i class="bi bi-house"></i> Home</a></li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-gear"></i> Core Classes</a>
+                        <ul class="submenu">
+                            <li><a href="../classes/assembly-handler.html">AssemblyHandler</a></li>
+                            <li><a href="../classes/assembly-class-definition.html">AssemblyClassDefinition</a></li>
+                            <li><a href="../classes/assemblies-rep.html">assemblies_rep</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu open">
+                        <a href="#"><i class="bi bi-plug"></i> Extensions</a>
+                        <ul class="submenu">
+                            <li><a href="loader-extensions.html" class="active">Loader Extensions</a></li>
+                            <li><a href="scanning-extensions.html">Scanning Extensions</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-database"></i> Drivers</a>
+                        <ul class="submenu">
+                            <li><a href="../drivers/connection-drivers.html">Connection Drivers</a></li>
+                            <li><a href="../drivers/data-sources.html">Data Sources</a></li>
+                            <li><a href="../drivers/ado-drivers.html">ADO.NET Drivers</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-book"></i> Guides</a>
+                        <ul class="submenu">
+                            <li><a href="../guides/getting-started.html">Getting Started</a></li>
+                            <li><a href="../guides/assembly-loading.html">Assembly Loading</a></li>
+                            <li><a href="../guides/extension-scanning.html">Extension Scanning</a></li>
+                            <li><a href="../guides/driver-management.html">Driver Management</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="../api/reference.html"><i class="bi bi-code-square"></i> API Reference</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>Loader Extensions</h1>
+                    <p class="page-subtitle">Extensible assembly loading and scanning mechanisms through ILoaderExtention</p>
+                </div>
+
+                <!-- Overview -->
+                <section class="section">
+                    <h2>Overview</h2>
+                    <p>
+                        Loader Extensions provide a pluggable architecture for extending assembly loading and scanning 
+                        capabilities in the Beep framework. Through the <code>ILoaderExtention</code> interface, 
+                        you can implement custom loading strategies, specialized scanning logic, and advanced 
+                        assembly processing workflows.
+                    </p>
+                    <p>
+                        This extensible system allows for domain-specific loading behaviors, custom filtering logic, 
+                        and specialized handling of different assembly types while maintaining consistency with 
+                        the core assembly management infrastructure.
+                    </p>
+                </section>
+
+                <!-- ILoaderExtention Interface -->
+                <section class="section">
+                    <h2>ILoaderExtention Interface</h2>
+                    
+                    <!-- Interface Declaration -->
+                    <div class="class-info">
+                        <div class="info-item">
+                            <span class="label">Namespace:</span>
+                            <span class="value">TheTechIdea.Beep.Tools</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Assembly:</span>
+                            <span class="value">DataManagementModels.dll</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Type:</span>
+                            <span class="value">Interface</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Purpose:</span>
+                            <span class="value">Extension point for custom loading logic</span>
+                        </div>
+                    </div>
+
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">public interface ILoaderExtention
+{
+    IErrorsInfo LoadAllAssembly();
+    IErrorsInfo Scan(assemblies_rep assembly);
+    IErrorsInfo Scan(Assembly assembly);
+    IErrorsInfo Scan();
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Interface Methods -->
+                <section class="section">
+                    <h2>Interface Methods</h2>
+
+                    <div class="method-item">
+                        <h3>LoadAllAssembly</h3>
+                        <div class="method-signature">
+                            <code>IErrorsInfo LoadAllAssembly()</code>
+                        </div>
+                        <p>Loads all assemblies using the extension's custom loading logic.</p>
+                        
+                        <div class="returns">
+                            <h4>Returns</h4>
+                            <p><code>IErrorsInfo</code> - Result of the loading operation with success/failure information</p>
+                        </div>
+                    </div>
+
+                    <div class="method-item">
+                        <h3>Scan (assemblies_rep)</h3>
+                        <div class="method-signature">
+                            <code>IErrorsInfo Scan(assemblies_rep assembly)</code>
+                        </div>
+                        <p>Scans a specific assembly representation using custom scanning logic.</p>
+                        
+                        <div class="parameters">
+                            <h4>Parameters</h4>
+                            <table class="params-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>assembly</code></td>
+                                        <td><code>assemblies_rep</code></td>
+                                        <td>Assembly representation to scan</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="method-item">
+                        <h3>Scan (Assembly)</h3>
+                        <div class="method-signature">
+                            <code>IErrorsInfo Scan(Assembly assembly)</code>
+                        </div>
+                        <p>Scans a .NET Assembly object directly using custom scanning logic.</p>
+                        
+                        <div class="parameters">
+                            <h4>Parameters</h4>
+                            <table class="params-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>assembly</code></td>
+                                        <td><code>Assembly</code></td>
+                                        <td>.NET Assembly object to scan</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="method-item">
+                        <h3>Scan (Parameterless)</h3>
+                        <div class="method-signature">
+                            <code>IErrorsInfo Scan()</code>
+                        </div>
+                        <p>Performs a comprehensive scan of all relevant assemblies using extension-specific logic.</p>
+                    </div>
+                </section>
+
+                <!-- Implementation Examples -->
+                <section class="section">
+                    <h2>Implementation Examples</h2>
+
+                    <div class="method-item">
+                        <h3>Basic Loader Extension</h3>
+                        <p>Example of a basic ILoaderExtention implementation:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">public class BasicLoaderExtension : ILoaderExtention
+{
+    private readonly IConfigEditor configEditor;
+    private readonly IDMLogger logger;
+    
+    public BasicLoaderExtension(IConfigEditor config, IDMLogger log)
+    {
+        configEditor = config;
+        logger = log;
+    }
+
+    public IErrorsInfo LoadAllAssembly()
+    {
+        var errorInfo = new ErrorsInfo();
+        
+        try
+        {
+            logger.WriteLog("Starting custom assembly loading...");
+            
+            // Custom loading logic here
+            var customPaths = configEditor.Config.Folders
+                .Where(f => f.FolderFilesType == FolderFileTypes.Addin)
+                .ToList();
+                
+            foreach (var folder in customPaths)
+            {
+                LoadAssembliesFromPath(folder.FolderPath);
+            }
+            
+            errorInfo.Flag = Errors.Ok;
+            errorInfo.Message = "Custom loading completed successfully";
+        }
+        catch (Exception ex)
+        {
+            errorInfo.Flag = Errors.Failed;
+            errorInfo.Message = ex.Message;
+            logger.WriteLog($"Loading failed: {ex.Message}");
+        }
+        
+        return errorInfo;
+    }
+
+    public IErrorsInfo Scan(assemblies_rep assembly)
+    {
+        var errorInfo = new ErrorsInfo();
+        
+        try
+        {
+            logger.WriteLog($"Scanning assembly: {assembly.DllName}");
+            
+            // Custom scanning logic
+            var types = assembly.DllLib.GetTypes();
+            var customInterfaces = types
+                .Where(t => HasCustomAttribute(t))
+                .ToList();
+                
+            foreach (var type in customInterfaces)
+            {
+                ProcessCustomType(type, assembly);
+            }
+            
+            errorInfo.Flag = Errors.Ok;
+        }
+        catch (Exception ex)
+        {
+            errorInfo.Flag = Errors.Failed;
+            errorInfo.Message = ex.Message;
+        }
+        
+        return errorInfo;
+    }
+
+    public IErrorsInfo Scan(Assembly assembly)
+    {
+        // Convert to assemblies_rep and use main scan method
+        var rep = new assemblies_rep(
+            assembly, 
+            assembly.Location, 
+            Path.GetFileName(assembly.Location),
+            FolderFileTypes.Addin
+        );
+        
+        return Scan(rep);
+    }
+
+    public IErrorsInfo Scan()
+    {
+        var errorInfo = new ErrorsInfo();
+        
+        try
+        {
+            logger.WriteLog("Starting comprehensive scan...");
+            
+            // Scan all loaded assemblies
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            
+            foreach (var assembly in assemblies)
+            {
+                var scanResult = Scan(assembly);
+                if (scanResult.Flag == Errors.Failed)
+                {
+                    logger.WriteLog($"Failed to scan {assembly.FullName}");
+                }
+            }
+            
+            errorInfo.Flag = Errors.Ok;
+        }
+        catch (Exception ex)
+        {
+            errorInfo.Flag = Errors.Failed;
+            errorInfo.Message = ex.Message;
+        }
+        
+        return errorInfo;
+    }
+    
+    private bool HasCustomAttribute(Type type)
+    {
+        // Custom logic to identify types of interest
+        return type.GetCustomAttribute&lt;CustomLoaderAttribute&gt;() != null;
+    }
+    
+    private void ProcessCustomType(Type type, assemblies_rep assembly)
+    {
+        // Custom processing logic
+        logger.WriteLog($"Processing custom type: {type.FullName}");
+    }
+    
+    private void LoadAssembliesFromPath(string path)
+    {
+        // Custom assembly loading implementation
+        logger.WriteLog($"Loading assemblies from: {path}");
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="method-item">
+                        <h3>Specialized Data Source Extension</h3>
+                        <p>Example of a loader extension specialized for data sources:</p>
+                        
+                        <div class="code-example">
+                            <pre><code class="language-csharp">public class DataSourceLoaderExtension : ILoaderExtention
+{
+    private readonly List&lt;AssemblyClassDefinition&gt; discoveredDataSources;
+    private readonly IDMLogger logger;
+    
+    public DataSourceLoaderExtension(IDMLogger log)
+    {
+        logger = log;
+        discoveredDataSources = new List&lt;AssemblyClassDefinition&gt;();
+    }
+
+    public IErrorsInfo LoadAllAssembly()
+    {
+        var errorInfo = new ErrorsInfo();
+        
+        try
+        {
+            // Load only data source specific directories
+            var dataSourcePaths = new[]
+            {
+                @"C:\DataSources\RDBMS",
+                @"C:\DataSources\NoSQL",
+                @"C:\DataSources\Files"
+            };
+            
+            foreach (var path in dataSourcePaths.Where(Directory.Exists))
+            {
+                LoadDataSourceAssemblies(path);
+            }
+            
+            errorInfo.Flag = Errors.Ok;
+            logger.WriteLog($"Loaded {discoveredDataSources.Count} data sources");
+        }
+        catch (Exception ex)
+        {
+            errorInfo.Flag = Errors.Failed;
+            errorInfo.Message = ex.Message;
+        }
+        
+        return errorInfo;
+    }
+
+    public IErrorsInfo Scan(assemblies_rep assembly)
+    {
+        var errorInfo = new ErrorsInfo();
+        
+        try
+        {
+            var types = assembly.DllLib.GetTypes();
+            var dataSourceTypes = types
+                .Where(t => typeof(IDataSource).IsAssignableFrom(t) 
+                           && !t.IsInterface 
+                           && !t.IsAbstract)
+                .ToList();
+
+            foreach (var type in dataSourceTypes)
+            {
+                var definition = CreateDataSourceDefinition(type, assembly);
+                discoveredDataSources.Add(definition);
+                
+                logger.WriteLog($"Found data source: {type.FullName}");
+            }
+            
+            errorInfo.Flag = Errors.Ok;
+        }
+        catch (Exception ex)
+        {
+            errorInfo.Flag = Errors.Failed;
+            errorInfo.Message = ex.Message;
+        }
+        
+        return errorInfo;
+    }
+
+    public IErrorsInfo Scan(Assembly assembly)
+    {
+        var rep = new assemblies_rep(
+            assembly,
+            assembly.Location,
+            Path.GetFileName(assembly.Location),
+            FolderFileTypes.DataSources
+        );
+        
+        return Scan(rep);
+    }
+
+    public IErrorsInfo Scan()
+    {
+        var errorInfo = new ErrorsInfo();
+        
+        // Scan all assemblies for data sources
+        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+        
+        foreach (var assembly in assemblies)
+        {
+            try
+            {
+                Scan(assembly);
+            }
+            catch (Exception ex)
+            {
+                logger.WriteLog($"Error scanning {assembly.FullName}: {ex.Message}");
+            }
+        }
+        
+        errorInfo.Flag = Errors.Ok;
+        errorInfo.Message = $"Scan completed. Found {discoveredDataSources.Count} data sources";
+        
+        return errorInfo;
+    }
+    
+    private AssemblyClassDefinition CreateDataSourceDefinition(Type type, assemblies_rep assembly)
+    {
+        var definition = new AssemblyClassDefinition
+        {
+            className = type.Name,
+            PackageName = type.FullName,
+            type = type,
+            componentType = "IDataSource",
+            IsDataSource = true,
+            dllname = assembly.DllName
+        };
+        
+        // Extract addin attribute if present
+        var addinAttr = type.GetCustomAttribute&lt;AddinAttribute&gt;();
+        if (addinAttr != null)
+        {
+            definition.classProperties = addinAttr;
+            definition.LocalDB = addinAttr.Category == DatasourceCategory.LOCALDB;
+            definition.InMemory = addinAttr.Category == DatasourceCategory.INMEMORY;
+        }
+        
+        return definition;
+    }
+    
+    private void LoadDataSourceAssemblies(string path)
+    {
+        foreach (var dllFile in Directory.GetFiles(path, "*.dll"))
+        {
+            try
+            {
+                var assembly = Assembly.LoadFrom(dllFile);
+                var rep = new assemblies_rep(
+                    assembly,
+                    path,
+                    Path.GetFileName(dllFile),
+                    FolderFileTypes.DataSources
+                );
+                
+                Scan(rep);
+            }
+            catch (Exception ex)
+            {
+                logger.WriteLog($"Failed to load {dllFile}: {ex.Message}");
+            }
+        }
+    }
+
+    public List&lt;AssemblyClassDefinition&gt; GetDiscoveredDataSources()
+    {
+        return discoveredDataSources.ToList();
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Extension Registration -->
+                <section class="section">
+                    <h2>Extension Registration</h2>
+
+                    <div class="method-item">
+                        <h3>Registering Loader Extensions</h3>
+                        <p>How to register and use loader extensions with AssemblyHandler:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">public class ExtensionManager
+{
+    private readonly List&lt;ILoaderExtention&gt; loaderExtensions;
+    private readonly AssemblyHandler assemblyHandler;
+    
+    public ExtensionManager(AssemblyHandler handler)
+    {
+        assemblyHandler = handler;
+        loaderExtensions = new List&lt;ILoaderExtention&gt;();
+    }
+    
+    public void RegisterExtension(ILoaderExtention extension)
+    {
+        loaderExtensions.Add(extension);
+        assemblyHandler.Logger.WriteLog(
+            $"Registered loader extension: {extension.GetType().Name}"
+        );
+    }
+    
+    public IErrorsInfo LoadAllWithExtensions()
+    {
+        var combinedResult = new ErrorsInfo { Flag = Errors.Ok };
+        
+        // First, use standard loading
+        var standardResult = assemblyHandler.LoadAllAssembly(null, CancellationToken.None);
+        
+        // Then, use registered extensions
+        foreach (var extension in loaderExtensions)
+        {
+            try
+            {
+                var extensionResult = extension.LoadAllAssembly();
+                if (extensionResult.Flag == Errors.Failed)
+                {
+                    assemblyHandler.Logger.WriteLog(
+                        $"Extension {extension.GetType().Name} failed: {extensionResult.Message}"
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                assemblyHandler.Logger.WriteLog(
+                    $"Extension {extension.GetType().Name} threw exception: {ex.Message}"
+                );
+            }
+        }
+        
+        return combinedResult;
+    }
+    
+    public IErrorsInfo ScanWithExtensions()
+    {
+        var combinedResult = new ErrorsInfo { Flag = Errors.Ok };
+        
+        foreach (var extension in loaderExtensions)
+        {
+            try
+            {
+                var scanResult = extension.Scan();
+                if (scanResult.Flag == Errors.Failed)
+                {
+                    assemblyHandler.Logger.WriteLog(
+                        $"Extension scan failed: {scanResult.Message}"
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                assemblyHandler.Logger.WriteLog(
+                    $"Extension scan exception: {ex.Message}"
+                );
+            }
+        }
+        
+        return combinedResult;
+    }
+}
+
+// Usage example
+var extensionManager = new ExtensionManager(assemblyHandler);
+
+// Register custom extensions
+extensionManager.RegisterExtension(new BasicLoaderExtension(configEditor, logger));
+extensionManager.RegisterExtension(new DataSourceLoaderExtension(logger));
+
+// Load and scan with extensions
+var loadResult = extensionManager.LoadAllWithExtensions();
+var scanResult = extensionManager.ScanWithExtensions();</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Advanced Patterns -->
+                <section class="section">
+                    <h2>Advanced Extension Patterns</h2>
+
+                    <div class="usage-pattern">
+                        <h3>Conditional Loading Extension</h3>
+                        <p>Extension that implements conditional loading based on configuration:</p>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">public class ConditionalLoaderExtension : ILoaderExtention
+{
+    private readonly IConfigEditor configEditor;
+    private readonly IDMLogger logger;
+    
+    public ConditionalLoaderExtension(IConfigEditor config, IDMLogger log)
+    {
+        configEditor = config;
+        logger = log;
+    }
+    
+    public IErrorsInfo LoadAllAssembly()
+    {
+        var errorInfo = new ErrorsInfo();
+        
+        try
+        {
+            // Load based on configuration settings
+            var loadingConfig = configEditor.Config.LoadingConfiguration;
+            
+            if (loadingConfig.LoadDevelopmentAssemblies)
+            {
+                LoadDevelopmentAssemblies();
+            }
+            
+            if (loadingConfig.LoadExperimentalFeatures)
+            {
+                LoadExperimentalAssemblies();
+            }
+            
+            if (loadingConfig.LoadThirdPartyPlugins)
+            {
+                LoadThirdPartyAssemblies();
+            }
+            
+            errorInfo.Flag = Errors.Ok;
+        }
+        catch (Exception ex)
+        {
+            errorInfo.Flag = Errors.Failed;
+            errorInfo.Message = ex.Message;
+        }
+        
+        return errorInfo;
+    }
+    
+    private void LoadDevelopmentAssemblies()
+    {
+        var devPath = configEditor.Config.DevelopmentAssemblyPath;
+        if (Directory.Exists(devPath))
+        {
+            logger.WriteLog($"Loading development assemblies from: {devPath}");
+            LoadAssembliesFromDirectory(devPath, FolderFileTypes.Addin);
+        }
+    }
+    
+    private void LoadExperimentalAssemblies()
+    {
+        var expPath = configEditor.Config.ExperimentalAssemblyPath;
+        if (Directory.Exists(expPath))
+        {
+            logger.WriteLog($"Loading experimental assemblies from: {expPath}");
+            LoadAssembliesFromDirectory(expPath, FolderFileTypes.Addin);
+        }
+    }
+    
+    // Additional implementation methods...
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="usage-pattern">
+                        <h3>Performance Monitoring Extension</h3>
+                        <p>Extension that adds performance monitoring to assembly operations:</p>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">public class PerformanceMonitoringExtension : ILoaderExtention
+{
+    private readonly ILoaderExtention baseExtension;
+    private readonly IDMLogger logger;
+    private readonly List&lt;PerformanceMetric&gt; metrics;
+    
+    public PerformanceMonitoringExtension(ILoaderExtention baseExt, IDMLogger log)
+    {
+        baseExtension = baseExt;
+        logger = log;
+        metrics = new List&lt;PerformanceMetric&gt;();
+    }
+    
+    public IErrorsInfo LoadAllAssembly()
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var startMemory = GC.GetTotalMemory(false);
+        
+        try
+        {
+            var result = baseExtension.LoadAllAssembly();
+            
+            stopwatch.Stop();
+            var endMemory = GC.GetTotalMemory(false);
+            
+            var metric = new PerformanceMetric
+            {
+                Operation = "LoadAllAssembly",
+                Duration = stopwatch.Elapsed,
+                MemoryUsed = endMemory - startMemory,
+                Success = result.Flag == Errors.Ok,
+                Timestamp = DateTime.UtcNow
+            };
+            
+            metrics.Add(metric);
+            LogPerformanceMetric(metric);
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            LogPerformanceError("LoadAllAssembly", stopwatch.Elapsed, ex);
+            throw;
+        }
+    }
+    
+    public IErrorsInfo Scan(assemblies_rep assembly)
+    {
+        return MonitoredOperation(
+            () => baseExtension.Scan(assembly),
+            $"Scan({assembly.DllName})"
+        );
+    }
+    
+    public IErrorsInfo Scan(Assembly assembly)
+    {
+        return MonitoredOperation(
+            () => baseExtension.Scan(assembly),
+            $"Scan({assembly.GetName().Name})"
+        );
+    }
+    
+    public IErrorsInfo Scan()
+    {
+        return MonitoredOperation(
+            () => baseExtension.Scan(),
+            "Scan()"
+        );
+    }
+    
+    private IErrorsInfo MonitoredOperation(Func&lt;IErrorsInfo&gt; operation, string operationName)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var startMemory = GC.GetTotalMemory(false);
+        
+        try
+        {
+            var result = operation();
+            
+            stopwatch.Stop();
+            var endMemory = GC.GetTotalMemory(false);
+            
+            var metric = new PerformanceMetric
+            {
+                Operation = operationName,
+                Duration = stopwatch.Elapsed,
+                MemoryUsed = endMemory - startMemory,
+                Success = result.Flag == Errors.Ok,
+                Timestamp = DateTime.UtcNow
+            };
+            
+            metrics.Add(metric);
+            LogPerformanceMetric(metric);
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            LogPerformanceError(operationName, stopwatch.Elapsed, ex);
+            throw;
+        }
+    }
+    
+    private void LogPerformanceMetric(PerformanceMetric metric)
+    {
+        logger.WriteLog($"Performance: {metric.Operation} - " +
+                       $"Duration: {metric.Duration.TotalMilliseconds:F2}ms, " +
+                       $"Memory: {metric.MemoryUsed / 1024:F2}KB, " +
+                       $"Success: {metric.Success}");
+    }
+    
+    public List&lt;PerformanceMetric&gt; GetMetrics() => metrics.ToList();
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section class="section">
+                    <h2>Best Practices</h2>
+                    
+                    <div class="best-practices">
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Error Handling</h3>
+                            <p>Always implement comprehensive error handling and return meaningful IErrorsInfo results.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Logging</h3>
+                            <p>Provide detailed logging for debugging and monitoring extension behavior.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Performance Considerations</h3>
+                            <p>Be mindful of performance impact, especially when scanning many assemblies.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Consistency</h3>
+                            <p>Maintain consistency with the core assembly management patterns and naming conventions.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Related Topics -->
+                <section class="section">
+                    <h2>Related Topics</h2>
+                    <div class="related-links">
+                        <a href="../classes/assembly-handler.html" class="related-link">
+                            <i class="bi bi-gear"></i>
+                            <span>AssemblyHandler</span>
+                        </a>
+                        <a href="../classes/assemblies-rep.html" class="related-link">
+                            <i class="bi bi-file-code"></i>
+                            <span>assemblies_rep</span>
+                        </a>
+                        <a href="../guides/extension-scanning.html" class="related-link">
+                            <i class="bi bi-search"></i>
+                            <span>Extension Scanning Guide</span>
+                        </a>
+                        <a href="../guides/getting-started.html" class="related-link">
+                            <i class="bi bi-book"></i>
+                            <span>Getting Started Guide</span>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="../scripts/docs.js"></script>
+</body>
+</html>

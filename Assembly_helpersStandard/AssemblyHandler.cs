@@ -8,8 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using TheTechIdea.Beep;
-
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.Workflow;
@@ -556,7 +554,7 @@ namespace TheTechIdea.Beep.Tools
             SendMessege(progress, token, "Adding Default Engine Drivers");
             AddEngineDefaultDrivers();
             SendMessege(progress, token, "Organizing Drivers");
-            CheckDriverAlreadyExistinList();
+          //  CheckDriverAlreadyExistinList();
             SendMessege(progress, token, "Scanning Extensions");
             ScanExtensions();
             SendMessege(progress, token, "Scanning Folders  For Extension Project's and Addin's");
@@ -1750,30 +1748,7 @@ namespace TheTechIdea.Beep.Tools
                 return false;
             };
         }
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        /// <param name="disposing">Indicates whether the method call comes from a Dispose method (its value is true) or from a finalizer (its value is false).</param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects)
-                    LoaderExtensions = null;
-                    LoaderExtensionClasses = null;
-                    Assemblies = null;
-                    // public List<IDM_Addin> AddIns { get; set; } = new List<IDM_Addin>();
-                    DataSourcesClasses = null;
-                    DataDriversConfig = null;
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
-                disposedValue = true;
-            }
-        }
+     
 
         #region New Implementations
         public Assembly LoadAssemblySafely(string assemblyPath)
@@ -2006,6 +1981,7 @@ namespace TheTechIdea.Beep.Tools
             {
                 // Create a thread-safe collection to hold driver configurations
                 var driversConfigDict = new ConcurrentDictionary<string, ConnectionDriversConfig>();
+                bool foundAnyDriverTypes = false;
 
                 // Extract assembly name parts once
                 string[] assemblyNameParts = asm.FullName.Split(new char[] { ',' });
@@ -2013,7 +1989,7 @@ namespace TheTechIdea.Beep.Tools
                     assemblyNameParts[1].Substring(assemblyNameParts[1].IndexOf("=") + 1) : "1.0";
                 string packageName = assemblyNameParts[0];
 
-                // Get all relevant types once
+                // Get all relevant types once - ONLY actual driver types
                 List<Type> relevantTypes;
                 try
                 {
@@ -2036,6 +2012,30 @@ namespace TheTechIdea.Beep.Tools
                     return false;
                 }
 
+                // ✅ KEY FIX: Only proceed if we actually found driver types
+                if (relevantTypes == null || relevantTypes.Count == 0)
+                {
+                    // Handle special case for SqlClient only if it's actually System.Data.SqlClient
+                    if (packageName == "System.Data.SqlClient")
+                    {
+                        var sqlDriver = new ConnectionDriversConfig
+                        {
+                            version = driverVersion,
+                            AdapterType = packageName + "." + "SqlDataAdapter",
+                            DbConnectionType = packageName + "." + "SqlConnection",
+                            CommandBuilderType = packageName + "." + "SqlCommandBuilder",
+                            DbTransactionType = packageName + "." + "SqlTransaction",
+                            PackageName = packageName,
+                            DriverClass = packageName,
+                            dllname = asm.ManifestModule.Name,
+                            ADOType = true
+                        };
+                        DataDriversConfig.Add(sqlDriver);
+                        return true;
+                    }
+                    return false; // ✅ Don't add anything if no driver types found
+                }
+
                 // Process types in parallel for large sets
                 if (relevantTypes.Count > 50)
                 {
@@ -2044,7 +2044,10 @@ namespace TheTechIdea.Beep.Tools
                         if (type.BaseType == null) return;
 
                         TypeInfo typeInfo = type.GetTypeInfo();
-                        ProcessDriverType(typeInfo, packageName, driverVersion, type.Module.Name, driversConfigDict);
+                        if (ProcessDriverType(typeInfo, packageName, driverVersion, type.Module.Name, driversConfigDict))
+                        {
+                            foundAnyDriverTypes = true;
+                        }
                     });
                 }
                 else
@@ -2054,36 +2057,23 @@ namespace TheTechIdea.Beep.Tools
                         if (type.BaseType == null) continue;
 
                         TypeInfo typeInfo = type.GetTypeInfo();
-                        ProcessDriverType(typeInfo, packageName, driverVersion, type.Module.Name, driversConfigDict);
+                        if (ProcessDriverType(typeInfo, packageName, driverVersion, type.Module.Name, driversConfigDict))
+                        {
+                            foundAnyDriverTypes = true;
+                        }
                     }
                 }
 
-                // Add all discovered drivers to the main collection
-                foreach (var driver in driversConfigDict.Values)
+                // ✅ Only add drivers if we actually found valid driver types
+                if (foundAnyDriverTypes)
                 {
-                    DataDriversConfig.Add(driver);
-                }
-
-                // Handle special case for SqlClient
-                if (packageName == "System.Data.SqlClient" && !driversConfigDict.ContainsKey(packageName))
-                {
-                    var sqlDriver = new ConnectionDriversConfig
+                    foreach (var driver in driversConfigDict.Values)
                     {
-                        version = driverVersion,
-                        AdapterType = packageName + "." + "SqlDataAdapter",
-                        DbConnectionType = packageName + "." + "SqlConnection",
-                        CommandBuilderType = packageName + "." + "SqlCommandBuilder",
-                        DbTransactionType = packageName + "." + "SqlTransaction",
-                        PackageName = packageName,
-                        DriverClass = packageName,
-                        dllname = asm.ManifestModule.Name,
-                        ADOType = true
-                    };
-
-                    DataDriversConfig.Add(sqlDriver);
+                        DataDriversConfig.Add(driver);
+                    }
                 }
 
-                return true;
+                return foundAnyDriverTypes;
             }
             catch (Exception ex)
             {
@@ -2091,10 +2081,11 @@ namespace TheTechIdea.Beep.Tools
                 return false;
             }
         }
-
-        private void ProcessDriverType(TypeInfo typeInfo, string packageName, string version, string moduleName,
-                                      ConcurrentDictionary<string, ConnectionDriversConfig> driversConfigDict)
+        private bool ProcessDriverType(TypeInfo typeInfo, string packageName, string version, string moduleName,
+                              ConcurrentDictionary<string, ConnectionDriversConfig> driversConfigDict)
         {
+            bool foundDriverComponent = false;
+
             // Get or create the driver config
             var driverConfig = driversConfigDict.GetOrAdd(packageName, key => new ConnectionDriversConfig
             {
@@ -2109,21 +2100,26 @@ namespace TheTechIdea.Beep.Tools
             if (typeInfo.ImplementedInterfaces.Contains(typeof(IDbDataAdapter)))
             {
                 driverConfig.AdapterType = typeInfo.FullName;
+                foundDriverComponent = true;
             }
             else if (typeInfo.BaseType.ToString().Contains("DbCommandBuilder"))
             {
                 driverConfig.CommandBuilderType = typeInfo.FullName;
+                foundDriverComponent = true;
             }
             else if (typeInfo.ImplementedInterfaces.Contains(typeof(IDbConnection)) || typeof(DbConnection).IsAssignableFrom(typeInfo))
             {
                 driverConfig.DbConnectionType = typeInfo.FullName;
+                foundDriverComponent = true;
             }
             else if (typeInfo.ImplementedInterfaces.Contains(typeof(IDbTransaction)) || typeof(DbTransaction).IsAssignableFrom(typeInfo))
             {
                 driverConfig.DbTransactionType = typeInfo.FullName;
+                foundDriverComponent = true;
             }
+
+            return foundDriverComponent;
         }
-        // Extract the type processing logic to a separate method
         private void ProcessTypeInfo(TypeInfo typeInfo, Assembly asm)
         {
             try
@@ -2225,6 +2221,30 @@ namespace TheTechIdea.Beep.Tools
             }
         }
         #endregion New Implementations
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        /// <param name="disposing">Indicates whether the method call comes from a Dispose method (its value is true) or from a finalizer (its value is false).</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                    LoaderExtensions = null;
+                    LoaderExtensionClasses = null;
+                    Assemblies = null;
+                    // public List<IDM_Addin> AddIns { get; set; } = new List<IDM_Addin>();
+                    DataSourcesClasses = null;
+                    DataDriversConfig = null;
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                disposedValue = true;
+            }
+        }
         // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
         // ~AssemblyHandler()
         // {
