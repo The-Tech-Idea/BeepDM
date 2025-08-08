@@ -129,5 +129,17 @@ namespace TheTechIdea.Beep.ConfigUtil
             get { return _methods; }
             set { SetProperty(ref _methods, value); }
         }
+        private string _assemblyName=string.Empty;
+        public string AssemblyName
+        {
+            get { return _assemblyName; }
+            set { SetProperty(ref _assemblyName, value); }
+        }
+        private string _assemblyVersion=string.Empty;
+        public string Version
+        {
+            get {return _assemblyVersion; }
+            set { SetProperty(ref _assemblyVersion, value);}
+        }
     }
 }

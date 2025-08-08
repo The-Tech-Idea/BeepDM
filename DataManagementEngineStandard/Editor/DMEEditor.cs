@@ -1,4 +1,5 @@
 ﻿
+
 using System.Collections.Generic;
 using System.Data;
 using TheTechIdea.Beep.Utilities;
@@ -31,7 +32,7 @@ namespace TheTechIdea.Beep
     /// Data Management Enterprize Editor (DMEEditor)
     /// This is the Class that encapsulate all functionality of Data Management.
     /// </summary>
-    public class DMEEditor : IDMEEditor,IDisposable
+    public partial class DMEEditor : IDMEEditor,IDisposable
     {
         private bool disposedValue;
         /// <summary>
@@ -172,7 +173,7 @@ namespace TheTechIdea.Beep
         /// Function to Add Log Message 
         /// </summary>
         /// <param name="pLogMessage"></param>
-        public void AddLogMessage(string pLogMessage)
+        public virtual void AddLogMessage(string pLogMessage)
         {
             if (Logger != null)
             {
@@ -192,7 +193,7 @@ namespace TheTechIdea.Beep
         /// <param name="entityname"></param>
         /// <param name="datasourcename"></param>
         /// <returns></returns>
-        public EntityStructure GetEntityStructure(string entityname, string datasourcename)
+        public virtual EntityStructure GetEntityStructure(string entityname, string datasourcename)
         {
             IDataSource ds = null;
             EntityStructure entity = null;
@@ -214,7 +215,7 @@ namespace TheTechIdea.Beep
         #endregion "Entity Structure Methods"
         #region "Get Data Methods"
         // Eliminate duplicate code between GUID and name-based methods
-        public IDataSource GetDataSourceById(string identifier, bool useGuid = false)
+        public virtual IDataSource GetDataSourceById(string identifier, bool useGuid = false)
         {
             if (string.IsNullOrEmpty(identifier))
                 return null;
@@ -293,7 +294,7 @@ namespace TheTechIdea.Beep
         /// <param name="ds"></param>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public object GetData(IDataSource ds, EntityStructure entity)
+        public virtual object GetData(IDataSource ds, EntityStructure entity)
         {
             object retval = null;
             if (ds != null && ds.ConnectionStatus == ConnectionState.Open)
@@ -362,7 +363,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public ConnectionState OpenDataSource(string pdatasourcename)
+        public virtual ConnectionState OpenDataSource(string pdatasourcename)
         {
             try
             {
@@ -396,7 +397,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public bool CloseDataSource(string pdatasourcename)
+        public virtual bool CloseDataSource(string pdatasourcename)
         {
             try
             {
@@ -430,7 +431,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public IDataSource GetDataSource(string pdatasourcename)
+        public virtual IDataSource GetDataSource(string pdatasourcename)
         {
             if (pdatasourcename == null)
             {
@@ -493,7 +494,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public ConnectionState OpenDataSourceUsingGuidID(string guidID)
+        public virtual ConnectionState OpenDataSourceUsingGuidID(string guidID)
         {
             try
             {
@@ -527,7 +528,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public bool CloseDataSourceUsingGuidID(string guidID)
+        public virtual bool CloseDataSourceUsingGuidID(string guidID)
         {
             try
             {
@@ -561,7 +562,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public IDataSource GetDataSourceUsingGuidID(string guidID)
+        public virtual IDataSource GetDataSourceUsingGuidID(string guidID)
         {
             if (guidID == null)
             {
@@ -624,7 +625,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public bool CheckDataSourceExistUsingGuidID(string guidID)
+        public virtual bool CheckDataSourceExistUsingGuidID(string guidID)
         {
             try
             {
@@ -653,7 +654,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public bool RemoveDataDourceUsingGuidID(string guidID)
+        public virtual bool RemoveDataDourceUsingGuidID(string guidID)
         {
             try
             {
@@ -689,7 +690,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="DatasourceName"></param>
         /// <returns></returns>
-        public AssemblyClassDefinition GetDataSourceClassUsingGuidID(string guidID)
+        public virtual AssemblyClassDefinition GetDataSourceClassUsingGuidID(string guidID)
         {
             AssemblyClassDefinition retval = null;
             try
@@ -718,7 +719,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public IDataSource CreateNewDataSourceConnectionUsingGuidID(string guidID)
+        public virtual IDataSource CreateNewDataSourceConnectionUsingGuidID(string guidID)
         {
             ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.GuidID.Equals(guidID, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             ErrorObject.Flag = Errors.Ok;
@@ -738,7 +739,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="DatasourceName"></param>
         /// <returns></returns>
-        public AssemblyClassDefinition GetDataSourceClass(string DatasourceName)
+        public virtual AssemblyClassDefinition GetDataSourceClass(string DatasourceName)
         {
             AssemblyClassDefinition retval = null;
             try
@@ -768,7 +769,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public bool CheckDataSourceExist(string pdatasourcename)
+        public virtual bool CheckDataSourceExist(string pdatasourcename)
         {
             try
             {
@@ -797,7 +798,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public bool RemoveDataDource(string pdatasourcename)
+        public virtual bool RemoveDataDource(string pdatasourcename)
         {
             try
             {
@@ -825,7 +826,7 @@ namespace TheTechIdea.Beep
             };
         }
         // Implement a more robust factory pattern for data source creation
-        private IDataSource CreateDataSourceFromDefinition(ConnectionProperties connection, AssemblyClassDefinition classDefinition)
+        public virtual IDataSource CreateDataSourceFromDefinition(ConnectionProperties connection, AssemblyClassDefinition classDefinition)
         {
             try
             {
@@ -863,7 +864,7 @@ namespace TheTechIdea.Beep
         }
         #endregion "Data Sources Methods"
         #region "Data Sources Open/Close"
-        public async Task<ConnectionState> OpenDataSourceAsync(string dataSourceName)
+        public virtual async Task<ConnectionState> OpenDataSourceAsync(string dataSourceName)
         {
             var ds = DataSources.FirstOrDefault(f => f.DatasourceName.Equals(dataSourceName, StringComparison.InvariantCultureIgnoreCase));
             if (ds == null)
@@ -878,7 +879,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public IDataSource CreateNewDataSourceConnection(string pdatasourcename)
+        public virtual IDataSource CreateNewDataSourceConnection(string pdatasourcename)
         {
             ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName != null && f.ConnectionName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             ErrorObject.Flag = Errors.Ok;
@@ -892,7 +893,7 @@ namespace TheTechIdea.Beep
                 return null;
             }
         }
-        public async Task<IDataSource> CreateNewDataSourceConnectionAsync(string pdatasourcename)
+        public virtual async Task<IDataSource> CreateNewDataSourceConnectionAsync(string pdatasourcename)
         {
             ConnectionProperties cn = ConfigEditor.DataConnections.Where(f => f.ConnectionName != null && f.ConnectionName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             ErrorObject.Flag = Errors.Ok;
@@ -912,7 +913,7 @@ namespace TheTechIdea.Beep
         /// <param name="cn"></param>
         /// <param name="pdatasourcename"></param>
         /// <returns></returns>
-        public IDataSource CreateNewDataSourceConnection(ConnectionProperties cn, string pdatasourcename)
+        public virtual IDataSource CreateNewDataSourceConnection(ConnectionProperties cn, string pdatasourcename)
         {
             ErrorObject.Flag = Errors.Ok;
 
@@ -978,7 +979,7 @@ namespace TheTechIdea.Beep
                 return null;
             }
         }
-        public async Task<IDataSource> CreateNewDataSourceConnectionAsync(ConnectionProperties cn, string pdatasourcename)
+        public virtual  async Task<IDataSource> CreateNewDataSourceConnectionAsync(ConnectionProperties cn, string pdatasourcename)
         {
             ErrorObject.Flag = Errors.Ok;
 
@@ -1060,7 +1061,7 @@ namespace TheTechIdea.Beep
         /// <param name="pdatasourcename"></param>
         /// <param name="ClassDBHandlerName"></param>
         /// <returns></returns>
-        public IDataSource CreateLocalDataSourceConnection(ConnectionProperties dataConnection, string pdatasourcename, string ClassDBHandlerName)
+        public virtual  IDataSource CreateLocalDataSourceConnection(ConnectionProperties dataConnection, string pdatasourcename, string ClassDBHandlerName)
         {
             ErrorObject.Flag = Errors.Ok;
             IDataSource ds = null;
@@ -1148,7 +1149,7 @@ namespace TheTechIdea.Beep
         }
 
         // Helper method for progress reporting
-        private void ReportProgress(PassedArgs progress)
+        private   void ReportProgress(PassedArgs progress)
         {
             if (string.IsNullOrEmpty(progress.Messege))
                 return;
@@ -1177,6 +1178,9 @@ namespace TheTechIdea.Beep
             {
                 if (disposing)
                 {
+                    // Call partial method for extensions cleanup
+                    OnDisposing();
+
                     // Use safe disposal for DataSources
                     if (DataSources != null)
                     {
@@ -1215,6 +1219,12 @@ namespace TheTechIdea.Beep
                 disposedValue = true;
             }
         }
+
+        /// <summary>
+        /// Partial method for extension cleanup - implemented in partial classes
+        /// </summary>
+        partial void OnDisposing();
+
         // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
         // ~DMEEditor()
         // {

@@ -1,6 +1,4 @@
-﻿
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -1462,6 +1460,15 @@ namespace TheTechIdea.Beep.Tools
         }
         #endregion "Helpers"
         #region "Connection Drivers Loaders"
+        public void AddTypeToCache(string fullName, Type type)
+        {
+            if (type == null || string.IsNullOrEmpty(fullName))
+                return;
+            if (!_typeCache.ContainsKey(fullName))
+            {
+                _typeCache.Add(fullName, type);
+            }
+        }
         /// <summary>
         /// Checks and updates the list of driver configurations to ensure no duplicates exist.
         /// </summary>
@@ -2261,6 +2268,7 @@ namespace TheTechIdea.Beep.Tools
             GC.SuppressFinalize(this);
         }
         #endregion
+
 
     }
 }

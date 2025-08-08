@@ -46,5 +46,6 @@ namespace TheTechIdea.Beep.Tools
         IErrorsInfo LoadAllAssembly(IProgress<PassedArgs> progress, CancellationToken token);
         bool RunMethod(object ObjInstance, string FullClassName, string MethodName);
         AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type, string typename);
+        void AddTypeToCache(string fullName, Type type);
     }
 }

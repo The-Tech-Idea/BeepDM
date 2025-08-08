@@ -2796,10 +2796,70 @@
             Actions that can be taken when unsaved changes are detected
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions">
+            <summary>
+            DMEEditor extension for enhanced package management capabilities
+            Provides extension methods that work with existing virtual methods
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.CreateEnhancedDataSourceConnectionAsync(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.String,System.Boolean)">
+            <summary>
+            Enhanced data source creation with better error handling
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.GetEnhancedDataSource(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.Boolean)">
+            <summary>
+            Enhanced data source retrieval with better diagnostics
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.OpenEnhancedDataSource(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.Boolean)">
+            <summary>
+            Enhanced connection opening with automatic diagnostics
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.GetDataSourceDiagnostics(TheTechIdea.Beep.Editor.IDMEEditor,System.String)">
+            <summary>
+            Get comprehensive data source diagnostics
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.TestAllConnectionsAsync(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Enhanced bulk connection testing
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.AddEnhancedLogMessage(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.Editor.LogLevel)">
+            <summary>
+            Enhanced logging with context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.GetSuggestedPackages(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Get suggested package names for missing data sources
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.SetExtensionData(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.Object)">
+            <summary>
+            Store extension data for this DMEEditor instance
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.GetExtensionData``1(TheTechIdea.Beep.Editor.IDMEEditor,System.String,``0)">
+            <summary>
+            Get extension data for this DMEEditor instance
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.CleanupNuggetExtensions(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Cleanup extension resources when DMEEditor is disposed
+            This method is called from the partial class OnDisposing method
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.DMEEditor">
             <summary>
             Data Management Enterprize Editor (DMEEditor)
             This is the Class that encapsulate all functionality of Data Management.
+            </summary>
+            <summary>
+            DMEEditor partial class extension for enhanced package management cleanup
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.DMEEditor.ContainerMode">
@@ -3045,6 +3105,11 @@
             <param name="ClassDBHandlerName"></param>
             <returns></returns>
         </member>
+        <member name="M:TheTechIdea.Beep.DMEEditor.OnDisposing">
+            <summary>
+            Enhanced dispose implementation that includes nugget extension cleanup
+            </summary>
+        </member>
         <!-- Badly formed XML comment ignored for member "T:TheTechIdea.Beep.EntityDataMoveValidator" -->
         <member name="M:TheTechIdea.Beep.EntityDataMoveValidator.CanInsertRecord(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.Object,System.String,System.String)">
             <summary>
@@ -3205,6 +3270,47 @@
             <param name="EntityName">The name of the entity.</param>
             <param name="Fields">The list of entity fields defining the object structure.</param>
             <returns>A dynamically created object for the entity.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor">
+            <summary>
+            Example of a custom DMEEditor that overrides virtual methods for enhanced functionality
+            This demonstrates how to leverage the virtual method pattern you added
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.GetDataSource(System.String)">
+            <summary>
+            Override GetDataSource to add custom logging and statistics
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.CreateNewDataSourceConnection(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.String)">
+            <summary>
+            Override CreateNewDataSourceConnection to add retry logic and enhanced error handling
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.OpenDataSource(System.String)">
+            <summary>
+            Override OpenDataSource to add connection statistics and enhanced monitoring
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.GetEntityStructure(System.String,System.String)">
+            <summary>
+            Override GetEntityStructure to add caching and performance monitoring
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.AddLogMessage(System.String)">
+            <summary>
+            Override AddLogMessage to add custom formatting and routing
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.GetSessionStats">
+            <summary>
+            Get session statistics
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.ResetSessionStats">
+            <summary>
+            Reset session statistics
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.LinkConnection2Drivers(TheTechIdea.Beep.ConfigUtil.IConnectionProperties,TheTechIdea.Beep.ConfigUtil.IConfigEditor)">
             <summary>Links a connection to its corresponding drivers in the configuration editor.</summary>

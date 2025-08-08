@@ -5,7 +5,7 @@
     <RootNamespace>TheTechIdea.Beep</RootNamespace>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.AssemblyLoader</PackageId>
-	<Version>2.0.7</Version>
+	<Version>2.0.8</Version>
     <Authors>The Tech Idea</Authors>
     <Product>TheTechIdea.Beep.AssemblyLoader</Product>
     <Description>Aseembly Loader for Data Management Engine</Description>
@@ -37,7 +37,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.8" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="9.0.8" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.67" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.68" />
   </ItemGroup>
 
 </Project>
