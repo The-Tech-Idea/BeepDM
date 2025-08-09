@@ -205,5 +205,947 @@
             Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant">
+            <summary>
+            Refactored AssemblyLoadingAssistant that delegates to SharedContextManager for true isolation
+            Acts as a bridge between legacy AssemblyHandler interface and modern SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.LoadAssemblySafely(System.String)">
+            <summary>
+            Legacy method - now delegates to SharedContextManager for true isolation
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.LoadAssembly(System.String,TheTechIdea.Beep.Utilities.FolderFileTypes)">
+            <summary>
+            Loads assemblies from directory using SharedContextManager - maintains legacy interface
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.LoadAssemblyFromRuntime">
+            <summary>
+            Loads runtime assemblies - these are NOT loaded via collectible context as they're system assemblies
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.GetRuntimeAssemblies">
+            <summary>
+            Gets runtime assemblies - system assemblies that should not be unloaded
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.LoadAssemblyInSharedContextAsync(System.String,System.String)">
+            <summary>
+            Loads assembly via SharedContextManager with full integration
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.UnloadAssembly(System.String)">
+            <summary>
+            Unloads assembly by removing its nugget from shared context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.GetAssembliesByType(TheTechIdea.Beep.Utilities.FolderFileTypes)">
+            <summary>
+            Gets assemblies by file type - reads from AssemblyHandler properties
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.IsAssemblyLoaded(System.String)">
+            <summary>
+            Checks if an assembly is loaded (either in shared context or traditionally)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.GetAssemblyByName(System.String)">
+            <summary>
+            Gets assembly by name - searches both shared context and traditional assemblies
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.GetLoadingStatistics">
+            <summary>
+            Gets comprehensive loading statistics from both systems
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.GetManagedNuggetIds">
+            <summary>
+            Gets all nugget IDs managed by this assistant
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.UnloadAllManagedAssemblies">
+            <summary>
+            Unloads all assemblies managed by this assistant
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.AssemblyScanningAssistant">
+            <summary>
+            Assistant for assembly scanning operations - scans assemblies for types and interfaces
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.AssemblyScanningAssistant.LoaderExtensionClasses">
+            <summary>
+            Gets the loader extension classes discovered by this assistant from SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyScanningAssistant.ScanAssembly(System.Reflection.Assembly,System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition})">
+            <summary>
+            Scans an assembly and extracts class definitions to the provided list
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyScanningAssistant.ProcessTypeInfo(System.Reflection.TypeInfo,System.Reflection.Assembly,System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition})">
+            <summary>
+            Processes a TypeInfo and adds appropriate class definitions
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyScanningAssistant.GetAssemblyClassDefinition(System.Reflection.TypeInfo,System.String)">
+            <summary>
+            Gets the definition of a class within an assembly, including metadata and methods
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyScanningAssistant.ScanAssemblyForDataSources(System.Reflection.Assembly,System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition})">
+            <summary>
+            Scans for data source specific implementations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyScanningAssistant.GetScanningStatistics">
+            <summary>
+            Gets scanning statistics from SharedContextManager
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.DriverDiscoveryAssistant">
+            <summary>
+            Assistant for discovering and managing database drivers
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.DriverDiscoveryAssistant.GetDrivers(System.Reflection.Assembly)">
+            <summary>
+            Discovers drivers from an assembly
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.DriverDiscoveryAssistant.GetADOTypeDrivers(System.Reflection.Assembly)">
+            <summary>
+            Gets ADO.NET type drivers from assembly
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.DriverDiscoveryAssistant.ProcessDriverType(System.Reflection.TypeInfo,System.String,System.String,System.String,System.Collections.Concurrent.ConcurrentDictionary{System.String,TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig})">
+            <summary>
+            Processes a driver type and updates the driver configuration
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.DriverDiscoveryAssistant.AddEngineDefaultDrivers(System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition})">
+            <summary>
+            Adds default engine drivers
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.DriverDiscoveryAssistant.CreateFileExtensionString(System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition})">
+            <summary>
+            Creates file extension string from data sources
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.DriverDiscoveryAssistant.CheckDriverAlreadyExistInList">
+            <summary>
+            Checks and adds drivers to configuration, avoiding duplicates
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.DriverDiscoveryAssistant.GetDiscoveredDrivers">
+            <summary>
+            Gets all discovered drivers from SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.DriverDiscoveryAssistant.GetDriverDiscoveryStatistics">
+            <summary>
+            Gets driver discovery statistics from SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.DriverDiscoveryAssistant.ClearDiscoveredDrivers">
+            <summary>
+            Clears discovered drivers - now delegates to SharedContextManager
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant">
+            <summary>
+            Assistant for creating instances from types with advanced caching and error handling
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.CreateInstanceFromString(System.String,System.Object[])">
+            <summary>
+            Creates an instance from a type name with parameters
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.CreateInstanceFromString(System.String,System.String,System.Object[])">
+            <summary>
+            Creates an instance from a specific assembly and type name
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.GetType(System.String)">
+            <summary>
+            Gets a type by its full name - delegates to SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.CreateSingleton``1(System.String,System.Object[])">
+            <summary>
+            Creates a singleton instance - delegates to SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.CreateSingletonFromSharedContext``1(System.String,System.Object[])">
+            <summary>
+            Creates a singleton instance using the shared context manager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.GetInstance(System.String)">
+            <summary>
+            Gets an instance by fully qualified name (non-cached)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.GetAssemblyByName(System.String)">
+            <summary>
+            Gets an assembly by name from shared context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.TypeExists(System.String)">
+            <summary>
+            Checks if a type exists
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.GetCachedTypes">
+            <summary>
+            Gets all cached types from SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.GetCreationStatistics">
+            <summary>
+            Gets creation statistics from SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.ClearCaches">
+            <summary>
+            Clears all caches - delegates to SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.ClearTypeCache">
+            <summary>
+            Clears type cache only - delegates to SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.ClearSingletonCache">
+            <summary>
+            Clears singleton cache only - delegates to SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.InstanceCreationAssistant.AddTypeToCache(System.String,System.Type)">
+            <summary>
+            Adds a type to cache manually - delegates to SharedContextManager
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.IScanningService">
+            <summary>
+            Abstraction for scanning assemblies to discover Beep components (data sources, addins, workflow, etc.).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.IScanningService.ScanAssembly(System.Reflection.Assembly,System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition})">
+            <summary>
+            Scans the provided assembly for all supported Beep component types and updates the SharedContextManager and optional target list.
+            </summary>
+            <param name="assembly">Assembly to scan.</param>
+            <param name="targetList">Optional list that will receive discovered <see cref="T:TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition"/> entries (in addition to central caches).</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.IScanningService.ScanAssemblyForDataSources(System.Reflection.Assembly,System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition})">
+            <summary>
+            Specifically scans the assembly for IDataSource implementations and records them in both configuration and shared context stores.
+            </summary>
+            <param name="assembly">Assembly to scan.</param>
+            <param name="dataSourceClasses">Optional list that will receive the discovered data source definitions.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.IScanningService.GetAssemblyClassDefinition(System.Reflection.TypeInfo,System.String)">
+            <summary>
+            Builds a rich <see cref="T:TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition"/> descriptor for a discovered component type including attributes, methods and ordering metadata.
+            </summary>
+            <param name="type">Type info for the component.</param>
+            <param name="componentType">Logical component type label (e.g. IDataSource, IDM_Addin).</param>
+            <returns>Populated class definition.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.IScanningService.GetScanningStatistics">
+            <summary>
+            Returns aggregated statistics about discovered component categories during the current scanning session.
+            </summary>
+            <returns>Dictionary keyed by category name with counts.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.PluginHealthMonitor">
+            <summary>
+            Manages health monitoring and resource tracking for plugins
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginHealthMonitor.StartHealthMonitoring(System.String,System.TimeSpan)">
+            <summary>
+            Starts health monitoring for a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginHealthMonitor.StopHealthMonitoring(System.String)">
+            <summary>
+            Stops health monitoring for a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginHealthMonitor.GetPluginHealthStatuses">
+            <summary>
+            Gets health status for all plugins
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginHealthMonitor.GetPluginHealthInfo(System.String)">
+            <summary>
+            Gets detailed health information for a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginHealthMonitor.SetPluginResourceLimits(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Sets resource limits for a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginHealthMonitor.GetPluginResourceUsage">
+            <summary>
+            Gets resource usage for all plugins
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginHealthMonitor.GetPluginMetrics(System.String)">
+            <summary>
+            Gets performance metrics for a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginHealthMonitor.CheckPluginHealthAsync(System.String)">
+            <summary>
+            Forces an immediate health check for a plugin
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.PluginLoadContext">
+            <summary>
+            Collectible Assembly Load Context for true plugin isolation
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager">
+            <summary>
+            Manages plugin isolation and true unloading using AssemblyLoadContext
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.LoadPluginWithIsolationAsync(System.String,System.String)">
+            <summary>
+            Loads an assembly with true isolation using collectible AssemblyLoadContext
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.UnloadPlugin(System.String)">
+            <summary>
+            Unloads a plugin with true memory cleanup
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.GetIsolatedPluginIds">
+            <summary>
+            Gets all isolated plugin contexts
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.GetPlugins">
+            <summary>
+            Gets all plugins
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.GetPlugin(System.String)">
+            <summary>
+            Gets plugin by ID
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.StorePluginInstance(System.String,System.Object)">
+            <summary>
+            Stores a plugin instance with weak reference
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.GetPluginInstance``1(System.String)">
+            <summary>
+            Gets a plugin instance if still alive
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.GetPluginVersionHistory(System.String)">
+            <summary>
+            Gets version history for a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.CreatePluginInstance(System.String,TheTechIdea.Beep.Tools.PluginResolutionStrategy,System.Object[])">
+            <summary>
+            Plugin-aware instance creation with strategy support
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.GetInstanceWithPluginSupport(System.String)">
+            <summary>
+            Enhanced GetInstance with plugin support
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.GetPluginType(System.String,TheTechIdea.Beep.Tools.PluginResolutionStrategy)">
+            <summary>
+            Gets plugin type information
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.CreateInstanceFromPlugin(System.String,System.String,System.Object[])">
+            <summary>
+            Creates instance from specific plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.CreateInstanceFromString(System.String,TheTechIdea.Beep.Tools.PluginResolutionStrategy,System.Object[])">
+            <summary>
+            Enhanced CreateInstanceFromString with strategy
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.GetAllAvailableTypes(System.String)">
+            <summary>
+            Gets all available types from plugins and regular assemblies
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.TypeExists(System.String,TheTechIdea.Beep.Tools.PluginResolutionStrategy)">
+            <summary>
+            Checks if type exists in plugins
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginIsolationManager.GetInstanceCreationStats">
+            <summary>
+            Gets instance creation statistics
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.PluginLifecycleManager">
+            <summary>
+            Manages plugin lifecycle states and transitions
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginLifecycleManager.RegisterPlugin(TheTechIdea.Beep.Tools.PluginInfo)">
+            <summary>
+            Registers a plugin with the lifecycle manager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginLifecycleManager.GetPlugins">
+            <summary>
+            Gets all loaded plugins with state information
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginLifecycleManager.GetPlugin(System.String)">
+            <summary>
+            Gets plugin by ID
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginLifecycleManager.InitializePlugin(System.String,TheTechIdea.Beep.Tools.IPluginContext)">
+            <summary>
+            Initializes a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginLifecycleManager.StartPlugin(System.String)">
+            <summary>
+            Starts a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginLifecycleManager.StopPlugin(System.String)">
+            <summary>
+            Stops a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginLifecycleManager.ReloadPlugin(System.String)">
+            <summary>
+            Reloads a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginLifecycleManager.CheckPluginHealth(System.String)">
+            <summary>
+            Checks plugin health
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginLifecycleManager.GetPluginMetadata(System.String)">
+            <summary>
+            Gets plugin metadata
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.PluginMessageBus">
+            <summary>
+            Plugin messaging system for inter-plugin communication
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginMessageBus.Subscribe``1(System.String,System.Action{``0})">
+            <summary>
+            Subscribe to a channel with a message handler
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginMessageBus.Unsubscribe(System.String)">
+            <summary>
+            Unsubscribe from a channel
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginMessageBus.Publish``1(System.String,``0)">
+            <summary>
+            Publish a message to a channel
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginMessageBus.SendToPlugin``1(System.String,System.String,``0)">
+            <summary>
+            Send a direct message to a specific plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginMessageBus.RegisterPluginForMessaging``1(System.String,System.String,System.Action{``0})">
+            <summary>
+            Register a plugin for direct messaging
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginMessageBus.UnregisterPlugin(System.String)">
+            <summary>
+            Unregister a plugin from direct messaging
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginMessageBus.RegisterPlugin(System.String,TheTechIdea.Beep.Tools.UnifiedPluginType)">
+            <summary>
+            Registers a plugin with the message bus
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginMessageBus.GetRegisteredPlugins">
+            <summary>
+            Gets all registered plugins
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginMessageBus.GetPluginsByType(TheTechIdea.Beep.Tools.UnifiedPluginType)">
+            <summary>
+            Gets plugins by type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginMessageBus.RequestAsync``2(System.String,``0,System.TimeSpan)">
+            <summary>
+            Create a request-response channel
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginMessageBus.GetChannelStatistics">
+            <summary>
+            Get channel statistics
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.PluginContext">
+            <summary>
+            Plugin context implementation with dependency injection
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.PluginServiceManager">
+            <summary>
+            Manages plugin services and dependency injection
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginServiceManager.RegisterPluginService``1(``0)">
+            <summary>
+            Registers a service for plugins
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginServiceManager.GetPluginService``1">
+            <summary>
+            Gets a service for plugins
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginServiceManager.CreatePluginContext(System.String,System.IServiceProvider)">
+            <summary>
+            Creates plugin context with dependency injection
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginServiceManager.CreateScopedServices(System.String)">
+            <summary>
+            Creates scoped services for a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginServiceManager.DisposeScopedServices(System.String)">
+            <summary>
+            Disposes scoped services for a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginServiceManager.RegisterPluginDependency(System.String,System.String)">
+            <summary>
+            Registers plugin dependency
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginServiceManager.GetPluginDependencies(System.String)">
+            <summary>
+            Gets plugin dependencies
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginServiceManager.ValidatePluginDependencies(System.String)">
+            <summary>
+            Validates plugin dependencies
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginServiceManager.GetServiceRegistry">
+            <summary>
+            Gets service registry information
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginServiceManager.CreatePluginServiceCollection">
+            <summary>
+            Creates a service collection builder for plugins
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginServiceManager.RegisterCommonPluginServices(TheTechIdea.Beep.ConfigUtil.IConfigEditor,TheTechIdea.Beep.Logger.IDMLogger,TheTechIdea.Beep.Tools.IAssemblyHandler)">
+            <summary>
+            Registers common plugin services
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.PluginVersionManager">
+            <summary>
+            Manages hot-swapping and versioning of plugins
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginVersionManager.ReplacePluginAsync(System.String,System.String,System.String)">
+            <summary>
+            Replaces a plugin with a new version at runtime
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginVersionManager.RollbackPluginAsync(System.String)">
+            <summary>
+            Rolls back to a previous plugin version
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginVersionManager.GetPluginVersionHistory(System.String)">
+            <summary>
+            Gets version history for a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginVersionManager.CreatePluginSnapshotAsync(System.String,System.String)">
+            <summary>
+            Creates a snapshot of the current plugin state
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.PluginVersionManager.RestoreFromSnapshotAsync(System.String,System.String)">
+            <summary>
+            Restores plugin from a named snapshot
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.PluginBackup">
+            <summary>
+            Represents a plugin backup for rollback purposes
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext">
+            <summary>
+            Shared Context Load Context for true unloading while maintaining shared visibility
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.ContextId">
+            <summary>Unique identifier for this load context (usually the nugget/plugin ID).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.SourcePath">
+            <summary>Original source path (directory or dll) used for loading.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.LoadedAt">
+            <summary>UTC timestamp when the context was created.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.IsSharedContext">
+            <summary>Flag indicating this context participates in shared resolution policy.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.#ctor(System.String,System.String,System.Boolean)">
+            <summary>Creates a new collectible load context for shared plugin loading.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.Load(System.Reflection.AssemblyName)">
+            <summary>Overrides load; returns null to defer to default context for framework/system assemblies.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager">
+            <summary>
+            Advanced SharedContextManager that uses collectible AssemblyLoadContext for true isolation
+            and unloading while maintaining maximum visibility between all loaded assemblies, nuggets, DLLs, and plugins
+            ALSO stores all discovered items (drivers, data sources, etc.) for shared access
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.NuggetLoaded">
+            <summary>Raised after a nugget (assembly set) is loaded into the shared context.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.NuggetUnloaded">
+            <summary>Raised after a nugget is unloaded from the shared context.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.PluginLoaded">
+            <summary>Raised when a plugin (type with plugin traits) has been registered as loaded.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.PluginUnloaded">
+            <summary>Raised when a plugin is unloaded or removed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.MessageBus">
+            <summary>Central plugin message bus for inter-plugin communication.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.DiscoveredDrivers">
+            <summary>Snapshot list of all discovered drivers.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.DiscoveredDataSources">
+            <summary>Snapshot list of discovered data source class definitions.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.DiscoveredAddins">
+            <summary>Snapshot list of discovered addin class definitions.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.DiscoveredWorkflowActions">
+            <summary>Snapshot list of discovered workflow action class definitions.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.DiscoveredViewModels">
+            <summary>Snapshot list of discovered view model class definitions.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.DiscoveredLoaderExtensions">
+            <summary>Snapshot list of discovered loader extension class definitions.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.#ctor(TheTechIdea.Beep.Logger.IDMLogger,System.Boolean)">
+            <summary>Creates a new shared context manager with integrated plugin system managers.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.AddDiscoveredDrivers(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig})">
+            <summary>
+            Adds discovered drivers to shared storage
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.AddDiscoveredDataSources(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition})">
+            <summary>
+            Adds discovered data sources to shared storage
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.AddDiscoveredAddins(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition})">
+            <summary>
+            Adds discovered addins to shared storage
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.AddDiscoveredWorkflowActions(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition})">
+            <summary>
+            Adds discovered workflow actions to shared storage
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.AddDiscoveredViewModels(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition})">
+            <summary>
+            Adds discovered view models to shared storage
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.AddDiscoveredLoaderExtensions(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition})">
+            <summary>
+            Adds discovered loader extensions to shared storage
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.RemoveDiscoveredItemsForNugget(System.String)">
+            <summary>
+            Removes discovered items associated with a nugget when it's unloaded
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.LoadNuggetAsync(System.String,System.String)">
+            <summary>
+            Loads a nugget (DLL, assembly, package) in shared context with true unload capability
+            Every loaded entity is treated as a plugin for unified management
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.LoadAssemblyInContextAsync(TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext,System.String)">
+            <summary>
+            Loads a single assembly in the shared context with collectible context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.UnloadNugget(System.String)">
+            <summary>
+            Unloads a nugget with true memory cleanup using collectible contexts
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.CacheAssemblyTypesAsync(System.Collections.Generic.IEnumerable{System.Reflection.Assembly})">
+            <summary>
+            Caches types from assemblies for fast shared access
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.RemoveAssemblyTypesFromCache(System.Reflection.Assembly)">
+            <summary>
+            Removes types from cache when assembly is unloaded
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetType(System.String)">
+            <summary>
+            Gets a type from the shared cache - all types visible across all contexts
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.CreateInstance(System.String,System.Object[])">
+            <summary>
+            Creates an instance from shared context with caching
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetLoadedNuggets">
+            <summary>
+            Gets all loaded nuggets (everything is treated as a plugin)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetAllDiscoveredPlugins">
+            <summary>
+            Gets all discovered plugins across all nuggets
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetNugget(System.String)">
+            <summary>
+            Gets a specific nugget by ID
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.IsNuggetLoaded(System.String)">
+            <summary>
+            Checks if a nugget is loaded
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetSharedAssemblies">
+            <summary>
+            Gets all loaded assemblies in shared context - maximum visibility
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetSharedAssemblyReps">
+            <summary>
+            Gets all assembly representations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetCachedTypes">
+            <summary>
+            Gets all cached types - shared across all contexts
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.TypeExists(System.String)">
+            <summary>
+            Checks if type exists in shared context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetLoadedNuggetIds">
+            <summary>
+            Gets nugget IDs
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.DiscoverAndLoadNuggetsAsync(System.String)">
+            <summary>
+            Discovers and loads nuggets from a directory
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.IntegrateWithAssistants">
+            <summary>
+            Enhanced shared context manager with better integration with assistant classes
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetIntegratedStatistics">
+            <summary>
+            Gets unified statistics including discovered items
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.CreateInstanceFromAssembly(System.String,System.String,System.Object[])">
+            <summary>
+            Attempts to create an instance of a type ensuring its defining assembly is loaded (on-demand) using a dll path or name.
+            </summary>
+            <param name="dllOrPath">File path or simple dll name (with or without .dll) or nugget id.</param>
+            <param name="fullTypeName">Full type name to instantiate.</param>
+            <param name="args">Constructor arguments.</param>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.IsSingleSharedContextMode">
+            <summary>Gets whether manager is operating in single shared context mode.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.SetSharedContextModeAsync(System.Boolean)">
+            <summary>Switches between single shared context and per-nugget isolation. Forces full reload of all currently loaded nuggets.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.ReloadAllNuggetsAsync">
+            <summary>Reloads all nuggets in current mode (useful after external file changes).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetTypeOrigin(System.String)">
+            <summary>Returns nugget Id (if any) that originally contributed the specified type.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetTypesForNugget(System.String)">
+            <summary>Returns all type full names contributed by a given nugget Id.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.PersistModePreference">
+            <summary>Persist current mode preference to disk (simple text file).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.LoadModePreference">
+            <summary>Explicitly reload mode preference from disk; does not auto-switch mode.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.SelectiveCleanupNuggetTypes(System.String)">
+            <summary>Removes types (and factories) contributed by a nugget without unloading its context (isolation mode only).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.PrewarmFactories(System.Func{System.Type,System.Boolean},System.Boolean)">
+            <summary>Prewarms factory delegates for all cached types (parameterless only by default).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.PrewarmFactoriesForNugget(System.String)">
+            <summary>Prewarms factory delegates for all types originating from the specified nugget.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.Dispose">
+            <summary>Disposes the manager, unloading all nuggets and clearing caches.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler">
+            <summary>
+            Modern AssemblyHandler implementation using SharedContextManager as the core loading system
+            This provides unified loading/unloading for DLLs, plugins, nuggets, and assemblies
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.NamespacestoIgnore">
+            <summary>Namespaces to ignore during scanning.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.Assemblies">
+            <summary>
+            Collection of loaded assembly representations. Wrapped to avoid external replacement of internal list.
+            Setting replaces contents while preserving backing list reference.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.LoadedAssemblies">
+            <summary>
+            List of loaded assemblies (raw Assembly objects). Wrapper for internal list.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.DataSourcesClasses">
+            <summary>
+            Discovered data source class definitions. Delegated directly to ConfigEditor storage to avoid duplication.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.ConfigEditor">
+            <summary>Configuration editor reference.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.ErrorObject">
+            <summary>Error object for reporting.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.Logger">
+            <summary>Logger instance.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.Utilfunction">
+            <summary>Utility functions provider.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.LoadAssembly(System.String,TheTechIdea.Beep.Utilities.FolderFileTypes)">
+            <summary>
+            Loads assemblies from a path using SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.LoadAllAssembly(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Loads all assemblies from configured folders
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.CreateInstanceFromString(System.String,System.Object[])">
+            <summary>Create instance by fully qualified type name using shared context.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.CreateInstanceFromString(System.String,System.String,System.Object[])">
+            <summary>Create instance by type name optionally constrained to a dll.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetInstance(System.String)">
+            <summary>Get (create) an instance of a type by full name.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetType(System.String)">
+            <summary>Resolve a type from shared context.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetAssemblyClassDefinition(System.Reflection.TypeInfo,System.String)">
+            <summary>Delegates building of AssemblyClassDefinition to the scanning service.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.AddTypeToCache(System.String,System.Type)">
+            <summary>No-op retained for interface compatibility; caching handled by SharedContextManager.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetAllDiscoveredDrivers">
+            <summary>
+            Gets all discovered drivers from the shared context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetAllDiscoveredDataSources">
+            <summary>
+            Gets all discovered data sources from the shared context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetAllDiscoveredAddins">
+            <summary>
+            Gets all discovered addins from the shared context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetAllDiscoveredLoaderExtensions">
+            <summary>
+            Gets all discovered loader extensions from the shared context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetAllDiscoveredWorkflowActions">
+            <summary>
+            Gets all discovered workflow actions from the shared context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetAllDiscoveredViewModels">
+            <summary>
+            Gets all discovered view models from the shared context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetDiscoveryStatistics">
+            <summary>
+            Gets comprehensive discovery statistics
+            </summary>
+        </member>
     </members>
 </doc>

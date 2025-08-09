@@ -1185,6 +1185,201 @@
             <param name="namespaceName">Component namespace</param>
             <returns>The Blazor component code</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.Tools.NuggetInfo">
+            <summary>
+            Information about a loaded nugget in shared context
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.NuggetEventArgs">
+            <summary>
+            Event arguments for nugget operations
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginHealthEventArgs">
+            <summary>
+            Event arguments for plugin health status changes
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginResourceEventArgs">
+            <summary>
+            Event arguments for plugin resource violations
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginState">
+            <summary>
+            Plugin states for modern plugin lifecycle management
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginHealth">
+            <summary>
+            Plugin health status
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginResolutionStrategy">
+            <summary>
+            Plugin assembly resolution strategy
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.PluginResolutionStrategy.RegularAssembliesOnly">
+            <summary>
+            Search regular assemblies only
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.PluginResolutionStrategy.IsolatedPluginsOnly">
+            <summary>
+            Search isolated plugins only
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.PluginResolutionStrategy.RegularFirst">
+            <summary>
+            Search regular assemblies first, then plugins
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.PluginResolutionStrategy.PluginsFirst">
+            <summary>
+            Search plugins first, then regular assemblies
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.PluginResolutionStrategy.Both">
+            <summary>
+            Search both simultaneously (parallel)
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.UnifiedPluginType">
+            <summary>
+            Unified plugin type - treats everything as a plugin
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.SharedAssembly">
+            <summary>
+            Regular assembly loaded in shared context
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.IsolatedPlugin">
+            <summary>
+            Isolated plugin with unload capability
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.NuggetPackage">
+            <summary>
+            Downloaded nugget package
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.BuiltinComponent">
+            <summary>
+            Built-in system component
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.DataSourceDriver">
+            <summary>
+            Data source driver
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.ConnectionDriver">
+            <summary>
+            Connection driver
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.WorkflowComponent">
+            <summary>
+            Workflow component
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.UIComponent">
+            <summary>
+            UI component/addon
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.ExtensionComponent">
+            <summary>
+            Extension/loader component
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginInfo">
+            <summary>
+            Plugin information for unified plugin system - treats everything as a plugin
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.UnifiedPlugin">
+            <summary>
+            Unified plugin container - represents any loadable component as a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.UnifiedPlugin.CreateInstance(System.String,System.Object[])">
+            <summary>
+            Creates an instance of a type from this plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.UnifiedPlugin.GetNamedInstance``1(System.String)">
+            <summary>
+            Gets an instance by name (for singleton-like behavior)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.UnifiedPlugin.SetNamedInstance(System.String,System.Object)">
+            <summary>
+            Sets a named instance
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.UnifiedPlugin.HasType(System.String)">
+            <summary>
+            Checks if the plugin contains a specific type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.UnifiedPlugin.GetTypesImplementing``1">
+            <summary>
+            Gets all types implementing a specific interface
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.UnifiedPlugin.ConvertToPluginInfo">
+            <summary>
+            Converts to legacy PluginInfo for compatibility
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginInstanceResult">
+            <summary>
+            Plugin instance creation result
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginTypeResult">
+            <summary>
+            Plugin type search result
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.IPluginContext">
+            <summary>
+            Plugin context for dependency injection and services
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginEventArgs">
+            <summary>
+            Event arguments for plugin lifecycle events
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.IModernPlugin">
+            <summary>
+            Enhanced modern plugin interface - unified approach
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.IPluginMessageBus">
+            <summary>
+            Plugin messaging system for inter-plugin communication
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.IUnifiedPluginManager">
+            <summary>
+            Unified plugin manager interface - treats everything as plugins
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginDiscoveryResult">
+            <summary>
+            Plugin discovery result
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.UnifiedPluginFactory">
+            <summary>
+            Plugin factory for creating unified plugins from different sources
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Vis.AddinAttribute">
             <summary>
             Attribute class to define metadata for add-ins within the system.

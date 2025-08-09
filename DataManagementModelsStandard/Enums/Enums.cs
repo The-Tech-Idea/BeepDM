@@ -59,7 +59,7 @@ namespace TheTechIdea.Beep.Utilities
         public string SuggestionType { get; set; }
     }
 
-    public enum FolderFileTypes { Addin, DataView, DataFiles, ProjectClass, ConnectionDriver, ProjectData, GFX, OtherDLL,Entities,Mapping ,WorkFlows,Scripts, ScriptsLogs,Config,Reports,Logs,Misc,LoaderExtensions,Projects,Global,Shared,Private,DataSources, Builtin }
+    public enum FolderFileTypes { Addin, DataView, DataFiles, ProjectClass, ConnectionDriver, ProjectData, GFX, OtherDLL,Entities,Mapping ,WorkFlows,Scripts, ScriptsLogs,Config,Reports,Logs,Misc,LoaderExtensions,Projects,Global,Shared,Private,DataSources, Builtin , Nugget,SharedAssembly }
 
     public enum BeepConfigType
     {
