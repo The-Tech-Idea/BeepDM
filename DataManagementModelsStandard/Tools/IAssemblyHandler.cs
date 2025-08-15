@@ -25,9 +25,7 @@ namespace TheTechIdea.Beep.Tools
         List<assemblies_rep> Assemblies { get; set; }
         List<Assembly> LoadedAssemblies { get;  set; }
         Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args);
-        // AppDomain CurrentDomain { get; set; }
         List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
-        // public IDMEEditor DMEEditor { get; set; }
         IConfigEditor ConfigEditor { get; set; }
         IErrorsInfo ErrorObject { get; set; }
         IDMLogger Logger { get; set; }
@@ -44,6 +42,8 @@ namespace TheTechIdea.Beep.Tools
         Type GetType(string strFullyQualifiedName);
         string LoadAssembly(string path, FolderFileTypes fileTypes);
         IErrorsInfo LoadAllAssembly(IProgress<PassedArgs> progress, CancellationToken token);
+        Assembly LoadAssembly(string path);
+        
         bool RunMethod(object ObjInstance, string FullClassName, string MethodName);
         AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type, string typename);
         void AddTypeToCache(string fullName, Type type);

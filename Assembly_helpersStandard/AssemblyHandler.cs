@@ -120,27 +120,47 @@ namespace TheTechIdea.Beep.Tools
         }
 
         #region "Loaders"
-        /// <summary>
-        /// Scans and initializes loader extensions within a given assembly representation.
-        /// </summary>
-        /// <param name="assembly">The assemblies_rep object representing the assembly to be scanned.</param>
-        private void ScanExtensions(assemblies_rep assembly)
+      
+
+        public Assembly LoadAssembly(string path)
         {
-            foreach (Type item in LoaderExtensions)
+            ErrorObject.Flag = Errors.Ok;
+            string res = "";
+            Assembly loadedAssembly = null;
+            try
             {
-                try
+                if (_loadedAssemblyCache.TryGetValue(path, out loadedAssembly))
                 {
-                    ILoaderExtention cls = (ILoaderExtention)Activator.CreateInstance(item, new object[] { this });
-                   
-                    cls.Scan(assembly);
-
+                    return loadedAssembly; // Return cached assembly if it exists
                 }
-                catch (Exception)
+                 loadedAssembly = LoadAssemblySafely(path);
+                if (loadedAssembly != null)
                 {
-
-
+                    assemblies_rep x = new assemblies_rep(loadedAssembly, path, path, FolderFileTypes.SharedAssembly);
+                    Assemblies.Add(x);
+                    _loadedAssemblyCache[path] = loadedAssembly; // Cache the loaded assembly
+                    LoadedAssemblies.Add(loadedAssembly);
                 }
+             
+              
             }
+            catch (FileLoadException loadEx)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                res = "The Assembly has already been loaded" + loadEx.Message;
+            } // The Assembly has already been loaded.
+            catch (BadImageFormatException imgEx)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                res = imgEx.Message;
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                res = ex.Message;
+            }
+            ErrorObject.Message = res;
+            return loadedAssembly;
         }
         /// <summary>
         /// Scans and initializes loader extensions within a given .NET Assembly object.
@@ -180,23 +200,7 @@ namespace TheTechIdea.Beep.Tools
                             //DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
                         }
                     }
-                    //foreach (assemblies_rep assembly1 in Assemblies.Where(p=>p.FileTypes  == FolderFileTypes.Addin || p.FileTypes == FolderFileTypes.ProjectClass))
-                    //{
-                    //    try
-                    //    {
-                    //        // Filter out system assemblies or non-NuGet assemblies if necessary
-                    //        // For example, you might check the assembly's name, location, etc.
-                    //        // filter also using the namespacetoignore
-                    //        if (!assembly1.DllName.StartsWith("System") && !assembly1.DllName.StartsWith("Microsoft"))
-                    //        {
-                    //            cls.Scan(assembly1);
-                    //        }
-                    //    }
-                    //    catch (Exception ex)
-                    //    {
-
-                    //        //DMEEditor.Logger.WriteLog($"error loading current assembly {ex.Message} ");
-                    //    }
+                  
                     //}
 
                 }
@@ -579,47 +583,7 @@ namespace TheTechIdea.Beep.Tools
             }
             return ErrorObject;
         }
-        /// <summary>
-        ///     Method Will Load All Assembly found in the Passed Path
-        /// </summary>
-        /// <param name="Path"></param>
-        /// <param name="FolderFileTypes"></param>
-        /// <returns></returns>
-        //public string LoadAssembly(string path, FolderFileTypes fileTypes)
-        //{
-        //    ErrorObject.Flag = Errors.Ok;
-        //    string res = "";
-
-        //    foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
-        //    {
-        //        try
-        //        {
-        //            Assembly loadedAssembly = Assembly.LoadFrom(dll);
-
-        //            assemblies_rep x = new assemblies_rep(loadedAssembly, path, dll, fileTypes);
-        //            Assemblies.Add(x);
-        //        }
-        //        catch (FileLoadException loadEx)
-        //        {
-        //            ErrorObject.Flag = Errors.Failed;
-        //            res = "The Assembly has already been loaded" + loadEx.Message;
-        //        } // The Assembly has already been loaded.
-        //        catch (BadImageFormatException imgEx)
-        //        {
-        //            ErrorObject.Flag = Errors.Failed;
-        //            res = imgEx.Message;
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            ErrorObject.Flag = Errors.Failed;
-        //            res = ex.Message;
-        //        }
-        //    }
-
-
-        //    ErrorObject.Message = res;
-        //    return res;
-        //}
+       
         /// <summary>
         ///     Method Will Load All Assembly found in the Passed Path
         /// </summary>
@@ -1480,201 +1444,8 @@ namespace TheTechIdea.Beep.Tools
                 ConfigEditor.AddDriver(dr);
             }
         }
-        /// <summary>
-        /// Extracts and configures ADO.NET type driver information from an assembly.
-        /// </summary>
-        /// <param name="asm">The assembly to scan for ADO.NET drivers.</param>
-        /// <returns>True if drivers are successfully extracted, false otherwise.</returns>
-        //private bool GetADOTypeDrivers(Assembly asm)
-        //{
-        //    ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
-        //    bool retval;
-        //    string[] p;
-        //    Type[] t;
-        //    List<Type> t1;
-        //    try
-        //    {
-        //        if (asm.ExportedTypes != null)
-        //        {
-        //            t = asm.ExportedTypes.ToArray();
-        //        }
-        //        else
-        //        {
-        //            //t1 = asm.GetTypes().Where(typeof(IDbDataAdapter).IsAssignableFrom).ToList() ;
-        //            //t1.AddRange(asm.GetTypes().Where(typeof(IDataConnection).IsAssignableFrom).ToList());
-        //            //t1.AddRange(asm.GetTypes().Where(e=>e.BaseType.ToString().Contains("DbCommandBuilder")).ToList());
-        //            //t1.AddRange(asm.GetTypes().Where(typeof(IDbTransaction).IsAssignableFrom).ToList());
-        //             t1 = asm.GetTypes().Where(type => typeof(IDbDataAdapter).IsAssignableFrom(type)).ToList();
-        //            t1.AddRange(asm.GetTypes().Where(type => typeof(IDbConnection).IsAssignableFrom(type)).ToList());
-        //            t1.AddRange(asm.GetTypes().Where(type => type.BaseType != null && type.BaseType.ToString().Contains("DbCommandBuilder")).ToList());
-        //            t1.AddRange(asm.GetTypes().Where(type => typeof(IDbTransaction).IsAssignableFrom(type)).ToList());
-        //            t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbConnection))).ToList());
-        //            t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbCommand))).ToList());
-        //            t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbDataReader))).ToList());
-        //            t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbParameter))).ToList());
-        //            t1.AddRange(asm.GetTypes().Where(type => type.IsSubclassOf(typeof(DbTransaction))).ToList());
-        //            t = t1.ToArray();
-        //        }
-        //       // Console.WriteLine(asm.FullName);
-        //        foreach (var mytype in t)
-        //        {
-        //            try
-        //            {
-        //                if (mytype.BaseType != null)
-        //                {
-        //                    TypeInfo type = mytype.GetTypeInfo();
-        //                    p = asm.FullName.Split(new char[] { ',' });
-        //                    p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
-
-        //                    driversConfig = DataDriversConfig.Where(c => c.DriverClass == p[0]).FirstOrDefault();
-        //                    bool recexist = false;
-
-        //                    if (driversConfig == null)
-        //                    {
-        //                        driversConfig = new ConnectionDriversConfig();
-        //                        recexist = false;
-        //                    }
-        //                    else
-        //                    {
-        //                        recexist = true;
-        //                    }
-        //                    //-------------------------------------------------------
-        //                    // Get DataBase Drivers
-        //                    if (type.ImplementedInterfaces.Contains(typeof(IDbDataAdapter)) )
-        //                    {
-        //                        driversConfig.version = p[1];
-        //                        driversConfig.AdapterType = type.FullName;
-        //                        driversConfig.PackageName = p[0];
-        //                        driversConfig.DriverClass = p[0];
-        //                        driversConfig.dllname = type.Module.Name;
-        //                        driversConfig.ADOType = true;
-        //                        if (recexist == false)
-        //                        {
-        //                            DataDriversConfig.Add(driversConfig);
-        //                        }
-        //                    }
-        //                    if (type.BaseType.ToString().Contains("DbCommandBuilder"))
-        //                    {
-
-        //                        driversConfig.CommandBuilderType = type.FullName;
-        //                        driversConfig.version = p[1];
-        //                        driversConfig.PackageName = p[0];
-        //                        driversConfig.DriverClass = p[0];
-        //                        driversConfig.dllname = type.Module.Name;
-        //                        driversConfig.ADOType = true;
-        //                        if (recexist == false)
-        //                        {
-        //                            DataDriversConfig.Add(driversConfig);
-        //                        }
-        //                    }
-        //                    if (type.ImplementedInterfaces.Contains(typeof(IDbConnection))|| typeof(DbConnection).IsAssignableFrom(type))
-        //                    {
-        //                        driversConfig.DbConnectionType = type.FullName;
-        //                        driversConfig.PackageName = p[0];
-        //                        driversConfig.DriverClass = p[0];
-        //                        driversConfig.version = p[1];
-        //                        driversConfig.dllname = type.Module.Name;
-        //                        driversConfig.ADOType = true;
-        //                        if (recexist == false)
-        //                        {
-        //                            DataDriversConfig.Add(driversConfig);
-        //                        }
-        //                    }
-        //                    if (type.ImplementedInterfaces.Contains(typeof(IDbTransaction)) || typeof(DbTransaction).IsAssignableFrom(type))
-        //                    {
-        //                        driversConfig.PackageName = p[0];
-        //                        driversConfig.DriverClass = p[0];
-        //                        driversConfig.version = p[1];
-        //                        driversConfig.dllname = type.Module.Name;
-        //                        driversConfig.DbTransactionType = type.FullName;
-        //                        if (recexist == false)
-        //                        {
-        //                            DataDriversConfig.Add(driversConfig);
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                return false;
-        //            }
-        //        }
-        //        if (driversConfig.dllname == null)
-        //        {
-        //            p = asm.FullName.Split(new char[] { ',' });
-        //            p[1] = p[1].Substring(p[1].IndexOf("=") + 1);
-        //            //---------------------------------------------------------
-        //            // Get NoSQL Drivers 
-        //            //  bool driverfound = false;
-        //            //  bool recexist = false;
-        //            driversConfig = DataDriversConfig.Where(c => c.DriverClass == p[0]).FirstOrDefault();
-        //            if (driversConfig == null)
-        //            {
-        //                driversConfig = new ConnectionDriversConfig();
-        //            }
-        //            driversConfig.version = p[1];
-        //            driversConfig.PackageName = p[0];
-        //            driversConfig.DriverClass = p[0];
-        //            driversConfig.dllname = asm.ManifestModule.Name;
-
-        //            if (p[0] == "System.Data.SqlClient")
-        //            {
-        //                driversConfig.version = p[1];
-        //                driversConfig.AdapterType = p[0] + "." + "SqlDataAdapter";
-        //                driversConfig.DbConnectionType = p[0] + "." + "SqlConnection";
-        //                driversConfig.CommandBuilderType = p[0] + "." + "SqlCommandBuilder";
-        //                driversConfig.DbTransactionType = p[0] + "." + "SqlTransaction";
-        //                driversConfig.PackageName = p[0];
-        //                driversConfig.DriverClass = p[0];
-        //                driversConfig.ADOType = true;
-        //                DataDriversConfig.Add(driversConfig);
-        //            }
-        //        }
-        //        if (driversConfig.dllname == null)
-        //        {
-        //            retval = false;
-        //        }
-        //        else
-        //            retval = true;
-        //        //DMEEditor.AddLogMessage("Success", $"Got ADO Type Drivers {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Ok);
-        //    }
-        //    catch (Exception)
-        //    {
-        //        t = null;
-        //        retval = false;
-        //        //DMEEditor.AddLogMessage("Failed", $"Could not ADO Type Drivers for {asm.GetName().ToString()}", DateTime.Now, -1, asm.GetName().ToString(), Errors.Failed);
-        //    }
-        //    return retval;
-        //}
-        /// <summary>
-        /// Configures non-ADO.NET type driver information based on predefined driver definitions.
-        /// </summary>
-        //private void GetNonADODrivers()
-        //{
-        //    ConnectionDriversConfig driversConfig = new ConnectionDriversConfig();
-        //    try
-        //    {
-        //        foreach (ConnectionDriversConfig item in  ConfigEditor.DriverDefinitionsConfig)
-        //        {
-        //            driversConfig = DataDriversConfig.Where(c => c.PackageName == item.PackageName).FirstOrDefault();
-        //            if (driversConfig == null)
-        //            {
-        //                driversConfig = new ConnectionDriversConfig();
-        //                driversConfig.version = item.version;
-        //                driversConfig.PackageName = item.PackageName;
-        //                driversConfig.DriverClass = item.DriverClass;
-        //                driversConfig.dllname = item.dllname;
-        //                driversConfig.parameter1 = item.parameter1;
-        //                driversConfig.parameter2 = item.parameter2;
-        //                driversConfig.parameter3 = item.parameter3;
-        //                DataDriversConfig.Add(driversConfig);
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //    }
-        //}
+       
+    
         /// <summary>
         /// Retrieves a list of driver configurations from an assembly.
         /// </summary>

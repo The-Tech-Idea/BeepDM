@@ -58,12 +58,6 @@
             <param name="pLogger">Logging interface.</param>
             <param name="pUtilfunction">Utility functions.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.ScanExtensions(TheTechIdea.Beep.Tools.assemblies_rep)">
-            <summary>
-            Scans and initializes loader extensions within a given assembly representation.
-            </summary>
-            <param name="assembly">The assemblies_rep object representing the assembly to be scanned.</param>
-        </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.ScanExtensions">
             <summary>
             Scans and initializes loader extensions within a given .NET Assembly object.

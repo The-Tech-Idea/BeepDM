@@ -116,6 +116,35 @@ namespace TheTechIdea.Beep.Tools
         #endregion
 
         #region Core Loading Methods
+
+        public Assembly LoadAssembly(string path)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            string res = "";
+            Assembly loadedAssembly = null;
+            try
+            {
+                LoadAssembly( path, FolderFileTypes.SharedAssembly);
+
+            }
+            catch (FileLoadException loadEx)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                res = "The Assembly has already been loaded" + loadEx.Message;
+            } // The Assembly has already been loaded.
+            catch (BadImageFormatException imgEx)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                res = imgEx.Message;
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                res = ex.Message;
+            }
+            ErrorObject.Message = res;
+            return loadedAssembly;
+        }
         /// <summary>
         /// Loads assemblies from a path using SharedContextManager
         /// </summary>
