@@ -13,6 +13,7 @@ using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Addin;
+using System.ComponentModel;
 
 
 
@@ -178,7 +179,7 @@ namespace TheTechIdea.Beep.WebAPI
         
        
 
-        public virtual object GetEntity(string EntityName, List<AppFilter> filter)
+        public virtual IBindingList GetEntity(string EntityName, List<AppFilter> filter)
         {
             EntityStructure ent = GetEntityStructure(EntityName,false);
             string str = ent.CustomBuildQuery;
@@ -200,7 +201,7 @@ namespace TheTechIdea.Beep.WebAPI
             throw new NotImplementedException();
         }
 
-        public virtual object GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
+        public virtual PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
         {
             EntityStructure ent = GetEntityStructure(EntityName, false);
             string str = ent.CustomBuildQuery;
@@ -221,7 +222,7 @@ namespace TheTechIdea.Beep.WebAPI
             }
             throw new NotImplementedException();
         }
-        public virtual  object RunQuery( string qrystr)
+        public virtual  IBindingList RunQuery( string qrystr)
         {
 
             throw new NotImplementedException();
@@ -329,7 +330,7 @@ namespace TheTechIdea.Beep.WebAPI
             throw new NotImplementedException();
         }
 
-        public virtual async Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public virtual async Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             var request = new HttpRequestMessage();
             client = new HttpClient();

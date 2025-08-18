@@ -119,6 +119,328 @@
             Represents a view for displaying and interacting with DataView  data.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.BindingListExtensions">
+            <summary>
+            Enhanced extension methods for BindingList&lt;T&gt; providing performance optimizations,
+            bulk operations, filtering, sorting, and utility methods.
+            All methods are fully generic with appropriate constraints.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.AddRange``1(System.ComponentModel.BindingList{``0},System.Collections.Generic.IEnumerable{``0},System.Boolean)">
+            <summary>
+            Adds multiple items to a BindingList with optimized event handling
+            </summary>
+            <typeparam name="T">The type of elements in the BindingList</typeparam>
+            <param name="bindingList">The target BindingList</param>
+            <param name="items">Items to add</param>
+            <param name="suppressEvents">Whether to suppress events during the operation</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.RemoveRange``1(System.ComponentModel.BindingList{``0},System.Collections.Generic.IEnumerable{``0},System.Boolean)">
+            <summary>
+            Removes multiple items from a BindingList with optimized event handling
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.RemoveWhere``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean},System.Boolean)">
+            <summary>
+            Removes items matching a predicate
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.ReplaceAll``1(System.ComponentModel.BindingList{``0},System.Collections.Generic.IEnumerable{``0})">
+            <summary>
+            Clears and replaces all items in the BindingList
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.First``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Returns the first element of the BindingList
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.First``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Returns the first element that satisfies a condition
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.FirstOrDefault``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Returns the first element of the BindingList, or default if empty
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.FirstOrDefault``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Returns the first element that satisfies a condition, or default if none found
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Last``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Returns the last element of the BindingList
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Last``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Returns the last element that satisfies a condition
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.LastOrDefault``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Returns the last element of the BindingList, or default if empty
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.LastOrDefault``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Returns the last element that satisfies a condition, or default if none found
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Single``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Returns the only element of the BindingList
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Single``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Returns the only element that satisfies a condition
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.SingleOrDefault``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Returns the only element of the BindingList, or default if empty
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.SingleOrDefault``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Returns the only element that satisfies a condition, or default if none found
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.ElementAt``1(System.ComponentModel.BindingList{``0},System.Int32)">
+            <summary>
+            Returns the element at a specified index
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.ElementAtOrDefault``1(System.ComponentModel.BindingList{``0},System.Int32)">
+            <summary>
+            Returns the element at a specified index, or default if index is out of range
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Skip``1(System.ComponentModel.BindingList{``0},System.Int32)">
+            <summary>
+            Bypasses a specified number of elements and returns the remaining elements
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.SkipWhile``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Bypasses elements while a condition is true and returns the remaining elements
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Take``1(System.ComponentModel.BindingList{``0},System.Int32)">
+            <summary>
+            Returns a specified number of elements from the start
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.TakeWhile``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Returns elements while a condition is true
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Reverse``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Returns a new BindingList with elements in reverse order
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.All``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Determines whether all elements satisfy a condition
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Any``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Determines whether any element exists or satisfies a condition
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Any``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Determines whether any element satisfies a condition
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Contains``1(System.ComponentModel.BindingList{``0},``0,System.Collections.Generic.IEqualityComparer{``0})">
+            <summary>
+            Determines whether the BindingList contains a specific value
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Count``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Returns the number of elements that satisfy a condition
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.FindIndex``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Finds the index of the first element that matches the predicate
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.FindLastIndex``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Finds the index of the last element that matches the predicate
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.IndexOf``1(System.ComponentModel.BindingList{``0},``0,System.Collections.Generic.IEqualityComparer{``0})">
+            <summary>
+            Returns the index of the first occurrence of a specific value
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.LastIndexOf``1(System.ComponentModel.BindingList{``0},``0,System.Collections.Generic.IEqualityComparer{``0})">
+            <summary>
+            Returns the index of the last occurrence of a specific value
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Filter``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Filters the BindingList and returns a new BindingList with matching items
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.FilterByProperty``2(System.ComponentModel.BindingList{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}},``1,System.Collections.Generic.IEqualityComparer{``1})">
+            <summary>
+            Generic filter by property value using expression
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.FilterByText``1(System.ComponentModel.BindingList{``0},System.Linq.Expressions.Expression{System.Func{``0,System.String}},System.String,System.Boolean)">
+            <summary>
+            Generic filter by string property with text search
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.FindFirst``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Finds the first item matching the predicate
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.FindAll``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Finds all items matching the predicate
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.FindByProperty``2(System.ComponentModel.BindingList{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}},``1,System.Collections.Generic.IEqualityComparer{``1})">
+            <summary>
+            Finds item by property value
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Sort``2(System.ComponentModel.BindingList{``0},System.Func{``0,``1},System.Boolean)">
+            <summary>
+            Sorts the BindingList using a key selector
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.SortByProperty``2(System.ComponentModel.BindingList{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}},System.Boolean)">
+            <summary>
+            Sorts the BindingList using an expression
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.SortBy``1(System.ComponentModel.BindingList{``0},System.ValueTuple{System.Func{``0,System.Object},System.Boolean}[])">
+            <summary>
+            Multi-level sorting with multiple key selectors
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.ToList``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Converts BindingList to a regular List
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.ToBindingList``1(System.Collections.Generic.IEnumerable{``0})">
+            <summary>
+            Converts IEnumerable to BindingList
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.DeepCopy``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Creates a deep copy of the BindingList (for ICloneable items)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.ShallowCopy``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Creates a shallow copy of the BindingList
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.ValidateAll``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Validates all items in the BindingList using a predicate
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.GetInvalidItems``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Gets invalid items based on a validator predicate
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.RemoveDuplicates``2(System.ComponentModel.BindingList{``0},System.Func{``0,``1})">
+            <summary>
+            Removes duplicate items based on a key selector
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.RemoveDuplicates``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Removes duplicates using the default equality comparer
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.IsNullOrEmpty``1(System.ComponentModel.BindingList{``0})">
+            <summary>
+            Checks if the BindingList is null or empty
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.SafeGet``1(System.ComponentModel.BindingList{``0},System.Int32,``0)">
+            <summary>
+            Safely gets an item by index, returning default if index is out of range
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.CountWhere``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Gets count of items matching predicate
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.AnyMatch``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Checks if any item matches the predicate
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.AddRangeAsync``1(System.ComponentModel.BindingList{``0},System.Collections.Generic.IEnumerable{``0},System.Boolean)">
+            <summary>
+            Asynchronously adds items to the BindingList
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.FilterAsync``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.Boolean})">
+            <summary>
+            Asynchronously filters the BindingList
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.SortAsync``2(System.ComponentModel.BindingList{``0},System.Func{``0,``1},System.Boolean)">
+            <summary>
+            Asynchronously sorts the BindingList
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.RemoveDuplicatesAsync``2(System.ComponentModel.BindingList{``0},System.Func{``0,``1})">
+            <summary>
+            Asynchronously removes duplicates
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.Flatten``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.ComponentModel.BindingList{``0}},System.Boolean)">
+            <summary>
+            Flattens a hierarchical BindingList into a flat list.
+            Works with any type that has a Children property of type BindingList&lt;T&gt;
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.FindByPath``1(System.ComponentModel.BindingList{``0},System.String,System.Func{``0,System.String},System.Func{``0,System.ComponentModel.BindingList{``0}},System.Char)">
+            <summary>
+            Finds items by path in a hierarchical structure
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.GetLeafNodes``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.ComponentModel.BindingList{``0}})">
+            <summary>
+            Gets all leaf nodes (items without children)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.GetMaxDepth``1(System.ComponentModel.BindingList{``0},System.Func{``0,System.ComponentModel.BindingList{``0}})">
+            <summary>
+            Gets the depth of the tree structure
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BindingListExtensions.ExecuteWithPerformanceMonitoring``1(System.ComponentModel.BindingList{``0},System.Action{System.ComponentModel.BindingList{``0}},System.Boolean)">
+            <summary>
+            Executes an action with event suppression and performance monitoring
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.WhereContains(System.String,System.String,System.Boolean)">
             <summary>
             Finds items where a string property contains the search text

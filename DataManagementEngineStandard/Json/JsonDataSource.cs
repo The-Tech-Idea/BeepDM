@@ -17,6 +17,7 @@ using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Addin;
+using System.ComponentModel;
 
 namespace TheTechIdea.Beep.Json
 {
@@ -409,18 +410,18 @@ namespace TheTechIdea.Beep.Json
         /// <param name="entityName">Name of the entity to retrieve</param>
         /// <param name="filter">Filter criteria (not fully implemented)</param>
         /// <returns>Collection of objects representing the entity data</returns>
-        public object GetEntity(string entityName, List<AppFilter> filter)
+        public IBindingList GetEntity(string entityName, List<AppFilter> filter)
         {
             var entityStructure = Entities.FirstOrDefault(e => e.EntityName == entityName);
             if (entityStructure == null)
             {
-                return new List<object>();
+                return new BindingList<object>();
             }
 
             JArray rootJsonArray = GetRootJsonArray();
             if (rootJsonArray == null)
             {
-                return new List<object>();
+                return new BindingList<object>();
             }
 
             List<object> resultList = new List<object>();
@@ -473,7 +474,7 @@ namespace TheTechIdea.Beep.Json
             object[] constructorArgs = new object[] { resultList };
 
             // Create ObservableBindingList<T> instance
-            object uowInstance = Activator.CreateInstance(uowGenericType, constructorArgs);
+            IBindingList uowInstance =(IBindingList) Activator.CreateInstance(uowGenericType, constructorArgs);
             return uowInstance;
         }
 
@@ -481,18 +482,18 @@ namespace TheTechIdea.Beep.Json
         /// Retrieves a paginated subset of the entity data.
         /// This version returns dynamic objects (ExpandoObjects).
         /// </summary>
-        public object GetEntity(string entityName, List<AppFilter> filter, int pageNumber, int pageSize)
+        public PagedResult GetEntity(string entityName, List<AppFilter> filter, int pageNumber, int pageSize)
         {
             var entityStructure = Entities.FirstOrDefault(e => e.EntityName == entityName);
             if (entityStructure == null)
             {
-                return new List<object>();
+                return new PagedResult();
             }
 
             JArray rootJsonArray = GetRootJsonArray();
             if (rootJsonArray == null)
             {
-                return new List<object>();
+                return new PagedResult();
             }
 
             List<object> resultList = new List<object>();
@@ -513,14 +514,20 @@ namespace TheTechIdea.Beep.Json
                 UpdateEntityStructureWithMissingFields(item, entityStructure);
                 resultList.Add(record);
             }
-
-            return resultList;
+            PagedResult pagedResult= new PagedResult
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = rootJsonArray.Count,
+                 Data = resultList
+            };
+            return pagedResult;
         }
 
         /// <summary>
         /// Asynchronously retrieves entity data. Uses GetEntity internally.
         /// </summary>
-        public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             return Task.FromResult(GetEntity(EntityName, Filter));
         }
@@ -589,19 +596,19 @@ namespace TheTechIdea.Beep.Json
         /// Runs a given query against the JSON data using JSONPath-like syntax.
         /// Attempts to match entity structure and return a list of objects.
         /// </summary>
-        public object RunQuery(string qrystr)
+        public IBindingList RunQuery(string qrystr)
         {
             // Ensure JSON is loaded
             JArray rootJsonArray = GetRootJsonArray();
             if (rootJsonArray == null)
             {
-                return new List<object>();
+                return new BindingList<object>();
             }
 
             try
             {
                 var queryResult = rootJsonArray.SelectTokens(qrystr);
-                List<object> resultList = new List<object>();
+                BindingList<object> resultList = new BindingList<object>();
                 string entityName = JsonExtensions.ExtractEntityNameFromQuery(qrystr);
                 EntityStructure entityStructure = Entities.FirstOrDefault(e => e.EntityName == entityName);
                 Type entityType = GetEntityType(entityName);
@@ -664,7 +671,7 @@ namespace TheTechIdea.Beep.Json
             catch (Exception ex)
             {
                 Console.WriteLine($"An error occurred while running the query: {ex.Message}");
-                return new List<object>();
+                return new BindingList<object>();
             }
         }
         #endregion

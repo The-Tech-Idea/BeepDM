@@ -1,20 +1,20 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
-
-using TheTechIdea.Beep.ConfigUtil;
-using TheTechIdea.Beep.Addin;
 
 namespace TheTechIdea.Beep.InMemory
 {
@@ -237,9 +237,9 @@ namespace TheTechIdea.Beep.InMemory
             return Entities is null ? null : Entities.Select(p=>p.EntityName).ToList();
         }
 
-        public virtual object RunQuery(string qrystr)
+        public virtual IBindingList RunQuery(string qrystr)
         {
-            return DMEEditor.ErrorObject;
+            return new BindingList<object>();
         }
 
         public virtual IErrorsInfo ExecuteSql(string sql)
@@ -337,15 +337,15 @@ namespace TheTechIdea.Beep.InMemory
             throw new NotImplementedException();
         }
 
-        public virtual object GetEntity(string EntityName, List<AppFilter> filter)
+        public virtual IBindingList GetEntity(string EntityName, List<AppFilter> filter)
         {
             throw new NotImplementedException();
         }
-        public virtual object GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
+        public virtual PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
         {
             throw new NotImplementedException();
         }
-        public virtual Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public virtual Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             return Task.Run(() => GetEntity(EntityName, Filter));
         }

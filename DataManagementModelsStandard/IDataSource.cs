@@ -11,6 +11,8 @@ using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Utilities;
+using System.Collections;
+using System.ComponentModel;
 
 namespace TheTechIdea.Beep
 {
@@ -107,7 +109,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="qrystr">The query string to be executed.</param>
         /// <returns>The result of the query execution.</returns>
-        object RunQuery(string qrystr);
+        IBindingList RunQuery(string qrystr);
 
         /// <summary>
         /// Executes a SQL command and returns any errors encountered.
@@ -115,7 +117,7 @@ namespace TheTechIdea.Beep
         /// <param name="sql">The SQL command to be executed.</param>
         /// <returns>Error information, if any.</returns>
         IErrorsInfo ExecuteSql(string sql);
-
+       
         /// <summary>
         /// Creates a new entity based on the provided structure.
         /// </summary>
@@ -260,7 +262,7 @@ namespace TheTechIdea.Beep
         /// <param name="EntityName">The name of the entity to retrieve.</param>
         /// <param name="filter">The filters to apply on the entity retrieval.</param>
         /// <returns>The requested entity.</returns>
-        object GetEntity(string EntityName, List<AppFilter> filter);
+        IBindingList GetEntity(string EntityName, List<AppFilter> filter);
         /// <summary>
         /// Retrieves an entity based on the provided name and filters.
         /// </summary>
@@ -269,7 +271,7 @@ namespace TheTechIdea.Beep
         /// <param name="pageNumber">The page number to retrieve.</param>
         /// <param name="pageSize">The size of the page to retrieve.</param>
         /// <returns>The requested entity.</returns>
-        object GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize);
+        PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize);
 
         /// <summary>
         /// Asynchronously retrieves an entity based on the provided name and filters.
@@ -277,7 +279,7 @@ namespace TheTechIdea.Beep
         /// <param name="EntityName">The name of the entity to retrieve.</param>
         /// <param name="Filter">The filters to apply on the entity retrieval.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the requested entity.</returns>
-        Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter);
+        Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter);
 
         /// <summary>
         /// Asynchronously retrieves a scalar value based on the provided query.

@@ -8,7 +8,6 @@ namespace TheTechIdea.Beep.Composite
     public interface ICompositeLayerDataSource
     {
         string DatabaseType { get; }
-        IDataViewDataSource DataViewSource { get; set; }
         CompositeLayer LayerInfo { get; set; }
         ILocalDB LocalDB { get; set; }
 

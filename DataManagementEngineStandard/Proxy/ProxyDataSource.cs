@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
@@ -729,7 +730,7 @@ namespace TheTechIdea.Beep.Proxy
             }
             throw new Exception("Maximum retry attempts exceeded.");
         }
-        public object RunQuery(string qrystr)
+        public IBindingList RunQuery(string qrystr)
         {
             return RetryPolicy(async () =>
             {
@@ -1058,9 +1059,9 @@ namespace TheTechIdea.Beep.Proxy
 
             return Current.ErrorObject;
         }
-        public object GetEntity(string EntityName, List<AppFilter> filter)
+        public IBindingList GetEntity(string EntityName, List<AppFilter> filter)
         {
-            object result = null;
+            IBindingList result = null;
             RetryPolicy(async () =>
             {
                 try
@@ -1077,9 +1078,9 @@ namespace TheTechIdea.Beep.Proxy
 
             return result;
         }
-        public object GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
+        public PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
         {
-            object result = null;
+            PagedResult result = null;
             RetryPolicy(async () =>
             {
                 try
@@ -1096,9 +1097,9 @@ namespace TheTechIdea.Beep.Proxy
 
             return result;
         }
-        public async Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public async Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
-            object result = null;
+            IBindingList result = null;
             await RetryPolicy(async () =>
             {
                 try

@@ -16,6 +16,7 @@ using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Addin;
 using System.Text;
+using System.ComponentModel;
 
 namespace TheTechIdea.Beep.FileManager
 {
@@ -941,7 +942,7 @@ namespace TheTechIdea.Beep.FileManager
         /// <param name="EntityName">Name of the entity (CSV file) to query</param>
         /// <param name="filter">List of filters to apply to the data</param>
         /// <returns>An ObservableBindingList containing the filtered data</returns>
-        public object GetEntity(string EntityName, List<AppFilter> filter)
+        public IBindingList GetEntity(string EntityName, List<AppFilter> filter)
         {
             ErrorObject.Flag = Errors.Ok;
             try
@@ -1330,7 +1331,9 @@ namespace TheTechIdea.Beep.FileManager
                 // Convert to requested type
                 enttype = GetEntityType(EntityName);
                 Type uowGenericType = typeof(ObservableBindingList<>).MakeGenericType(enttype);
-                return Activator.CreateInstance(uowGenericType, new object[] { dataTable });
+                IBindingList Data = (IBindingList)Activator.CreateInstance(uowGenericType, new object[] { dataTable });
+          
+                return Data;
             }
             catch (Exception ex)
             {
@@ -1341,7 +1344,7 @@ namespace TheTechIdea.Beep.FileManager
 
         // Improved implementation of GetEntity with paging support
         // Improved implementation with extended filtering operators
-        public object GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
+        public PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
         {
             ErrorObject.Flag = Errors.Ok;
             try
@@ -1732,7 +1735,14 @@ namespace TheTechIdea.Beep.FileManager
                 // Convert to requested type
                 enttype = GetEntityType(EntityName);
                 Type uowGenericType = typeof(ObservableBindingList<>).MakeGenericType(enttype);
-                return Activator.CreateInstance(uowGenericType, new object[] { dataTable });
+                PagedResult pagedResult=new PagedResult()
+                {
+                    Data= Activator.CreateInstance(uowGenericType, new object[] { dataTable }),
+                    TotalRecords = dataTable.Rows.Count,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+};
+                return pagedResult;
             }
             catch (Exception ex)
             {
@@ -1834,7 +1844,7 @@ namespace TheTechIdea.Beep.FileManager
             DMTypeBuilder.CreateNewObject(DMEEditor, "Beep.CSVDataSource", Entities.FirstOrDefault().EntityName, Entities.FirstOrDefault().Fields);
             return DMTypeBuilder.MyType;
         }
-         public  object RunQuery( string qrystr)
+         public  IBindingList RunQuery( string qrystr)
         {
             return GetEntity(Entities[0].EntityName,new List<AppFilter>() { });
         }
@@ -2059,7 +2069,7 @@ namespace TheTechIdea.Beep.FileManager
 
             return ErrorObject;
         }
-        public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
            var retval =  Task.Run(() => GetEntity(EntityName, Filter)) ;
            return retval;

@@ -166,11 +166,11 @@ namespace TheTechIdea.Beep
                                 {
                                     if (int.TryParse(strval, out intval))
                                     {
-                                        cnt = (int)DataSource.RunQuery($"select count(*)  from {Entity.EntityName} where {fieldname}={intval}");
+                                        cnt = (int)DataSource.GetScalar($"select count(*)  from {Entity.EntityName} where {fieldname}={intval}");
                                     }
                                     else
                                     {
-                                        cnt = (int)DataSource.RunQuery($"select count(*)  from {Entity.EntityName} where {fieldname}='{strval}'");
+                                        cnt = (int)DataSource.GetScalar($"select count(*)  from {Entity.EntityName} where {fieldname}='{strval}'");
                                     }
                                     if (cnt == 0)
                                     {
@@ -237,12 +237,12 @@ namespace TheTechIdea.Beep
                                         {
                                             if (int.TryParse(strval, out intval))
                                             {
-                                                cnt = (int)DataSource.RunQuery($"select count(*)  from {rel.RelatedEntityID} where {rel.RelatedEntityColumnID}={intval}");
+                                                cnt = (int)DataSource.GetScalar($"select count(*)  from {rel.RelatedEntityID} where {rel.RelatedEntityColumnID}={intval}");
                                             }
                                             else
                                             {
 
-                                                cnt = (int)DataSource.RunQuery($"select count(*)  from {rel.RelatedEntityID} where {rel.RelatedEntityColumnID}='{strval}'");
+                                                cnt = (int)DataSource.GetScalar($"select count(*)  from {rel.RelatedEntityID} where {rel.RelatedEntityColumnID}='{strval}'");
                                             }
                                             if (cnt == 0)
                                             {

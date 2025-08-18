@@ -11,13 +11,14 @@ using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
+using System.ComponentModel;
 
 namespace TheTechIdea.Beep.DataView
 {
     /// <summary>
     /// Represents a data source for a data view.
     /// </summary>
-    public class DataViewDataSource : IDataViewDataSource, IDataSource, IDMDataView
+    public class DataViewDataSource :  IDataSource, IDMDataView
     {
         /// <summary>
         /// Event that is raised when a specific event is passed.
@@ -389,9 +390,9 @@ namespace TheTechIdea.Beep.DataView
         /// <param name="EntityName">The name of the entity to retrieve.</param>
         /// <param name="filter">A list of filters to apply to the entity.</param>
         /// <returns>The retrieved entity.</returns>
-        public object GetEntity(string EntityName, List<AppFilter> filter)
+        public IBindingList GetEntity(string EntityName, List<AppFilter> filter)
         {
-            object retval = null;
+            IBindingList retval = null;
             IDataSource ds = GetDataSourceObject(EntityName);
             if (ds != null)
             {
@@ -424,9 +425,9 @@ namespace TheTechIdea.Beep.DataView
         /// <param name="EntityName">The name of the entity to retrieve.</param>
         /// <param name="filter">A list of filters to apply to the entity.</param>
         /// <returns>The retrieved entity.</returns>
-        public object GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
+        public PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
         {
-            object retval = null;
+            IBindingList retval = null;
             IDataSource ds = GetDataSourceObject(EntityName);
             if (ds != null)
             {
@@ -453,7 +454,14 @@ namespace TheTechIdea.Beep.DataView
                     }
                 }
             }
-            return retval;
+            PagedResult pagedResult = new PagedResult
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = retval.Count,
+                Data = retval.Cast<object>().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList()
+            };
+            return pagedResult;
         }
         /// <summary>Returns the index of an entity in the entity list.</summary>
         /// <param name="entityid">The ID of the entity.</param>
@@ -684,10 +692,10 @@ namespace TheTechIdea.Beep.DataView
         /// <summary>Executes a query and returns the result.</summary>
         /// <param name="qrystr">The query string to execute.</param>
         /// <returns>The result of the query execution.</returns>
-        public object RunQuery(string qrystr)
+        public IBindingList RunQuery(string qrystr)
         {
             DMEEditor.AddLogMessage("Beep", $"DataView DataSource {DatasourceName}  Method  {System.Reflection.MethodBase.GetCurrentMethod().Name} Not Implemented", DateTime.Now, 0, null, Errors.Ok);
-            return DMEEditor.ErrorObject;
+            return new BindingList<object>();
 
         }
         /// <summary>Updates entities in the system.</summary>
@@ -806,9 +814,9 @@ namespace TheTechIdea.Beep.DataView
         /// <param name="EntityName">The name of the entity to retrieve.</param>
         /// <param name="Filter">A list of filters to apply to the entity.</param>
         /// <returns>A task representing the asynchronous operation. The result is the retrieved entity.</returns>
-        public Task<object> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
-            return (Task<object>)GetEntity(EntityName, Filter);
+            return (Task<IBindingList>)GetEntity(EntityName, Filter);
         }
         #region "DataView Methods"
 
