@@ -183,7 +183,7 @@ namespace TheTechIdea.Beep.Json
                 case "=":
                     return fieldValue.Equals(filter.FilterValue);
                 case "contains":
-                    return fieldValue.ToString().Contains(filter.FilterValue);
+                    return fieldValue.ToString().Contains(filter.FilterValue.ToString());
                 case ">":
                     return Comparer.Default.Compare(fieldValue, filter.FilterValue) > 0;
                 case "<":

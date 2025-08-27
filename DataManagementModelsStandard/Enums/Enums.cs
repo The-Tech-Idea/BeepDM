@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 
 namespace TheTechIdea.Beep.Utilities
 {
@@ -155,8 +154,22 @@ namespace TheTechIdea.Beep.Utilities
         Milvus,
         RedisVector,
         Zilliz,
-        Vespa,
+        Vespa, MariaDB,
 
+        // Connectors (Expanded List)
+        Salesforce, HubSpot, Zoho, Pipedrive, MicrosoftDynamics365, Freshsales, SugarCRM, Insightly, Copper, Nutshell, // CRM
+        Mailchimp, Marketo, GoogleAds, ActiveCampaign, ConstantContact, Klaviyo, Sendinblue, CampaignMonitor, ConvertKit, Drip, MailerLite, // Marketing
+        Shopify, WooCommerce, Magento, BigCommerce, Squarespace, Wix, Etsy, OpenCart, Ecwid, Volusion, // E-commerce
+        Jira, Trello, Asana, Monday, ClickUp, Basecamp, Notion, Wrike, Smartsheet, Teamwork, Podio, // Project Management
+        Slack, MicrosoftTeams, Zoom, GoogleChat, Discord, Telegram, WhatsAppBusiness, Twist, Chanty, RocketChat, Flock, // Communication
+        GoogleDrive, Dropbox, OneDrive, Box, AmazonS3, pCloud, iCloud, Egnyte, MediaFire, CitrixShareFile, // Cloud Storage
+        Stripe, PayPal, Square, AuthorizeNet, Braintree, Worldpay, Adyen, TwoCheckout, Razorpay, Payoneer, Wise, // Payment Gateways
+        Facebook, Twitter, Instagram, LinkedIn, Pinterest, YouTube, TikTok, Snapchat, Reddit, Buffer, Hootsuite, TikTokAds, // Social Media
+        Zapier, Make, Airtable, MicrosoftPowerAutomate, Calendly, Doodle, Eventbrite, // Workflow Automation
+        GitHub, GitLab, Bitbucket, Jenkins, CircleCI, Postman, SwaggerHub, AzureDevOps, // Developer Tools
+        Zendesk, Freshdesk, HelpScout, ZohoDesk, Kayako, LiveAgent, Front, // Customer Support
+        GoogleAnalytics, Mixpanel, Hotjar, Amplitude, Heap, Databox, Geckoboard, Cyfe, // Analytics and Reporting
+        Twilio, Plaid, QuickBooks, Xero, DocuSign, PhilipsHue, Nest, SmartThings, Tuya // IoT
     }
     public enum DatasourceCategory
     {
@@ -191,8 +204,8 @@ namespace TheTechIdea.Beep.Utilities
         DataMart,
         DataPipeline,
         DataMesh,
-        DataFabric
-
+        DataFabric,
+        Connector // Added new category for connectors
     }
 
     public enum FileTypes
