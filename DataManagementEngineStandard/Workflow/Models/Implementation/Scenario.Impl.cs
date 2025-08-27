@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Workflow.Models.Base;
+using TheTechIdea.Beep.Workflow.Models;
 
-namespace TheTechIdea.Beep.Workflow.Models.Implementation
+namespace TheTechIdea.Beep.Workflow.Models.Base
 {
     /// <summary>
     /// Implementation partial class for Scenario - contains business logic methods
@@ -187,14 +188,5 @@ namespace TheTechIdea.Beep.Workflow.Models.Implementation
                 VersionNotes = versionNotes
             };
         }
-    }
-
-    /// <summary>
-    /// Validation result class
-    /// </summary>
-    public class ValidationResult
-    {
-        public List<string> Errors { get; } = new List<string>();
-        public bool IsValid => !Errors.Any();
     }
 }

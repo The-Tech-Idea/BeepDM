@@ -12,7 +12,7 @@ namespace TheTechIdea.Beep.Report
          int ID { get; set; }
          string GuidID { get; set; }
         string FieldName { get; set; }
-        object FilterValue { get; set; }
+        string FilterValue { get; set; }
         string Operator { get; set; }
         string valueType { get; set; }
          string FilterValue1 { get; set; }
@@ -51,8 +51,8 @@ namespace TheTechIdea.Beep.Report
             set { SetProperty(ref _Operator, value); }
         }
 
-        private object _FilterValue;
-        public object FilterValue
+        private string _FilterValue;
+        public string FilterValue
         {
             get { return _FilterValue; }
             set { SetProperty(ref _FilterValue, value); }

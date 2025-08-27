@@ -1136,7 +1136,7 @@ namespace TheTechIdea.Beep
             typesHelper = new DataTypesHelper(this);
             ETL = new ETLEditor(this);
             classCreator = new ClassCreator(this);
-            WorkFlowEditor = new WorkFlowEditor(this);
+        
 
             // Initialize helpers
             FileConnectionHelper.Initialize(this);

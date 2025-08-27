@@ -45,6 +45,12 @@
 - `Models/Implementation/Module.Impl.cs` - Implementation methods for Module
 - `Models/Helpers/ModuleHelper.cs` - Helper methods for Module operations
 - `Models/Base/Connection.Base.cs` - Base partial class for Connection entity
+- `Models/Base/DataMapping.Base.cs` - Base partial class for DataMapping entity
+- `Models/Base/ModuleVariable.Base.cs` - Base partial class for ModuleVariable entity
+- `Models/Base/ModuleExecutionLog.Base.cs` - Base partial class for ModuleExecutionLog entity
+- `Models/Base/ScenarioVariable.Base.cs` - Base partial class for ScenarioVariable entity
+- `Models/Base/ScenarioExecutionLog.Base.cs` - Base partial class for ScenarioExecutionLog entity
+- `Models/Base/ConnectionTestLog.Base.cs` - Base partial class for ConnectionTestLog entity
 
 #### Next Steps:
 1. Create Connection implementation and helper classes
@@ -94,10 +100,10 @@ Workflow/
 **Solution**: Designed interfaces and base classes to allow easy extension.
 
 ## Metrics
-- **Lines of Code**: ~1100 (core data models implemented)
-- **Classes Created**: 9 (Scenario.Base, Scenario.Impl, ScenarioHelper, Module.Base, Module.Impl, ModuleHelper, Connection.Base, ValidationResult, ModuleStatistics)
+- **Lines of Code**: ~1500 (core data models completed)
+- **Classes Created**: 14 (all base entities with enums)
 - **Test Coverage**: 0%
-- **Completion Percentage**: 25%
+- **Completion Percentage**: 30%
 
 ## Next Milestone
 Complete Phase 1 core data models by [Date: TBD]</content>

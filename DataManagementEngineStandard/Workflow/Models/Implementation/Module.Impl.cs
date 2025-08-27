@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Workflow.Models.Base;
+using TheTechIdea.Beep.Workflow.Models;
 
-namespace TheTechIdea.Beep.Workflow.Models.Implementation
+namespace TheTechIdea.Beep.Workflow.Models.Base
 {
     /// <summary>
     /// Implementation partial class for Module - contains business logic methods
