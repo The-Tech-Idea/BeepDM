@@ -36,11 +36,6 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Compile Remove="CodeDom\CodeDomCompiler.cs" />
-	  <Compile Remove="Workflow\Actions\CopyData.cs" />
-	  <Compile Remove="Workflow\Actions\CopyEntities.cs" />
-	  <Compile Remove="Workflow\Actions\CopyEntity.cs" />
-	  <Compile Remove="Workflow\Actions\RunScript.cs" />
-	  <Compile Remove="Workflow\RulesEditor.cs" />
 	</ItemGroup>
 
   <ItemGroup>
