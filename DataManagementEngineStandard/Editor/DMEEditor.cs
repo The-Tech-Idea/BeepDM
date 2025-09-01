@@ -182,7 +182,7 @@ namespace TheTechIdea.Beep
                 string errmsg = "Beep" + "," + pLogMessage;
                 ErrorObject.Flag = Errors.Ok;
                 ErrorObject.Message = errmsg;
-                Task.Run(() => Logger.WriteLog(errmsg));
+                 Logger.WriteLog(errmsg);
             }
         }
         #endregion "Log and Error Methods"
