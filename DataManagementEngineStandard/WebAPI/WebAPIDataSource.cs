@@ -1,1181 +1,184 @@
 ﻿
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TheTechIdea.Beep.Logger;
-using TheTechIdea.Beep.Utilities;
 using System.Data;
-using TheTechIdea.Beep.DataBase;
+using System.Linq;
 using System.Net.Http;
-using TheTechIdea.Beep.Report;
-using TheTechIdea.Beep.Editor;
-using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Addin;
-using System.ComponentModel;
-using System.Net;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.Report;
+using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.WebAPI.Helpers;
-using System.Text.Json;
 
 namespace TheTechIdea.Beep.WebAPI
 {
     /// <summary>
-    /// Optimized Web API Data Source implementation using helper classes architecture
-    /// Supports OAuth2, API Keys, Basic Auth, Bearer tokens with retry logic, caching, and rate limiting
-    /// Refactored to use helper classes and proper separation of concerns
+    /// Core partial containing only state (properties/fields), constructor and disposal logic.
+    /// All IDataSource method implementations are split into separate partial skeleton files.
     /// </summary>
-    public class WebAPIDataSource : IDataSource
+    public partial class WebAPIDataSource : IWebAPIDataSource, IDisposable
     {
-        #region Events and Properties
-        
-        /// <summary>Event raised when operations pass messages</summary>
-        public event EventHandler<PassedArgs> PassEvent;
-        
-        /// <summary>Type of data source</summary>
-        public DataSourceType DatasourceType { get; set; }
-        
-        /// <summary>Category of data source</summary>
-        public DatasourceCategory Category { get; set; }
-        
-        /// <summary>Data connection instance</summary>
-        public IDataConnection Dataconnection { get; set; }
-        
-        /// <summary>Name of the data source</summary>
-        public string DatasourceName { get; set; }
-        
-        /// <summary>Error handling object</summary>
-        public IErrorsInfo ErrorObject { get; set; }
-        
-        /// <summary>Unique identifier</summary>
-        public string Id { get; set; }
-        
-        /// <summary>Logger instance</summary>
-        public IDMLogger Logger { get; set; }
-        
-        /// <summary>List of entity names</summary>
-        public List<string> EntitiesNames { get; set; }
-        
-        /// <summary>List of entity structures</summary>
-        public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
-        
-        /// <summary>Data management editor instance</summary>
-        public IDMEEditor DMEEditor { get; set; }
-        
-        /// <summary>Records collection</summary>
-        public List<object> Records { get; set; }
-        
-        /// <summary>Connection status</summary>
-        public ConnectionState ConnectionStatus { get; set; }
-        
-        /// <summary>Column delimiter for queries</summary>
-        public virtual string ColumnDelimiter { get; set; } = "''";
-        
-        /// <summary>Parameter delimiter</summary>
-        public virtual string ParameterDelimiter { get; set; } = ":";
-        
-        /// <summary>HTTP client for API calls</summary>
-        public HttpClient client { get; set; }
-        
-        /// <summary>Unique GUID identifier</summary>
+        /// <summary>
+        /// Delimiter used to separate columns in queries or data representations.
+        /// </summary>
+        public string ColumnDelimiter { get; set; } = "\"";
+        /// <summary>
+        /// Delimiter used for parameters in queries.
+        /// </summary>
+        public string ParameterDelimiter { get; set; } = ":";
+        /// <summary>
+        /// Unique identifier for the data source.
+        /// </summary>
         public string GuidID { get; set; } = Guid.NewGuid().ToString();
+        /// <summary>
+        /// Type of the data source.
+        /// </summary>
+        public DataSourceType DatasourceType { get; set; } = DataSourceType.WebApi;
+        /// <summary>
+        /// Category of the data source.
+        /// </summary>
+        public DatasourceCategory Category { get; set; } = DatasourceCategory.WEBAPI;
+        /// <summary>
+        /// Data connection interface.
+        /// </summary>
+        public IDataConnection Dataconnection { get; set; }
+        /// <summary>
+        /// Name of the data source.
+        /// </summary>
+        public string DatasourceName { get; set; }
+        /// <summary>
+        /// Error handling object.
+        /// </summary>
+        public IErrorsInfo ErrorObject { get; set; }
+        /// <summary>
+        /// Secondary identifier for the data source.
+        /// </summary>
+        public string Id { get; set; }
+        /// <summary>
+        /// Logger for data management activities.
+        /// </summary>
+        public IDMLogger Logger { get; set; }
+        /// <summary>
+        /// List of entity names in the data source.
+        /// </summary>
+        public List<string> EntitiesNames { get; set; } = new();
+        /// <summary>
+        /// List of entity structures.
+        /// </summary>
+        public List<EntityStructure> Entities { get; set; } = new();
+        /// <summary>
+        /// Data manipulation and exploration editor.
+        /// </summary>
+        public IDMEEditor DMEEditor { get; set; }
+        /// <summary>
+        /// Current connection status.
+        /// </summary>
+        public ConnectionState ConnectionStatus { get; set; } = ConnectionState.Closed;
+        /// <summary>
+        /// Event raised when a specific action or event is passed.
+        /// </summary>
+        public event EventHandler<PassedArgs> PassEvent;
+        // IWebAPIDataSource specific
+        /// <summary>
+        /// List of entity fields.
+        /// </summary>
+        public List<EntityField> Fields { get; set; } = new();
+        /// <summary>
+        /// API key for authentication.
+        /// </summary>
+        public string ApiKey { get; set; }
+        /// <summary>
+        /// Resource endpoint.
+        /// </summary>
+        public string Resource { get; set; }
+        /// <summary>
+        /// Parameters for the API request.
+        /// </summary>
+        public Dictionary<string,string> Parameters { get; set; } = new();
 
+        #region Helper Fields
+        private HttpClient _httpClient; // shared client
+        private WebAPIConfigurationHelper _configHelper;
+        private WebAPIAuthenticationHelper _authHelper;
+        private WebAPIRequestHelper _requestHelper;
+        private WebAPICacheHelper _cacheHelper;
+        private WebAPIDataHelper _dataHelper;
+        private WebAPIRateLimitHelper _rateLimitHelper;
+        private WebAPISchemaHelper _schemaHelper;
+        private WebAPIErrorHelper _errorHelper;
         #endregion
-
-        #region Private Fields - Helper Classes
-
-        private readonly WebAPIDataConnection cn;
-        private readonly WebAPIAuthenticationHelper _authHelper;
-        private readonly WebAPIRequestHelper _requestHelper;
-        private readonly WebAPICacheHelper _cacheHelper;
-        private readonly WebAPIDataHelper _dataHelper;
-
-        #endregion
-
-        #region Constructor
 
         /// <summary>
-        /// Initializes a new instance of WebAPIDataSource with helper classes
+        /// Initializes a new instance of the WebAPIDataSource class.
         /// </summary>
-        public WebAPIDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
+        /// <param name="datasourcename">Name of the data source.</param>
+        /// <param name="logger">Logger instance.</param>
+        /// <param name="dmeEditor">DME editor instance.</param>
+        /// <param name="databasetype">Type of the data source.</param>
+        /// <param name="errorObject">Error object.</param>
+        public WebAPIDataSource(string datasourcename, IDMLogger logger, IDMEEditor dmeEditor, DataSourceType databasetype, IErrorsInfo errorObject)
         {
-            // Initialize basic properties
             DatasourceName = datasourcename;
             Logger = logger;
-            ErrorObject = per;
-            DMEEditor = pDMEEditor;
+            DMEEditor = dmeEditor;
             DatasourceType = databasetype;
+            ErrorObject = errorObject ?? new ErrorsInfo();
             Category = DatasourceCategory.WEBAPI;
-            
-            // Initialize connection
-            Dataconnection = new WebAPIDataConnection
+
+            Dataconnection = new WebAPIDataConnection()
             {
                 Logger = logger,
                 ErrorObject = ErrorObject,
-                DMEEditor = pDMEEditor
+                DMEEditor = dmeEditor
             };
+            Dataconnection.ConnectionProp = dmeEditor?.ConfigEditor?.DataConnections?.FirstOrDefault(c => c.ConnectionName.Equals(datasourcename, StringComparison.InvariantCultureIgnoreCase));
+
+            _configHelper = new WebAPIConfigurationHelper(Dataconnection.ConnectionProp, Logger, DatasourceName);
             
-            // Get connection properties
-            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections
-                .Where(c => c.ConnectionName == datasourcename).FirstOrDefault();
+            _httpClient = new HttpClient();
+            _httpClient.Timeout = TimeSpan.FromMilliseconds(_configHelper.TimeoutMs);
             
-            cn = (WebAPIDataConnection)Dataconnection;
-            
-            // Initialize HTTP client with optimizations
-            InitializeHttpClient();
-            
-            // Initialize helper classes
-            _authHelper = new WebAPIAuthenticationHelper(Dataconnection.ConnectionProp, Logger, client);
-            _requestHelper = new WebAPIRequestHelper(client, Logger, DatasourceName, 
-                GetConfigurationValue("MaxConcurrentRequests", 10),
-                GetConfigurationValue("RetryCount", 3),
-                GetConfigurationValue("RetryDelayMs", 1000));
-            _cacheHelper = new WebAPICacheHelper(Logger, DatasourceName, GetConfigurationValue("CacheExpiryMinutes", 15));
+            _authHelper = new WebAPIAuthenticationHelper(Dataconnection.ConnectionProp, Logger, _httpClient);
+            _errorHelper = new WebAPIErrorHelper(Logger, DatasourceName);
+            _requestHelper = new WebAPIRequestHelper(_httpClient, Logger, DatasourceName, _errorHelper, _configHelper.MaxConcurrentRequests, _configHelper.MaxRetries, _configHelper.RetryDelayMs);
+            _cacheHelper = new WebAPICacheHelper(Logger, DatasourceName, _configHelper.CacheDurationMinutes);
             _dataHelper = new WebAPIDataHelper(Logger, DatasourceName);
-            
-            // Open connection
-            try
-            {
-                cn.OpenConnection();
-                ConnectionStatus = cn.ConnectionStatus;
-                
-                Logger?.WriteLog($"WebAPI DataSource {DatasourceName} initialized successfully");
-            }
-            catch (Exception ex)
-            {
-                Logger?.WriteLog($"Failed to initialize WebAPI DataSource {DatasourceName}: {ex.Message}");
-                ConnectionStatus = ConnectionState.Broken;
-            }
+            _rateLimitHelper = new WebAPIRateLimitHelper(Logger, DatasourceName);
+            _schemaHelper = new WebAPISchemaHelper(Logger, DatasourceName);
         }
+  
 
-        #endregion
-
-        #region Initialization
-
-        private void InitializeHttpClient()
-        {
-            var handler = new HttpClientHandler()
-            {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-            };
-            
-            var timeout = GetConfigurationValue("TimeoutMs", 30000);
-            client = new HttpClient(handler)
-            {
-                Timeout = TimeSpan.FromMilliseconds(timeout)
-            };
-            
-            // Set default headers
-            var userAgent = GetConfigurationValue("UserAgent", "BeepDM-WebAPI/1.0");
-            client.DefaultRequestHeaders.Add("User-Agent", userAgent);
-            client.DefaultRequestHeaders.Add("Accept", "application/json, application/xml, text/plain, */*");
-            
-            if (GetConfigurationValue("EnableCompression", true))
-            {
-                client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
-            }
-        }
-
-        private T GetConfigurationValue<T>(string paramName, T defaultValue)
-        {
-            try
-            {
-                if (Dataconnection?.ConnectionProp is WebAPIConnectionProperties webApiProps)
-                {
-                    var propertyInfo = typeof(WebAPIConnectionProperties).GetProperty(paramName);
-                    if (propertyInfo != null)
-                    {
-                        var value = propertyInfo.GetValue(webApiProps);
-                        if (value != null)
-                        {
-                            return (T)Convert.ChangeType(value, typeof(T));
-                        }
-                    }
-                }
-                
-                // Try to get from Parameters string
-                if (!string.IsNullOrEmpty(Dataconnection?.ConnectionProp?.Parameters))
-                {
-                    var parameters = ParseParameters(Dataconnection.ConnectionProp.Parameters);
-                    if (parameters.ContainsKey(paramName))
-                    {
-                        return (T)Convert.ChangeType(parameters[paramName], typeof(T));
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger?.WriteLog($"Error getting configuration value {paramName}: {ex.Message}");
-            }
-
-            return defaultValue;
-        }
-
-        private Dictionary<string, string> ParseParameters(string parametersString)
-        {
-            var parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            
-            if (string.IsNullOrEmpty(parametersString))
-                return parameters;
-
-            var pairs = parametersString.Split(';', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var pair in pairs)
-            {
-                var keyValue = pair.Split('=', 2, StringSplitOptions.RemoveEmptyEntries);
-                if (keyValue.Length == 2)
-                {
-                    parameters[keyValue[0].Trim()] = keyValue[1].Trim();
-                }
-            }
-
-            return parameters;
-        }
-
-        #endregion
-
-        #region Connection Operations
-
-        /// <summary>Opens connection to the Web API</summary>
-        public ConnectionState Openconnection()
-        {
-            try
-            {
-                Logger?.WriteLog($"Opening connection to Web API: {DatasourceName}");
-                
-                if (Dataconnection?.ConnectionStatus == ConnectionState.Open)
-                {
-                    Logger?.WriteLog("Connection already open");
-                    return ConnectionState.Open;
-                }
-
-                ErrorObject.Flag = Errors.Ok;
-                
-                cn.OpenConnection();
-                ConnectionStatus = cn.ConnectionStatus;
-                
-                if (ConnectionStatus == ConnectionState.Open)
-                {
-                    Logger?.WriteLog($"Successfully connected to {DatasourceName}");
-                    
-                    // Initialize entities if not already done
-                    if (Entities == null || Entities.Count == 0)
-                    {
-                        GetEntitiesAsync().Wait();
-                    }
-                }
-                else
-                {
-                    Logger?.WriteLog($"Failed to connect to {DatasourceName}");
-                    ErrorObject.Ex = new Exception($"Could not connect to {DatasourceName}");
-                    ErrorObject.Flag = Errors.Failed;
-                }
-
-                return ConnectionStatus;
-            }
-            catch (Exception ex)
-            {
-                Logger?.WriteLog($"Error opening connection: {ex.Message}");
-                ErrorObject.Ex = ex;
-                ErrorObject.Flag = Errors.Failed;
-                ConnectionStatus = ConnectionState.Broken;
-                return ConnectionStatus;
-            }
-        }
-
-        /// <summary>Closes connection to the Web API</summary>
-        public ConnectionState Closeconnection()
-        {
-            try
-            {
-                Logger?.WriteLog($"Closing connection to Web API: {DatasourceName}");
-                
-                if (Dataconnection?.ConnectionStatus == ConnectionState.Closed)
-                {
-                    Logger?.WriteLog("Connection already closed");
-                    return ConnectionState.Closed;
-                }
-
-                cn.CloseConn();
-                ConnectionStatus = ConnectionState.Closed;
-                
-                Logger?.WriteLog($"Connection to {DatasourceName} closed");
-                return ConnectionStatus;
-            }
-            catch (Exception ex)
-            {
-                Logger?.WriteLog($"Error closing connection: {ex.Message}");
-                ErrorObject.Ex = ex;
-                ErrorObject.Flag = Errors.Failed;
-                ConnectionStatus = ConnectionState.Broken;
-                return ConnectionStatus;
-            }
-        }
-
-        /// <summary>Checks if connection is valid</summary>
-        public bool CheckConnection()
-        {
-            try
-            {
-                if (ConnectionStatus == ConnectionState.Open)
-                {
-                    // Test connection with a simple health check
-                    return TestConnectionAsync().Result;
-                }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Logger?.WriteLog($"Connection check failed: {ex.Message}");
-                return false;
-            }
-        }
-
-        private async Task<bool> TestConnectionAsync()
-        {
-            try
-            {
-                var baseUrl = Dataconnection.ConnectionProp.Url;
-                if (string.IsNullOrEmpty(baseUrl))
-                {
-                    return false;
-                }
-
-                // Try to make a simple HEAD or GET request to test connectivity
-                var healthCheckEndpoint = GetConfigurationValue("HealthCheckEndpoint", "");
-                var testUrl = !string.IsNullOrEmpty(healthCheckEndpoint) 
-                    ? _dataHelper.BuildEndpointUrl(baseUrl, healthCheckEndpoint)
-                    : baseUrl;
-
-                var response = await _requestHelper.SendWithRetryAsync(async () =>
-                {
-                    var request = new HttpRequestMessage(HttpMethod.Head, testUrl);
-                    await _authHelper.EnsureAuthenticatedAsync();
-                    _authHelper.AddAuthenticationHeaders(request);
-                    return await client.SendAsync(request);
-                });
-
-                return response.IsSuccessStatusCode;
-            }
-            catch (Exception ex)
-            {
-                Logger?.WriteLog($"Connection test failed: {ex.Message}");
-                return false;
-            }
-        }
-
-        #endregion
-
-        // Configuration settings
-        private int _retryCount = 3;
-        private int _retryDelayMs = 1000;
-        private int _timeoutMs = 30000;
-        private int _cacheExpiryMinutes = 15;
-        private int _maxConcurrentRequests = 10;
-
-        #endregion
-
-        #region Constructor
-
+        #region Dispose Pattern
+        private bool _disposed;
         /// <summary>
-        /// Initializes a new instance of WebAPIDataSource with comprehensive API support
+        /// Disposes the resources used by the WebAPIDataSource.
         /// </summary>
-        public WebAPIDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
-        {
-            DatasourceName = datasourcename;
-            Logger = logger;
-            ErrorObject = per;
-            DMEEditor = pDMEEditor;
-            DatasourceType = databasetype;
-            Category = DatasourceCategory.WEBAPI;
-            
-            // Initialize connection
-            Dataconnection = new WebAPIDataConnection
-            {
-                Logger = logger,
-                ErrorObject = ErrorObject,
-                DMEEditor = pDMEEditor
-            };
-            
-            // Configure HttpClient with optimizations
-            var handler = new HttpClientHandler()
-            {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-            };
-            
-            client = new HttpClient(handler)
-            {
-                Timeout = TimeSpan.FromMilliseconds(_timeoutMs)
-            };
-            
-            // Set default headers
-            client.DefaultRequestHeaders.Add("User-Agent", "BeepDM-WebAPI/1.0");
-            client.DefaultRequestHeaders.Add("Accept", "application/json, application/xml, text/plain, */*");
-            client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
-            
-            // Get connection properties
-            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections
-                .Where(c => c.ConnectionName == datasourcename).FirstOrDefault();
-            
-            cn = (WebAPIDataConnection)Dataconnection;
-            
-            // Load configuration
-            LoadConfiguration();
-            
-            // Setup cache cleanup timer (runs every 5 minutes)
-            _cacheCleanupTimer = new Timer(CleanupCache, null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
-            
-            // Open connection
-            cn.OpenConnection();
-            ConnectionStatus = cn.ConnectionStatus;
-        }
-
-        #endregion
-
-        #region Configuration
-
-        private void LoadConfiguration()
-        {
-            // Configuration is typically stored in connection properties
-            // For now, we'll use default values and can be extended later
-            // based on the actual structure of ConnectionProp.Parameters
-        }
-
-        private void CleanupCache(object state)
-        {
-            try
-            {
-                var expiredKeys = new List<string>();
-                var cutoffTime = DateTime.Now.AddMinutes(-_cacheExpiryMinutes);
-                
-                foreach (var kvp in _cacheTimestamps)
-                {
-                    if (kvp.Value < cutoffTime)
-                    {
-                        expiredKeys.Add(kvp.Key);
-                    }
-                }
-                
-                foreach (var key in expiredKeys)
-                {
-                    _cache.TryRemove(key, out _);
-                    _cacheTimestamps.TryRemove(key, out _);
-                }
-                
-                if (expiredKeys.Count > 0)
-                {
-                    DMEEditor.AddLogMessage("Success", $"Cleaned up {expiredKeys.Count} expired cache entries", 
-                        DateTime.Now, 0, DatasourceName, Errors.Ok);
-                }
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Warning", $"Error during cache cleanup: {ex.Message}", 
-                    DateTime.Now, 0, DatasourceName, Errors.Warning);
-            }
-        }
-
-        #endregion
-
-        #region Authentication Support
-
-        /// <summary>
-        /// Refreshes the access token for OAuth/JWT authentication
-        /// </summary>
-        private async Task<bool> RefreshTokenAsync()
-        {
-            try
-            {
-                // Use ConnectionString field to store auth URL if needed
-                var authUrl = GetConnectionParameter("AuthUrl");
-                if (string.IsNullOrEmpty(authUrl))
-                    return true; // No authentication required
-                
-                var authRequest = new HttpRequestMessage(HttpMethod.Post, authUrl);
-                
-                // Prepare authentication payload based on auth type
-                var authPayload = PrepareAuthPayload();
-                if (!string.IsNullOrEmpty(authPayload))
-                {
-                    authRequest.Content = new StringContent(authPayload, Encoding.UTF8, "application/json");
-                }
-                
-                var response = await client.SendAsync(authRequest);
-                response.EnsureSuccessStatusCode();
-                
-                var responseContent = await response.Content.ReadAsStringAsync();
-                var tokenResponse = JsonSerializer.Deserialize<Dictionary<string, object>>(responseContent);
-                
-                if (tokenResponse.ContainsKey("access_token"))
-                {
-                    _accessToken = tokenResponse["access_token"].ToString();
-                    
-                    // Set expiry time (default 1 hour if not specified)
-                    var expiresIn = tokenResponse.ContainsKey("expires_in") 
-                        ? Convert.ToInt32(tokenResponse["expires_in"]) 
-                        : 3600;
-                    _tokenExpiry = DateTime.Now.AddSeconds(expiresIn - 60); // Refresh 1 minute early
-                    
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Error", $"Token refresh failed: {ex.Message}", 
-                    DateTime.Now, 0, DatasourceName, Errors.Failed);
-            }
-            
-            return false;
-        }
-
-        private string GetConnectionParameter(string paramName)
-        {
-            // Helper method to get parameters from connection properties
-            // This can be extended based on how parameters are actually stored
-            return Dataconnection.ConnectionProp.ConnectionString; // Placeholder
-        }
-
-        private string PrepareAuthPayload()
-        {
-            var authType = GetConnectionParameter("AuthType")?.ToLower();
-            
-            switch (authType)
-            {
-                case "oauth2_client_credentials":
-                    return JsonSerializer.Serialize(new
-                    {
-                        grant_type = "client_credentials",
-                        client_id = GetConnectionParameter("ClientId"),
-                        client_secret = GetConnectionParameter("ClientSecret"),
-                        scope = GetConnectionParameter("Scope") ?? ""
-                    });
-                    
-                case "oauth2_password":
-                    return JsonSerializer.Serialize(new
-                    {
-                        grant_type = "password",
-                        username = Dataconnection.ConnectionProp.UserID,
-                        password = Dataconnection.ConnectionProp.Password,
-                        client_id = GetConnectionParameter("ClientId"),
-                        client_secret = GetConnectionParameter("ClientSecret")
-                    });
-                    
-                default:
-                    return string.Empty;
-            }
-        }
-
-        private async Task<bool> EnsureAuthenticatedAsync()
-        {
-            var authUrl = GetConnectionParameter("AuthUrl");
-            if (string.IsNullOrEmpty(authUrl))
-                return true; // No authentication required
-            
-            lock (_tokenLock)
-            {
-                if (DateTime.Now < _tokenExpiry && !string.IsNullOrEmpty(_accessToken))
-                    return true; // Token still valid
-            }
-            
-            return await RefreshTokenAsync();
-        }
-
-        #endregion
-
-        #region HTTP Request Methods
-
-        private async Task<HttpRequestMessage> PrepareRequestAsync(string endpoint, HttpMethod method, object data = null)
-        {
-            await EnsureAuthenticatedAsync();
-            
-            var request = new HttpRequestMessage(method, BuildEndpointUrl(endpoint));
-            
-            // Add authentication
-            AddAuthenticationHeaders(request);
-            
-            // Add custom headers
-            AddCustomHeaders(request);
-            
-            // Add request body for POST/PUT/PATCH
-            if (data != null && (method == HttpMethod.Post || method == HttpMethod.Put || method == HttpMethod.Patch))
-            {
-                var json = JsonSerializer.Serialize(data);
-                request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-            }
-            
-            return request;
-        }
-
-        private string BuildEndpointUrl(string endpoint)
-        {
-            var baseUrl = Dataconnection.ConnectionProp.Url?.TrimEnd('/');
-            endpoint = endpoint?.TrimStart('/');
-            
-            var url = $"{baseUrl}/{endpoint}";
-            
-            // Replace API key placeholder if present
-            if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.ApiKey))
-            {
-                url = url.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
-            }
-            
-            return url;
-        }
-
-        private void AddAuthenticationHeaders(HttpRequestMessage request)
-        {
-            var authType = GetConnectionParameter("AuthType")?.ToLower();
-            
-            switch (authType)
-            {
-                case "bearer":
-                case "oauth2_client_credentials":
-                case "oauth2_password":
-                    if (!string.IsNullOrEmpty(_accessToken))
-                        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-                    break;
-                    
-                case "apikey":
-                    if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.ApiKey))
-                    {
-                        var apiKeyHeader = GetConnectionParameter("ApiKeyHeader") ?? "X-API-Key";
-                        request.Headers.Add(apiKeyHeader, Dataconnection.ConnectionProp.ApiKey);
-                    }
-                    break;
-                    
-                case "basic":
-                    if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.UserID))
-                    {
-                        var credentials = Convert.ToBase64String(
-                            Encoding.UTF8.GetBytes($"{Dataconnection.ConnectionProp.UserID}:{Dataconnection.ConnectionProp.Password}"));
-                        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-                    }
-                    break;
-            }
-        }
-
-        private void AddCustomHeaders(HttpRequestMessage request)
-        {
-            if (Dataconnection.ConnectionProp.Headers != null)
-            {
-                foreach (var header in Dataconnection.ConnectionProp.Headers)
-                {
-                    try
-                    {
-                        request.Headers.Add(header.Headername, header.Headervalue);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Some headers might need to be added to content headers
-                        try
-                        {
-                            request.Content?.Headers.Add(header.Headername, header.Headervalue);
-                        }
-                        catch
-                        {
-                            DMEEditor.AddLogMessage("Warning", $"Could not add header {header.Headername}: {ex.Message}",
-                                DateTime.Now, 0, DatasourceName, Errors.Warning);
-                        }
-                    }
-                }
-            }
-        }
-
-        private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> operation, string operationName)
-        {
-            var lastException = new Exception();
-            
-            for (int attempt = 0; attempt <= _retryCount; attempt++)
-            {
-                try
-                {
-                    await _rateLimitSemaphore.WaitAsync();
-                    
-                    try
-                    {
-                        return await operation();
-                    }
-                    finally
-                    {
-                        _rateLimitSemaphore.Release();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    lastException = ex;
-                    
-                    if (attempt < _retryCount && ShouldRetry(ex))
-                    {
-                        var delay = CalculateDelay(attempt);
-                        DMEEditor.AddLogMessage("Warning", 
-                            $"Attempt {attempt + 1} failed for {operationName}, retrying in {delay}ms: {ex.Message}",
-                            DateTime.Now, 0, DatasourceName, Errors.Warning);
-                        
-                        await Task.Delay(delay);
-                        continue;
-                    }
-                    
-                    DMEEditor.AddLogMessage("Error", $"Operation {operationName} failed after {attempt + 1} attempts: {ex.Message}",
-                        DateTime.Now, 0, DatasourceName, Errors.Failed);
-                    throw;
-                }
-            }
-            
-            throw lastException;
-        }
-
-        private bool ShouldRetry(Exception ex)
-        {
-            // Retry on network errors, timeouts, and 5xx server errors
-            return ex is HttpRequestException || 
-                   ex is TaskCanceledException ||
-                   (ex is WebException webEx && (
-                       webEx.Status == WebExceptionStatus.Timeout ||
-                       webEx.Status == WebExceptionStatus.ConnectionClosed ||
-                       webEx.Status == WebExceptionStatus.ConnectFailure
-                   ));
-        }
-
-        private int CalculateDelay(int attemptNumber)
-        {
-            // Exponential backoff with jitter
-            var delay = _retryDelayMs * Math.Pow(2, attemptNumber);
-            var jitter = new Random().Next(0, (int)(delay * 0.1)); // Add up to 10% jitter
-            return (int)(delay + jitter);
-        }
-
-        #endregion
-
-        #region Caching Support
-
-        private string GenerateCacheKey(string operation, params string[] parameters)
-        {
-            var key = $"{DatasourceName}:{operation}";
-            if (parameters?.Length > 0)
-            {
-                key += ":" + string.Join(":", parameters);
-            }
-            return key;
-        }
-
-        private T GetFromCache<T>(string cacheKey) where T : class
-        {
-            if (_cache.TryGetValue(cacheKey, out var cached) && 
-                _cacheTimestamps.TryGetValue(cacheKey, out var timestamp))
-            {
-                if (DateTime.Now - timestamp < TimeSpan.FromMinutes(_cacheExpiryMinutes))
-                {
-                    return cached as T;
-                }
-                
-                // Expired cache entry
-                _cache.TryRemove(cacheKey, out _);
-                _cacheTimestamps.TryRemove(cacheKey, out _);
-            }
-            
-            return null;
-        }
-
-        private void SetCache<T>(string cacheKey, T value)
-        {
-            _cache.TryAdd(cacheKey, value);
-            _cacheTimestamps.TryAdd(cacheKey, DateTime.Now);
-        }
-
-        #endregion
-        #region IDataSource Implementation
-
-        /// <summary>Gets scalar value from API endpoint</summary>
-        public virtual Task<double> GetScalarAsync(string query)
-        {
-            return Task.Run(() => GetScalar(query));
-        }
-
-        /// <summary>Gets scalar value from API endpoint</summary>
-        public virtual double GetScalar(string query)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
-                var result = ExecuteWithRetryAsync(async () =>
-                {
-                    var request = await PrepareRequestAsync(query, HttpMethod.Get);
-                    var response = await client.SendAsync(request);
-                    response.EnsureSuccessStatusCode();
-                    
-                    var content = await response.Content.ReadAsStringAsync();
-                    if (double.TryParse(content, out double value))
-                        return value;
-                    
-                    // Try to extract number from JSON
-                    if (content.StartsWith("{") || content.StartsWith("["))
-                    {
-                        var json = JsonSerializer.Deserialize<JsonElement>(content);
-                        if (json.ValueKind == JsonValueKind.Number)
-                            return json.GetDouble();
-                    }
-                    
-                    return 0.0;
-                }, "GetScalar").Result;
-                
-                return result;
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Fail", $"Error in executing scalar query ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
-                return 0.0;
-            }
-        }
-
-        /// <summary>Opens connection to the web API</summary>
-        public ConnectionState Openconnection()
-        {
-            try
-            {
-                cn.OpenConnection();
-                ConnectionStatus = cn.ConnectionStatus;
-                return ConnectionStatus;
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Error", $"Failed to open connection: {ex.Message}", DateTime.Now, 0, DatasourceName, Errors.Failed);
-                ConnectionStatus = ConnectionState.Broken;
-                return ConnectionStatus;
-            }
-        }
-
-        /// <summary>Closes connection to the web API</summary>
-        public ConnectionState Closeconnection()
-        {
-            try
-            {
-                client?.Dispose();
-                ConnectionStatus = ConnectionState.Closed;
-                return ConnectionStatus;
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Error", $"Failed to close connection: {ex.Message}", DateTime.Now, 0, DatasourceName, Errors.Failed);
-                return ConnectionStatus;
-            }
-        }
-
-        /// <summary>Gets the index of an entity by name</summary>
-        public int GetEntityIdx(string entityName)
-        {
-            if (Entities.Count > 0)
-            {
-                return Entities.FindIndex(p => p.EntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase) || 
-                                             p.DatasourceEntityName.Equals(entityName, StringComparison.InvariantCultureIgnoreCase));
-            }
-            return -1;
-        }
-
-        /// <summary>Checks if entity exists in the data source</summary>
-        public bool CheckEntityExist(string EntityName)
-        {
-            return Dataconnection.ConnectionProp.Entities.Any(o => o.EntityName.Equals(EntityName, StringComparison.InvariantCultureIgnoreCase));
-        }
-
-        /// <summary>Creates entity (not supported for read-only APIs)</summary>
-        public virtual bool CreateEntityAs(EntityStructure entity)
-        {
-            throw new NotSupportedException("Entity creation not supported for Web API data sources");
-        }
-
-        /// <summary>Executes SQL (not applicable for REST APIs)</summary>
-        public virtual IErrorsInfo ExecuteSql(string sql)
-        {
-            throw new NotSupportedException("SQL execution not supported for Web API data sources");
-        }
-
-        /// <summary>Gets child tables (relationships not typical in REST APIs)</summary>
-        public virtual List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
-        {
-            return new List<ChildRelation>(); // REST APIs typically don't have traditional relationships
-        }
-
-        /// <summary>Gets child tables from custom query</summary>
-        public virtual DataSet GetChildTablesListFromCustomQuery(string tablename, string customquery)
-        {
-            return new DataSet(); // Not applicable for REST APIs
-        }
-
-        /// <summary>Gets data reader (not applicable for REST APIs)</summary>
-        public virtual IDataReader GetDataReader(string querystring)
-        {
-            throw new NotSupportedException("DataReader not supported for Web API data sources");
-        }
-
-        /// <summary>Gets list of available entities/endpoints</summary>
-        public virtual List<string> GetEntitesList()
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
-                var cacheKey = GenerateCacheKey("EntitiesList");
-                var cached = GetFromCache<List<string>>(cacheKey);
-                if (cached != null) return cached;
-
-                var entities = Dataconnection.ConnectionProp.Entities.Select(x => x.EntityName).ToList();
-                SetCache(cacheKey, entities);
-                
-                return entities;
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Fail", $"Failed to retrieve entities list for {DatasourceName} ({ex.Message})", 
-                    DateTime.Now, 0, DatasourceName, Errors.Failed);
-                return EntitiesNames ?? new List<string>();
-            }
-        }
-
-        /// <summary>Gets entity data with filters</summary>
-        public virtual IBindingList GetEntity(string EntityName, List<AppFilter> filter)
-        {
-            return GetEntityAsync(EntityName, filter).Result;
-        }
-
-        /// <summary>Gets entity data with pagination</summary>
-        public virtual PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
-        {
-            try
-            {
-                var entity = GetEntityStructure(EntityName, false);
-                if (entity == null)
-                {
-                    throw new ArgumentException($"Entity '{EntityName}' not found");
-                }
-
-                return ExecuteWithRetryAsync(async () =>
-                {
-                    var endpoint = BuildEntityEndpoint(entity, filter, pageNumber, pageSize);
-                    var request = await PrepareRequestAsync(endpoint, HttpMethod.Get);
-                    var response = await client.SendAsync(request);
-                    response.EnsureSuccessStatusCode();
-
-                    var content = await response.Content.ReadAsStringAsync();
-                    var data = ProcessApiResponse(content, entity);
-
-                    return new PagedResult
-                    {
-                        Data = data,
-                        PageNumber = pageNumber,
-                        PageSize = pageSize,
-                        TotalRecords = GetTotalRecordsFromResponse(content, response.Headers)
-                    };
-                }, $"GetEntity-{EntityName}").Result;
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Error", $"Failed to get entity {EntityName}: {ex.Message}", 
-                    DateTime.Now, 0, DatasourceName, Errors.Failed);
-                return new PagedResult { Data = new List<object>() };
-            }
-        }
-
-        /// <summary>Runs custom query</summary>
-        public virtual IBindingList RunQuery(string qrystr)
-        {
-            return GetEntityAsync("query", new List<AppFilter>()).Result;
-        }
-
-        /// <summary>Gets entity foreign keys (not applicable for REST APIs)</summary>
-        public virtual List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
-        {
-            return new List<RelationShipKeys>(); // REST APIs typically don't have foreign keys
-        }
-
-        /// <summary>Gets entity structure definition</summary>
-        public EntityStructure GetEntityStructure(string EntityName, bool refresh)
-        {
-            var cacheKey = GenerateCacheKey("EntityStructure", EntityName);
-            if (!refresh)
-            {
-                var cached = GetFromCache<EntityStructure>(cacheKey);
-                if (cached != null) return cached;
-            }
-
-            var entity = Dataconnection.ConnectionProp.Entities
-                .FirstOrDefault(o => o.EntityName.Equals(EntityName, StringComparison.InvariantCultureIgnoreCase));
-                
-            if (entity != null && refresh)
-            {
-                SetCache(cacheKey, entity);
-            }
-                
-            return entity;
-        }
-
-        /// <summary>Gets entity structure from existing structure</summary>
-        public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
-        {
-            return GetEntityStructure(fnd.EntityName, refresh);
-        }
-
-        /// <summary>Gets dynamic type for entity</summary>
-        public Type GetEntityType(string EntityName)
-        {
-            var structure = GetEntityStructure(EntityName, false);
-            if (structure != null)
-            {
-                DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, structure.Fields);
-                return DMTypeBuilder.MyType;
-            }
-            return typeof(object);
-        }
-
-        #endregion
-
-        #region Transaction Support (Limited for REST APIs)
-
-        /// <summary>Begins transaction (limited support for REST APIs)</summary>
-        public virtual IErrorsInfo BeginTransaction(PassedArgs args)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
-                // REST APIs typically don't support traditional transactions
-                // This could be used to begin a batch operation or session
-                DMEEditor.AddLogMessage("Info", "Transaction support limited for Web API", DateTime.Now, 0, null, Errors.Ok);
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Error", $"Error in Begin Transaction {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return ErrorObject;
-        }
-
-        /// <summary>Ends transaction</summary>
-        public virtual IErrorsInfo EndTransaction(PassedArgs args)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
-                // Placeholder for ending batch operations
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Error", $"Error in End Transaction {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return ErrorObject;
-        }
-
-        /// <summary>Commits transaction</summary>
-        public virtual IErrorsInfo Commit(PassedArgs args)
-        {
-            ErrorObject.Flag = Errors.Ok;
-            try
-            {
-                // Placeholder for committing batch operations
-            }
-            catch (Exception ex)
-            {
-                DMEEditor.AddLogMessage("Error", $"Error in Commit Transaction {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
-            return ErrorObject;
-        }
-
-        #endregion
-        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
-        {
-            throw new NotImplementedException();
-        }
-        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
-        {
-
-
-            throw new NotImplementedException();
-        }
-        public IErrorsInfo DeleteEntity(string EntityName, object DeletedDataRow)
-        {
-            throw new NotImplementedException();
-        }
-
-        
-        public IErrorsInfo RunScript(ETLScriptDet dDLScripts)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IErrorsInfo CreateEntities(List<EntityStructure> entities)
-        {
-            throw new NotImplementedException();
-        }
-        public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual async Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
-        {
-            var request = new HttpRequestMessage();
-            client = new HttpClient();
-            string filterstr="";
-            client.BaseAddress = new Uri(Dataconnection.ConnectionProp.Url);
-
-            EntityStructure ent = Dataconnection.ConnectionProp.Entities.Where(o => o.EntityName == EntityName).FirstOrDefault();
-            if (!string.IsNullOrEmpty(Dataconnection.ConnectionProp.ApiKey))
-            {
-                Dataconnection.ConnectionProp.Url = Dataconnection.ConnectionProp.Url.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
-            }
-            if (!string.IsNullOrEmpty(filterstr))
-            {
-                filterstr = filterstr.Replace("@apikey", Dataconnection.ConnectionProp.ApiKey);
-            }
-           
-            request.Method = HttpMethod.Get;
-            request.RequestUri = new Uri(Dataconnection.ConnectionProp.Url + "/" + filterstr);
-            foreach (WebApiHeader item in Dataconnection.ConnectionProp.Headers)
-            {
-                request.Headers.Add(item.Headername, item.Headervalue);
-            }
-
-            //string retval = SendAsync(request).Result;
-
-            using (var response = await client.SendAsync(request))
-            {
-                //    response.EnsureSuccessStatusCode();
-                var body = await response.Content.ReadAsStringAsync();
-
-                dynamic x = DMEEditor.ConfigEditor.JsonLoader.DeserializeObjectString<dynamic>(body);
-                return x;
-            }
-
-
-        }
-        #region "dispose"
-        private bool disposedValue;
+        /// <param name="disposing">True to dispose managed resources.</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposed)
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects)
+                    _httpClient?.Dispose();
+                    _schemaHelper?.Dispose();
+                    _cacheHelper?.Dispose();
+                    _errorHelper?.Dispose();
+                    _rateLimitHelper?.Dispose();
                 }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
-                disposedValue = true;
+                _disposed = true;
             }
         }
 
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~RDBSource()
-        // {
-        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        //     Dispose(disposing: false);
-        // }
-
+        /// <summary>
+        /// Disposes the WebAPIDataSource.
+        /// </summary>
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
         #endregion

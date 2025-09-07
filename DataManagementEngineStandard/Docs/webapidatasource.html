@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebAPIDataSource - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Navigation will be loaded dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>→</span>
+                    <a href="data-management-examples.html">Data Management</a>
+                    <span>→</span>
+                    <span>WebAPIDataSource</span>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>🌐 WebAPIDataSource</h1>
+                    <p class="page-subtitle">Complete REST API integration with authentication, caching, and circuit breaker patterns</p>
+                </div>
+
+                <!-- Important Note -->
+                <div class="alert alert-info">
+                    <h4><i class="bi bi-info-circle"></i> Updated Configuration Guide</h4>
+                    <p>This documentation uses the optimized WebAPIConnectionProperties class structure:</p>
+                    <ul>
+                        <li><strong>WebAPIConnectionProperties</strong> - Comprehensive Web API connection class with all required properties</li>
+                        <li><strong>AuthTypeEnum</strong> - Strongly-typed authentication types (None, ApiKey, Basic, Bearer, OAuth2)</li>
+                        <li><strong>Built-in validation</strong> - ValidateConfiguration() and GetValidationErrors() methods</li>
+                        <li><strong>Parameter management</strong> - GetParameterValue() and SetParameterValue() methods</li>
+                        <li><strong>Smart defaults</strong> - Automatic headers and authentication requirement detection</li>
+                        <li><strong>Complete interface compliance</strong> - Implements all IConnectionProperties members</li>
+                    </ul>
+                </div>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>📚 Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#architecture">Architecture</a></li>
+                        <li><a href="#configuration">Configuration</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                        <li><a href="#advanced-features">Advanced Features</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                        <li><a href="#troubleshooting">Troubleshooting</a></li>
+                        <li><a href="#api-reference">API Reference</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section class="section" id="overview">
+                    <h2>Overview</h2>
+                    <p>
+                        The <strong>WebAPIDataSource</strong> is a comprehensive implementation of the <code>IDataSource</code> interface
+                        specifically designed for REST API integration within the BeepDM framework. It provides a unified way to interact
+                        with web APIs using familiar database-like operations while handling the complexities of HTTP communication,
+                        authentication, caching, and error recovery.
+                    </p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔄 Database-like Operations</h3>
+                            <p>Use familiar CRUD operations (Create, Read, Update, Delete) with any REST API</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>🔐 Multiple Authentication</h3>
+                            <p>OAuth2, Bearer tokens, API keys, Basic authentication, and custom providers</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>⚡ Circuit Breaker Pattern</h3>
+                            <p>Automatic failure recovery and resilience for production environments</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>💾 Intelligent Caching</h3>
+                            <p>Response caching with TTL and invalidation for improved performance</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>🚦 Rate Limiting</h3>
+                            <p>Built-in throttling and request queuing to respect API limits</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>🔍 Schema Inference</h3>
+                            <p>Automatic API schema discovery from JSON responses</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Architecture -->
+                <section class="section" id="architecture">
+                    <h2>Architecture</h2>
+
+                    <h3>Partial Class Structure</h3>
+                    <p>The WebAPIDataSource follows a partial class pattern similar to RDBSource for maintainability:</p>
+
+                    <div class="code-example">
+                        <pre><code class="language-csharp">WebAPIDataSource.cs              // Main class with properties and constructor
+WebAPIDataSource.Connection.cs   // Connection management and authentication
+WebAPIDataSource.Data.cs         // CRUD operations (Create, Read, Update, Delete)
+WebAPIDataSource.Query.cs        // Query execution and scalar operations
+WebAPIDataSource.Structure.cs    // Entity discovery and schema management
+WebAPIDataSource.Scripting.cs    // Script execution and entity creation
+WebAPIDataSource.WebAPI.cs       // IWebAPIDataSource specific methods</code></pre>
+                    </div>
+
+                    <h3>Helper Classes</h3>
+                    <p>The implementation uses specialized helper classes for different concerns:</p>
+
+                    <ul>
+                        <li><strong>WebAPIConfigurationHelper</strong> - Manages API endpoints, timeouts, headers, and pagination settings</li>
+                        <li><strong>WebAPIAuthenticationHelper</strong> - Handles OAuth2, Bearer tokens, API keys, and Basic authentication</li>
+                        <li><strong>WebAPIRequestHelper</strong> - Manages HTTP requests with retry logic and circuit breaker</li>
+                        <li><strong>WebAPICacheHelper</strong> - Implements response caching with TTL and invalidation</li>
+                        <li><strong>WebAPIDataHelper</strong> - Handles data transformation and endpoint URL building</li>
+                        <li><strong>WebAPIRateLimitHelper</strong> - Manages rate limiting and request throttling</li>
+                        <li><strong>WebAPISchemaHelper</strong> - Performs schema inference from API responses</li>
+                        <li><strong>WebAPIErrorHelper</strong> - Provides comprehensive error handling and recovery</li>
+                    </ul>
+                </section>
+
+                <!-- Configuration -->
+                <section class="section" id="configuration">
+                    <h2>Configuration</h2>
+
+                    <h3>Connection Properties</h3>
+                    <p>Configure your WebAPIDataSource using the WebAPIConnectionProperties class with built-in validation:</p>
+
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Create WebAPI connection with comprehensive settings
+var webApiConnection = new WebAPIConnectionProperties
+{
+    // Core connection settings
+    ConnectionName = "GitHub API",
+    ConnectionString = "https://api.github.com",
+    AuthType = AuthTypeEnum.Bearer,
+    ApiKey = "ghp_your-github-token",
+    
+    // Request configuration
+    TimeoutMs = 30000,
+    MaxRetries = 3,
+    RetryIntervalMs = 1000,
+    
+    // Performance settings
+    EnableCaching = true,
+    CacheExpiryMinutes = 15,
+    MaxConcurrentRequests = 10,
+    
+    // Rate limiting
+    EnableRateLimit = true,
+    RateLimitRequestsPerMinute = 60,
+    
+    // Response handling
+    ResponseFormat = "json",
+    UserAgent = "MyApp/1.0"
+};
+
+// Add custom headers
+webApiConnection.Headers.Add(new WebApiHeader 
+{ 
+    Headername = "Accept", 
+    Headervalue = "application/vnd.github.v3+json" 
+});
+
+// Set additional parameters
+webApiConnection.SetParameterValue("DefaultPageSize", "50");
+webApiConnection.SetParameterValue("MaxPageSize", "100");
+
+// Validate configuration
+if (webApiConnection.ValidateConfiguration())
+{
+    Console.WriteLine("Configuration is valid");
+}
+else
+{
+    Console.WriteLine($"Configuration errors: {webApiConnection.GetValidationErrors()}");
+}</code></pre>
+                    </div>
+
+                    <h3>Authentication Types</h3>
+                    <p>WebAPIConnectionProperties supports multiple authentication methods through the AuthTypeEnum:</p>
+
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// No Authentication
+var noAuthConnection = new WebAPIConnectionProperties
+{
+    ConnectionString = "https://api.publicdata.com",
+    AuthType = AuthTypeEnum.None
+};
+
+// API Key Authentication
+var apiKeyConnection = new WebAPIConnectionProperties
+{
+    ConnectionString = "https://api.service.com",
+    AuthType = AuthTypeEnum.ApiKey,
+    ApiKey = "your-api-key",
+    ApiKeyHeader = "X-API-Key" // Default, can be customized
+};
+
+// Basic Authentication
+var basicAuthConnection = new WebAPIConnectionProperties
+{
+    ConnectionString = "https://api.internal.com",
+    AuthType = AuthTypeEnum.Basic,
+    UserID = "username",
+    Password = "password"
+};
+
+// Bearer Token Authentication
+var bearerConnection = new WebAPIConnectionProperties
+{
+    ConnectionString = "https://api.service.com",
+    AuthType = AuthTypeEnum.Bearer,
+    ApiKey = "your-bearer-token" // Static token
+};
+
+// OAuth2 Authentication
+var oauth2Connection = new WebAPIConnectionProperties
+{
+    ConnectionString = "https://api.service.com",
+    AuthType = AuthTypeEnum.OAuth2,
+    ClientId = "your-client-id",
+    ClientSecret = "your-client-secret",
+    TokenUrl = "https://auth.service.com/oauth/token",
+    GrantType = "client_credentials", // or "password", "authorization_code"
+    Scope = "read write" // Optional
+};</code></pre>
+                    </div>
+                </section>
+
+                <!-- Usage Examples -->
+                <section class="section" id="examples">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Basic Setup</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Initialize the data source
+var webApiDS = new WebAPIDataSource("MyAPI", logger, dmeEditor, DataSourceType.WebApi, errorObject);
+
+// Open connection (performs authentication)
+var connectionResult = webApiDS.Openconnection();
+
+// Get list of available entities
+var entities = webApiDS.GetEntitesList();
+
+// Get entity structure
+var userStructure = webApiDS.GetEntityStructure("Users", false);</code></pre>
+                    </div>
+
+                    <h3>GitHub API Integration</h3>
+                    <div class="tip">
+                    <h3>Advanced Configuration</h3>
+                    <p>Configure advanced settings for production environments:</p>
+
+                    <div class="code-example">
+                        <pre><code class="language-csharp">var advancedConnection = new WebAPIConnectionProperties
+{
+    ConnectionName = "Production API",
+    ConnectionString = "https://api.production.com/v2",
+    AuthType = AuthTypeEnum.OAuth2,
+    
+    // OAuth2 settings
+    ClientId = "prod-client-id",
+    ClientSecret = Environment.GetEnvironmentVariable("API_CLIENT_SECRET"),
+    TokenUrl = "https://auth.production.com/oauth/token",
+    GrantType = "client_credentials",
+    Scope = "api:read api:write",
+    
+    // Performance tuning
+    TimeoutMs = 60000, // 60 seconds for slow APIs
+    MaxRetries = 5,
+    RetryIntervalMs = 2000, // 2 second delay between retries
+    MaxConcurrentRequests = 20,
+    
+    // Caching strategy
+    EnableCaching = true,
+    CacheExpiryMinutes = 30,
+    
+    // Rate limiting
+    EnableRateLimit = true,
+    RateLimitRequestsPerMinute = 120,
+    
+    // Security settings
+    ValidateServerCertificate = true,
+    IgnoreSSLErrors = false,
+    
+    // Proxy configuration (if needed)
+    UseProxy = true,
+    ProxyUrl = "http://corporate-proxy.com",
+    ProxyPort = 8080,
+    UseDefaultProxyCredentials = true,
+    
+    // Response handling
+    ResponseFormat = "json",
+    DataPath = "$.data", // JSONPath to extract data
+    TotalCountPath = "$.meta.total", // JSONPath for pagination
+    
+    // Pagination
+    PageNumberParameter = "page",
+    PageSizeParameter = "per_page",
+    DefaultPageSize = 50,
+    MaxPageSize = 200,
+    
+    // Custom headers
+    UserAgent = "MyApp/2.1.0 (+https://mycompany.com/contact)"
+};
+
+// Add authentication header template
+advancedConnection.Headers.Add(new WebApiHeader 
+{ 
+    Headername = "Accept", 
+    Headervalue = "application/vnd.api+json" 
+});
+
+// Store endpoint mappings
+advancedConnection.SetParameterValue("Endpoints.Users", "/api/v2/users");
+advancedConnection.SetParameterValue("Endpoints.Orders", "/api/v2/orders");
+advancedConnection.SetParameterValue("Endpoints.Products", "/api/v2/products");
+
+// Validate before use
+if (!advancedConnection.ValidateConfiguration())
+{
+    throw new InvalidOperationException($"Invalid API configuration: {advancedConnection.GetValidationErrors()}");
+}</code></pre>
+                    </div>
+
+                    <h3>GitHub API Integration</h3>
+                    <div class="tip">
+                        <h4>GitHub API Configuration</h4>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Configure for GitHub API v4 (GraphQL) and v3 (REST)
+var githubConnection = new WebAPIConnectionProperties
+{
+    ConnectionName = "GitHub API",
+    ConnectionString = "https://api.github.com",
+    AuthType = AuthTypeEnum.Bearer,
+    ApiKey = "ghp_your_personal_access_token",
+    
+    // GitHub-specific settings
+    TimeoutMs = 30000,
+    MaxRetries = 3,
+    RetryIntervalMs = 1000,
+    RateLimitRequestsPerMinute = 60, // GitHub's rate limit
+    
+    // Response settings
+    ResponseFormat = "json",
+    UserAgent = "MyApp/1.0 (https://github.com/myuser/myapp)",
+    
+    // Pagination for GitHub API
+    PageSizeParameter = "per_page",
+    PageNumberParameter = "page",
+    DefaultPageSize = 30,
+    MaxPageSize = 100
+};
+
+// Add GitHub-specific headers
+githubConnection.Headers.Add(new WebApiHeader 
+{ 
+    Headername = "Accept", 
+    Headervalue = "application/vnd.github.v3+json" 
+});
+
+// Configure endpoint mappings
+githubConnection.SetParameterValue("Repos.List", "/user/repos");
+githubConnection.SetParameterValue("Repos.Get", "/repos/{owner}/{repo}");
+githubConnection.SetParameterValue("Issues.List", "/repos/{owner}/{repo}/issues");
+githubConnection.SetParameterValue("Pulls.List", "/repos/{owner}/{repo}/pulls");
+githubConnection.SetParameterValue("Commits.List", "/repos/{owner}/{repo}/commits");
+
+// Validate configuration
+if (githubConnection.ValidateConfiguration())
+{
+    Console.WriteLine("GitHub API configuration is valid");
+}</code></pre>
+                        </div>
+
+                        <h4>Usage Example</h4>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Initialize data source with GitHub connection
+var githubDataSource = new WebAPIDataSource("GitHub", logger, dmeEditor, DataSourceType.WebApi, errorObject);
+githubDataSource.ConnectionProp = githubConnection;
+
+// Open connection
+var connectionResult = githubDataSource.Openconnection();
+if (connectionResult == ConnectionState.Open)
+{
+    // Get repository information
+    var filters = new List&lt;AppFilter&gt; 
+    {
+        new AppFilter { FieldName = "owner", FilterValue = "microsoft", Operator = "=" },
+        new AppFilter { FieldName = "repo", FilterValue = "vscode", Operator = "=" }
+    };
+
+    var repoData = githubDataSource.GetEntity("repos", filters);
+    
+    // Get issues with pagination
+    var issueFilters = new List&lt;AppFilter&gt;
+    {
+        new AppFilter { FieldName = "owner", FilterValue = "microsoft", Operator = "=" },
+        new AppFilter { FieldName = "repo", FilterValue = "vscode", Operator = "=" },
+        new AppFilter { FieldName = "state", FilterValue = "open", Operator = "=" }
+    };
+    
+    var pagedIssues = githubDataSource.GetEntity("issues", issueFilters, 1, 50);
+    
+    // Execute custom query
+    var recentCommits = githubDataSource.RunQuery("GET /repos/microsoft/vscode/commits?since=2024-01-01T00:00:00Z");
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3>Twitter API v2</h3>
+                    <div class="tip">
+                        <h4>Twitter API Configuration</h4>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Configure for Twitter API v2 using standard ConnectionProperties
+ConnectionProp.ConnectionString = "https://api.twitter.com/2";
+ConnectionProp.ApiKey = "your-twitter-bearer-token";
+
+// Add authorization header
+ConnectionProp.Headers.Add(new WebApiHeader 
+{ 
+    Headername = "Authorization", 
+    Headervalue = "Bearer your-twitter-bearer-token" 
+});
+
+// Define endpoints using Parameters
+ConnectionProp.Parameters = "Endpoints.Tweets.Get=/tweets/search/recent;Endpoints.Users.Get=/users/by/username/{username};Endpoints.Spaces.Get=/spaces/{id}";
+
+// Or using WebAPIConnectionProperties
+var webApiProps = new WebAPIConnectionProperties
+{
+    ConnectionString = "https://api.twitter.com/2",
+    AuthType = "Bearer",
+    ApiKey = "your-twitter-bearer-token"
+};</code></pre>
+                        </div>
+
+                        <h4>Usage Example</h4>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Search for recent tweets
+var tweetFilters = new List&lt;AppFilter&gt; {
+    new AppFilter { FieldName = "query", FilterValue = "#CSharp", Operator = "=" },
+    new AppFilter { FieldName = "max_results", FilterValue = "100", Operator = "=" }
+};
+
+var tweets = webApiDS.GetEntity("Tweets", tweetFilters);
+
+// Get user information
+var userFilters = new List&lt;AppFilter&gt; {
+    new AppFilter { FieldName = "username", FilterValue = "GitHub", Operator = "=" }
+};
+
+var userData = webApiDS.GetEntity("Users", userFilters);</code></pre>
+                        </div>
+                    </div>
+
+                    <h3>Stripe API (Payment Processing)</h3>
+                    <div class="tip">
+                        <h4>Stripe API Configuration</h4>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Configure for Stripe API using standard ConnectionProperties
+ConnectionProp.ConnectionString = "https://api.stripe.com/v1";
+ConnectionProp.ApiKey = "sk_test_your-stripe-secret-key";
+
+// Add authorization header
+ConnectionProp.Headers.Add(new WebApiHeader 
+{ 
+    Headername = "Authorization", 
+    Headervalue = "Bearer sk_test_your-stripe-secret-key" 
+});
+
+// Define endpoints using Parameters
+ConnectionProp.Parameters = "Endpoints.Customers.Get=/customers;Endpoints.Customers.Post=/customers;Endpoints.Charges.Get=/charges;Endpoints.Invoices.Get=/invoices";
+
+// Or using WebAPIConnectionProperties
+var webApiProps = new WebAPIConnectionProperties
+{
+    ConnectionString = "https://api.stripe.com/v1",
+    AuthType = "Bearer",
+    ApiKey = "sk_test_your-stripe-secret-key"
+};</code></pre>
+                        </div>
+
+                        <h4>Usage Example</h4>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Get customer list
+var customers = webApiDS.GetEntity("Customers", null);
+
+// Create new customer
+var newCustomer = new {
+    email = "customer@example.com",
+    name = "John Doe",
+    description = "New customer"
+};
+
+var insertResult = webApiDS.InsertEntity("Customers", newCustomer);
+
+// Get charges with filtering
+var chargeFilters = new List&lt;AppFilter&gt; {
+    new AppFilter { FieldName = "customer", FilterValue = "cus_1234567890", Operator = "=" },
+    new AppFilter { FieldName = "limit", FilterValue = "50", Operator = "=" }
+};
+
+var charges = webApiDS.GetEntity("Charges", chargeFilters);</code></pre>
+                        </div>
+                    </div>
+
+                    <h3>Company Internal API</h3>
+                    <div class="tip">
+                        <h4>Internal API Configuration</h4>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Configure for internal company API using standard ConnectionProperties
+ConnectionProp.ConnectionString = "https://api.company.internal/v2";
+ConnectionProp.UserID = "company-app-client-id";
+ConnectionProp.Password = "company-app-client-secret";
+
+// Store OAuth2 configuration in Parameters
+ConnectionProp.Parameters = "AuthType=OAuth2;TokenUrl=https://auth.company.internal/oauth/token;GrantType=client_credentials";
+
+// Define endpoints using Parameters
+ConnectionProp.Parameters += ";Endpoints.Employees.Get=/hr/employees;Endpoints.Employees.Post=/hr/employees;Endpoints.Projects.Get=/pm/projects;Endpoints.Timesheets.Get=/hr/timesheets";
+
+// Or using WebAPIConnectionProperties
+var webApiProps = new WebAPIConnectionProperties
+{
+    ConnectionString = "https://api.company.internal/v2",
+    AuthType = "OAuth2",
+    ClientId = "company-app-client-id",
+    ClientSecret = "company-app-client-secret",
+    TokenUrl = "https://auth.company.internal/oauth/token",
+    GrantType = "client_credentials"
+};</code></pre>
+                        </div>
+
+                        <h4>Usage Example</h4>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Get employee directory
+var employees = webApiDS.GetEntity("Employees", null);
+
+// Get projects with filtering
+var projectFilters = new List&lt;AppFilter&gt; {
+    new AppFilter { FieldName = "status", FilterValue = "active", Operator = "=" },
+    new AppFilter { FieldName = "department", FilterValue = "engineering", Operator = "=" }
+};
+
+var projects = webApiDS.GetEntity("Projects", projectFilters);
+
+// Submit timesheet entry
+var timesheetEntry = new {
+    employee_id = "12345",
+    project_id = "PROJ-001",
+    hours = 8.0,
+    date = DateTime.Today.ToString("yyyy-MM-dd"),
+    description = "Feature development"
+};
+
+var submitResult = webApiDS.InsertEntity("Timesheets", timesheetEntry);</code></pre>
+                        </div>
+                    </div>
+
+                    <h3>RESTful CRUD Operations</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Full CRUD example with a generic REST API
+
+// CREATE - Insert new record
+var newRecord = new {
+    name = "John Doe",
+    email = "john.doe@example.com",
+    department = "Engineering"
+};
+var insertResult = webApiDS.InsertEntity("Users", newRecord);
+
+// READ - Get all records
+var allUsers = webApiDS.GetEntity("Users", null);
+
+// READ - Get with filtering
+var filters = new List&lt;AppFilter&gt; {
+    new AppFilter { FieldName = "department", FilterValue = "Engineering", Operator = "=" }
+};
+var engineers = webApiDS.GetEntity("Users", filters);
+
+// READ - Get single record by ID
+var userFilters = new List&lt;AppFilter&gt; {
+    new AppFilter { FieldName = "id", FilterValue = "123", Operator = "=" }
+};
+var user = webApiDS.GetEntity("Users", userFilters);
+
+// UPDATE - Modify existing record
+var updatedUser = new {
+    id = 123,
+    name = "John Smith",
+    email = "john.smith@example.com",
+    department = "Engineering"
+};
+var updateResult = webApiDS.UpdateEntity("Users", updatedUser);
+
+// DELETE - Remove record
+var deleteResult = webApiDS.DeleteEntity("Users", updatedUser);</code></pre>
+                    </div>
+                </div>
+
+                <!-- Advanced Features -->
+                <section class="section" id="advanced-features">
+                    <h2>Advanced Features</h2>
+
+                    <h3>Circuit Breaker Pattern</h3>
+                    <p>The WebAPIDataSource automatically implements circuit breaker functionality:</p>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Circuit breaker automatically handles failures
+// - Closed: Normal operation
+// - Open: Failing fast after repeated failures
+// - Half-Open: Testing recovery
+
+// The circuit breaker is automatically managed by WebAPIErrorHelper
+// and integrated into all HTTP requests via WebAPIRequestHelper</code></pre>
+                    </div>
+
+                    <h3>Performance Optimization</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// High-performance configuration for heavy workloads
+var performanceConnection = new WebAPIConnectionProperties
+{
+    ConnectionName = "High Performance API",
+    ConnectionString = "https://api.high-volume.com/v1",
+    AuthType = AuthTypeEnum.ApiKey,
+    ApiKey = "your-high-perf-key",
+    
+    // Aggressive performance settings
+    TimeoutMs = 10000, // Quick timeout for fast APIs
+    MaxRetries = 1, // Minimal retries for speed
+    RetryIntervalMs = 500, // Fast retry
+    MaxConcurrentRequests = 50, // High concurrency
+    
+    // Optimized caching
+    EnableCaching = true,
+    CacheExpiryMinutes = 5, // Short cache for fresh data
+    
+    // Aggressive rate limiting
+    EnableRateLimit = true,
+    RateLimitRequestsPerMinute = 1000,
+    
+    // Compression for bandwidth
+    EnableCompression = true,
+    
+    // Minimal response processing
+    ResponseFormat = "json",
+    DataPath = "$", // Direct response, no nesting
+    
+    // Large page sizes
+    DefaultPageSize = 500,
+    MaxPageSize = 1000,
+    
+    UserAgent = "HighPerf-Client/1.0"
+};
+
+// Minimal headers for performance
+performanceConnection.Headers.Clear();
+performanceConnection.Headers.Add(new WebApiHeader { Headername = "Accept", Headervalue = "application/json" });
+performanceConnection.Headers.Add(new WebApiHeader { Headername = "Accept-Encoding", Headervalue = "gzip, deflate" });</code></pre>
+                    </div>
+
+                    <h3>Configuration Validation and Error Handling</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Comprehensive validation example
+public static WebAPIConnectionProperties CreateValidatedConnection(string configName)
+{
+    var connection = new WebAPIConnectionProperties();
+    
+    try
+    {
+        // Load configuration from various sources
+        connection.ConnectionName = configName;
+        connection.ConnectionString = Configuration.GetConnectionString(configName);
+        connection.AuthType = Enum.Parse&lt;AuthTypeEnum&gt;(Configuration[$"{configName}:AuthType"]);
+        
+        // Set auth-specific properties
+        switch (connection.AuthType)
+        {
+            case AuthTypeEnum.ApiKey:
+                connection.ApiKey = Configuration[$"{configName}:ApiKey"];
+                connection.ApiKeyHeader = Configuration[$"{configName}:ApiKeyHeader"] ?? "X-API-Key";
+                break;
+                
+            case AuthTypeEnum.Basic:
+                connection.UserID = Configuration[$"{configName}:Username"];
+                connection.Password = Configuration[$"{configName}:Password"];
+                break;
+                
+            case AuthTypeEnum.OAuth2:
+                connection.ClientId = Configuration[$"{configName}:ClientId"];
+                connection.ClientSecret = Configuration[$"{configName}:ClientSecret"];
+                connection.TokenUrl = Configuration[$"{configName}:TokenUrl"];
+                connection.Scope = Configuration[$"{configName}:Scope"];
+                break;
+        }
+        
+        // Apply environment-specific settings
+        var environment = Configuration["Environment"];
+        if (environment == "Production")
+        {
+            connection.TimeoutMs = 60000;
+            connection.MaxRetries = 3;
+            connection.ValidateServerCertificate = true;
+        }
+        else if (environment == "Development")
+        {
+            connection.TimeoutMs = 30000;
+            connection.MaxRetries = 1;
+            connection.IgnoreSSLErrors = true; // Only for dev!
+        }
+        
+        // Validate the configuration
+        if (!connection.ValidateConfiguration())
+        {
+            var errors = connection.GetValidationErrors();
+            throw new ConfigurationException($"Invalid {configName} configuration: {errors}");
+        }
+        
+        Logger.Information($"Successfully configured {configName} connection");
+        return connection;
+    }
+    catch (Exception ex)
+    {
+        Logger.Error($"Failed to create {configName} connection: {ex.Message}");
+        throw;
+    }
+}
+
+// Usage
+var githubConnection = CreateValidatedConnection("GitHub");
+var stripeConnection = CreateValidatedConnection("Stripe");</code></pre>
+                    </div>
+
+                    <h3>Custom Authentication</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Implement custom authentication by extending WebAPIAuthenticationHelper
+public class CustomAuthHelper : WebAPIAuthenticationHelper
+{
+    public override async Task&lt;bool&gt; EnsureAuthenticatedAsync()
+    {
+        // Custom authentication logic
+        var token = await GetCustomToken();
+        // Set authentication headers
+        return true;
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section class="section" id="best-practices">
+                    <h2>Best Practices</h2>
+
+                    <div class="warning">
+                        <h3>⚠️ Security Considerations</h3>
+                        <ul>
+                            <li>Never store API keys or secrets in plain text configuration files</li>
+                            <li>Use environment variables or secure credential stores</li>
+                            <li>Implement proper token refresh logic for long-running applications</li>
+                            <li>Validate SSL certificates for production environments</li>
+                        </ul>
+                    </div>
+
+                    <div class="success">
+                        <h3>✅ Performance Optimization</h3>
+                        <ul>
+                            <li>Enable caching for frequently accessed data</li>
+                            <li>Use pagination for large datasets</li>
+                            <li>Configure appropriate timeouts and retry policies</li>
+                            <li>Monitor rate limits and implement backoff strategies</li>
+                        </ul>
+                    </div>
+
+                    <h3>Error Handling</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Always check error status after operations
+var result = webApiDS.InsertEntity("Users", userData);
+if (result.Flag == Errors.Failed)
+{
+    Logger.WriteLog($"Operation failed: {result.Message}");
+    // Handle error appropriately
+}
+
+// Use try-catch for comprehensive error handling
+try
+{
+    var data = webApiDS.GetEntity("Users", filters);
+}
+catch (HttpRequestException ex)
+{
+    Logger.WriteLog($"HTTP Error: {ex.Message}");
+    // Handle network errors
+}
+catch (Exception ex)
+{
+    Logger.WriteLog($"Unexpected error: {ex.Message}");
+    // Handle other errors
+}</code></pre>
+                    </div>
+
+                    <h3>Connection Management</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Always open connection before use
+if (webApiDS.ConnectionStatus != ConnectionState.Open)
+{
+    var result = webApiDS.Openconnection();
+    if (result == ConnectionState.Open)
+    {
+        // Connection successful
+    }
+}
+
+// Close connection when done
+webApiDS.Closeconnection();
+
+// Use using statement for automatic disposal
+using (var ds = new WebAPIDataSource(name, logger, editor, type, errors))
+{
+    // Use data source
+} // Automatically disposed</code></pre>
+                    </div>
+                </section>
+
+                <!-- Troubleshooting -->
+                <section class="section" id="troubleshooting">
+                    <h2>Troubleshooting</h2>
+
+                    <h3>Common Issues</h3>
+
+                    <h4>Troubleshooting Guide</h4>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Comprehensive troubleshooting helper
+public static class WebAPITroubleshooter
+{
+    public static void DiagnoseConnection(WebAPIConnectionProperties connection)
+    {
+        Console.WriteLine("=== WebAPI Connection Diagnostics ===");
+        
+        // Basic validation
+        Console.WriteLine($"Connection Name: {connection.ConnectionName ?? "Not Set"}");
+        Console.WriteLine($"Connection String: {connection.ConnectionString ?? "Not Set"}");
+        Console.WriteLine($"Auth Type: {connection.AuthType}");
+        
+        // Validate configuration
+        if (connection.ValidateConfiguration())
+        {
+            Console.WriteLine("✓ Configuration validation passed");
+        }
+        else
+        {
+            Console.WriteLine($"✗ Configuration errors: {connection.GetValidationErrors()}");
+        }
+        
+        // Check authentication setup
+        CheckAuthentication(connection);
+        
+        // Check network settings
+        CheckNetworkSettings(connection);
+        
+        // Check performance settings
+        CheckPerformanceSettings(connection);
+    }
+    
+    private static void CheckAuthentication(WebAPIConnectionProperties connection)
+    {
+        Console.WriteLine("\n--- Authentication Check ---");
+        
+        switch (connection.AuthType)
+        {
+            case AuthTypeEnum.None:
+                Console.WriteLine("✓ No authentication required");
+                break;
+                
+            case AuthTypeEnum.ApiKey:
+                Console.WriteLine($"API Key: {(!string.IsNullOrEmpty(connection.ApiKey) ? "Set" : "✗ Not Set")}");
+                Console.WriteLine($"API Key Header: {connection.ApiKeyHeader}");
+                break;
+                
+            case AuthTypeEnum.Basic:
+                Console.WriteLine($"Username: {(!string.IsNullOrEmpty(connection.UserID) ? "Set" : "✗ Not Set")}");
+                Console.WriteLine($"Password: {(!string.IsNullOrEmpty(connection.Password) ? "Set" : "✗ Not Set")}");
+                break;
+                
+            case AuthTypeEnum.Bearer:
+                Console.WriteLine($"Bearer Token: {(!string.IsNullOrEmpty(connection.ApiKey) ? "Set" : "✗ Not Set")}");
+                break;
+                
+            case AuthTypeEnum.OAuth2:
+                Console.WriteLine($"Client ID: {(!string.IsNullOrEmpty(connection.ClientId) ? "Set" : "✗ Not Set")}");
+                Console.WriteLine($"Client Secret: {(!string.IsNullOrEmpty(connection.ClientSecret) ? "Set" : "✗ Not Set")}");
+                Console.WriteLine($"Token URL: {connection.TokenUrl ?? "✗ Not Set"}");
+                Console.WriteLine($"Grant Type: {connection.GrantType}");
+                Console.WriteLine($"Scope: {connection.Scope ?? "Not Set"}");
+                break;
+        }
+    }
+    
+    private static void CheckNetworkSettings(WebAPIConnectionProperties connection)
+    {
+        Console.WriteLine("\n--- Network Settings ---");
+        Console.WriteLine($"Timeout: {connection.TimeoutMs}ms");
+        Console.WriteLine($"Max Retries: {connection.MaxRetries}");
+        Console.WriteLine($"Retry Interval: {connection.RetryIntervalMs}ms");
+        Console.WriteLine($"SSL Validation: {(connection.ValidateServerCertificate ? "Enabled" : "Disabled")}");
+        Console.WriteLine($"Ignore SSL Errors: {(connection.IgnoreSSLErrors ? "Yes" : "No")}");
+        
+        if (connection.UseProxy)
+        {
+            Console.WriteLine($"Proxy: {connection.ProxyUrl}:{connection.ProxyPort}");
+            Console.WriteLine($"Proxy Credentials: {(connection.UseDefaultProxyCredentials ? "Default" : "Custom")}");
+        }
+        else
+        {
+            Console.WriteLine("Proxy: Not Used");
+        }
+    }
+    
+    private static void CheckPerformanceSettings(WebAPIConnectionProperties connection)
+    {
+        Console.WriteLine("\n--- Performance Settings ---");
+        Console.WriteLine($"Caching: {(connection.EnableCaching ? "Enabled" : "Disabled")}");
+        if (connection.EnableCaching)
+        {
+            Console.WriteLine($"Cache Expiry: {connection.CacheExpiryMinutes} minutes");
+        }
+        
+        Console.WriteLine($"Rate Limiting: {(connection.EnableRateLimit ? "Enabled" : "Disabled")}");
+        if (connection.EnableRateLimit)
+        {
+            Console.WriteLine($"Rate Limit: {connection.RateLimitRequestsPerMinute} requests/minute");
+        }
+        
+        Console.WriteLine($"Max Concurrent Requests: {connection.MaxConcurrentRequests}");
+        Console.WriteLine($"Compression: {(connection.EnableCompression ? "Enabled" : "Disabled")}");
+        Console.WriteLine($"Default Page Size: {connection.DefaultPageSize}");
+        Console.WriteLine($"Max Page Size: {connection.MaxPageSize}");
+        
+        Console.WriteLine($"\nHeaders ({connection.Headers.Count}):");
+        foreach (var header in connection.Headers)
+        {
+            Console.WriteLine($"  {header.Headername}: {header.Headervalue}");
+        }
+    }
+}
+
+// Usage
+var connection = new WebAPIConnectionProperties { /* your config */ };
+WebAPITroubleshooter.DiagnoseConnection(connection);</code></pre>
+                    </div>
+
+                    <h4>Schema Inference Problems</h4>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Force schema refresh
+var structure = webApiDS.GetEntityStructure("EntityName", true);
+
+// Manually define schema if inference fails
+var customStructure = new EntityStructure
+{
+    EntityName = "CustomEntity",
+    Fields = new List&lt;EntityField&gt; {
+        new EntityField { fieldname = "id", fieldtype = "System.Int32" },
+        new EntityField { fieldname = "name", fieldtype = "System.String" }
+    }
+};</code></pre>
+                    </div>
+                </section>
+
+                <!-- API Reference -->
+                <section class="section" id="api-reference">
+                    <h2>API Reference</h2>
+
+                    <h3>Core Methods</h3>
+                    <ul>
+                        <li><code>Openconnection()</code> - Establish connection and authenticate</li>
+                        <li><code>Closeconnection()</code> - Close connection and cleanup</li>
+                        <li><code>GetEntitesList()</code> - Get list of available entities</li>
+                        <li><code>GetEntityStructure(string entityName, bool refresh)</code> - Get entity schema</li>
+                        <li><code>GetEntity(string entityName, List&lt;AppFilter&gt; filters)</code> - Retrieve entity data</li>
+                        <li><code>InsertEntity(string entityName, object data)</code> - Create new record</li>
+                        <li><code>UpdateEntity(string entityName, object data)</code> - Update existing record</li>
+                        <li><code>DeleteEntity(string entityName, object data)</code> - Delete record</li>
+                        <li><code>RunQuery(string query)</code> - Execute custom query</li>
+                    </ul>
+
+                    <h3>Async Methods</h3>
+                    <ul>
+                        <li><code>GetEntityAsync(string entityName, List&lt;AppFilter&gt; filters)</code> - Async entity retrieval</li>
+                        <li><code>GetScalarAsync(string query)</code> - Async scalar query execution</li>
+                    </ul>
+
+                    <h3>Pagination Support</h3>
+                    <ul>
+                        <li><code>GetEntity(string entityName, List&lt;AppFilter&gt; filters, int pageNumber, int pageSize)</code> - Paged entity retrieval</li>
+                        <li><code>PagedResult GetEntity(...)</code> - Returns paginated results with metadata</li>
+                    </ul>
+                </section>
+
+                <!-- Migration Guide -->
+                <section class="section" id="migration">
+                    <h2>Migration Guide</h2>
+
+                    <h3>From Custom HTTP Clients</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Before: Manual HTTP client usage
+using (var client = new HttpClient())
+{
+    client.DefaultRequestHeaders.Add("Authorization", "Bearer " + token);
+    var response = await client.GetAsync("https://api.example.com/users");
+    var content = await response.Content.ReadAsStringAsync();
+    // Manual JSON parsing and error handling...
+}
+
+// After: WebAPIDataSource usage
+var users = webApiDS.GetEntity("Users", null);
+// Automatic authentication, error handling, caching, and parsing</code></pre>
+                    </div>
+
+                    <h3>From Database DataSources</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Database-style operations work seamlessly
+var filters = new List&lt;AppFilter&gt; {
+    new AppFilter { FieldName = "status", FilterValue = "active", Operator = "=" }
+};
+
+var activeUsers = webApiDS.GetEntity("Users", filters); // Just like RDBSource!
+
+// CRUD operations
+webApiDS.InsertEntity("Users", newUser);
+webApiDS.UpdateEntity("Users", updatedUser);
+webApiDS.DeleteEntity("Users", userToDelete);</code></pre>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="navigation.js"></script>
+    <script>
+        // Load navigation when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNavigation();
+        });
+    </script>
+</body>
+</html></content>
+<parameter name="oldString">                <div class="section" id="migration">
+                    <h2>Migration Guide</h2>
+
+                    <h3>From Custom HTTP Clients</h3>
+                    <div class="code-block">
+// Before: Manual HTTP client usage
+using (var client = new HttpClient())
+{
+    client.DefaultRequestHeaders.Add("Authorization", "Bearer " + token);
+    var response = await client.GetAsync("https://api.example.com/users");
+    var content = await response.Content.ReadAsStringAsync();
+    // Manual JSON parsing and error handling...
+}
+
+// After: WebAPIDataSource usage
+var users = webApiDS.GetEntity("Users", null);
+// Automatic authentication, error handling, caching, and parsing
+                    </div>
+
+                    <h3>From Database DataSources</h3>
+                    <div class="code-block">
+// Database-style operations work seamlessly
+var filters = new List&lt;AppFilter&gt; {
+    new AppFilter { FieldName = "status", FilterValue = "active", Operator = "=" }
+};
+
+var activeUsers = webApiDS.GetEntity("Users", filters); // Just like RDBSource!
+
+// CRUD operations
+webApiDS.InsertEntity("Users", newUser);
+webApiDS.UpdateEntity("Users", updatedUser);
+webApiDS.DeleteEntity("Users", userToDelete);
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html></content>
+<parameter name="filePath">C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\Docs\webapidatasource.html

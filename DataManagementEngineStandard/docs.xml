@@ -5709,5 +5709,1422 @@
             <param name="namespaceName">Namespace</param>
             <returns>The generated proto file and service implementation</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIAuthenticationHelper">
+            <summary>
+            Authentication helper for Web API connections supporting various auth methods
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPICacheHelper">
+            <summary>
+            Caching helper for Web API responses with TTL support
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper">
+            <summary>
+            Configuration management helper for Web API DataSource
+            Handles connection properties, endpoint configurations, and API-specific settings
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.BaseUrl">
+            <summary>Base URL for the API</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ApiVersion">
+            <summary>API version</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationType">
+            <summary>Authentication type</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.TimeoutMs">
+            <summary>Request timeout in milliseconds</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.MaxRetries">
+            <summary>Maximum retry attempts</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.RetryDelayMs">
+            <summary>Retry delay in milliseconds</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.CacheEnabled">
+            <summary>Enable response caching</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.CacheDurationMinutes">
+            <summary>Cache duration in minutes</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.RateLimitEnabled">
+            <summary>Enable rate limiting</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.RequestsPerSecond">
+            <summary>Requests per second limit</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PagingEnabled">
+            <summary>Enable pagination</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PageSize">
+            <summary>Default page size</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.MaxConcurrentRequests">
+            <summary>Maximum concurrent requests</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.#ctor(TheTechIdea.Beep.ConfigUtil.IConnectionProperties,TheTechIdea.Beep.Logger.IDMLogger,System.String)">
+            <summary>
+            Initializes the configuration helper
+            </summary>
+            <param name="connectionProperties">Connection properties</param>
+            <param name="logger">Logger instance</param>
+            <param name="datasourceName">Data source name</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.GetConfigValue``1(System.String,``0)">
+            <summary>
+            Gets a configuration value with type conversion
+            </summary>
+            <typeparam name="T">Type to convert to</typeparam>
+            <param name="key">Configuration key</param>
+            <param name="defaultValue">Default value if key not found</param>
+            <returns>Configuration value</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.SetConfigValue(System.String,System.Object)">
+            <summary>
+            Sets a configuration value
+            </summary>
+            <param name="key">Configuration key</param>
+            <param name="value">Configuration value</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.GetHeaders">
+            <summary>
+            Gets HTTP headers from configuration
+            </summary>
+            <returns>Dictionary of headers</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.GetEndpointConfiguration(System.String)">
+            <summary>
+            Gets endpoint configuration for a specific entity
+            </summary>
+            <param name="entityName">Entity name</param>
+            <returns>Endpoint configuration</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.GetAuthenticationConfiguration">
+            <summary>
+            Gets authentication configuration
+            </summary>
+            <returns>Authentication configuration</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.GetPaginationConfiguration">
+            <summary>
+            Gets pagination configuration
+            </summary>
+            <returns>Pagination configuration</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ValidateConfiguration">
+            <summary>
+            Validates the current configuration
+            </summary>
+            <returns>Validation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.Dispose">
+            <summary>
+            Disposes resources used by the configuration helper
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration">
+            <summary>
+            Endpoint configuration for specific entities
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration.EntityName">
+            <summary>Entity name</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration.GetEndpoint">
+            <summary>GET endpoint path</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration.PostEndpoint">
+            <summary>POST endpoint path</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration.PutEndpoint">
+            <summary>PUT endpoint path</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration.DeleteEndpoint">
+            <summary>DELETE endpoint path</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration.ListEndpoint">
+            <summary>LIST endpoint path</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration.HttpMethod">
+            <summary>HTTP method for queries</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration.RequiresAuth">
+            <summary>Whether authentication is required</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration.CacheDuration">
+            <summary>Cache duration in minutes</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration.RateLimit">
+            <summary>Rate limit for this endpoint</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration">
+            <summary>
+            Authentication configuration
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.Type">
+            <summary>Authentication type</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.ClientId">
+            <summary>OAuth2 client ID</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.ClientSecret">
+            <summary>OAuth2 client secret</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.Username">
+            <summary>Username for basic auth</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.Password">
+            <summary>Password for basic auth</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.ApiKey">
+            <summary>API key value</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.ApiKeyHeader">
+            <summary>API key header name</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.TokenUrl">
+            <summary>OAuth2 token URL</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.RefreshUrl">
+            <summary>OAuth2 refresh URL</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.Scope">
+            <summary>OAuth2 scope</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.TokenExpiryBuffer">
+            <summary>Token expiry buffer in seconds</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PaginationConfiguration">
+            <summary>
+            Pagination configuration
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PaginationConfiguration.Enabled">
+            <summary>Whether pagination is enabled</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PaginationConfiguration.DefaultPageSize">
+            <summary>Default page size</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PaginationConfiguration.MaxPageSize">
+            <summary>Maximum page size</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PaginationConfiguration.PageParameterName">
+            <summary>Page parameter name</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PaginationConfiguration.SizeParameterName">
+            <summary>Size parameter name</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PaginationConfiguration.OffsetParameterName">
+            <summary>Offset parameter name</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PaginationConfiguration.LimitParameterName">
+            <summary>Limit parameter name</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PaginationConfiguration.Style">
+            <summary>Pagination style (PageSize, OffsetLimit, Cursor)</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult">
+            <summary>
+            Configuration validation result
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult.IsValid">
+            <summary>Whether configuration is valid</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult.Issues">
+            <summary>List of validation issues</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult.Warnings">
+            <summary>List of validation warnings</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIDataHelper">
+            <summary>
+            Data processing helper for Web API responses
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIDataHelper.BuildEntityEndpoint(System.String,System.String)">
+            <summary>Builds entity endpoint for specific ID</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIDataHelper.ExtractIdValue(System.Object)">
+            <summary>Extracts ID value from data object</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIDataHelper.ParseEntitiesFromDiscoveryResponse(System.String)">
+            <summary>Parses entities from discovery API response</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIDataHelper.InferEntityStructureFromSample(System.String,System.Text.Json.JsonElement)">
+            <summary>Infers entity structure from sample data</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIDataHelper.GenerateCacheKey(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Int32,System.Int32)">
+            <summary>Generates cache key from multiple parameters</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper">
+            <summary>
+            Error handling and retry logic helper for Web API operations
+            Implements exponential backoff, circuit breaker pattern, and comprehensive error categorization
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.DefaultMaxRetries">
+            <summary>Default maximum retry attempts</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.DefaultBaseDelayMs">
+            <summary>Default base delay for exponential backoff in milliseconds</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.DefaultFailureThreshold">
+            <summary>Default circuit breaker failure threshold</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.DefaultRecoveryTimeoutSeconds">
+            <summary>Default circuit breaker recovery timeout in seconds</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.#ctor(TheTechIdea.Beep.Logger.IDMLogger,System.String)">
+            <summary>
+            Initializes the error helper
+            </summary>
+            <param name="logger">Logger instance</param>
+            <param name="datasourceName">Data source name for logging</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.HandleErrorResponseAsync(System.Net.Http.HttpResponseMessage)">
+            <summary>
+            Handles and logs an error from an HttpResponseMessage.
+            </summary>
+            <param name="response">The HTTP response message.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CategorizeErrorAsync(System.Net.Http.HttpResponseMessage)">
+            <summary>
+            Analyzes an HttpResponseMessage to categorize the error.
+            </summary>
+            <param name="response">The HTTP response to analyze.</param>
+            <returns>A WebApiError object with categorized error information.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ExecuteWithRetryAsync``1(System.Func{System.Threading.Tasks.Task{``0}},System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Executes an operation with retry logic and circuit breaker protection
+            </summary>
+            <typeparam name="T">Return type of the operation</typeparam>
+            <param name="operation">Operation to execute</param>
+            <param name="operationName">Name of the operation for logging</param>
+            <param name="maxRetries">Maximum retry attempts</param>
+            <param name="baseDelayMs">Base delay for exponential backoff</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>Result of the operation</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.AnalyzeError(System.Exception)">
+            <summary>
+            Analyzes an exception and returns error information
+            </summary>
+            <param name="exception">Exception to analyze</param>
+            <returns>Error analysis result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.GetCircuitBreakerStatus(System.String)">
+            <summary>
+            Gets circuit breaker status for an operation
+            </summary>
+            <param name="operationName">Name of the operation</param>
+            <returns>Circuit breaker status</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ResetCircuitBreaker(System.String)">
+            <summary>
+            Resets circuit breaker for an operation
+            </summary>
+            <param name="operationName">Name of the operation</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.Dispose">
+            <summary>
+            Disposes resources used by the error helper
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiError">
+            <summary>
+            Web API error information
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiError.Category">
+            <summary>Error category</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiError.Message">
+            <summary>Error message</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiError.StatusCode">
+            <summary>HTTP status code</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiError.Content">
+            <summary>Response content</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiError.Timestamp">
+            <summary>Error timestamp</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiErrorCategory">
+            <summary>
+            Web API error category enumeration
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiErrorCategory.ClientError">
+            <summary>Client-side errors (4xx)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiErrorCategory.AuthenticationError">
+            <summary>Authentication errors</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiErrorCategory.AuthorizationError">
+            <summary>Authorization errors</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiErrorCategory.ServerError">
+            <summary>Server-side errors (5xx)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiErrorCategory.NetworkError">
+            <summary>Network or connectivity errors</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.WebApiErrorCategory.Unknown">
+            <summary>Unknown or uncategorized errors</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorAnalysisResult">
+            <summary>
+            Error analysis result
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorAnalysisResult.OriginalException">
+            <summary>Original exception</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorAnalysisResult.ErrorMessage">
+            <summary>Error message</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorAnalysisResult.ErrorType">
+            <summary>Error type name</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorAnalysisResult.Category">
+            <summary>Error category</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorAnalysisResult.IsRetryable">
+            <summary>Whether the error is retryable</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorAnalysisResult.SuggestedAction">
+            <summary>Suggested action to resolve the error</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorAnalysisResult.Timestamp">
+            <summary>Error timestamp</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerState">
+            <summary>
+            Circuit breaker state enumeration
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerState.Closed">
+            <summary>Circuit breaker is closed (normal operation)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerState.Open">
+            <summary>Circuit breaker is open (failing fast)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerState.HalfOpen">
+            <summary>Circuit breaker is half-open (testing recovery)</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerStatus">
+            <summary>
+            Circuit breaker status information
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerStatus.OperationName">
+            <summary>Operation name</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerStatus.State">
+            <summary>Current state</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerStatus.FailureCount">
+            <summary>Failure count</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerStatus.LastFailureTime">
+            <summary>Last failure time</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorCategory">
+            <summary>
+            Error category enumeration
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorCategory.Network">
+            <summary>Network-related errors</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorCategory.Authentication">
+            <summary>Authentication/authorization errors</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorCategory.Configuration">
+            <summary>Configuration errors</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorCategory.Timeout">
+            <summary>Timeout errors</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorCategory.Logic">
+            <summary>Logic errors</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorCategory.Unknown">
+            <summary>Unknown errors</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreaker">
+            <summary>
+            Circuit breaker implementation with state management
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIRateLimitHelper">
+            <summary>
+            Rate limiting helper to manage API request throttling and quota compliance
+            Implements token bucket algorithm for smooth rate limiting
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIRateLimitHelper.DefaultRequestsPerSecond">
+            <summary>Default requests per second if not configured</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIRateLimitHelper.DefaultBurstCapacity">
+            <summary>Default burst capacity</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIRateLimitHelper.CleanupIntervalMinutes">
+            <summary>Bucket cleanup interval in minutes</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIRateLimitHelper.#ctor(TheTechIdea.Beep.Logger.IDMLogger,System.String)">
+            <summary>
+            Initializes the rate limit helper
+            </summary>
+            <param name="logger">Logger instance</param>
+            <param name="datasourceName">Data source name for logging</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIRateLimitHelper.WaitForPermissionAsync(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits for rate limit permission before proceeding
+            </summary>
+            <param name="endpoint">API endpoint identifier</param>
+            <param name="requestsPerSecond">Requests per second limit</param>
+            <param name="burstCapacity">Burst capacity</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>Task that completes when permission is granted</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIRateLimitHelper.CanMakeRequest(System.String,System.Int32,System.Int32)">
+            <summary>
+            Checks if a request can be made immediately
+            </summary>
+            <param name="endpoint">API endpoint identifier</param>
+            <param name="requestsPerSecond">Requests per second limit</param>
+            <param name="burstCapacity">Burst capacity</param>
+            <returns>True if request can be made immediately</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIRateLimitHelper.GetStatus(System.String)">
+            <summary>
+            Gets current rate limit status for an endpoint
+            </summary>
+            <param name="endpoint">API endpoint identifier</param>
+            <returns>Rate limit status information</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIRateLimitHelper.TokenBucket">
+            <summary>
+            Token bucket implementation for rate limiting
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIRateLimitHelper.RateLimitStatus">
+            <summary>
+            Rate limit status information
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIRequestHelper">
+            <summary>
+            HTTP request helper with retry logic, rate limiting, and error handling
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper">
+            <summary>
+            Schema discovery and validation helper for Web APIs
+            Supports OpenAPI/Swagger, JSON Schema, and dynamic schema inference
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.SchemaCacheExpirationMinutes">
+            <summary>Schema cache expiration time in minutes</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.MaxNestingDepth">
+            <summary>Maximum depth for nested object analysis</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.MinSampleSize">
+            <summary>Minimum sample size for schema inference</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.#ctor(TheTechIdea.Beep.Logger.IDMLogger,System.String)">
+            <summary>
+            Initializes the schema helper
+            </summary>
+            <param name="logger">Logger instance</param>
+            <param name="datasourceName">Data source name for logging</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.InferSchemaFromJsonAsync(System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
+            <summary>
+            Infers entity structure from JSON response data
+            </summary>
+            <param name="entityName">Name of the entity</param>
+            <param name="jsonData">JSON data samples</param>
+            <param name="forceRefresh">Force schema refresh</param>
+            <returns>Inferred entity structure</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.InferSchemaFromJson(System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
+            <summary>
+            Infers entity structure from JSON response data (synchronous version)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.ValidateSchemaAsync(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Validates entity structure against actual data
+            </summary>
+            <param name="entity">Entity structure to validate</param>
+            <param name="jsonData">JSON data samples</param>
+            <returns>Validation results</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.ValidateSchema(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Validates entity structure against actual data (synchronous version)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.UpdateSchemaAsync(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Updates entity structure based on new data
+            </summary>
+            <param name="entity">Current entity structure</param>
+            <param name="jsonData">New JSON data samples</param>
+            <returns>Updated entity structure</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.TryGetCachedSchema(System.String,TheTechIdea.Beep.DataBase.EntityStructure@)">
+            <summary>
+            Gets cached schema if available and not expired
+            </summary>
+            <param name="entityName">Entity name</param>
+            <param name="schema">Output schema if found</param>
+            <returns>True if cached schema is available</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.ClearCache">
+            <summary>
+            Clears schema cache
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.Dispose">
+            <summary>
+            Disposes resources used by the schema helper
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.SchemaValidationResult">
+            <summary>
+            Schema validation result
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.SchemaValidationResult.EntityName">
+            <summary>Name of the validated entity</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.SchemaValidationResult.IsValid">
+            <summary>Indicates if the schema is valid</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.SchemaValidationResult.Issues">
+            <summary>List of validation issues found</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPISchemaHelper.SchemaValidationResult.SuggestedChanges">
+            <summary>List of suggested changes to fix issues</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties">
+            <summary>
+            Enhanced connection properties for Web API connections with comprehensive settings.
+            This class extends IConnectionProperties with Web API-specific configuration options
+            including authentication, caching, rate limiting, and response handling.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ID">
+            <summary>
+            Unique identifier for this connection
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.GuidID">
+            <summary>
+            Globally unique identifier for this connection instance
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ConnectionName">
+            <summary>
+            Human-readable name for this connection
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ConnectionString">
+            <summary>
+            Base URL for the Web API (e.g., "https://api.example.com/v1")
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Database">
+            <summary>
+            Database name (may be used for API versioning or endpoint identification)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.OracleSIDorService">
+            <summary>
+            Oracle-specific SID or service name (not typically used for Web APIs)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.DatabaseType">
+            <summary>
+            Type of data source (always WebApi for this class)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Category">
+            <summary>
+            Category of the data source (always WEBAPI for this class)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.DriverName">
+            <summary>
+            Name of the driver handling this connection
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.DriverVersion">
+            <summary>
+            Version of the driver
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Host">
+            <summary>
+            Hostname or IP address of the API server
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Parameters">
+            <summary>
+            Additional connection parameters as semicolon-separated key-value pairs
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Password">
+            <summary>
+            Password for basic authentication
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Port">
+            <summary>
+            Port number for the API server (typically 80 for HTTP, 443 for HTTPS)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.SchemaName">
+            <summary>
+            Schema name (may be used for API versioning)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.UserID">
+            <summary>
+            Username for basic authentication
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.FilePath">
+            <summary>
+            File path (not typically used for Web APIs)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.FileName">
+            <summary>
+            File name (not typically used for Web APIs)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Ext">
+            <summary>
+            Extended configuration data (JSON format)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Drawn">
+            <summary>
+            Whether this connection has been drawn in the UI
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.CertificatePath">
+            <summary>
+            Path to SSL certificate file
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Url">
+            <summary>
+            Alternative URL (may be used for redirects or fallbacks)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.KeyToken">
+            <summary>
+            Security token for authentication
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ApiKey">
+            <summary>
+            API key for authentication
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Databases">
+            <summary>
+            List of available databases/endpoints
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Entities">
+            <summary>
+            List of entity structures discovered from the API
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Headers">
+            <summary>
+            Custom HTTP headers to include in requests
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.DatasourceDefaults">
+            <summary>
+            Default values for data source parameters
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Delimiter">
+            <summary>
+            Field delimiter character (not typically used for Web APIs)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Favourite">
+            <summary>
+            Whether this connection is marked as favorite
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.IsLocal">
+            <summary>
+            Whether this is a local connection
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.IsRemote">
+            <summary>
+            Whether this is a remote connection (always true for Web APIs)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.IsWebApi">
+            <summary>
+            Whether this is a Web API connection (always true for this class)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.IsFile">
+            <summary>
+            Whether this is a file-based connection
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.IsDatabase">
+            <summary>
+            Whether this is a database connection
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.IsComposite">
+            <summary>
+            Whether this is a composite connection
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.IsCloud">
+            <summary>
+            Whether this is a cloud-based connection
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.IsFavourite">
+            <summary>
+            Whether this connection is marked as favorite
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.IsDefault">
+            <summary>
+            Whether this is the default connection
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.IsInMemory">
+            <summary>
+            Whether this is an in-memory connection
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties._authType">
+            <summary>
+            Type of authentication to use
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ClientId">
+            <summary>
+            Client ID for OAuth2 authentication
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ClientSecret">
+            <summary>
+            Client secret for OAuth2 authentication
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.AuthUrl">
+            <summary>
+            OAuth2 authorization URL
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.TokenUrl">
+            <summary>
+            OAuth2 token endpoint URL
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.Scope">
+            <summary>
+            OAuth2 scope parameter
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.GrantType">
+            <summary>
+            OAuth2 grant type (client_credentials, password, authorization_code)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ApiKeyHeader">
+            <summary>
+            HTTP header name for API key authentication (default: "X-API-Key")
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.RedirectUri">
+            <summary>
+            OAuth2 redirect URI for authorization code flow
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.AuthCode">
+            <summary>
+            OAuth2 authorization code for authorization code flow
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.TimeoutMs">
+            <summary>
+            Request timeout in milliseconds (default: 30000)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.MaxRetries">
+            <summary>
+            Maximum number of retry attempts for failed requests (default: 3)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.RetryIntervalMs">
+            <summary>
+            Delay between retry attempts in milliseconds (default: 1000)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.UseProxy">
+            <summary>
+            Whether to use a proxy server
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ProxyUrl">
+            <summary>
+            Proxy server URL
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ProxyPort">
+            <summary>
+            Proxy server port
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ProxyUser">
+            <summary>
+            Username for proxy authentication
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ProxyPassword">
+            <summary>
+            Password for proxy authentication
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.BypassProxyOnLocal">
+            <summary>
+            Whether to bypass proxy for local addresses
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.UseDefaultProxyCredentials">
+            <summary>
+            Whether to use default proxy credentials
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.IgnoreSSLErrors">
+            <summary>
+            Whether to ignore SSL certificate errors
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ValidateServerCertificate">
+            <summary>
+            Whether to validate server SSL certificates
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ClientCertificatePath">
+            <summary>
+            Path to client certificate file for mutual TLS
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ClientCertificatePassword">
+            <summary>
+            Password for client certificate
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.RequiresAuthentication">
+            <summary>
+            Whether the API requires authentication
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.RequiresTokenRefresh">
+            <summary>
+            Whether tokens need to be automatically refreshed
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.RetryCount">
+            <summary>
+            Number of retry attempts for failed requests (default: 3)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.RetryDelayMs">
+            <summary>
+            Delay between retry attempts in milliseconds (default: 1000)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.CacheExpiryMinutes">
+            <summary>
+            Cache expiry time in minutes (default: 15)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.MaxConcurrentRequests">
+            <summary>
+            Maximum number of concurrent requests (default: 10)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.EnableCaching">
+            <summary>
+            Whether to enable response caching (default: true)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.EnableCompression">
+            <summary>
+            Whether to enable HTTP compression (default: true)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.UserAgent">
+            <summary>
+            User agent string for HTTP requests (default: "BeepDM-WebAPI/1.0")
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.RateLimitRequestsPerMinute">
+            <summary>
+            Maximum number of requests per minute (default: 60)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.EnableRateLimit">
+            <summary>
+            Whether to enable rate limiting (default: true)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ResponseFormat">
+            <summary>
+            Expected response format: "json", "xml", "csv", "text" (default: "json")
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.DataPath">
+            <summary>
+            JSONPath or XPath expression to extract data from response
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.TotalCountPath">
+            <summary>
+            JSONPath or XPath expression to extract total count from response
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.PageNumberParameter">
+            <summary>
+            Query parameter name for page number (default: "page")
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.PageSizeParameter">
+            <summary>
+            Query parameter name for page size (default: "limit")
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.DefaultPageSize">
+            <summary>
+            Default page size for requests (default: 100)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.MaxPageSize">
+            <summary>
+            Maximum allowed page size (default: 1000)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.#ctor">
+            <summary>
+            Initializes a new instance of WebAPIConnectionProperties with default values
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.GetParameterValue(System.String)">
+            <summary>
+            Gets a connection parameter value by name from the Parameters string
+            </summary>
+            <param name="paramName">Name of the parameter to retrieve</param>
+            <returns>Parameter value if found, null otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.SetParameterValue(System.String,System.String)">
+            <summary>
+            Sets a connection parameter value in the Parameters string
+            </summary>
+            <param name="paramName">Name of the parameter to set</param>
+            <param name="value">Value to set for the parameter</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ParseParameters(System.String)">
+            <summary>
+            Parses the Parameters string into a dictionary
+            </summary>
+            <param name="parametersString">Semicolon-separated key-value pairs</param>
+            <returns>Dictionary containing the parsed parameters</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.UpdateAuthenticationRequirements">
+            <summary>
+            Updates authentication requirement flags based on the current AuthType
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ValidateConfiguration">
+            <summary>
+            Validates that all required properties for the current AuthType are set
+            </summary>
+            <returns>True if validation passes, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.GetValidationErrors">
+            <summary>
+            Gets a description of missing required configuration for the current AuthType
+            </summary>
+            <returns>Description of missing configuration, or empty string if valid</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.WebAPIDataConnection">
+            <summary>
+            Enhanced WebAPI Data Connection implementation using WebAPIConnectionProperties
+            Provides optimized connection management for Web API data sources
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.ConnectionProp">
+            <summary>Connection properties specific to Web APIs</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.ConnectionStatus">
+            <summary>Current connection status</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.Logger">
+            <summary>Logger instance for connection operations</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.ErrorObject">
+            <summary>Error information object</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.DMEEditor">
+            <summary>Reference to the data management editor</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.Id">
+            <summary>Unique identifier for this connection</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.ConnectionString">
+            <summary>Connection string (derived from properties)</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.DatabaseType">
+            <summary>Database type for this connection</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.ReplcaDataSourceType">
+            <summary>Replica database type</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.WebAPIProperties">
+            <summary>Web API specific connection properties</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.InMemory">
+            <summary>Legacy property for compatibility</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.GuidID">
+            <summary>Legacy GUID identifier</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.ID">
+            <summary>Legacy ID property</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.DataSourceDriver">
+            <summary>Data source driver configuration</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.DbConn">
+            <summary>Database connection instance</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.#ctor">
+            <summary>
+            Initializes a new WebAPIDataConnection instance
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.#ctor(TheTechIdea.Beep.ConfigUtil.IConnectionProperties)">
+            <summary>
+            Initializes WebAPIDataConnection with existing connection properties
+            </summary>
+            <param name="connectionProperties">Connection properties to use</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.OpenConnection">
+            <summary>Opens the Web API connection</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.OpenConnection(TheTechIdea.Beep.ConfigUtil.IConnectionProperties)">
+            <summary>Opens connection with specific properties</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.OpenConnection(TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
+            <summary>Opens connection with database type and connection string</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.OpenConnection(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.Int32,System.String,System.String,System.String,System.String)">
+            <summary>Opens connection with individual parameters</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.CloseConn">
+            <summary>Closes the Web API connection</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.ReplaceValueFromConnectionString">
+            <summary>Legacy method for replacing values in connection string</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.ValidateConnectionProperties">
+            <summary>Validates that required connection properties are provided</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.ValidateWebAPIAuthentication">
+            <summary>Validates Web API specific authentication settings</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.TestConnection">
+            <summary>Tests the connection by attempting to reach the API</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.BuildConnectionString">
+            <summary>Builds connection string from properties</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.ParseConnectionString(System.String)">
+            <summary>Parses connection string into properties</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.Dispose(System.Boolean)">
+            <summary>Disposes the connection resources</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataConnection.Dispose">
+            <summary>Disposes the Web API connection</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.WebAPI.WebAPIDataSource">
+            <summary>
+            Connection and transaction skeleton implementations.
+            </summary>
+            <summary>
+            Core partial containing only state (properties/fields), constructor and disposal logic.
+            All IDataSource method implementations are split into separate partial skeleton files.
+            </summary>
+            <summary>
+            Data retrieval &amp; CRUD operations using helpers.
+            </summary>
+            <summary>
+            Query &amp; scalar interface stubs.
+            </summary>
+            <summary>
+            Scripting &amp; entity creation interface stubs (no implementation per requirements).
+            </summary>
+            <summary>
+            Structure and metadata related methods.
+            </summary>
+            <summary>
+            IWebAPIDataSource specific members (skeleton implementation).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Openconnection">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Closeconnection">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.BeginTransaction(TheTechIdea.Beep.Addin.PassedArgs)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.EndTransaction(TheTechIdea.Beep.Addin.PassedArgs)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Commit(TheTechIdea.Beep.Addin.PassedArgs)">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.ColumnDelimiter">
+            <summary>
+            Delimiter used to separate columns in queries or data representations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.ParameterDelimiter">
+            <summary>
+            Delimiter used for parameters in queries.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GuidID">
+            <summary>
+            Unique identifier for the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.DatasourceType">
+            <summary>
+            Type of the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Category">
+            <summary>
+            Category of the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Dataconnection">
+            <summary>
+            Data connection interface.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.DatasourceName">
+            <summary>
+            Name of the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.ErrorObject">
+            <summary>
+            Error handling object.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Id">
+            <summary>
+            Secondary identifier for the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Logger">
+            <summary>
+            Logger for data management activities.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.EntitiesNames">
+            <summary>
+            List of entity names in the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Entities">
+            <summary>
+            List of entity structures.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.DMEEditor">
+            <summary>
+            Data manipulation and exploration editor.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.ConnectionStatus">
+            <summary>
+            Current connection status.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.WebAPI.WebAPIDataSource.PassEvent">
+            <summary>
+            Event raised when a specific action or event is passed.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Fields">
+            <summary>
+            List of entity fields.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.ApiKey">
+            <summary>
+            API key for authentication.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Resource">
+            <summary>
+            Resource endpoint.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Parameters">
+            <summary>
+            Parameters for the API request.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.#ctor(System.String,TheTechIdea.Beep.Logger.IDMLogger,TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.ConfigUtil.IErrorsInfo)">
+            <summary>
+            Initializes a new instance of the WebAPIDataSource class.
+            </summary>
+            <param name="datasourcename">Name of the data source.</param>
+            <param name="logger">Logger instance.</param>
+            <param name="dmeEditor">DME editor instance.</param>
+            <param name="databasetype">Type of the data source.</param>
+            <param name="errorObject">Error object.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Dispose(System.Boolean)">
+            <summary>
+            Disposes the resources used by the WebAPIDataSource.
+            </summary>
+            <param name="disposing">True to dispose managed resources.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Dispose">
+            <summary>
+            Disposes the WebAPIDataSource.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetEntity(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetEntity(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Int32,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetEntityAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.InsertEntity(System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.UpdateEntity(System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.DeleteEntity(System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.UpdateEntities(System.String,System.Object,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.RunQuery(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetScalar(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetScalarAsync(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.ExecuteSql(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.RunScript(TheTechIdea.Beep.Editor.ETLScriptDet)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetCreateEntityScript(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.CreateEntities(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetEntitesList">
+            <summary>
+            Gets the list of available entities from the Web API
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.CheckEntityExist(System.String)">
+            <summary>
+            Checks if an entity exists in the data source
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetEntityIdx(System.String)">
+            <summary>
+            Gets the index of an entity in the entities list
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetEntityStructure(System.String,System.Boolean)">
+            <summary>
+            Gets the structure/metadata of an entity
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetEntityStructure(TheTechIdea.Beep.DataBase.EntityStructure,System.Boolean)">
+            <summary>
+            Gets the structure/metadata of an entity using an existing structure as reference
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetEntityType(System.String)">
+            <summary>
+            Gets the .NET type for an entity
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetEntityforeignkeys(System.String,System.String)">
+            <summary>
+            Gets foreign key relationships for an entity
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetChildTablesList(System.String,System.String,System.String)">
+            <summary>
+            Gets child table relationships for an entity
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.CreateEntityAs(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Creates an entity structure
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.ReadData(System.Boolean,System.Int32,System.Int32)">
+            <summary>
+            Reads data from the Web API with pagination support
+            </summary>
+        </member>
     </members>
 </doc>

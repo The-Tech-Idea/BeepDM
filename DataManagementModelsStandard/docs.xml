@@ -114,6 +114,540 @@
             Gets or sets the class associated with the branch. Defaults to "ADDIN".
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.AuthTypeEnum">
+            <summary>
+            Enumeration of supported authentication types for Web API connections
+            Based on the WebAPIAuthenticationHelper implementation
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.AuthTypeEnum.None">
+            <summary>
+            No authentication required
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.AuthTypeEnum.ApiKey">
+            <summary>
+            API Key authentication using custom header (default: X-API-Key)
+            Requires ApiKey property to be set
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.AuthTypeEnum.Basic">
+            <summary>
+            Basic HTTP authentication using username and password
+            Requires UserID and Password properties to be set
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.AuthTypeEnum.Bearer">
+            <summary>
+            Bearer token authentication
+            Can use static token or OAuth2 flow depending on configuration
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.AuthTypeEnum.OAuth2">
+            <summary>
+            OAuth2 authentication with automatic token management
+            Supports client_credentials, password, and authorization_code grant types
+            Requires TokenUrl, ClientId, and ClientSecret (or other credentials based on grant type)
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.AuthTypeEnumExtensions">
+            <summary>
+            Extension methods for AuthTypeEnum
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.AuthTypeEnumExtensions.ToStringValue(TheTechIdea.Beep.ConfigUtil.AuthTypeEnum)">
+            <summary>
+            Converts AuthTypeEnum to string representation used by WebAPIAuthenticationHelper
+            </summary>
+            <param name="authType">The authentication type</param>
+            <returns>String representation for the authentication helper</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.AuthTypeEnumExtensions.FromString(System.String)">
+            <summary>
+            Parses string value to AuthTypeEnum
+            </summary>
+            <param name="authTypeString">String representation of auth type</param>
+            <returns>Corresponding AuthTypeEnum value</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.AuthTypeEnumExtensions.GetRequiredCredentials(TheTechIdea.Beep.ConfigUtil.AuthTypeEnum)">
+            <summary>
+            Gets a description of what credentials are required for each auth type
+            </summary>
+            <param name="authType">The authentication type</param>
+            <returns>Description of required credentials</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.AuthTypeEnumExtensions.RequiresTokenRefresh(TheTechIdea.Beep.ConfigUtil.AuthTypeEnum)">
+            <summary>
+            Checks if the auth type requires automatic token refresh
+            </summary>
+            <param name="authType">The authentication type</param>
+            <returns>True if token refresh is handled automatically</returns>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._clientId">
+            <summary>
+            Gets or sets the Client ID for OAuth2 authentication.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._clientSecret">
+            <summary>
+            Gets or sets the Client Secret for OAuth2 authentication.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._authType">
+            <summary>
+            Gets or sets the authentication type for the Web API.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._authUrl">
+            <summary>
+            Gets or sets the authorization URL for OAuth2.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._tokenUrl">
+            <summary>
+            Gets or sets the token URL for OAuth2.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._scope">
+            <summary>
+            Gets or sets the scope for OAuth2.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._grantType">
+            <summary>
+            Gets or sets the grant type for OAuth2 (e.g., client_credentials).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._apiKeyHeader">
+            <summary>
+            Gets or sets the header name for the API key.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._redirectUri">
+            <summary>
+            Gets or sets the redirect URI for OAuth2 authorization code flow.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._authCode">
+            <summary>
+            Gets or sets the authorization code from the OAuth2 flow.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._timeoutMs">
+            <summary>
+            Gets or sets the request timeout in milliseconds.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._maxRetries">
+            <summary>
+            Gets or sets the maximum number of retries for failed requests.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._retryIntervalMs">
+            <summary>
+            Gets or sets the interval between retries in milliseconds.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._useProxy">
+            <summary>
+            Gets or sets a value indicating whether to use a proxy.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._proxyUrl">
+            <summary>
+            Gets or sets the proxy URL.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._proxyPort">
+            <summary>
+            Gets or sets the proxy port.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._proxyUser">
+            <summary>
+            Gets or sets the proxy user name.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._proxyPassword">
+            <summary>
+            Gets or sets the proxy password.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._bypassProxyOnLocal">
+            <summary>
+            Gets or sets a value indicating whether to bypass the proxy for local addresses.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._useDefaultProxyCredentials">
+            <summary>
+            Gets or sets a value indicating whether to use default proxy credentials.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._ignoreSSLErrors">
+            <summary>
+            Gets or sets a value indicating whether to ignore SSL errors.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._validateServerCertificate">
+            <summary>
+            Gets or sets a value indicating whether to validate the server certificate.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._clientCertificatePath">
+            <summary>
+            Gets or sets the path to the client certificate.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._clientCertificatePassword">
+            <summary>
+            Gets or sets the password for the client certificate.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._requiresAuthentication">
+            <summary>
+            Gets or sets a value indicating whether the API requires authentication.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._requiresTokenRefresh">
+            <summary>
+            Gets or sets a value indicating whether the token needs to be refreshed.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.IConnectionProperties">
+            <summary>
+            Defines the properties for a data source connection.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ID">
+            <summary>
+            Gets or sets the unique identifier for the connection.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.GuidID">
+            <summary>
+            Gets or sets the GUID for the connection.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ConnectionName">
+            <summary>
+            Gets or sets the user-friendly name for the connection.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ConnectionString">
+            <summary>
+            Gets or sets the full connection string.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Category">
+            <summary>
+            Gets or sets the category of the data source (e.g., RDBMS, NoSQL, File).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Favourite">
+            <summary>
+            Gets or sets a value indicating whether this connection is marked as a favorite.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.IsDefault">
+            <summary>
+            Gets or sets a value indicating whether this is the default connection.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Drawn">
+            <summary>
+            Gets or sets a value indicating whether the connection is represented on a design surface.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.IsLocal">
+            <summary>
+            Gets or sets a value indicating whether the data source is local.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.IsRemote">
+            <summary>
+            Gets or sets a value indicating whether the data source is remote.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.IsWebApi">
+            <summary>
+            Gets or sets a value indicating whether the data source is a Web API.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.IsFile">
+            <summary>
+            Gets or sets a value indicating whether the data source is a file.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.IsDatabase">
+            <summary>
+            Gets or sets a value indicating whether the data source is a database.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.IsComposite">
+            <summary>
+            Gets or sets a value indicating whether the data source is a composite of other data sources.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.IsCloud">
+            <summary>
+            Gets or sets a value indicating whether the data source is cloud-based.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.IsFavourite">
+            <summary>
+            Gets or sets a value indicating whether this connection is a favorite.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.IsInMemory">
+            <summary>
+            Gets or sets a value indicating whether the data is stored in-memory.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.DatabaseType">
+            <summary>
+            Gets or sets the type of the database (e.g., MySQL, SQLServer, Oracle).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Database">
+            <summary>
+            Gets or sets the name of the database.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Databases">
+            <summary>
+            Gets or sets the list of available databases.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.SchemaName">
+            <summary>
+            Gets or sets the schema name.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.OracleSIDorService">
+            <summary>
+            Gets or sets the Oracle SID or Service Name.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.FilePath">
+            <summary>
+            Gets or sets the file path for file-based data sources.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.FileName">
+            <summary>
+            Gets or sets the file name for file-based data sources.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Ext">
+            <summary>
+            Gets or sets the file extension.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Delimiter">
+            <summary>
+            Gets or sets the delimiter character for delimited files.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Host">
+            <summary>
+            Gets or sets the host name or IP address.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Port">
+            <summary>
+            Gets or sets the port number.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Url">
+            <summary>
+            Gets or sets the URL for web-based services.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.UserID">
+            <summary>
+            Gets or sets the user ID for authentication.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Password">
+            <summary>
+            Gets or sets the password for authentication.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ApiKey">
+            <summary>
+            Gets or sets the API key for authentication.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.KeyToken">
+            <summary>
+            Gets or sets a key or token for authentication.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.CertificatePath">
+            <summary>
+            Gets or sets the path to a security certificate.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.DriverName">
+            <summary>
+            Gets or sets the name of the database driver.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.DriverVersion">
+            <summary>
+            Gets or sets the version of the database driver.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Parameters">
+            <summary>
+            Gets or sets additional connection parameters as a string.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Entities">
+            <summary>
+            Gets or sets the list of entity structures (e.g., tables, views) in the data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.DatasourceDefaults">
+            <summary>
+            Gets or sets default values for data source properties.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Headers">
+            <summary>
+            Gets or sets the list of headers for Web API requests.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ClientId">
+            <summary>
+            Gets or sets the Client ID for OAuth2 authentication.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ClientSecret">
+            <summary>
+            Gets or sets the Client Secret for OAuth2 authentication.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.AuthType">
+            <summary>
+            Gets or sets the authentication type for the Web API.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.AuthUrl">
+            <summary>
+            Gets or sets the authorization URL for OAuth2.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.TokenUrl">
+            <summary>
+            Gets or sets the token URL for OAuth2.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Scope">
+            <summary>
+            Gets or sets the scope for OAuth2.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.GrantType">
+            <summary>
+            Gets or sets the grant type for OAuth2 (e.g., client_credentials).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ApiKeyHeader">
+            <summary>
+            Gets or sets the header name for the API key.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.RedirectUri">
+            <summary>
+            Gets or sets the redirect URI for OAuth2 authorization code flow.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.AuthCode">
+            <summary>
+            Gets or sets the authorization code from the OAuth2 flow.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.TimeoutMs">
+            <summary>
+            Gets or sets the request timeout in milliseconds.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.MaxRetries">
+            <summary>
+            Gets or sets the maximum number of retries for failed requests.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.RetryIntervalMs">
+            <summary>
+            Gets or sets the interval between retries in milliseconds.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.UseProxy">
+            <summary>
+            Gets or sets a value indicating whether to use a proxy.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ProxyUrl">
+            <summary>
+            Gets or sets the proxy URL.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ProxyPort">
+            <summary>
+            Gets or sets the proxy port.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ProxyUser">
+            <summary>
+            Gets or sets the proxy user name.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ProxyPassword">
+            <summary>
+            Gets or sets the proxy password.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.BypassProxyOnLocal">
+            <summary>
+            Gets or sets a value indicating whether to bypass the proxy for local addresses.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.UseDefaultProxyCredentials">
+            <summary>
+            Gets or sets a value indicating whether to use default proxy credentials.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.IgnoreSSLErrors">
+            <summary>
+            Gets or sets a value indicating whether to ignore SSL errors.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ValidateServerCertificate">
+            <summary>
+            Gets or sets a value indicating whether to validate the server certificate.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ClientCertificatePath">
+            <summary>
+            Gets or sets the path to the client certificate.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ClientCertificatePassword">
+            <summary>
+            Gets or sets the password for the client certificate.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.RequiresAuthentication">
+            <summary>
+            Gets or sets a value indicating whether the API requires authentication.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.RequiresTokenRefresh">
+            <summary>
+            Gets or sets a value indicating whether the token needs to be refreshed.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.DataView.DMDataView">
             <summary>
             Represents a view for displaying and interacting with DataView  data.

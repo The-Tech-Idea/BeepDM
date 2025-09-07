@@ -52,6 +52,10 @@ class NavigationManager {
                 activeId: 'nav-examples', 
                 openSection: 'nav-data-management' 
             },
+            'webapidatasource': { 
+                activeId: 'nav-webapi', 
+                openSection: 'nav-data-management' 
+            },
             'best-practices': { 
                 activeId: 'nav-best-practices', 
                 openSection: 'nav-data-management' 

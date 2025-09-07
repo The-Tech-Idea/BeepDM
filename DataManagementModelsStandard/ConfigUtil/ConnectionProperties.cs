@@ -1,4 +1,5 @@
 ﻿
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -308,7 +309,243 @@ namespace TheTechIdea.Beep.ConfigUtil
             get { return _httpMethod; }
             set { SetProperty(ref _httpMethod, value); }
         }
+        #region Web API Authentication
+        /// <summary>
+        /// Gets or sets the Client ID for OAuth2 authentication.
+        /// </summary>
+        private string _clientId;
+        public string ClientId
+        {
+            get { return _clientId; }
+            set { SetProperty(ref _clientId, value); }
+        }
+        /// <summary>
+        /// Gets or sets the Client Secret for OAuth2 authentication.
+        /// </summary>
+        private string _clientSecret;
+        public string ClientSecret
+        {
+            get { return _clientSecret; }
+            set { SetProperty(ref _clientSecret, value); }
+        }
+        /// <summary>
+        /// Gets or sets the authentication type for the Web API.
+        /// </summary>
+        private AuthTypeEnum _authType;
+        public AuthTypeEnum AuthType
+        {
+            get { return _authType; }
+            set { SetProperty(ref _authType, value); }
+        }
+        /// <summary>
+        /// Gets or sets the authorization URL for OAuth2.
+        /// </summary>
+        private string _authUrl;
+        public string AuthUrl
+        {
+            get { return _authUrl; }
+            set { SetProperty(ref _authUrl, value); }
+        }
+        /// <summary>
+        /// Gets or sets the token URL for OAuth2.
+        /// </summary>
+        private string _tokenUrl;
+        public string TokenUrl
+        {
+            get { return _tokenUrl; }
+            set { SetProperty(ref _tokenUrl, value); }
+        }
+        /// <summary>
+        /// Gets or sets the scope for OAuth2.
+        /// </summary>
+        private string _scope;
+        public string Scope
+        {
+            get { return _scope; }
+            set { SetProperty(ref _scope, value); }
+        }
+        /// <summary>
+        /// Gets or sets the grant type for OAuth2 (e.g., client_credentials).
+        /// </summary>
+        private string _grantType;
+        public string GrantType
+        {
+            get { return _grantType; }
+            set { SetProperty(ref _grantType, value); }
+        }
+        /// <summary>
+        /// Gets or sets the header name for the API key.
+        /// </summary>
+        private string _apiKeyHeader;
+        public string ApiKeyHeader
+        {
+            get { return _apiKeyHeader; }
+            set { SetProperty(ref _apiKeyHeader, value); }
+        }
+        /// <summary>
+        /// Gets or sets the redirect URI for OAuth2 authorization code flow.
+        /// </summary>
+        private string _redirectUri;
+        public string RedirectUri
+        {
+            get { return _redirectUri; }
+            set { SetProperty(ref _redirectUri, value); }
+        }
+        /// <summary>
+        /// Gets or sets the authorization code from the OAuth2 flow.
+        /// </summary>
+        private string _authCode;
+        public string AuthCode
+        {
+            get { return _authCode; }
+            set { SetProperty(ref _authCode, value); }
+        }
+        /// <summary>
+        /// Gets or sets the request timeout in milliseconds.
+        /// </summary>
+        private int _timeoutMs;
+        public int TimeoutMs
+        {
+            get { return _timeoutMs; }
+            set { SetProperty(ref _timeoutMs, value); }
+        }
+        /// <summary>
+        /// Gets or sets the maximum number of retries for failed requests.
+        /// </summary>
+        private int _maxRetries;
+        public int MaxRetries
+        {
+            get { return _maxRetries; }
+            set { SetProperty(ref _maxRetries, value); }
+        }
+        /// <summary>
+        /// Gets or sets the interval between retries in milliseconds.
+        /// </summary>
+        private int _retryIntervalMs;
+        public int RetryIntervalMs
+        {
+            get { return _retryIntervalMs; }
+            set { SetProperty(ref _retryIntervalMs, value); }
+        }
+        /// <summary>
+        /// Gets or sets a value indicating whether to use a proxy.
+        /// </summary>
+        private bool _useProxy;
+        public bool UseProxy
+        {
+            get { return _useProxy; }
+            set { SetProperty(ref _useProxy, value); }
+        }
+        /// <summary>
+        /// Gets or sets the proxy URL.
+        /// </summary>
+        private string _proxyUrl;
+        public string ProxyUrl
+        {
+            get { return _proxyUrl; }
+            set { SetProperty(ref _proxyUrl, value); }
+        }
+        /// <summary>
+        /// Gets or sets the proxy port.
+        /// </summary>
+        private int _proxyPort;
+        public int ProxyPort
+        {
+            get { return _proxyPort; }
+            set { SetProperty(ref _proxyPort, value); }
+        }
+        /// <summary>
+        /// Gets or sets the proxy user name.
+        /// </summary>
+        private string _proxyUser;
+        public string ProxyUser
+        {
+            get { return _proxyUser; }
+            set { SetProperty(ref _proxyUser, value); }
+        }
+        /// <summary>
+        /// Gets or sets the proxy password.
+        /// </summary>
+        private string _proxyPassword;
+        public string ProxyPassword
+        {
+            get { return _proxyPassword; }
+            set { SetProperty(ref _proxyPassword, value); }
+        }
+        /// <summary>
+        /// Gets or sets a value indicating whether to bypass the proxy for local addresses.
+        /// </summary>
+        private bool _bypassProxyOnLocal;
+        public bool BypassProxyOnLocal
+        {
+            get { return _bypassProxyOnLocal; }
+            set { SetProperty(ref _bypassProxyOnLocal, value); }
+        }
+        /// <summary>
+        /// Gets or sets a value indicating whether to use default proxy credentials.
+        /// </summary>
+        private bool _useDefaultProxyCredentials;
+        public bool UseDefaultProxyCredentials
+        {
+            get { return _useDefaultProxyCredentials; }
+            set { SetProperty(ref _useDefaultProxyCredentials, value); }
+        }
+        /// <summary>
+        /// Gets or sets a value indicating whether to ignore SSL errors.
+        /// </summary>
+        private bool _ignoreSSLErrors;
+        public bool IgnoreSSLErrors
+        {
+            get { return _ignoreSSLErrors; }
+            set { SetProperty(ref _ignoreSSLErrors, value); }
+        }
+        /// <summary>
+        /// Gets or sets a value indicating whether to validate the server certificate.
+        /// </summary>
+        private bool _validateServerCertificate;
+        public bool ValidateServerCertificate
+        {
+            get { return _validateServerCertificate; }
+            set { SetProperty(ref _validateServerCertificate, value); }
+        }
+        /// <summary>
+        /// Gets or sets the path to the client certificate.
+        /// </summary>
+        private string _clientCertificatePath;
+        public string ClientCertificatePath
+        {
+            get { return _clientCertificatePath; }
+            set { SetProperty(ref _clientCertificatePath, value); }
+        }
+        /// <summary>
+        /// Gets or sets the password for the client certificate.
+        /// </summary>
+        private string _clientCertificatePassword;
+        public string ClientCertificatePassword
+        {
+            get { return _clientCertificatePassword; }
+            set { SetProperty(ref _clientCertificatePassword, value); }
+        }
+        /// <summary>
+        /// Gets or sets a value indicating whether the API requires authentication.
+        /// </summary>
+        private bool _requiresAuthentication;
+        public bool RequiresAuthentication
+        {
+            get { return _requiresAuthentication; }
+            set { SetProperty(ref _requiresAuthentication, value); }
+        }
+        /// <summary>
+        /// Gets or sets a value indicating whether the token needs to be refreshed.
+        /// </summary>
+        private bool _requiresTokenRefresh;
+        public bool RequiresTokenRefresh
+        {
+            get { return _requiresTokenRefresh; }
+            set { SetProperty(ref _requiresTokenRefresh, value); }
+        }
 
+        #endregion
     }
 
     public class WebApiHeader:Entity

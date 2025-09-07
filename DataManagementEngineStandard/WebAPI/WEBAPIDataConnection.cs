@@ -11,6 +11,8 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.DriversConfigurations;
+using System.Security.Cryptography.X509Certificates;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace TheTechIdea.Beep.WebAPI
 {
@@ -21,7 +23,7 @@ namespace TheTechIdea.Beep.WebAPI
     public class WebAPIDataConnection : IDataConnection
     {
         #region Properties
-
+      
         /// <summary>Connection properties specific to Web APIs</summary>
         public IConnectionProperties ConnectionProp { get; set; }
 
@@ -304,11 +306,11 @@ namespace TheTechIdea.Beep.WebAPI
         {
             try
             {
-                var authType = WebAPIProperties.AuthType?.ToLowerInvariant();
+                var authType = WebAPIProperties.AuthType;
                 
                 switch (authType)
                 {
-                    case "oauth2":
+                    case  AuthTypeEnum.OAuth2:
                         if (string.IsNullOrEmpty(WebAPIProperties.ClientId) || 
                             string.IsNullOrEmpty(WebAPIProperties.ClientSecret))
                         {
@@ -316,16 +318,16 @@ namespace TheTechIdea.Beep.WebAPI
                             return false;
                         }
                         break;
-                        
-                    case "apikey":
+
+                    case AuthTypeEnum.ApiKey:
                         if (string.IsNullOrEmpty(WebAPIProperties.ApiKey))
                         {
                             Logger?.WriteLog("API Key authentication requires ApiKey");
                             return false;
                         }
                         break;
-                        
-                    case "basic":
+
+                    case AuthTypeEnum.Basic:
                         if (string.IsNullOrEmpty(ConnectionProp.UserID) || 
                             string.IsNullOrEmpty(ConnectionProp.Password))
                         {
@@ -333,8 +335,8 @@ namespace TheTechIdea.Beep.WebAPI
                             return false;
                         }
                         break;
-                        
-                    case "bearer":
+
+                    case AuthTypeEnum.Bearer:
                         if (string.IsNullOrEmpty(WebAPIProperties.KeyToken))
                         {
                             Logger?.WriteLog("Bearer authentication requires KeyToken");
@@ -405,17 +407,25 @@ namespace TheTechIdea.Beep.WebAPI
                 // Add Web API specific properties
                 if (WebAPIProperties != null)
                 {
-                    if (!string.IsNullOrEmpty(WebAPIProperties.AuthType))
-                        connectionStringBuilder.Append($"AuthType={WebAPIProperties.AuthType};");
-                    
-                    if (!string.IsNullOrEmpty(WebAPIProperties.ClientId))
-                        connectionStringBuilder.Append($"ClientId={WebAPIProperties.ClientId};");
-                    
-                    if (!string.IsNullOrEmpty(WebAPIProperties.ApiKey))
-                        connectionStringBuilder.Append($"ApiKey={WebAPIProperties.ApiKey};");
-                    
-                    if (WebAPIProperties.TimeoutMs > 0)
-                        connectionStringBuilder.Append($"TimeoutMs={WebAPIProperties.TimeoutMs};");
+                    switch (WebAPIProperties.AuthType)
+                    {
+                        case AuthTypeEnum.None:
+                            connectionStringBuilder.Append("AuthType=none;");
+                            break;
+                        case AuthTypeEnum.ApiKey:
+                            connectionStringBuilder.Append("AuthType=apikey;");
+                            break;
+                        case AuthTypeEnum.Basic:
+                            connectionStringBuilder.Append("AuthType=basic;");
+                            break;
+                        case AuthTypeEnum.Bearer:
+                            connectionStringBuilder.Append("AuthType=bearer;");
+                            break;
+                        case AuthTypeEnum.OAuth2:
+                            connectionStringBuilder.Append("AuthType=oauth2;");
+                            break;
+                    }
+                 
                 }
 
                 // Add parameters if available
@@ -478,7 +488,15 @@ namespace TheTechIdea.Beep.WebAPI
                                 ConnectionProp.Password = value;
                                 break;
                             case "authtype":
-                                webApiProps.AuthType = value;
+                                webApiProps.AuthType = value.ToLower() switch
+                                {
+                                    "none" => AuthTypeEnum.None,
+                                    "apikey" => AuthTypeEnum.ApiKey,
+                                    "basic" => AuthTypeEnum.Basic,
+                                    "bearer" => AuthTypeEnum.Bearer,
+                                    "oauth2" => AuthTypeEnum.OAuth2,
+                                    _ => AuthTypeEnum.None
+                                };
                                 break;
                             case "clientid":
                                 webApiProps.ClientId = value;
