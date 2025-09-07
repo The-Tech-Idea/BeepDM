@@ -15,15 +15,21 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Addin;
 using System.ComponentModel;
 using System.Net;
-using TheTechIdea.Beep.WebAPI.Helpers;
 using System.Text.Json;
+using System.Threading;
+using System.Collections.Concurrent;
+using System.Security.Authentication;
+using System.Net.Http.Headers;
+using System.IO;
+using System.Reflection;
+
+
 
 namespace TheTechIdea.Beep.WebAPI
 {
     /// <summary>
-    /// Optimized Web API Data Source implementation using helper classes architecture
-    /// Supports OAuth2, API Keys, Basic Auth, Bearer tokens with retry logic, caching, and rate limiting
-    /// Refactored to use helper classes and proper separation of concerns
+    /// Optimized Web API Data Source implementation for connecting to REST APIs, SaaS, and commercial services
+    /// Supports OAuth, JWT, API Keys, retry policies, caching, and comprehensive error handling
     /// </summary>
     public class WebAPIDataSource : IDataSource
     {
@@ -82,288 +88,16 @@ namespace TheTechIdea.Beep.WebAPI
 
         #endregion
 
-        #region Private Fields - Helper Classes
+        #region Private Fields
 
         private readonly WebAPIDataConnection cn;
-        private readonly WebAPIAuthenticationHelper _authHelper;
-        private readonly WebAPIRequestHelper _requestHelper;
-        private readonly WebAPICacheHelper _cacheHelper;
-        private readonly WebAPIDataHelper _dataHelper;
-
-        #endregion
-
-        #region Constructor
-
-        /// <summary>
-        /// Initializes a new instance of WebAPIDataSource with helper classes
-        /// </summary>
-        public WebAPIDataSource(string datasourcename, IDMLogger logger, IDMEEditor pDMEEditor, DataSourceType databasetype, IErrorsInfo per)
-        {
-            // Initialize basic properties
-            DatasourceName = datasourcename;
-            Logger = logger;
-            ErrorObject = per;
-            DMEEditor = pDMEEditor;
-            DatasourceType = databasetype;
-            Category = DatasourceCategory.WEBAPI;
-            
-            // Initialize connection
-            Dataconnection = new WebAPIDataConnection
-            {
-                Logger = logger,
-                ErrorObject = ErrorObject,
-                DMEEditor = pDMEEditor
-            };
-            
-            // Get connection properties
-            Dataconnection.ConnectionProp = DMEEditor.ConfigEditor.DataConnections
-                .Where(c => c.ConnectionName == datasourcename).FirstOrDefault();
-            
-            cn = (WebAPIDataConnection)Dataconnection;
-            
-            // Initialize HTTP client with optimizations
-            InitializeHttpClient();
-            
-            // Initialize helper classes
-            _authHelper = new WebAPIAuthenticationHelper(Dataconnection.ConnectionProp, Logger, client);
-            _requestHelper = new WebAPIRequestHelper(client, Logger, DatasourceName, 
-                GetConfigurationValue("MaxConcurrentRequests", 10),
-                GetConfigurationValue("RetryCount", 3),
-                GetConfigurationValue("RetryDelayMs", 1000));
-            _cacheHelper = new WebAPICacheHelper(Logger, DatasourceName, GetConfigurationValue("CacheExpiryMinutes", 15));
-            _dataHelper = new WebAPIDataHelper(Logger, DatasourceName);
-            
-            // Open connection
-            try
-            {
-                cn.OpenConnection();
-                ConnectionStatus = cn.ConnectionStatus;
-                
-                Logger?.WriteLog($"WebAPI DataSource {DatasourceName} initialized successfully");
-            }
-            catch (Exception ex)
-            {
-                Logger?.WriteLog($"Failed to initialize WebAPI DataSource {DatasourceName}: {ex.Message}");
-                ConnectionStatus = ConnectionState.Broken;
-            }
-        }
-
-        #endregion
-
-        #region Initialization
-
-        private void InitializeHttpClient()
-        {
-            var handler = new HttpClientHandler()
-            {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-            };
-            
-            var timeout = GetConfigurationValue("TimeoutMs", 30000);
-            client = new HttpClient(handler)
-            {
-                Timeout = TimeSpan.FromMilliseconds(timeout)
-            };
-            
-            // Set default headers
-            var userAgent = GetConfigurationValue("UserAgent", "BeepDM-WebAPI/1.0");
-            client.DefaultRequestHeaders.Add("User-Agent", userAgent);
-            client.DefaultRequestHeaders.Add("Accept", "application/json, application/xml, text/plain, */*");
-            
-            if (GetConfigurationValue("EnableCompression", true))
-            {
-                client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
-            }
-        }
-
-        private T GetConfigurationValue<T>(string paramName, T defaultValue)
-        {
-            try
-            {
-                if (Dataconnection?.ConnectionProp is WebAPIConnectionProperties webApiProps)
-                {
-                    var propertyInfo = typeof(WebAPIConnectionProperties).GetProperty(paramName);
-                    if (propertyInfo != null)
-                    {
-                        var value = propertyInfo.GetValue(webApiProps);
-                        if (value != null)
-                        {
-                            return (T)Convert.ChangeType(value, typeof(T));
-                        }
-                    }
-                }
-                
-                // Try to get from Parameters string
-                if (!string.IsNullOrEmpty(Dataconnection?.ConnectionProp?.Parameters))
-                {
-                    var parameters = ParseParameters(Dataconnection.ConnectionProp.Parameters);
-                    if (parameters.ContainsKey(paramName))
-                    {
-                        return (T)Convert.ChangeType(parameters[paramName], typeof(T));
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger?.WriteLog($"Error getting configuration value {paramName}: {ex.Message}");
-            }
-
-            return defaultValue;
-        }
-
-        private Dictionary<string, string> ParseParameters(string parametersString)
-        {
-            var parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            
-            if (string.IsNullOrEmpty(parametersString))
-                return parameters;
-
-            var pairs = parametersString.Split(';', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var pair in pairs)
-            {
-                var keyValue = pair.Split('=', 2, StringSplitOptions.RemoveEmptyEntries);
-                if (keyValue.Length == 2)
-                {
-                    parameters[keyValue[0].Trim()] = keyValue[1].Trim();
-                }
-            }
-
-            return parameters;
-        }
-
-        #endregion
-
-        #region Connection Operations
-
-        /// <summary>Opens connection to the Web API</summary>
-        public ConnectionState Openconnection()
-        {
-            try
-            {
-                Logger?.WriteLog($"Opening connection to Web API: {DatasourceName}");
-                
-                if (Dataconnection?.ConnectionStatus == ConnectionState.Open)
-                {
-                    Logger?.WriteLog("Connection already open");
-                    return ConnectionState.Open;
-                }
-
-                ErrorObject.Flag = Errors.Ok;
-                
-                cn.OpenConnection();
-                ConnectionStatus = cn.ConnectionStatus;
-                
-                if (ConnectionStatus == ConnectionState.Open)
-                {
-                    Logger?.WriteLog($"Successfully connected to {DatasourceName}");
-                    
-                    // Initialize entities if not already done
-                    if (Entities == null || Entities.Count == 0)
-                    {
-                        GetEntitiesAsync().Wait();
-                    }
-                }
-                else
-                {
-                    Logger?.WriteLog($"Failed to connect to {DatasourceName}");
-                    ErrorObject.Ex = new Exception($"Could not connect to {DatasourceName}");
-                    ErrorObject.Flag = Errors.Failed;
-                }
-
-                return ConnectionStatus;
-            }
-            catch (Exception ex)
-            {
-                Logger?.WriteLog($"Error opening connection: {ex.Message}");
-                ErrorObject.Ex = ex;
-                ErrorObject.Flag = Errors.Failed;
-                ConnectionStatus = ConnectionState.Broken;
-                return ConnectionStatus;
-            }
-        }
-
-        /// <summary>Closes connection to the Web API</summary>
-        public ConnectionState Closeconnection()
-        {
-            try
-            {
-                Logger?.WriteLog($"Closing connection to Web API: {DatasourceName}");
-                
-                if (Dataconnection?.ConnectionStatus == ConnectionState.Closed)
-                {
-                    Logger?.WriteLog("Connection already closed");
-                    return ConnectionState.Closed;
-                }
-
-                cn.CloseConn();
-                ConnectionStatus = ConnectionState.Closed;
-                
-                Logger?.WriteLog($"Connection to {DatasourceName} closed");
-                return ConnectionStatus;
-            }
-            catch (Exception ex)
-            {
-                Logger?.WriteLog($"Error closing connection: {ex.Message}");
-                ErrorObject.Ex = ex;
-                ErrorObject.Flag = Errors.Failed;
-                ConnectionStatus = ConnectionState.Broken;
-                return ConnectionStatus;
-            }
-        }
-
-        /// <summary>Checks if connection is valid</summary>
-        public bool CheckConnection()
-        {
-            try
-            {
-                if (ConnectionStatus == ConnectionState.Open)
-                {
-                    // Test connection with a simple health check
-                    return TestConnectionAsync().Result;
-                }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Logger?.WriteLog($"Connection check failed: {ex.Message}");
-                return false;
-            }
-        }
-
-        private async Task<bool> TestConnectionAsync()
-        {
-            try
-            {
-                var baseUrl = Dataconnection.ConnectionProp.Url;
-                if (string.IsNullOrEmpty(baseUrl))
-                {
-                    return false;
-                }
-
-                // Try to make a simple HEAD or GET request to test connectivity
-                var healthCheckEndpoint = GetConfigurationValue("HealthCheckEndpoint", "");
-                var testUrl = !string.IsNullOrEmpty(healthCheckEndpoint) 
-                    ? _dataHelper.BuildEndpointUrl(baseUrl, healthCheckEndpoint)
-                    : baseUrl;
-
-                var response = await _requestHelper.SendWithRetryAsync(async () =>
-                {
-                    var request = new HttpRequestMessage(HttpMethod.Head, testUrl);
-                    await _authHelper.EnsureAuthenticatedAsync();
-                    _authHelper.AddAuthenticationHeaders(request);
-                    return await client.SendAsync(request);
-                });
-
-                return response.IsSuccessStatusCode;
-            }
-            catch (Exception ex)
-            {
-                Logger?.WriteLog($"Connection test failed: {ex.Message}");
-                return false;
-            }
-        }
-
-        #endregion
+        private readonly ConcurrentDictionary<string, object> _cache = new ConcurrentDictionary<string, object>();
+        private readonly ConcurrentDictionary<string, DateTime> _cacheTimestamps = new ConcurrentDictionary<string, DateTime>();
+        private readonly SemaphoreSlim _rateLimitSemaphore = new SemaphoreSlim(10, 10); // Allow 10 concurrent requests
+        private readonly Timer _cacheCleanupTimer;
+        private string _accessToken;
+        private DateTime _tokenExpiry = DateTime.MinValue;
+        private readonly object _tokenLock = new object();
 
         // Configuration settings
         private int _retryCount = 3;
