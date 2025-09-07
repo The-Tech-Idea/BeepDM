@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Rules;
 
 
-namespace TheTechIdea.Beep.Editor
+namespace TheTechIdea.Beep.Editor.Defaults
 {
     public static class DefaultsManager 
     {

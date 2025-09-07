@@ -10,7 +10,7 @@ using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
 
-namespace TheTechIdea.Beep.Mapping
+namespace TheTechIdea.Beep.Editor.Mapping
 {
     /// <summary>
     /// Provides utility methods to create and manage entity mappings between source and destination entities.

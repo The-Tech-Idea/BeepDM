@@ -1695,6 +1695,606 @@
             Validates if a specific mapping entity exists.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager">
+            <summary>
+            BeepSyncManager - A clean, modern sync manager based on best practices
+            Consolidates functionality from DataSyncManager and DataSyncService with helper-based architecture
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.Editor">
+            <summary>
+            DME Editor instance
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncSchemas">
+            <summary>
+            Collection of sync schemas
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.IsPaused">
+            <summary>
+            Indicates if sync operations are currently paused
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.IsCancelled">
+            <summary>
+            Indicates if sync operations have been cancelled
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Initialize BeepSyncManager with editor and create helper instances
+            </summary>
+            <param name="editor">DME Editor instance</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Synchronize data based on schema - async version with full error handling and progress reporting
+            </summary>
+            <param name="schema">Sync schema to execute</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <param name="progress">Progress reporter</param>
+            <returns>Operation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncData(TheTechIdea.Beep.Editor.DataSyncSchema,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Synchronize data - synchronous version
+            </summary>
+            <param name="schema">Sync schema to execute</param>
+            <param name="progress">Progress reporter</param>
+            <returns>Operation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncAllSchemasAsync(System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Synchronize all schemas
+            </summary>
+            <param name="cancellationToken">Cancellation token</param>
+            <param name="progress">Progress reporter</param>
+            <returns>Operation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.AddSyncSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Add sync schema to collection
+            </summary>
+            <param name="schema">Schema to add</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.RemoveSyncSchema(System.String)">
+            <summary>
+            Remove sync schema from collection
+            </summary>
+            <param name="schemaId">ID of schema to remove</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.UpdateSyncSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Update existing sync schema
+            </summary>
+            <param name="schema">Updated schema</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.GetSchema(System.String)">
+            <summary>
+            Get schema by ID
+            </summary>
+            <param name="schemaId">Schema ID</param>
+            <returns>Schema or null if not found</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.ValidateSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Validate schema using validation helper
+            </summary>
+            <param name="schema">Schema to validate</param>
+            <returns>Validation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SaveSchemasAsync">
+            <summary>
+            Save all schemas to storage
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.LoadSchemasAsync">
+            <summary>
+            Load schemas from storage
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SaveSchemas">
+            <summary>
+            Save schemas synchronously
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.LoadSchemas">
+            <summary>
+            Load schemas synchronously
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.PauseSync">
+            <summary>
+            Pause sync operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.ResumeSync">
+            <summary>
+            Resume sync operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.CancelSync">
+            <summary>
+            Cancel all sync operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.ProcessSingleRecordAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Object,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Process a single record through the sync pipeline
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.GetSyncKeyValue(System.Object,System.String)">
+            <summary>
+            Get sync key value from source record
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.NormalizeToEnumerable(System.Object)">
+            <summary>
+            Normalize data to enumerable for consistent processing
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.CreateErrorResult(System.String)">
+            <summary>
+            Create error result
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.CreateSuccessResult(System.String)">
+            <summary>
+            Create success result
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.Dispose(System.Boolean)">
+            <summary>
+            Dispose managed resources
+            </summary>
+            <param name="disposing">True if disposing managed resources</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.Dispose">
+            <summary>
+            Dispose the manager and clean up resources
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper">
+            <summary>
+            Helper class for data source operations in sync processes
+            Based on patterns from DataSyncManager and DataSyncService
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Initializes a new instance of the DataSourceHelper class
+            </summary>
+            <param name="editor">The DME editor instance</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.GetDataSource(System.String)">
+            <summary>
+            Get data source by name with validation and error logging
+            </summary>
+            <param name="dataSourceName">Name of the data source</param>
+            <returns>IDataSource instance or null if not found</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.ValidateDataSourceConnection(System.String)">
+            <summary>
+            Validate that a data source exists and is accessible
+            </summary>
+            <param name="dataSourceName">Name of the data source to validate</param>
+            <returns>True if data source is valid and accessible</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.GetEntityDataAsync(System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Get entity data from source with filters - async version
+            </summary>
+            <param name="dataSourceName">Name of the data source</param>
+            <param name="entityName">Name of the entity</param>
+            <param name="filters">Optional filters to apply</param>
+            <returns>Entity data or null if not found</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.InsertEntityAsync(System.String,System.String,System.Object)">
+            <summary>
+            Insert entity data into destination - async version
+            </summary>
+            <param name="dataSourceName">Name of the destination data source</param>
+            <param name="entityName">Name of the entity</param>
+            <param name="entity">Entity data to insert</param>
+            <returns>Operation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.UpdateEntityAsync(System.String,System.String,System.Object)">
+            <summary>
+            Update entity data in destination - async version
+            </summary>
+            <param name="dataSourceName">Name of the destination data source</param>
+            <param name="entityName">Name of the entity</param>
+            <param name="entity">Entity data to update</param>
+            <returns>Operation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.EntityExistsAsync(System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Check if entity exists in destination based on filters
+            </summary>
+            <param name="dataSourceName">Name of the data source</param>
+            <param name="entityName">Name of the entity</param>
+            <param name="filters">Filters to identify the entity</param>
+            <returns>True if entity exists</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.CreateErrorResult(System.String)">
+            <summary>
+            Create error result for failed operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.CreateSuccessResult(System.String)">
+            <summary>
+            Create success result for successful operations
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper">
+            <summary>
+            Helper class for field mapping operations
+            Based on mapping patterns from DataSyncManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.BeepSync.Interfaces.IDataSourceHelper)">
+            <summary>
+            Initializes a new instance of the FieldMappingHelper class
+            </summary>
+            <param name="editor">The DME editor instance</param>
+            <param name="dataSourceHelper">The data source helper instance</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.MapFields(System.Object,System.Object,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.FieldSyncData})">
+            <summary>
+            Map fields from source to destination object using field mappings
+            Based on the MapFields method from DataSyncManager
+            </summary>
+            <param name="source">Source object</param>
+            <param name="destination">Destination object</param>
+            <param name="mappedFields">Field mapping definitions</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.CreateDestinationEntity(System.String,System.String)">
+            <summary>
+            Create destination entity instance
+            Based on CreateDestinationEntity pattern from DataSyncManager
+            </summary>
+            <param name="dataSourceName">Name of the destination data source</param>
+            <param name="entityName">Name of the entity</param>
+            <returns>New entity instance</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.AutoMapFields(System.String,System.String,System.String,System.String)">
+            <summary>
+            Auto-map fields based on name matching between source and destination
+            </summary>
+            <param name="sourceDataSource">Source data source name</param>
+            <param name="sourceEntity">Source entity name</param>
+            <param name="destDataSource">Destination data source name</param>
+            <param name="destEntity">Destination entity name</param>
+            <returns>List of auto-generated field mappings</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.ValidateFieldMappings(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.FieldSyncData})">
+            <summary>
+            Validate field mappings for correctness
+            </summary>
+            <param name="mappedFields">Field mappings to validate</param>
+            <returns>Validation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.ConvertValue(System.Object,System.Type,TheTechIdea.Beep.Editor.FieldSyncData)">
+            <summary>
+            Convert value from source type to destination type with error handling
+            </summary>
+            <param name="value">Source value</param>
+            <param name="targetType">Target type</param>
+            <param name="field">Field mapping info for error reporting</param>
+            <returns>Converted value</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper">
+            <summary>
+            Helper class for sync schema persistence operations
+            Based on persistence patterns from DataSyncManager.SaveSchemas and LoadSchemas
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Initialize the schema persistence helper with editor and file paths
+            </summary>
+            <param name="editor">DME Editor instance</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.SaveSchemasAsync(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.DataSyncSchema})">
+            <summary>
+            Save sync schemas to storage asynchronously
+            Based on DataSyncManager.SaveSchemas method
+            </summary>
+            <param name="schemas">Collection of schemas to save</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.LoadSchemasAsync">
+            <summary>
+            Load sync schemas from storage asynchronously
+            Based on DataSyncManager.LoadSchemas method
+            </summary>
+            <returns>Observable collection of loaded schemas</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.SaveSchemaAsync(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Save a single schema to storage
+            </summary>
+            <param name="schema">Schema to save</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.DeleteSchemaAsync(System.String)">
+            <summary>
+            Delete schema from storage
+            </summary>
+            <param name="schemaId">ID of schema to delete</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.CreateBackupAsync">
+            <summary>
+            Create backup of current schemas
+            </summary>
+            <returns>True if backup was successful</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.GetSchemasFilePath">
+            <summary>
+            Get file path where schemas are stored
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.SchemasFileExists">
+            <summary>
+            Check if schemas file exists
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.EnsureDirectoryExists">
+            <summary>
+            Ensure the directory exists for storing schemas
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncProgressHelper">
+            <summary>
+            Helper class for sync progress reporting and logging operations
+            Based on progress patterns from DataSyncManager.SendMessage and LogSyncRun
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncProgressHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Initializes a new instance of the SyncProgressHelper class
+            </summary>
+            <param name="editor">The DME editor instance</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncProgressHelper.ReportProgress(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.String,System.Int32,System.Int32)">
+            <summary>
+            Report progress with message and optional progress counters
+            Based on DataSyncManager.SendMessage pattern
+            </summary>
+            <param name="progress">Progress reporter</param>
+            <param name="message">Progress message</param>
+            <param name="current">Current progress count</param>
+            <param name="total">Total progress count</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncProgressHelper.LogMessage(System.String,TheTechIdea.Beep.ConfigUtil.Errors)">
+            <summary>
+            Log sync operation message with specified error level
+            </summary>
+            <param name="message">Message to log</param>
+            <param name="errorLevel">Error level (Ok, Failed, etc.)</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncProgressHelper.LogSyncRun(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Log sync run details and update schema status
+            Based on DataSyncManager.LogSyncRun method
+            </summary>
+            <param name="schema">The sync schema to log</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncProgressHelper.LogError(TheTechIdea.Beep.Editor.DataSyncSchema,System.String,System.Exception)">
+            <summary>
+            Handle and log sync errors with detailed information
+            </summary>
+            <param name="schema">The sync schema where error occurred</param>
+            <param name="message">Error message</param>
+            <param name="ex">Optional exception for detailed error information</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncProgressHelper.LogSuccess(TheTechIdea.Beep.Editor.DataSyncSchema,System.Int32,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Report successful sync completion
+            </summary>
+            <param name="schema">The sync schema that completed successfully</param>
+            <param name="recordsProcessed">Number of records processed</param>
+            <param name="progress">Optional progress reporter</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncProgressHelper.LogCancellation(TheTechIdea.Beep.Editor.DataSyncSchema,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Report sync cancellation
+            </summary>
+            <param name="schema">The sync schema that was cancelled</param>
+            <param name="progress">Optional progress reporter</param>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper">
+            <summary>
+            Helper class for sync validation operations
+            Based on validation patterns from DataSyncManager.ValidateSchema
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.BeepSync.Interfaces.IDataSourceHelper)">
+            <summary>
+            Initializes a new instance of the SyncValidationHelper class
+            </summary>
+            <param name="editor">The DME editor instance</param>
+            <param name="dataSourceHelper">The data source helper instance</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper.ValidateSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Validate complete sync schema for all required fields and configurations
+            Based on DataSyncManager.ValidateSchema method
+            </summary>
+            <param name="schema">The sync schema to validate</param>
+            <returns>Validation result with detailed error information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper.ValidateDataSource(System.String)">
+            <summary>
+            Validate that a data source exists and is accessible
+            </summary>
+            <param name="dataSourceName">Name of the data source</param>
+            <returns>Validation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper.ValidateEntity(System.String,System.String)">
+            <summary>
+            Validate that an entity exists in the specified data source
+            </summary>
+            <param name="dataSourceName">Name of the data source</param>
+            <param name="entityName">Name of the entity</param>
+            <returns>Validation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper.ValidateSyncOperation(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Validate sync operation before execution - comprehensive pre-sync validation
+            </summary>
+            <param name="schema">The sync schema to validate for operation</param>
+            <returns>Validation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper.ValidateRequiredField(System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.ErrorsInfo})">
+            <summary>
+            Helper method to validate required fields
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IDataSourceHelper">
+            <summary>
+            Interface for data source operations in sync processes
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IDataSourceHelper.GetDataSource(System.String)">
+            <summary>
+            Get data source by name with validation
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IDataSourceHelper.ValidateDataSourceConnection(System.String)">
+            <summary>
+            Validate that a data source exists and is accessible
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IDataSourceHelper.GetEntityDataAsync(System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Get entity data from source with filters
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IDataSourceHelper.InsertEntityAsync(System.String,System.String,System.Object)">
+            <summary>
+            Insert entity data into destination
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IDataSourceHelper.UpdateEntityAsync(System.String,System.String,System.Object)">
+            <summary>
+            Update entity data in destination
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IDataSourceHelper.EntityExistsAsync(System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Check if entity exists in destination
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IFieldMappingHelper">
+            <summary>
+            Interface for field mapping operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IFieldMappingHelper.MapFields(System.Object,System.Object,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.FieldSyncData})">
+            <summary>
+            Map fields from source to destination object
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IFieldMappingHelper.CreateDestinationEntity(System.String,System.String)">
+            <summary>
+            Create destination entity instance
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IFieldMappingHelper.AutoMapFields(System.String,System.String,System.String,System.String)">
+            <summary>
+            Auto-map fields based on name matching
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IFieldMappingHelper.ValidateFieldMappings(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.FieldSyncData})">
+            <summary>
+            Validate field mappings
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncValidationHelper">
+            <summary>
+            Interface for sync validation operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncValidationHelper.ValidateSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Validate complete sync schema
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncValidationHelper.ValidateDataSource(System.String)">
+            <summary>
+            Validate data source configuration
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncValidationHelper.ValidateEntity(System.String,System.String)">
+            <summary>
+            Validate entity exists in data source
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncValidationHelper.ValidateSyncOperation(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Validate sync operation before execution
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncProgressHelper">
+            <summary>
+            Interface for sync progress and logging
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncProgressHelper.ReportProgress(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.String,System.Int32,System.Int32)">
+            <summary>
+            Report progress with message
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncProgressHelper.LogMessage(System.String,TheTechIdea.Beep.ConfigUtil.Errors)">
+            <summary>
+            Log sync operation message
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncProgressHelper.LogSyncRun(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Log sync run details
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncProgressHelper.LogError(TheTechIdea.Beep.Editor.DataSyncSchema,System.String,System.Exception)">
+            <summary>
+            Handle and log sync errors
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncProgressHelper.LogCancellation(TheTechIdea.Beep.Editor.DataSyncSchema,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Log cancellation of sync operation
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncProgressHelper.LogSuccess(TheTechIdea.Beep.Editor.DataSyncSchema,System.Int32,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Log successful completion of sync operation
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper">
+            <summary>
+            Interface for sync schema persistence
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.SaveSchemasAsync(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.DataSyncSchema})">
+            <summary>
+            Save sync schemas to storage
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.LoadSchemasAsync">
+            <summary>
+            Load sync schemas from storage
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.SaveSchemaAsync(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Save single schema
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.DeleteSchemaAsync(System.String)">
+            <summary>
+            Delete schema from storage
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema,System.String)">
             <summary>
             Retrieves records from the source data based on the schema's LastSyncDate and the specified filter operator.
@@ -1798,14 +2398,14 @@
             If the error flag is set to "Failed" in the DMEEditor.ErrorObject, a SyncErrorsandTracking object is created and the error count is incremented.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DefaultsManager.GetDefaults(TheTechIdea.Beep.Editor.IDMEEditor,System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.Defaults.DefaultsManager.GetDefaults(TheTechIdea.Beep.Editor.IDMEEditor,System.String)">
             <summary>
             Retrieves the default values for a specified data source.
             </summary>
             <param name="dataSourceName">The name of the data source.</param>
             <returns>A list of DefaultValue objects.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DefaultsManager.ResolveDefaultValue(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.ConfigUtil.DefaultValue,TheTechIdea.Beep.Addin.IPassedArgs)">
+        <member name="M:TheTechIdea.Beep.Editor.Defaults.DefaultsManager.ResolveDefaultValue(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.ConfigUtil.DefaultValue,TheTechIdea.Beep.Addin.IPassedArgs)">
             <summary>
             Resolves the default value for a specific DefaultValue object.
             </summary>
@@ -1813,7 +2413,7 @@
             <param name="parameters">The parameters to pass to the rule, if applicable.</param>
             <returns>The resolved value.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DefaultsManager.ResolveDefaultValue(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.Addin.IPassedArgs)">
+        <member name="M:TheTechIdea.Beep.Editor.Defaults.DefaultsManager.ResolveDefaultValue(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.Addin.IPassedArgs)">
             <summary>
             Resolves the default value for a given data source and field name.
             </summary>
@@ -1822,7 +2422,7 @@
             <param name="parameters">The parameters to pass to the rule, if applicable.</param>
             <returns>The resolved value.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DefaultsManager.SaveDefaults(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.DefaultValue},System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.Defaults.DefaultsManager.SaveDefaults(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.DefaultValue},System.String)">
             <summary>
             Saves the default values for a specified data source.
             </summary>
@@ -1980,26 +2580,140 @@
         </member>
         <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETLEditor.InsertEntity(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL,System.Object,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)" -->
         <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.ETLEditor.SendMessege(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.Editor.ETLScriptDet,System.String)" -->
-        <member name="M:TheTechIdea.Beep.Editor.Sync.SyncManager.StartSyncAllAsync(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="T:TheTechIdea.Beep.Editor.Helpers.ETL.ETLEntityCopyHelper">
             <summary>
-            Starts synchronization of all schemas asynchronously.
-            </summary>
-            <param name="progress">Optional progress reporter.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Sync.SyncManager.PauseSync">
-            <summary>
-            Pauses the synchronization. Any long-running sync operation in progress will pause at the next checkpoint.
+            Handles copying entity structure and data between data sources.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Sync.SyncManager.ResumeSync">
+        <member name="M:TheTechIdea.Beep.Editor.Helpers.ETL.ETLEntityCopyHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
-            Resumes synchronization if it was previously paused.
+            Initializes a new instance of the <see cref="T:TheTechIdea.Beep.Editor.Helpers.ETL.ETLEntityCopyHelper"/> class.
+            </summary>
+            <param name="dme">The DME editor instance.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Helpers.ETL.ETLEntityCopyHelper.CopyEntityStructure(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.IDataSource,System.String,System.String,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Copies the structure of an entity from a source data source to a destination data source.
+            </summary>
+            <param name="source">Source data source.</param>
+            <param name="dest">Destination data source.</param>
+            <param name="srcEntity">Source entity name.</param>
+            <param name="destEntity">Destination entity name.</param>
+            <param name="createIfMissing">If true and entity missing it will be created (currently always creates to match legacy behavior).</param>
+            <param name="progress">Progress reporter.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Error object reflecting operation result.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Helpers.ETL.ETLEntityCopyHelper.CopyEntityData(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.IDataSource,System.String,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)">
+            <summary>
+            Copies data rows from a source entity to a destination entity.
+            </summary>
+            <param name="source">Source data source.</param>
+            <param name="dest">Destination data source.</param>
+            <param name="srcEntity">Source entity name.</param>
+            <param name="destEntity">Destination entity name.</param>
+            <param name="progress">Progress reporter.</param>
+            <param name="token">Cancellation token.</param>
+            <param name="map">Optional mapping (currently unused; placeholder for future field mapping).</param>
+            <returns>Error object reflecting operation result.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Helpers.ETL.ETLEntityCopyHelper.RunCopyEntityScript(TheTechIdea.Beep.Editor.ETLScriptDet,TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.IDataSource,System.String,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)">
+            <summary>
+            Executes a copy entity script (wrapper used by ETLEditor legacy RunCopyEntityScript).
+            </summary>
+            <param name="sc">Script detail (currently only used for metadata/logging externally).</param>
+            <param name="sourceds">Source datasource.</param>
+            <param name="destds">Destination datasource.</param>
+            <param name="srcentity">Source entity name.</param>
+            <param name="destentity">Destination entity name.</param>
+            <param name="progress">Progress reporter.</param>
+            <param name="token">Cancellation token.</param>
+            <param name="createMissingEntity">Whether to create entity if missing (not implemented here; legacy always assumes exist).</param>
+            <param name="map_DTL">Optional mapping.</param>
+            <returns>Error object after operation.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Helpers.ETL.ETLEntityCopyHelper.NormalizeToList(System.Object,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Normalizes supported data container types into a list of objects representing entity rows.
+            </summary>
+            <param name="data">The raw data returned by IDataSource.GetEntity (DataTable, List, IEnumerable, etc.).</param>
+            <param name="entity">Entity structure metadata.</param>
+            <returns>List of row objects.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Helpers.ETL.ETLScriptBuilder">
+            <summary>
+            Helper responsible for building ETL scripts (Create / Copy / Alter etc.)
+            Keeps ETLEditor thin and testable.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Sync.SyncManager.StopSync">
+        <member name="T:TheTechIdea.Beep.Editor.Mapping.MappingManager">
             <summary>
-            Stops the synchronization by canceling the operation.
+            Provides utility methods to create and manage entity mappings between source and destination entities.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+            <summary>
+            Creates an entity mapping for a given destination entity using a source entity and data source.
+            </summary>
+            <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
+            <param name="destent">The structure of the destination entity.</param>
+            <param name="SourceEntityName">The name of the source entity.</param>
+            <param name="SourceDataSourceName">The name of the source data source.</param>
+            <returns>
+            A tuple containing the <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> object and the resulting <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap"/>.
+            </returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.String)">
+            <summary>
+            Creates an entity mapping for migration between two entities in different data sources.
+            </summary>
+            <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
+            <param name="SourceEntityName">The name of the source entity.</param>
+            <param name="SourceDataSourceName">The name of the source data source.</param>
+            <param name="DestEntityName">The name of the destination entity.</param>
+            <param name="DestDataSourceName">The name of the destination data source.</param>
+            <returns>
+            A tuple containing the <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> object and the resulting <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap"/>.
+            </returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String)">
+            <summary>
+            Creates a new entity mapping for the specified destination entity.
+            </summary>
+            <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
+            <param name="DestEntityName">The name of the destination entity.</param>
+            <param name="DestDataSourceName">The name of the destination data source.</param>
+            <returns>
+            A tuple containing the <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> object and the resulting <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap"/>.
+            </returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.AddEntityToMappedEntities(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Adds a source entity to the mapped entities for a given destination entity.
+            </summary>
+            <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
+            <param name="SourceDataSourceName">The name of the source data source.</param>
+            <param name="SourceEntityName">The name of the source entity.</param>
+            <param name="destent">The destination entity structure.</param>
+            <returns>The updated <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL"/> object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.MapEntityFields(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)">
+            <summary>
+            Maps fields from the source entity to the destination entity.
+            </summary>
+            <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
+            <param name="srcent">The structure of the source entity.</param>
+            <param name="datamap">The data map for mapping fields.</param>
+            <returns>A list of <see cref="T:TheTechIdea.Beep.Workflow.Mapping_rep_fields"/> representing the mapped fields.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.MapProperty(System.Object,System.Object,TheTechIdea.Beep.Workflow.Mapping_rep_fields)">
+            <summary>
+            Creates a new object based on the entity definition and fields.
+            </summary>
+            <param name="DMEEditor">The DMEEditor instance for configuration and type building.</param>
+            <param name="EntityName">The name of the entity.</param>
+            <param name="Fields">The list of entity fields defining the object structure.</param>
+            <returns>A dynamically created object for the entity.</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UnitofWork`1">
             <summary>
@@ -3201,75 +3915,6 @@
             <summary>
             Represents the result of a comparison between two data source entities.
             </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Mapping.MappingManager">
-            <summary>
-            Provides utility methods to create and manage entity mappings between source and destination entities.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
-            <summary>
-            Creates an entity mapping for a given destination entity using a source entity and data source.
-            </summary>
-            <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
-            <param name="destent">The structure of the destination entity.</param>
-            <param name="SourceEntityName">The name of the source entity.</param>
-            <param name="SourceDataSourceName">The name of the source data source.</param>
-            <returns>
-            A tuple containing the <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> object and the resulting <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap"/>.
-            </returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.String)">
-            <summary>
-            Creates an entity mapping for migration between two entities in different data sources.
-            </summary>
-            <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
-            <param name="SourceEntityName">The name of the source entity.</param>
-            <param name="SourceDataSourceName">The name of the source data source.</param>
-            <param name="DestEntityName">The name of the destination entity.</param>
-            <param name="DestDataSourceName">The name of the destination data source.</param>
-            <returns>
-            A tuple containing the <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> object and the resulting <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap"/>.
-            </returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.CreateEntityMap(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String)">
-            <summary>
-            Creates a new entity mapping for the specified destination entity.
-            </summary>
-            <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
-            <param name="DestEntityName">The name of the destination entity.</param>
-            <param name="DestDataSourceName">The name of the destination data source.</param>
-            <returns>
-            A tuple containing the <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> object and the resulting <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap"/>.
-            </returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.AddEntityToMappedEntities(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.DataBase.EntityStructure)">
-            <summary>
-            Adds a source entity to the mapped entities for a given destination entity.
-            </summary>
-            <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
-            <param name="SourceDataSourceName">The name of the source data source.</param>
-            <param name="SourceEntityName">The name of the source entity.</param>
-            <param name="destent">The destination entity structure.</param>
-            <returns>The updated <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL"/> object.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.MapEntityFields(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)">
-            <summary>
-            Maps fields from the source entity to the destination entity.
-            </summary>
-            <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
-            <param name="srcent">The structure of the source entity.</param>
-            <param name="datamap">The data map for mapping fields.</param>
-            <returns>A list of <see cref="T:TheTechIdea.Beep.Workflow.Mapping_rep_fields"/> representing the mapped fields.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Mapping.MappingManager.MapProperty(System.Object,System.Object,TheTechIdea.Beep.Workflow.Mapping_rep_fields)">
-            <summary>
-            Creates a new object based on the entity definition and fields.
-            </summary>
-            <param name="DMEEditor">The DMEEditor instance for configuration and type building.</param>
-            <param name="EntityName">The name of the entity.</param>
-            <param name="Fields">The list of entity fields defining the object structure.</param>
-            <returns>A dynamically created object for the entity.</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor">
             <summary>

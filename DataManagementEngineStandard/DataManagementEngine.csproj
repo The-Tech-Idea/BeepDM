@@ -6,7 +6,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.DataManagementEngine</PackageId>
     <Authors>The Tech Idea</Authors>
-    <Version>2.0.37</Version>
+    <Version>2.0.38</Version>
 	<LangVersion>latest</LangVersion>
     <Product>TheTechIdea.Beep.DataManagementEngine</Product>
     <Description>Data Management Library</Description>
@@ -46,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="CodeDom\" />
+    <Folder Include="Editor\ETL\Helpers\" />
     <Folder Include="Resources\" />
     <Folder Include="Workflow\Models\Helpers\" />
   </ItemGroup>

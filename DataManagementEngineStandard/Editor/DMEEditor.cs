@@ -23,6 +23,8 @@ using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Connections;
 using TheTechIdea.Beep.Addin;
 using static TheTechIdea.Beep.Utilities.Util;
+using TheTechIdea.Beep.Editor.Defaults;
+using TheTechIdea.Beep.Editor.ETL;
 
 
 namespace TheTechIdea.Beep
