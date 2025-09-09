@@ -6,9 +6,7 @@ A robust REST/Web API data source for BeepDM providing database-like operations,
 
 - Unified configuration via WebAPIConnectionProperties (no separate auth DTOs)
 - Validation with local ConfigurationValidationResult (IsValid, Errors, Warnings)
-- New HTTP convenience methods in WebAPIDataSource.Http.cs:
-  - GetAsync(string urlOrEndpoint, Dictionary<string,string> query = null, Dictionary<string,string> headers = null)
-  - GetAsync<T>(...) deserializes JSON response
+- High-level CRUD operations for REST API interactions
 - Consistent usage of helpers across partials (auth, request retry, error handling, schema, cache, rate limit)
 
 ## Project layout (partials)
@@ -18,7 +16,6 @@ A robust REST/Web API data source for BeepDM providing database-like operations,
 - WebAPIDataSource.Data.cs: CRUD operations
 - WebAPIDataSource.Query.cs: RunQuery, GetScalar
 - WebAPIDataSource.Structure.cs: entities discovery and schema
-- WebAPIDataSource.Http.cs: HTTP convenience methods (GetAsync)
 - WebAPIDataSource.*.cs: other specialized behaviors (paging, scripting, entity ops)
 
 ## Helpers
@@ -107,6 +104,44 @@ All calls:
 - Use WebAPIAuthenticationHelper to ensure and add auth headers
 - Use WebAPIRequestHelper for resilient HTTP with retry
 - Use WebAPIErrorHelper for non-success responses
+
+## Usage for Derived Classes
+
+When creating custom data sources that inherit from WebAPIDataSource:
+
+1. **Do not use low-level HTTP methods** - WebAPIDataSource does not expose GetAsync, PostAsync, etc.
+2. **Use high-level CRUD methods** - Override GetEntity, InsertEntity, UpdateEntity, DeleteEntity as needed
+3. **Handle authentication via configuration** - Set up WebAPIConnectionProperties with appropriate auth settings
+4. **Use connection management** - Override ConnectAsync/DisconnectAsync for custom connection logic
+5. **Configure endpoints** - Define entity endpoints in your configuration or override endpoint resolution
+
+### Example Custom Data Source Pattern
+
+```csharp
+public class MyApiDataSource : WebAPIDataSource
+{
+    public MyApiDataSource(string datasourcename, IDMLogger logger, IDMEEditor editor, 
+                          DataSourceType type, IErrorsInfo errors, MyConfig config)
+        : base(datasourcename, logger, editor, type, errors)
+    {
+        // Set up connection properties
+        if (Dataconnection?.ConnectionProp is WebAPIConnectionProperties props)
+        {
+            props.Url = config.BaseUrl;
+            props.ApiKey = config.ApiKey;
+            props.AuthType = AuthType.ApiKey;
+            // ... other properties
+        }
+    }
+
+    public override IBindingList GetEntity(string entityName, List<AppFilter> filter)
+    {
+        // Custom implementation using base class helpers
+        // Do not call base.GetAsync() - it doesn't exist
+        // Instead, implement your own HTTP logic or use the high-level methods
+    }
+}
+```
 
 ### Quick CRUD examples
 

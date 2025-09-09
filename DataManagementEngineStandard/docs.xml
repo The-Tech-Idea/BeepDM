@@ -7694,11 +7694,6 @@
             - Otherwise it is combined with BaseUrl.
             Default headers and auth headers are applied automatically.
             </summary>
-            <param name="endpointOrUrl">Relative endpoint or absolute URL</param>
-            <param name="query">Optional query parameters to append</param>
-            <param name="headers">Optional extra headers</param>
-            <param name="cancellationToken">Cancellation token</param>
-            <returns>HttpResponseMessage or null if request failed</returns>
         </member>
         <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetAsync``1(System.String,System.Collections.Generic.Dictionary{System.String,System.String},System.Collections.Generic.Dictionary{System.String,System.String},System.Threading.CancellationToken)">
             <summary>

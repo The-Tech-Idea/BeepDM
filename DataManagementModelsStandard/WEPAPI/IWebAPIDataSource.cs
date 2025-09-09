@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -33,6 +32,63 @@ namespace TheTechIdea.Beep.WebAPI
         /// </summary>
         Task<T> GetAsync<T>(
             string endpointOrUrl,
+            Dictionary<string, string> query = null,
+            Dictionary<string, string> headers = null,
+            CancellationToken cancellationToken = default);
+
+        // New generic HTTP helpers
+        Task<HttpResponseMessage> PostAsync(
+            string endpointOrUrl,
+            object body = null,
+            Dictionary<string, string> query = null,
+            Dictionary<string, string> headers = null,
+            CancellationToken cancellationToken = default);
+
+        Task<T> PostAsync<T>(
+            string endpointOrUrl,
+            object body = null,
+            Dictionary<string, string> query = null,
+            Dictionary<string, string> headers = null,
+            CancellationToken cancellationToken = default);
+
+        Task<HttpResponseMessage> PutAsync(
+            string endpointOrUrl,
+            object body = null,
+            Dictionary<string, string> query = null,
+            Dictionary<string, string> headers = null,
+            CancellationToken cancellationToken = default);
+
+        Task<T> PutAsync<T>(
+            string endpointOrUrl,
+            object body = null,
+            Dictionary<string, string> query = null,
+            Dictionary<string, string> headers = null,
+            CancellationToken cancellationToken = default);
+
+        Task<HttpResponseMessage> PatchAsync(
+            string endpointOrUrl,
+            object body = null,
+            Dictionary<string, string> query = null,
+            Dictionary<string, string> headers = null,
+            CancellationToken cancellationToken = default);
+
+        Task<T> PatchAsync<T>(
+            string endpointOrUrl,
+            object body = null,
+            Dictionary<string, string> query = null,
+            Dictionary<string, string> headers = null,
+            CancellationToken cancellationToken = default);
+
+        Task<HttpResponseMessage> DeleteAsync(
+            string endpointOrUrl,
+            object body = null,
+            Dictionary<string, string> query = null,
+            Dictionary<string, string> headers = null,
+            CancellationToken cancellationToken = default);
+
+        Task<T> DeleteAsync<T>(
+            string endpointOrUrl,
+            object body = null,
             Dictionary<string, string> query = null,
             Dictionary<string, string> headers = null,
             CancellationToken cancellationToken = default);
