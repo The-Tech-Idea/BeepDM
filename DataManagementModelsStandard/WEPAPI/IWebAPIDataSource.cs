@@ -2,9 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
-using TheTechIdea.Beep.DataBase;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.WebAPI
@@ -13,12 +16,26 @@ namespace TheTechIdea.Beep.WebAPI
     {
        
         List<EntityField> Fields { get; set; }
-        
         string          ApiKey { get; set; }
         string          Resource { get; set; }
         Dictionary<string,string> Parameters { get; set; }
         Task<List<object>> ReadData(bool HeaderExist, int fromline = 0, int toline = 100);
-    
 
+         Task<HttpResponseMessage> GetAsync(
+         string endpointOrUrl,
+         Dictionary<string, string> query = null,
+         Dictionary<string, string> headers = null,
+         CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Sends a GET request and deserializes the JSON response to type T.
+        /// Returns default(T) if the request fails or content cannot be parsed.
+        /// </summary>
+        Task<T> GetAsync<T>(
+            string endpointOrUrl,
+            Dictionary<string, string> query = null,
+            Dictionary<string, string> headers = null,
+            CancellationToken cancellationToken = default);
+      
     }
 }

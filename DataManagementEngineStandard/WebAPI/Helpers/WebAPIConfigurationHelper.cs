@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
 
         private readonly IDMLogger _logger;
         private readonly string _datasourceName;
-        private readonly IConnectionProperties _connectionProperties;
+        private readonly WebAPIConnectionProperties _connectionProperties;
         private readonly Dictionary<string, object> _configCache;
         private bool _disposed;
 
@@ -77,7 +77,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         /// <param name="datasourceName">Data source name</param>
         public WebAPIConfigurationHelper(IConnectionProperties connectionProperties, IDMLogger logger, string datasourceName)
         {
-            _connectionProperties = connectionProperties ?? throw new ArgumentNullException(nameof(connectionProperties));
+            _connectionProperties = (WebAPIConnectionProperties)(connectionProperties ?? throw new ArgumentNullException(nameof(connectionProperties)));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _datasourceName = datasourceName ?? throw new ArgumentNullException(nameof(datasourceName));
             _configCache = new Dictionary<string, object>();
@@ -147,7 +147,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                 
                 // Also update connection properties if possible
                 SetToConnectionProperties(key, value);
-                
+
                 _logger?.WriteLog($"Set configuration value '{key}' = '{value}'");
             }
             catch (Exception ex)
@@ -221,27 +221,12 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         }
 
         /// <summary>
-        /// Gets authentication configuration
+        /// Gets authentication configuration from connection properties
         /// </summary>
-        /// <returns>Authentication configuration</returns>
-        public AuthenticationConfiguration GetAuthenticationConfiguration()
+        /// <returns>The WebAPIConnectionProperties instance with authentication settings</returns>
+        public WebAPIConnectionProperties GetAuthenticationConfiguration()
         {
-            var config = new AuthenticationConfiguration
-            {
-                Type = AuthenticationType,
-                ClientId = GetConfigValue<string>("Auth.ClientId", ""),
-                ClientSecret = GetConfigValue<string>("Auth.ClientSecret", ""),
-                Username = GetConfigValue<string>("Auth.Username", ""),
-                Password = GetConfigValue<string>("Auth.Password", ""),
-                ApiKey = GetConfigValue<string>("Auth.ApiKey", ""),
-                ApiKeyHeader = GetConfigValue<string>("Auth.ApiKeyHeader", "X-API-Key"),
-                TokenUrl = GetConfigValue<string>("Auth.TokenUrl", ""),
-                RefreshUrl = GetConfigValue<string>("Auth.RefreshUrl", ""),
-                Scope = GetConfigValue<string>("Auth.Scope", ""),
-                TokenExpiryBuffer = GetConfigValue<int>("Auth.TokenExpiryBuffer", 300) // 5 minutes
-            };
-
-            return config;
+            return _connectionProperties;
         }
 
         /// <summary>
@@ -273,9 +258,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         {
             var result = new ConfigurationValidationResult
             {
-                IsValid = true,
-                Issues = new List<string>(),
-                Warnings = new List<string>()
+                IsValid = true
             };
 
             try
@@ -284,72 +267,78 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                 if (string.IsNullOrWhiteSpace(BaseUrl))
                 {
                     result.IsValid = false;
-                    result.Issues.Add("BaseUrl is required");
+                    result.AddError("BaseUrl", "BaseUrl is required");
                 }
                 else
                 {
                     if (!Uri.TryCreate(BaseUrl, UriKind.Absolute, out var uri))
                     {
                         result.IsValid = false;
-                        result.Issues.Add("BaseUrl is not a valid URL");
+                        result.AddError("BaseUrl", "BaseUrl is not a valid URL");
                     }
                     else if (uri.Scheme != "https" && uri.Scheme != "http")
                     {
                         result.IsValid = false;
-                        result.Issues.Add("BaseUrl must use HTTP or HTTPS protocol");
+                        result.AddError("BaseUrl", "BaseUrl must use HTTP or HTTPS protocol");
                     }
                 }
 
                 // Validate authentication
                 var authConfig = GetAuthenticationConfiguration();
                 var authValidation = ValidateAuthentication(authConfig);
-                result.Issues.AddRange(authValidation.Issues);
-                result.Warnings.AddRange(authValidation.Warnings);
+                foreach (var error in authValidation.Errors)
+                {
+                    result.AddError("Authentication", error);
+                }
+                foreach (var warning in authValidation.Warnings)
+                {
+                    result.AddWarning("Authentication", warning);
+                }
                 if (!authValidation.IsValid)
                     result.IsValid = false;
 
                 // Validate timeouts
                 if (TimeoutMs <= 0)
                 {
-                    result.Issues.Add("TimeoutMs must be greater than 0");
+                    result.AddError("TimeoutMs", "TimeoutMs must be greater than 0");
                     result.IsValid = false;
                 }
                 else if (TimeoutMs < 1000)
                 {
-                    result.Warnings.Add("TimeoutMs is very low, consider increasing for better reliability");
+                    result.AddWarning("TimeoutMs", "TimeoutMs is very low, consider increasing for better reliability");
                 }
 
                 // Validate retry settings
                 if (MaxRetries < 0)
                 {
-                    result.Issues.Add("MaxRetries cannot be negative");
+                    result.AddError("MaxRetries", "MaxRetries cannot be negative");
                     result.IsValid = false;
                 }
 
                 if (RetryDelayMs <= 0)
                 {
-                    result.Issues.Add("RetryDelayMs must be greater than 0");
+                    result.AddError("RetryDelayMs", "RetryDelayMs must be greater than 0");
                     result.IsValid = false;
                 }
 
                 // Validate rate limiting
                 if (RequestsPerSecond <= 0)
                 {
-                    result.Issues.Add("RequestsPerSecond must be greater than 0");
+                    result.AddError("RequestsPerSecond", "RequestsPerSecond must be greater than 0");
                     result.IsValid = false;
                 }
 
                 // Validate pagination
                 if (PageSize <= 0)
                 {
-                    result.Issues.Add("PageSize must be greater than 0");
+                    result.AddError("PageSize", "PageSize must be greater than 0");
                     result.IsValid = false;
                 }
             }
             catch (Exception ex)
             {
                 result.IsValid = false;
-                result.Issues.Add($"Configuration validation error: {ex.Message}");
+                result.AddError("Validation", $"Configuration validation error: {ex.Message}");
             }
 
             return result;
@@ -512,7 +501,8 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                     {
                         case "authtype":
                         case "authenticationtype":
-                            webApiProps.AuthType =  AuthTypeEnumExtensions.FromString(value?.ToString() ?? "None");
+                            if (Enum.TryParse<AuthTypeEnum>(value?.ToString(), true, out var authType))
+                                webApiProps.AuthType = authType;
                             return;
                         case "clientid":
                             webApiProps.ClientId = value?.ToString();
@@ -588,72 +578,119 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             }
         }
 
-        private ConfigurationValidationResult ValidateAuthentication(AuthenticationConfiguration authConfig)
+        private ConfigurationValidationResult ValidateAuthentication(WebAPIConnectionProperties authConfig)
         {
             var result = new ConfigurationValidationResult
             {
-                IsValid = true,
-                Issues = new List<string>(),
-                Warnings = new List<string>()
+                IsValid = true
             };
 
-            switch (authConfig.Type?.ToLower())
+            switch (authConfig.AuthType)
             {
-                case "oauth2":
+                case AuthTypeEnum.OAuth2:
                     if (string.IsNullOrEmpty(authConfig.ClientId))
                     {
                         result.IsValid = false;
-                        result.Issues.Add("OAuth2 requires ClientId");
+                        result.AddError("ClientId", "OAuth2 requires ClientId");
                     }
                     if (string.IsNullOrEmpty(authConfig.ClientSecret))
                     {
                         result.IsValid = false;
-                        result.Issues.Add("OAuth2 requires ClientSecret");
+                        result.AddError("ClientSecret", "OAuth2 requires ClientSecret");
                     }
                     if (string.IsNullOrEmpty(authConfig.TokenUrl))
                     {
                         result.IsValid = false;
-                        result.Issues.Add("OAuth2 requires TokenUrl");
+                        result.AddError("TokenUrl", "OAuth2 requires TokenUrl");
                     }
                     break;
 
-                case "bearer":
+                case AuthTypeEnum.Bearer:
                     // Bearer token will be obtained through OAuth2 or provided directly
                     break;
 
-                case "apikey":
+                case AuthTypeEnum.ApiKey:
                     if (string.IsNullOrEmpty(authConfig.ApiKey))
                     {
                         result.IsValid = false;
-                        result.Issues.Add("API Key authentication requires ApiKey");
+                        result.AddError("ApiKey", "API Key authentication requires ApiKey");
                     }
                     break;
 
-                case "basic":
-                    if (string.IsNullOrEmpty(authConfig.Username))
+                case AuthTypeEnum.Basic:
+                    if (string.IsNullOrEmpty(authConfig.UserID))
                     {
                         result.IsValid = false;
-                        result.Issues.Add("Basic authentication requires Username");
+                        result.AddError("Username", "Basic authentication requires Username");
                     }
                     if (string.IsNullOrEmpty(authConfig.Password))
                     {
                         result.IsValid = false;
-                        result.Issues.Add("Basic authentication requires Password");
+                        result.AddError("Password", "Basic authentication requires Password");
                     }
                     break;
 
-                case "none":
-                case "":
-                case null:
-                    // No authentication - valid
-                    break;
-
+                case AuthTypeEnum.None:
                 default:
-                    result.Warnings.Add($"Unknown authentication type: {authConfig.Type}");
+                    // No authentication - valid
                     break;
             }
 
             return result;
+        }
+
+        private string GetParameterValue(string paramName)
+        {
+            // Check if it's a WebAPIConnectionProperties with specific properties first
+            if (_connectionProperties is WebAPIConnectionProperties webApiProps)
+            {
+                switch (paramName.ToLowerInvariant())
+                {
+                    case "refreshurl":
+                        return GetFromConnectionProperties("RefreshUrl")?.ToString();
+                    case "authurl":
+                        return webApiProps.AuthUrl;
+                    case "tokenurl":
+                        return webApiProps.TokenUrl;
+                    case "scope":
+                        return webApiProps.Scope;
+                    case "granttype":
+                        return webApiProps.GrantType;
+                    case "redirecturi":
+                        return webApiProps.RedirectUri;
+                    case "authcode":
+                        return webApiProps.AuthCode;
+                }
+            }
+
+            // Parse parameters from the Parameters string
+            if (!string.IsNullOrEmpty(_connectionProperties.Parameters))
+            {
+                var parameters = ParseParameters(_connectionProperties.Parameters);
+                return parameters.ContainsKey(paramName) ? parameters[paramName] : null;
+            }
+            
+            return null;
+        }
+
+        private Dictionary<string, string> ParseParameters(string parametersString)
+        {
+            var parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            
+            if (string.IsNullOrEmpty(parametersString))
+                return parameters;
+
+            var pairs = parametersString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var pair in pairs)
+            {
+                var keyValue = pair.Split('=', 2, StringSplitOptions.RemoveEmptyEntries);
+                if (keyValue.Length == 2)
+                {
+                    parameters[keyValue[0].Trim()] = keyValue[1].Trim();
+                }
+            }
+
+            return parameters;
         }
 
         #endregion
@@ -671,8 +708,9 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                 _disposed = true;
             }
         }
-
         #endregion
+
+      
 
         #region Configuration Classes
 
@@ -713,42 +751,30 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         }
 
         /// <summary>
-        /// Authentication configuration
+        /// Result of configuration validation
         /// </summary>
-        public class AuthenticationConfiguration
+        public class ConfigurationValidationResult
         {
-            /// <summary>Authentication type</summary>
-            public string Type { get; set; }
+            /// <summary>Whether configuration is valid</summary>
+            public bool IsValid { get; set; }
             
-            /// <summary>OAuth2 client ID</summary>
-            public string ClientId { get; set; }
+            /// <summary>List of validation errors</summary>
+            public List<string> Errors { get; } = new List<string>();
             
-            /// <summary>OAuth2 client secret</summary>
-            public string ClientSecret { get; set; }
-            
-            /// <summary>Username for basic auth</summary>
-            public string Username { get; set; }
-            
-            /// <summary>Password for basic auth</summary>
-            public string Password { get; set; }
-            
-            /// <summary>API key value</summary>
-            public string ApiKey { get; set; }
-            
-            /// <summary>API key header name</summary>
-            public string ApiKeyHeader { get; set; }
-            
-            /// <summary>OAuth2 token URL</summary>
-            public string TokenUrl { get; set; }
-            
-            /// <summary>OAuth2 refresh URL</summary>
-            public string RefreshUrl { get; set; }
-            
-            /// <summary>OAuth2 scope</summary>
-            public string Scope { get; set; }
-            
-            /// <summary>Token expiry buffer in seconds</summary>
-            public int TokenExpiryBuffer { get; set; }
+            /// <summary>List of validation warnings</summary>
+            public List<string> Warnings { get; } = new List<string>();
+
+            /// <summary>Adds an error with a key prefix</summary>
+            public void AddError(string key, string message)
+            {
+                Errors.Add(string.IsNullOrWhiteSpace(key) ? message : $"{key}: {message}");
+            }
+
+            /// <summary>Adds a warning with a key prefix</summary>
+            public void AddWarning(string key, string message)
+            {
+                Warnings.Add(string.IsNullOrWhiteSpace(key) ? message : $"{key}: {message}");
+            }
         }
 
         /// <summary>
@@ -779,21 +805,6 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             
             /// <summary>Pagination style (PageSize, OffsetLimit, Cursor)</summary>
             public string Style { get; set; }
-        }
-
-        /// <summary>
-        /// Configuration validation result
-        /// </summary>
-        public class ConfigurationValidationResult
-        {
-            /// <summary>Whether configuration is valid</summary>
-            public bool IsValid { get; set; }
-            
-            /// <summary>List of validation issues</summary>
-            public List<string> Issues { get; set; } = new List<string>();
-            
-            /// <summary>List of validation warnings</summary>
-            public List<string> Warnings { get; set; } = new List<string>();
         }
 
         #endregion

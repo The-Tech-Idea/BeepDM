@@ -26,7 +26,7 @@ namespace TheTechIdea.Beep.WebAPI
                 if (!validationResult.IsValid)
                 {
                     ErrorObject.Flag = Errors.Failed;
-                    ErrorObject.Message = string.Join("; ", validationResult.Issues);
+                    ErrorObject.Message = string.Join("; ", validationResult.Errors);
                     return ConnectionState.Broken;
                 }
 

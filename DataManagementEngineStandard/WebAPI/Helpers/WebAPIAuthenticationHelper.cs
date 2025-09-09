@@ -17,7 +17,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
     /// </summary>
     public class WebAPIAuthenticationHelper : IDisposable
     {
-        private readonly IConnectionProperties _connectionProps;
+        private readonly WebAPIConnectionProperties _connectionProps;
         private readonly IDMLogger _logger;
         private readonly HttpClient _httpClient;
         private string _accessToken;
@@ -26,7 +26,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
 
         public WebAPIAuthenticationHelper(IConnectionProperties connectionProps, IDMLogger logger, HttpClient httpClient)
         {
-            _connectionProps = connectionProps ?? throw new ArgumentNullException(nameof(connectionProps));
+            _connectionProps = (WebAPIConnectionProperties)(connectionProps ?? throw new ArgumentNullException(nameof(connectionProps)));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }

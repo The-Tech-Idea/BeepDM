@@ -1,125 +1,127 @@
-# WebAPIDataSource
+# Web API Data Source (BeepDM)
 
-A comprehensive REST API data source implementation for the BeepDM framework that provides database-like operations for web APIs.
+A robust REST/Web API data source for BeepDM providing database-like operations, helpers, and utilities to call, authenticate, cache, transform, and validate API interactions.
 
-## 🚀 Quick Start
+## What’s new
+
+- Unified configuration via WebAPIConnectionProperties (no separate auth DTOs)
+- Validation with local ConfigurationValidationResult (IsValid, Errors, Warnings)
+- New HTTP convenience methods in WebAPIDataSource.Http.cs:
+  - GetAsync(string urlOrEndpoint, Dictionary<string,string> query = null, Dictionary<string,string> headers = null)
+  - GetAsync<T>(...) deserializes JSON response
+- Consistent usage of helpers across partials (auth, request retry, error handling, schema, cache, rate limit)
+
+## Project layout (partials)
+
+- WebAPIDataSource.cs: core state, ctor, DI of helpers
+- WebAPIDataSource.Connection.cs: open/close, transactional stubs
+- WebAPIDataSource.Data.cs: CRUD operations
+- WebAPIDataSource.Query.cs: RunQuery, GetScalar
+- WebAPIDataSource.Structure.cs: entities discovery and schema
+- WebAPIDataSource.Http.cs: HTTP convenience methods (GetAsync)
+- WebAPIDataSource.*.cs: other specialized behaviors (paging, scripting, entity ops)
+
+## Helpers
+
+- WebAPIConfigurationHelper
+  - Uses WebAPIConnectionProperties directly
+  - GetConfigValue<T>(), GetHeaders(), GetEndpointConfiguration(entity)
+  - ValidateConfiguration() -> ConfigurationValidationResult (IsValid, Errors, Warnings)
+- WebAPIAuthenticationHelper
+  - Uses WebAPIConnectionProperties for all auth
+  - Supports AuthType: None, ApiKey, Basic, Bearer, OAuth2
+  - EnsureAuthenticatedAsync(), AddAuthenticationHeaders(HttpRequestMessage)
+- WebAPIRequestHelper
+  - Centralized SendWithRetryAsync, concurrency control
+- WebAPICacheHelper
+  - In-memory response cache with TTL
+- WebAPIDataHelper
+  - BuildEndpointUrl(baseUrl, endpoint, filters, pagination)
+  - ProcessApiResponse()/ProcessJson* helpers, CreateRequest, AddCustomHeaders
+- WebAPIRateLimitHelper
+  - Simple per-minute throttling hooks
+- WebAPISchemaHelper
+  - Infer schema/EntityStructure from sample JSON
+- WebAPIErrorHelper
+  - Normalize/handle error responses
+
+## Configuration (WebAPIConnectionProperties)
+
+Core URL/auth
+- Url: base URL (https://api.example.com)
+- AuthType: None | ApiKey | Basic | Bearer | OAuth2
+- ApiKey / ApiKeyHeader (default X-API-Key)
+- UserID / Password (Basic)
+- ClientId / ClientSecret / TokenUrl / AuthUrl / Scope / GrantType (OAuth2)
+
+Behavior
+- TimeoutMs, RetryCount, RetryDelayMs
+- EnableCaching, CacheExpiryMinutes
+- MaxConcurrentRequests
+- EnableRateLimit, RateLimitRequestsPerMinute
+
+Pagination and response
+- PageNumberParameter (default page), PageSizeParameter (default limit)
+- ResponseFormat, DataPath, TotalCountPath
+
+Headers and parameters
+- Headers: List<WebApiHeader>
+- Parameters: string key=value;... (optional)
+
+## Endpoints configuration
+
+WebAPIConfigurationHelper.GetEndpointConfiguration(entityName) resolves:
+- Endpoints.{entity}.Get / Post / Put / Delete / List
+- Endpoints.{entity}.Method, RequiresAuth, CacheDuration, RateLimit
+Falls back to "/{entity}" when not supplied.
+
+## Data operations (WebAPIDataSource.Data.cs)
+
+CRUD functions exposed by the data source:
+
+- IBindingList GetEntity(string entityName, List<AppFilter> filter)
+  - GET {BaseUrl}/{Endpoints.{entity}.Get} with optional filters appended as query string
+  - Parses JSON to BindingList<object> (dictionary per row)
+
+- PagedResult GetEntity(string entityName, List<AppFilter> filter, int pageNumber, int pageSize)
+  - GET {BaseUrl}/{Endpoints.{entity}.List} with paging parameters
+  - Returns data plus TotalRecords (from X-Total-Count header or JSON fields)
+
+- Task<IBindingList> GetEntityAsync(string entityName, List<AppFilter> filter)
+  - Async wrapper for GetEntity
+
+- IErrorsInfo InsertEntity(string entityName, object data)
+  - POST {BaseUrl}/{Endpoints.{entity}.Post} with JSON body
+
+- IErrorsInfo UpdateEntity(string entityName, object data)
+  - PUT {BaseUrl}/{Endpoints.{entity}.Put} with JSON body
+
+- IErrorsInfo DeleteEntity(string entityName, object data)
+  - DELETE {BaseUrl}/{Endpoints.{entity}.Delete}
+
+- IErrorsInfo UpdateEntities(string entityName, object uploadData, IProgress<PassedArgs> progress)
+  - Bulk update helper that iterates items and calls UpdateEntity per item
+
+All calls:
+- Use WebAPIConfigurationHelper for headers and endpoints
+- Use WebAPIAuthenticationHelper to ensure and add auth headers
+- Use WebAPIRequestHelper for resilient HTTP with retry
+- Use WebAPIErrorHelper for non-success responses
+
+### Quick CRUD examples
 
 ```csharp
-// Initialize the data source
-var webApiDS = new WebAPIDataSource("MyAPI", logger, dmeEditor, DataSourceType.WebApi, errorObject);
+// Read all
+var orders = ds.GetEntity("Orders", null);
 
-// Configure connection
-ConnectionProp.ConnectionString = "https://api.example.com/v1";
-ConnectionProp.ExtendedProperties["AuthenticationType"] = "Bearer";
-ConnectionProp.ExtendedProperties["Token"] = "your-api-token";
+// Read paged
+var page = ds.GetEntity("Orders", null, pageNumber: 1, pageSize: 50);
 
-// Open connection and authenticate
-var result = webApiDS.Openconnection();
+// Insert
+var resIns = ds.InsertEntity("Orders", new { customerId = 1, total = 99.5 });
 
-// Use like a database!
-var users = webApiDS.GetEntity("Users", null);
-webApiDS.InsertEntity("Users", newUser);
-```
+// Update
+var resUpd = ds.UpdateEntity("Orders", new { id = 123, total = 120.0 });
 
-## 📚 Documentation
-
-For complete documentation, examples, and advanced usage, see:
-- **[WebAPIDataSource Documentation](../Docs/webapidatasource.html)** - Complete guide with examples
-- **[API Reference](../Docs/api-reference.html)** - Technical API documentation
-
-## 🏗️ Architecture
-
-The WebAPIDataSource uses a partial class architecture with specialized helpers:
-
-- **WebAPIDataSource.cs** - Main class with properties and constructor
-- **WebAPIDataSource.Connection.cs** - Connection management and authentication
-- **WebAPIDataSource.Data.cs** - CRUD operations
-- **WebAPIDataSource.Query.cs** - Query execution
-- **WebAPIDataSource.Structure.cs** - Entity discovery and schema
-- **WebAPIDataSource.Scripting.cs** - Script execution
-- **WebAPIDataSource.WebAPI.cs** - IWebAPIDataSource specific methods
-
-### Helper Classes
-
-- **WebAPIConfigurationHelper** - Configuration management
-- **WebAPIAuthenticationHelper** - OAuth2, Bearer, API Key authentication
-- **WebAPIRequestHelper** - HTTP requests with retry and circuit breaker
-- **WebAPICacheHelper** - Response caching with TTL
-- **WebAPIDataHelper** - Data transformation and URL building
-- **WebAPIRateLimitHelper** - Rate limiting and throttling
-- **WebAPISchemaHelper** - Schema inference from API responses
-- **WebAPIErrorHelper** - Comprehensive error handling
-
-## 🔧 Configuration
-
-### Basic Setup
-```csharp
-ConnectionProp.ConnectionString = "https://api.example.com/v1";
-ConnectionProp.ExtendedProperties["AuthenticationType"] = "Bearer";
-ConnectionProp.ExtendedProperties["Token"] = "your-token";
-```
-
-### Advanced Configuration
-```csharp
-ConnectionProp.ExtendedProperties["TimeoutMs"] = "30000";
-ConnectionProp.ExtendedProperties["MaxRetries"] = "3";
-ConnectionProp.ExtendedProperties["CacheDurationMinutes"] = "10";
-ConnectionProp.ExtendedProperties["MaxConcurrentRequests"] = "10";
-```
-
-## 🌟 Key Features
-
-- ✅ **Database-like Operations** - Use familiar CRUD operations
-- ✅ **Multiple Authentication** - OAuth2, Bearer, API Key, Basic Auth
-- ✅ **Circuit Breaker** - Automatic failure recovery
-- ✅ **Intelligent Caching** - Response caching with TTL
-- ✅ **Rate Limiting** - Built-in throttling
-- ✅ **Schema Inference** - Automatic API schema discovery
-- ✅ **Async Support** - Full async/await operations
-- ✅ **Error Recovery** - Comprehensive error handling
-
-## 📖 Examples
-
-### GitHub API
-```csharp
-ConnectionProp.ConnectionString = "https://api.github.com";
-ConnectionProp.ExtendedProperties["AuthenticationType"] = "Bearer";
-ConnectionProp.ExtendedProperties["Token"] = "your-github-token";
-
-var repos = webApiDS.GetEntity("Repos", null);
-```
-
-### Company Internal API
-```csharp
-ConnectionProp.ConnectionString = "https://api.company.internal/v2";
-ConnectionProp.ExtendedProperties["AuthenticationType"] = "OAuth2";
-ConnectionProp.ExtendedProperties["TokenEndpoint"] = "https://auth.company.internal/oauth/token";
-ConnectionProp.ExtendedProperties["ClientId"] = "your-client-id";
-
-var employees = webApiDS.GetEntity("Employees", null);
-```
-
-## 🔍 Troubleshooting
-
-- Check the **[WebAPIDataSource Documentation](../Docs/webapidatasource.html)** for detailed troubleshooting
-- Verify authentication configuration
-- Check network connectivity and API endpoints
-- Review error logs for detailed error information
-
-## 📋 Requirements
-
-- .NET 6.0 or higher
-- BeepDM Framework
-- Valid API credentials and endpoints
-
-## 📞 Support
-
-For issues and questions:
-1. Check the **[documentation](../Docs/webapidatasource.html)**
-2. Review the **[examples](../Docs/examples.html)**
-3. Check the **[API reference](../Docs/api-reference.html)**
-
----
-
-*For complete documentation and examples, visit the [WebAPIDataSource Documentation](../Docs/webapidatasource.html)*</content>
-<parameter name="filePath">C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\WebAPI\README.md
+// Delete
+var resDel = ds.DeleteEntity("Orders", new { id = 123 });

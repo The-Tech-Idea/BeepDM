@@ -6448,9 +6448,9 @@
         </member>
         <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.GetAuthenticationConfiguration">
             <summary>
-            Gets authentication configuration
+            Gets authentication configuration from connection properties
             </summary>
-            <returns>Authentication configuration</returns>
+            <returns>The WebAPIConnectionProperties instance with authentication settings</returns>
         </member>
         <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.GetPaginationConfiguration">
             <summary>
@@ -6504,43 +6504,25 @@
         <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration.RateLimit">
             <summary>Rate limit for this endpoint</summary>
         </member>
-        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration">
+        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult">
             <summary>
-            Authentication configuration
+            Result of configuration validation
             </summary>
         </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.Type">
-            <summary>Authentication type</summary>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult.IsValid">
+            <summary>Whether configuration is valid</summary>
         </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.ClientId">
-            <summary>OAuth2 client ID</summary>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult.Errors">
+            <summary>List of validation errors</summary>
         </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.ClientSecret">
-            <summary>OAuth2 client secret</summary>
+        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult.Warnings">
+            <summary>List of validation warnings</summary>
         </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.Username">
-            <summary>Username for basic auth</summary>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult.AddError(System.String,System.String)">
+            <summary>Adds an error with a key prefix</summary>
         </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.Password">
-            <summary>Password for basic auth</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.ApiKey">
-            <summary>API key value</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.ApiKeyHeader">
-            <summary>API key header name</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.TokenUrl">
-            <summary>OAuth2 token URL</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.RefreshUrl">
-            <summary>OAuth2 refresh URL</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.Scope">
-            <summary>OAuth2 scope</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.AuthenticationConfiguration.TokenExpiryBuffer">
-            <summary>Token expiry buffer in seconds</summary>
+        <member name="M:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult.AddWarning(System.String,System.String)">
+            <summary>Adds a warning with a key prefix</summary>
         </member>
         <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PaginationConfiguration">
             <summary>
@@ -6570,20 +6552,6 @@
         </member>
         <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.PaginationConfiguration.Style">
             <summary>Pagination style (PageSize, OffsetLimit, Cursor)</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult">
-            <summary>
-            Configuration validation result
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult.IsValid">
-            <summary>Whether configuration is valid</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult.Issues">
-            <summary>List of validation issues</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIConfigurationHelper.ConfigurationValidationResult.Warnings">
-            <summary>List of validation warnings</summary>
         </member>
         <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIDataHelper">
             <summary>
@@ -7170,6 +7138,7 @@
             Whether this is an in-memory connection
             </summary>
         </member>
+        <!-- Badly formed XML comment ignored for member "P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.ApiVersion" -->
         <member name="F:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties._authType">
             <summary>
             Type of authentication to use
@@ -7218,6 +7187,21 @@
         <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.AuthCode">
             <summary>
             OAuth2 authorization code for authorization code flow
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.AccessToken">
+            <summary>
+            Access token for Instagram Basic Display API - maps to ApiKey
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.AppId">
+            <summary>
+            Instagram App ID - maps to ClientId
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.AppSecret">
+            <summary>
+            Instagram App Secret - maps to ClientSecret
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.WebAPI.WebAPIConnectionProperties.TimeoutMs">
@@ -7536,6 +7520,9 @@
             Data retrieval &amp; CRUD operations using helpers.
             </summary>
             <summary>
+            HTTP convenience methods for common Web API calls (GET, etc.)
+            </summary>
+            <summary>
             Query &amp; scalar interface stubs.
             </summary>
             <summary>
@@ -7699,6 +7686,25 @@
         </member>
         <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.UpdateEntities(System.String,System.Object,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetAsync(System.String,System.Collections.Generic.Dictionary{System.String,System.String},System.Collections.Generic.Dictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <summary>
+            Sends a GET request to the specified endpoint or absolute URL.
+            - If endpointOrUrl starts with http, it is treated as an absolute URL.
+            - Otherwise it is combined with BaseUrl.
+            Default headers and auth headers are applied automatically.
+            </summary>
+            <param name="endpointOrUrl">Relative endpoint or absolute URL</param>
+            <param name="query">Optional query parameters to append</param>
+            <param name="headers">Optional extra headers</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>HttpResponseMessage or null if request failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.GetAsync``1(System.String,System.Collections.Generic.Dictionary{System.String,System.String},System.Collections.Generic.Dictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <summary>
+            Sends a GET request and deserializes the JSON response to type T.
+            Returns default(T) if the request fails or content cannot be parsed.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.WebAPI.WebAPIDataSource.RunQuery(System.String)">
             <inheritdoc />

@@ -2456,5 +2456,11 @@
             Gets or sets the display order of the command. Defaults to 0.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.WebAPI.IWebAPIDataSource.GetAsync``1(System.String,System.Collections.Generic.Dictionary{System.String,System.String},System.Collections.Generic.Dictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <summary>
+            Sends a GET request and deserializes the JSON response to type T.
+            Returns default(T) if the request fails or content cannot be parsed.
+            </summary>
+        </member>
     </members>
 </doc>

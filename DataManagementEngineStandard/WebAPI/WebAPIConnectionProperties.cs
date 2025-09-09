@@ -219,6 +219,10 @@ namespace TheTechIdea.Beep.WebAPI
 
         #region Web API Specific Properties
 
+        // <summary>
+        /// API version for Instagram Graph API
+        /// </summary>
+        public string ApiVersion { get; set; } = "v1.0";
         /// <summary>
         /// Type of authentication to use
         /// </summary>
@@ -277,7 +281,44 @@ namespace TheTechIdea.Beep.WebAPI
         /// OAuth2 authorization code for authorization code flow
         /// </summary>
         public string AuthCode { get; set; }
+        /// <summary>
+        /// Access token for Instagram Basic Display API - maps to ApiKey
+        /// </summary>
+        public string AccessToken
+        {
+            get => ApiKey;
+            set => ApiKey = value;
+        }
+        /// <summary>
+        /// Instagram App ID - maps to ClientId
+        /// </summary>
+        public string AppId
+        {
+            get => ClientId;
+            set => ClientId = value;
+        }
 
+        /// <summary>
+        /// Instagram App Secret - maps to ClientSecret
+        /// </summary>
+        public string AppSecret
+        {
+            get => ClientSecret;
+            set => ClientSecret = value;
+        }
+        public string ConsumerKey
+        {
+            get => ClientId;
+            set => ClientId = value;
+        }
+      
+        public string BearerToken { get; set; }
+
+        public string ConsumerSecret
+        {
+            get => ClientSecret;
+            set => ClientSecret = value;
+        }
         #endregion
 
         #region Configuration Settings
