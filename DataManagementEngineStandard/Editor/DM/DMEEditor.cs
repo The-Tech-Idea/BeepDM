@@ -461,12 +461,27 @@ namespace TheTechIdea.Beep
                 {
                     try
                     {
-                        ds1 = CreateNewDataSourceConnection(pdatasourcename);
+                        try
+                        {
+                            // Try to create via lifecycle helper using configured connection properties
+                            var cp = ConfigEditor.DataConnections.Where(c => c.ConnectionName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+                            if (cp != null)
+                            {
+                                ds1 = DataSourceLifecycleHelper.CreateDataSourceAsync(cp, this).GetAwaiter().GetResult();
+                            }
+                        }
+                        catch
+                        {
+                            ds1 = null;
+                        }
+
+                        if (ds1 == null)
+                            ds1 = CreateNewDataSourceConnection(pdatasourcename);
+
                         if (ds1 != null)
                         {
                             if (ds1.Entities.Count == 0 && !ds1.Dataconnection.ConnectionProp.IsInMemory)
                             {
-
                                 if (ConfigEditor.LoadDataSourceEntitiesValues(ds1.DatasourceName) != null)
                                 {
                                     ds1.Entities = ConfigEditor.LoadDataSourceEntitiesValues(ds1.DatasourceName).Entities;
@@ -727,6 +742,18 @@ namespace TheTechIdea.Beep
             ErrorObject.Flag = Errors.Ok;
             if (cn != null)
             {
+                // Try centralized lifecycle-based creation first; if it fails, fall back to the existing path
+                try
+                {
+                    var ds = DataSourceLifecycleHelper.CreateDataSourceAsync(cn, this).GetAwaiter().GetResult();
+                    if (ds != null)
+                        return ds;
+                }
+                catch
+                {
+                    // ignore and fallback
+                }
+
                 return CreateNewDataSourceConnection(cn, guidID);
             }
             else
@@ -887,6 +914,18 @@ namespace TheTechIdea.Beep
             ErrorObject.Flag = Errors.Ok;
             if (cn != null)
             {
+                // Prefer lifecycle helper to create datasource (centralized logic). Keep fallback to existing implementation.
+                try
+                {
+                    var ds = DataSourceLifecycleHelper.CreateDataSourceAsync(cn, this).GetAwaiter().GetResult();
+                    if (ds != null)
+                        return ds;
+                }
+                catch
+                {
+                    // ignore and fallback
+                }
+
                 return CreateNewDataSourceConnection(cn, pdatasourcename);
             }
             else
@@ -901,6 +940,18 @@ namespace TheTechIdea.Beep
             ErrorObject.Flag = Errors.Ok;
             if (cn != null)
             {
+                // Try lifecycle helper asynchronously first, fallback to synchronous implementation if needed
+                try
+                {
+                    var ds = await DataSourceLifecycleHelper.CreateDataSourceAsync(cn, this).ConfigureAwait(false);
+                    if (ds != null)
+                        return ds;
+                }
+                catch
+                {
+                    // ignore and fallback
+                }
+
                 return CreateNewDataSourceConnection(cn, pdatasourcename);
             }
             else
@@ -981,8 +1032,10 @@ namespace TheTechIdea.Beep
                 return null;
             }
         }
-        public virtual  async Task<IDataSource> CreateNewDataSourceConnectionAsync(ConnectionProperties cn, string pdatasourcename)
-        {
+    public virtual async Task<IDataSource> CreateNewDataSourceConnectionAsync(ConnectionProperties cn, string pdatasourcename)
+    {
+            // ensure method is actually asynchronous to avoid compiler warnings
+            await Task.Yield();
             ErrorObject.Flag = Errors.Ok;
 
             try

@@ -99,7 +99,7 @@ namespace TheTechIdea.Beep.Utilities
     public enum ColumnViewType
     { TextBox, CheckBox, ComboBox, DateCalendar,Label }
     public enum DataSourceType
-    {
+    {Unknown,
         // Relational Databases
         NONE, Oracle, SqlServer, Mysql, SqlCompact, SqlLite, Postgre, FireBird, DB2, SnowFlake, Hana, Cockroach, Spanner, TerraData, Vertica, AzureSQL, AWSRDS,
 
@@ -278,7 +278,7 @@ namespace TheTechIdea.Beep.Utilities
     public enum AddinType
     {
         Form,Control,Class,Page,Link,Branch,Menu,Button,Tab,Panel,Grid,Tree,Chart,
-        Report,Graph,Map,Table,View,Entity,Data,DataView
+        Report,Graph,Map,Table,View,Entity,Data,DataView,Config,ConnectionProperties,Workflow,Script,Other
     }
     public enum TransActionType
     {

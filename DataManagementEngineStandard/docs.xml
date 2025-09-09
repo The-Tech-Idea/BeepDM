@@ -3510,70 +3510,10 @@
             Actions that can be taken when unsaved changes are detected
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions">
-            <summary>
-            DMEEditor extension for enhanced package management capabilities
-            Provides extension methods that work with existing virtual methods
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.CreateEnhancedDataSourceConnectionAsync(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.String,System.Boolean)">
-            <summary>
-            Enhanced data source creation with better error handling
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.GetEnhancedDataSource(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.Boolean)">
-            <summary>
-            Enhanced data source retrieval with better diagnostics
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.OpenEnhancedDataSource(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.Boolean)">
-            <summary>
-            Enhanced connection opening with automatic diagnostics
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.GetDataSourceDiagnostics(TheTechIdea.Beep.Editor.IDMEEditor,System.String)">
-            <summary>
-            Get comprehensive data source diagnostics
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.TestAllConnectionsAsync(TheTechIdea.Beep.Editor.IDMEEditor)">
-            <summary>
-            Enhanced bulk connection testing
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.AddEnhancedLogMessage(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.Editor.LogLevel)">
-            <summary>
-            Enhanced logging with context
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.GetSuggestedPackages(TheTechIdea.Beep.Editor.IDMEEditor)">
-            <summary>
-            Get suggested package names for missing data sources
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.SetExtensionData(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.Object)">
-            <summary>
-            Store extension data for this DMEEditor instance
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.GetExtensionData``1(TheTechIdea.Beep.Editor.IDMEEditor,System.String,``0)">
-            <summary>
-            Get extension data for this DMEEditor instance
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DMEEditorNuggetExtensions.CleanupNuggetExtensions(TheTechIdea.Beep.Editor.IDMEEditor)">
-            <summary>
-            Cleanup extension resources when DMEEditor is disposed
-            This method is called from the partial class OnDisposing method
-            </summary>
-        </member>
         <member name="T:TheTechIdea.Beep.DMEEditor">
             <summary>
             Data Management Enterprize Editor (DMEEditor)
             This is the Class that encapsulate all functionality of Data Management.
-            </summary>
-            <summary>
-            DMEEditor partial class extension for enhanced package management cleanup
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.DMEEditor.ContainerMode">
@@ -3819,9 +3759,251 @@
             <param name="ClassDBHandlerName"></param>
             <returns></returns>
         </member>
-        <member name="M:TheTechIdea.Beep.DMEEditor.OnDisposing">
+        <member name="T:TheTechIdea.Beep.DMEEditorHelpers">
             <summary>
-            Enhanced dispose implementation that includes nugget extension cleanup
+            Lightweight IDMEEditor implementation that uses helper classes (DataSourceLifecycleHelper, ValidationHelper, ErrorHandlingHelper, CacheManagerHelper).
+            This is intended as an additional implementation for experiments and refactoring; it preserves the IDMEEditor contract.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.DataSources">
+            <summary>
+            Gets or sets the list of active data sources.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.progress">
+            <summary>
+            Gets or sets the progress handler for reporting progress.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.ContainerMode">
+            <summary>
+            Gets or sets a value indicating whether the editor is running in container mode.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.ContainerName">
+            <summary>
+            Gets or sets the name of the container.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.EntityName">
+            <summary>
+            Gets or sets the name of the current entity.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.DataSourceName">
+            <summary>
+            Gets or sets the name of the current data source.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.ETL">
+            <summary>
+            Gets or sets the ETL (Extract, Transform, Load) component.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.ErrorObject">
+            <summary>
+            Gets or sets the error information object.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.Logger">
+            <summary>
+            Gets or sets the logger instance.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.typesHelper">
+            <summary>
+            Gets or sets the data types helper.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.Utilfunction">
+            <summary>
+            Gets or sets the utility functions provider.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.ConfigEditor">
+            <summary>
+            Gets or sets the configuration editor.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.WorkFlowEditor">
+            <summary>
+            Gets or sets the workflow editor.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.classCreator">
+            <summary>
+            Gets or sets the class creator for dynamic type generation.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.assemblyHandler">
+            <summary>
+            Gets or sets the assembly handler for managing loaded assemblies.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.Loganderrors">
+            <summary>
+            Gets or sets the collection of log and error messages.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.Passedarguments">
+            <summary>
+            Gets or sets the arguments passed in events.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.DMEEditorHelpers.PassEvent">
+            <summary>
+            Event triggered to pass arguments and notifications.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:TheTechIdea.Beep.DMEEditorHelpers"/> class.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.GetDataSource(System.String)">
+            <summary>
+            Retrieves a data source by name. It first checks the cache, then attempts to create it if not found.
+            </summary>
+            <param name="pdatasourcename">The name of the data source to retrieve.</param>
+            <returns>An IDataSource instance or null if not found.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.CreateNewDataSourceConnection(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.String)">
+            <summary>
+            Creates a new data source connection using the provided properties. Delegates creation to DataSourceLifecycleHelper.
+            </summary>
+            <param name="cn">The connection properties.</param>
+            <param name="pdatasourcename">The desired name for the data source.</param>
+            <returns>A new IDataSource instance or null on failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.CreateLocalDataSourceConnection(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.String,System.String)">
+            <summary>
+            Creates a local data source connection. This method delegates to CreateNewDataSourceConnection.
+            </summary>
+            <param name="dataConnection">The connection properties.</param>
+            <param name="pdatasourcename">The name for the data source.</param>
+            <param name="ClassDBHandlerName">The class handler name (used by helper to resolve driver).</param>
+            <returns>A new IDataSource instance or null on failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.RemoveDataDource(System.String)">
+            <summary>
+            Removes a data source from the editor and attempts to dispose it.
+            </summary>
+            <param name="pdatasourcename">The name of the data source to remove.</param>
+            <returns>True if the data source was found and removed; otherwise, false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.CheckDataSourceExist(System.String)">
+            <summary>
+            Checks if a data source with the specified name exists in the editor.
+            </summary>
+            <param name="pdatasourcename">The name of the data source to check.</param>
+            <returns>True if the data source exists; otherwise, false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.OpenDataSource(System.String)">
+            <summary>
+            Opens the connection for a specified data source.
+            </summary>
+            <param name="pdatasourcename">The name of the data source to open.</param>
+            <returns>The state of the connection after the open attempt.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.CloseDataSource(System.String)">
+            <summary>
+            Closes the connection for a specified data source.
+            </summary>
+            <param name="pdatasourcename">The name of the data source to close.</param>
+            <returns>True if the connection was successfully closed.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.GetDataSourceClass(System.String)">
+            <summary>
+            Retrieves the assembly and class definition for a given data source name.
+            </summary>
+            <param name="DatasourceName">The name of the data source.</param>
+            <returns>The AssemblyClassDefinition or null if not found.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.AddLogMessage(System.String,System.String,System.DateTime,System.Int32,System.String,TheTechIdea.Beep.ConfigUtil.Errors)">
+            <summary>
+            Adds a log message to the logger and updates the error object.
+            </summary>
+            <param name="pLogType">The type of the log (e.g., "Error", "Info").</param>
+            <param name="pLogMessage">The message to log.</param>
+            <param name="pLogData">The timestamp of the log entry.</param>
+            <param name="pRecordID">An optional record ID related to the log.</param>
+            <param name="pMiscData">Miscellaneous data related to the log.</param>
+            <param name="pFlag">An error flag indicating the status.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.AddLogMessage(System.String)">
+            <summary>
+            Adds a simple log message.
+            </summary>
+            <param name="pLogMessage">The message to log.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.RaiseEvent(System.Object,TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>
+            Raises the PassEvent to notify listeners.
+            </summary>
+            <param name="sender">The object that raised the event.</param>
+            <param name="args">The event arguments.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.AskQuestion(TheTechIdea.Beep.Addin.IPassedArgs)">
+            <summary>
+            Placeholder method for asking a question to the user.
+            </summary>
+            <param name="args">Arguments for the question.</param>
+            <returns>An IErrorsInfo object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.GetData(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Retrieves data for a specific entity from a data source.
+            </summary>
+            <param name="ds">The data source.</param>
+            <param name="entity">The entity structure defining what data to retrieve.</param>
+            <returns>Data as an object (e.g., DataTable) or null on failure.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.Getdefaults(System.String)">
+            <summary>
+            Gets default values for a data source using the DefaultsManager.
+            </summary>
+            <param name="DatasourceName">The name of the data source.</param>
+            <returns>A list of default values.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.Savedefaults(System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.DefaultValue},System.String)">
+            <summary>
+            Saves default values for a data source using the DefaultsManager.
+            </summary>
+            <param name="defaults">The list of default values to save.</param>
+            <param name="DatasourceName">The name of the data source.</param>
+            <returns>An IErrorsInfo object indicating the result.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.RemoveDataDourceUsingGuidID(System.String)">
+            <summary>
+            Removes a data source from the editor using its unique GUID.
+            </summary>
+            <param name="guidID">The GUID of the data source to remove.</param>
+            <returns>True if the data source was found and removed; otherwise, false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.CheckDataSourceExistUsingGuidID(System.String)">
+            <summary>
+            Checks if a data source with the specified GUID exists.
+            </summary>
+            <param name="guidID">The GUID to check.</param>
+            <returns>True if the data source exists; otherwise, false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.OpenDataSourceUsingGuidID(System.String)">
+            <summary>
+            Opens the connection for a data source identified by its GUID.
+            </summary>
+            <param name="guidID">The GUID of the data source to open.</param>
+            <returns>The state of the connection after the open attempt.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.CloseDataSourceUsingGuidID(System.String)">
+            <summary>
+            Closes the connection for a data source identified by its GUID.
+            </summary>
+            <param name="guidID">The GUID of the data source to close.</param>
+            <returns>True if the connection was successfully closed.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.Dispose">
+            <summary>
+            Disposes all resources used by the editor, including all cached and local data sources.
             </summary>
         </member>
         <!-- Badly formed XML comment ignored for member "T:TheTechIdea.Beep.EntityDataMoveValidator" -->
@@ -3916,45 +4098,10 @@
             Represents the result of a comparison between two data source entities.
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor">
+        <member name="T:TheTechIdea.Beep.Helpers.CacheManagerHelper">
             <summary>
-            Example of a custom DMEEditor that overrides virtual methods for enhanced functionality
-            This demonstrates how to leverage the virtual method pattern you added
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.GetDataSource(System.String)">
-            <summary>
-            Override GetDataSource to add custom logging and statistics
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.CreateNewDataSourceConnection(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.String)">
-            <summary>
-            Override CreateNewDataSourceConnection to add retry logic and enhanced error handling
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.OpenDataSource(System.String)">
-            <summary>
-            Override OpenDataSource to add connection statistics and enhanced monitoring
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.GetEntityStructure(System.String,System.String)">
-            <summary>
-            Override GetEntityStructure to add caching and performance monitoring
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.AddLogMessage(System.String)">
-            <summary>
-            Override AddLogMessage to add custom formatting and routing
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.GetSessionStats">
-            <summary>
-            Get session statistics
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Extensions.CustomEnhancedDMEEditor.ResetSessionStats">
-            <summary>
-            Reset session statistics
+            Lightweight in-memory cache helper for small objects used by DMEEditor.
+            Not meant to replace production caches; provides expiry and basic stats.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.LinkConnection2Drivers(TheTechIdea.Beep.ConfigUtil.IConnectionProperties,TheTechIdea.Beep.ConfigUtil.IConfigEditor)">
@@ -4170,6 +4317,81 @@
         <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateDuckDBConfig">
             <summary>Creates a configuration object for DuckDB connection drivers.</summary>
             <returns>A configuration object for DuckDB connection drivers.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper">
+            <summary>
+            Helper class for managing the complete lifecycle of data sources including creation, 
+            caching, validation, and disposal with advanced retry and error handling mechanisms.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.CreateDataSourceAsync(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,TheTechIdea.Beep.Editor.IDMEEditor,System.Boolean)">
+            <summary>
+            Creates a new data source asynchronously with comprehensive error handling and validation.
+            </summary>
+            <param name="connection">Connection properties for the data source</param>
+            <param name="editor">DME Editor instance for logging and configuration</param>
+            <param name="validateConnection">Whether to validate connection before creation</param>
+            <returns>Created and validated IDataSource instance</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.GetOrCreateDataSourceAsync(System.String,System.Func{TheTechIdea.Beep.ConfigUtil.ConnectionProperties},TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Gets an existing data source from cache or creates a new one using the provided factory.
+            </summary>
+            <param name="name">Data source name</param>
+            <param name="connectionFactory">Factory function to create connection properties</param>
+            <param name="editor">DME Editor instance</param>
+            <returns>Cached or newly created IDataSource instance</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.ValidateDataSourceAsync(TheTechIdea.Beep.IDataSource)">
+            <summary>
+            Validates a data source's health and connectivity.
+            </summary>
+            <param name="dataSource">Data source to validate</param>
+            <returns>True if data source is valid and functional</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.OpenWithRetryAsync(TheTechIdea.Beep.IDataSource,System.Int32)">
+            <summary>
+            Opens a data source connection with retry logic and exponential backoff.
+            </summary>
+            <param name="dataSource">Data source to open</param>
+            <param name="maxRetries">Maximum number of retry attempts</param>
+            <returns>Final connection state</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.RegisterDataSource(TheTechIdea.Beep.IDataSource)">
+            <summary>
+            Registers a data source in the internal cache.
+            </summary>
+            <param name="dataSource">Data source to register</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.UnregisterDataSource(System.String)">
+            <summary>
+            Unregisters a data source from the cache without disposing it.
+            </summary>
+            <param name="name">Name of the data source to unregister</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.DisposeDataSourceAsync(TheTechIdea.Beep.IDataSource)">
+            <summary>
+            Safely disposes a data source with proper cleanup.
+            </summary>
+            <param name="dataSource">Data source to dispose</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.DisposeAllAsync">
+            <summary>
+            Disposes all cached data sources.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.GetCachedDataSource(System.String)">
+            <summary>
+            Gets cached data source by name.
+            </summary>
+            <param name="name">Data source name</param>
+            <returns>Cached data source or null if not found</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.GetAllCachedDataSources">
+            <summary>
+            Gets all cached data sources.
+            </summary>
+            <returns>List of cached data sources</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Helpers.DataTypeFieldMappingHelper">
             <summary>
@@ -4430,6 +4652,93 @@
         <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.GetNetDataTypes2">
             <summary>Returns an array of .NET data types.</summary>
             <returns>An array of .NET data types.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.ErrorHandlingHelper">
+            <summary>
+            Helper class providing consistent error handling, logging, and exception management
+            across the data management engine with structured error reporting and recovery strategies.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ErrorHandlingHelper.HandleException(System.Exception,System.String,TheTechIdea.Beep.Editor.IDMEEditor,System.Boolean)">
+            <summary>
+            Handles an exception with consistent logging and error reporting.
+            </summary>
+            <param name="ex">Exception to handle</param>
+            <param name="context">Contextual information about where the error occurred</param>
+            <param name="editor">DME Editor instance for logging</param>
+            <param name="includeStackTrace">Whether to include stack trace in logging</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ErrorHandlingHelper.ExecuteWithErrorHandlingAsync``1(System.Func{System.Threading.Tasks.Task{``0}},System.String,TheTechIdea.Beep.Editor.IDMEEditor,``0,System.Int32)">
+            <summary>
+            Executes an async operation with comprehensive error handling and recovery.
+            </summary>
+            <typeparam name="T">Return type of the operation</typeparam>
+            <param name="operation">Async operation to execute</param>
+            <param name="context">Context description for error reporting</param>
+            <param name="editor">DME Editor instance for logging</param>
+            <param name="defaultValue">Default value to return on error</param>
+            <param name="retryCount">Number of retry attempts</param>
+            <returns>Result of operation or default value on error</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ErrorHandlingHelper.ExecuteWithErrorHandling``1(System.Func{``0},System.String,TheTechIdea.Beep.Editor.IDMEEditor,``0)">
+            <summary>
+            Executes a synchronous operation with comprehensive error handling.
+            </summary>
+            <typeparam name="T">Return type of the operation</typeparam>
+            <param name="operation">Operation to execute</param>
+            <param name="context">Context description for error reporting</param>
+            <param name="editor">DME Editor instance for logging</param>
+            <param name="defaultValue">Default value to return on error</param>
+            <returns>Result of operation or default value on error</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ErrorHandlingHelper.CreateErrorInfo(System.Exception,System.String)">
+            <summary>
+            Creates a comprehensive error info object from an exception.
+            </summary>
+            <param name="ex">Exception to create error info from</param>
+            <param name="context">Contextual information</param>
+            <returns>Structured error information object</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ErrorHandlingHelper.LogStructuredException(System.Exception,System.String,TheTechIdea.Beep.Logger.IDMLogger,System.Boolean)">
+            <summary>
+            Logs a structured exception with detailed information.
+            </summary>
+            <param name="ex">Exception to log</param>
+            <param name="context">Context where the exception occurred</param>
+            <param name="logger">Logger instance</param>
+            <param name="includeStackTrace">Whether to include stack trace</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ErrorHandlingHelper.SafeDispose(System.IDisposable,System.String,TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Safely executes a disposal operation with error handling.
+            </summary>
+            <param name="disposable">Object to dispose</param>
+            <param name="objectName">Name of the object for logging</param>
+            <param name="editor">DME Editor for logging</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ErrorHandlingHelper.EnsureSuccess(System.Boolean,System.String,System.String)">
+            <summary>
+            Validates that an operation completed successfully and throws if not.
+            </summary>
+            <param name="condition">Condition that should be true for success</param>
+            <param name="errorMessage">Error message if condition is false</param>
+            <param name="context">Context for the validation</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ErrorHandlingHelper.TryExecute(System.Action,System.String,TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Wraps an action with a try-catch that suppresses exceptions.
+            </summary>
+            <param name="action">Action to execute</param>
+            <param name="context">Context for error reporting</param>
+            <param name="editor">Editor for logging (optional)</param>
+            <returns>True if action completed successfully, false if an exception was caught</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ErrorHandlingHelper.GetUserFriendlyMessage(System.Exception)">
+            <summary>
+            Gets a user-friendly error message from an exception.
+            </summary>
+            <param name="ex">Exception to get message from</param>
+            <returns>User-friendly error message</returns>
         </member>
         <member name="P:TheTechIdea.Beep.Helpers.FileConnectionHelper.DMEEditor">
             <summary>
@@ -5717,6 +6026,120 @@
             <returns> 
             An instance of the given <paramref name="type"/>. 
             </returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.ValidationResult">
+            <summary>
+            Result of a validation operation containing success status and any error messages.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.ValidationResult.IsValid">
+            <summary>
+            Gets or sets whether the validation was successful.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.ValidationResult.Errors">
+            <summary>
+            Gets or sets the list of validation error messages.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.ValidationResult.Warnings">
+            <summary>
+            Gets or sets the list of validation warning messages.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationResult.#ctor(System.Boolean)">
+            <summary>
+            Initializes a new instance of ValidationResult.
+            </summary>
+            <param name="isValid">Initial validation state</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationResult.AddError(System.String)">
+            <summary>
+            Adds an error message and sets IsValid to false.
+            </summary>
+            <param name="error">Error message to add</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationResult.AddWarning(System.String)">
+            <summary>
+            Adds a warning message.
+            </summary>
+            <param name="warning">Warning message to add</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationResult.Success">
+            <summary>
+            Creates a successful validation result.
+            </summary>
+            <returns>Successful validation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationResult.Failure(System.String)">
+            <summary>
+            Creates a failed validation result with an error message.
+            </summary>
+            <param name="error">Error message</param>
+            <returns>Failed validation result</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.ValidationHelper">
+            <summary>
+            Helper class providing comprehensive validation capabilities for data management operations.
+            Includes validation for connection properties, data source names, entity structures, and more.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationHelper.ValidateConnectionProperties(TheTechIdea.Beep.ConfigUtil.ConnectionProperties)">
+            <summary>
+            Validates connection properties for completeness and correctness.
+            </summary>
+            <param name="properties">Connection properties to validate</param>
+            <returns>Validation result with any errors or warnings</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationHelper.ValidateDataSourceName(System.String)">
+            <summary>
+            Validates a data source name for correctness and uniqueness constraints.
+            </summary>
+            <param name="name">Data source name to validate</param>
+            <returns>Validation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationHelper.ValidateEntityStructure(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Validates an entity structure for completeness and data integrity.
+            </summary>
+            <param name="entity">Entity structure to validate</param>
+            <returns>Validation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationHelper.ValidateConnectionAsync(TheTechIdea.Beep.ConfigUtil.ConnectionProperties)">
+            <summary>
+            Validates a connection asynchronously by attempting to establish connectivity.
+            </summary>
+            <param name="properties">Connection properties to validate</param>
+            <returns>Async validation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationHelper.IsValidGuid(System.String)">
+            <summary>
+            Validates if a string is a valid GUID format.
+            </summary>
+            <param name="guidString">String to validate as GUID</param>
+            <returns>True if valid GUID format</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationHelper.IsValidConnectionString(System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Validates a connection string for a specific database type.
+            </summary>
+            <param name="connectionString">Connection string to validate</param>
+            <param name="dbType">Database type for validation context</param>
+            <returns>True if connection string appears valid</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationHelper.IsValidName(System.String)">
+            <summary>
+            Validates if a name follows valid naming conventions.
+            </summary>
+            <param name="name">Name to validate</param>
+            <returns>True if name is valid</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.ValidationHelper.ValidateBatchConnections(System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.ConnectionProperties})">
+            <summary>
+            Validates batch connection properties.
+            </summary>
+            <param name="connections">List of connection properties to validate</param>
+            <returns>Dictionary of validation results by connection name</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.VectorDatabaseHelper.GenerateVectorDatabaseCommand(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Helpers.VectorDatabaseHelper.VectorDatabaseOperation,System.Collections.Generic.Dictionary{System.String,System.Object})">
             <summary>

@@ -29,5 +29,55 @@
             Writes a general log message.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Logger.LoggerScope">
+            <summary>
+            A simple implementation of a logging scope for Microsoft.Extensions.Logging
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Logger.Extensions.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for configuring DMLogger with dependency injection
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.Extensions.ServiceCollectionExtensions.AddDMLogger(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds DMLogger as the logging provider to the service collection
+            </summary>
+            <param name="services">The service collection</param>
+            <returns>The service collection for method chaining</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.Extensions.ServiceCollectionExtensions.AddDMLogger(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{TheTechIdea.Beep.Logger.DMLogger})">
+            <summary>
+            Adds DMLogger as the logging provider with custom configuration
+            </summary>
+            <param name="services">The service collection</param>
+            <param name="configureLogger">Action to configure the logger</param>
+            <returns>The service collection for method chaining</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.Extensions.ServiceCollectionExtensions.AddDMLogger(Microsoft.Extensions.Logging.ILoggingBuilder)">
+            <summary>
+            Adds DMLogger as a logging provider to the ASP.NET Core logging system
+            </summary>
+            <param name="builder">The logging builder</param>
+            <returns>The logging builder for method chaining</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.Extensions.ServiceCollectionExtensions.AddDMLogger(Microsoft.Extensions.Logging.ILoggingBuilder,System.Action{TheTechIdea.Beep.Logger.DMLogger})">
+            <summary>
+            Adds DMLogger as a logging provider with custom configuration to the ASP.NET Core logging system
+            </summary>
+            <param name="builder">The logging builder</param>
+            <param name="configureLogger">Action to configure the logger</param>
+            <returns>The logging builder for method chaining</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Logger.Providers.DMLoggerProvider">
+            <summary>
+            Logger provider for DMLogger integration with ASP.NET Core logging
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Logger.Providers.DMLoggerAdapter">
+            <summary>
+            Adapter to wrap DMLogger for category-specific logging
+            </summary>
+        </member>
     </members>
 </doc>
