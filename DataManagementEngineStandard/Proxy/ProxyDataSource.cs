@@ -709,7 +709,7 @@ namespace TheTechIdea.Beep.Proxy
 
         #endregion Proxy DataSource Functions
         #region IDataSource Functions
-        public List<string> GetEntitesList()
+        public IEnumerable<string> GetEntitesList()
         {
             int retryCount = 0;
             while (retryCount < MaxRetries)
@@ -730,7 +730,7 @@ namespace TheTechIdea.Beep.Proxy
             }
             throw new Exception("Maximum retry attempts exceeded.");
         }
-        public IBindingList RunQuery(string qrystr)
+        public IEnumerable<object> RunQuery(string qrystr)
         {
             return RetryPolicy(async () =>
             {
@@ -794,7 +794,7 @@ namespace TheTechIdea.Beep.Proxy
         {
             return Current.GetEntityIdx(entityName);
         }
-        public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
+        public IEnumerable<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
             return RetryPolicy(async () =>
             {
@@ -809,7 +809,7 @@ namespace TheTechIdea.Beep.Proxy
             : new List<ChildRelation>();
 
         }
-        public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
+        public IEnumerable<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             return RetryPolicy(async () =>
             {
@@ -859,7 +859,7 @@ namespace TheTechIdea.Beep.Proxy
                 ? Current.RunScript(script)
                 : _dmeEditor.ErrorObject;
         }
-        public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
+        public IEnumerable<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
             return RetryPolicy(async () =>
             {
@@ -1059,9 +1059,9 @@ namespace TheTechIdea.Beep.Proxy
 
             return Current.ErrorObject;
         }
-        public IBindingList GetEntity(string EntityName, List<AppFilter> filter)
+        public IEnumerable<object> GetEntity(string EntityName, List<AppFilter> filter)
         {
-            IBindingList result = null;
+            IEnumerable<object> result = null;
             RetryPolicy(async () =>
             {
                 try
@@ -1097,9 +1097,9 @@ namespace TheTechIdea.Beep.Proxy
 
             return result;
         }
-        public async Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public async Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
-            IBindingList result = null;
+            IEnumerable<object> result = null;
             await RetryPolicy(async () =>
             {
                 try

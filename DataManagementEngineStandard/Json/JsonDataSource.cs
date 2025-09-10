@@ -376,7 +376,7 @@ namespace TheTechIdea.Beep.Json
         /// <summary>
         /// Returns a list of child relations for a given table. Not implemented for JSON.
         /// </summary>
-        public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
+        public IEnumerable<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
             throw new NotImplementedException();
         }
@@ -384,7 +384,7 @@ namespace TheTechIdea.Beep.Json
         /// <summary>
         /// Returns a list of scripts to create entities, if applicable. Not implemented for JSON.
         /// </summary>
-        public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
+        public IEnumerable<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
             throw new NotImplementedException();
         }
@@ -392,7 +392,7 @@ namespace TheTechIdea.Beep.Json
         /// <summary>
         /// Returns a list of entity names managed by this data source.
         /// </summary>
-        public List<string> GetEntitesList()
+        public IEnumerable<string> GetEntitesList()
         {
             if (Entities.Count > 0)
             {
@@ -410,18 +410,18 @@ namespace TheTechIdea.Beep.Json
         /// <param name="entityName">Name of the entity to retrieve</param>
         /// <param name="filter">Filter criteria (not fully implemented)</param>
         /// <returns>Collection of objects representing the entity data</returns>
-        public IBindingList GetEntity(string entityName, List<AppFilter> filter)
+        public IEnumerable<object> GetEntity(string entityName, List<AppFilter> filter)
         {
             var entityStructure = Entities.FirstOrDefault(e => e.EntityName == entityName);
             if (entityStructure == null)
             {
-                return new BindingList<object>();
+                return Enumerable.Empty<object>();
             }
 
             JArray rootJsonArray = GetRootJsonArray();
             if (rootJsonArray == null)
             {
-                return new BindingList<object>();
+                return Enumerable.Empty<object>();
             }
 
             List<object> resultList = new List<object>();
@@ -527,7 +527,7 @@ namespace TheTechIdea.Beep.Json
         /// <summary>
         /// Asynchronously retrieves entity data. Uses GetEntity internally.
         /// </summary>
-        public Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             return Task.FromResult(GetEntity(EntityName, Filter));
         }
@@ -535,7 +535,7 @@ namespace TheTechIdea.Beep.Json
         /// <summary>
         /// Returns foreign keys for an entity. Not implemented for JSON.
         /// </summary>
-        public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
+        public IEnumerable<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             throw new NotImplementedException();
         }
@@ -596,13 +596,13 @@ namespace TheTechIdea.Beep.Json
         /// Runs a given query against the JSON data using JSONPath-like syntax.
         /// Attempts to match entity structure and return a list of objects.
         /// </summary>
-        public IBindingList RunQuery(string qrystr)
+        public IEnumerable<object> RunQuery(string qrystr)
         {
             // Ensure JSON is loaded
             JArray rootJsonArray = GetRootJsonArray();
             if (rootJsonArray == null)
             {
-                return new BindingList<object>();
+                return Enumerable.Empty<object>();
             }
 
             try

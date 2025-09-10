@@ -13,6 +13,15 @@ A robust REST/Web API data source for BeepDM providing database-like operations,
 
 - WebAPIDataSource.cs: core state, ctor, DI of helpers
 - WebAPIDataSource.Connection.cs: open/close, transactional stubs
+- WebAPIDataSource.Helpers.cs: helper instances
+- WebAPIDataSource.Configuration.cs: config validation
+- WebAPIDataSource.Authentication.cs: auth handling
+- WebAPIDataSource.Request.cs: HTTP request/response
+- WebAPIDataSource.Cache.cs: in-memory caching
+- WebAPIDataSource.RateLimit.cs: rate limiting
+- WebAPIDataSource.DataHelper.cs: URL building, response processing
+- WebAPIDataSource.Schema.cs: schema inference
+- WebAPIDataSource.http.cs: low-level HTTP methods (GetAsync, PostAsync, etc.)
 - WebAPIDataSource.Data.cs: CRUD operations
 - WebAPIDataSource.Query.cs: RunQuery, GetScalar
 - WebAPIDataSource.Structure.cs: entities discovery and schema

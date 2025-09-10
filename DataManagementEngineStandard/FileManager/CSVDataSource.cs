@@ -916,15 +916,15 @@ namespace TheTechIdea.Beep.FileManager
         {
             return DMEEditor.ErrorObject;
         }
-        public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
+        public IEnumerable<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
             return null;
         }
-        public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
+        public IEnumerable<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
            return null;
         }
-        public List<string> GetEntitesList()
+        public IEnumerable<string> GetEntitesList()
         {
             if(Entities.Count == 0)
             {
@@ -942,406 +942,382 @@ namespace TheTechIdea.Beep.FileManager
         /// <param name="EntityName">Name of the entity (CSV file) to query</param>
         /// <param name="filter">List of filters to apply to the data</param>
         /// <returns>An ObservableBindingList containing the filtered data</returns>
-        public IBindingList GetEntity(string EntityName, List<AppFilter> filter)
+        public IEnumerable<object> GetEntity(string EntityName, List<AppFilter> filter)
         {
             ErrorObject.Flag = Errors.Ok;
+            var results = new List<object>();
             try
             {
-                
+                if (string.IsNullOrWhiteSpace(EntityName))
+                {
+                    DMEEditor.AddLogMessage("Fail", "EntityName is null or empty", DateTime.Now, 0, null, Errors.Failed);
+                    return results;
+                }
 
+                // Ensure entity structure
                 var entityStructure = GetEntityStructure(EntityName, false);
-                if (entityStructure == null)
+                if (entityStructure == null || entityStructure.Fields == null || entityStructure.Fields.Count == 0)
                 {
-                    DMEEditor.AddLogMessage("Error", $"Entity structure not found for {EntityName}", DateTime.Now, 0, null, Errors.Failed);
-                    return null;
+                    DMEEditor.AddLogMessage("Fail", $"Entity structure not found or empty for {EntityName}", DateTime.Now, 0, null, Errors.Failed);
+                    return results;
                 }
 
-                // Create DataTable with proper structure
-                DataTable dataTable = new DataTable();
-                foreach (EntityField field in entityStructure.Fields)
+                // Build runtime type (if possible)
+                Type runtimeType = null;
+                try
                 {
-                    Type fieldType = Type.GetType(field.fieldtype);
-                    dataTable.Columns.Add(field.fieldname, fieldType ?? typeof(string));
+                    runtimeType = GetEntityType(EntityName);
+                }
+                catch
+                {
+                    runtimeType = null; // fallback to dictionary mode
                 }
 
-                // Calculate skip and take for paging
-    
-                int rowCounter = 0;
-                int addedRows = 0;
+                // Map field index for faster access
+                var fieldIndexMap = entityStructure.Fields
+                    .Select((f, i) => new { f.fieldname, Index = i, FieldDef = f })
+                    .ToDictionary(x => x.fieldname, x => x, StringComparer.OrdinalIgnoreCase);
 
-                using (fieldParser = new CsvTextFieldParser(CombineFilePath))
+                // Normalize filters (ignore invalid)
+                var activeFilters = (filter ?? new List<AppFilter>())
+                    .Where(f => f != null && !string.IsNullOrWhiteSpace(f.FieldName) && !string.IsNullOrWhiteSpace(f.Operator))
+                    .ToList();
+
+                if (activeFilters.Count == 0 && (filter != null && filter.Count > 0))
                 {
-                    fieldParser.SetDelimiter(Delimiter);
+                    DMEEditor.AddLogMessage("Warning", "All provided filters were invalid and ignored", DateTime.Now, 0, null, Errors.Warning);
+                }
 
-                    // Skip header
-                    fieldParser.ReadFields();
+                // Open file
+                if (string.IsNullOrEmpty(CombineFilePath))
+                {
+                    CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+                }
+                if (!File.Exists(CombineFilePath))
+                {
+                    DMEEditor.AddLogMessage("Fail", $"File not found: {CombineFilePath}", DateTime.Now, 0, null, Errors.Failed);
+                    return results;
+                }
 
-                    // Read data rows with paging
-                    while (!fieldParser.EndOfData )
+                using var parser = new CsvTextFieldParser(CombineFilePath);
+                parser.SetDelimiter(Delimiter);
+
+                // Read header
+                var header = parser.ReadFields();
+                if (header == null)
+                {
+                    DMEEditor.AddLogMessage("Warning", "CSV file is empty", DateTime.Now, 0, null, Errors.Warning);
+                    return results;
+                }
+
+                // Build mapping header->entity field index
+                var headerToEntityIndex = new Dictionary<int, int>();
+                for (int h = 0; h < header.Length; h++)
+                {
+                    var matchIdx = entityStructure.Fields.FindIndex(f =>
+                        f.fieldname.Equals(header[h], StringComparison.OrdinalIgnoreCase) ||
+                        f.Originalfieldname?.Equals(header[h], StringComparison.OrdinalIgnoreCase) == true);
+                    if (matchIdx >= 0) headerToEntityIndex[h] = matchIdx;
+                }
+
+                // Row processing
+                while (!parser.EndOfData)
+                {
+                    string[] row;
+                    try
                     {
-                        string[] fields = fieldParser.ReadFields();
+                        row = parser.ReadFields();
+                        if (row == null) break;
+                    }
+                    catch
+                    {
+                        continue; // skip malformed line
+                    }
 
-                        // Skip rows for paging
-                        rowCounter++;
-                        
-
-                        // Process filter if provided
-                        bool includeRow = true;
-                        if (filter != null && filter.Count > 0)
+                    // Apply filters
+                    bool include = true;
+                    foreach (var f in activeFilters)
+                    {
+                        if (!fieldIndexMap.TryGetValue(f.FieldName, out var info))
                         {
-                            foreach (var f in filter.Where(f => !string.IsNullOrEmpty(f.FilterValue)))
-                            {
-                                int columnIndex = entityStructure.Fields.FindIndex(ef => ef.fieldname == f.FieldName);
-                                if (columnIndex >= 0 && columnIndex < fields.Length)
-                                {
-                                    string fieldValue = fields[columnIndex];
-                                    EntityField entityField = entityStructure.Fields[columnIndex];
-                                    Type fieldType = Type.GetType(entityField.fieldtype) ?? typeof(string);
-
-                                    // Apply filter based on operator
-                                    string op = (f.Operator?.ToLower() ?? "equals");
-
-                                    // For empty field values, apply special handling
-                                    if (string.IsNullOrEmpty(fieldValue))
-                                    {
-                                        switch (op)
-                                        {
-                                            case "isnull":
-                                            case "is null":
-                                                includeRow = true;
-                                                break;
-                                            case "isnotnull":
-                                            case "is not null":
-                                                includeRow = false;
-                                                break;
-                                            default:
-                                                // Most operators will exclude rows where the field is null
-                                                includeRow = false;
-                                                break;
-                                        }
-
-                                        // Skip further processing for this filter if field is null
-                                        if (!includeRow) break;
-                                        continue;
-                                    }
-
-                                    // Check if filter value is null operator
-                                    if (f.FilterValue.Equals("null", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        switch (op)
-                                        {
-                                            case "=":
-                                            case "equals":
-                                            case "isnull":
-                                            case "is null":
-                                                includeRow = string.IsNullOrEmpty(fieldValue);
-                                                break;
-                                            case "!=":
-                                            case "<>":
-                                            case "notequals":
-                                            case "not equals":
-                                            case "isnotnull":
-                                            case "is not null":
-                                                includeRow = !string.IsNullOrEmpty(fieldValue);
-                                                break;
-                                            default:
-                                                includeRow = false;
-                                                break;
-                                        }
-
-                                        if (!includeRow) break;
-                                        continue;
-                                    }
-
-                                    // String comparison operators
-                                    if (fieldType == typeof(string))
-                                    {
-                                        switch (op)
-                                        {
-                                            case "=":
-                                            case "equals":
-                                                includeRow = fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "!=":
-                                            case "<>":
-                                            case "notequals":
-                                            case "not equals":
-                                                includeRow = !fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "contains":
-                                                includeRow = fieldValue.Contains(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "notcontains":
-                                            case "not contains":
-                                            case "!contains":
-                                                includeRow = !fieldValue.Contains(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "startswith":
-                                            case "starts with":
-                                                includeRow = fieldValue.StartsWith(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "endswith":
-                                            case "ends with":
-                                                includeRow = fieldValue.EndsWith(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "regex":
-                                            case "matches":
-                                                includeRow = Regex.IsMatch(fieldValue, f.FilterValue);
-                                                break;
-                                            case "in":
-                                                // Process comma separated values
-                                                var values = f.FilterValue.Split(',').Select(v => v.Trim());
-                                                includeRow = values.Any(v => fieldValue.Equals(v, StringComparison.OrdinalIgnoreCase));
-                                                break;
-                                            case "notin":
-                                            case "not in":
-                                                // Process comma separated values
-                                                var excludeValues = f.FilterValue.Split(',').Select(v => v.Trim());
-                                                includeRow = !excludeValues.Any(v => fieldValue.Equals(v, StringComparison.OrdinalIgnoreCase));
-                                                break;
-                                            default:
-                                                includeRow = false;
-                                                break;
-                                        }
-                                    }
-                                    // Numeric comparison operators
-                                    else if (fieldType == typeof(int) || fieldType == typeof(decimal) ||
-                                             fieldType == typeof(double) || fieldType == typeof(float) ||
-                                             fieldType == typeof(long))
-                                    {
-                                        bool parseFieldValue = decimal.TryParse(fieldValue, out decimal numValue);
-                                        bool parseFilterValue = decimal.TryParse(f.FilterValue, out decimal filterValue);
-
-                                        if (parseFieldValue && parseFilterValue)
-                                        {
-                                            switch (op)
-                                            {
-                                                case "=":
-                                                case "equals":
-                                                    includeRow = numValue == filterValue;
-                                                    break;
-                                                case "!=":
-                                                case "<>":
-                                                case "notequals":
-                                                case "not equals":
-                                                    includeRow = numValue != filterValue;
-                                                    break;
-                                                case ">":
-                                                    includeRow = numValue > filterValue;
-                                                    break;
-                                                case ">=":
-                                                case "=>":
-                                                    includeRow = numValue >= filterValue;
-                                                    break;
-                                                case "<":
-                                                    includeRow = numValue < filterValue;
-                                                    break;
-                                                case "<=":
-                                                case "=<":
-                                                    includeRow = numValue <= filterValue;
-                                                    break;
-                                                case "between":
-                                                    // Format: "min,max"
-                                                    if (f.FilterValue.Contains(','))
-                                                    {
-                                                        var parts = f.FilterValue.Split(',');
-                                                        if (parts.Length == 2 &&
-                                                            decimal.TryParse(parts[0], out decimal min) &&
-                                                            decimal.TryParse(parts[1], out decimal max))
-                                                        {
-                                                            includeRow = numValue >= min && numValue <= max;
-                                                        }
-                                                        else
-                                                        {
-                                                            includeRow = false;
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        includeRow = false;
-                                                    }
-                                                    break;
-                                                default:
-                                                    includeRow = false;
-                                                    break;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            includeRow = false; // Invalid numeric comparison
-                                        }
-                                    }
-                                    // Date comparison operators
-                                    else if (fieldType == typeof(DateTime))
-                                    {
-                                        bool parseFieldValue = DateTime.TryParse(fieldValue, out DateTime dateValue);
-                                        bool parseFilterValue = DateTime.TryParse(f.FilterValue, out DateTime filterDateValue);
-
-                                        if (parseFieldValue && parseFilterValue)
-                                        {
-                                            switch (op)
-                                            {
-                                                case "=":
-                                                case "equals":
-                                                    includeRow = dateValue.Date == filterDateValue.Date;
-                                                    break;
-                                                case "!=":
-                                                case "<>":
-                                                case "notequals":
-                                                case "not equals":
-                                                    includeRow = dateValue.Date != filterDateValue.Date;
-                                                    break;
-                                                case ">":
-                                                case "after":
-                                                    includeRow = dateValue > filterDateValue;
-                                                    break;
-                                                case ">=":
-                                                case "=>":
-                                                case "on or after":
-                                                    includeRow = dateValue >= filterDateValue;
-                                                    break;
-                                                case "<":
-                                                case "before":
-                                                    includeRow = dateValue < filterDateValue;
-                                                    break;
-                                                case "<=":
-                                                case "=<":
-                                                case "on or before":
-                                                    includeRow = dateValue <= filterDateValue;
-                                                    break;
-                                                case "between":
-                                                    // Format: "startDate,endDate"
-                                                    if (f.FilterValue.Contains(','))
-                                                    {
-                                                        var parts = f.FilterValue.Split(',');
-                                                        if (parts.Length == 2 &&
-                                                            DateTime.TryParse(parts[0], out DateTime startDate) &&
-                                                            DateTime.TryParse(parts[1], out DateTime endDate))
-                                                        {
-                                                            includeRow = dateValue >= startDate && dateValue <= endDate;
-                                                        }
-                                                        else
-                                                        {
-                                                            includeRow = false;
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        includeRow = false;
-                                                    }
-                                                    break;
-                                                default:
-                                                    includeRow = false;
-                                                    break;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            includeRow = false; // Invalid date comparison
-                                        }
-                                    }
-                                    // Boolean comparison operators
-                                    else if (fieldType == typeof(bool))
-                                    {
-                                        bool parseFieldValue = bool.TryParse(fieldValue, out bool boolValue);
-
-                                        // Allow flexible boolean parsing (true, yes, 1, etc.)
-                                        bool filterBoolValue;
-                                        string filterValueLower = f.FilterValue.ToLower().Trim();
-                                        filterBoolValue = filterValueLower == "true" || filterValueLower == "yes" || filterValueLower == "1";
-
-                                        if (parseFieldValue)
-                                        {
-                                            switch (op)
-                                            {
-                                                case "=":
-                                                case "equals":
-                                                case "is":
-                                                    includeRow = boolValue == filterBoolValue;
-                                                    break;
-                                                case "!=":
-                                                case "<>":
-                                                case "notequals":
-                                                case "not equals":
-                                                case "is not":
-                                                    includeRow = boolValue != filterBoolValue;
-                                                    break;
-                                                default:
-                                                    includeRow = false;
-                                                    break;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            includeRow = false; // Invalid boolean comparison
-                                        }
-                                    }
-                                    // Default fallback for other types
-                                    else
-                                    {
-                                        switch (op)
-                                        {
-                                            case "=":
-                                            case "equals":
-                                                includeRow = fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "!=":
-                                            case "<>":
-                                            case "notequals":
-                                            case "not equals":
-                                                includeRow = !fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "contains":
-                                                includeRow = fieldValue.Contains(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            default:
-                                                includeRow = false;
-                                                break;
-                                        }
-                                    }
-
-                                    if (!includeRow) break;
-                                }
-                            }
+                            include = false;
+                            break;
                         }
 
-                        if (includeRow)
+                        int entityFieldIdx = info.Index;
+                        // Find corresponding CSV column index
+                        int csvIdx = headerToEntityIndex.FirstOrDefault(kv => kv.Value == entityFieldIdx).Key;
+                        if (csvIdx < 0 || csvIdx >= row.Length)
                         {
-                            DataRow newRow = dataTable.NewRow();
-                            for (int i = 0; i < Math.Min(fields.Length, entityStructure.Fields.Count); i++)
-                            {
-                                try
-                                {
-                                    Type targetType = dataTable.Columns[i].DataType;
-                                    newRow[i] = string.IsNullOrEmpty(fields[i]) || string.IsNullOrWhiteSpace(fields[i]) ?
-                                        DBNull.Value :
-                                        Convert.ChangeType(fields[i], targetType);
-                                }
-                                catch
-                                {
-                                    newRow[i] = DBNull.Value;
-                                }
-                            }
-                            dataTable.Rows.Add(newRow);
-                            addedRows++;
+                            include = false;
+                            break;
+                        }
+
+                        string rawValue = row[csvIdx];
+                        if (!EvaluateFilter(rawValue, info.FieldDef, f))
+                        {
+                            include = false;
+                            break;
                         }
                     }
+
+                    if (!include) continue;
+
+                    // Materialize row
+                    if (runtimeType != null)
+                    {
+                        // strongly-typed object creation
+                        object instance;
+                        try
+                        {
+                            instance = Activator.CreateInstance(runtimeType);
+                        }
+                        catch
+                        {
+                            runtimeType = null; // fallback next iteration
+                            goto fallbackDict;
+                        }
+
+                        foreach (var ef in entityStructure.Fields)
+                        {
+                            var prop = runtimeType.GetProperty(ef.fieldname);
+                            if (prop == null || !prop.CanWrite) continue;
+
+                            int csvIndex = headerToEntityIndex.FirstOrDefault(kv => kv.Value == fieldIndexMap[ef.fieldname].Index).Key;
+                            if (csvIndex < 0 || csvIndex >= row.Length) continue;
+
+                            var strVal = row[csvIndex];
+                            if (string.IsNullOrWhiteSpace(strVal))
+                            {
+                                prop.SetValue(instance, null);
+                                continue;
+                            }
+
+                            try
+                            {
+                                var targetType = Type.GetType(ef.fieldtype) ?? typeof(string);
+                                object converted = ConvertString(strVal, targetType);
+                                prop.SetValue(instance, converted);
+                            }
+                            catch
+                            {
+                                prop.SetValue(instance, null);
+                            }
+                        }
+                        results.Add(instance);
+                        continue;
+                    }
+
+                // Dictionary fallback
+                fallbackDict:
+                    var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var ef in entityStructure.Fields)
+                    {
+                        int csvIndex = headerToEntityIndex.FirstOrDefault(kv => kv.Value == fieldIndexMap[ef.fieldname].Index).Key;
+                        if (csvIndex < 0 || csvIndex >= row.Length)
+                        {
+                            dict[ef.fieldname] = null;
+                            continue;
+                        }
+                        var strVal = row[csvIndex];
+                        if (string.IsNullOrWhiteSpace(strVal))
+                        {
+                            dict[ef.fieldname] = null;
+                            continue;
+                        }
+                        try
+                        {
+                            var targetType = Type.GetType(ef.fieldtype) ?? typeof(string);
+                            dict[ef.fieldname] = ConvertString(strVal, targetType);
+                        }
+                        catch
+                        {
+                            dict[ef.fieldname] = null;
+                        }
+                    }
+                    results.Add(dict);
                 }
 
-                // Convert to requested type
-                enttype = GetEntityType(EntityName);
-                Type uowGenericType = typeof(ObservableBindingList<>).MakeGenericType(enttype);
-                IBindingList Data = (IBindingList)Activator.CreateInstance(uowGenericType, new object[] { dataTable });
-          
-                return Data;
+                return results;
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("Fail", $"Error in getting File Data: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
-                return null;
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+                DMEEditor.AddLogMessage("Fail", $"Error in GetEntity: {ex.Message}", DateTime.Now, 0, EntityName, Errors.Failed);
+                return results;
             }
         }
 
+        // Evaluate a single filter condition
+        private bool EvaluateFilter(string rawValue, EntityField fieldDef, AppFilter f)
+        {
+            string op = (f.Operator ?? "=").Trim().ToLowerInvariant();
+
+            // Null checks
+            if (rawValue == null || rawValue.Length == 0)
+            {
+                return op switch
+                {
+                    "isnull" or "is null" => true,
+                    "isnotnull" or "is not null" => false,
+                    "=" or "equals" => string.IsNullOrEmpty(f.FilterValue),
+                    "!=" or "<>" or "notequals" or "not equals" => !string.IsNullOrEmpty(f.FilterValue),
+                    _ => false
+                };
+            }
+
+            var fieldType = Type.GetType(fieldDef.fieldtype) ?? typeof(string);
+
+            // Handle string
+            if (fieldType == typeof(string))
+            {
+                string v = rawValue;
+                string fv = f.FilterValue ?? string.Empty;
+                switch (op)
+                {
+                    case "=":
+                    case "equals": return string.Equals(v, fv, StringComparison.OrdinalIgnoreCase);
+                    case "!=":
+                    case "<>":
+                    case "notequals":
+                    case "not equals": return !string.Equals(v, fv, StringComparison.OrdinalIgnoreCase);
+                    case "contains": return v.IndexOf(fv, StringComparison.OrdinalIgnoreCase) >= 0;
+                    case "notcontains":
+                    case "not contains":
+                    case "!contains": return v.IndexOf(fv, StringComparison.OrdinalIgnoreCase) < 0;
+                    case "startswith":
+                    case "starts with": return v.StartsWith(fv, StringComparison.OrdinalIgnoreCase);
+                    case "endswith":
+                    case "ends with": return v.EndsWith(fv, StringComparison.OrdinalIgnoreCase);
+                    case "in":
+                        return (f.FilterValue ?? "")
+                            .Split(',')
+                            .Select(s => s.Trim())
+                            .Any(s => string.Equals(s, v, StringComparison.OrdinalIgnoreCase));
+                    case "notin":
+                    case "not in":
+                        return !(f.FilterValue ?? "")
+                            .Split(',')
+                            .Select(s => s.Trim())
+                            .Any(s => string.Equals(s, v, StringComparison.OrdinalIgnoreCase));
+                    case "regex":
+                    case "matches":
+                        try { return Regex.IsMatch(v, f.FilterValue); } catch { return false; }
+                    default:
+                        return false;
+                }
+            }
+
+            // Numeric
+            if (IsNumeric(fieldType))
+            {
+                if (!decimal.TryParse(rawValue, out var numVal)) return false;
+                if (op == "between")
+                {
+                    if (!string.IsNullOrWhiteSpace(f.FilterValue1))
+                    {
+                        if (decimal.TryParse(f.FilterValue, out var n1) && decimal.TryParse(f.FilterValue1, out var n2))
+                            return numVal >= Math.Min(n1, n2) && numVal <= Math.Max(n1, n2);
+                        return false;
+                    }
+                    // legacy: FilterValue contains comma
+                    if (f.FilterValue?.Contains(',') == true)
+                    {
+                        var parts = f.FilterValue.Split(',');
+                        if (parts.Length == 2 &&
+                            decimal.TryParse(parts[0], out var n1) &&
+                            decimal.TryParse(parts[1], out var n2))
+                            return numVal >= Math.Min(n1, n2) && numVal <= Math.Max(n1, n2);
+                    }
+                    return false;
+                }
+                if (!decimal.TryParse(f.FilterValue, out var cmp)) return false;
+                return op switch
+                {
+                    "=" or "equals" => numVal == cmp,
+                    "!=" or "<>" or "notequals" or "not equals" => numVal != cmp,
+                    ">" => numVal > cmp,
+                    ">=" or "=>" => numVal >= cmp,
+                    "<" => numVal < cmp,
+                    "<=" or "=<" => numVal <= cmp,
+                    _ => false
+                };
+            }
+
+            // DateTime
+            if (fieldType == typeof(DateTime))
+            {
+                if (!DateTime.TryParse(rawValue, out var dateVal)) return false;
+                if (op == "between")
+                {
+                    if (!string.IsNullOrWhiteSpace(f.FilterValue1))
+                    {
+                        if (DateTime.TryParse(f.FilterValue, out var d1) && DateTime.TryParse(f.FilterValue1, out var d2))
+                            return dateVal >= (d1 < d2 ? d1 : d2) && dateVal <= (d1 > d2 ? d1 : d2);
+                        return false;
+                    }
+                    if (f.FilterValue?.Contains(',') == true)
+                    {
+                        var parts = f.FilterValue.Split(',');
+                        if (parts.Length == 2 &&
+                            DateTime.TryParse(parts[0], out var d1) &&
+                            DateTime.TryParse(parts[1], out var d2))
+                            return dateVal >= (d1 < d2 ? d1 : d2) && dateVal <= (d1 > d2 ? d1 : d2);
+                    }
+                    return false;
+                }
+                if (!DateTime.TryParse(f.FilterValue, out var cmpDate)) return false;
+                return op switch
+                {
+                    "=" or "equals" => dateVal.Date == cmpDate.Date,
+                    "!=" or "<>" or "notequals" or "not equals" => dateVal.Date != cmpDate.Date,
+                    ">" or "after" => dateVal > cmpDate,
+                    ">=" or "=>" or "on or after" => dateVal >= cmpDate,
+                    "<" or "before" => dateVal < cmpDate,
+                    "<=" or "=<" or "on or before" => dateVal <= cmpDate,
+                    _ => false
+                };
+            }
+
+            // Bool
+            if (fieldType == typeof(bool))
+            {
+                if (!bool.TryParse(NormalizeBool(rawValue), out var bv)) return false;
+                bool cmpBool = bool.TryParse(NormalizeBool(f.FilterValue), out var fb) && fb;
+                return op switch
+                {
+                    "=" or "equals" or "is" => bv == cmpBool,
+                    "!=" or "<>" or "notequals" or "not equals" or "is not" => bv != cmpBool,
+                    _ => false
+                };
+            }
+
+            // Fallback string compare
+            return rawValue.Equals(f.FilterValue ?? "", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsNumeric(Type t)
+        {
+            return t == typeof(int) || t == typeof(long) || t == typeof(short) ||
+                   t == typeof(decimal) || t == typeof(double) || t == typeof(float);
+        }
+
+        private static string NormalizeBool(string s)
+        {
+            if (s == null) return "false";
+            var v = s.Trim().ToLowerInvariant();
+            return (v == "1" || v == "true" || v == "yes" || v == "y") ? "true" : "false";
+        }
+
+        private static object ConvertString(string value, Type targetType)
+        {
+            if (targetType == typeof(string)) return value;
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            if (targetType == typeof(bool)) return NormalizeBool(value) == "true";
+            if (targetType.IsEnum) return Enum.Parse(targetType, value, true);
+            return Convert.ChangeType(value, targetType);
+        }
         // Improved implementation of GetEntity with paging support
         // Improved implementation with extended filtering operators
         public PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
@@ -1349,409 +1325,57 @@ namespace TheTechIdea.Beep.FileManager
             ErrorObject.Flag = Errors.Ok;
             try
             {
-                if (pageNumber <= 0) pageNumber = 1;
-                if (pageSize <= 0) pageSize = int.MaxValue;
-
-                var entityStructure = GetEntityStructure(EntityName, false);
-                if (entityStructure == null)
+                if (string.IsNullOrWhiteSpace(EntityName))
                 {
-                    DMEEditor.AddLogMessage("Error", $"Entity structure not found for {EntityName}", DateTime.Now, 0, null, Errors.Failed);
+                    DMEEditor.AddLogMessage("Fail", "EntityName is null or empty", DateTime.Now, 0, null, Errors.Failed);
                     return null;
                 }
+                if (pageNumber < 1) pageNumber = 1;
+                if (pageSize <= 0) pageSize = int.MaxValue;
 
-                // Create DataTable with proper structure
-                DataTable dataTable = new DataTable();
-                foreach (EntityField field in entityStructure.Fields)
+                // Reuse existing filtered loader
+                var all = GetEntity(EntityName, filter)?.ToList() ?? new List<object>();
+                int total = all.Count;
+
+                int skip = (pageNumber - 1) * pageSize;
+                if (skip >= total)
                 {
-                    Type fieldType = Type.GetType(field.fieldtype);
-                    dataTable.Columns.Add(field.fieldname, fieldType ?? typeof(string));
+                    skip = total; // return empty page if out of range
                 }
 
-                // Calculate skip and take for paging
-                int skipRows = (pageNumber - 1) * pageSize;
-                int rowCounter = 0;
-                int addedRows = 0;
+                var pageItems = all.Skip(skip).Take(pageSize).ToList();
 
-                using (fieldParser = new CsvTextFieldParser(CombineFilePath))
+                var result = new PagedResult
                 {
-                    fieldParser.SetDelimiter(Delimiter);
-
-                    // Skip header
-                    fieldParser.ReadFields();
-
-                    // Read data rows with paging
-                    while (!fieldParser.EndOfData && (addedRows < pageSize || pageSize <= 0))
-                    {
-                        string[] fields = fieldParser.ReadFields();
-
-                        // Skip rows for paging
-                        rowCounter++;
-                        if (rowCounter <= skipRows)
-                            continue;
-
-                        // Process filter if provided
-                        bool includeRow = true;
-                        if (filter != null && filter.Count > 0)
-                        {
-                            foreach (var f in filter.Where(f => !string.IsNullOrEmpty(f.FilterValue)))
-                            {
-                                int columnIndex = entityStructure.Fields.FindIndex(ef => ef.fieldname == f.FieldName);
-                                if (columnIndex >= 0 && columnIndex < fields.Length)
-                                {
-                                    string fieldValue = fields[columnIndex];
-                                    EntityField entityField = entityStructure.Fields[columnIndex];
-                                    Type fieldType = Type.GetType(entityField.fieldtype) ?? typeof(string);
-
-                                    // Apply filter based on operator
-                                    string op = (f.Operator?.ToLower() ?? "equals");
-
-                                    // For empty field values, apply special handling
-                                    if (string.IsNullOrEmpty(fieldValue))
-                                    {
-                                        switch (op)
-                                        {
-                                            case "isnull":
-                                            case "is null":
-                                                includeRow = true;
-                                                break;
-                                            case "isnotnull":
-                                            case "is not null":
-                                                includeRow = false;
-                                                break;
-                                            default:
-                                                // Most operators will exclude rows where the field is null
-                                                includeRow = false;
-                                                break;
-                                        }
-
-                                        // Skip further processing for this filter if field is null
-                                        if (!includeRow) break;
-                                        continue;
-                                    }
-
-                                    // Check if filter value is null operator
-                                    if (f.FilterValue.Equals("null", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        switch (op)
-                                        {
-                                            case "=":
-                                            case "equals":
-                                            case "isnull":
-                                            case "is null":
-                                                includeRow = string.IsNullOrEmpty(fieldValue);
-                                                break;
-                                            case "!=":
-                                            case "<>":
-                                            case "notequals":
-                                            case "not equals":
-                                            case "isnotnull":
-                                            case "is not null":
-                                                includeRow = !string.IsNullOrEmpty(fieldValue);
-                                                break;
-                                            default:
-                                                includeRow = false;
-                                                break;
-                                        }
-
-                                        if (!includeRow) break;
-                                        continue;
-                                    }
-
-                                    // String comparison operators
-                                    if (fieldType == typeof(string))
-                                    {
-                                        switch (op)
-                                        {
-                                            case "=":
-                                            case "equals":
-                                                includeRow = fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "!=":
-                                            case "<>":
-                                            case "notequals":
-                                            case "not equals":
-                                                includeRow = !fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "contains":
-                                                includeRow = fieldValue.Contains(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "notcontains":
-                                            case "not contains":
-                                            case "!contains":
-                                                includeRow = !fieldValue.Contains(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "startswith":
-                                            case "starts with":
-                                                includeRow = fieldValue.StartsWith(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "endswith":
-                                            case "ends with":
-                                                includeRow = fieldValue.EndsWith(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "regex":
-                                            case "matches":
-                                                includeRow = Regex.IsMatch(fieldValue, f.FilterValue);
-                                                break;
-                                            case "in":
-                                                // Process comma separated values
-                                                var values = f.FilterValue.Split(',').Select(v => v.Trim());
-                                                includeRow = values.Any(v => fieldValue.Equals(v, StringComparison.OrdinalIgnoreCase));
-                                                break;
-                                            case "notin":
-                                            case "not in":
-                                                // Process comma separated values
-                                                var excludeValues = f.FilterValue.Split(',').Select(v => v.Trim());
-                                                includeRow = !excludeValues.Any(v => fieldValue.Equals(v, StringComparison.OrdinalIgnoreCase));
-                                                break;
-                                            default:
-                                                includeRow = false;
-                                                break;
-                                        }
-                                    }
-                                    // Numeric comparison operators
-                                    else if (fieldType == typeof(int) || fieldType == typeof(decimal) ||
-                                             fieldType == typeof(double) || fieldType == typeof(float) ||
-                                             fieldType == typeof(long))
-                                    {
-                                        bool parseFieldValue = decimal.TryParse(fieldValue, out decimal numValue);
-                                        bool parseFilterValue = decimal.TryParse(f.FilterValue, out decimal filterValue);
-
-                                        if (parseFieldValue && parseFilterValue)
-                                        {
-                                            switch (op)
-                                            {
-                                                case "=":
-                                                case "equals":
-                                                    includeRow = numValue == filterValue;
-                                                    break;
-                                                case "!=":
-                                                case "<>":
-                                                case "notequals":
-                                                case "not equals":
-                                                    includeRow = numValue != filterValue;
-                                                    break;
-                                                case ">":
-                                                    includeRow = numValue > filterValue;
-                                                    break;
-                                                case ">=":
-                                                case "=>":
-                                                    includeRow = numValue >= filterValue;
-                                                    break;
-                                                case "<":
-                                                    includeRow = numValue < filterValue;
-                                                    break;
-                                                case "<=":
-                                                case "=<":
-                                                    includeRow = numValue <= filterValue;
-                                                    break;
-                                                case "between":
-                                                    // Format: "min,max"
-                                                    if (f.FilterValue.Contains(','))
-                                                    {
-                                                        var parts = f.FilterValue.Split(',');
-                                                        if (parts.Length == 2 &&
-                                                            decimal.TryParse(parts[0], out decimal min) &&
-                                                            decimal.TryParse(parts[1], out decimal max))
-                                                        {
-                                                            includeRow = numValue >= min && numValue <= max;
-                                                        }
-                                                        else
-                                                        {
-                                                            includeRow = false;
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        includeRow = false;
-                                                    }
-                                                    break;
-                                                default:
-                                                    includeRow = false;
-                                                    break;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            includeRow = false; // Invalid numeric comparison
-                                        }
-                                    }
-                                    // Date comparison operators
-                                    else if (fieldType == typeof(DateTime))
-                                    {
-                                        bool parseFieldValue = DateTime.TryParse(fieldValue, out DateTime dateValue);
-                                        bool parseFilterValue = DateTime.TryParse(f.FilterValue, out DateTime filterDateValue);
-
-                                        if (parseFieldValue && parseFilterValue)
-                                        {
-                                            switch (op)
-                                            {
-                                                case "=":
-                                                case "equals":
-                                                    includeRow = dateValue.Date == filterDateValue.Date;
-                                                    break;
-                                                case "!=":
-                                                case "<>":
-                                                case "notequals":
-                                                case "not equals":
-                                                    includeRow = dateValue.Date != filterDateValue.Date;
-                                                    break;
-                                                case ">":
-                                                case "after":
-                                                    includeRow = dateValue > filterDateValue;
-                                                    break;
-                                                case ">=":
-                                                case "=>":
-                                                case "on or after":
-                                                    includeRow = dateValue >= filterDateValue;
-                                                    break;
-                                                case "<":
-                                                case "before":
-                                                    includeRow = dateValue < filterDateValue;
-                                                    break;
-                                                case "<=":
-                                                case "=<":
-                                                case "on or before":
-                                                    includeRow = dateValue <= filterDateValue;
-                                                    break;
-                                                case "between":
-                                                    // Format: "startDate,endDate"
-                                                    if (f.FilterValue.Contains(','))
-                                                    {
-                                                        var parts = f.FilterValue.Split(',');
-                                                        if (parts.Length == 2 &&
-                                                            DateTime.TryParse(parts[0], out DateTime startDate) &&
-                                                            DateTime.TryParse(parts[1], out DateTime endDate))
-                                                        {
-                                                            includeRow = dateValue >= startDate && dateValue <= endDate;
-                                                        }
-                                                        else
-                                                        {
-                                                            includeRow = false;
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        includeRow = false;
-                                                    }
-                                                    break;
-                                                default:
-                                                    includeRow = false;
-                                                    break;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            includeRow = false; // Invalid date comparison
-                                        }
-                                    }
-                                    // Boolean comparison operators
-                                    else if (fieldType == typeof(bool))
-                                    {
-                                        bool parseFieldValue = bool.TryParse(fieldValue, out bool boolValue);
-
-                                        // Allow flexible boolean parsing (true, yes, 1, etc.)
-                                        bool filterBoolValue;
-                                        string filterValueLower = f.FilterValue.ToLower().Trim();
-                                        filterBoolValue = filterValueLower == "true" || filterValueLower == "yes" || filterValueLower == "1";
-
-                                        if (parseFieldValue)
-                                        {
-                                            switch (op)
-                                            {
-                                                case "=":
-                                                case "equals":
-                                                case "is":
-                                                    includeRow = boolValue == filterBoolValue;
-                                                    break;
-                                                case "!=":
-                                                case "<>":
-                                                case "notequals":
-                                                case "not equals":
-                                                case "is not":
-                                                    includeRow = boolValue != filterBoolValue;
-                                                    break;
-                                                default:
-                                                    includeRow = false;
-                                                    break;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            includeRow = false; // Invalid boolean comparison
-                                        }
-                                    }
-                                    // Default fallback for other types
-                                    else
-                                    {
-                                        switch (op)
-                                        {
-                                            case "=":
-                                            case "equals":
-                                                includeRow = fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "!=":
-                                            case "<>":
-                                            case "notequals":
-                                            case "not equals":
-                                                includeRow = !fieldValue.Equals(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            case "contains":
-                                                includeRow = fieldValue.Contains(f.FilterValue, StringComparison.OrdinalIgnoreCase);
-                                                break;
-                                            default:
-                                                includeRow = false;
-                                                break;
-                                        }
-                                    }
-
-                                    if (!includeRow) break;
-                                }
-                            }
-                        }
-
-                        if (includeRow)
-                        {
-                            DataRow newRow = dataTable.NewRow();
-                            for (int i = 0; i < Math.Min(fields.Length, entityStructure.Fields.Count); i++)
-                            {
-                                try
-                                {
-                                    Type targetType = dataTable.Columns[i].DataType;
-                                    newRow[i] = string.IsNullOrEmpty(fields[i]) ?
-                                        DBNull.Value :
-                                        Convert.ChangeType(fields[i], targetType);
-                                }
-                                catch
-                                {
-                                    newRow[i] = DBNull.Value;
-                                }
-                            }
-                            dataTable.Rows.Add(newRow);
-                            addedRows++;
-                        }
-                    }
-                }
-
-                // Convert to requested type
-                enttype = GetEntityType(EntityName);
-                Type uowGenericType = typeof(ObservableBindingList<>).MakeGenericType(enttype);
-                PagedResult pagedResult=new PagedResult()
-                {
-                    Data= Activator.CreateInstance(uowGenericType, new object[] { dataTable }),
-                    TotalRecords = dataTable.Rows.Count,
                     PageNumber = pageNumber,
                     PageSize = pageSize
-};
-                return pagedResult;
+                };
+
+                // Populate richer metadata if properties exist (backward compatibility with minimal PagedResult)
+                var type = result.GetType();
+                void SetProp(string name, object value)
+                {
+                    var p = type.GetProperty(name);
+                    if (p != null && p.CanWrite) p.SetValue(result, value);
+                }
+
+                SetProp("Data", pageItems);
+                SetProp("TotalRecords", total);
+                SetProp("TotalPages", total > 0 && pageSize > 0 ? (int)Math.Ceiling((double)total / pageSize) : 0);
+                SetProp("HasNextPage", pageSize > 0 && pageNumber * pageSize < total);
+                SetProp("HasPreviousPage", pageNumber > 1);
+
+                return result;
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("Fail", $"Error in getting File Data: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+                DMEEditor.AddLogMessage("Fail", $"Error in paged GetEntity: {ex.Message}", DateTime.Now, 0, EntityName, Errors.Failed);
                 return null;
             }
         }
-
-        public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
+        public IEnumerable<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             throw new NotImplementedException();
         }
@@ -1844,7 +1468,7 @@ namespace TheTechIdea.Beep.FileManager
             DMTypeBuilder.CreateNewObject(DMEEditor, "Beep.CSVDataSource", Entities.FirstOrDefault().EntityName, Entities.FirstOrDefault().Fields);
             return DMTypeBuilder.MyType;
         }
-         public  IBindingList RunQuery( string qrystr)
+         public  IEnumerable<object> RunQuery( string qrystr)
         {
             return GetEntity(Entities[0].EntityName,new List<AppFilter>() { });
         }
@@ -2069,7 +1693,7 @@ namespace TheTechIdea.Beep.FileManager
 
             return ErrorObject;
         }
-        public Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
            var retval =  Task.Run(() => GetEntity(EntityName, Filter)) ;
            return retval;

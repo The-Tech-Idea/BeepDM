@@ -309,7 +309,7 @@ namespace TheTechIdea.Beep.DataView
         }
         /// <summary>Returns a list of entities.</summary>
         /// <returns>A list of entities.</returns>
-        public List<string> GetEntitesList()
+        public IEnumerable<string> GetEntitesList()
         {
             ErrorObject.Flag = Errors.Ok;
             List<string> retval = new List<string>();
@@ -390,9 +390,9 @@ namespace TheTechIdea.Beep.DataView
         /// <param name="EntityName">The name of the entity to retrieve.</param>
         /// <param name="filter">A list of filters to apply to the entity.</param>
         /// <returns>The retrieved entity.</returns>
-        public IBindingList GetEntity(string EntityName, List<AppFilter> filter)
+        public IEnumerable<object> GetEntity(string EntityName, List<AppFilter> filter)
         {
-            IBindingList retval = null;
+            IEnumerable<object> retval = null;
             IDataSource ds = GetDataSourceObject(EntityName);
             if (ds != null)
             {
@@ -427,7 +427,7 @@ namespace TheTechIdea.Beep.DataView
         /// <returns>The retrieved entity.</returns>
         public PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
         {
-            IBindingList retval = null;
+            IEnumerable<object> retval = null;
             IDataSource ds = GetDataSourceObject(EntityName);
             if (ds != null)
             {
@@ -436,31 +436,11 @@ namespace TheTechIdea.Beep.DataView
                     EntityStructure ent = GetEntityStructure(EntityName);
                     if (ent != null)
                     {
-                        switch (ent.Viewtype)
-                        {
-                            case ViewType.File:
-                            case ViewType.Url:
-                            case ViewType.Table:
-                            case ViewType.Query:
-                                retval = GetDataSourceObject(EntityName).GetEntity(EntityName, filter);
-                                break;
-                            case ViewType.Code:
-                                retval = null;
-                                break;
-                            default:
-                                retval = null;
-                                break;
-                        }
+                      return ds.GetEntity(EntityName, filter, pageNumber, pageSize);
                     }
                 }
             }
-            PagedResult pagedResult = new PagedResult
-            {
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                TotalRecords = retval.Count,
-                Data = retval.Cast<object>().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList()
-            };
+            PagedResult pagedResult = null;
             return pagedResult;
         }
         /// <summary>Returns the index of an entity in the entity list.</summary>
@@ -563,7 +543,7 @@ namespace TheTechIdea.Beep.DataView
         /// <param name="SchemaName">The name of the schema containing the parent table.</param>
         /// <param name="Filterparamters">Additional filter parameters to refine the search.</param>
         /// <returns>A list of ChildRelation objects representing the child tables.</returns>
-        public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
+        public IEnumerable<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
             EntityStructure dh = Entities[EntityListIndex(tablename)];
 
@@ -584,7 +564,7 @@ namespace TheTechIdea.Beep.DataView
         /// <param name="entityname">The name of the entity.</param>
         /// <param name="SchemaName">The name of the schema.</param>
         /// <returns>A list of RelationShipKeys representing the foreign keys of the entity.</returns>
-        public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
+        public IEnumerable<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             IDataSource ds = GetDataSourceObject(entityname);
             if (ds.ConnectionStatus == ConnectionState.Open)
@@ -692,7 +672,7 @@ namespace TheTechIdea.Beep.DataView
         /// <summary>Executes a query and returns the result.</summary>
         /// <param name="qrystr">The query string to execute.</param>
         /// <returns>The result of the query execution.</returns>
-        public IBindingList RunQuery(string qrystr)
+        public IEnumerable<object> RunQuery(string qrystr)
         {
             DMEEditor.AddLogMessage("Beep", $"DataView DataSource {DatasourceName}  Method  {System.Reflection.MethodBase.GetCurrentMethod().Name} Not Implemented", DateTime.Now, 0, null, Errors.Ok);
             return new BindingList<object>();
@@ -773,7 +753,7 @@ namespace TheTechIdea.Beep.DataView
         /// <summary>Generates a list of ETL script details for creating entities.</summary>
         /// <param name="entities">Optional. A list of entity structures. If provided, the script details will be generated for these entities only. If not provided, script details will be generated for all entities.</param>
         /// <returns>A list of ETL script details for creating entities.</returns>
-        public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
+        public IEnumerable<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
             List<ETLScriptDet> ls = new List<ETLScriptDet>();
             foreach (EntityStructure item in entities)
@@ -814,9 +794,9 @@ namespace TheTechIdea.Beep.DataView
         /// <param name="EntityName">The name of the entity to retrieve.</param>
         /// <param name="Filter">A list of filters to apply to the entity.</param>
         /// <returns>A task representing the asynchronous operation. The result is the retrieved entity.</returns>
-        public Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
-            return (Task<IBindingList>)GetEntity(EntityName, Filter);
+            return (Task<IEnumerable<object>>)GetEntity(EntityName, Filter);
         }
         #region "DataView Methods"
 
@@ -925,7 +905,7 @@ namespace TheTechIdea.Beep.DataView
             //int maxcnt;
 
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-            List<ChildRelation> ds = conn.GetChildTablesList(tablename, SchemaName, Filterparamters);
+            List<ChildRelation> ds = (List<ChildRelation>)conn.GetChildTablesList(tablename, SchemaName, Filterparamters);
             //if (DataView.Entities.Count == 0)
             //{
 
@@ -1029,7 +1009,7 @@ namespace TheTechIdea.Beep.DataView
                 EntityStructure pd = DataView.Entities.Where(c => c.Id == pid).FirstOrDefault();
                 if (pd.Viewtype == ViewType.Table)
                 {
-                    List<ChildRelation> ds = conn.GetChildTablesList(tablename, conn.Dataconnection.ConnectionProp.SchemaName, Filterparamters);
+                    List<ChildRelation> ds = (List<ChildRelation>)conn.GetChildTablesList(tablename, conn.Dataconnection.ConnectionProp.SchemaName, Filterparamters);
                     if (ds != null)
                     {
 
@@ -1079,7 +1059,7 @@ namespace TheTechIdea.Beep.DataView
 
             DMEEditor.ErrorObject.Flag = Errors.Ok;
 
-            List<ChildRelation> ds = conn.GetChildTablesList(tablename, SchemaName, Filterparamters);
+            List<ChildRelation> ds = (List<ChildRelation>)conn.GetChildTablesList(tablename, SchemaName, Filterparamters);
 
 
             EntityStructure maintab = new EntityStructure() { Id = NextHearId(), EntityName = tablename };
@@ -1141,7 +1121,7 @@ namespace TheTechIdea.Beep.DataView
             try
             {
 
-                List<ChildRelation> ds = conn.GetChildTablesList(tablename, SchemaName, Filterparamters);
+                List<ChildRelation> ds = (List<ChildRelation>)conn.GetChildTablesList(tablename, SchemaName, Filterparamters);
                 maintab = new EntityStructure() { Id = NextHearId(), EntityName = tablename };
                 maintab.DataSourceID = conn.DatasourceName;
                 maintab.EntityName = tablename.ToUpper();
@@ -1345,7 +1325,7 @@ namespace TheTechIdea.Beep.DataView
                 IDataSource entityds = DMEEditor.GetDataSource(maintab.DataSourceID);
                 if (entityds != null && entityds.Category == DatasourceCategory.RDBMS)
                 {
-                    List<ChildRelation> ds = entityds.GetChildTablesList(maintab.DatasourceEntityName, entityds.Dataconnection.ConnectionProp.SchemaName, null);
+                    List<ChildRelation> ds = (List<ChildRelation>)entityds.GetChildTablesList(maintab.DatasourceEntityName, entityds.Dataconnection.ConnectionProp.SchemaName, null);
                     if (DMEEditor.ErrorObject.Flag == Errors.Ok)
                     {
                         if (ds != null && ds.Count > 0)

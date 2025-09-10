@@ -14,11 +14,11 @@ namespace TheTechIdea.Beep.WebAPI
     public interface IWebAPIDataSource : IDataSource
     {
        
-        List<EntityField> Fields { get; set; }
+       
         string          ApiKey { get; set; }
         string          Resource { get; set; }
         Dictionary<string,string> Parameters { get; set; }
-        Task<List<object>> ReadData(bool HeaderExist, int fromline = 0, int toline = 100);
+        Task<IEnumerable<object>> ReadData(bool HeaderExist, int fromline = 0, int toline = 100);
 
          Task<HttpResponseMessage> GetAsync(
          string endpointOrUrl,

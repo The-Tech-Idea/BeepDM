@@ -5,6 +5,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
 using System.Net.Http;
+using System.Collections.Generic;
 
 namespace TheTechIdea.Beep.WebAPI
 {
@@ -14,7 +15,7 @@ namespace TheTechIdea.Beep.WebAPI
     public partial class WebAPIDataSource
     {
         /// <inheritdoc />
-        public IBindingList RunQuery(string qrystr)
+        public IEnumerable<object> RunQuery(string qrystr)
         {
             try
             {

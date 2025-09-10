@@ -232,12 +232,12 @@ namespace TheTechIdea.Beep.InMemory
 
         #endregion
         #region "IDataSource Methods"
-        public virtual List<string> GetEntitesList()
+        public virtual IEnumerable<string> GetEntitesList()
         {
             return Entities is null ? null : Entities.Select(p=>p.EntityName).ToList();
         }
 
-        public virtual IBindingList RunQuery(string qrystr)
+        public virtual IEnumerable<object> RunQuery(string qrystr)
         {
             return new BindingList<object>();
         }
@@ -267,12 +267,12 @@ namespace TheTechIdea.Beep.InMemory
             throw new NotImplementedException();
         }
 
-        public virtual List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
+        public virtual IEnumerable<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
             throw new NotImplementedException();
         }
 
-        public virtual List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
+        public virtual IEnumerable<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             throw new NotImplementedException();
         }
@@ -292,7 +292,7 @@ namespace TheTechIdea.Beep.InMemory
             throw new NotImplementedException();
         }
 
-        public virtual List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
+        public virtual IEnumerable<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
             throw new NotImplementedException();
         }
@@ -337,7 +337,7 @@ namespace TheTechIdea.Beep.InMemory
             throw new NotImplementedException();
         }
 
-        public virtual IBindingList GetEntity(string EntityName, List<AppFilter> filter)
+        public virtual IEnumerable<object> GetEntity(string EntityName, List<AppFilter> filter)
         {
             throw new NotImplementedException();
         }
@@ -345,7 +345,7 @@ namespace TheTechIdea.Beep.InMemory
         {
             throw new NotImplementedException();
         }
-        public virtual Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public virtual Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             return Task.Run(() => GetEntity(EntityName, Filter));
         }

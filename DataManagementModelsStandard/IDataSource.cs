@@ -102,14 +102,14 @@ namespace TheTechIdea.Beep
         /// Retrieves a list of entity names from the data source.
         /// </summary>
         /// <returns>List of entity names.</returns>
-        List<string> GetEntitesList();
+        IEnumerable<string> GetEntitesList();
 
         /// <summary>
         /// Executes a query and returns the results.
         /// </summary>
         /// <param name="qrystr">The query string to be executed.</param>
         /// <returns>The result of the query execution.</returns>
-        IBindingList RunQuery(string qrystr);
+        IEnumerable<object> RunQuery(string qrystr);
 
         /// <summary>
         /// Executes a SQL command and returns any errors encountered.
@@ -153,7 +153,7 @@ namespace TheTechIdea.Beep
         /// <param name="SchemaName">The name of the schema.</param>
         /// <param name="Filterparamters">Filter parameters for the child tables.</param>
         /// <returns>List of child relations.</returns>
-        List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters);
+        IEnumerable<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters);
 
         /// <summary>
         /// Retrieves foreign keys for a specified entity.
@@ -161,7 +161,7 @@ namespace TheTechIdea.Beep
         /// <param name="entityname">The name of the entity.</param>
         /// <param name="SchemaName">The schema name.</param>
         /// <returns>List of relationship keys.</returns>
-        List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName);
+        IEnumerable<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName);
 
         /// <summary>
         /// Obtains the structure of a specified entity.
@@ -191,7 +191,7 @@ namespace TheTechIdea.Beep
         /// </summary>
         /// <param name="entities">List of entities to generate scripts for.</param>
         /// <returns>List of ETL script details.</returns>
-        List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null);
+        IEnumerable<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null);
 
         /// <summary>
         /// Creates multiple entities and returns any errors.
@@ -262,7 +262,7 @@ namespace TheTechIdea.Beep
         /// <param name="EntityName">The name of the entity to retrieve.</param>
         /// <param name="filter">The filters to apply on the entity retrieval.</param>
         /// <returns>The requested entity.</returns>
-        IBindingList GetEntity(string EntityName, List<AppFilter> filter);
+        IEnumerable<object> GetEntity(string EntityName, List<AppFilter> filter);
         /// <summary>
         /// Retrieves an entity based on the provided name and filters.
         /// </summary>
@@ -279,7 +279,7 @@ namespace TheTechIdea.Beep
         /// <param name="EntityName">The name of the entity to retrieve.</param>
         /// <param name="Filter">The filters to apply on the entity retrieval.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the requested entity.</returns>
-        Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter);
+        Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter);
 
         /// <summary>
         /// Asynchronously retrieves a scalar value based on the provided query.

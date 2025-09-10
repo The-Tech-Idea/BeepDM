@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// Gets the list of available entities from the Web API
         /// </summary>
-        public List<string> GetEntitesList()
+        public IEnumerable<string> GetEntitesList()
         {
             try
             {
@@ -92,10 +92,10 @@ namespace TheTechIdea.Beep.WebAPI
         /// Gets the index of an entity in the entities list
         /// </summary>
         public int GetEntityIdx(string entityName)
-        {
+        {   
             try
             {
-                var entities = GetEntitesList();
+                List<string> entities = (List<string>)GetEntitesList();
                 return entities.FindIndex(e => string.Equals(e, entityName, StringComparison.OrdinalIgnoreCase));
             }
             catch (Exception ex)
@@ -191,7 +191,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// Gets foreign key relationships for an entity
         /// </summary>
-        public List<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
+        public IEnumerable<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             try
             {
@@ -212,7 +212,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// Gets child table relationships for an entity
         /// </summary>
-        public List<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
+        public IEnumerable<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
             try
             {

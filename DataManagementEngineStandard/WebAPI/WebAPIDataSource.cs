@@ -85,7 +85,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// List of entity fields.
         /// </summary>
-        public List<EntityField> Fields { get; set; } = new();
+        //public List<EntityField> Fields { get; set; } = new();
         /// <summary>
         /// API key for authentication.
         /// </summary>

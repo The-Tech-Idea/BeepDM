@@ -37,7 +37,7 @@ namespace TheTechIdea.Beep.WebAPI
         }
 
         /// <inheritdoc />
-        public List<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
+        public IEnumerable<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
             try
             {

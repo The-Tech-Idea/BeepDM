@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.WebAPI
     public partial class WebAPIDataSource
     {
         /// <inheritdoc />
-        public IBindingList GetEntity(string EntityName, List<AppFilter> filter)
+        public IEnumerable<object> GetEntity(string EntityName, List<AppFilter> filter)
         {
             try
             {
@@ -122,7 +122,7 @@ namespace TheTechIdea.Beep.WebAPI
         }
 
         /// <inheritdoc />
-        public Task<IBindingList> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             return Task.Run(() => GetEntity(EntityName, Filter));
         }
