@@ -23,9 +23,10 @@ using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Beep.Logger;
 using System.Text.Json;
 using System.Xml;
+using TheTechIdea.Beep.Utilities;
 
 
-namespace TheTechIdea.Beep.Utilities
+namespace TheTechIdea.Beep.Utils
 {
     public class Util : IUtil
     {
@@ -296,7 +297,7 @@ namespace TheTechIdea.Beep.Utilities
             var observableCollection = new ObservableCollection<T>(list);
             return observableCollection;
         }
-        public bool AddinInterfaceFilter(Type typeObj, Object criteriaObj)
+        public bool AddinInterfaceFilter(Type typeObj, object criteriaObj)
         {
             if (typeObj.ToString() == criteriaObj.ToString())
                 return true;
@@ -515,7 +516,7 @@ namespace TheTechIdea.Beep.Utilities
             }
             return table;
         }
-        public DataTable CreateDataTableVer1(Object[] array)
+        public DataTable CreateDataTableVer1(object[] array)
         {
             PropertyInfo[] properties = array.GetType().GetElementType().GetProperties();
             DataTable dt = CreateDataTable(properties);
@@ -540,19 +541,19 @@ namespace TheTechIdea.Beep.Utilities
             }
             return dt;
         }
-        public DataTable CreateDataTableVer2(Object[] arr)
+        public DataTable CreateDataTableVer2(object[] arr)
         {
             XmlSerializer serializer = new XmlSerializer(arr.GetType());
-            System.IO.StringWriter sw = new System.IO.StringWriter();
+            StringWriter sw = new StringWriter();
             serializer.Serialize(sw, arr);
-            System.Data.DataSet ds = new System.Data.DataSet();
-            System.Data.DataTable dt = new System.Data.DataTable();
-            System.IO.StringReader reader = new System.IO.StringReader(sw.ToString());
+            DataSet ds = new DataSet();
+            DataTable dt = new DataTable();
+            StringReader reader = new StringReader(sw.ToString());
 
             ds.ReadXml(reader);
             return ds.Tables[0];
         }
-        private void FillData(PropertyInfo[] properties, DataTable dt, Object o)
+        private void FillData(PropertyInfo[] properties, DataTable dt, object o)
         {
             DataRow dr = dt.NewRow();
             foreach (PropertyInfo pi in properties)
@@ -897,7 +898,7 @@ namespace TheTechIdea.Beep.Utilities
         {
             string downloadfile = downloadFilePath + downloadFileName;
             string httpPathWebResource = null;
-            Boolean ifFileDownoadedchk = false;
+            bool ifFileDownoadedchk = false;
             ifFileDownoadedchk = false;
             WebClient myWebClient = new WebClient();
             httpPathWebResource = url + downloadFileName;
@@ -1645,11 +1646,11 @@ namespace TheTechIdea.Beep.Utilities
                 {
                     try
                     {
-                        System.Reflection.PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
+                        PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
 
                         //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
                         //{
-                        System.Reflection.PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
+                        PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
                         if (GetPropAInfo != null && PropAInfo !=null)
                         {
                             result = GetPropAInfo.GetValue(UploadDataRow);
@@ -1660,12 +1661,12 @@ namespace TheTechIdea.Beep.Utilities
                     catch (Exception ex)
                     {
 
-                        result = System.DBNull.Value;
+                        result = DBNull.Value;
                     }
                    
                     if (result == null)
                     {
-                        result = System.DBNull.Value;
+                        result = DBNull.Value;
                     }
                     //if (result != null && result != System.DBNull.Value)
                     //{
@@ -1731,12 +1732,12 @@ namespace TheTechIdea.Beep.Utilities
             // now try the non-generic way
 
             // if it's a dictionary we always return DictionaryEntry
-            if (typeof(System.Collections.IDictionary).IsAssignableFrom(type))
-                return typeof(System.Collections.DictionaryEntry);
+            if (typeof(IDictionary).IsAssignableFrom(type))
+                return typeof(DictionaryEntry);
 
             // if it's a list we look for an Item property with an int index parameter
             // where the property type is anything but object
-            if (typeof(System.Collections.IList).IsAssignableFrom(type))
+            if (typeof(IList).IsAssignableFrom(type))
             {
                 foreach (var prop in type.GetProperties())
                 {
@@ -1753,7 +1754,7 @@ namespace TheTechIdea.Beep.Utilities
 
             // if it's a collection, we look for an Add() method whose parameter is 
             // anything but object
-            if (typeof(System.Collections.ICollection).IsAssignableFrom(type))
+            if (typeof(ICollection).IsAssignableFrom(type))
             {
                 foreach (var meth in type.GetMethods())
                 {
@@ -1765,7 +1766,7 @@ namespace TheTechIdea.Beep.Utilities
                     }
                 }
             }
-            if (typeof(System.Collections.IEnumerable).IsAssignableFrom(type))
+            if (typeof(IEnumerable).IsAssignableFrom(type))
                 return typeof(object);
             return null;
         }
@@ -1800,7 +1801,7 @@ namespace TheTechIdea.Beep.Utilities
                 if (SrcPropAInfo != null)
                 {
                     Type t = Nullable.GetUnderlyingType(SrcPropAInfo.PropertyType) ?? SrcPropAInfo.PropertyType;
-                    object safeValue = (value == null) ? null : Convert.ChangeType(value, t);
+                    object safeValue = value == null ? null : Convert.ChangeType(value, t);
                     SrcPropAInfo.SetValue(sourceobj, safeValue, null);
                 }
                 //SrcPropAInfo.SetValue(sourceobj, Convert.ChangeType(value, SrcPropAInfo.PropertyType), null);
@@ -2167,7 +2168,7 @@ namespace TheTechIdea.Beep.Utilities
                 {
                     if (Directory.Exists(folderpath))
                     {
-                        string dirname = new System.IO.DirectoryInfo(folderpath).Name;
+                        string dirname = new DirectoryInfo(folderpath).Name;
                         projectFolder.Url = folderpath;
                         projectFolder.Name = dirname;
                         Folder folder = new Folder(folderpath);

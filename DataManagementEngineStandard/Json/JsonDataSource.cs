@@ -18,6 +18,7 @@ using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Addin;
 using System.ComponentModel;
+using TheTechIdea.Beep.Vis;
 
 namespace TheTechIdea.Beep.Json
 {
@@ -27,8 +28,10 @@ namespace TheTechIdea.Beep.Json
     /// This class supports reading, writing, updating, and deleting JSON objects from a file,
     /// and includes the ability to generate EntityStructures dynamically.
     /// </summary>
+    [AddinAttribute(Category = DatasourceCategory.FILE, DatasourceType = DataSourceType.Json)]
     public class JsonDataSource : IDataSource, IDisposable
     {
+      
         /// <summary>
         /// Constructor initializing JsonDataSource with a specified data source name, logger, editor, and datasource type.
         /// It attempts to load the JSON file associated with the connection specified in the DMEEditor.ConfigEditor.
@@ -373,14 +376,7 @@ namespace TheTechIdea.Beep.Json
             return new ErrorsInfo { Message = "No matching item found to remove.", Flag = Errors.Failed };
         }
 
-        /// <summary>
-        /// Returns a list of child relations for a given table. Not implemented for JSON.
-        /// </summary>
-        public IEnumerable<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
-        {
-            throw new NotImplementedException();
-        }
-
+      
         /// <summary>
         /// Returns a list of scripts to create entities, if applicable. Not implemented for JSON.
         /// </summary>
@@ -412,70 +408,57 @@ namespace TheTechIdea.Beep.Json
         /// <returns>Collection of objects representing the entity data</returns>
         public IEnumerable<object> GetEntity(string entityName, List<AppFilter> filter)
         {
-            var entityStructure = Entities.FirstOrDefault(e => e.EntityName == entityName);
-            if (entityStructure == null)
+            // Basic validation
+            if (string.IsNullOrWhiteSpace(entityName)) return Enumerable.Empty<object>();
+            var entityStructure = Entities.FirstOrDefault(e => e.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+            if (entityStructure == null) return Enumerable.Empty<object>();
+            var rootJsonArray = GetRootJsonArray();
+            if (rootJsonArray == null) return Enumerable.Empty<object>();
+
+            // Prepare simple filters (equality only). If AppFilter has an Operator property elsewhere it will be ignored here.
+            var activeFilters = (filter ?? new List<AppFilter>())
+                .Where(f => f != null && !string.IsNullOrWhiteSpace(f.FieldName) && !string.IsNullOrEmpty(f.FilterValue))
+                .ToList();
+
+            var results = new List<object>();
+
+            foreach (var item in rootJsonArray.OfType<JObject>())
             {
-                return Enumerable.Empty<object>();
-            }
-
-            JArray rootJsonArray = GetRootJsonArray();
-            if (rootJsonArray == null)
-            {
-                return Enumerable.Empty<object>();
-            }
-
-            List<object> resultList = new List<object>();
-            Type entityType = GetEntityType(entityName);
-
-            foreach (var item in rootJsonArray.Children<JObject>())
-            {
-                var entity = Activator.CreateInstance(entityType);
-
-                foreach (var property in item.Properties())
+                // Apply filters
+                bool include = true;
+                foreach (var f in activeFilters)
                 {
-                    var propInfo = entityType.GetProperty(property.Name, BindingFlags.Public | BindingFlags.Instance);
-                    if (propInfo != null && propInfo.CanWrite)
+                    var token = item.Property(f.FieldName, StringComparison.OrdinalIgnoreCase)?.Value;
+                    if (token == null)
                     {
-                        try
-                        {
-                            var fieldInfo = entityStructure.Fields.FirstOrDefault(p => p.fieldname == property.Name);
-                            if (fieldInfo != null)
-                            {
-                                Type fieldType = Type.GetType(fieldInfo.fieldtype);
-                                object value;
-
-                                // Handle $oid special field
-                                if (property.Value.Type == JTokenType.Object && property.Value["$oid"] != null)
-                                {
-                                    value = property.Value["$oid"].ToString();
-                                }
-                                else
-                                {
-                                    value = property.Value.ToObject(fieldType);
-                                }
-
-                                propInfo.SetValue(entity, value);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Error setting property {property.Name}: {ex.Message}");
-                        }
+                        include = false; break;
+                    }
+                    // Simple string comparison (case-insensitive)
+                    if (!string.Equals(token.Type == JTokenType.Object && token["$oid"] != null ? token["$oid"].ToString() : token.ToString(), f.FilterValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        include = false; break;
                     }
                 }
+                if (!include) continue;
 
-                // Check and add missing fields to entity structure if found
+                // Build a dictionary for the row
+                var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                foreach (var prop in item.Properties())
+                {
+                    object value;
+                    if (prop.Value.Type == JTokenType.Object && prop.Value["$oid"] != null)
+                        value = prop.Value["$oid"].ToString();
+                    else
+                        value = prop.Value.Type == JTokenType.Null ? null : prop.Value.ToObject<object>();
+                    dict[prop.Name] = value;
+                }
+
+                // Update entity structure with any new fields discovered
                 UpdateEntityStructureWithMissingFields(item, entityStructure);
-                resultList.Add(entity);
+                results.Add(dict);
             }
 
-            enttype = GetEntityType(entityName);
-            Type uowGenericType = typeof(ObservableBindingList<>).MakeGenericType(enttype);
-            object[] constructorArgs = new object[] { resultList };
-
-            // Create ObservableBindingList<T> instance
-            IBindingList uowInstance =(IBindingList) Activator.CreateInstance(uowGenericType, constructorArgs);
-            return uowInstance;
+            return results;
         }
 
         /// <summary>
@@ -1153,6 +1136,15 @@ namespace TheTechIdea.Beep.Json
                 Logger?.LogInfo("Schema synchronized successfully.");
             }
         }
+        /// <summary>
+        /// Returns a list of child relations for a given table. Not implemented for JSON.
+        /// </summary>
+        public IEnumerable<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
+        {
+            // JSON datasource has no native child relation discovery implemented yet
+            return Enumerable.Empty<ChildRelation>();
+        }
+
         #endregion
     }
 }

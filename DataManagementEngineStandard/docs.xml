@@ -6362,11 +6362,6 @@
             Currently, the method is a placeholder. You need to provide a 'MatchesCriteria' extension or logic.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetChildTablesList(System.String,System.String,System.String)">
-            <summary>
-            Returns a list of child relations for a given table. Not implemented for JSON.
-            </summary>
-        </member>
         <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetCreateEntityScript(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
             <summary>
             Returns a list of scripts to create entities, if applicable. Not implemented for JSON.
@@ -6536,6 +6531,11 @@
         <member name="M:TheTechIdea.Beep.Json.JsonDataSource.HandleSchemaChanges">
             <summary>
             Handles schema changes dynamically, including adding and removing fields.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetChildTablesList(System.String,System.String,System.String)">
+            <summary>
+            Returns a list of child relations for a given table. Not implemented for JSON.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Properties.Resources">
@@ -8046,11 +8046,6 @@
         <member name="E:TheTechIdea.Beep.WebAPI.WebAPIDataSource.PassEvent">
             <summary>
             Event raised when a specific action or event is passed.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.Fields">
-            <summary>
-            List of entity fields.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.WebAPI.WebAPIDataSource.ApiKey">

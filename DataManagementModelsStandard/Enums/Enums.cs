@@ -125,7 +125,7 @@ namespace TheTechIdea.Beep.Utilities
         TFRecord, ONNX, PyTorchData, ScikitLearnData,
 
         // File Formats
-        FlatFile, CSV, TSV, Text, YAML,Json, Markdown, Log, INI, JSON, XML, Xls, Doc, Docx, PPT, PPTX, PDF,Onnx,  RecordIO,
+        FlatFile, CSV, TSV, Text, YAML,Json, Markdown, Log, INI,  XML, Xls, Doc, Docx, PPT, PPTX, PDF,Onnx,  RecordIO,
 
         // Specialized Formats
         Hdf5, LibSVM, GraphML, DICOM, LAS,

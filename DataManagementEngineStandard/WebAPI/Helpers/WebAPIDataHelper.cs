@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Linq;
-using System.ComponentModel;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Logger;
@@ -82,12 +81,12 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             return endpoint;
         }
 
-        public IBindingList ProcessApiResponse(string jsonResponse, EntityStructure entityStructure)
+        public IEnumerable<object> ProcessApiResponse(string jsonResponse, EntityStructure entityStructure)
         {
             try
             {
                 if (string.IsNullOrEmpty(jsonResponse))
-                    return new BindingList<object>();
+                    return new List<object>();
 
                 // Try to deserialize as JSON
                 using (var document = JsonDocument.Parse(jsonResponse))
@@ -116,7 +115,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                 _logger?.WriteLog($"Error processing API response: {ex.Message}");
             }
 
-            return new BindingList<object>();
+            return new List<object>();
         }
 
         public int GetTotalRecordsFromResponse(string jsonResponse, System.Net.Http.Headers.HttpResponseHeaders headers = null)
@@ -124,13 +123,10 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             try
             {
                 // Try to get from headers first
-                if (headers != null)
+                if (headers != null && headers.TryGetValues("X-Total-Count", out var totalCountValues))
                 {
-                    if (headers.TryGetValues("X-Total-Count", out var totalCountValues))
-                    {
-                        if (int.TryParse(totalCountValues.FirstOrDefault(), out var totalFromHeader))
-                            return totalFromHeader;
-                    }
+                    if (int.TryParse(totalCountValues.FirstOrDefault(), out var totalFromHeader))
+                        return totalFromHeader;
                 }
 
                 // Try to get from JSON response
@@ -168,9 +164,9 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             return 0;
         }
 
-        private IBindingList ProcessJsonArray(JsonElement arrayElement, EntityStructure entityStructure)
+        private IEnumerable<object> ProcessJsonArray(JsonElement arrayElement, EntityStructure entityStructure)
         {
-            var result = new BindingList<object>();
+            var result = new List<object>();
 
             foreach (var item in arrayElement.EnumerateArray())
             {
@@ -181,11 +177,8 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             return result;
         }
 
-        private IBindingList ProcessJsonObject(JsonElement objectElement, EntityStructure entityStructure)
+        private IEnumerable<object> ProcessJsonObject(JsonElement objectElement, EntityStructure entityStructure)
         {
-            var result = new BindingList<object>();
-
-            // Look for data array within the object
             var dataFields = new[] { "data", "items", "results", "records", "content" };
             
             foreach (var field in dataFields)
@@ -197,22 +190,17 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                 }
             }
 
-            // If no data array found, treat the object itself as a single item
-            var obj = ConvertJsonElementToObject(objectElement, entityStructure);
-            result.Add(obj);
-
-            return result;
+            var singleList = new List<object> { ConvertJsonElementToObject(objectElement, entityStructure) };
+            return singleList;
         }
 
         private object ConvertJsonElementToObject(JsonElement jsonElement, EntityStructure entityStructure)
         {
-            var dictionary = new Dictionary<string, object>();
+            var dictionary = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var property in jsonElement.EnumerateObject())
             {
-                var fieldName = property.Name;
-                var value = ConvertJsonValueToClrValue(property.Value);
-                dictionary[fieldName] = value;
+                dictionary[property.Name] = ConvertJsonValueToClrValue(property.Value);
             }
 
             return dictionary;
@@ -226,12 +214,9 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                     return jsonValue.GetString();
                 
                 case JsonValueKind.Number:
-                    if (jsonValue.TryGetInt32(out var intValue))
-                        return intValue;
-                    if (jsonValue.TryGetInt64(out var longValue))
-                        return longValue;
-                    if (jsonValue.TryGetDouble(out var doubleValue))
-                        return doubleValue;
+                    if (jsonValue.TryGetInt32(out var i)) return i;
+                    if (jsonValue.TryGetInt64(out var l)) return l;
+                    if (jsonValue.TryGetDouble(out var d)) return d;
                     return jsonValue.GetDecimal();
                 
                 case JsonValueKind.True:
@@ -252,10 +237,10 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                     return list;
                 
                 case JsonValueKind.Object:
-                    var dict = new Dictionary<string, object>();
-                    foreach (var property in jsonValue.EnumerateObject())
+                    var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var prop in jsonValue.EnumerateObject())
                     {
-                        dict[property.Name] = ConvertJsonValueToClrValue(property.Value);
+                        dict[prop.Name] = ConvertJsonValueToClrValue(prop.Value);
                     }
                     return dict;
                 
@@ -264,19 +249,11 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             }
         }
 
-        private IBindingList ProcessNonJsonResponse(string response, EntityStructure entityStructure)
+        private IEnumerable<object> ProcessNonJsonResponse(string response, EntityStructure entityStructure)
         {
-            var result = new BindingList<object>();
-            
-            // Handle CSV, XML, or other formats here if needed
-            // For now, just return the raw response as a single object
-            var obj = new Dictionary<string, object>
-            {
-                ["response"] = response
-            };
-            
-            result.Add(obj);
-            return result;
+            var list = new List<object>();
+            list.Add(new Dictionary<string, object> { ["response"] = response });
+            return list;
         }
 
         private string ProcessCustomQuery(string customQuery, List<AppFilter> filters, List<EntityParameters> parameters)
@@ -372,14 +349,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                 
                 if (data is Dictionary<string, object> dict)
                 {
-                    foreach (var field in idFields)
-                    {
-                        if (dict.ContainsKey(field))
-                        {
-                            return dict[field];
-                        }
-                    }
-                    // Return first value if no standard ID field found
+                    foreach (var field in idFields) if (dict.ContainsKey(field)) return dict[field];
                     return dict.Values.FirstOrDefault();
                 }
 
@@ -388,21 +358,13 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                 foreach (var field in idFields)
                 {
                     var prop = type.GetProperty(field, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-                    if (prop != null)
-                    {
-                        return prop.GetValue(data);
-                    }
+                    if (prop != null) return prop.GetValue(data);
                 }
 
                 // Try first property as fallback
-                var firstProp = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault();
-                return firstProp?.GetValue(data);
+                return type.GetProperties(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault()?.GetValue(data);
             }
-            catch (Exception ex)
-            {
-                _logger?.WriteLog($"Error extracting ID value: {ex.Message}");
-                return null;
-            }
+            catch (Exception ex) { _logger?.WriteLog($"Error extracting ID value: {ex.Message}"); return null; }
         }
 
         /// <summary>Parses entities from discovery API response</summary>
@@ -412,47 +374,26 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
 
             try
             {
-                if (string.IsNullOrEmpty(jsonResponse))
-                    return entities;
+                if (string.IsNullOrEmpty(jsonResponse)) return entities;
 
                 var jsonDoc = JsonDocument.Parse(jsonResponse);
-                
-                // Handle different response formats
                 JsonElement dataElement = jsonDoc.RootElement;
                 
-                // Look for common data containers
-                if (dataElement.TryGetProperty("data", out var data))
-                    dataElement = data;
-                else if (dataElement.TryGetProperty("entities", out var entitiesElement))
-                    dataElement = entitiesElement;
-                else if (dataElement.TryGetProperty("resources", out var resources))
-                    dataElement = resources;
-                else if (dataElement.TryGetProperty("endpoints", out var endpoints))
-                    dataElement = endpoints;
+                // Handle different response formats
+                if (dataElement.TryGetProperty("data", out var d) ||
+                    dataElement.TryGetProperty("entities", out d) ||
+                    dataElement.TryGetProperty("resources", out d) ||
+                    dataElement.TryGetProperty("endpoints", out d))
+                { dataElement = d; }
 
                 if (dataElement.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var item in dataElement.EnumerateArray())
-                    {
-                        var entity = ParseEntityFromJsonElement(item);
-                        if (entity != null)
-                            entities.Add(entity);
-                    }
-                }
+                { foreach (var item in dataElement.EnumerateArray()) { var e = ParseEntityFromJsonElement(item); if (e != null) entities.Add(e); } }
                 else if (dataElement.ValueKind == JsonValueKind.Object)
-                {
-                    // Single entity or object with entity properties
-                    var entity = ParseEntityFromJsonElement(dataElement);
-                    if (entity != null)
-                        entities.Add(entity);
-                }
+                { var e = ParseEntityFromJsonElement(dataElement); if (e != null) entities.Add(e); }
 
                 _logger?.WriteLog($"Parsed {entities.Count} entities from discovery response");
             }
-            catch (Exception ex)
-            {
-                _logger?.WriteLog($"Error parsing entities from discovery response: {ex.Message}");
-            }
+            catch (Exception ex) { _logger?.WriteLog($"Error parsing entities: {ex.Message}"); }
 
             return entities;
         }
@@ -462,36 +403,16 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         {
             try
             {
-                var entity = new EntityStructure
-                {
-                    EntityName = entityName,
-                    DataSourceID = "WebAPI",
-                    DatasourceEntityName = entityName,
-                    Fields = new List<EntityField>()
-                };
-
+                var entity = new EntityStructure { EntityName = entityName, DataSourceID = "WebAPI", DatasourceEntityName = entityName, Fields = new List<EntityField>() };
                 if (sampleData.ValueKind == JsonValueKind.Object)
-                {
-                    foreach (var property in sampleData.EnumerateObject())
-                    {
-                        var field = CreateFieldFromJsonProperty(property);
-                        if (field != null)
-                            entity.Fields.Add(field);
-                    }
-                }
-
+                { foreach (var prop in sampleData.EnumerateObject()) { var field = CreateFieldFromJsonProperty(prop); if (field != null) entity.Fields.Add(field); } }
                 _logger?.WriteLog($"Inferred structure for entity '{entityName}' with {entity.Fields.Count} fields");
                 return entity;
             }
             catch (Exception ex)
             {
-                _logger?.WriteLog($"Error inferring entity structure for '{entityName}': {ex.Message}");
-                return new EntityStructure
-                {
-                    EntityName = entityName,
-                    DataSourceID = "WebAPI",
-                    Fields = new List<EntityField>()
-                };
+                _logger?.WriteLog($"Error inferring structure for '{entityName}': {ex.Message}");
+                return new EntityStructure { EntityName = entityName, DataSourceID = "WebAPI", Fields = new List<EntityField>() };
             }
         }
 
@@ -503,127 +424,53 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             if (filters != null && filters.Count > 0)
             {
                 keyBuilder.Append("_filters:");
-                foreach (var filter in filters)
-                {
-                    keyBuilder.Append($"{filter.FieldName}={filter.FilterValue}_");
-                }
+                foreach (var f in filters) keyBuilder.Append($"{f.FieldName}={f.FilterValue}_");
             }
-            
-            if (pageNumber > 0 || pageSize > 0)
-            {
-                keyBuilder.Append($"_page:{pageNumber}_size:{pageSize}");
-            }
-            
+            if (pageNumber > 0 || pageSize > 0) keyBuilder.Append($"_page:{pageNumber}_size:{pageSize}");
             return keyBuilder.ToString();
         }
 
         #region Private Methods
-
         private EntityStructure ParseEntityFromJsonElement(JsonElement element)
         {
             try
             {
                 string entityName = null;
-                
-                // Try to extract entity name from various properties
-                if (element.TryGetProperty("name", out var nameElement))
-                    entityName = nameElement.GetString();
-                else if (element.TryGetProperty("entityName", out var entityNameElement))
-                    entityName = entityNameElement.GetString();
-                else if (element.TryGetProperty("resource", out var resourceElement))
-                    entityName = resourceElement.GetString();
-                else if (element.TryGetProperty("endpoint", out var endpointElement))
-                    entityName = endpointElement.GetString();
-
-                if (string.IsNullOrEmpty(entityName))
-                    return null;
-
-                var entity = new EntityStructure
-                {
-                    EntityName = entityName,
-                    DataSourceID = "WebAPI",
-                    DatasourceEntityName = entityName,
-                    Fields = new List<EntityField>()
-                };
-
-                // Try to get schema/fields information
-                if (element.TryGetProperty("schema", out var schemaElement) ||
-                    element.TryGetProperty("fields", out schemaElement) ||
-                    element.TryGetProperty("properties", out schemaElement))
-                {
-                    if (schemaElement.ValueKind == JsonValueKind.Object)
-                    {
-                        foreach (var property in schemaElement.EnumerateObject())
-                        {
-                            var field = CreateFieldFromJsonProperty(property);
-                            if (field != null)
-                                entity.Fields.Add(field);
-                        }
-                    }
-                }
-
+                if (element.TryGetProperty("name", out var nameElement)) entityName = nameElement.GetString();
+                else if (element.TryGetProperty("entityName", out var en)) entityName = en.GetString();
+                else if (element.TryGetProperty("resource", out var resourceElement)) entityName = resourceElement.GetString();
+                else if (element.TryGetProperty("endpoint", out var endpointElement)) entityName = endpointElement.GetString();
+                if (string.IsNullOrEmpty(entityName)) return null;
+                var entity = new EntityStructure { EntityName = entityName, DataSourceID = "WebAPI", DatasourceEntityName = entityName, Fields = new List<EntityField>() };
+                if (element.TryGetProperty("schema", out var schemaElement) || element.TryGetProperty("fields", out schemaElement) || element.TryGetProperty("properties", out schemaElement))
+                { if (schemaElement.ValueKind == JsonValueKind.Object) foreach (var p in schemaElement.EnumerateObject()) { var field = CreateFieldFromJsonProperty(p); if (field != null) entity.Fields.Add(field); } }
                 return entity;
             }
-            catch (Exception ex)
-            {
-                _logger?.WriteLog($"Error parsing entity from JSON element: {ex.Message}");
-                return null;
-            }
+            catch (Exception ex) { _logger?.WriteLog($"Error parsing entity: {ex.Message}"); return null; }
         }
-
         private EntityField CreateFieldFromJsonProperty(JsonProperty property)
         {
             try
             {
-                var field = new EntityField
-                {
-                    fieldname = property.Name,
-                    fieldtype = InferDataTypeFromJsonValue(property.Value),
-                    Size1 = 0,
-                    IsKey = IsLikelyIdField(property.Name),
-                    AllowDBNull = true,
-                    IsUnique = IsLikelyIdField(property.Name)
-                };
-
-                return field;
+                return new EntityField { fieldname = property.Name, fieldtype = InferDataTypeFromJsonValue(property.Value), IsKey = IsLikelyIdField(property.Name), AllowDBNull = true, IsUnique = IsLikelyIdField(property.Name) };
             }
-            catch (Exception ex)
-            {
-                _logger?.WriteLog($"Error creating field from JSON property '{property.Name}': {ex.Message}");
-                return null;
-            }
+            catch (Exception ex) { _logger?.WriteLog($"Error creating field '{property.Name}': {ex.Message}"); return null; }
         }
-
         private string InferDataTypeFromJsonValue(JsonElement value)
         {
             switch (value.ValueKind)
             {
-                case JsonValueKind.String:
-                    return "System.String";
-                case JsonValueKind.Number:
-                    if (value.TryGetInt32(out _))
-                        return "System.Int32";
-                    if (value.TryGetInt64(out _))
-                        return "System.Int64";
-                    return "System.Double";
+                case JsonValueKind.String: return "System.String";
+                case JsonValueKind.Number: if (value.TryGetInt32(out _)) return "System.Int32"; if (value.TryGetInt64(out _)) return "System.Int64"; return "System.Double";
                 case JsonValueKind.True:
-                case JsonValueKind.False:
-                    return "System.Boolean";
-                case JsonValueKind.Array:
-                    return "System.String"; // Store as JSON string
-                case JsonValueKind.Object:
-                    return "System.String"; // Store as JSON string
-                default:
-                    return "System.String";
+                case JsonValueKind.False: return "System.Boolean";
+                case JsonValueKind.Array: return "System.String";
+                case JsonValueKind.Object: return "System.String";
+                default: return "System.String";
             }
         }
-
         private bool IsLikelyIdField(string fieldName)
-        {
-            var idFields = new[] { "id", "_id", "uuid", "key", "pk", "primarykey" };
-            return idFields.Contains(fieldName.ToLower());
-        }
-
+        { var idFields = new[] { "id", "_id", "uuid", "key", "pk", "primarykey" }; return idFields.Contains(fieldName.ToLower()); }
         #endregion
     }
 }

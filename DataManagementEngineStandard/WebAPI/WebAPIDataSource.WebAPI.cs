@@ -33,7 +33,7 @@ namespace TheTechIdea.Beep.WebAPI
                 }
 
                 // Use the first available entity as default
-                var entities = GetEntitesList();
+                List<string> entities = (List<string>)GetEntitesList();
                 if (entities.Count == 0)
                 {
                     Logger.WriteLog("No entities available");
