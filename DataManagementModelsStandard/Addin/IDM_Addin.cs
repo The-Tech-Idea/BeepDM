@@ -39,6 +39,12 @@ namespace TheTechIdea.Beep.Addin
         // Optional Configuration (if runtime config is needed)
         void Configure(Dictionary<string, object> settings);
         // Apply theme if applicable
+        bool IsConfigured { get; set; }
+        bool IsRunning { get; set; }
+        bool IsSuspended { get; set; }
+        bool IsStarted { get; set; }
+
+      
         void ApplyTheme();
         // Events
         event EventHandler OnStart;
