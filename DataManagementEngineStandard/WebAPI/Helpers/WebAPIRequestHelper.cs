@@ -34,7 +34,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             _rateLimitSemaphore = new SemaphoreSlim(maxConcurrentRequests, maxConcurrentRequests);
         }
 
-        public async Task<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, string operationName = null)
+        public virtual async Task<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, string operationName = null)
         {
             return await _errorHelper.ExecuteWithRetryAsync(async () =>
             {
@@ -59,7 +59,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             }, operationName ?? "HTTP Request");
         }
 
-        public async Task<T> SendWithRetryAsync<T>(HttpRequestMessage request, Func<HttpResponseMessage, Task<T>> responseHandler, string operationName = null)
+        public virtual async Task<T> SendWithRetryAsync<T>(HttpRequestMessage request, Func<HttpResponseMessage, Task<T>> responseHandler, string operationName = null)
         {
             var response = await SendWithRetryAsync(request, operationName);
             return await responseHandler(response);

@@ -21,7 +21,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// - Otherwise it is combined with BaseUrl.
         /// Default headers and auth headers are applied automatically.
         /// </summary>
-        public async Task<HttpResponseMessage> GetAsync(
+        public virtual async Task<HttpResponseMessage> GetAsync(
             string endpointOrUrl,
             Dictionary<string, string> query = null,
             Dictionary<string, string> headers = null,
@@ -77,7 +77,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// Sends a GET request and deserializes the JSON response to type T.
         /// Returns default(T) if the request fails or content cannot be parsed.
         /// </summary>
-        public async Task<T> GetAsync<T>(
+        public virtual async Task<T> GetAsync<T>(
             string endpointOrUrl,
             Dictionary<string, string> query = null,
             Dictionary<string, string> headers = null,
@@ -105,7 +105,7 @@ namespace TheTechIdea.Beep.WebAPI
 
         // Additional IWebAPIDataSource methods
 
-        public async Task<HttpResponseMessage> PostAsync(
+        public virtual async Task<HttpResponseMessage> PostAsync(
             string endpointOrUrl,
             object body = null,
             Dictionary<string, string> query = null,

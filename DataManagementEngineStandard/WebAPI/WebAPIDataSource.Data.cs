@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.WebAPI
     public partial class WebAPIDataSource
     {
         /// <inheritdoc />
-        public IEnumerable<object> GetEntity(string EntityName, List<AppFilter> filter)
+        public virtual IEnumerable<object> GetEntity(string EntityName, List<AppFilter> filter)
         {
             try
             {
@@ -71,7 +71,7 @@ namespace TheTechIdea.Beep.WebAPI
         }
 
         /// <inheritdoc />
-        public PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
+        public virtual PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
         {
             try
             {
@@ -122,13 +122,13 @@ namespace TheTechIdea.Beep.WebAPI
         }
 
         /// <inheritdoc />
-        public Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public virtual Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
             return Task.Run(() => GetEntity(EntityName, Filter));
         }
 
         /// <inheritdoc />
-        public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
+        public virtual IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
             try
             {
@@ -183,7 +183,7 @@ namespace TheTechIdea.Beep.WebAPI
         }
 
         /// <inheritdoc />
-        public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
+        public virtual IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow)
         {
             try
             {
@@ -235,7 +235,7 @@ namespace TheTechIdea.Beep.WebAPI
         }
 
         /// <inheritdoc />
-        public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow)
+        public virtual IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow)
         {
             try
             {
@@ -285,7 +285,7 @@ namespace TheTechIdea.Beep.WebAPI
         }
 
         /// <inheritdoc />
-        public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
+        public virtual IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress)
         {
             // For bulk update, iterate through the data and update each item
             try

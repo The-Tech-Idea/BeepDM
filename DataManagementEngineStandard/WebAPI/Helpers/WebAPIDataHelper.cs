@@ -28,7 +28,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             _dataSourceName = dataSourceName ?? "WebAPI";
         }
 
-        public string BuildEndpointUrl(string baseUrl, string endpoint, List<AppFilter> filters = null, int? pageNumber = null, int? pageSize = null)
+        public virtual string BuildEndpointUrl(string baseUrl, string endpoint, List<AppFilter> filters = null, int? pageNumber = null, int? pageSize = null)
         {
             var url = new StringBuilder();
             url.Append(baseUrl?.TrimEnd('/'));
@@ -68,7 +68,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             return url.ToString();
         }
 
-        public string BuildEntityEndpoint(EntityStructure entity, List<AppFilter> filters = null, int? pageNumber = null, int? pageSize = null)
+        public virtual string BuildEntityEndpoint(EntityStructure entity, List<AppFilter> filters = null, int? pageNumber = null, int? pageSize = null)
         {
             var endpoint = entity.DatasourceEntityName ?? entity.EntityName;
             
@@ -81,7 +81,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             return endpoint;
         }
 
-        public IEnumerable<object> ProcessApiResponse(string jsonResponse, EntityStructure entityStructure)
+        public virtual IEnumerable<object> ProcessApiResponse(string jsonResponse, EntityStructure entityStructure)
         {
             try
             {
@@ -118,7 +118,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             return new List<object>();
         }
 
-        public int GetTotalRecordsFromResponse(string jsonResponse, System.Net.Http.Headers.HttpResponseHeaders headers = null)
+        public virtual int GetTotalRecordsFromResponse(string jsonResponse, System.Net.Http.Headers.HttpResponseHeaders headers = null)
         {
             try
             {
@@ -164,7 +164,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             return 0;
         }
 
-        private IEnumerable<object> ProcessJsonArray(JsonElement arrayElement, EntityStructure entityStructure)
+        private  IEnumerable<object> ProcessJsonArray(JsonElement arrayElement, EntityStructure entityStructure)
         {
             var result = new List<object>();
 
@@ -297,7 +297,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             return request;
         }
 
-        public void AddCustomHeaders(HttpRequestMessage request, List<WebApiHeader> headers)
+        public virtual void AddCustomHeaders(HttpRequestMessage request, List<WebApiHeader> headers)
         {
             if (headers?.Any() == true)
             {
@@ -327,7 +327,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         }
 
         /// <summary>Builds entity endpoint for specific ID</summary>
-        public string BuildEntityEndpoint(string entityName, string id)
+        public virtual string BuildEntityEndpoint(string entityName, string id)
         {
             var endpoint = entityName.ToLower();
             if (!string.IsNullOrEmpty(id))
@@ -338,7 +338,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         }
 
         /// <summary>Extracts ID value from data object</summary>
-        public object ExtractIdValue(object data)
+        public virtual object ExtractIdValue(object data)
         {
             if (data == null) return null;
 
@@ -368,7 +368,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         }
 
         /// <summary>Parses entities from discovery API response</summary>
-        public List<EntityStructure> ParseEntitiesFromDiscoveryResponse(string jsonResponse)
+        public virtual List<EntityStructure> ParseEntitiesFromDiscoveryResponse(string jsonResponse)
         {
             var entities = new List<EntityStructure>();
 
@@ -399,7 +399,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         }
 
         /// <summary>Infers entity structure from sample data</summary>
-        public EntityStructure InferEntityStructureFromSample(string entityName, JsonElement sampleData)
+        public virtual EntityStructure InferEntityStructureFromSample(string entityName, JsonElement sampleData)
         {
             try
             {

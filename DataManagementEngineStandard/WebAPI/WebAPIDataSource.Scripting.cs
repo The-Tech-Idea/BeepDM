@@ -16,7 +16,7 @@ namespace TheTechIdea.Beep.WebAPI
     public partial class WebAPIDataSource
     {
         /// <inheritdoc />
-        public IErrorsInfo RunScript(ETLScriptDet dDLScripts)
+        public virtual IErrorsInfo RunScript(ETLScriptDet dDLScripts)
         {
             try
             {
@@ -37,7 +37,7 @@ namespace TheTechIdea.Beep.WebAPI
         }
 
         /// <inheritdoc />
-        public IEnumerable<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
+        public virtual IEnumerable<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
             try
             {
@@ -56,7 +56,7 @@ namespace TheTechIdea.Beep.WebAPI
         }
 
         /// <inheritdoc />
-        public IErrorsInfo CreateEntities(List<EntityStructure> entities)
+        public virtual IErrorsInfo CreateEntities(List<EntityStructure> entities)
         {
             try
             {

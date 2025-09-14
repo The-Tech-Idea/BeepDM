@@ -96,7 +96,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         /// <param name="key">Configuration key</param>
         /// <param name="defaultValue">Default value if key not found</param>
         /// <returns>Configuration value</returns>
-        public T GetConfigValue<T>(string key, T defaultValue = default)
+        public virtual T GetConfigValue<T>(string key, T defaultValue = default)
         {
             if (string.IsNullOrEmpty(key))
                 return defaultValue;
@@ -136,7 +136,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         /// </summary>
         /// <param name="key">Configuration key</param>
         /// <param name="value">Configuration value</param>
-        public void SetConfigValue(string key, object value)
+        public virtual void SetConfigValue(string key, object value)
         {
             if (string.IsNullOrEmpty(key))
                 return;
@@ -160,7 +160,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         /// Gets HTTP headers from configuration
         /// </summary>
         /// <returns>Dictionary of headers</returns>
-        public Dictionary<string, string> GetHeaders()
+        public virtual Dictionary<string, string> GetHeaders()
         {
             var headers = new Dictionary<string, string>();
 
@@ -201,7 +201,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         /// </summary>
         /// <param name="entityName">Entity name</param>
         /// <returns>Endpoint configuration</returns>
-        public EndpointConfiguration GetEndpointConfiguration(string entityName)
+        public virtual EndpointConfiguration GetEndpointConfiguration(string entityName)
         {
             var config = new EndpointConfiguration
             {
@@ -233,7 +233,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         /// Gets pagination configuration
         /// </summary>
         /// <returns>Pagination configuration</returns>
-        public PaginationConfiguration GetPaginationConfiguration()
+        public virtual PaginationConfiguration GetPaginationConfiguration()
         {
             var config = new PaginationConfiguration
             {
@@ -254,7 +254,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         /// Validates the current configuration
         /// </summary>
         /// <returns>Validation result</returns>
-        public ConfigurationValidationResult ValidateConfiguration()
+        public virtual ConfigurationValidationResult ValidateConfiguration()
         {
             var result = new ConfigurationValidationResult
             {

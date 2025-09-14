@@ -521,7 +521,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// </summary>
         /// <param name="paramName">Name of the parameter to retrieve</param>
         /// <returns>Parameter value if found, null otherwise</returns>
-        public string GetParameterValue(string paramName)
+        public virtual string GetParameterValue(string paramName)
         {
             if (string.IsNullOrEmpty(Parameters))
                 return null;
@@ -535,7 +535,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// </summary>
         /// <param name="paramName">Name of the parameter to set</param>
         /// <param name="value">Value to set for the parameter</param>
-        public void SetParameterValue(string paramName, string value)
+        public virtual void SetParameterValue(string paramName, string value)
         {
             var parameters = ParseParameters(Parameters ?? string.Empty);
             parameters[paramName] = value;
@@ -547,7 +547,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// </summary>
         /// <param name="parametersString">Semicolon-separated key-value pairs</param>
         /// <returns>Dictionary containing the parsed parameters</returns>
-        private Dictionary<string, string> ParseParameters(string parametersString)
+        private  Dictionary<string, string> ParseParameters(string parametersString)
         {
             var parameters = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
 

@@ -60,7 +60,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         #endregion
 
         #region Public Methods
-        public async Task<EntityStructure> InferEntityStructureAsync(string entityName)
+        public virtual async Task<EntityStructure> InferEntityStructureAsync(string entityName)
         {
             // This is a simplified example. A real implementation would need a way to get sample data.
             // For instance, by making a request to a known endpoint for that entity.
@@ -81,7 +81,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         /// <param name="jsonData">JSON data samples</param>
         /// <param name="forceRefresh">Force schema refresh</param>
         /// <returns>Inferred entity structure</returns>
-        public Task<EntityStructure> InferSchemaFromJsonAsync(string entityName, 
+        public virtual Task<EntityStructure> InferSchemaFromJsonAsync(string entityName, 
             IEnumerable<string> jsonData, 
             bool forceRefresh = false)
         {
@@ -166,7 +166,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         /// <param name="entity">Entity structure to validate</param>
         /// <param name="jsonData">JSON data samples</param>
         /// <returns>Validation results</returns>
-        public Task<SchemaValidationResult> ValidateSchemaAsync(EntityStructure entity, 
+        public virtual Task<SchemaValidationResult> ValidateSchemaAsync(EntityStructure entity, 
             IEnumerable<string> jsonData)
         {
             return Task.Run(() => ValidateSchema(entity, jsonData));
@@ -260,7 +260,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         /// <param name="entity">Current entity structure</param>
         /// <param name="jsonData">New JSON data samples</param>
         /// <returns>Updated entity structure</returns>
-        public async Task<EntityStructure> UpdateSchemaAsync(EntityStructure entity, IEnumerable<string> jsonData)
+        public virtual async Task<EntityStructure> UpdateSchemaAsync(EntityStructure entity, IEnumerable<string> jsonData)
         {
             var validation = await ValidateSchemaAsync(entity, jsonData);
             
@@ -296,7 +296,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         /// <param name="entityName">Entity name</param>
         /// <param name="schema">Output schema if found</param>
         /// <returns>True if cached schema is available</returns>
-        public bool TryGetCachedSchema(string entityName, out EntityStructure schema)
+        public virtual bool TryGetCachedSchema(string entityName, out EntityStructure schema)
         {
             lock (_cacheLock)
             {
@@ -324,7 +324,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         /// <summary>
         /// Clears schema cache
         /// </summary>
-        public void ClearCache()
+        public virtual void ClearCache()
         {
             lock (_cacheLock)
             {

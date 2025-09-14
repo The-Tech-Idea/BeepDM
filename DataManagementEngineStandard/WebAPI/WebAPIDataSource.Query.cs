@@ -15,7 +15,7 @@ namespace TheTechIdea.Beep.WebAPI
     public partial class WebAPIDataSource
     {
         /// <inheritdoc />
-        public IEnumerable<object> RunQuery(string qrystr)
+        public virtual IEnumerable<object> RunQuery(string qrystr)
         {
             try
             {
@@ -72,7 +72,7 @@ namespace TheTechIdea.Beep.WebAPI
             }
         }
         /// <inheritdoc />
-        public double GetScalar(string query)
+        public virtual double GetScalar(string query)
         {
             try
             {
@@ -138,13 +138,13 @@ namespace TheTechIdea.Beep.WebAPI
         }
 
         /// <inheritdoc />
-        public Task<double> GetScalarAsync(string query)
+        public virtual Task<double> GetScalarAsync(string query)
         {
             return Task.Run(() => GetScalar(query));
         }
 
         /// <inheritdoc />
-        public IErrorsInfo ExecuteSql(string sql)
+        public virtual IErrorsInfo ExecuteSql(string sql)
         {
             Logger.WriteLog("ExecuteSql is not supported for WebAPIDataSource. Use specific entity methods.");
             ErrorObject.Flag = Errors.Failed;

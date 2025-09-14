@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// Gets the list of available entities from the Web API
         /// </summary>
-        public IEnumerable<string> GetEntitesList()
+        public virtual IEnumerable<string> GetEntitesList()
         {
             try
             {
@@ -73,7 +73,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// Checks if an entity exists in the data source
         /// </summary>
-        public bool CheckEntityExist(string EntityName)
+        public virtual bool CheckEntityExist(string EntityName)
         {
             try
             {
@@ -91,7 +91,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// Gets the index of an entity in the entities list
         /// </summary>
-        public int GetEntityIdx(string entityName)
+        public virtual int GetEntityIdx(string entityName)
         {   
             try
             {
@@ -109,7 +109,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// Gets the structure/metadata of an entity
         /// </summary>
-        public EntityStructure GetEntityStructure(string EntityName, bool refresh)
+        public virtual EntityStructure GetEntityStructure(string EntityName, bool refresh)
         {
             try
             {
@@ -166,14 +166,14 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// Gets the structure/metadata of an entity using an existing structure as reference
         /// </summary>
-        public EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
+        public virtual EntityStructure GetEntityStructure(EntityStructure fnd, bool refresh = false)
         {
             return GetEntityStructure(fnd.EntityName, refresh);
         }
         /// <summary>
         /// Gets the .NET type for an entity
         /// </summary>
-        public Type GetEntityType(string EntityName)
+        public virtual Type GetEntityType(string EntityName)
         {
             try
             {
@@ -191,7 +191,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// Gets foreign key relationships for an entity
         /// </summary>
-        public IEnumerable<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
+        public virtual IEnumerable<RelationShipKeys> GetEntityforeignkeys(string entityname, string SchemaName)
         {
             try
             {
@@ -212,7 +212,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// Gets child table relationships for an entity
         /// </summary>
-        public IEnumerable<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
+        public virtual IEnumerable<ChildRelation> GetChildTablesList(string tablename, string SchemaName, string Filterparamters)
         {
             try
             {
@@ -233,7 +233,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// Creates an entity structure
         /// </summary>
-        public bool CreateEntityAs(EntityStructure entity)
+        public virtual bool CreateEntityAs(EntityStructure entity)
         {
             try
             {

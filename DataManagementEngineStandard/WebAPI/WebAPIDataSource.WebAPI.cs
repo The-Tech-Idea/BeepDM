@@ -15,7 +15,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// <summary>
         /// Reads data from the Web API with pagination support
         /// </summary>
-        public async Task<IEnumerable<object>> ReadData(bool HeaderExist, int fromline = 0, int toline = 100)
+        public virtual async Task<IEnumerable<object>> ReadData(bool HeaderExist, int fromline = 0, int toline = 100)
         {
             try
             {

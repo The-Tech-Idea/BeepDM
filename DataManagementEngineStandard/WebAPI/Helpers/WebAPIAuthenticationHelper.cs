@@ -31,7 +31,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
-        public async Task<bool> EnsureAuthenticatedAsync()
+        public virtual async Task<bool> EnsureAuthenticatedAsync()
         {
             var authType = GetAuthenticationType();
             if (string.IsNullOrEmpty(authType) || authType.Equals("none", StringComparison.OrdinalIgnoreCase))
@@ -50,7 +50,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             }
         }
 
-        public void AddAuthenticationHeaders(HttpRequestMessage request)
+        public virtual void AddAuthenticationHeaders(HttpRequestMessage request)
         {
             var authType = GetAuthenticationType()?.ToLower();
             
