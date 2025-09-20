@@ -99,7 +99,8 @@ namespace TheTechIdea.Beep.Utilities
     public enum ColumnViewType
     { TextBox, CheckBox, ComboBox, DateCalendar,Label }
     public enum DataSourceType
-    {Unknown,
+    {
+        Unknown,
         // Relational Databases
         NONE, Oracle, SqlServer, Mysql, SqlCompact, SqlLite, Postgre, FireBird, DB2, SnowFlake, Hana, Cockroach, Spanner, TerraData, Vertica, AzureSQL, AWSRDS,
 
@@ -125,7 +126,7 @@ namespace TheTechIdea.Beep.Utilities
         TFRecord, ONNX, PyTorchData, ScikitLearnData,
 
         // File Formats
-        FlatFile, CSV, TSV, Text, YAML,Json, Markdown, Log, INI,  XML, Xls, Doc, Docx, PPT, PPTX, PDF,Onnx,  RecordIO,
+        FlatFile, CSV, TSV, Text, YAML, Json, Markdown, Log, INI, XML, Xls, Doc, Docx, PPT, PPTX, PDF, Onnx, RecordIO,
 
         // Specialized Formats
         Hdf5, LibSVM, GraphML, DICOM, LAS,
@@ -137,16 +138,16 @@ namespace TheTechIdea.Beep.Utilities
         AWSIoT, AWSIoTCore, AWSIoTAnalytics,
 
         // Search Platforms
-         Solr,
+        Solr,
 
         // Industrial and Specialized Systems
         OPC,
 
         // Miscellaneous
-        DuckDB, GoogleSheets, MiModel, Presto, Trino, TimeScale,WebApi, RestApi, GraphQL, OData, ODBC, OLEDB, ADO, 
+        DuckDB, GoogleSheets, MiModel, Presto, Trino, TimeScale, WebApi, RestApi, GraphQL, OData, ODBC, OLEDB, ADO,
 
         //VectorDB
-         ChromaDB,
+        ChromaDB,
         PineCone,
         Qdrant,
         ShapVector,
@@ -169,7 +170,10 @@ namespace TheTechIdea.Beep.Utilities
         GitHub, GitLab, Bitbucket, Jenkins, CircleCI, Postman, SwaggerHub, AzureDevOps, // Developer Tools
         Zendesk, Freshdesk, HelpScout, ZohoDesk, Kayako, LiveAgent, Front, // Customer Support
         GoogleAnalytics, Mixpanel, Hotjar, Amplitude, Heap, Databox, Geckoboard, Cyfe, // Analytics and Reporting
-        Twilio, Plaid, QuickBooks, Xero, DocuSign, PhilipsHue, Nest, SmartThings, Tuya // IoT
+        Twilio, Plaid, QuickBooks, Xero, DocuSign, PhilipsHue, Nest, SmartThings, Tuya, // IoT
+        FreshBooks, WaveApps, SageBusinessCloud, MYOB, QuickBooks, Xero, // Accounting
+        // Added missing connectors
+        SAPCRM, OracleCRM, HootsuiteMarketing, Mailgun, SendGrid, Criteo, PrestaShop, BigCartel, AzureBoards, SmartsheetPM, Mattermost, RocketChatComm, GoogleCloudStorage, Mega, Backblaze, Coinbase, Venmo, BitPay, Threads, Mastodon, Bluesky, Integromat, TrayIO, SonarQube, Intercom, Drift, Tableau, PowerBI, BenchAccounting, Particle, ArduinoCloud, Ethereum, Hyperledger, BitcoinCore // Blockchain additions
     }
     public enum DatasourceCategory
     {
@@ -205,7 +209,8 @@ namespace TheTechIdea.Beep.Utilities
         DataPipeline,
         DataMesh,
         DataFabric,
-        Connector // Added new category for connectors
+        Connector, // Added new category for connectors
+        Blockchain // Added for distributed ledger technologies
     }
 
     public enum FileTypes
