@@ -495,6 +495,58 @@ namespace TheTechIdea.Beep.WebAPI
         /// Maximum allowed page size (default: 1000)
         /// </summary>
         public int MaxPageSize { get; set; } = 1000;
+        public bool IntegratedSecurity { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool PersistSecurityInfo { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool TrustedConnection { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool EncryptConnection { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool MultiSubnetFailover { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool TrustServerCertificate { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool AllowPublicKeyRetrieval { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool UseSSL { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool RequireSSL { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool BypassServerCertificateValidation { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool UseWindowsAuthentication { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool UseOAuth { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool UseApiKey { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool UseCertificate { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool UseUserAndPassword { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool SavePassword { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool ReadOnly { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public bool AllowLoadLocalInfile { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string SSLMode { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public int SSLTimeout { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string AuthenticationType { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string Authority { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string TenantId { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string ApplicationId { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string RedirectUriAuth { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string Resource { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string Audience { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string ClientCertificateThumbprint { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string ClientCertificateStoreLocation { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string ClientCertificateStoreName { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string ClientCertificateSubjectName { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string AdditionalAuthInfo { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string Domain { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string WorkstationID { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string KerberosServiceName { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string KerberosRealm { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string KerberosKdc { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string KerberosConfigPath { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string OAuthAccessToken { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string OAuthRefreshToken { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string OAuthTokenEndpoint { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string OAuthClientSecret { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string OAuthScope { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string OAuthGrantType { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string OAuthState { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string OAuthCodeVerifier { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string OAuthCodeChallenge { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public string OAuthCodeChallengeMethod { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public List<WebApiParameter> QueryParameters { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public List<WebApiParameter> BodyParameters { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public List<WebApiParameter> FormParameters { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+        public List<WebApiFileParameter> FileParameters { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
 
         #endregion
 

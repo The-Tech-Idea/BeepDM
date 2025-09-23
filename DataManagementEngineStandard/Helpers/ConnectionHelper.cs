@@ -10,7 +10,7 @@ using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Beep.Helpers
 {
-    public static class ConnectionHelper
+    public  static partial class ConnectionHelper
     {
         /// <summary>Links a connection to its corresponding drivers in the configuration editor.</summary>
         /// <param name="cn">The connection properties.</param>

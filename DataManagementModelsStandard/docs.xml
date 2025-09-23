@@ -183,136 +183,6 @@
             <param name="authType">The authentication type</param>
             <returns>True if token refresh is handled automatically</returns>
         </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._clientId">
-            <summary>
-            Gets or sets the Client ID for OAuth2 authentication.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._clientSecret">
-            <summary>
-            Gets or sets the Client Secret for OAuth2 authentication.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._authType">
-            <summary>
-            Gets or sets the authentication type for the Web API.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._authUrl">
-            <summary>
-            Gets or sets the authorization URL for OAuth2.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._tokenUrl">
-            <summary>
-            Gets or sets the token URL for OAuth2.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._scope">
-            <summary>
-            Gets or sets the scope for OAuth2.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._grantType">
-            <summary>
-            Gets or sets the grant type for OAuth2 (e.g., client_credentials).
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._apiKeyHeader">
-            <summary>
-            Gets or sets the header name for the API key.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._redirectUri">
-            <summary>
-            Gets or sets the redirect URI for OAuth2 authorization code flow.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._authCode">
-            <summary>
-            Gets or sets the authorization code from the OAuth2 flow.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._timeoutMs">
-            <summary>
-            Gets or sets the request timeout in milliseconds.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._maxRetries">
-            <summary>
-            Gets or sets the maximum number of retries for failed requests.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._retryIntervalMs">
-            <summary>
-            Gets or sets the interval between retries in milliseconds.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._useProxy">
-            <summary>
-            Gets or sets a value indicating whether to use a proxy.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._proxyUrl">
-            <summary>
-            Gets or sets the proxy URL.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._proxyPort">
-            <summary>
-            Gets or sets the proxy port.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._proxyUser">
-            <summary>
-            Gets or sets the proxy user name.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._proxyPassword">
-            <summary>
-            Gets or sets the proxy password.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._bypassProxyOnLocal">
-            <summary>
-            Gets or sets a value indicating whether to bypass the proxy for local addresses.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._useDefaultProxyCredentials">
-            <summary>
-            Gets or sets a value indicating whether to use default proxy credentials.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._ignoreSSLErrors">
-            <summary>
-            Gets or sets a value indicating whether to ignore SSL errors.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._validateServerCertificate">
-            <summary>
-            Gets or sets a value indicating whether to validate the server certificate.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._clientCertificatePath">
-            <summary>
-            Gets or sets the path to the client certificate.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._clientCertificatePassword">
-            <summary>
-            Gets or sets the password for the client certificate.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._requiresAuthentication">
-            <summary>
-            Gets or sets a value indicating whether the API requires authentication.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.ConfigUtil.ConnectionProperties._requiresTokenRefresh">
-            <summary>
-            Gets or sets a value indicating whether the token needs to be refreshed.
-            </summary>
-        </member>
         <member name="T:TheTechIdea.Beep.ConfigUtil.IConnectionProperties">
             <summary>
             Defines the properties for a data source connection.
@@ -521,6 +391,26 @@
         <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Headers">
             <summary>
             Gets or sets the list of headers for Web API requests.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.QueryParameters">
+            <summary>
+            Gets or sets the list of query parameters for Web API requests.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.BodyParameters">
+            <summary>
+            Gets or sets the list of body parameters for Web API requests.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.FormParameters">
+            <summary>
+            Gets or sets the list of form parameters for Web API requests.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.FileParameters">
+            <summary>
+            Gets or sets the list of file parameters for Web API requests.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ClientId">
