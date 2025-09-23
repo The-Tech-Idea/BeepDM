@@ -201,10 +201,60 @@ namespace TheTechIdea.Beep.ConfigUtil
         /// Gets or sets the path to a security certificate.
         /// </summary>
         string CertificatePath { get; set; }
+        bool IntegratedSecurity { get; set; }
+        bool PersistSecurityInfo { get; set; }
+        bool TrustedConnection { get; set; }
+        bool EncryptConnection { get; set; }
+        bool MultiSubnetFailover { get; set; }
+        bool TrustServerCertificate { get; set; }
+        bool AllowPublicKeyRetrieval { get; set; }
+        bool UseSSL { get; set; }
+        bool RequireSSL { get; set; }
+        bool BypassServerCertificateValidation { get; set; }
+        bool UseWindowsAuthentication { get; set; }
+        bool UseOAuth { get; set; }
+        bool UseApiKey { get; set; }
+        bool UseCertificate { get; set; }
+        bool UseUserAndPassword { get; set; }
+        bool SavePassword { get; set; }
+        bool ReadOnly { get; set; }
+        bool AllowLoadLocalInfile { get; set; }
+        string SSLMode { get; set; } // e.g., None, Preferred, Required, VerifyCA, VerifyFull
+        int SSLTimeout { get; set; } // e.g., SSL timeout in seconds
+
+        string AuthenticationType { get; set; } // e.g., SQL Server Authentication, Windows Authentication, OAuth, API Key, Certificate
+        string Authority { get; set; } // e.g., Azure AD Authority URL
+        string TenantId { get; set; } // e.g., Azure AD Tenant ID
+        string ApplicationId { get; set; } // e.g., Azure AD Application ID
+        string RedirectUriAuth { get; set; } // e.g., Redirect URI for OAuth flows
+        string Resource { get; set; } // e.g., Resource URI for OAuth
+        string Audience { get; set; } // e.g., Audience for JWT tokens
+        string ClientCertificateThumbprint { get; set; } // e.g., Thumbprint of the client certificate
+        string ClientCertificateStoreLocation { get; set; } // e.g., CurrentUser, LocalMachine
+        string ClientCertificateStoreName { get; set; } // e.g., My, Root, CA
+        string ClientCertificateSubjectName { get; set; } // e.g., Subject name of the client certificate
+        string AdditionalAuthInfo { get; set; } // e.g., Any additional info needed for authentication
+        string Domain { get; set; } // e.g., Domain for Windows Authentication
+        string WorkstationID { get; set; } // e.g., Workstation ID for NTLM authentication
+        string KerberosServiceName { get; set; } // e.g., Service name for Kerberos authentication
+        string KerberosRealm { get; set; } // e.g., Realm for Kerberos authentication
+        string KerberosKdc { get; set; } // e.g., KDC for Kerberos authentication
+        string KerberosConfigPath { get; set; } // e.g., Path to Kerberos configuration file
+        string OAuthAccessToken { get; set; } // e.g., Access token for OAuth authentication
+        string OAuthRefreshToken { get; set; } // e.g., Refresh token for OAuth authentication
+        string OAuthTokenEndpoint { get; set; } // e.g., Token endpoint URL for OAuth
+        string OAuthClientSecret { get; set; } // e.g., Client secret for OAuth
+        string OAuthScope { get; set; } // e.g., Scope for OAuth
+        string OAuthGrantType { get; set; } // e.g., Grant type for OAuth (e.g., client_credentials, authorization_code)
+        string OAuthState { get; set; } // e.g., State parameter for OAuth
+        string OAuthCodeVerifier { get; set; } // e.g., Code verifier for PKCE in OAuth
+        string OAuthCodeChallenge { get; set; } // e.g., Code challenge for PKCE in OAuth
+        string OAuthCodeChallengeMethod { get; set; } // e.g., Code challenge method for PKCE in OAuth (e.g., S256)
+
 
         #endregion
 
-        #region Driver and Parameters
+        #region Driver
 
         /// <summary>
         /// Gets or sets the name of the database driver.
@@ -221,8 +271,14 @@ namespace TheTechIdea.Beep.ConfigUtil
         /// </summary>
         string Parameters { get; set; }
 
-        #endregion
 
+        #endregion
+        #region Parameter List for additional flexibility
+        /// <summary>
+        ///  Gets or sets additional connection parameters as a dictionary.
+        /// </summary>
+        Dictionary<string, string> ParameterList { get; set; }
+        #endregion
         #region Metadata
 
         /// <summary>
@@ -237,12 +293,32 @@ namespace TheTechIdea.Beep.ConfigUtil
 
         #endregion
 
-        #region Web API Properties
+        #region Web API Properties needed for Web API connections
 
         /// <summary>
         /// Gets or sets the list of headers for Web API requests.
         /// </summary>
         List<WebApiHeader> Headers { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of query parameters for Web API requests.
+        /// </summary>
+        List<WebApiParameter> QueryParameters { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of body parameters for Web API requests.
+        /// </summary>
+        List<WebApiParameter> BodyParameters { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of form parameters for Web API requests.
+        /// </summary>
+        List<WebApiParameter> FormParameters { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of file parameters for Web API requests.
+        /// </summary>
+        List<WebApiFileParameter> FileParameters { get; set; }
 
         #endregion
 

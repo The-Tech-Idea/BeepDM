@@ -503,6 +503,11 @@
             Gets or sets additional connection parameters as a string.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.ParameterList">
+            <summary>
+             Gets or sets additional connection parameters as a dictionary.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.Entities">
             <summary>
             Gets or sets the list of entity structures (e.g., tables, views) in the data source.

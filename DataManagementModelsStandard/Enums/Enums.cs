@@ -170,7 +170,7 @@ namespace TheTechIdea.Beep.Utilities
         GitHub, GitLab, Bitbucket, Jenkins, CircleCI, Postman, SwaggerHub, AzureDevOps, // Developer Tools
         Zendesk, Freshdesk, HelpScout, ZohoDesk, Kayako, LiveAgent, Front, // Customer Support
         GoogleAnalytics, Mixpanel, Hotjar, Amplitude, Heap, Databox, Geckoboard, Cyfe, // Analytics and Reporting
-        Twilio, Plaid, QuickBooks, Xero, DocuSign, PhilipsHue, Nest, SmartThings, Tuya, // IoT
+        Twilio, Plaid,  DocuSign, PhilipsHue, Nest, SmartThings, Tuya, // IoT
         FreshBooks, WaveApps, SageBusinessCloud, MYOB, QuickBooks, Xero, // Accounting
         // Added missing connectors
         SAPCRM, OracleCRM, HootsuiteMarketing, Mailgun, SendGrid, Criteo, PrestaShop, BigCartel, AzureBoards, SmartsheetPM, Mattermost, RocketChatComm, GoogleCloudStorage, Mega, Backblaze, Coinbase, Venmo, BitPay, Threads, Mastodon, Bluesky, Integromat, TrayIO, SonarQube, Intercom, Drift, Tableau, PowerBI, BenchAccounting, Particle, ArduinoCloud, Ethereum, Hyperledger, BitcoinCore // Blockchain additions

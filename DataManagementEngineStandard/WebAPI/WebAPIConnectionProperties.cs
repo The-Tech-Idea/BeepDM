@@ -75,6 +75,7 @@ namespace TheTechIdea.Beep.WebAPI
         /// </summary>
         public string Parameters { get; set; }
 
+     
         /// <summary>
         /// Password for basic authentication
         /// </summary>
@@ -322,7 +323,7 @@ namespace TheTechIdea.Beep.WebAPI
         #endregion
 
         #region Configuration Settings
-
+        public Dictionary<string, string> ParameterList { get; set; } = new Dictionary<string, string>();
         /// <summary>
         /// Request timeout in milliseconds (default: 30000)
         /// </summary>
