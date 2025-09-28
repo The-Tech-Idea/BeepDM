@@ -24,6 +24,7 @@ using TheTechIdea.Beep.Logger;
 using System.Text.Json;
 using System.Xml;
 using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Helpers.FileandFolderHelpers;
 
 
 namespace TheTechIdea.Beep.Utils

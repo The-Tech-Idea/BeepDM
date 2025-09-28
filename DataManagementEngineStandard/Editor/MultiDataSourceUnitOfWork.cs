@@ -6,6 +6,7 @@ using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Report;
+using TheTechIdea.Beep.Editor.UOW;
 
 namespace TheTechIdea.Beep.Editor
 {

@@ -183,6 +183,99 @@
             <param name="authType">The authentication type</param>
             <returns>True if token refresh is handled automatically</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.DefaultValue">
+            <summary>
+            Represents a default value configuration for entity properties with support for static values and dynamic rules
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.ID">
+            <summary>
+            Unique numeric identifier for the default value
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.GuidID">
+            <summary>
+            Unique GUID identifier for the default value
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.PropertyName">
+            <summary>
+            Name of the property/field this default value applies to
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.PropertyValue">
+            <summary>
+            Static default value to use when propertyType is Static, ReplaceValue, or similar
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.Rule">
+            <summary>
+            Rule or expression to use for dynamic value generation when propertyType is Rule, Expression, Function, etc.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.propertyType">
+            <summary>
+            Type of default value processing to apply (Static, Rule, Expression, Function, etc.)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.PropertyCategory">
+            <summary>
+            Optional category for grouping related default values
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.Description">
+            <summary>
+            Optional description explaining the purpose of this default value
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.IsEnabled">
+            <summary>
+            Whether this default value is currently enabled/active
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.CreatedDate">
+            <summary>
+            When this default value configuration was created
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.ModifiedDate">
+            <summary>
+            When this default value configuration was last modified
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.IsRuleBased">
+            <summary>
+            Gets whether this default value uses a rule (dynamic) vs static value
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.DefaultValue.IsAdvancedRuleType">
+            <summary>
+            Checks if the property type is one of the advanced rule types
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DefaultValue.IsStatic">
+            <summary>
+            Gets whether this default value is a simple static value
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.DefaultValue.IsValid">
+            <summary>
+            Validates the default value configuration
+            </summary>
+            <returns>True if configuration is valid</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.DefaultValue.ToString">
+            <summary>
+            Gets a human-readable description of this default value configuration
+            </summary>
+            <returns>Description string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.DefaultValue.Clone">
+            <summary>
+            Creates a copy of this default value configuration
+            </summary>
+            <returns>New DefaultValue instance with copied values</returns>
+        </member>
         <member name="T:TheTechIdea.Beep.ConfigUtil.IConnectionProperties">
             <summary>
             Defines the properties for a data source connection.
@@ -1076,6 +1169,151 @@
         <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.Custom">
             <summary>
             Allows for custom, user-defined logic to determine the default value.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.Static">
+            <summary>
+            Fixed static values that don't change during runtime.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.Expression">
+            <summary>
+            Calculated values based on expressions or mathematical formulas.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.Function">
+            <summary>
+            Values generated by calling custom functions or methods.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.Template">
+            <summary>
+            Default values based on predefined templates.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.Sequence">
+            <summary>
+            Sequential number generation for unique identifiers.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.CurrentDateTime">
+            <summary>
+            Current system date and time.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.CurrentUser">
+            <summary>
+            Current authenticated user identifier or name.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.GenerateUniqueId">
+            <summary>
+            Generate a unique identifier (GUID).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.EntityLookup">
+            <summary>
+            Lookup value from another entity or data source.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.EnvironmentVariable">
+            <summary>
+            Default value based on environment variables.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.ConfigurationValue">
+            <summary>
+            Default value from application configuration settings.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.SessionValue">
+            <summary>
+            Default value from user session or context.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.CachedValue">
+            <summary>
+            Default value based on cached data.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.ParentValue">
+            <summary>
+            Default value from parent entity in hierarchical relationships.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.ChildValue">
+            <summary>
+            Default value calculated from related child entities.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.AutoIncrement">
+            <summary>
+            Auto-increment numeric value.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.WebService">
+            <summary>
+            Default value from external web service or API.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.StoredProcedure">
+            <summary>
+            Default value from stored procedure execution.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.RandomValue">
+            <summary>
+            Random value generation within specified parameters.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.RoleBasedValue">
+            <summary>
+            Default value based on user role or permissions.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.LocalizedValue">
+            <summary>
+            Default value from localization/internationalization resources.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.BusinessCalendar">
+            <summary>
+            Default value based on business calendar (working days, holidays, etc.).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.UserPreference">
+            <summary>
+            Default value from user preferences or profile settings.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.AuditValue">
+            <summary>
+            Default value from audit trail or change history.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.LocationBased">
+            <summary>
+            Default value based on geographic or location data.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.MLPrediction">
+            <summary>
+            Default value from machine learning model predictions.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.Statistical">
+            <summary>
+            Default value from statistical calculations (average, median, etc.).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.InheritedValue">
+            <summary>
+            Default value inherited from template or prototype entity.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.DefaultValueType.WorkflowContext">
+            <summary>
+            Default value from workflow or business process context.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.FileManager.RootFolder">

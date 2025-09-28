@@ -10,6 +10,8 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Defaults;
+using TheTechIdea.Beep.Editor.Mapping.Helpers;
+using TheTechIdea.Beep.Exensions;
 using TheTechIdea.Beep.Workflow.Mapping;
 
 namespace TheTechIdea.Beep.Editor.ETL
@@ -107,8 +109,6 @@ namespace TheTechIdea.Beep.Editor.ETL
         {
             try
             {
-                List<DefaultValue> defaultValues = new List<DefaultValue>();
-                defaultValues = DefaultsManager.GetDefaults(DMEEditor, destDataSourceName);
                 var transformedList = new List<object>();
 
                 if (sourceData is IEnumerable<object> sourceList)
@@ -122,18 +122,19 @@ namespace TheTechIdea.Beep.Editor.ETL
                         {
                             transformedRecord = DMEEditor.Utilfunction.MapObjectToAnother(DMEEditor, destDataSourceName, map_DTL, record);
                         }
-                        // Apply Default Values 
-                        if (defaultValues != null && defaultValues.Any())
+
+                        // Apply Defaults using centralized helper (only fills null/default fields)
+                        try
                         {
-                            foreach (var def in defaultValues)
-                            {
-                                if (DestEntityStructure.Fields.Any(p => p.fieldname.Equals(def.PropertyName, StringComparison.InvariantCultureIgnoreCase)))
-                                {
-                                    object retval = DefaultsManager.ResolveDefaultValue(DMEEditor, destDataSourceName, def.PropertyName, new PassedArgs() { ParameterString1 = def.Rule ,SentData=def,ObjectName="Default"});
-                                    DMEEditor.Utilfunction.SetFieldValueFromObject(def.PropertyName, transformedRecord, retval);
-                                }
-                            }
+                            MappingDefaultsHelper.ApplyDefaultsToObject(
+                                DMEEditor,
+                                destDataSourceName,
+                                DestEntityStructure?.EntityName,
+                                transformedRecord,
+                                DestEntityStructure?.Fields);
                         }
+                        catch { /* non-fatal */ }
+
                         // Apply custom transformation
                         if (customTransformation != null)
                         {

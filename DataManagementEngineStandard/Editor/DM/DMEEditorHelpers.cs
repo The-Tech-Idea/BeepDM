@@ -19,7 +19,7 @@ using TheTechIdea.Beep.Editor.Defaults;
 namespace TheTechIdea.Beep
 {
     /// <summary>
-    /// Lightweight IDMEEditor implementation that uses helper classes (DataSourceLifecycleHelper, ValidationHelper, ErrorHandlingHelper, CacheManagerHelper).
+    /// Lightweight IDMEEditor implementation that uses helper classes (DataSourceLifecycleHelper, ValidationHelper, ErrorHandlingHelper, CacheManager).
     /// This is intended as an additional implementation for experiments and refactoring; it preserves the IDMEEditor contract.
     /// </summary>
     public class DMEEditorHelpers : IDMEEditor

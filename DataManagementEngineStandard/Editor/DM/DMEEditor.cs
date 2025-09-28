@@ -27,6 +27,7 @@ using TheTechIdea.Beep.Editor.Defaults;
 using TheTechIdea.Beep.Editor.ETL;
 
 
+
 namespace TheTechIdea.Beep
 {
 
@@ -1194,7 +1195,7 @@ namespace TheTechIdea.Beep
         
 
             // Initialize helpers
-            FileConnectionHelper.Initialize(this);
+             ConnectionHelper.Initialize(this);
 
             // Set up progress reporting
             progress = new Progress<PassedArgs>(ReportProgress);

@@ -6,6 +6,7 @@ using System.Reflection;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Mapping.Helpers;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
@@ -15,20 +16,13 @@ namespace TheTechIdea.Beep.Editor.Mapping
     /// <summary>
     /// Provides utility methods to create and manage entity mappings between source and destination entities.
     /// </summary>
-    public  static partial class MappingManager
+    public static partial class MappingManager
     {
         private const string LogSource = "Beep";
 
         /// <summary>
         /// Creates an entity mapping for a given destination entity using a source entity and data source.
         /// </summary>
-        /// <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
-        /// <param name="destent">The structure of the destination entity.</param>
-        /// <param name="SourceEntityName">The name of the source entity.</param>
-        /// <param name="SourceDataSourceName">The name of the source data source.</param>
-        /// <returns>
-        /// A tuple containing the <see cref="IErrorsInfo"/> object and the resulting <see cref="EntityDataMap"/>.
-        /// </returns>
         public static Tuple<IErrorsInfo, EntityDataMap> CreateEntityMap(IDMEEditor DMEEditor, EntityStructure destent, string SourceEntityName, string SourceDataSourceName)
         {
             var Mapping = LoadOrInitializeMapping(DMEEditor, destent.EntityName, destent.DataSourceID);
@@ -50,14 +44,6 @@ namespace TheTechIdea.Beep.Editor.Mapping
         /// <summary>
         /// Creates an entity mapping for migration between two entities in different data sources.
         /// </summary>
-        /// <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
-        /// <param name="SourceEntityName">The name of the source entity.</param>
-        /// <param name="SourceDataSourceName">The name of the source data source.</param>
-        /// <param name="DestEntityName">The name of the destination entity.</param>
-        /// <param name="DestDataSourceName">The name of the destination data source.</param>
-        /// <returns>
-        /// A tuple containing the <see cref="IErrorsInfo"/> object and the resulting <see cref="EntityDataMap"/>.
-        /// </returns>
         public static Tuple<IErrorsInfo, EntityDataMap> CreateEntityMap(IDMEEditor DMEEditor, string SourceEntityName, string SourceDataSourceName, string DestEntityName, string DestDataSourceName)
         {
             var Mapping = LoadOrInitializeMapping(DMEEditor, DestEntityName, DestDataSourceName);
@@ -80,12 +66,6 @@ namespace TheTechIdea.Beep.Editor.Mapping
         /// <summary>
         /// Creates a new entity mapping for the specified destination entity.
         /// </summary>
-        /// <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
-        /// <param name="DestEntityName">The name of the destination entity.</param>
-        /// <param name="DestDataSourceName">The name of the destination data source.</param>
-        /// <returns>
-        /// A tuple containing the <see cref="IErrorsInfo"/> object and the resulting <see cref="EntityDataMap"/>.
-        /// </returns>
         public static Tuple<IErrorsInfo, EntityDataMap> CreateEntityMap(IDMEEditor DMEEditor, string DestEntityName, string DestDataSourceName)
         {
             var Mapping = LoadOrInitializeMapping(DMEEditor, DestEntityName, DestDataSourceName);
@@ -107,21 +87,17 @@ namespace TheTechIdea.Beep.Editor.Mapping
         /// <summary>
         /// Adds a source entity to the mapped entities for a given destination entity.
         /// </summary>
-        /// <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
-        /// <param name="SourceDataSourceName">The name of the source data source.</param>
-        /// <param name="SourceEntityName">The name of the source entity.</param>
-        /// <param name="destent">The destination entity structure.</param>
-        /// <returns>The updated <see cref="EntityDataMap_DTL"/> object.</returns>
         public static EntityDataMap_DTL AddEntityToMappedEntities(IDMEEditor DMEEditor, string SourceDataSourceName, string SourceEntityName, EntityStructure destent)
         {
             var det = new EntityDataMap_DTL();
             try
             {
+                if (DMEEditor == null) return det;
                 InitializeEntityDataMapDetail(det, destent);
                 var srcds = DMEEditor.GetDataSource(SourceDataSourceName);
                 srcds?.Openconnection();
 
-                var srcent = srcds?.GetEntityStructure(SourceEntityName, srcds.ConnectionStatus == ConnectionState.Open).Clone() as EntityStructure;
+                var srcent = srcds?.GetEntityStructure(SourceEntityName, srcds.ConnectionStatus == ConnectionState.Open)?.Clone() as EntityStructure;
 
                 if (srcent != null)
                 {
@@ -139,40 +115,44 @@ namespace TheTechIdea.Beep.Editor.Mapping
         /// <summary>
         /// Maps fields from the source entity to the destination entity.
         /// </summary>
-        /// <param name="DMEEditor">The DMEEditor instance for accessing configuration and data sources.</param>
-        /// <param name="srcent">The structure of the source entity.</param>
-        /// <param name="datamap">The data map for mapping fields.</param>
-        /// <returns>A list of <see cref="Mapping_rep_fields"/> representing the mapped fields.</returns>
         public static List<Mapping_rep_fields> MapEntityFields(IDMEEditor DMEEditor, EntityStructure srcent, EntityDataMap_DTL datamap)
         {
             var retval = new List<Mapping_rep_fields>();
             try
             {
+                if (srcent == null || datamap == null)
+                    return retval;
+
                 datamap.EntityName = srcent.EntityName;
                 datamap.EntityDataSource = srcent.DataSourceID;
 
-                retval.AddRange(datamap.SelectedDestFields.Select(destField =>
+                foreach (var destField in datamap.SelectedDestFields ?? Enumerable.Empty<EntityField>())
                 {
-                    var srcField = srcent.Fields.FirstOrDefault(f => f.fieldname.Equals(destField.fieldname, StringComparison.InvariantCultureIgnoreCase));
-                    return new Mapping_rep_fields
+                    var srcField = srcent.Fields?.FirstOrDefault(f => f.fieldname.Equals(destField.fieldname, StringComparison.InvariantCultureIgnoreCase));
+                    retval.Add(new Mapping_rep_fields
                     {
                         ToFieldName = destField.fieldname,
                         ToFieldType = destField.fieldtype,
                         FromFieldName = srcField?.fieldname,
                         FromFieldType = srcField?.fieldtype
-                    };
-                }));
+                    });
+                }
             }
             catch (Exception ex)
             {
-                LogError(DMEEditor, $"Error Mapping Entities Field {datamap.EntityName}", ex);
+                LogError(DMEEditor, $"Error Mapping Entities Field {datamap?.EntityName}", ex);
             }
             return retval;
         }
+
         public static object GetEntityObject(IDMEEditor DMEEditor, string EntityName, List<EntityField> Fields)
         {
             return DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, Fields);
         }
+
+        /// <summary>
+        /// Maps source object to a new destination object using mapping, then applies defaults from DefaultsManager.
+        /// </summary>
         public static object MapObjectToAnother(IDMEEditor DMEEditor, string destentityname, EntityDataMap_DTL SelectedMapping, object sourceobj)
         {
             // Validate parameters
@@ -191,7 +171,7 @@ namespace TheTechIdea.Beep.Editor.Mapping
                 throw new InvalidOperationException($"Failed to create destination object for entity: {destentityname}");
 
             // Map each property from the source to the destination
-            foreach (Mapping_rep_fields mapping in SelectedMapping.FieldMapping)
+            foreach (Mapping_rep_fields mapping in SelectedMapping.FieldMapping ?? new List<Mapping_rep_fields>())
             {
                 try
                 {
@@ -200,8 +180,18 @@ namespace TheTechIdea.Beep.Editor.Mapping
                 catch (Exception ex)
                 {
                     // Log and continue mapping the next field
-                    DMEEditor.AddLogMessage("MappingError", $"Error mapping field '{mapping.FromFieldName}' to '{mapping.ToFieldName}': {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                    DMEEditor.AddLogMessage("MappingError", $"Error mapping field '{mapping?.FromFieldName}' to '{mapping?.ToFieldName}': {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
                 }
+            }
+
+            // Apply Defaults via DefaultsManager (rule/static) after basic mapping
+            try
+            {
+                MappingDefaultsHelper.ApplyDefaultsToObject(DMEEditor, SelectedMapping.EntityDataSource, destentityname, destobj, SelectedMapping.SelectedDestFields);
+            }
+            catch
+            {
+                // do not fail mapping on defaults
             }
 
             return destobj;
@@ -250,14 +240,7 @@ namespace TheTechIdea.Beep.Editor.Mapping
         {
             DMEEditor.AddLogMessage(LogSource, $"{message} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
         }
-        /// <summary>
-        /// Creates a new object based on the entity definition and fields.
-        /// </summary>
-        /// <param name="DMEEditor">The DMEEditor instance for configuration and type building.</param>
-        /// <param name="EntityName">The name of the entity.</param>
-        /// <param name="Fields">The list of entity fields defining the object structure.</param>
-        /// <returns>A dynamically created object for the entity.</returns>
-      
+
         private static void MapProperty(object source, object destination, Mapping_rep_fields mapping)
         {
             if (mapping == null)
@@ -290,7 +273,11 @@ namespace TheTechIdea.Beep.Editor.Mapping
         {
             try
             {
-                if (targetType.IsAssignableFrom(value.GetType()))
+                if (value == null)
+                    return null;
+
+                var srcType = value.GetType();
+                if (targetType.IsAssignableFrom(srcType))
                 {
                     return value;
                 }

@@ -8,6 +8,7 @@ using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Helpers;
+using TheTechIdea.Beep.Helpers.FileandFolderHelpers;
 using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Utilities;
 

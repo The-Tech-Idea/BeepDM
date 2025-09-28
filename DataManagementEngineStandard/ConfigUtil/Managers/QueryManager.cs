@@ -8,6 +8,7 @@ using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Helpers.RDBMSHelpers;
 
 namespace TheTechIdea.Beep.ConfigUtil.Managers
 {
@@ -135,7 +136,7 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         /// <param name="userName">Username used in the query</param>
         /// <param name="query">The query string to validate</param>
         /// <returns>A QueryValidationResult containing validation status and details</returns>
-        public RDBMSHelper.QueryValidationResult ValidateSchemaQuery(DataSourceType databaseType, string userName, string query = null)
+        public QueryValidationResult ValidateSchemaQuery(DataSourceType databaseType, string userName, string query = null)
         {
             try
             {
@@ -144,11 +145,11 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
             catch (Exception ex)
             {
                 _logger?.WriteLog($"Error validating schema query: {ex.Message}");
-                return new RDBMSHelper.QueryValidationResult 
+                return new QueryValidationResult 
                 { 
                     IsValid = false, 
                     ErrorMessage = ex.Message,
-                    ErrorType = RDBMSHelper.QueryErrorType.Other
+                    ErrorType = QueryErrorType.Other
                 };
             }
         }

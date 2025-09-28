@@ -7,6 +7,7 @@ using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync.Interfaces;
 using TheTechIdea.Beep.Editor.BeepSync.Helpers;
+using TheTechIdea.Beep.Editor.Defaults;
 using TheTechIdea.Beep.Report;
 
 namespace TheTechIdea.Beep.Editor.BeepSync
@@ -55,6 +56,21 @@ namespace TheTechIdea.Beep.Editor.BeepSync
         /// </summary>
         public bool IsCancelled => _cancellationTokenSource.Token.IsCancellationRequested;
 
+        /// <summary>
+        /// Enable automatic application of default values during sync operations
+        /// </summary>
+        public bool ApplyDefaultsOnSync { get; set; } = true;
+
+        /// <summary>
+        /// Apply defaults only to empty/null fields (true) or overwrite existing values (false)
+        /// </summary>
+        public bool ApplyDefaultsOnlyToEmptyFields { get; set; } = true;
+
+        /// <summary>
+        /// Enable automatic creation of audit field defaults for sync operations
+        /// </summary>
+        public bool AutoCreateAuditDefaults { get; set; } = false;
+
         #endregion
 
         #region Constructor
@@ -79,10 +95,53 @@ namespace TheTechIdea.Beep.Editor.BeepSync
             _cancellationTokenSource = new CancellationTokenSource();
             _syncSchemas = new ObservableBindingList<DataSyncSchema>();
 
+            // Initialize DefaultsManager for sync operations
+            InitializeDefaultsManager();
+
             // Load existing schemas
             LoadSchemasAsync().ConfigureAwait(false);
 
             _progressHelper.LogMessage("BeepSyncManager initialized successfully");
+        }
+
+        /// <summary>
+        /// Initialize DefaultsManager and configure sync-specific defaults
+        /// </summary>
+        private void InitializeDefaultsManager()
+        {
+            try
+            {
+                // Initialize DefaultsManager
+                DefaultsManager.Initialize(_editor);
+                _progressHelper.LogMessage("DefaultsManager integration initialized successfully");
+                
+                // Log information about existing defaults
+                LogExistingDefaults();
+            }
+            catch (Exception ex)
+            {
+                _progressHelper.LogMessage($"Warning: DefaultsManager initialization failed: {ex.Message}", Errors.Failed);
+                // Continue without defaults integration if initialization fails
+                ApplyDefaultsOnSync = false;
+                _progressHelper.LogMessage("Defaults application has been disabled due to initialization failure", Errors.Failed);
+            }
+        }
+
+        /// <summary>
+        /// Log information about existing defaults across all data sources
+        /// </summary>
+        private void LogExistingDefaults()
+        {
+            try
+            {
+                // This would require access to all data sources to check for defaults
+                // For now, we'll just log that defaults checking is available
+                _progressHelper.LogMessage("Defaults checking is available. Use HasDefaultsConfigured() to check specific data sources.");
+            }
+            catch (Exception ex)
+            {
+                _progressHelper.LogMessage($"Error logging existing defaults: {ex.Message}", Errors.Failed);
+            }
         }
 
         #endregion
@@ -113,6 +172,23 @@ namespace TheTechIdea.Beep.Editor.BeepSync
                 {
                     _progressHelper.LogError(schema, "Schema validation failed", null);
                     return validationResult;
+                }
+
+                // Validate defaults configuration if enabled
+                if (ApplyDefaultsOnSync)
+                {
+                    _progressHelper.ReportProgress(progress, "Validating defaults configuration...");
+                    var defaultsValidation = ValidateSchemaDefaults(schema);
+                    if (defaultsValidation.Flag == Errors.Failed)
+                    {
+                        _progressHelper.LogError(schema, "Defaults validation failed", null);
+                        // Continue with sync but log the warning
+                        _progressHelper.LogMessage($"Continuing sync despite defaults validation issues: {defaultsValidation.Message}", Errors.Failed);
+                    }
+                    else if (!string.IsNullOrEmpty(defaultsValidation.Message))
+                    {
+                        _progressHelper.LogMessage($"Defaults validation: {defaultsValidation.Message}", Errors.Ok);
+                    }
                 }
 
                 // Get source data
@@ -403,6 +479,22 @@ namespace TheTechIdea.Beep.Editor.BeepSync
         {
             try
             {
+                // Check if defaults should be applied and if defaults exist for the destination data source
+                if (ApplyDefaultsOnSync)
+                {
+                    // Check if there are any defaults configured for the destination data source
+                    if (HasDefaultsForDataSource(schema.DestinationDataSourceName))
+                    {
+                        _progressHelper.ReportProgress(progress, "Applying default values...");
+                        sourceRecord = ApplyDefaultsToRecord(schema.DestinationDataSourceName, schema.DestinationEntityName, sourceRecord);
+                    }
+                    else
+                    {
+                        // Log that no defaults were found but continue processing
+                        _progressHelper.ReportProgress(progress, $"No defaults configured for {schema.DestinationDataSourceName}, skipping defaults application");
+                    }
+                }
+
                 // Create filters to check if record exists in destination
                 var keyValue = GetSyncKeyValue(sourceRecord, schema.SourceSyncDataField);
                 if (keyValue == null)
@@ -457,6 +549,120 @@ namespace TheTechIdea.Beep.Editor.BeepSync
             catch (Exception ex)
             {
                 return CreateErrorResult($"Error processing record: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Apply default values to a record during sync operations
+        /// </summary>
+        /// <param name="dataSourceName">Name of the data source</param>
+        /// <param name="entityName">Name of the entity</param>
+        /// <param name="record">Record to apply defaults to</param>
+        /// <param name="context">Additional context for rule resolution</param>
+        /// <returns>Record with defaults applied</returns>
+        private object ApplyDefaultsToRecord(string dataSourceName, string entityName, object record, 
+            Dictionary<string, object> context = null)
+        {
+            if (!ApplyDefaultsOnSync || record == null)
+                return record;
+
+            try
+            {
+                // First check if there are any defaults configured for this data source
+                var defaults = DefaultsManager.GetDefaults(_editor, dataSourceName);
+                if (defaults == null || !defaults.Any())
+                {
+                    // No defaults configured for this data source, skip processing
+                    return record;
+                }
+
+                // Create parameters for default resolution
+                var parameters = new PassedArgs
+                {
+                    DatasourceName = dataSourceName,
+                    CurrentEntity = entityName,
+                    ObjectName = entityName,
+                    SentData = record
+                };
+
+                // Add context data if provided
+                if (context != null)
+                {
+                    var objects = new List<object>();
+                    foreach (var kvp in context)
+                    {
+                        objects.Add(new { Name = kvp.Key, obj = kvp.Value });
+                    }
+                    parameters.SentData = objects;
+                }
+
+                // Apply defaults using DefaultsManager
+                var updatedRecord = DefaultsManager.ApplyDefaultsToRecord(_editor, dataSourceName, entityName, record, parameters);
+                
+                return updatedRecord ?? record;
+            }
+            catch (Exception ex)
+            {
+                _progressHelper.LogMessage($"Error applying defaults to record: {ex.Message}", Errors.Failed);
+                return record; // Return original record if defaults application fails
+            }
+        }
+
+        /// <summary>
+        /// Check if there are any defaults configured for the specified data source
+        /// </summary>
+        /// <param name="dataSourceName">Name of the data source to check</param>
+        /// <returns>True if defaults exist, false otherwise</returns>
+        private bool HasDefaultsForDataSource(string dataSourceName)
+        {
+            if (!ApplyDefaultsOnSync || string.IsNullOrWhiteSpace(dataSourceName))
+                return false;
+
+            try
+            {
+                var defaults = DefaultsManager.GetDefaults(_editor, dataSourceName);
+                return defaults != null && defaults.Any();
+            }
+            catch (Exception ex)
+            {
+                _progressHelper.LogMessage($"Error checking defaults for data source {dataSourceName}: {ex.Message}", Errors.Failed);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Check if there are defaults configured for a specific data source and entity
+        /// </summary>
+        /// <param name="dataSourceName">Name of the data source</param>
+        /// <param name="entityName">Name of the entity (optional, for logging purposes)</param>
+        /// <returns>True if defaults exist, false otherwise</returns>
+        public bool HasDefaultsConfigured(string dataSourceName, string entityName = null)
+        {
+            if (!ApplyDefaultsOnSync || string.IsNullOrWhiteSpace(dataSourceName))
+                return false;
+
+            try
+            {
+                var defaults = DefaultsManager.GetDefaults(_editor, dataSourceName);
+                var hasDefaults = defaults != null && defaults.Any();
+                
+                if (hasDefaults)
+                {
+                    var entityInfo = !string.IsNullOrEmpty(entityName) ? $" for entity {entityName}" : "";
+                    _progressHelper.LogMessage($"Found {defaults.Count} default values configured for data source {dataSourceName}{entityInfo}");
+                }
+                else
+                {
+                    var entityInfo = !string.IsNullOrEmpty(entityName) ? $" for entity {entityName}" : "";
+                    _progressHelper.LogMessage($"No default values configured for data source {dataSourceName}{entityInfo}");
+                }
+
+                return hasDefaults;
+            }
+            catch (Exception ex)
+            {
+                _progressHelper.LogMessage($"Error checking defaults for data source {dataSourceName}: {ex.Message}", Errors.Failed);
+                return false;
             }
         }
 
@@ -541,6 +747,513 @@ namespace TheTechIdea.Beep.Editor.BeepSync
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        #endregion
+
+        #region Backward Compatibility Methods (from DataSyncManager)
+
+        /// <summary>
+        /// Synchronize data by schema ID - backward compatibility
+        /// </summary>
+        /// <param name="schemaId">Schema ID</param>
+        public void SyncData(string schemaId)
+        {
+            var schema = GetSchema(schemaId);
+            if (schema != null)
+            {
+                SyncData(schema);
+            }
+            else
+            {
+                _progressHelper.LogMessage($"Schema with ID '{schemaId}' not found", Errors.Failed);
+            }
+        }
+
+        /// <summary>
+        /// Synchronize data with parameters - backward compatibility
+        /// </summary>
+        public void SyncData(string schemaId, string sourceEntityName, string destinationEntityName)
+        {
+            var schema = GetSchema(schemaId);
+            if (schema != null)
+            {
+                schema.SourceEntityName = sourceEntityName;
+                schema.DestinationEntityName = destinationEntityName;
+                SyncData(schema);
+            }
+        }
+
+        /// <summary>
+        /// Synchronize data with sync field parameters - backward compatibility
+        /// </summary>
+        public void SyncData(string schemaId, string sourceEntityName, string destinationEntityName, string sourceSyncDataField)
+        {
+            var schema = GetSchema(schemaId);
+            if (schema != null)
+            {
+                schema.SourceEntityName = sourceEntityName;
+                schema.DestinationEntityName = destinationEntityName;
+                schema.SourceSyncDataField = sourceSyncDataField;
+                SyncData(schema);
+            }
+        }
+
+        /// <summary>
+        /// Synchronize data with full parameters - backward compatibility
+        /// </summary>
+        public void SyncData(string schemaId, string sourceEntityName, string destinationEntityName, 
+            string sourceSyncDataField, string destinationSyncDataField)
+        {
+            var schema = GetSchema(schemaId);
+            if (schema != null)
+            {
+                schema.SourceEntityName = sourceEntityName;
+                schema.DestinationEntityName = destinationEntityName;
+                schema.SourceSyncDataField = sourceSyncDataField;
+                schema.DestinationSyncDataField = destinationSyncDataField;
+                SyncData(schema);
+            }
+        }
+
+        /// <summary>
+        /// Add filter to schema - backward compatibility
+        /// </summary>
+        public void AddFilter(string schemaId, AppFilter filter)
+        {
+            var schema = GetSchema(schemaId);
+            if (schema != null)
+            {
+                schema.Filters ??= new ObservableBindingList<AppFilter>();
+                schema.Filters.Add(filter);
+                _progressHelper.LogMessage($"Added filter to schema '{schemaId}'");
+            }
+        }
+
+        /// <summary>
+        /// Remove filter from schema - backward compatibility
+        /// </summary>
+        public void RemoveFilter(string schemaId, string fieldName)
+        {
+            var schema = GetSchema(schemaId);
+            if (schema != null)
+            {
+                var filter = schema.Filters?.FirstOrDefault(f => f.FieldName == fieldName);
+                if (filter != null)
+                {
+                    schema.Filters.Remove(filter);
+                    _progressHelper.LogMessage($"Removed filter '{fieldName}' from schema '{schemaId}'");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Add field mapping to schema - backward compatibility
+        /// </summary>
+        public void AddFieldMapping(string schemaId, FieldSyncData field)
+        {
+            var schema = GetSchema(schemaId);
+            if (schema != null)
+            {
+                schema.MappedFields ??= new ObservableBindingList<FieldSyncData>();
+                schema.MappedFields.Add(field);
+                _progressHelper.LogMessage($"Added field mapping to schema '{schemaId}'");
+            }
+        }
+
+        /// <summary>
+        /// Synchronize all schemas - backward compatibility (sync version)
+        /// </summary>
+        public void SyncAllData()
+        {
+            SyncAllSchemasAsync().GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Get records from source with filter operator - enhanced version from DataSyncManager
+        /// </summary>
+        /// <param name="schema">Sync schema</param>
+        /// <param name="filterOperator">Filter operator (>, >=, <, <=, =)</param>
+        /// <returns>Records from source</returns>
+        public async Task<object> GetRecordsFromSourceData(DataSyncSchema schema, string filterOperator)
+        {
+            if (schema?.LastSyncDate == null || schema.LastSyncDate == DateTime.MinValue)
+                return null;
+
+            var filters = schema.Filters?.ToList() ?? new List<AppFilter>();
+            filters.Add(new AppFilter
+            {
+                FieldName = schema.SourceSyncDataField,
+                Operator = filterOperator,
+                FilterValue = schema.LastSyncDate.ToString("yyyy-MM-dd HH:mm:ss")
+            });
+
+            return await _dataSourceHelper.GetEntityDataAsync(
+                schema.SourceDataSourceName, 
+                schema.SourceEntityName, 
+                filters);
+        }
+
+        /// <summary>
+        /// Get new records since last sync - enhanced version from DataSyncManager
+        /// </summary>
+        /// <param name="schema">Sync schema</param>
+        /// <returns>New records</returns>
+        public Task<object> GetNewRecordsFromSourceData(DataSyncSchema schema)
+        {
+            return GetRecordsFromSourceData(schema, ">");
+        }
+
+        /// <summary>
+        /// Get updated records since last sync - enhanced version from DataSyncManager
+        /// </summary>
+        /// <param name="schema">Sync schema</param>
+        /// <returns>Updated records</returns>
+        public Task<object> GetUpdatedRecordsFromSourceData(DataSyncSchema schema)
+        {
+            return GetRecordsFromSourceData(schema, ">=");
+        }
+
+        #endregion
+
+        #region Enhanced Sync Operations (New Features)
+
+        /// <summary>
+        /// Bulk synchronize multiple records with enhanced error handling and metrics
+        /// </summary>
+        /// <param name="schema">Sync schema</param>
+        /// <param name="batchSize">Number of records to process in each batch</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <param name="progress">Progress reporter</param>
+        /// <returns>Sync metrics and results</returns>
+        public async Task<SyncMetrics> BulkSyncAsync(DataSyncSchema schema, int batchSize = 100, 
+            CancellationToken cancellationToken = default, IProgress<PassedArgs> progress = null)
+        {
+            var metrics = new SyncMetrics
+            {
+                SchemaID = schema.ID,
+                SyncDate = DateTime.Now
+            };
+
+            try
+            {
+                var sourceData = await _dataSourceHelper.GetEntityDataAsync(
+                    schema.SourceDataSourceName, 
+                    schema.SourceEntityName, 
+                    schema.Filters?.ToList());
+
+                if (sourceData == null)
+                {
+                    metrics.FailedRecords = 1;
+                    return metrics;
+                }
+
+                var records = NormalizeToEnumerable(sourceData).ToList();
+                metrics.TotalRecords = records.Count;
+
+                // Process in batches
+                for (int i = 0; i < records.Count; i += batchSize)
+                {
+                    var batch = records.Skip(i).Take(batchSize);
+                    var batchResults = await ProcessBatchAsync(schema, batch, cancellationToken);
+                    
+                    metrics.SuccessfulRecords += batchResults.successCount;
+                    metrics.FailedRecords += batchResults.errorCount;
+
+                    _progressHelper.ReportProgress(progress, 
+                        $"Processed batch {(i / batchSize) + 1}, Records: {metrics.SuccessfulRecords + metrics.FailedRecords}/{metrics.TotalRecords}",
+                        metrics.SuccessfulRecords + metrics.FailedRecords, metrics.TotalRecords);
+
+                    // Check for cancellation between batches
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                return metrics;
+            }
+            catch (Exception ex)
+            {
+                _progressHelper.LogError(schema, "Bulk sync failed", ex);
+                metrics.FailedRecords = metrics.TotalRecords - metrics.SuccessfulRecords;
+                return metrics;
+            }
+        }
+
+        /// <summary>
+        /// Process a batch of records
+        /// </summary>
+        /// <param name="schema">Sync schema</param>
+        /// <param name="records">Records to process</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Tuple with success count and error count</returns>
+        private async Task<(int successCount, int errorCount)> ProcessBatchAsync(
+            DataSyncSchema schema, IEnumerable<object> records, CancellationToken cancellationToken)
+        {
+            int successCount = 0;
+            int errorCount = 0;
+
+            var tasks = records.Select(async record =>
+            {
+                try
+                {
+                    var result = await ProcessSingleRecordAsync(schema, record, null, cancellationToken);
+                    return result.Flag == Errors.Ok;
+                }
+                catch
+                {
+                    return false;
+                }
+            });
+
+            var results = await Task.WhenAll(tasks);
+            successCount = results.Count(r => r);
+            errorCount = results.Count(r => !r);
+
+            return (successCount, errorCount);
+        }
+
+        #endregion
+
+        #region DefaultsManager Integration
+
+        /// <summary>
+        /// Configure default values for a data source used in sync operations
+        /// </summary>
+        /// <param name="dataSourceName">Name of the data source</param>
+        /// <param name="entityName">Name of the entity</param>
+        /// <param name="defaults">Dictionary of field names and default configurations</param>
+        /// <returns>Configuration result</returns>
+        public IErrorsInfo ConfigureSyncDefaults(string dataSourceName, string entityName, 
+            Dictionary<string, (string value, bool isRule)> defaults)
+        {
+            if (!ApplyDefaultsOnSync)
+            {
+                return CreateErrorResult("DefaultsManager integration is disabled");
+            }
+
+            try
+            {
+                var result = DefaultsManager.SetMultipleColumnDefaults(_editor, dataSourceName, entityName, defaults);
+                
+                if (result.Flag == Errors.Ok)
+                {
+                    _progressHelper.LogMessage($"Configured {defaults.Count} default values for {dataSourceName}.{entityName}");
+                }
+                else
+                {
+                    _progressHelper.LogMessage($"Failed to configure defaults for {dataSourceName}.{entityName}: {result.Message}", Errors.Failed);
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = $"Error configuring sync defaults: {ex.Message}";
+                _progressHelper.LogMessage(errorMsg, Errors.Failed);
+                return CreateErrorResult(errorMsg);
+            }
+        }
+
+        /// <summary>
+        /// Set up standard audit defaults for sync operations
+        /// </summary>
+        /// <param name="dataSourceName">Name of the data source</param>
+        /// <param name="entityName">Name of the entity</param>
+        /// <returns>Configuration result</returns>
+        public IErrorsInfo SetupAuditDefaults(string dataSourceName, string entityName)
+        {
+            if (!ApplyDefaultsOnSync)
+            {
+                return CreateErrorResult("DefaultsManager integration is disabled");
+            }
+
+            try
+            {
+                var auditDefaults = new Dictionary<string, (string value, bool isRule)>
+                {
+                    { "CreatedBy", ("USERNAME", true) },
+                    { "CreatedDate", ("NOW", true) },
+                    { "ModifiedBy", ("USERNAME", true) },
+                    { "ModifiedDate", ("NOW", true) },
+                    { "SyncedBy", ("USERNAME", true) },
+                    { "SyncedDate", ("NOW", true) },
+                    { "SyncSource", ("BeepSyncManager", false) }
+                };
+
+                var result = ConfigureSyncDefaults(dataSourceName, entityName, auditDefaults);
+                
+                if (result.Flag == Errors.Ok)
+                {
+                    _progressHelper.LogMessage($"Configured audit defaults for {dataSourceName}.{entityName}");
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = $"Error setting up audit defaults: {ex.Message}";
+                _progressHelper.LogMessage(errorMsg, Errors.Failed);
+                return CreateErrorResult(errorMsg);
+            }
+        }
+
+        /// <summary>
+        /// Get configured default values for an entity
+        /// </summary>
+        /// <param name="dataSourceName">Name of the data source</param>
+        /// <param name="entityName">Name of the entity</param>
+        /// <returns>Dictionary of configured defaults</returns>
+        public Dictionary<string, DefaultValue> GetEntityDefaults(string dataSourceName, string entityName)
+        {
+            if (!ApplyDefaultsOnSync)
+                return new Dictionary<string, DefaultValue>();
+
+            try
+            {
+                // Get defaults for the data source
+                var defaults = DefaultsManager.GetDefaults(_editor, dataSourceName);
+                if (defaults == null || !defaults.Any())
+                {
+                    return new Dictionary<string, DefaultValue>();
+                }
+
+                // Convert to dictionary for easier access
+                return defaults.ToDictionary(d => d.PropertyName, d => d);
+            }
+            catch (Exception ex)
+            {
+                _progressHelper.LogMessage($"Error getting entity defaults: {ex.Message}", Errors.Failed);
+                return new Dictionary<string, DefaultValue>();
+            }
+        }
+
+        /// <summary>
+        /// Auto-configure defaults for a sync schema
+        /// </summary>
+        /// <param name="schema">Sync schema to configure defaults for</param>
+        /// <returns>Configuration result</returns>
+        public IErrorsInfo AutoConfigureSchemaDefaults(DataSyncSchema schema)
+        {
+            if (!ApplyDefaultsOnSync || schema == null)
+            {
+                return CreateSuccessResult("Defaults integration disabled or invalid schema");
+            }
+
+            try
+            {
+                var results = new List<IErrorsInfo>();
+
+                // Configure defaults for destination entity if enabled
+                if (AutoCreateAuditDefaults)
+                {
+                    var auditResult = SetupAuditDefaults(schema.DestinationDataSourceName, schema.DestinationEntityName);
+                    results.Add(auditResult);
+                }
+
+                // Add common sync defaults
+                var syncDefaults = new Dictionary<string, (string value, bool isRule)>
+                {
+                    { "LastSyncDate", ("NOW", true) },
+                    { "SyncSchemaId", (schema.ID, false) },
+                    { "SyncStatus", ("Synced", false) }
+                };
+
+                var defaultsResult = ConfigureSyncDefaults(schema.DestinationDataSourceName, schema.DestinationEntityName, syncDefaults);
+                results.Add(defaultsResult);
+
+                // Determine overall result
+                var hasErrors = results.Any(r => r.Flag == Errors.Failed);
+                var message = hasErrors 
+                    ? "Some defaults configuration failed" 
+                    : "Schema defaults configured successfully";
+
+                return new ErrorsInfo
+                {
+                    Flag = hasErrors ? Errors.Failed : Errors.Ok,
+                    Message = message
+                };
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = $"Error auto-configuring schema defaults: {ex.Message}";
+                _progressHelper.LogMessage(errorMsg, Errors.Failed);
+                return CreateErrorResult(errorMsg);
+            }
+        }
+
+        /// <summary>
+        /// Validate that defaults are properly configured for a sync schema
+        /// </summary>
+        /// <param name="schema">Sync schema to validate</param>
+        /// <returns>Validation result with details about defaults configuration</returns>
+        public IErrorsInfo ValidateSchemaDefaults(DataSyncSchema schema)
+        {
+            if (schema == null)
+                return CreateErrorResult("Schema cannot be null");
+
+            if (!ApplyDefaultsOnSync)
+                return CreateSuccessResult("Defaults integration is disabled - no validation needed");
+
+            try
+            {
+                var issues = new List<string>();
+                var warnings = new List<string>();
+
+                // Check source data source defaults
+                if (!HasDefaultsConfigured(schema.SourceDataSourceName, schema.SourceEntityName))
+                {
+                    warnings.Add($"No defaults configured for source data source: {schema.SourceDataSourceName}");
+                }
+
+                // Check destination data source defaults
+                if (!HasDefaultsConfigured(schema.DestinationDataSourceName, schema.DestinationEntityName))
+                {
+                    warnings.Add($"No defaults configured for destination data source: {schema.DestinationDataSourceName}");
+                }
+
+                // Check if audit defaults are expected but not configured
+                if (AutoCreateAuditDefaults)
+                {
+                    var destDefaults = GetEntityDefaults(schema.DestinationDataSourceName, schema.DestinationEntityName);
+                    var auditFields = new[] { "CreatedBy", "CreatedDate", "ModifiedBy", "ModifiedDate" };
+                    
+                    foreach (var auditField in auditFields)
+                    {
+                        if (!destDefaults.ContainsKey(auditField))
+                        {
+                            warnings.Add($"Expected audit field '{auditField}' not configured with defaults");
+                        }
+                    }
+                }
+
+                // Compile results
+                var message = "";
+                if (issues.Any())
+                {
+                    message = $"Validation failed: {string.Join("; ", issues)}";
+                    if (warnings.Any())
+                    {
+                        message += $". Warnings: {string.Join("; ", warnings)}";
+                    }
+                    return CreateErrorResult(message);
+                }
+                else if (warnings.Any())
+                {
+                    message = $"Validation passed with warnings: {string.Join("; ", warnings)}";
+                    _progressHelper.LogMessage(message, Errors.Ok);
+                    return CreateSuccessResult(message);
+                }
+                else
+                {
+                    message = "Schema defaults validation passed successfully";
+                    return CreateSuccessResult(message);
+                }
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = $"Error validating schema defaults: {ex.Message}";
+                _progressHelper.LogMessage(errorMsg, Errors.Failed);
+                return CreateErrorResult(errorMsg);
+            }
         }
 
         #endregion
