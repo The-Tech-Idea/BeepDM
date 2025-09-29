@@ -31,7 +31,7 @@ namespace TheTechIdea.Beep.Helpers
             lock (_lock)
             {
                 if (_isInitialized)
-                    throw new InvalidOperationException("FileOperationHelper is already initialized.");
+                    return;
 
                 DMEEditor = editor ?? throw new ArgumentNullException(nameof(editor));
                 _isInitialized = true;

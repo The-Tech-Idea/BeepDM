@@ -148,7 +148,7 @@ namespace TheTechIdea.Beep.Utils
         }
         public ConnectionDriversConfig LinkConnection2Drivers(IConnectionProperties cn)
         {
-
+            if (cn is null) return null;
             string vr = cn.DriverVersion;
             string pk = cn.DriverName;
             ConnectionDriversConfig retval=DME.ConfigEditor.DataDriversClasses.Where(c => c.PackageName.Equals(pk,StringComparison.InvariantCultureIgnoreCase) && c.version == vr).FirstOrDefault();
