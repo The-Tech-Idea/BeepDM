@@ -162,9 +162,14 @@ namespace TheTechIdea.Beep
                     formattedMessage += $" | Context: {miscData ?? "N/A"} | ID: {recordId}";
                     formattedMessage += $" | Stack: {Environment.StackTrace.Split(new[] { Environment.NewLine }, StringSplitOptions.None).FirstOrDefault(s => s.Contains("DMEEditor"))}";
                 }
-
+                if(Logger==null) 
+                    return;
                 // Use Task.Run with ConfigureAwait to prevent blocking
-                Task.Run(() => Logger.WriteLog(formattedMessage)).ConfigureAwait(false);
+                Task.Run(() => {
+                    if (Logger == null)
+                        return;
+                    Logger.WriteLog(formattedMessage);
+                }).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
