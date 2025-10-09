@@ -164,21 +164,21 @@ namespace TheTechIdea.Beep.Utilities
         Salesforce, HubSpot, Zoho, Pipedrive, MicrosoftDynamics365, Freshsales, SugarCRM, Insightly, Copper, Nutshell, // CRM
         Mailchimp, Marketo, GoogleAds, ActiveCampaign, ConstantContact, Klaviyo, Sendinblue, CampaignMonitor, ConvertKit, Drip, MailerLite, // Marketing
         Shopify, WooCommerce, Magento, BigCommerce, Squarespace, Wix, Etsy, OpenCart, Ecwid, Volusion, // E-commerce
-        Jira, Trello, Asana, Monday, ClickUp, Basecamp, Notion, Wrike, Smartsheet, Teamwork, Podio, // Project Management
-        Slack, MicrosoftTeams, Zoom, GoogleChat, Discord, Telegram, WhatsAppBusiness, Twist, Chanty, RocketChat, Flock, // Communication
+        Jira, Trello, Asana, Monday, ClickUp, Basecamp, Notion, Wrike, Smartsheet, Teamwork, Podio, AnyDo, // Project Management
+        Slack, MicrosoftTeams, Zoom, GoogleChat, Discord, Telegram, WhatsAppBusiness, ClickSend, Kudosity, Twist, Chanty, RocketChat, Flock, // Communication
         GoogleDrive, Dropbox, OneDrive, Box, AmazonS3, pCloud, iCloud, Egnyte, MediaFire, CitrixShareFile, // Cloud Storage
         Stripe, PayPal, Square, AuthorizeNet, Braintree, Worldpay, Adyen, TwoCheckout, Razorpay, Payoneer, Wise, // Payment Gateways
-        Facebook, Twitter, Instagram, LinkedIn, Pinterest, YouTube, TikTok, Snapchat, Reddit, Buffer, Hootsuite, TikTokAds, // Social Media
-        Zapier, Make, Airtable, MicrosoftPowerAutomate, Calendly, Doodle, Eventbrite, // Workflow Automation
+        Facebook, Twitter, Instagram, LinkedIn, Pinterest, YouTube, TikTok, Snapchat, Reddit, Buffer, Hootsuite, TikTokAds, Loomly, // Social Media
+        Zapier, Make, Airtable, MicrosoftPowerAutomate, Calendly, Doodle, Eventbrite, Typeform, Jotform, WordPress, TLDV, Fathom, // Workflow Automation
         GitHub, GitLab, Bitbucket, Jenkins, CircleCI, Postman, SwaggerHub, AzureDevOps, // Developer Tools
         Zendesk, Freshdesk, HelpScout, ZohoDesk, Kayako, LiveAgent, Front, // Customer Support
-        GoogleAnalytics, Mixpanel, Hotjar, Amplitude, Heap, Databox, Geckoboard, Cyfe, // Analytics and Reporting
+        GoogleAnalytics, Mixpanel, Hotjar, Amplitude, Heap, Databox, Geckoboard, Cyfe, Tableau, // Analytics and Reporting
         Twilio, Plaid, DocuSign, PhilipsHue, Nest, SmartThings, Tuya, // IoT
         FreshBooks, WaveApps, SageBusinessCloud, MYOB, QuickBooks, Xero, // Accounting
         // Added missing connectors
-        SAPCRM, OracleCRM, HootsuiteMarketing, Mailgun, SendGrid, Criteo, PrestaShop, BigCartel, AzureBoards, SmartsheetPM, Mattermost, RocketChatComm, GoogleCloudStorage, Mega, Backblaze, Coinbase, Venmo, BitPay, Threads, Mastodon, Bluesky, Integromat, TrayIO, SonarQube, Intercom, Drift, Tableau, PowerBI, BenchAccounting, Particle, ArduinoCloud, Ethereum, Hyperledger, BitcoinCore, // Blockchain additions
+        SAPCRM, OracleCRM, HootsuiteMarketing, Mailgun, SendGrid, Criteo, PrestaShop, BigCartel, AzureBoards, SmartsheetPM, Mattermost, RocketChatComm, GoogleCloudStorage, Mega, Backblaze, Coinbase, Venmo, BitPay, Threads, Mastodon, Bluesky, Integromat, TrayIO, SonarQube, Intercom, Drift,  PowerBI, BenchAccounting, Particle, ArduinoCloud, Ethereum, Hyperledger, BitcoinCore, // Blockchain additions
         FTP, SFTP,  // File Transfer Protocols
-        Email, IMAP, POP3, SMTP, // Email Protocols
+        Email, IMAP, POP3, SMTP, Gmail, Outlook, Yahoo, // Email Protocols
         XMLRPC, SOAP,JSONRPC, GRPC, WebSocket, SSE, // Remote Procedure Call Protocols
         Other
     }
