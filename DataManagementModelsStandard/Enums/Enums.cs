@@ -176,7 +176,10 @@ namespace TheTechIdea.Beep.Utilities
         Twilio, Plaid, DocuSign, PhilipsHue, Nest, SmartThings, Tuya, // IoT
         FreshBooks, WaveApps, SageBusinessCloud, MYOB, QuickBooks, Xero, // Accounting
         // Added missing connectors
-        SAPCRM, OracleCRM, HootsuiteMarketing, Mailgun, SendGrid, Criteo, PrestaShop, BigCartel, AzureBoards, SmartsheetPM, Mattermost, RocketChatComm, GoogleCloudStorage, Mega, Backblaze, Coinbase, Venmo, BitPay, Threads, Mastodon, Bluesky, Integromat, TrayIO, SonarQube, Intercom, Drift,  PowerBI, BenchAccounting, Particle, ArduinoCloud, Ethereum, Hyperledger, BitcoinCore, // Blockchain additions
+        SAPCRM, OracleCRM, HootsuiteMarketing, Mailgun, SendGrid, Criteo, PrestaShop, BigCartel,
+        AzureBoards, SmartsheetPM, Mattermost, RocketChatComm, GoogleCloudStorage, Mega, Backblaze,
+         Coinbase, Venmo, BitPay, Threads, Mastodon, Bluesky, Integromat, TrayIO, SonarQube, Intercom,
+          Drift,  PowerBI, BenchAccounting, Particle, ArduinoCloud, Ethereum, Hyperledger, BitcoinCore, // Blockchain additions
         FTP, SFTP,  // File Transfer Protocols
         Email, IMAP, POP3, SMTP, Gmail, Outlook, Yahoo, // Email Protocols
         XMLRPC, SOAP,JSONRPC, GRPC, WebSocket, SSE, // Remote Procedure Call Protocols
