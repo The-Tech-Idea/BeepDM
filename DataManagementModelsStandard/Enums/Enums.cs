@@ -138,7 +138,7 @@ namespace TheTechIdea.Beep.Utilities
         AWSSWF, AWSStepFunctions,
 
         // Internet of Things (IoT)
-        AWSIoT, AWSIoTCore, AWSIoTAnalytics,
+        AWSIoT, AWSIoTCore, AWSIoTAnalytics, AzureIoTHub,
 
         // Search Platforms
         Solr,
@@ -174,7 +174,7 @@ namespace TheTechIdea.Beep.Utilities
         Zendesk, Freshdesk, HelpScout, ZohoDesk, Kayako, LiveAgent, Front, // Customer Support
         GoogleAnalytics, Mixpanel, Hotjar, Amplitude, Heap, Databox, Geckoboard, Cyfe, Tableau, // Analytics and Reporting
         Twilio, Plaid, DocuSign, PhilipsHue, Nest, SmartThings, Tuya, // IoT
-        FreshBooks, WaveApps, SageBusinessCloud, MYOB, QuickBooks, Xero, // Accounting
+        FreshBooks, WaveApps, SageBusinessCloud, MYOB, QuickBooks, Xero, QuickBooksOnline, SageIntacct, ZohoBooks, // Accounting
         // Added missing connectors
         SAPCRM, OracleCRM, HootsuiteMarketing, Mailgun, SendGrid, Criteo, PrestaShop, BigCartel,
         AzureBoards, SmartsheetPM, Mattermost, RocketChatComm, GoogleCloudStorage, Mega, Backblaze,

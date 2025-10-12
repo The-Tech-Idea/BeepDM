@@ -2105,6 +2105,251 @@
             The line number of the malformed line.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.FromType(TheTechIdea.Beep.DataBase.EntityStructure,System.Type)">
+            <summary>
+            Populates EntityStructure from a .NET Type using reflection
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.FromType``1(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Creates an EntityStructure from a generic type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.FromDataTable(TheTechIdea.Beep.DataBase.EntityStructure,System.Data.DataTable)">
+            <summary>
+            Populates EntityStructure from a DataTable
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.FromList``1(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.List{``0})">
+            <summary>
+            Populates EntityStructure from a list of objects
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.ToDataTableSchema(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Converts EntityStructure to a DataTable schema (without data)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.AddField(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Type,System.Boolean,System.Boolean)">
+            <summary>
+            Adds a field to the EntityStructure
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.AddField(TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Adds a field to the EntityStructure with detailed configuration
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.RemoveField(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Removes a field from the EntityStructure
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetField(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Gets a field by name
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.HasField(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Checks if a field exists
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetFieldsByCategory(TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.Utilities.DbFieldCategory)">
+            <summary>
+            Gets all fields of a specific category
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetNumericFields(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Gets all numeric fields
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetStringFields(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Gets all string fields
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetDateFields(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Gets all date fields
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.Validate(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Validates the EntityStructure
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.MergeFields(TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityStructure,System.Boolean)">
+            <summary>
+            Merges fields from another EntityStructure
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.CloneStructureOnly(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Creates a shallow copy of the EntityStructure with fields only
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.Add(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.Type)">
+            <summary>
+            Adds a new entity to the collection with the specified name and type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.Add``1(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String)">
+            <summary>
+            Adds a new entity from a generic type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.Add(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.String)">
+            <summary>
+            Adds a new entity to the collection with full configuration
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.AddFromDataTable(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.Data.DataTable)">
+            <summary>
+            Adds an entity from a DataTable
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.FindByName(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String)">
+            <summary>
+            Finds an entity by name (case-insensitive)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetByDataSource(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String)">
+            <summary>
+            Gets all entities from a specific data source
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetByType(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},TheTechIdea.Beep.Utilities.EntityType)">
+            <summary>
+            Gets all entities of a specific type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.RemoveByName(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String)">
+            <summary>
+            Removes an entity by name
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.Contains(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String)">
+            <summary>
+            Checks if an entity exists by name
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetTables(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Gets all table entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetViews(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Gets all view entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetQueries(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Gets all query entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetBySchema(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String)">
+            <summary>
+            Gets entities by schema or owner
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetByCategory(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String)">
+            <summary>
+            Gets entities by category
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.CloneAll(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Clones all entities in the collection
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetLoaded(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Gets all loaded entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetUnsaved(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Gets all entities that need to be saved
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.Upsert(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Updates or adds an entity (upsert operation)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.AddRange(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Batch adds multiple entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.ValidateAll(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
+            <summary>
+            Validates all entities in the collection
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.EntitiesExtensions.FieldCategoryConfig">
+            <summary>
+            Configuration for field category mapping
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.EntitiesExtensions.FieldCategoryConfig.TreatDecimalAsCurrency">
+            <summary>
+            If true, decimal types will be categorized as Currency, otherwise as Numeric
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.EntitiesExtensions.FieldCategoryConfig.TreatComplexObjectsAsJson">
+            <summary>
+            If true, complex objects will be categorized as Json, otherwise as String
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.EntitiesExtensions.FieldCategoryConfig.CustomTypeMappings">
+            <summary>
+            Custom type mappings for specific types
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetFieldCategory(System.Type)">
+            <summary>
+            Gets the field category for a given type with configuration support
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetFieldCategory(System.Type,System.Boolean,System.Boolean)">
+            <summary>
+            Gets the field category for a given type with explicit options
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.ToFieldCategory(System.Type)">
+            <summary>
+            Extension method to get field category directly from a Type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.IsNumericType(System.Type)">
+            <summary>
+            Checks if a type is a numeric type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.IsDateTimeType(System.Type)">
+            <summary>
+            Checks if a type is a date/time type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.IsSimpleType(System.Type)">
+            <summary>
+            Checks if a type is a simple/primitive type (string, numeric, bool, date, guid)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.GetFriendlyTypeName(System.Type)">
+            <summary>
+            Gets a friendly display name for a database field type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntitiesExtensions.ToSqlTypeName(System.Type,System.Nullable{System.Int32})">
+            <summary>
+            Gets a SQL-like type name for a .NET type
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.DataView.DataViewConnection">
             <summary>
             Represents a connection to a data source.
