@@ -178,7 +178,25 @@ namespace TheTechIdea.Beep.DriversConfigurations
             get { return _isMissing; }
             set { SetProperty(ref _isMissing, value); }
         }
-       
+        private bool _nuggetmissing;
+        public bool NuggetMissing
+        {
+            get { return _nuggetmissing; }
+            set { SetProperty(ref _nuggetmissing, value); }
+        }
+        private string _nuggetversion;
+        public string NuggetVersion
+        {
+            get { return _nuggetversion; }
+            set { SetProperty(ref _nuggetversion, value); }
+        }
+        private string _nuggetsource;
+        public string NuggetSource
+        {
+            get { return _nuggetsource; }
+            set { SetProperty(ref _nuggetsource, value); }
+        }
+        
     }
 
 }

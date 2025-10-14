@@ -56,7 +56,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Slack,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Slack.Webhooks",
+                NuggetMissing = false
             };
         }
 
@@ -80,7 +83,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.MicrosoftTeams,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Microsoft.Graph",
+                NuggetMissing = false
             };
         }
 
@@ -104,7 +110,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Zoom,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Zoom.Net",
+                NuggetMissing = false
             };
         }
 
@@ -128,7 +137,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.GoogleChat,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Google.Apis.HangoutsChat",
+                NuggetMissing = false
             };
         }
 
@@ -152,7 +164,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Discord,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Discord.Net",
+                NuggetMissing = false
             };
         }
 
@@ -176,7 +191,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Telegram,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Telegram.Bot",
+                NuggetMissing = false
             };
         }
 
@@ -200,7 +218,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.WhatsAppBusiness,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "WhatsApp.Business.Client",
+                NuggetMissing = false
             };
         }
 
@@ -224,7 +245,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Twist,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Twist.Client",
+                NuggetMissing = false
             };
         }
 
@@ -248,7 +272,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Chanty,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Chanty.Client",
+                NuggetMissing = false
             };
         }
 
@@ -272,7 +299,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.RocketChat,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Rocket.Chat.Net",
+                NuggetMissing = false
             };
         }
 
@@ -296,7 +326,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Flock,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Flock.Client",
+                NuggetMissing = false
             };
         }
 
@@ -320,7 +353,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Mattermost,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Mattermost.Client",
+                NuggetMissing = false
             };
         }
 
@@ -344,7 +380,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.RocketChatComm,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "RocketChatComm.Client",
+                NuggetMissing = false
             };
         }
     }

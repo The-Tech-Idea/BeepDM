@@ -55,7 +55,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Shopify,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Shopify.Client",
+                NuggetMissing = false
             };
         }
 
@@ -79,7 +82,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.WooCommerce,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "WooCommerce.Client",
+                NuggetMissing = false
             };
         }
 
@@ -103,7 +109,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Magento,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Magento.Client",
+                NuggetMissing = false
             };
         }
 
@@ -127,7 +136,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.BigCommerce,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "BigCommerce.Client",
+                NuggetMissing = false
             };
         }
 
@@ -151,7 +163,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Squarespace,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Squarespace.Client",
+                NuggetMissing = false
             };
         }
 
@@ -175,7 +190,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Wix,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Wix.Client",
+                NuggetMissing = false
             };
         }
 
@@ -199,7 +217,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Etsy,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Etsy.Client",
+                NuggetMissing = false
             };
         }
 
@@ -223,7 +244,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.OpenCart,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "OpenCart.Client",
+                NuggetMissing = false
             };
         }
 
@@ -247,7 +271,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Ecwid,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Ecwid.Client",
+                NuggetMissing = false
             };
         }
 
@@ -271,7 +298,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Volusion,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Volusion.Client",
+                NuggetMissing = false
             };
         }
 
@@ -295,7 +325,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.PrestaShop,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "PrestaShop.Client",
+                NuggetMissing = false
             };
         }
 
@@ -319,7 +352,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.BigCartel,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "BigCartel.Client",
+                NuggetMissing = false
             };
         }
     }

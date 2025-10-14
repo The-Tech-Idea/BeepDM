@@ -55,7 +55,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Salesforce,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Salesforce.Client",
+                NuggetMissing = false
             };
         }
 
@@ -79,7 +82,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.HubSpot,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "HubSpot.Client",
+                NuggetMissing = false
             };
         }
 
@@ -103,7 +109,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Zoho,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Zoho.CRM.Client",
+                NuggetMissing = false
             };
         }
 
@@ -127,7 +136,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Pipedrive,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Pipedrive.Client",
+                NuggetMissing = false
             };
         }
 
@@ -151,7 +163,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.MicrosoftDynamics365,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Microsoft.Dynamics365.Client",
+                NuggetMissing = false
             };
         }
 
@@ -175,7 +190,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Freshsales,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Freshsales.Client",
+                NuggetMissing = false
             };
         }
 
@@ -199,7 +217,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.SugarCRM,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "SugarCRM.Client",
+                NuggetMissing = false
             };
         }
 
@@ -223,7 +244,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Insightly,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Insightly.Client",
+                NuggetMissing = false
             };
         }
 
@@ -247,7 +271,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Copper,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Copper.Client",
+                NuggetMissing = false
             };
         }
 
@@ -271,7 +298,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Nutshell,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Nutshell.Client",
+                NuggetMissing = false
             };
         }
 
@@ -295,7 +325,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.SAPCRM,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "SAP.CRM.Client",
+                NuggetMissing = false
             };
         }
 
@@ -319,7 +352,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.OracleCRM,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Oracle.CRM.Client",
+                NuggetMissing = false
             };
         }
     }

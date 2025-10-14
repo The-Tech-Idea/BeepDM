@@ -56,7 +56,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Jira,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Atlassian.Jira.Client",
+                NuggetMissing = false
             };
         }
 
@@ -80,7 +83,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Trello,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Trello.Client",
+                NuggetMissing = false
             };
         }
 
@@ -104,7 +110,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Asana,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Asana.Client",
+                NuggetMissing = false
             };
         }
 
@@ -128,7 +137,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Monday,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Monday.Client",
+                NuggetMissing = false
             };
         }
 
@@ -152,7 +164,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.ClickUp,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "ClickUp.Client",
+                NuggetMissing = false
             };
         }
 
@@ -176,7 +191,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Basecamp,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Basecamp.Client",
+                NuggetMissing = false
             };
         }
 
@@ -200,7 +218,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Notion,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Notion.Client",
+                NuggetMissing = false
             };
         }
 
@@ -224,7 +245,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Wrike,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Wrike.Client",
+                NuggetMissing = false
             };
         }
 
@@ -248,7 +272,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Smartsheet,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Smartsheet.Client",
+                NuggetMissing = false
             };
         }
 
@@ -272,7 +299,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Teamwork,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Teamwork.Client",
+                NuggetMissing = false
             };
         }
 
@@ -296,7 +326,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Podio,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Podio.Client",
+                NuggetMissing = false
             };
         }
 
@@ -320,7 +353,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.AzureBoards,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Microsoft.TeamFoundation.Client",
+                NuggetMissing = false
             };
         }
 
@@ -344,7 +380,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.SmartsheetPM,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "SmartsheetPM.Client",
+                NuggetMissing = false
             };
         }
     }

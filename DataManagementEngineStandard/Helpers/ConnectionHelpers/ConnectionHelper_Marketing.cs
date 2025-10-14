@@ -58,7 +58,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Mailchimp,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Mailchimp.Client",
+                NuggetMissing = false
             };
         }
 
@@ -82,7 +85,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Marketo,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Marketo.Client",
+                NuggetMissing = false
             };
         }
 
@@ -106,7 +112,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.GoogleAds,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Google.Ads.Client",
+                NuggetMissing = false
             };
         }
 
@@ -130,7 +139,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.ActiveCampaign,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "ActiveCampaign.Client",
+                NuggetMissing = false
             };
         }
 
@@ -154,7 +166,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.ConstantContact,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "ConstantContact.Client",
+                NuggetMissing = false
             };
         }
 
@@ -178,7 +193,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Klaviyo,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Klaviyo.Client",
+                NuggetMissing = false
             };
         }
 
@@ -202,7 +220,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Sendinblue,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Sendinblue.Client",
+                NuggetMissing = false
             };
         }
 
@@ -226,7 +247,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.CampaignMonitor,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "CampaignMonitor.Client",
+                NuggetMissing = false
             };
         }
 
@@ -250,7 +274,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.ConvertKit,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "ConvertKit.Client",
+                NuggetMissing = false
             };
         }
 
@@ -274,7 +301,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Drip,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Drip.Client",
+                NuggetMissing = false
             };
         }
 
@@ -298,7 +328,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.MailerLite,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "MailerLite.Client",
+                NuggetMissing = false
             };
         }
 
@@ -322,7 +355,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.HootsuiteMarketing,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Hootsuite.Marketing.Client",
+                NuggetMissing = false
             };
         }
 
@@ -346,7 +382,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Mailgun,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Mailgun.Client",
+                NuggetMissing = false
             };
         }
 
@@ -370,7 +409,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.SendGrid,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "SendGrid.Client",
+                NuggetMissing = false
             };
         }
 
@@ -394,7 +436,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.Criteo,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Criteo.Client",
+                NuggetMissing = false
             };
         }
     }

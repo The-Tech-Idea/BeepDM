@@ -69,7 +69,10 @@ namespace TheTechIdea.Beep.Helpers
                 extensionstoHandle = "csv",
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.CSV,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1",
+                NuggetSource = "FileReader",
+                NuggetMissing = false
             };
         }
 
@@ -96,7 +99,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.CSV,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1",
+                NuggetSource = "CSVDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -123,7 +129,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.Json,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1",
+                NuggetSource = "JsonDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -150,7 +159,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.Xls,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1",
+                NuggetSource = "TxtXlsCSVFileSource",
+                NuggetMissing = false
             };
         }
 
@@ -174,7 +186,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.VIEWS,
                 DatasourceType = DataSourceType.Json,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1",
+                NuggetSource = "DataViewReader",
+                NuggetMissing = false
             };
         }
 
@@ -199,7 +214,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.XML,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "XMLDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -224,7 +242,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.YAML,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "YAMLDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -249,7 +270,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.INI,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "INIDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -274,7 +298,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.Text,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "TextFileDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -299,7 +326,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.PDF,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "PDFDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -324,7 +354,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.Parquet,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "ParquetDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -349,7 +382,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.Avro,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "AvroDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -374,7 +410,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.ORC,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "ORCDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -399,7 +438,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.Feather,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "FeatherDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -424,7 +466,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.Hdf5,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Hdf5DataSource",
+                NuggetMissing = false
             };
         }
 
@@ -449,7 +494,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.LibSVM,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "LibSVMDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -474,7 +522,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.GraphFile,
                 DatasourceType = DataSourceType.GraphML,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "GraphMLDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -499,7 +550,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.DICOM,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "DICOMDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -524,7 +578,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.LAS,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "LASDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -549,7 +606,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.RecordIO,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "RecordIODataSource",
+                NuggetMissing = false
             };
         }
 
@@ -574,7 +634,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.Markdown,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "MarkdownDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -599,7 +662,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.Log,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "LogFileDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -624,7 +690,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.FlatFile,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "FlatFileDataSource",
+                NuggetMissing = false
             };
         }
     }

@@ -65,7 +65,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.CLOUD,
                 DatasourceType = DataSourceType.AWSRedshift,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.1.3.0",
+                NuggetSource = "Npgsql",
+                NuggetMissing = false
             };
         }
 
@@ -89,7 +92,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.CLOUD,
                 DatasourceType = DataSourceType.GoogleBigQuery,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.0.0.0",
+                NuggetSource = "Google.Cloud.BigQuery.V2",
+                NuggetMissing = false
             };
         }
 
@@ -113,7 +119,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.CLOUD,
                 DatasourceType = DataSourceType.AWSGlue,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.7.0.0",
+                NuggetSource = "AWSSDK.Glue",
+                NuggetMissing = false
             };
         }
 
@@ -137,7 +146,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.CLOUD,
                 DatasourceType = DataSourceType.AWSAthena,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.7.0.0",
+                NuggetSource = "AWSSDK.Athena",
+                NuggetMissing = false
             };
         }
 
@@ -161,7 +173,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.CLOUD,
                 DatasourceType = DataSourceType.AzureCloud,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.0.0.0",
+                NuggetSource = "Microsoft.Azure.Management.ResourceManager",
+                NuggetMissing = false
             };
         }
 
@@ -185,7 +200,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.CLOUD,
                 DatasourceType = DataSourceType.DataBricks,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Databricks.Client",
+                NuggetMissing = false
             };
         }
 
@@ -209,7 +227,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.CLOUD,
                 DatasourceType = DataSourceType.Firebolt,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Firebolt.Client",
+                NuggetMissing = false
             };
         }
 
@@ -233,7 +254,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.CLOUD,
                 DatasourceType = DataSourceType.Hologres,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Hologres.Client",
+                NuggetMissing = false
             };
         }
 
@@ -257,7 +281,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.CLOUD,
                 DatasourceType = DataSourceType.Supabase,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Supabase",
+                NuggetMissing = false
             };
         }
 
@@ -281,7 +308,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Workflow,
                 DatasourceType = DataSourceType.AWSStepFunctions,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.7.0.0",
+                NuggetSource = "AWSSDK.StepFunctions",
+                NuggetMissing = false
             };
         }
 
@@ -305,7 +335,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Workflow,
                 DatasourceType = DataSourceType.AWSSWF,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.7.0.0",
+                NuggetSource = "AWSSDK.SimpleWorkflow",
+                NuggetMissing = false
             };
         }
 
@@ -329,7 +362,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.IoT,
                 DatasourceType = DataSourceType.AWSIoT,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.7.0.0",
+                NuggetSource = "AWSSDK.IoT",
+                NuggetMissing = false
             };
         }
 
@@ -353,7 +389,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.IoT,
                 DatasourceType = DataSourceType.AWSIoTCore,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.7.0.0",
+                NuggetSource = "AWSSDK.IotData",
+                NuggetMissing = false
             };
         }
 
@@ -377,7 +416,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.IoT,
                 DatasourceType = DataSourceType.AWSIoTAnalytics,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.7.0.0",
+                NuggetSource = "AWSSDK.IoTAnalytics",
+                NuggetMissing = false
             };
         }
 
@@ -401,7 +443,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.CLOUD,
                 DatasourceType = DataSourceType.GoogleCloudStorage,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.0.0.0",
+                NuggetSource = "Google.Cloud.Storage.V1",
+                NuggetMissing = false
             };
         }
 
@@ -425,7 +470,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.CLOUD,
                 DatasourceType = DataSourceType.AmazonS3,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.7.0.0",
+                NuggetSource = "AWSSDK.S3",
+                NuggetMissing = false
             };
         }
 
@@ -449,7 +497,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.DataPipeline,
                 DatasourceType = DataSourceType.AzureCloud,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.0.0.0",
+                NuggetSource = "Microsoft.Azure.Management.DataFactory",
+                NuggetMissing = false
             };
         }
 
@@ -477,7 +528,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.DataWarehouse,
                 DatasourceType = DataSourceType.AzureCloud,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.6.1.1",
+                NuggetSource = "System.Data.SqlClient",
+                NuggetMissing = false
             };
         }
 
@@ -501,7 +555,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.CLOUD,
                 DatasourceType = DataSourceType.AzureCloud,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "12.0.0.0",
+                NuggetSource = "Azure.Storage.Blobs",
+                NuggetMissing = false
             };
         }
     }

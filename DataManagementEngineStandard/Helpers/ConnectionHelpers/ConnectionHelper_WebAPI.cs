@@ -57,7 +57,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.WEBAPI,
                 DatasourceType = DataSourceType.RestApi,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "108.0.0.0",
+                NuggetSource = "RestSharp",
+                NuggetMissing = false
             };
         }
 
@@ -81,7 +84,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.WEBAPI,
                 DatasourceType = DataSourceType.GraphQL,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "5.0.0.0",
+                NuggetSource = "GraphQL.Client",
+                NuggetMissing = false
             };
         }
 
@@ -105,7 +111,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.WEBAPI,
                 DatasourceType = DataSourceType.OData,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "7.0.0.0",
+                NuggetSource = "Microsoft.OData.Client",
+                NuggetMissing = false
             };
         }
 
@@ -129,7 +138,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.WEBAPI,
                 DatasourceType = DataSourceType.WebApi,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.3.0.0",
+                NuggetSource = "System.Net.Http",
+                NuggetMissing = false
             };
         }
 
@@ -156,7 +168,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.WEBAPI,
                 DatasourceType = DataSourceType.OPC,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "2.0.0.0",
+                NuggetSource = "OPC",
+                NuggetMissing = false
             };
         }
 
@@ -180,7 +195,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.WEBAPI,
                 DatasourceType = DataSourceType.SOAP,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.8.0.0",
+                NuggetSource = "System.ServiceModel",
+                NuggetMissing = false
             };
         }
 
@@ -204,7 +222,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.WEBAPI,
                 DatasourceType = DataSourceType.XML,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.0.0.0",
+                NuggetSource = "CookComputing.XmlRpc",
+                NuggetMissing = false
             };
         }
 
@@ -228,7 +249,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.WEBAPI,
                 DatasourceType = DataSourceType.Json,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "2.10.0.0",
+                NuggetSource = "StreamJsonRpc",
+                NuggetMissing = false
             };
         }
 
@@ -256,7 +280,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.ODBC,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "6.0.0.0",
+                NuggetSource = "System.Data.Odbc",
+                NuggetMissing = false
             };
         }
 
@@ -284,7 +311,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.OLEDB,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "6.0.0.0",
+                NuggetSource = "System.Data.OleDb",
+                NuggetMissing = false
             };
         }
 
@@ -312,7 +342,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Connector,
                 DatasourceType = DataSourceType.ADO,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.3.0.0",
+                NuggetSource = "System.Data.Common",
+                NuggetMissing = false
             };
         }
 
@@ -336,7 +369,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.WEBAPI,
                 DatasourceType = DataSourceType.GRPC,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "2.0.0.0",
+                NuggetSource = "Grpc.Net.Client",
+                NuggetMissing = false
             };
         }
 
@@ -360,7 +396,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.WEBAPI,
                 DatasourceType = DataSourceType.WebSocket,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.3.0.0",
+                NuggetSource = "System.Net.WebSockets.Client",
+                NuggetMissing = false
             };
         }
 
@@ -384,7 +423,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.WEBAPI,
                 DatasourceType = DataSourceType.SSE,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.0.0.0",
+                NuggetSource = "LaunchDarkly.EventSource",
+                NuggetMissing = false
             };
         }
     }

@@ -46,7 +46,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.Blockchain,
                 DatasourceType = DataSourceType.Ethereum,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.0.0.0",
+                NuggetSource = "Nethereum",
+                NuggetMissing = false
             };
         }
 
@@ -70,7 +73,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Blockchain,
                 DatasourceType = DataSourceType.Hyperledger,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Hyperledger.Fabric.SDK",
+                NuggetMissing = false
             };
         }
 
@@ -94,7 +100,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.Blockchain,
                 DatasourceType = DataSourceType.BitcoinCore,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "7.0.0.0",
+                NuggetSource = "NBitcoin",
+                NuggetMissing = false
             };
         }
     }

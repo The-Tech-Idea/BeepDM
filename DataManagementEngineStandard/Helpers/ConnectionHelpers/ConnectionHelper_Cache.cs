@@ -57,7 +57,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.InMemoryCache,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "TheTechIdea.Beep.InMemoryCache",
+                NuggetMissing = false
             };
         }
 
@@ -81,7 +84,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.CachedMemory,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "TheTechIdea.Beep.CachedMemory",
+                NuggetMissing = false
             };
         }
 
@@ -105,7 +111,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.InMemoryCache,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "8.0.0.0",
+                NuggetSource = "Microsoft.Extensions.Caching.Distributed",
+                NuggetMissing = false
             };
         }
 
@@ -129,7 +138,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.InMemoryCache,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "TheTechIdea.Beep.HybridCache",
+                NuggetMissing = false
             };
         }
 
@@ -153,7 +165,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.InMemoryCache,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "TheTechIdea.Beep.L1L2Cache",
+                NuggetMissing = false
             };
         }
 
@@ -177,7 +192,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.InMemoryCache,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "8.0.0.0",
+                NuggetSource = "Microsoft.Extensions.Caching.Memory",
+                NuggetMissing = false
             };
         }
 
@@ -201,7 +219,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.Redis,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "2.7.4.0",
+                NuggetSource = "StackExchange.Redis",
+                NuggetMissing = false
             };
         }
 
@@ -225,7 +246,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.InMemoryCache,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "5.3.0.0",
+                NuggetSource = "Alachisoft.NCache",
+                NuggetMissing = false
             };
         }
 
@@ -249,7 +273,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.Couchbase,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.4.0.0",
+                NuggetSource = "CouchbaseNetClient",
+                NuggetMissing = false
             };
         }
 
@@ -273,7 +300,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.Hazelcast,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "5.0.0.0",
+                NuggetSource = "Hazelcast.Net",
+                NuggetMissing = false
             };
         }
 
@@ -297,7 +327,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.ApacheIgnite,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "2.15.0.0",
+                NuggetSource = "Apache.Ignite",
+                NuggetMissing = false
             };
         }
 
@@ -321,7 +354,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.InMemoryCache,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "14.0.0.0",
+                NuggetSource = "Infinispan.HotRod",
+                NuggetMissing = false
             };
         }
 
@@ -345,7 +381,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.InMemoryCache,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "EhCache.Net",
+                NuggetMissing = false
             };
         }
 
@@ -369,7 +408,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.InMemoryCache,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Caffeine.Cache",
+                NuggetMissing = false
             };
         }
     }

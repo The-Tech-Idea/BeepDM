@@ -66,7 +66,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.SqlServer,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.6.1.1",
+                NuggetSource = "System.Data.SqlClient",
+                NuggetMissing = false
             };
         }
 
@@ -94,7 +97,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.Mysql,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "8.0.28.0",
+                NuggetSource = "MySql.Data",
+                NuggetMissing = false
             };
         }
 
@@ -121,7 +127,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.Postgre,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.1.3.0",
+                NuggetSource = "Npgsql",
+                NuggetMissing = false
             };
         }
 
@@ -148,7 +157,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.Oracle,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.122.19.1",
+                NuggetSource = "Oracle.ManagedDataAccess",
+                NuggetMissing = false
             };
         }
 
@@ -177,7 +189,10 @@ namespace TheTechIdea.Beep.Helpers
                 extensionstoHandle = "s3db",
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.SqlLite,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.113.0",
+                NuggetSource = "System.Data.SQLite",
+                NuggetMissing = false
             };
         }
 
@@ -205,7 +220,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.SqlCompact,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.0.0.0",
+                NuggetSource = "System.Data.SqlServerCe",
+                NuggetMissing = false
             };
         }
 
@@ -235,7 +253,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.FireBird,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "7.10.1.0",
+                NuggetSource = "FirebirdSql.Data.FirebirdClient",
+                NuggetMissing = false
             };
         }
 
@@ -262,7 +283,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.DB2,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "11.5.0.0",
+                NuggetSource = "IBM.Data.DB2",
+                NuggetMissing = false
             };
         }
 
@@ -288,7 +312,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.SnowFlake,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.10.2.0",
+                NuggetSource = "SnowFlake",
+                NuggetMissing = false
             };
         }
 
@@ -317,7 +344,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.VistaDB,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "5.7.0.0",
+                NuggetSource = "VistaDB",
+                NuggetMissing = false
             };
         }
 
@@ -343,7 +373,10 @@ namespace TheTechIdea.Beep.Helpers
                 InMemory = true,
                 IsMissing = false,
                 PackageName = "DuckDB.NET.Data",
-                version = "0.8.1.0"
+                version = "0.8.1.0",
+                NuggetVersion = "0.8.1.0",
+                NuggetSource = "DuckDB.NET.Data",
+                NuggetMissing = false
             };
         }
 
@@ -370,7 +403,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.TimeScale,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.1.3.0",
+                NuggetSource = "Npgsql",
+                NuggetMissing = false
             };
         }
 
@@ -397,7 +433,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.Cockroach,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.1.3.0",
+                NuggetSource = "Npgsql",
+                NuggetMissing = false
             };
         }
 
@@ -421,7 +460,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.Spanner,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.0.0.0",
+                NuggetSource = "Google.Cloud.Spanner.Data",
+                NuggetMissing = false
             };
         }
 
@@ -445,7 +487,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.TerraData,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "20.0.0.0",
+                NuggetSource = "Teradata.Client.Provider",
+                NuggetMissing = false
             };
         }
 
@@ -469,7 +514,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.Vertica,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "11.0.0.0",
+                NuggetSource = "Vertica.Data",
+                NuggetMissing = false
             };
         }
 
@@ -497,7 +545,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.AWSRDS,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "8.0.28.0",
+                NuggetSource = "MySql.Data",
+                NuggetMissing = false
             };
         }
 
@@ -525,7 +576,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.AzureSQL,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.6.1.1",
+                NuggetSource = "System.Data.SqlClient",
+                NuggetMissing = false
             };
         }
 
@@ -549,7 +603,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.RDBMS,
                 DatasourceType = DataSourceType.Hana,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "2.15.0.0",
+                NuggetSource = "Sap.Data.Hana",
+                NuggetMissing = false
             };
         }
     }

@@ -54,7 +54,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.VectorDB,
                 DatasourceType = DataSourceType.ChromaDB,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "ChromaDB",
+                NuggetMissing = false
             };
         }
 
@@ -80,7 +83,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.VectorDB,
                 DatasourceType = DataSourceType.PineCone,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "PineCone",
+                NuggetMissing = false
             };
         }
 
@@ -106,7 +112,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.VectorDB,
                 DatasourceType = DataSourceType.Qdrant,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Qdrant",
+                NuggetMissing = false
             };
         }
 
@@ -132,7 +141,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.VectorDB,
                 DatasourceType = DataSourceType.ShapVector,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "ShapVector",
+                NuggetMissing = false
             };
         }
 
@@ -158,7 +170,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.VectorDB,
                 DatasourceType = DataSourceType.Weaviate,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Weaviate",
+                NuggetMissing = false
             };
         }
 
@@ -184,7 +199,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.VectorDB,
                 DatasourceType = DataSourceType.Milvus,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Milvus",
+                NuggetMissing = false
             };
         }
 
@@ -210,7 +228,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.VectorDB,
                 DatasourceType = DataSourceType.RedisVector,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "RedisVector",
+                NuggetMissing = false
             };
         }
 
@@ -236,7 +257,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.VectorDB,
                 DatasourceType = DataSourceType.Zilliz,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Zilliz",
+                NuggetMissing = false
             };
         }
 
@@ -262,7 +286,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.VectorDB,
                 DatasourceType = DataSourceType.Vespa,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Vespa",
+                NuggetMissing = false
             };
         }
     }

@@ -63,7 +63,10 @@ namespace TheTechIdea.Beep.Helpers
                 ConnectionString = "mongodb://{username}:{password}@{host}:{port}/{database}",
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.MongoDB,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "2.10.4.0",
+                NuggetSource = "MongoDB.Driver",
+                NuggetMissing = false
             };
         }
 
@@ -92,7 +95,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.CouchDB,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.1.0.0",
+                NuggetSource = "CouchDB",
+                NuggetMissing = false
             };
         }
 
@@ -118,7 +124,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.RavenDB,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "5.0.1.0",
+                NuggetSource = "Raven.Client",
+                NuggetMissing = false
             };
         }
 
@@ -145,7 +154,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.Couchbase,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.0.0.0",
+                NuggetSource = "Couchbase",
+                NuggetMissing = false
             };
         }
 
@@ -172,7 +184,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.Couchbase,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "2.7.1.0",
+                NuggetSource = "Couchbase.Lite",
+                NuggetMissing = false
             };
         }
 
@@ -198,7 +213,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.Redis,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "2.2.4.0",
+                NuggetSource = "StackExchange.Redis",
+                NuggetMissing = false
             };
         }
 
@@ -224,7 +242,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.Redis,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "2.0.0.0",
+                NuggetSource = "StackExchange.Redis",
+                NuggetMissing = false
             };
         }
 
@@ -251,7 +272,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.Firebase,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "7.0.0.0",
+                NuggetSource = "Firebase",
+                NuggetMissing = false
             };
         }
 
@@ -277,7 +301,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.LiteDB,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1",
+                NuggetSource = "LiteDBDataSource",
+                NuggetMissing = false
             };
         }
 
@@ -301,7 +328,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.ArangoDB,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "ArangoDB.Client",
+                NuggetMissing = false
             };
         }
 
@@ -325,7 +355,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.GraphDB,
                 DatasourceType = DataSourceType.Neo4j,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.4.0.0",
+                NuggetSource = "Neo4j.Driver",
+                NuggetMissing = false
             };
         }
 
@@ -351,7 +384,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.Cassandra,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.99.0.0",
+                NuggetSource = "Cassandra",
+                NuggetMissing = false
             };
         }
 
@@ -375,7 +411,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.OrientDB,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "OrientDB.Net",
+                NuggetMissing = false
             };
         }
 
@@ -400,7 +439,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.SearchEngine,
                 DatasourceType = DataSourceType.ElasticSearch,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "7.0.0.0",
+                NuggetSource = "Elasticsearch.Net",
+                NuggetMissing = false
             };
         }
 
@@ -424,7 +466,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.ColumnarDB,
                 DatasourceType = DataSourceType.ClickHouse,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "ClickHouse.Client",
+                NuggetMissing = false
             };
         }
 
@@ -448,7 +493,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.TimeSeriesDB,
                 DatasourceType = DataSourceType.InfluxDB,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "4.12.0.0",
+                NuggetSource = "InfluxDB.Client",
+                NuggetMissing = false
             };
         }
 
@@ -472,7 +520,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.DynamoDB,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.7.0.0",
+                NuggetSource = "AWSSDK.DynamoDBv2",
+                NuggetMissing = false
             };
         }
 
@@ -499,7 +550,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.RealIM,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "5.0.0.0",
+                NuggetSource = "Realm",
+                NuggetMissing = false
             };
         }
     }

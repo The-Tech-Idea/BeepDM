@@ -60,7 +60,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.STREAM,
                 DatasourceType = DataSourceType.Kafka,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Kafka",
+                NuggetMissing = false
             };
         }
 
@@ -84,7 +87,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.QUEUE,
                 DatasourceType = DataSourceType.RabbitMQ,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "RabbitMQ.Client",
+                NuggetMissing = false
             };
         }
 
@@ -108,7 +114,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.QUEUE,
                 DatasourceType = DataSourceType.ActiveMQ,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Apache.NMS.ActiveMQ",
+                NuggetMissing = false
             };
         }
 
@@ -132,7 +141,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.STREAM,
                 DatasourceType = DataSourceType.Pulsar,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "DotPulsar",
+                NuggetMissing = false
             };
         }
 
@@ -156,7 +168,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.QUEUE,
                 DatasourceType = DataSourceType.MassTransit,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "MassTransit",
+                NuggetMissing = false
             };
         }
 
@@ -180,7 +195,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.STREAM,
                 DatasourceType = DataSourceType.Nats,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "NATS.Client",
+                NuggetMissing = false
             };
         }
 
@@ -204,7 +222,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.STREAM,
                 DatasourceType = DataSourceType.ZeroMQ,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "NetMQ",
+                NuggetMissing = false
             };
         }
 
@@ -228,7 +249,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.STREAM,
                 DatasourceType = DataSourceType.AWSKinesis,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "AWSSDK.Kinesis",
+                NuggetMissing = false
             };
         }
 
@@ -252,7 +276,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.QUEUE,
                 DatasourceType = DataSourceType.AWSSQS,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "AWSSDK.SQS",
+                NuggetMissing = false
             };
         }
 
@@ -276,7 +303,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.QUEUE,
                 DatasourceType = DataSourceType.AWSSNS,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "AWSSDK.SimpleNotificationService",
+                NuggetMissing = false
             };
         }
 
@@ -300,7 +330,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.QUEUE,
                 DatasourceType = DataSourceType.AzureServiceBus,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Azure.Messaging.ServiceBus",
+                NuggetMissing = false
             };
         }
 
@@ -324,7 +357,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.STREAM,
                 DatasourceType = DataSourceType.AzureServiceBus,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Azure.Messaging.EventHubs",
+                NuggetMissing = false
             };
         }
 
@@ -348,7 +384,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.StreamProcessing,
                 DatasourceType = DataSourceType.ApacheFlink,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Apache.Flink",
+                NuggetMissing = false
             };
         }
 
@@ -372,7 +411,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.StreamProcessing,
                 DatasourceType = DataSourceType.ApacheStorm,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Apache.Storm",
+                NuggetMissing = false
             };
         }
 
@@ -396,7 +438,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.StreamProcessing,
                 DatasourceType = DataSourceType.ApacheSparkStreaming,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Apache.Spark.Streaming",
+                NuggetMissing = false
             };
         }
     }

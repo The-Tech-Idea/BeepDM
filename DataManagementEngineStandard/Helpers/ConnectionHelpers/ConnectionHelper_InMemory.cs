@@ -61,7 +61,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = true,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.SqlLite,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.113.0",
+                NuggetSource = "System.Data.SQLite",
+                NuggetMissing = false
             };
         }
 
@@ -86,7 +89,10 @@ namespace TheTechIdea.Beep.Helpers
                 extensionstoHandle = "s3db",
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.SqlLite,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.113.0",
+                NuggetSource = "TheTechIdea.Beep.Maui.DataSource.Sqlite",
+                NuggetMissing = false
             };
         }
 
@@ -113,7 +119,10 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 PackageName = "DuckDB.NET.Data",
                 ConnectionString = ":memory:",
-                version = "0.8.1.0"
+                version = "0.8.1.0",
+                NuggetVersion = "0.8.1.0",
+                NuggetSource = "DuckDB.NET.Data",
+                NuggetMissing = false
             };
         }
 
@@ -137,7 +146,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.RealIM,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "RealIM",
+                NuggetMissing = false
             };
         }
 
@@ -163,7 +175,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.BigData,
                 DatasourceType = DataSourceType.Hadoop,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.3.0.0",
+                NuggetSource = "Hadoop",
+                NuggetMissing = false
             };
         }
 
@@ -187,7 +202,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.Petastorm,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "Petastorm",
+                NuggetMissing = false
             };
         }
 
@@ -211,7 +229,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.RocketSet,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "RocketSet",
+                NuggetMissing = false
             };
         }
 
@@ -235,7 +256,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.ApacheIgnite,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "2.14.0.0",
+                NuggetSource = "Apache.Ignite",
+                NuggetMissing = false
             };
         }
 
@@ -259,7 +283,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.Hazelcast,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "5.0.0.0",
+                NuggetSource = "Hazelcast.Net",
+                NuggetMissing = false
             };
         }
 
@@ -286,7 +313,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.Redis,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "2.2.4.0",
+                NuggetSource = "StackExchange.Redis",
+                NuggetMissing = false
             };
         }
 
@@ -310,7 +340,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.Memcached,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "3.0.0.0",
+                NuggetSource = "EnyimMemcached",
+                NuggetMissing = false
             };
         }
 
@@ -334,7 +367,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.GridGain,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "8.8.0.0",
+                NuggetSource = "GridGain.Net",
+                NuggetMissing = false
             };
         }
 
@@ -358,7 +394,10 @@ namespace TheTechIdea.Beep.Helpers
                 Favourite = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.ChronicleMap,
-                IsMissing = false
+                IsMissing = false,
+                NuggetVersion = "1.0.0.0",
+                NuggetSource = "ChronicleMap.Net",
+                NuggetMissing = false
             };
         }
 
