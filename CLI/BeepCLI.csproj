@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>beep</AssemblyName>
+    <RootNamespace>TheTechIdea.Beep.CLI</RootNamespace>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>beep</ToolCommandName>
+    <PackageId>TheTechIdea.Beep.CLI</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>The Tech Idea</Authors>
+    <Company>The Tech Idea</Company>
+    <Description>Command-line interface for BeepDM data management platform</Description>
+    <PackageTags>cli;data;etl;beep;database</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="Spectre.Console" Version="0.48.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataManagementEngineStandard\DataManagementEngine.csproj" />
+    <ProjectReference Include="..\DataManagementModelsStandard\DataManagementModels.csproj" />
+    <ProjectReference Include="..\Assembly_helpersStandard\Assembly_helpers.csproj" />
+    <ProjectReference Include="..\DMLoggerStandard\DMLogger.csproj" />
+    <ProjectReference Include="..\JsonFileLoaderStandard\JsonFileLoader.csproj" />
+  </ItemGroup>
+
+</Project>

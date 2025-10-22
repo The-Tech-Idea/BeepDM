@@ -39,6 +39,21 @@ namespace TheTechIdea.Beep.Editor.BeepSync
         public int SkippedRecords { get; set; }
 
         /// <summary>
+        /// Number of records inserted during synchronization
+        /// </summary>
+        public int RecordsInserted { get; set; }
+
+        /// <summary>
+        /// Number of records updated during synchronization
+        /// </summary>
+        public int RecordsUpdated { get; set; }
+
+        /// <summary>
+        /// Number of records deleted during synchronization
+        /// </summary>
+        public int RecordsDeleted { get; set; }
+
+        /// <summary>
         /// Duration of the sync operation
         /// </summary>
         public TimeSpan Duration { get; set; }

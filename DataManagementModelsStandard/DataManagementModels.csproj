@@ -32,7 +32,6 @@
 	  <Compile Remove="AppBlock.cs" />
 	  <Compile Remove="AppBlockColumns.cs" />
 	  <Compile Remove="AppDefinition.cs" />
-	  <Compile Remove="AppFilter.cs" />
 	  <Compile Remove="AppTemplate.cs" />
 	</ItemGroup>
   <ItemGroup>
