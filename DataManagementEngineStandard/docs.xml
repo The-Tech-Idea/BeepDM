@@ -3659,6 +3659,21 @@
             Number of records that were skipped during synchronization
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RecordsInserted">
+            <summary>
+            Number of records inserted during synchronization
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RecordsUpdated">
+            <summary>
+            Number of records updated during synchronization
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RecordsDeleted">
+            <summary>
+            Number of records deleted during synchronization
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.Duration">
             <summary>
             Duration of the sync operation
