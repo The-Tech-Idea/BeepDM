@@ -29,16 +29,36 @@ namespace TheTechIdea.Beep.Tools.Interfaces
     /// </summary>
     public interface IPocoClassGenerator
     {
+        string CreatePOCOClass(string datasourcename,string classname,List<string> entities, string usingheader, 
+            string implementations, string extracode, string outputpath, 
+            string nameSpacestring = "TheTechIdea.ProjectClasses", bool generateCSharpCodeFiles = true);
+
+  string CreateINotifyClass(string datasourcename,List<string> entities, string usingheader, string implementations, 
+            string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", 
+            bool generateCSharpCodeFiles = true);
+
+            string CreateEntityClass(string datasourcename,List<string> entities, string usingHeader, string extraCode, 
+                    string outputPath, string namespaceString = "TheTechIdea.ProjectClasses", bool generateFiles = true);
+
+
+        string CreatePOCOClass(string classname,List<EntityStructure> entities, string usingheader, 
+            string implementations, string extracode, string outputpath, 
+            string nameSpacestring = "TheTechIdea.ProjectClasses", bool generateCSharpCodeFiles = true);
         string CreatePOCOClass(string classname, EntityStructure entity, string usingheader, 
             string implementations, string extracode, string outputpath, 
             string nameSpacestring = "TheTechIdea.ProjectClasses", bool generateCSharpCodeFiles = true);
         
+        string CreateINotifyClass(List<EntityStructure> entities, string usingheader, string implementations, 
+            string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", 
+            bool generateCSharpCodeFiles = true);
         string CreateINotifyClass(EntityStructure entity, string usingheader, string implementations, 
             string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", 
             bool generateCSharpCodeFiles = true);
         
-        string CreateEntityClass(EntityStructure entity, string usingHeader, string extraCode, 
-            string outputPath, string namespaceString = "TheTechIdea.ProjectClasses", bool generateFiles = true);
+            string CreateEntityClass(EntityStructure entity, string usingHeader, string extraCode, 
+                    string outputPath, string namespaceString = "TheTechIdea.ProjectClasses", bool generateFiles = true);
+            string CreateEntityClass(List<EntityStructure> entities, string usingHeader, string extraCode, 
+                string outputPath, string namespaceString = "TheTechIdea.ProjectClasses", bool generateFiles = true);
     }
 
     /// <summary>

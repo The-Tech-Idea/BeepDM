@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using TheTechIdea.Beep.DataBase;
@@ -35,6 +36,23 @@ namespace TheTechIdea.Beep.Tools.Helpers
         }
 
         /// <summary>
+        /// Creates multiple POCO classes from a list of entities
+        /// </summary>
+        public string CreatePOCOClass(string classname, List<EntityStructure> entities, string usingheader, 
+            string implementations, string extracode, string outputpath, 
+            string nameSpacestring = "TheTechIdea.ProjectClasses", bool generateCSharpCodeFiles = true)
+        {
+            var results = new StringBuilder();
+            foreach (var entity in entities)
+            {
+                var result = CreatePOCOClass(entity.EntityName, entity, usingheader, implementations, 
+                    extracode, outputpath, nameSpacestring, generateCSharpCodeFiles);
+                results.AppendLine($"Generated {entity.EntityName}.cs");
+            }
+            return results.ToString();
+        }
+
+        /// <summary>
         /// Creates a class that implements INotifyPropertyChanged
         /// </summary>
         public string CreateINotifyClass(EntityStructure entity, string usingheader, string implementations, 
@@ -62,6 +80,23 @@ namespace TheTechIdea.Beep.Tools.Helpers
             
             return CreateClassFromTemplate(entity.EntityName, entity, template2, usingheader, 
                 implementations2, extracode2, outputpath, nameSpacestring, generateCSharpCodeFiles);
+        }
+
+        /// <summary>
+        /// Creates multiple INotifyPropertyChanged classes from a list of entities
+        /// </summary>
+        public string CreateINotifyClass(List<EntityStructure> entities, string usingheader, string implementations, 
+            string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", 
+            bool generateCSharpCodeFiles = true)
+        {
+            var results = new StringBuilder();
+            foreach (var entity in entities)
+            {
+                var result = CreateINotifyClass(entity, usingheader, implementations, 
+                    extracode, outputpath, nameSpacestring, generateCSharpCodeFiles);
+                results.AppendLine($"Generated {entity.EntityName}.cs");
+            }
+            return results.ToString();
         }
 
         /// <summary>
@@ -100,6 +135,114 @@ public :FIELDTYPE? :FIELDNAME
 
             return CreateClassFromTemplate(entity.EntityName, entity, fieldTemplate, usingHeader, 
                 implementations, notificationCode, outputPath, namespaceString, generateFiles);
+        }
+
+        /// <summary>
+        /// Creates multiple Entity classes from a list of entities
+        /// </summary>
+        public string CreateEntityClass(List<EntityStructure> entities, string usingHeader, string extraCode, 
+            string outputPath, string namespaceString = "TheTechIdea.ProjectClasses", bool generateFiles = true)
+        {
+            var results = new StringBuilder();
+            foreach (var entity in entities)
+            {
+                var result = CreateEntityClass(entity, usingHeader, extraCode, 
+                    outputPath, namespaceString, generateFiles);
+                results.AppendLine($"Generated {entity.EntityName}.cs");
+            }
+            return results.ToString();
+        }
+
+        /// <summary>
+        /// Creates POCO classes from datasource using entity names
+        /// </summary>
+        public string CreatePOCOClass(string datasourcename, string classname, List<string> entities, string usingheader, 
+            string implementations, string extracode, string outputpath, 
+            string nameSpacestring = "TheTechIdea.ProjectClasses", bool generateCSharpCodeFiles = true)
+        {
+            var results = new StringBuilder();
+            var ds = _dmeEditor.GetDataSource(datasourcename);
+            if (ds == null)
+            {
+                throw new ArgumentException($"Data source '{datasourcename}' not found");
+            }
+
+            foreach (var entityName in entities)
+            {
+                var entity = ds.GetEntityStructure(entityName, true);
+                if (entity != null)
+                {
+                    var result = CreatePOCOClass(classname, entity, usingheader, implementations, 
+                        extracode, outputpath, nameSpacestring, generateCSharpCodeFiles);
+                    results.AppendLine($"Generated {entityName}.cs");
+                }
+                else
+                {
+                    results.AppendLine($"Entity '{entityName}' not found in datasource '{datasourcename}'");
+                }
+            }
+            return results.ToString();
+        }
+
+        /// <summary>
+        /// Creates INotifyPropertyChanged classes from datasource using entity names
+        /// </summary>
+        public string CreateINotifyClass(string datasourcename, List<string> entities, string usingheader, string implementations, 
+            string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", 
+            bool generateCSharpCodeFiles = true)
+        {
+            var results = new StringBuilder();
+            var ds = _dmeEditor.GetDataSource(datasourcename);
+            if (ds == null)
+            {
+                throw new ArgumentException($"Data source '{datasourcename}' not found");
+            }
+
+            foreach (var entityName in entities)
+            {
+                var entity = ds.GetEntityStructure(entityName, true);
+                if (entity != null)
+                {
+                    var result = CreateINotifyClass(entity, usingheader, implementations, 
+                        extracode, outputpath, nameSpacestring, generateCSharpCodeFiles);
+                    results.AppendLine($"Generated {entityName}.cs");
+                }
+                else
+                {
+                    results.AppendLine($"Entity '{entityName}' not found in datasource '{datasourcename}'");
+                }
+            }
+            return results.ToString();
+        }
+
+        /// <summary>
+        /// Creates Entity classes from datasource using entity names
+        /// </summary>
+        public string CreateEntityClass(string datasourcename, List<string> entities, string usingHeader, string extraCode, 
+            string outputPath, string namespaceString = "TheTechIdea.ProjectClasses", bool generateFiles = true)
+        {
+            var results = new StringBuilder();
+            var ds = _dmeEditor.GetDataSource(datasourcename);
+            if (ds == null)
+            {
+                throw new ArgumentException($"Data source '{datasourcename}' not found");
+            }
+
+            foreach (var entityName in entities)
+            {
+                var entity = ds.GetEntityStructure(entityName, true);
+                if (entity != null)
+                {
+                    var result = CreateEntityClass(entity, usingHeader, extraCode, 
+                        outputPath, namespaceString, generateFiles);
+                    results.AppendLine($"Generated {entityName}.cs");
+                }
+                else
+                {
+                    results.AppendLine($"Entity '{entityName}' not found in datasource '{datasourcename}'");
+                }
+            }
+            return results.ToString();
         }
 
         /// <summary>

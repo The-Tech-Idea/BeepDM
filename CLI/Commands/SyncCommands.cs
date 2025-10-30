@@ -9,6 +9,7 @@ using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
+using static TheTechIdea.Beep.CLI.Infrastructure.CliHelper;
 
 namespace TheTechIdea.Beep.CLI.Commands
 {
@@ -74,7 +75,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                                 syncManager.AddSyncSchema(schema);
                                 syncManager.SaveSchemas();
                                 
-                                AnsiConsole.MarkupLine($"[green]✓[/] Sync schema created successfully");
+                                DisplaySuccess("Sync schema created successfully");
                                 AnsiConsole.MarkupLine($"[cyan]Schema ID:[/] {schemaId}");
                                 AnsiConsole.MarkupLine($"[cyan]Source:[/] {srcDs}.{srcEntity}");
                                 AnsiConsole.MarkupLine($"[cyan]Destination:[/] {destDs}.{destEntity}");
@@ -82,13 +83,13 @@ namespace TheTechIdea.Beep.CLI.Commands
                             }
                             else
                             {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Validation failed: {validation.Message}");
+                                DisplayError($"Validation failed: {validation.Message}");
                             }
                         });
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+                    DisplayError($"Error: {ex.Message}");
                 }
             }, schemaIdArg, srcDsArg, srcEntityArg, destDsArg, destEntityArg, bidirectionalOption, profileOption);
 
@@ -115,7 +116,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                     
                     if (schema == null)
                     {
-                        AnsiConsole.MarkupLine($"[red]✗[/] Schema '{schemaId}' not found");
+                        DisplayError($"Schema '{schemaId}' not found");
                         return;
                     }
                     
@@ -126,11 +127,11 @@ namespace TheTechIdea.Beep.CLI.Commands
                         
                         if (validation.Flag == Errors.Ok)
                         {
-                            AnsiConsole.MarkupLine("[green]✓[/] Schema is valid and ready to sync");
+                            DisplaySuccess("Schema is valid and ready to sync");
                         }
                         else
                         {
-                            AnsiConsole.MarkupLine($"[red]✗[/] Validation failed: {validation.Message}");
+                            DisplayError($"Validation failed: {validation.Message}");
                         }
                         return;
                     }
@@ -142,17 +143,17 @@ namespace TheTechIdea.Beep.CLI.Commands
                             
                             if (result.Flag == Errors.Ok)
                             {
-                                AnsiConsole.MarkupLine($"[green]✓[/] Synchronization completed successfully");
+                                DisplaySuccess("Synchronization completed successfully");
                             }
                             else
                             {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Synchronization failed: {result.Message}");
+                                DisplayError($"Synchronization failed: {result.Message}");
                             }
                         });
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+                    DisplayError($"Error: {ex.Message}");
                 }
             }, runSchemaArg, dryRunOption, profileOption);
 
@@ -174,7 +175,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                     
                     if (schemas == null || !schemas.Any())
                     {
-                        AnsiConsole.MarkupLine("[yellow]No sync schemas found[/]");
+                        DisplayWarning("No sync schemas found");
                         return;
                     }
                     
@@ -207,7 +208,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+                    DisplayError($"Error: {ex.Message}");
                 }
             }, profileOption);
 
@@ -232,7 +233,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                     
                     if (schema == null)
                     {
-                        AnsiConsole.MarkupLine($"[red]✗[/] Schema '{schemaId}' not found");
+                        DisplayError($"Schema '{schemaId}' not found");
                         return;
                     }
                     
@@ -254,7 +255,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+                    DisplayError($"Error: {ex.Message}");
                 }
             }, showSchemaArg, profileOption);
 
@@ -278,11 +279,11 @@ namespace TheTechIdea.Beep.CLI.Commands
                     syncManager.RemoveSyncSchema(schemaId);
                     syncManager.SaveSchemas();
                     
-                    AnsiConsole.MarkupLine($"[green]✓[/] Schema '{schemaId}' deleted successfully");
+                    DisplaySuccess($"Schema '{schemaId}' deleted successfully");
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+                    DisplayError($"Error: {ex.Message}");
                 }
             }, delSchemaArg, profileOption);
 

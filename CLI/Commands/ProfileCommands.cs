@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Spectre.Console;
 using TheTechIdea.Beep.CLI.Infrastructure;
+using static TheTechIdea.Beep.CLI.Infrastructure.CliHelper;
 
 namespace TheTechIdea.Beep.CLI.Commands
 {
@@ -86,7 +87,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 // Validate profile name
                 if (string.IsNullOrWhiteSpace(name) || name.Contains(Path.GetInvalidFileNameChars().First()))
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Invalid profile name. Use alphanumeric characters and hyphens only.");
+                    DisplayError("Invalid profile name. Use alphanumeric characters and hyphens only.");
                     return;
                 }
 
@@ -107,7 +108,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                         {
                             if (!ProfileManager.ProfileExists(from))
                             {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Source profile '{from}' does not exist");
+                                DisplayError($"Source profile '{from}' does not exist");
                                 return;
                             }
                             ctx.Status($"Copying from '{from}'...");
@@ -115,7 +116,7 @@ namespace TheTechIdea.Beep.CLI.Commands
 
                         if (ProfileManager.CreateProfile(name, from ?? string.Empty))
                         {
-                            AnsiConsole.MarkupLine($"[green]✓[/] Profile '{name}' created successfully");
+                            DisplaySuccess($"Profile '{name}' created successfully");
                             
                             var path = ProfileManager.GetProfilePath(name);
                             AnsiConsole.MarkupLine($"[dim]Location:[/] {path}");
@@ -139,7 +140,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                         }
                         else
                         {
-                            AnsiConsole.MarkupLine($"[red]✗[/] Failed to create profile '{name}'");
+                            DisplayError($"Failed to create profile '{name}'");
                         }
                     });
             }, nameArg, sourceOption, descriptionOption);
@@ -154,7 +155,7 @@ namespace TheTechIdea.Beep.CLI.Commands
             {
                 if (name == ProfileManager.DEFAULT_PROFILE)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Cannot delete the default profile");
+                    DisplayError("Cannot delete the default profile");
                     return;
                 }
 
@@ -179,11 +180,11 @@ namespace TheTechIdea.Beep.CLI.Commands
                 
                 if (ProfileManager.DeleteProfile(name))
                 {
-                    AnsiConsole.MarkupLine($"[green]✓[/] Profile '{name}' deleted successfully");
+                    DisplaySuccess($"Profile '{name}' deleted successfully");
                 }
                 else
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Failed to delete profile '{name}'");
+                    DisplayError($"Failed to delete profile '{name}'");
                 }
             }, deleteNameArg, forceOption);
 
@@ -195,7 +196,7 @@ namespace TheTechIdea.Beep.CLI.Commands
             {
                 if (!ProfileManager.ProfileExists(name))
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Profile '{name}' does not exist");
+                    DisplayError($"Profile '{name}' does not exist");
                     AnsiConsole.MarkupLine($"[dim]Available profiles:[/]");
                     foreach (var p in ProfileManager.ListProfiles())
                     {
@@ -296,19 +297,19 @@ namespace TheTechIdea.Beep.CLI.Commands
             {
                 if (oldName == ProfileManager.DEFAULT_PROFILE)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Cannot rename the default profile");
+                    DisplayError("Cannot rename the default profile");
                     return;
                 }
 
                 if (!ProfileManager.ProfileExists(oldName))
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Profile '{oldName}' does not exist");
+                    DisplayError($"Profile '{oldName}' does not exist");
                     return;
                 }
 
                 if (ProfileManager.ProfileExists(newName))
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Profile '{newName}' already exists");
+                    DisplayError($"Profile '{newName}' already exists");
                     return;
                 }
 
@@ -318,11 +319,11 @@ namespace TheTechIdea.Beep.CLI.Commands
                     var newPath = ProfileManager.GetProfilePath(newName);
                     
                     Directory.Move(oldPath, newPath);
-                    AnsiConsole.MarkupLine($"[green]✓[/] Profile renamed from '{oldName}' to '{newName}'");
+                    DisplaySuccess($"Profile renamed from '{oldName}' to '{newName}'");
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Failed to rename profile: {ex.Message}");
+                    DisplayError($"Failed to rename profile: {ex.Message}");
                 }
             }, oldNameArg, newNameArg);
 
@@ -336,7 +337,7 @@ namespace TheTechIdea.Beep.CLI.Commands
             {
                 if (!ProfileManager.ProfileExists(name))
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Profile '{name}' does not exist");
+                    DisplayError($"Profile '{name}' does not exist");
                     return;
                 }
 
@@ -356,12 +357,12 @@ namespace TheTechIdea.Beep.CLI.Commands
                             System.IO.Compression.ZipFile.CreateFromDirectory(profilePath, outputPath);
                         });
 
-                    AnsiConsole.MarkupLine($"[green]✓[/] Profile exported successfully");
+                    DisplaySuccess("Profile exported successfully");
                     AnsiConsole.MarkupLine($"[dim]Location:[/] {outputPath}");
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Export failed: {ex.Message}");
+                    DisplayError($"Export failed: {ex.Message}");
                 }
             }, exportNameArg, exportPathArg);
 
@@ -375,7 +376,7 @@ namespace TheTechIdea.Beep.CLI.Commands
             {
                 if (!File.Exists(zipPath))
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] File not found: {zipPath}");
+                    DisplayError($"File not found: {zipPath}");
                     return;
                 }
 
@@ -399,12 +400,12 @@ namespace TheTechIdea.Beep.CLI.Commands
                             System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, profilePath);
                         });
 
-                    AnsiConsole.MarkupLine($"[green]✓[/] Profile imported successfully as '{profileName}'");
+                    DisplaySuccess($"Profile imported successfully as '{profileName}'");
                     AnsiConsole.MarkupLine($"[dim]Location:[/] {profilePath}");
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Import failed: {ex.Message}");
+                    DisplayError($"Import failed: {ex.Message}");
                 }
             }, importPathArg, importNameArg);
 
@@ -428,7 +429,7 @@ namespace TheTechIdea.Beep.CLI.Commands
 
                 if (!emptyProfiles.Any())
                 {
-                    AnsiConsole.MarkupLine("[green]✓[/] No empty profiles found");
+                    DisplaySuccess("No empty profiles found");
                     return;
                 }
 
@@ -457,7 +458,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                         deleted++;
                 }
 
-                AnsiConsole.MarkupLine($"[green]✓[/] Deleted {deleted} profile(s)");
+                DisplaySuccess($"Deleted {deleted} profile(s)");
             }, dryRunOption);
 
             profileCommand.AddCommand(listCommand);

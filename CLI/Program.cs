@@ -44,7 +44,9 @@ namespace TheTechIdea.Beep.CLI
                 ETLCommands.Build(),
                 MappingCommands.Build(),
                 SyncCommands.Build(),
-                ImportCommands.Build()
+                ImportCommands.Build(),
+                ClassCreatorCommands.Build(),
+                DataManagementCommands.Build()
             };
 
             return rootCommand;

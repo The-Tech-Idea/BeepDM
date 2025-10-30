@@ -44,14 +44,8 @@ namespace TheTechIdea.Beep.CLI.Commands
                     AnsiConsole.Status()
                         .Start($"Executing query on '{datasource}'...", ctx =>
                         {
-                            var ds = editor.GetDataSource(datasource);
-                            if (ds == null)
-                            {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Data source '{datasource}' not found");
-                                return;
-                            }
-                            if (ds.ConnectionStatus != System.Data.ConnectionState.Open)
-                                editor.OpenDataSource(datasource);
+                            var ds = CliHelper.ValidateAndGetDataSource(editor, datasource);
+                            if (ds == null) return;
 
                             var result = ds.RunQuery(sql);
                             sw.Stop();
@@ -94,14 +88,8 @@ namespace TheTechIdea.Beep.CLI.Commands
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 try
                 {
-                    var ds = editor.GetDataSource(datasource);
-                    if (ds == null)
-                    {
-                        AnsiConsole.MarkupLine($"[red]✗[/] Data source '{datasource}' not found");
-                        return;
-                    }
-                    if (ds.ConnectionStatus != System.Data.ConnectionState.Open)
-                        editor.OpenDataSource(datasource);
+                    var ds = CliHelper.ValidateAndGetDataSource(editor, datasource);
+                    if (ds == null) return;
 
                     if (showSchema)
                     {

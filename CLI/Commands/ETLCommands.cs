@@ -52,20 +52,10 @@ namespace TheTechIdea.Beep.CLI.Commands
                     {
                         try
                         {
-                            var sourceDs = editor.GetDataSource(source);
-                            var destDs = editor.GetDataSource(dest);
+                            var sourceDs = CliHelper.ValidateAndGetDataSource(editor, source);
+                            var destDs = CliHelper.ValidateAndGetDataSource(editor, dest);
                             
-                            if (sourceDs == null)
-                            {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Source data source '{source}' not found");
-                                return;
-                            }
-                            
-                            if (destDs == null)
-                            {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Destination data source '{dest}' not found");
-                                return;
-                            }
+                            if (sourceDs == null || destDs == null) return;
                             
                             var etl = new ETLEditor(editor);
                             var progress = new Progress<PassedArgs>(args => 
@@ -117,20 +107,10 @@ namespace TheTechIdea.Beep.CLI.Commands
                     {
                         try
                         {
-                            var sourceDs = editor.GetDataSource(source);
-                            var destDs = editor.GetDataSource(dest);
+                            var sourceDs = CliHelper.ValidateAndGetDataSource(editor, source);
+                            var destDs = CliHelper.ValidateAndGetDataSource(editor, dest);
                             
-                            if (sourceDs == null)
-                            {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Source data source '{source}' not found");
-                                return;
-                            }
-                            
-                            if (destDs == null)
-                            {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Destination data source '{dest}' not found");
-                                return;
-                            }
+                            if (sourceDs == null || destDs == null) return;
                             
                             var etl = new ETLEditor(editor);
                             int recordCount = 0;
@@ -185,20 +165,10 @@ namespace TheTechIdea.Beep.CLI.Commands
                     {
                         try
                         {
-                            var sourceDs = editor.GetDataSource(source);
-                            var destDs = editor.GetDataSource(dest);
+                            var sourceDs = CliHelper.ValidateAndGetDataSource(editor, source);
+                            var destDs = CliHelper.ValidateAndGetDataSource(editor, dest);
                             
-                            if (sourceDs == null)
-                            {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Source data source '{source}' not found");
-                                return;
-                            }
-                            
-                            if (destDs == null)
-                            {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Destination data source '{dest}' not found");
-                                return;
-                            }
+                            if (sourceDs == null || destDs == null) return;
                             
                             var etl = new ETLEditor(editor);
                             var progress = new Progress<PassedArgs>(args => 
@@ -245,14 +215,10 @@ namespace TheTechIdea.Beep.CLI.Commands
                 
                 try
                 {
-                    var sourceDs = editor.GetDataSource(source);
-                    var destDs = editor.GetDataSource(dest);
+                    var sourceDs = CliHelper.ValidateAndGetDataSource(editor, source);
+                    var destDs = CliHelper.ValidateAndGetDataSource(editor, dest);
                     
-                    if (sourceDs == null || destDs == null)
-                    {
-                        AnsiConsole.MarkupLine($"[red]✗[/] Data source not found");
-                        return;
-                    }
+                    if (sourceDs == null || destDs == null) return;
                     
                     var validator = new ETLValidator(editor);
                     var result = validator.ValidateEntityConsistency(sourceDs, destDs, entity, entity);
@@ -304,14 +270,10 @@ namespace TheTechIdea.Beep.CLI.Commands
                 
                 try
                 {
-                    var sourceDs = editor.GetDataSource(source);
-                    var destDs = editor.GetDataSource(dest);
+                    var sourceDs = CliHelper.ValidateAndGetDataSource(editor, source);
+                    var destDs = CliHelper.ValidateAndGetDataSource(editor, dest);
                     
-                    if (sourceDs == null || destDs == null)
-                    {
-                        AnsiConsole.MarkupLine($"[red]✗[/] Data source not found");
-                        return;
-                    }
+                    if (sourceDs == null || destDs == null) return;
                     
                     var srcStructure = sourceDs.GetEntityStructure(entity, true);
                     var destStructure = destDs.GetEntityStructure(entity, true);

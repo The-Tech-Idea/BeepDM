@@ -7,6 +7,7 @@ using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Helpers.ConnectionHelpers;
 using TheTechIdea.Beep.DriversConfigurations;
 using System.Collections.Generic;
+using static TheTechIdea.Beep.CLI.Infrastructure.CliHelper;
 
 namespace TheTechIdea.Beep.CLI.Commands
 {
@@ -49,7 +50,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                     }
                     else
                     {
-                        AnsiConsole.MarkupLine($"[red]Invalid category:[/] {category}");
+                        DisplayError($"Invalid category: {category}");
                         return;
                     }
                 }
@@ -64,7 +65,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                     }
                     else
                     {
-                        AnsiConsole.MarkupLine($"[red]Invalid type:[/] {type}");
+                        DisplayError($"Invalid type: {type}");
                         return;
                     }
                 }
@@ -73,7 +74,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 
                 if (!driversList.Any())
                 {
-                    AnsiConsole.MarkupLine("[yellow]No drivers found matching the criteria[/]");
+                    DisplayWarning("No drivers found matching the criteria");
                     return;
                 }
                 
@@ -151,11 +152,11 @@ namespace TheTechIdea.Beep.CLI.Commands
                             editor.ConfigEditor.SaveConnectionDriversConfigValues();
                         });
                     
-                    AnsiConsole.MarkupLine($"[green]✓[/] Drivers scanned and registered from '{path}'");
+                    DisplaySuccess($"Drivers scanned and registered from '{path}'");
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Failed to scan drivers: {ex.Message}");
+                    DisplayError($"Failed to scan drivers: {ex.Message}");
                 }
             }, pathArg, profileOption);
 
@@ -174,7 +175,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 
                 if (driver == null)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Driver '{name}' not found");
+                    DisplayError($"Driver '{name}' not found");
                     return;
                 }
                 
@@ -219,7 +220,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 
                 if (connection == null)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Connection '{connectionName}' not found");
+                    DisplayError($"Connection '{connectionName}' not found");
                     return;
                 }
                 
@@ -235,9 +236,8 @@ namespace TheTechIdea.Beep.CLI.Commands
                 
                 if (!compatibleDrivers.Any())
                 {
-                    AnsiConsole.MarkupLine("[red]✗[/] No compatible drivers found!");
-                    AnsiConsole.MarkupLine("[yellow]Suggestion:[/] Install a driver for {0} ({1})", 
-                        connection.DatabaseType, connection.Category);
+                    DisplayError("No compatible drivers found!");
+                    DisplayWarning($"Suggestion: Install a driver for {connection.DatabaseType} ({connection.Category})");
                     return;
                 }
                 
@@ -310,7 +310,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 
                 if (!drivers.Any())
                 {
-                    AnsiConsole.MarkupLine($"[yellow]No drivers found for extension:[/] .{extension}");
+                    DisplayWarning($"No drivers found for extension: .{extension}");
                     return;
                 }
                 

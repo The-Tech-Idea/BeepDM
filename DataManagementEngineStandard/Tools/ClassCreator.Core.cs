@@ -209,6 +209,39 @@ namespace TheTechIdea.Beep.Tools
         }
 
         /// <summary>
+        /// Creates multiple POCO classes from a list of entities using the helper
+        /// </summary>
+        public string CreatePOCOClass(string classname, List<EntityStructure> entities, string usingheader, 
+            string implementations, string extracode, string outputpath, 
+            string nameSpacestring = "TheTechIdea.ProjectClasses", bool generateCSharpCodeFiles = true)
+        {
+            return _pocoHelper.CreatePOCOClass(classname, entities, usingheader, implementations, 
+                extracode, outputpath, nameSpacestring, generateCSharpCodeFiles);
+        }
+         /// <summary>
+        /// Creates multiple POCO classes from a list of entities using the helper
+        /// </summary>
+        public string CreatePOCOClass(string datasourcename,string classname, List<string> entities, string usingheader, 
+            string implementations, string extracode, string outputpath, 
+            string nameSpacestring = "TheTechIdea.ProjectClasses", bool generateCSharpCodeFiles = true)
+        {
+            var dataSource = DMEEditor.GetDataSource(datasourcename);
+            if (dataSource == null)
+                throw new ArgumentException($"Data source '{datasourcename}' not found", nameof(datasourcename));
+            
+            List<EntityStructure> entityStructures = new List<EntityStructure>();
+            foreach (var entity in entities)
+            {
+                var entityStructure = dataSource.GetEntityStructure(entity, true);
+                if (entityStructure == null)
+                    throw new ArgumentException($"Entity structure for '{entity}' not found", nameof(entity));
+                entityStructures.Add(entityStructure);
+            }
+            return _pocoHelper.CreatePOCOClass(classname, entityStructures, usingheader, implementations, 
+                extracode, outputpath, nameSpacestring, generateCSharpCodeFiles);
+        }
+
+        /// <summary>
         /// Creates a class with INotifyPropertyChanged implementation
         /// </summary>
         public string CreateINotifyClass(EntityStructure entity, string usingheader, string implementations, 
@@ -219,6 +252,35 @@ namespace TheTechIdea.Beep.Tools
                 outputpath, nameSpacestring, generateCSharpCodeFiles);
         }
 
+        /// <summary>
+        /// Creates multiple classes with INotifyPropertyChanged implementation from a list of entities
+        /// </summary>
+        public string CreateINotifyClass(List<EntityStructure> entities, string usingheader, string implementations, 
+            string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", 
+            bool generateCSharpCodeFiles = true)
+        {
+            return _pocoHelper.CreateINotifyClass(entities, usingheader, implementations, extracode, 
+                outputpath, nameSpacestring, generateCSharpCodeFiles);
+        }
+        public string CreateINotifyClass(string datasourcename,List<string> entities, string usingheader, string implementations, 
+            string extracode, string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", 
+            bool generateCSharpCodeFiles = true)
+        {
+            var dataSource = DMEEditor.GetDataSource(datasourcename);
+            if (dataSource == null)
+                throw new ArgumentException($"Data source '{datasourcename}' not found", nameof(datasourcename));
+            
+            List<EntityStructure> entityStructures = new List<EntityStructure>();
+            foreach (var entity in entities)
+            {
+                var entityStructure = dataSource.GetEntityStructure(entity, true);
+                if (entityStructure == null)
+                    throw new ArgumentException($"Entity structure for '{entity}' not found", nameof(entity));
+                entityStructures.Add(entityStructure);
+            }
+            return _pocoHelper.CreateINotifyClass(entityStructures, usingheader, implementations, extracode, 
+                outputpath, nameSpacestring, generateCSharpCodeFiles);
+        }
         /// <summary>
         /// Creates an Entity class that inherits from Entity base class (legacy interface method)
         /// </summary>
@@ -238,6 +300,35 @@ namespace TheTechIdea.Beep.Tools
             return _pocoHelper.CreateEntityClass(entity, usingHeader, extraCode, outputPath, 
                 namespaceString, generateFiles);
         }
+
+        /// <summary>
+        /// Creates multiple Entity classes from a list of entities that inherit from Entity base class
+        /// </summary>
+        public string CreateEntityClass(List<EntityStructure> entities, string usingHeader, string extraCode, 
+            string outputPath, string namespaceString = "TheTechIdea.ProjectClasses", bool generateFiles = true)
+        {
+            return _pocoHelper.CreateEntityClass(entities, usingHeader, extraCode, outputPath, 
+                namespaceString, generateFiles);
+        }
+        public string CreateEntityClass(string datasourcename,List<string> entities, string usingHeader, string extraCode, 
+            string outputPath, string namespaceString = "TheTechIdea.ProjectClasses", bool generateFiles = true)
+        {
+            var dataSource = DMEEditor.GetDataSource(datasourcename);
+            if (dataSource == null)
+                throw new ArgumentException($"Data source '{datasourcename}' not found", nameof(datasourcename));
+            
+            List<EntityStructure> entityStructures = new List<EntityStructure>();
+            foreach (var entity in entities)    
+            {
+                var entityStructure = dataSource.GetEntityStructure(entity, true);
+                if (entityStructure == null)
+                    throw new ArgumentException($"Entity structure for '{entity}' not found", nameof(entity));
+                entityStructures.Add(entityStructure);
+            }
+            return _pocoHelper.CreateEntityClass(entityStructures, usingHeader, extraCode, outputPath, 
+                namespaceString, generateFiles);
+        }   
+
 
         /// <summary>
         /// Creates a class from a template with field substitution

@@ -7,5 +7,7 @@
 			"path": "../BeepDataSources/DataSourcesPlugins/RDBMSDataSource"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"powershell.cwd": "BeepDM"
+	}
 }

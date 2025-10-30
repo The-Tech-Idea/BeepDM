@@ -42,15 +42,10 @@ namespace TheTechIdea.Beep.CLI.Commands
                     {
                         try
                         {
-                            var ds = editor.GetDataSource(name);
-                            if (ds == null)
-                            {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Data source '{name}' not found in configuration");
-                                return;
-                            }
+                            var ds = CliHelper.ValidateAndGetDataSource(editor, name);
+                            if (ds == null) return;
                             
-                            var state = ds.Openconnection();
-                            if (state == ConnectionState.Open)
+                            if (ds.ConnectionStatus == ConnectionState.Open)
                             {
                                 AnsiConsole.MarkupLine($"[green]✓[/] Connection successful");
                                 AnsiConsole.MarkupLine($"[dim]Type:[/] {ds.DatasourceType}");
@@ -59,7 +54,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                             }
                             else
                             {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Connection failed: {state}");
+                                AnsiConsole.MarkupLine($"[red]✗[/] Connection failed: {ds.ConnectionStatus}");
                             }
                         }
                         catch (Exception ex)

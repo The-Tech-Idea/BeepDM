@@ -102,12 +102,8 @@ namespace TheTechIdea.Beep.CLI.Commands
                                 }
                             }
                             
-                            var destDataSource = editor.GetDataSource(destDs);
-                            if (destDataSource == null)
-                            {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Failed to open destination data source");
-                                return;
-                            }
+                            var destDataSource = CliHelper.ValidateAndGetDataSource(editor, destDs);
+                            if (destDataSource == null) return;
                             
                             ctx.Status($"Reading source structure...");
                             
@@ -328,12 +324,8 @@ namespace TheTechIdea.Beep.CLI.Commands
                                 return;
                             }
                             
-                            var destDataSource = editor.GetDataSource(destDs);
-                            if (destDataSource == null)
-                            {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Destination data source not found");
-                                return;
-                            }
+                            var destDataSource = CliHelper.ValidateAndGetDataSource(editor, destDs);
+                            if (destDataSource == null) return;
                             
                             // Get structures
                             var sourceEntities = sourceDs.GetEntitesList();

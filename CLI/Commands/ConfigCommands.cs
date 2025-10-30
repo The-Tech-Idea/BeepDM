@@ -9,6 +9,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Helpers.ConnectionHelpers;
 using System.Collections.Generic;
+using static TheTechIdea.Beep.CLI.Infrastructure.CliHelper;
 
 namespace TheTechIdea.Beep.CLI.Commands
 {
@@ -97,7 +98,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 var connectionName = AnsiConsole.Ask<string>("Enter [green]connection name[/]:");
                 if (editor.ConfigEditor.DataConnectionExist(connectionName))
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Connection '{connectionName}' already exists");
+                    DisplayError($"Connection '{connectionName}' already exists");
                     return;
                 }
                 var category = AnsiConsole.Prompt(
@@ -107,7 +108,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 var availableDrivers = ConnectionDriverLinkingHelper.GetDriversForCategory(category, editor.ConfigEditor);
                 if (!availableDrivers.Any())
                 {
-                    AnsiConsole.MarkupLine($"[yellow]⚠[/] No drivers available for category {category}. Please install drivers first.");
+                    DisplayWarning($"No drivers available for category {category}. Please install drivers first.");
                     return;
                 }
                 var driverOptions = availableDrivers.Select(d => d.DatasourceType).Distinct().OrderBy(d => d.ToString()).ToList();
@@ -192,11 +193,11 @@ namespace TheTechIdea.Beep.CLI.Commands
                 if (editor.ConfigEditor.AddDataConnection(conn))
                 {
                     editor.ConfigEditor.SaveDataconnectionsValues();
-                    AnsiConsole.MarkupLine($"[green]✓[/] Connection '{connectionName}' added successfully");
+                    DisplaySuccess($"Connection '{connectionName}' added successfully");
                 }
                 else
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Failed to add connection");
+                    DisplayError("Failed to add connection");
                 }
             }, profileOption);
 
@@ -212,7 +213,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 var conn = editor.ConfigEditor.DataConnections.FirstOrDefault(c => c.ConnectionName == name);
                 if (conn == null)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Connection '{name}' not found");
+                    DisplayError($"Connection '{name}' not found");
                     return;
                 }
                 AnsiConsole.MarkupLine($"[bold blue]Update Connection: {name}[/]\n");
@@ -240,7 +241,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                     }
                 }
                 editor.ConfigEditor.SaveDataconnectionsValues();
-                AnsiConsole.MarkupLine($"[green]✓[/] Connection '{name}' updated");
+                DisplaySuccess($"Connection '{name}' updated");
             }, updateNameArg, profileOption);
 
             // Delete connection with confirmation
@@ -256,7 +257,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 var editor = services.GetEditor();
                 if (!editor.ConfigEditor.DataConnectionExist(name))
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Connection '{name}' not found");
+                    DisplayError($"Connection '{name}' not found");
                     return;
                 }
                 if (!force && !AnsiConsole.Confirm($"Are you sure you want to delete connection '{name}'?"))
@@ -267,11 +268,11 @@ namespace TheTechIdea.Beep.CLI.Commands
                 if (editor.ConfigEditor.RemoveDataConnection(name))
                 {
                     editor.ConfigEditor.SaveDataconnectionsValues();
-                    AnsiConsole.MarkupLine($"[green]✓[/] Connection '{name}' deleted");
+                    DisplaySuccess($"Connection '{name}' deleted");
                 }
                 else
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Failed to delete connection");
+                    DisplayError("Failed to delete connection");
                 }
             }, deleteNameArg, forceOption, profileOption);
 
@@ -334,11 +335,11 @@ namespace TheTechIdea.Beep.CLI.Commands
                         ctx.Status("Checking assemblies...");
                         var assemblies = editor.assemblyHandler.Assemblies;
                     });
-                    AnsiConsole.MarkupLine("[green]✓[/] Configuration is valid");
+                    DisplaySuccess("Configuration is valid");
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Configuration validation failed: {ex.Message}");
+                    DisplayError($"Configuration validation failed: {ex.Message}");
                 }
             }, profileOption);
 

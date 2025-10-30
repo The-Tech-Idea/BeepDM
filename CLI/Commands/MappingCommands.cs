@@ -8,6 +8,7 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Workflow.Mapping;
+using static TheTechIdea.Beep.CLI.Infrastructure.CliHelper;
 
 namespace TheTechIdea.Beep.CLI.Commands
 {
@@ -59,7 +60,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                             {
                                 var mapping = result.Item2;
                                 
-                                AnsiConsole.MarkupLine($"[green]✓[/] Mapping created successfully");
+                                DisplaySuccess("Mapping created successfully");
                                 AnsiConsole.MarkupLine($"[cyan]Mapping Name:[/] {mapping.MappingName}");
                                 
                                 if (mapping.MappedEntities != null && mapping.MappedEntities.Any())
@@ -101,13 +102,13 @@ namespace TheTechIdea.Beep.CLI.Commands
                             }
                             else
                             {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Failed: {result.Item1.Message}");
+                                DisplayError($"Failed: {result.Item1.Message}");
                             }
                         });
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+                    DisplayError($"Error: {ex.Message}");
                 }
             }, srcDsArg, srcEntityArg, destDsArg, destEntityArg, autoMapOption, profileOption);
 
@@ -131,7 +132,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                     
                     if (!System.IO.Directory.Exists(mappingPath))
                     {
-                        AnsiConsole.MarkupLine("[yellow]No mappings found - mapping directory doesn't exist[/]");
+                        DisplayWarning("No mappings found - mapping directory doesn't exist");
                         return;
                     }
                     
@@ -139,7 +140,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                     
                     if (!mappingFiles.Any())
                     {
-                        AnsiConsole.MarkupLine("[yellow]No mapping files found[/]");
+                        DisplayWarning("No mapping files found");
                         return;
                     }
                     
@@ -166,7 +167,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+                    DisplayError($"Error: {ex.Message}");
                 }
             }, datasourceOption, profileOption);
 
@@ -192,7 +193,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                     
                     if (mapping == null || string.IsNullOrEmpty(mapping.EntityName))
                     {
-                        AnsiConsole.MarkupLine($"[red]✗[/] Mapping not found for {entityName} in {dsName}");
+                        DisplayError($"Mapping not found for {entityName} in {dsName}");
                         return;
                     }
                     
@@ -241,7 +242,7 @@ namespace TheTechIdea.Beep.CLI.Commands
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+                    DisplayError($"Error: {ex.Message}");
                 }
             }, entityNameArg, dsNameArg, profileOption);
 
@@ -268,16 +269,16 @@ namespace TheTechIdea.Beep.CLI.Commands
                     
                     if (!System.IO.File.Exists(filePath))
                     {
-                        AnsiConsole.MarkupLine($"[red]✗[/] Mapping file not found: {filePath}");
+                        DisplayError($"Mapping file not found: {filePath}");
                         return;
                     }
                     
                     System.IO.File.Delete(filePath);
-                    AnsiConsole.MarkupLine($"[green]✓[/] Mapping deleted: {entityName} from {dsName}");
+                    DisplaySuccess($"Mapping deleted: {entityName} from {dsName}");
                 }
                 catch (Exception ex)
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+                    DisplayError($"Error: {ex.Message}");
                 }
             }, delEntityArg, delDsArg, profileOption);
 

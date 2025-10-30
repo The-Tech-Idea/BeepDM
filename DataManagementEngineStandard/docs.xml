@@ -18478,9 +18478,24 @@
             Creates a POCO class using the helper
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreatePOCOClass(System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates multiple POCO classes from a list of entities using the helper
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreatePOCOClass(System.String,System.String,System.Collections.Generic.List{System.String},System.String,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates multiple POCO classes from a list of entities using the helper
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateINotifyClass(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.String,System.String,System.String,System.Boolean)">
             <summary>
             Creates a class with INotifyPropertyChanged implementation
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateINotifyClass(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates multiple classes with INotifyPropertyChanged implementation from a list of entities
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreatEntityClass(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.String,System.String,System.Boolean)">
@@ -18491,6 +18506,11 @@
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityClass(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.String,System.String,System.Boolean)">
             <summary>
             Creates an Entity class that inherits from Entity base class (modern method)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityClass(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates multiple Entity classes from a list of entities that inherit from Entity base class
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateClassFromTemplate(System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.String,System.String,System.String,System.String,System.Boolean)">
@@ -18959,14 +18979,44 @@
             Creates a simple POCO class with basic properties
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoClassGeneratorHelper.CreatePOCOClass(System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates multiple POCO classes from a list of entities
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoClassGeneratorHelper.CreateINotifyClass(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.String,System.String,System.String,System.Boolean)">
             <summary>
             Creates a class that implements INotifyPropertyChanged
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoClassGeneratorHelper.CreateINotifyClass(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates multiple INotifyPropertyChanged classes from a list of entities
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoClassGeneratorHelper.CreateEntityClass(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.String,System.String,System.Boolean)">
             <summary>
             Creates an Entity class that inherits from Entity base class
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoClassGeneratorHelper.CreateEntityClass(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates multiple Entity classes from a list of entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoClassGeneratorHelper.CreatePOCOClass(System.String,System.String,System.Collections.Generic.List{System.String},System.String,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates POCO classes from datasource using entity names
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoClassGeneratorHelper.CreateINotifyClass(System.String,System.Collections.Generic.List{System.String},System.String,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates INotifyPropertyChanged classes from datasource using entity names
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoClassGeneratorHelper.CreateEntityClass(System.String,System.Collections.Generic.List{System.String},System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates Entity classes from datasource using entity names
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoClassGeneratorHelper.CreateClassFromTemplate(System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.String,System.String,System.String,System.String,System.Boolean)">
