@@ -16,34 +16,340 @@ using TheTechIdea.Beep.DriversConfigurations;
 namespace TheTechIdea.Beep.Tools.PluginSystem
 {
     /// <summary>
+    /// Event arguments for assembly resolution events
+    /// </summary>
+    public class AssemblyResolvedEventArgs : EventArgs
+    {
+        public AssemblyName AssemblyName { get; set; }
+        public Assembly ResolvedAssembly { get; set; }
+        public string ResolvedFrom { get; set; }
+        public string ContextId { get; set; }
+    }
+
+    /// <summary>
     /// Shared Context Load Context for true unloading while maintaining shared visibility
+    /// Uses proper dependency resolution to share assemblies across contexts
     /// </summary>
     public class SharedContextLoadContext : AssemblyLoadContext
     {
-    /// <summary>Unique identifier for this load context (usually the nugget/plugin ID).</summary>
-    public string ContextId { get; }
-    /// <summary>Original source path (directory or dll) used for loading.</summary>
-    public string SourcePath { get; }
-    /// <summary>UTC timestamp when the context was created.</summary>
-    public DateTime LoadedAt { get; }
-    /// <summary>Flag indicating this context participates in shared resolution policy.</summary>
-    public bool IsSharedContext { get; }
+        /// <summary>Unique identifier for this load context (usually the nugget/plugin ID).</summary>
+        public string ContextId { get; }
+        /// <summary>Original source path (directory or dll) used for loading.</summary>
+        public string SourcePath { get; }
+        /// <summary>UTC timestamp when the context was created.</summary>
+        public DateTime LoadedAt { get; }
+        /// <summary>Flag indicating this context participates in shared resolution policy.</summary>
+        public bool IsSharedContext { get; }
+        
+        private readonly AssemblyDependencyResolver _resolver;
+        private readonly SharedContextManager _manager;
+        private readonly ConcurrentDictionary<string, Assembly> _resolvedDependencies = new();
 
-    /// <summary>Creates a new collectible load context for shared plugin loading.</summary>
-    public SharedContextLoadContext(string contextId, string sourcePath, bool isCollectible = true) 
+        /// <summary>Raised when an assembly is successfully resolved by this context.</summary>
+        public event EventHandler<AssemblyResolvedEventArgs> AssemblyResolved;
+
+        /// <summary>Creates a new collectible load context for shared plugin loading.</summary>
+        public SharedContextLoadContext(string contextId, string sourcePath, SharedContextManager manager, bool isCollectible = true) 
             : base(contextId, isCollectible)
         {
             ContextId = contextId;
             SourcePath = sourcePath;
             LoadedAt = DateTime.UtcNow;
             IsSharedContext = true;
+            _manager = manager;
+            
+            // Initialize dependency resolver for the main assembly path
+            // CRITICAL: Handle both single DLL files AND directories with .deps.json
+            if (!string.IsNullOrEmpty(sourcePath))
+            {
+                if (File.Exists(sourcePath) && sourcePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Single DLL file - use it directly
+                    _resolver = new AssemblyDependencyResolver(sourcePath);
+                }
+                else if (Directory.Exists(sourcePath))
+                {
+                    // Directory - look for main DLL with .deps.json
+                    var mainDll = FindMainDllWithDepsJson(sourcePath);
+                    if (!string.IsNullOrEmpty(mainDll) && File.Exists(mainDll))
+                    {
+                        _resolver = new AssemblyDependencyResolver(mainDll);
+                    }
+                }
+            }
+            
+            // CRITICAL: Hook into the Resolving event for plugin-and-play assembly resolution
+            // This fires BEFORE Load() is called, allowing us to intercept and resolve from other nuggets
+            this.Resolving += OnResolving;
+        }
+        
+        /// <summary>
+        /// Handles the Resolving event for cross-plugin assembly sharing.
+        /// This allows plugins to use assemblies loaded by other plugins.
+        /// Fires BEFORE the Load() override is called.
+        /// </summary>
+        private Assembly OnResolving(AssemblyLoadContext context, AssemblyName assemblyName)
+        {
+            // Check if another plugin has already loaded this assembly
+            if (_manager != null)
+            {
+                var sharedAssembly = _manager.GetSharedAssemblies()
+                    .FirstOrDefault(a => string.Equals(a.GetName().Name, assemblyName.Name, StringComparison.OrdinalIgnoreCase));
+                
+                if (sharedAssembly != null)
+                {
+                    // Fire event to notify cross-plugin resolution
+                    AssemblyResolved?.Invoke(this, new AssemblyResolvedEventArgs
+                    {
+                        AssemblyName = assemblyName,
+                        ResolvedAssembly = sharedAssembly,
+                        ResolvedFrom = "CrossPlugin-SharedContext",
+                        ContextId = ContextId
+                    });
+                    
+                    return sharedAssembly;
+                }
+            }
+            
+            // Return null to let Load() override handle it
+            return null;
         }
 
-    /// <summary>Overrides load; returns null to defer to default context for framework/system assemblies.</summary>
+        /// <summary>
+        /// Finds the main DLL file in a directory that has a corresponding .deps.json file
+        /// </summary>
+        private string FindMainDllWithDepsJson(string directoryPath)
+        {
+            try
+            {
+                // Look for any DLL that has a .deps.json file
+                var dllFiles = Directory.GetFiles(directoryPath, "*.dll", SearchOption.TopDirectoryOnly);
+                
+                foreach (var dllFile in dllFiles)
+                {
+                    var depsJsonFile = Path.ChangeExtension(dllFile, ".deps.json");
+                    if (File.Exists(depsJsonFile))
+                    {
+                        return dllFile;
+                    }
+                }
+
+                // If no .deps.json found, check subdirectories (framework-specific folders)
+                var frameworks = new[] { "net8.0", "net9.0", "net8.0-windows", "net9.0-windows" };
+                foreach (var framework in frameworks)
+                {
+                    var frameworkPath = Path.Combine(directoryPath, framework);
+                    if (Directory.Exists(frameworkPath))
+                    {
+                        dllFiles = Directory.GetFiles(frameworkPath, "*.dll", SearchOption.TopDirectoryOnly);
+                        foreach (var dllFile in dllFiles)
+                        {
+                            var depsJsonFile = Path.ChangeExtension(dllFile, ".deps.json");
+                            if (File.Exists(depsJsonFile))
+                            {
+                                return dllFile;
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Failed to find main DLL
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Official Microsoft plugin pattern from:
+        /// https://learn.microsoft.com/en-us/dotnet/core/tutorials/creating-app-with-plugin-support
+        /// 
+        /// Uses AssemblyDependencyResolver to resolve plugin dependencies from .deps.json
+        /// Returns null to allow default context to provide shared assemblies
+        /// </summary>
         protected override Assembly Load(AssemblyName assemblyName)
         {
-            // Allow the default context to handle system assemblies for better sharing
+            // Use the dependency resolver to find the assembly from .deps.json
+            string assemblyPath = _resolver?.ResolveAssemblyToPath(assemblyName);
+            if (assemblyPath != null)
+            {
+                return LoadFromAssemblyPath(assemblyPath);
+            }
+
+            // Return null - allows the runtime to use the default load context
+            // This provides shared assemblies from the host application
             return null;
+        }
+
+        /// <summary>
+        /// Tries to load assembly from probing paths (plugin folder, bin, runtime folders)
+        /// </summary>
+        private Assembly TryLoadFromProbingPaths(AssemblyName assemblyName)
+        {
+            try
+            {
+                var baseDir = File.Exists(SourcePath) 
+                    ? Path.GetDirectoryName(SourcePath) 
+                    : SourcePath;
+
+                if (string.IsNullOrEmpty(baseDir) || !Directory.Exists(baseDir))
+                    return null;
+
+                var dllName = $"{assemblyName.Name}.dll";
+                
+                // Probing paths to check
+                var probingPaths = new List<string>
+                {
+                    Path.Combine(baseDir, dllName),                           // Same folder as plugin
+                    Path.Combine(baseDir, "bin", dllName),                   // bin subfolder
+                    Path.Combine(baseDir, "runtimes", "win", "lib", "net8.0", dllName),  // Runtime folder
+                    Path.Combine(baseDir, "runtimes", "win", "lib", "net9.0", dllName),  // Runtime folder
+                    Path.Combine(baseDir, "lib", "net8.0", dllName),         // lib folder
+                    Path.Combine(baseDir, "lib", "net9.0", dllName),         // lib folder
+                };
+
+                // Also check parent folders (for NuGet structure)
+                var parentDir = Directory.GetParent(baseDir)?.FullName;
+                if (!string.IsNullOrEmpty(parentDir))
+                {
+                    probingPaths.Add(Path.Combine(parentDir, dllName));
+                    probingPaths.Add(Path.Combine(parentDir, "lib", "net8.0", dllName));
+                    probingPaths.Add(Path.Combine(parentDir, "lib", "net9.0", dllName));
+                }
+
+                foreach (var path in probingPaths)
+                {
+                    if (File.Exists(path))
+                    {
+                        try
+                        {
+                            return LoadFromAssemblyPath(path);
+                        }
+                        catch
+                        {
+                            // Try next path
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Probing failed
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Tries to load assembly from NuGet package cache
+        /// </summary>
+        private Assembly TryLoadFromNuGetCache(AssemblyName assemblyName)
+        {
+            try
+            {
+                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                var nugetCachePath = Path.Combine(userProfile, ".nuget", "packages");
+
+                if (!Directory.Exists(nugetCachePath))
+                    return null;
+
+                // NuGet cache structure: {package-name}/{version}/lib/{framework}/{dll}
+                var packageFolder = Path.Combine(nugetCachePath, assemblyName.Name.ToLowerInvariant());
+                
+                if (!Directory.Exists(packageFolder))
+                    return null;
+
+                // Try to find the assembly in any version folder
+                var versionFolders = Directory.GetDirectories(packageFolder);
+                var frameworks = new[] { "net8.0", "net9.0", "net8.0-windows", "net9.0-windows", "netstandard2.1", "netstandard2.0" };
+                
+                foreach (var versionFolder in versionFolders.OrderByDescending(f => f))
+                {
+                    var libFolder = Path.Combine(versionFolder, "lib");
+                    if (!Directory.Exists(libFolder))
+                        continue;
+
+                    foreach (var framework in frameworks)
+                    {
+                        var frameworkPath = Path.Combine(libFolder, framework, $"{assemblyName.Name}.dll");
+                        if (File.Exists(frameworkPath))
+                        {
+                            try
+                            {
+                                return LoadFromAssemblyPath(frameworkPath);
+                            }
+                            catch
+                            {
+                                // Try next framework
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // NuGet cache resolution failed
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Resolves unmanaged DLL dependencies
+        /// </summary>
+        protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
+        {
+            if (_resolver != null)
+            {
+                string libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
+                if (!string.IsNullOrEmpty(libraryPath) && File.Exists(libraryPath))
+                {
+                    return LoadUnmanagedDllFromPath(libraryPath);
+                }
+            }
+            
+            return base.LoadUnmanagedDll(unmanagedDllName);
+        }
+
+        /// <summary>
+        /// Checks if assembly name matches considering version flexibility
+        /// </summary>
+        private bool AssemblyNamesMatch(AssemblyName a, AssemblyName b)
+        {
+            if (!string.Equals(a.Name, b.Name, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // For shared context, we allow version flexibility to maximize sharing
+            // Public key token must match if specified
+            if (b.GetPublicKeyToken() != null && a.GetPublicKeyToken() != null)
+            {
+                var aToken = a.GetPublicKeyToken();
+                var bToken = b.GetPublicKeyToken();
+                if (aToken.Length != bToken.Length)
+                    return false;
+                for (int i = 0; i < aToken.Length; i++)
+                {
+                    if (aToken[i] != bToken[i])
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Determines if an assembly is a system assembly
+        /// </summary>
+        private bool IsSystemAssembly(AssemblyName assemblyName)
+        {
+            var name = assemblyName.Name;
+            return name != null && (
+                name.StartsWith("System", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("Microsoft", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("netstandard", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("mscorlib", StringComparison.OrdinalIgnoreCase)
+            );
         }
     }
 
@@ -213,6 +519,103 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
 
             // Note: Plugin managers don't have direct events - we'll manage our own events
             _logger?.LogWithContext("SharedContextManager initialized with integrated plugin system and shared discovery storage", null);
+            
+            // CRITICAL: Automatically register all assemblies that are already loaded in AppDomain
+            // This prevents conflicts when NuGet packages are both PackageReferences and dynamically loaded
+            RegisterPreLoadedAssemblies();
+        }
+        
+        /// <summary>
+        /// Automatically registers assemblies that are already loaded as PackageReferences or project references.
+        /// This prevents the plugin system from trying to reload them and causing type conflicts.
+        /// Called automatically during SharedContextManager construction.
+        /// </summary>
+        private void RegisterPreLoadedAssemblies()
+        {
+            try
+            {
+                // Get all currently loaded assemblies in the AppDomain
+                var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+                    .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+                    .ToList();
+                
+                if (loadedAssemblies.Any())
+                {
+                    // Register them with the shared context WITHOUT calling CacheAssemblyTypesAsync
+                    // This avoids ReflectionTypeLoadExceptions during initialization
+                    foreach (var assembly in loadedAssemblies)
+                    {
+                        try
+                        {
+                            RegisterExistingAssemblyQuick(assembly, "PreLoaded-AppDomain");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogWithContext($"Failed to register assembly {assembly.GetName().Name}: {ex.Message}", null);
+                            // Continue with other assemblies
+                        }
+                    }
+                    
+                    _logger?.LogWithContext($"Auto-registered {loadedAssemblies.Count} pre-loaded assemblies from AppDomain", null);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWithContext("Failed to auto-register pre-loaded assemblies during initialization", ex);
+                // Don't throw - this is a best-effort operation
+            }
+        }
+        
+        /// <summary>
+        /// Quick registration without type caching to avoid ReflectionTypeLoadException during initialization
+        /// </summary>
+        private void RegisterExistingAssemblyQuick(Assembly assembly, string source)
+        {
+            if (assembly == null || assembly.IsDynamic)
+                return;
+
+            lock (_sharedAssemblyList)
+            {
+                if (_sharedAssemblyList.Contains(assembly))
+                {
+                    return; // Already registered
+                }
+
+                // Add to shared assembly list
+                _sharedAssemblyList.Add(assembly);
+                
+                // Create assembly representation
+                var nuggetId = $"Existing_{assembly.GetName().Name}_{DateTime.UtcNow.Ticks}";
+                var assemblyRep = new assemblies_rep(assembly, nuggetId, assembly.Location ?? assembly.FullName, FolderFileTypes.Builtin);
+                _sharedAssemblyReps.Add(assemblyRep);
+                
+                // Add to nugget tracking (as a pseudo-nugget)
+                if (!_nuggetAssemblies.ContainsKey(nuggetId))
+                {
+                    _nuggetAssemblies[nuggetId] = new List<Assembly> { assembly };
+                    
+                    // Create a nugget info for tracking
+                    var nuggetInfo = new NuggetInfo
+                    {
+                        Id = nuggetId,
+                        Name = assembly.GetName().Name,
+                        Version = assembly.GetName().Version?.ToString() ?? "1.0.0",
+                        LoadedAt = DateTime.UtcNow,
+                        LoadedAssemblies = new List<Assembly> { assembly },
+                        DiscoveredPlugins = new List<PluginInfo>(),
+                        SourcePath = source,
+                        IsSharedContext = true,
+                        IsActive = true,
+                        Metadata = new Dictionary<string, object>
+                        {
+                            ["RegistrationType"] = "ExistingAssembly",
+                            ["Source"] = source
+                        }
+                    };
+                    
+                    _sharedNuggets[nuggetId] = nuggetInfo;
+                }
+            }
         }
         #endregion
 
@@ -383,19 +786,35 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 if (_useSingleSharedContext)
                 {
                     // Create (once) a non-collectible global context to maximize sharing
-                    _globalSharedContext ??= new SharedContextLoadContext("GlobalSharedContext", "__GLOBAL__", isCollectible: false);
+                    _globalSharedContext ??= new SharedContextLoadContext("GlobalSharedContext", "__GLOBAL__", this, isCollectible: false);
                     loadContext = _globalSharedContext;
                 }
                 else
                 {
                     // Per-nugget collectible context for isolation & unload
-                    loadContext = new SharedContextLoadContext(nuggetId, nuggetPath, isCollectible: true);
+                    loadContext = new SharedContextLoadContext(nuggetId, nuggetPath, this, isCollectible: true);
                 }
 
                 // Load assemblies based on path type
                 if (Directory.Exists(nuggetPath))
                 {
-                    var dllFiles = Directory.GetFiles(nuggetPath, "*.dll", SearchOption.AllDirectories);
+                    // CRITICAL: For multi-targeted projects, prefer framework-specific subdirectory
+                    var targetFramework = GetCurrentTargetFramework();
+                    var frameworkSpecificPath = Path.Combine(nuggetPath, targetFramework);
+                    
+                    string[] dllFiles;
+                    if (Directory.Exists(frameworkSpecificPath))
+                    {
+                        // Load only from the matching framework folder (no recursion to avoid loading other frameworks)
+                        _logger?.LogWithContext($"Loading from framework-specific path: {frameworkSpecificPath}", null);
+                        dllFiles = Directory.GetFiles(frameworkSpecificPath, "*.dll", SearchOption.TopDirectoryOnly);
+                    }
+                    else
+                    {
+                        // Fallback: scan all subdirectories but filter by compatibility
+                        dllFiles = Directory.GetFiles(nuggetPath, "*.dll", SearchOption.AllDirectories);
+                    }
+                    
                     foreach (var dllFile in dllFiles)
                     {
                         var assembly = await LoadAssemblyInContextAsync(loadContext, dllFile);
@@ -487,31 +906,95 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         }
 
         /// <summary>
-        /// Loads a single assembly in the shared context with collectible context
+        /// Loads a single assembly in the shared context with collectible context.
+        /// Uses LoadFromAssemblyPath for proper reference resolution to default AppDomain assemblies.
         /// </summary>
         private async Task<Assembly> LoadAssemblyInContextAsync(SharedContextLoadContext loadContext, string assemblyPath)
         {
             try
             {
-                // Load assembly in the collectible context
+                // CRITICAL: Check if assembly already exists in AppDomain
+                var assemblyName = AssemblyName.GetAssemblyName(assemblyPath);
+                var existingAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(a => !a.IsDynamic && AssemblyNamesMatch(a.GetName(), assemblyName));
+
+                if (existingAssembly != null)
+                {
+                    _logger?.LogWithContext($"Assembly already loaded in AppDomain, reusing: {assemblyName.Name}", null);
+                    // Register assembly in shared context
+                    _sharedNuggets.TryGetValue(existingAssembly.GetName().Name, out var existingInfo);
+                    if (existingInfo == null)
+                    {
+                        RegisterExistingAssembly(existingAssembly, "AppDomain");
+                    }
+                    return existingAssembly;
+                }
+
+                // Check if already loaded in any shared context
+                var sharedAssembly = GetSharedAssemblies()
+                    .FirstOrDefault(a => AssemblyNamesMatch(a.GetName(), assemblyName));
+                
+                if (sharedAssembly != null)
+                {
+                    _logger?.LogWithContext($"Assembly already loaded in shared context, reusing: {assemblyName.Name}", null);
+                    return sharedAssembly;
+                }
+
+                // CRITICAL: Load using LoadFromAssemblyPath for proper reference resolution
                 Assembly assembly = await Task.Run(() =>
                 {
-                    using (var stream = File.OpenRead(assemblyPath))
+                    try 
                     {
-                        return loadContext.LoadFromStream(stream);
+                        // This allows proper reference resolution from default AppDomain
+                        return loadContext.LoadFromAssemblyPath(assemblyPath);
+                    }
+                    catch (BadImageFormatException)
+                    {
+                        _logger?.LogWithContext($"Framework mismatch, checking other target frameworks: {assemblyPath}", null);
+                        
+                        // Try alternate framework-specific paths
+                        var dir = Path.GetDirectoryName(assemblyPath);
+                        var fileName = Path.GetFileName(assemblyPath);
+                        
+                        var frameworks = new[] { "net8.0", "net8.0-windows", "net9.0", "net9.0-windows" };
+                        foreach (var fw in frameworks)
+                        {
+                            var altPath = Path.Combine(dir, fw, fileName);
+                            if (File.Exists(altPath) && IsCompatibleWithCurrentRuntime(altPath))
+                            {
+                                _logger?.LogWithContext($"Trying alternate framework path: {altPath}", null);
+                                return loadContext.LoadFromAssemblyPath(altPath);
+                            }
+                        }
+                        throw; // Re-throw if no compatible version found
                     }
                 });
 
                 if (assembly != null)
                 {
-                    _logger?.LogWithContext($"Assembly loaded in shared context: {assembly.FullName}", null);
+                    _logger?.LogWithContext($"Successfully loaded assembly with proper references: {assembly.FullName}", null);
                 }
 
                 return assembly;
             }
+            catch (FileNotFoundException fnfEx)
+            {
+                _logger?.LogWithContext($"Assembly file not found or wrong framework version: {assemblyPath} - {fnfEx.Message}", fnfEx);
+                return null;
+            }
+            catch (BadImageFormatException bifEx)
+            {
+                _logger?.LogWithContext($"Bad image format (wrong framework/architecture): {assemblyPath} - {bifEx.Message}", bifEx);
+                return null;
+            }
             catch (Exception ex)
             {
-                _logger?.LogWithContext($"Failed to load assembly in shared context: {assemblyPath}", ex);
+                _logger?.LogWithContext($"Failed to load assembly: {assemblyPath}", ex);
+                
+                if (ex is FileNotFoundException || ex is BadImageFormatException)
+                {
+                    _logger?.LogWithContext($"Assembly or its dependencies not found, or framework mismatch: {ex.Message}", null);
+                }
                 return null;
             }
         }
@@ -633,30 +1116,62 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                     {
                         try
                         {
-                            var types = assembly.GetTypes();
-                            foreach (var type in types)
+                            Type[] types = null;
+                            
+                            try
                             {
-                                if (!string.IsNullOrEmpty(type.FullName))
+                                types = assembly.GetTypes();
+                            }
+                            catch (ReflectionTypeLoadException rtle)
+                            {
+                                // Some types failed to load, but we can still use the ones that loaded successfully
+                                types = rtle.Types.Where(t => t != null).ToArray();
+                                
+                                // Log the loader exceptions for debugging
+                                if (rtle.LoaderExceptions != null && rtle.LoaderExceptions.Length > 0)
                                 {
-                                    _sharedTypeCache.AddOrUpdate(type.FullName,
-                                        _ => new WeakReference<Type>(type),
-                                        (_, __) => new WeakReference<Type>(type));
-                                    // Track origin nugget (best-effort). Pick first owning nugget that lists this assembly
-                                    try
+                                    var missingAssemblies = rtle.LoaderExceptions
+                                        .OfType<FileNotFoundException>()
+                                        .Select(ex => ex.FileName)
+                                        .Distinct()
+                                        .ToList();
+                                    
+                                    if (missingAssemblies.Any())
                                     {
-                                        var nuggetId = _nuggetAssemblies.FirstOrDefault(kv => kv.Value.Contains(assembly)).Key;
-                                        if (!string.IsNullOrEmpty(nuggetId))
-                                        {
-                                            _typeOriginMap[type.FullName] = nuggetId;
-                                        }
+                                        _logger?.LogWithContext(
+                                            $"Assembly {assembly.GetName().Name} has missing dependencies: {string.Join(", ", missingAssemblies)}", 
+                                            null);
                                     }
-                                    catch { }
+                                }
+                            }
+                            
+                            if (types != null && types.Length > 0)
+                            {
+                                foreach (var type in types)
+                                {
+                                    if (type != null && !string.IsNullOrEmpty(type.FullName))
+                                    {
+                                        _sharedTypeCache.AddOrUpdate(type.FullName,
+                                            _ => new WeakReference<Type>(type),
+                                            (_, __) => new WeakReference<Type>(type));
+                                        
+                                        // Track origin nugget (best-effort)
+                                        try
+                                        {
+                                            var nuggetId = _nuggetAssemblies.FirstOrDefault(kv => kv.Value.Contains(assembly)).Key;
+                                            if (!string.IsNullOrEmpty(nuggetId))
+                                            {
+                                                _typeOriginMap[type.FullName] = nuggetId;
+                                            }
+                                        }
+                                        catch { }
+                                    }
                                 }
                             }
                         }
                         catch (Exception ex)
                         {
-                            _logger?.LogWithContext($"Failed to cache types from assembly: {assembly.FullName}", ex);
+                            _logger?.LogWithContext($"Failed to cache types from assembly: {assembly.GetName().Name} - {ex.Message}", ex);
                         }
                     }
                 });
@@ -670,23 +1185,37 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         /// <summary>
         /// Removes types from cache when assembly is unloaded
         /// </summary>
-    private void RemoveAssemblyTypesFromCache(Assembly assembly)
+        private void RemoveAssemblyTypesFromCache(Assembly assembly)
         {
             try
             {
-                var types = assembly.GetTypes();
-                foreach (var type in types)
+                Type[] types = null;
+                
+                try
                 {
-                    if (!string.IsNullOrEmpty(type.FullName))
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException rtle)
+                {
+                    // Use the types that loaded successfully
+                    types = rtle.Types.Where(t => t != null).ToArray();
+                }
+                
+                if (types != null)
+                {
+                    foreach (var type in types)
                     {
-            _sharedTypeCache.TryRemove(type.FullName, out _);
-            _typeOriginMap.TryRemove(type.FullName, out _);
+                        if (type != null && !string.IsNullOrEmpty(type.FullName))
+                        {
+                            _sharedTypeCache.TryRemove(type.FullName, out _);
+                            _typeOriginMap.TryRemove(type.FullName, out _);
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger?.LogWithContext($"Failed to remove types from cache: {assembly.FullName}", ex);
+                _logger?.LogWithContext($"Failed to remove types from cache: {assembly.GetName().Name}", ex);
             }
         }
 
@@ -779,6 +1308,194 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         #endregion
 
         #region Public API - Unified Plugin/Nugget Access
+        /// <summary>
+        /// Registers an already-loaded assembly with the shared context
+        /// This is critical for project references and assemblies loaded in the default context
+        /// </summary>
+        public void RegisterExistingAssembly(Assembly assembly, string source = "Default")
+        {
+            if (assembly == null || assembly.IsDynamic)
+                return;
+
+            try
+            {
+                // Check if already registered
+                lock (_sharedAssemblyList)
+                {
+                    if (_sharedAssemblyList.Contains(assembly))
+                    {
+                        _logger?.LogWithContext($"Assembly already registered: {assembly.GetName().Name}", null);
+                        return;
+                    }
+
+                    // Add to shared assembly list
+                    _sharedAssemblyList.Add(assembly);
+                    
+                    // Create assembly representation
+                    var nuggetId = $"Existing_{assembly.GetName().Name}_{DateTime.UtcNow.Ticks}";
+                    var assemblyRep = new assemblies_rep(assembly, nuggetId, assembly.Location ?? assembly.FullName, FolderFileTypes.Builtin);
+                    _sharedAssemblyReps.Add(assemblyRep);
+                    
+                    // Add to nugget tracking (as a pseudo-nugget)
+                    if (!_nuggetAssemblies.ContainsKey(nuggetId))
+                    {
+                        _nuggetAssemblies[nuggetId] = new List<Assembly> { assembly };
+                        
+                        // Create a nugget info for tracking
+                        var nuggetInfo = new NuggetInfo
+                        {
+                            Id = nuggetId,
+                            Name = assembly.GetName().Name,
+                            Version = assembly.GetName().Version?.ToString() ?? "1.0.0",
+                            LoadedAt = DateTime.UtcNow,
+                            LoadedAssemblies = new List<Assembly> { assembly },
+                            DiscoveredPlugins = new List<PluginInfo>(),
+                            SourcePath = source,
+                            IsSharedContext = true,
+                            IsActive = true,
+                            Metadata = new Dictionary<string, object>
+                            {
+                                ["RegistrationType"] = "ExistingAssembly",
+                                ["Source"] = source
+                            }
+                        };
+                        
+                        _sharedNuggets[nuggetId] = nuggetInfo;
+                    }
+                }
+
+                // Cache types from this assembly
+                CacheAssemblyTypesAsync(new[] { assembly }).Wait();
+                
+                _logger?.LogWithContext($"Registered existing assembly in shared context: {assembly.GetName().Name}", null);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWithContext($"Failed to register existing assembly: {assembly.GetName().Name}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Registers multiple already-loaded assemblies with the shared context
+        /// </summary>
+        public void RegisterExistingAssemblies(IEnumerable<Assembly> assemblies, string source = "Default")
+        {
+            if (assemblies == null)
+                return;
+
+            foreach (var assembly in assemblies)
+            {
+                RegisterExistingAssembly(assembly, source);
+            }
+        }
+
+        /// <summary>
+        /// Resolves an assembly by name - used by AppDomain.AssemblyResolve integration
+        /// This method is called when assembly resolution fails in the default context
+        /// </summary>
+        public Assembly ResolveAssembly(AssemblyName assemblyName)
+        {
+            if (assemblyName == null) return null;
+
+            try
+            {
+                // First check all shared assemblies
+                var assembly = GetSharedAssemblies()
+                    .FirstOrDefault(a => AssemblyNamesMatch(a.GetName(), assemblyName));
+
+                if (assembly != null)
+                {
+                    _logger?.LogWithContext($"Resolved assembly from shared context: {assemblyName.Name}", null);
+                    return assembly;
+                }
+
+                // Check assemblies in all load contexts
+                foreach (var context in _loadContexts.Values)
+                {
+                    try
+                    {
+                        var contextAssembly = context.Assemblies
+                            .FirstOrDefault(a => AssemblyNamesMatch(a.GetName(), assemblyName));
+                        if (contextAssembly != null)
+                        {
+                            _logger?.LogWithContext($"Resolved assembly from context {context.ContextId}: {assemblyName.Name}", null);
+                            return contextAssembly;
+                        }
+                    }
+                    catch { }
+                }
+
+                // CRITICAL: Check if assembly is already loaded in AppDomain but not yet registered
+                // This handles project references and other default-context assemblies
+                var existingAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(a => !a.IsDynamic && AssemblyNamesMatch(a.GetName(), assemblyName));
+                
+                if (existingAssembly != null)
+                {
+                    _logger?.LogWithContext($"Found assembly in AppDomain, registering: {assemblyName.Name}", null);
+                    // Register it so we don't have to search again
+                    RegisterExistingAssembly(existingAssembly, "AppDomain");
+                    return existingAssembly;
+                }
+
+                // Not found
+                _logger?.LogWithContext($"Failed to resolve assembly: {assemblyName.Name}", null);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWithContext($"Error resolving assembly: {assemblyName.Name}", ex);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Resolves an assembly by simple name (for backward compatibility)
+        /// </summary>
+        public Assembly ResolveAssemblyByName(string assemblyName)
+        {
+            if (string.IsNullOrWhiteSpace(assemblyName)) return null;
+
+            try
+            {
+                // Parse assembly name
+                var name = new AssemblyName(assemblyName);
+                return ResolveAssembly(name);
+            }
+            catch
+            {
+                // Try simple name match
+                return GetSharedAssemblies()
+                    .FirstOrDefault(a => a.GetName().Name.Equals(assemblyName, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
+        /// <summary>
+        /// Checks if assembly names match considering version flexibility
+        /// </summary>
+        private bool AssemblyNamesMatch(AssemblyName a, AssemblyName b)
+        {
+            if (!string.Equals(a.Name, b.Name, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // For shared context, we allow version flexibility to maximize sharing
+            // Public key token must match if specified
+            if (b.GetPublicKeyToken() != null && a.GetPublicKeyToken() != null)
+            {
+                var aToken = a.GetPublicKeyToken();
+                var bToken = b.GetPublicKeyToken();
+                if (aToken.Length != bToken.Length)
+                    return false;
+                for (int i = 0; i < aToken.Length; i++)
+                {
+                    if (aToken[i] != bToken[i])
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Gets all loaded nuggets (everything is treated as a plugin)
         /// </summary>
@@ -1223,6 +1940,104 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             catch
             {
                 return "1.0.0";
+            }
+        }
+
+        /// <summary>
+        /// Checks if an assembly path is compatible with the current runtime framework.
+        /// For multi-targeted assemblies (net8.0, net9.0), only the matching framework should be loaded.
+        /// </summary>
+        private bool IsCompatibleWithCurrentRuntime(string assemblyPath)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(assemblyPath))
+                    return false;
+
+                // Get the directory path which may contain framework identifier
+                var directoryPath = Path.GetDirectoryName(assemblyPath);
+                if (string.IsNullOrEmpty(directoryPath))
+                    return true; // If no directory info, assume compatible
+
+                // Detect current runtime framework version
+                var currentFramework = Environment.Version.Major; // .NET 8 = 8, .NET 9 = 9, etc.
+                
+                // Check if path contains framework-specific folder (net8.0, net9.0, etc.)
+                var pathLower = directoryPath.ToLowerInvariant();
+                
+                // If path contains a framework identifier, check compatibility
+                if (pathLower.Contains("net8.0") || pathLower.Contains("net8"))
+                {
+                    return currentFramework == 8;
+                }
+                else if (pathLower.Contains("net9.0") || pathLower.Contains("net9"))
+                {
+                    return currentFramework == 9;
+                }
+                else if (pathLower.Contains("net6.0") || pathLower.Contains("net6"))
+                {
+                    return currentFramework == 6;
+                }
+                else if (pathLower.Contains("net7.0") || pathLower.Contains("net7"))
+                {
+                    return currentFramework == 7;
+                }
+                
+                // If no specific framework in path, try to load assembly metadata to check
+                try
+                {
+                    var assemblyName = AssemblyName.GetAssemblyName(assemblyPath);
+                    // If we can get the name, it's likely compatible
+                    return true;
+                }
+                catch (BadImageFormatException)
+                {
+                    // Wrong architecture or framework
+                    _logger?.LogWithContext($"Assembly incompatible with current runtime: {assemblyPath}", null);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWithContext($"Error checking runtime compatibility for: {assemblyPath}", ex);
+                // When in doubt, attempt to load (fail gracefully in LoadAssemblyInContextAsync)
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Gets the current target framework identifier (e.g., "net8.0", "net9.0")
+        /// </summary>
+        private string GetCurrentTargetFramework()
+        {
+            try
+            {
+                // Get the framework from the entry assembly's target framework attribute
+                var entryAssembly = Assembly.GetEntryAssembly();
+                if (entryAssembly != null)
+                {
+                    var targetFrameworkAttribute = entryAssembly.GetCustomAttribute<System.Runtime.Versioning.TargetFrameworkAttribute>();
+                    if (targetFrameworkAttribute != null)
+                    {
+                        // Parse ".NETCoreApp,Version=v8.0" to "net8.0"
+                        var frameworkName = targetFrameworkAttribute.FrameworkName;
+                        if (frameworkName.Contains("Version=v"))
+                        {
+                            var versionPart = frameworkName.Substring(frameworkName.IndexOf("Version=v") + 9);
+                            var majorMinor = versionPart.Split('.').Take(2);
+                            return $"net{string.Join(".", majorMinor)}";
+                        }
+                    }
+                }
+
+                // Fallback: detect from Environment.Version
+                var major = Environment.Version.Major;
+                return $"net{major}.0";
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWithContext("Error detecting target framework, defaulting to net8.0", ex);
+                return "net8.0"; // Safe default
             }
         }
 

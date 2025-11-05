@@ -803,9 +803,15 @@
             Represents a plugin backup for rollback purposes
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.AssemblyResolvedEventArgs">
+            <summary>
+            Event arguments for assembly resolution events
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext">
             <summary>
             Shared Context Load Context for true unloading while maintaining shared visibility
+            Uses proper dependency resolution to share assemblies across contexts
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.ContextId">
@@ -820,11 +826,57 @@
         <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.IsSharedContext">
             <summary>Flag indicating this context participates in shared resolution policy.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.#ctor(System.String,System.String,System.Boolean)">
+        <member name="E:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.AssemblyResolved">
+            <summary>Raised when an assembly is successfully resolved by this context.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.#ctor(System.String,System.String,TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager,System.Boolean)">
             <summary>Creates a new collectible load context for shared plugin loading.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.OnResolving(System.Runtime.Loader.AssemblyLoadContext,System.Reflection.AssemblyName)">
+            <summary>
+            Handles the Resolving event for cross-plugin assembly sharing.
+            This allows plugins to use assemblies loaded by other plugins.
+            Fires BEFORE the Load() override is called.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.FindMainDllWithDepsJson(System.String)">
+            <summary>
+            Finds the main DLL file in a directory that has a corresponding .deps.json file
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.Load(System.Reflection.AssemblyName)">
-            <summary>Overrides load; returns null to defer to default context for framework/system assemblies.</summary>
+            <summary>
+            Official Microsoft plugin pattern from:
+            https://learn.microsoft.com/en-us/dotnet/core/tutorials/creating-app-with-plugin-support
+            
+            Uses AssemblyDependencyResolver to resolve plugin dependencies from .deps.json
+            Returns null to allow default context to provide shared assemblies
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.TryLoadFromProbingPaths(System.Reflection.AssemblyName)">
+            <summary>
+            Tries to load assembly from probing paths (plugin folder, bin, runtime folders)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.TryLoadFromNuGetCache(System.Reflection.AssemblyName)">
+            <summary>
+            Tries to load assembly from NuGet package cache
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.LoadUnmanagedDll(System.String)">
+            <summary>
+            Resolves unmanaged DLL dependencies
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.AssemblyNamesMatch(System.Reflection.AssemblyName,System.Reflection.AssemblyName)">
+            <summary>
+            Checks if assembly name matches considering version flexibility
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext.IsSystemAssembly(System.Reflection.AssemblyName)">
+            <summary>
+            Determines if an assembly is a system assembly
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager">
             <summary>
@@ -869,6 +921,18 @@
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.#ctor(TheTechIdea.Beep.Logger.IDMLogger,System.Boolean)">
             <summary>Creates a new shared context manager with integrated plugin system managers.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.RegisterPreLoadedAssemblies">
+            <summary>
+            Automatically registers assemblies that are already loaded as PackageReferences or project references.
+            This prevents the plugin system from trying to reload them and causing type conflicts.
+            Called automatically during SharedContextManager construction.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.RegisterExistingAssemblyQuick(System.Reflection.Assembly,System.String)">
+            <summary>
+            Quick registration without type caching to avoid ReflectionTypeLoadException during initialization
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.AddDiscoveredDrivers(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig})">
             <summary>
             Adds discovered drivers to shared storage
@@ -912,7 +976,8 @@
         </member>
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.LoadAssemblyInContextAsync(TheTechIdea.Beep.Tools.PluginSystem.SharedContextLoadContext,System.String)">
             <summary>
-            Loads a single assembly in the shared context with collectible context
+            Loads a single assembly in the shared context with collectible context.
+            Uses LoadFromAssemblyPath for proper reference resolution to default AppDomain assemblies.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.UnloadNugget(System.String)">
@@ -938,6 +1003,33 @@
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.CreateInstance(System.String,System.Object[])">
             <summary>
             Creates an instance from shared context with caching
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.RegisterExistingAssembly(System.Reflection.Assembly,System.String)">
+            <summary>
+            Registers an already-loaded assembly with the shared context
+            This is critical for project references and assemblies loaded in the default context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.RegisterExistingAssemblies(System.Collections.Generic.IEnumerable{System.Reflection.Assembly},System.String)">
+            <summary>
+            Registers multiple already-loaded assemblies with the shared context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.ResolveAssembly(System.Reflection.AssemblyName)">
+            <summary>
+            Resolves an assembly by name - used by AppDomain.AssemblyResolve integration
+            This method is called when assembly resolution fails in the default context
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.ResolveAssemblyByName(System.String)">
+            <summary>
+            Resolves an assembly by simple name (for backward compatibility)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.AssemblyNamesMatch(System.Reflection.AssemblyName,System.Reflection.AssemblyName)">
+            <summary>
+            Checks if assembly names match considering version flexibility
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetLoadedNuggets">
@@ -1038,6 +1130,17 @@
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.PrewarmFactoriesForNugget(System.String)">
             <summary>Prewarms factory delegates for all types originating from the specified nugget.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.IsCompatibleWithCurrentRuntime(System.String)">
+            <summary>
+            Checks if an assembly path is compatible with the current runtime framework.
+            For multi-targeted assemblies (net8.0, net9.0), only the matching framework should be loaded.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.GetCurrentTargetFramework">
+            <summary>
+            Gets the current target framework identifier (e.g., "net8.0", "net9.0")
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.Dispose">
             <summary>Disposes the manager, unloading all nuggets and clearing caches.</summary>
         </member>
@@ -1086,6 +1189,12 @@
         <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.LoadAllAssembly(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
             <summary>
             Loads all assemblies from configured folders
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.RegisterAssemblyWithSharedContext(System.Reflection.Assembly)">
+            <summary>
+            Registers an already-loaded assembly with the SharedContextManager
+            This is critical for project references that are loaded in the default context
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.CreateInstanceFromString(System.String,System.Object[])">
@@ -1139,6 +1248,18 @@
         <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetDiscoveryStatistics">
             <summary>
             Gets comprehensive discovery statistics
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.ResolveFrameworkSpecificPath(System.String)">
+            <summary>
+            Resolves a path to framework-specific subdirectory if it exists.
+            For multi-targeted projects, returns path/net8.0 (or net9.0, etc.) if it exists.
+            Otherwise returns the original path.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetCurrentTargetFramework">
+            <summary>
+            Gets the current target framework identifier (e.g., "net8.0", "net9.0")
             </summary>
         </member>
     </members>

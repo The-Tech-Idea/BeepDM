@@ -232,7 +232,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 {
                     foreach (var item in cls)
                     {
-                        foreach (string extension in item.classProperties.FileType.Split(','))
+                        List<string> extensions = item.classProperties.FileType?.Split(',').ToList();
+                        if (extensions == null) continue;
+                        foreach (string extension in extensions)
                         {
                             var fileDriver = new ConnectionDriversConfig
                             {

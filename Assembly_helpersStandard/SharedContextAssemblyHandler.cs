@@ -101,17 +101,19 @@ namespace TheTechIdea.Beep.Tools
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             Utilfunction = utilFunction ?? throw new ArgumentNullException(nameof(utilFunction));
 
-            // Initialize SharedContextManager first
-            _sharedContextManager = new SharedContextManager(Logger);
+            // Initialize SharedContextManager first - this is the core of the plugin system
+            // It handles all assembly loading with proper isolation and reference resolution
+            _sharedContextManager = new SharedContextManager(Logger, useSingleSharedContext: true);
 
             // Initialize retained assistant and scanning service
             _driverAssistant = new DriverDiscoveryAssistant(_sharedContextManager, ConfigEditor, Logger);
             _scanningService = new ScanningService(_sharedContextManager, ConfigEditor, Logger);
 
-            // Setup assembly resolver
+            // Setup assembly resolver to integrate SharedContextManager with AppDomain resolution
+            // This ensures that when any code requests an assembly, we check the shared context first
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
 
-            Logger?.LogWithContext("SharedContextAssemblyHandler initialized with refactored bridge pattern", null);
+            Logger?.LogWithContext("SharedContextAssemblyHandler initialized with integrated plugin system", null);
         }
         #endregion
 
@@ -155,7 +157,10 @@ namespace TheTechIdea.Beep.Tools
 
             try
             {
-                var nuggetInfo = _sharedContextManager.LoadNuggetAsync(path, $"Nugget_{fileTypes}_{DateTime.UtcNow.Ticks}").GetAwaiter().GetResult();
+                // CRITICAL: For multi-targeted projects, resolve to framework-specific subdirectory
+                string resolvedPath = ResolveFrameworkSpecificPath(path);
+                
+                var nuggetInfo = _sharedContextManager.LoadNuggetAsync(resolvedPath, $"Nugget_{fileTypes}_{DateTime.UtcNow.Ticks}").GetAwaiter().GetResult();
                 
                 if (nuggetInfo != null)
                 {
@@ -174,13 +179,13 @@ namespace TheTechIdea.Beep.Tools
                         }
                     }
 
-                    result = $"Successfully loaded nugget: {nuggetInfo.Id} with {nuggetInfo.LoadedAssemblies.Count} assemblies";
+                    result = $"Successfully loaded from {resolvedPath}: {nuggetInfo.Id} with {nuggetInfo.LoadedAssemblies.Count} assemblies";
                     Logger?.LogWithContext(result, nuggetInfo);
                 }
                 else
                 {
                     ErrorObject.Flag = Errors.Failed;
-                    result = $"Failed to load assemblies from path: {path}";
+                    result = $"Failed to load assemblies from path: {resolvedPath}";
                     Logger?.LogWithContext(result, null);
                 }
             }
@@ -276,6 +281,12 @@ namespace TheTechIdea.Beep.Tools
         {
             try
             {
+                if (ConfigEditor?.ExePath == null)
+                {
+                    Logger?.LogWithContext("ConfigEditor.ExePath is null, skipping framework extensions loading", null);
+                    return;
+                }
+
                 var extensionPath = Path.Combine(ConfigEditor.ExePath, "LoadingExtensions");
                 if (Directory.Exists(extensionPath))
                 {
@@ -290,8 +301,14 @@ namespace TheTechIdea.Beep.Tools
 
         private void LoadDriverClasses(IProgress<PassedArgs> progress, CancellationToken token)
         {
+            if (ConfigEditor?.Config?.Folders == null)
+            {
+                Logger?.LogWithContext("ConfigEditor.Config.Folders is null, skipping driver classes loading", null);
+                return;
+            }
+
             var driverFolders = ConfigEditor.Config.Folders
-                .Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver)
+                .Where(c => c != null && !string.IsNullOrEmpty(c.FolderPath) && c.FolderFilesType == FolderFileTypes.ConnectionDriver)
                 .Select(x => x.FolderPath);
 
             foreach (var path in driverFolders)
@@ -309,8 +326,14 @@ namespace TheTechIdea.Beep.Tools
 
         private void LoadDataSourceClasses(IProgress<PassedArgs> progress, CancellationToken token)
         {
+            if (ConfigEditor?.Config?.Folders == null)
+            {
+                Logger?.LogWithContext("ConfigEditor.Config.Folders is null, skipping data source classes loading", null);
+                return;
+            }
+
             var dataSourceFolders = ConfigEditor.Config.Folders
-                .Where(c => c.FolderFilesType == FolderFileTypes.DataSources)
+                .Where(c => c != null && !string.IsNullOrEmpty(c.FolderPath) && c.FolderFilesType == FolderFileTypes.DataSources)
                 .Select(x => x.FolderPath);
 
             foreach (var path in dataSourceFolders)
@@ -328,8 +351,14 @@ namespace TheTechIdea.Beep.Tools
 
         private void LoadProjectAndAddinClasses(IProgress<PassedArgs> progress, CancellationToken token)
         {
+            if (ConfigEditor?.Config?.Folders == null)
+            {
+                Logger?.LogWithContext("ConfigEditor.Config.Folders is null, skipping project and addin classes loading", null);
+                return;
+            }
+
             var projectFolders = ConfigEditor.Config.Folders
-                .Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass)
+                .Where(c => c != null && !string.IsNullOrEmpty(c.FolderPath) && c.FolderFilesType == FolderFileTypes.ProjectClass)
                 .Select(x => x.FolderPath);
 
             foreach (var path in projectFolders)
@@ -347,8 +376,14 @@ namespace TheTechIdea.Beep.Tools
 
         private void LoadOtherDLLClasses(IProgress<PassedArgs> progress, CancellationToken token)
         {
+            if (ConfigEditor?.Config?.Folders == null)
+            {
+                Logger?.LogWithContext("ConfigEditor.Config.Folders is null, skipping other DLL classes loading", null);
+                return;
+            }
+
             var otherDllFolders = ConfigEditor.Config.Folders
-                .Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL)
+                .Where(c => c != null && !string.IsNullOrEmpty(c.FolderPath) && c.FolderFilesType == FolderFileTypes.OtherDLL)
                 .Select(x => x.FolderPath);
 
             foreach (var path in otherDllFolders)
@@ -366,8 +401,14 @@ namespace TheTechIdea.Beep.Tools
 
         private void LoadAddinClasses(IProgress<PassedArgs> progress, CancellationToken token)
         {
+            if (ConfigEditor?.Config?.Folders == null)
+            {
+                Logger?.LogWithContext("ConfigEditor.Config.Folders is null, skipping addin classes loading", null);
+                return;
+            }
+
             var addinFolders = ConfigEditor.Config.Folders
-                .Where(c => c.FolderFilesType == FolderFileTypes.Addin)
+                .Where(c => c != null && !string.IsNullOrEmpty(c.FolderPath) && c.FolderFilesType == FolderFileTypes.Addin)
                 .Select(x => x.FolderPath);
 
             foreach (var path in addinFolders)
@@ -388,22 +429,76 @@ namespace TheTechIdea.Beep.Tools
             try
             {
                 var runtimeAssemblies = GetRuntimeAssemblies();
-                foreach (var assembly in runtimeAssemblies)
+                
+                // CRITICAL: Also get all already-loaded assemblies from AppDomain
+                // This includes project references that are already in the default context
+                var alreadyLoadedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+                    .Where(a => !a.IsDynamic && 
+                               !string.IsNullOrEmpty(a.Location) &&
+                               !a.FullName.StartsWith("System.") &&
+                               !a.FullName.StartsWith("Microsoft."))
+                    .ToList();
+
+                // Combine both lists
+                var allAssemblies = runtimeAssemblies.Concat(alreadyLoadedAssemblies).Distinct().ToList();
+
+                foreach (var assembly in allAssemblies)
                 {
                     if (!_loadedAssemblies.Contains(assembly))
                     {
                         _loadedAssemblies.Add(assembly);
-                        var assemblyRep = new assemblies_rep(assembly, "Runtime", assembly.Location, FolderFileTypes.Builtin);
+                        
+                        // Determine the file type
+                        var fileType = FolderFileTypes.Builtin;
+                        var location = assembly.Location ?? "Runtime";
+                        
+                        // Check if it's a project reference (in same directory as entry assembly)
+                        var entryPath = Assembly.GetEntryAssembly()?.Location;
+                        if (!string.IsNullOrEmpty(entryPath) && !string.IsNullOrEmpty(assembly.Location))
+                        {
+                            var entryDir = Path.GetDirectoryName(entryPath);
+                            var assemblyDir = Path.GetDirectoryName(assembly.Location);
+                            if (string.Equals(entryDir, assemblyDir, StringComparison.OrdinalIgnoreCase))
+                            {
+                                fileType = FolderFileTypes.ProjectClass;
+                                Logger?.LogWithContext($"Detected project reference: {assembly.GetName().Name}", null);
+                            }
+                        }
+                        
+                        var assemblyRep = new assemblies_rep(assembly, location, assembly.Location ?? assembly.FullName, fileType);
                         if (!_assemblies.Any(a => a.DllLib == assembly))
                         {
                             _assemblies.Add(assemblyRep);
                         }
+                        
+                        // CRITICAL: Register with SharedContextManager so it can resolve these assemblies
+                        // This ensures project references are visible in the shared context
+                        RegisterAssemblyWithSharedContext(assembly);
                     }
                 }
+                
+                Logger?.LogWithContext($"Loaded {allAssemblies.Count} runtime and project reference assemblies", null);
             }
             catch (Exception ex)
             {
                 Logger?.LogWithContext("Failed to load runtime assemblies", ex);
+            }
+        }
+
+        /// <summary>
+        /// Registers an already-loaded assembly with the SharedContextManager
+        /// This is critical for project references that are loaded in the default context
+        /// </summary>
+        private void RegisterAssemblyWithSharedContext(Assembly assembly)
+        {
+            try
+            {
+                // Use the new public method to register existing assemblies
+                _sharedContextManager.RegisterExistingAssembly(assembly, "AppDomain");
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWithContext($"Failed to register assembly with SharedContextManager: {assembly.GetName().Name}", ex);
             }
         }
 
@@ -585,48 +680,125 @@ namespace TheTechIdea.Beep.Tools
 
         public Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
-            if (args.Name.Contains(".resources"))
+            // Ignore resource assemblies
+            if (args?.Name == null || args.Name.Contains(".resources"))
                 return null;
 
-            var assemblyName = args.Name.Split(',')[0];
-            
-            // Try from shared context first
-            var sharedAssemblies = _sharedContextManager.GetSharedAssemblies();
-            var assembly = sharedAssemblies.FirstOrDefault(a => a.FullName.StartsWith(assemblyName));
-            if (assembly != null)
-                return assembly;
-
-            // Try from loaded assemblies
-            assembly = _loadedAssemblies.FirstOrDefault(a => a.FullName.StartsWith(assemblyName));
-            if (assembly != null)
-                return assembly;
-
-            // Try to load from configured folders
-            var allFolders = ConfigEditor.Config.Folders
-                .Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL ||
-                           c.FolderFilesType == FolderFileTypes.ConnectionDriver ||
-                           c.FolderFilesType == FolderFileTypes.ProjectClass);
-
-            foreach (var folder in allFolders)
+            try
             {
-                try
+                // Parse the assembly name
+                var assemblyName = new AssemblyName(args.Name);
+                
+                // CRITICAL: Use SharedContextManager's integrated resolver first
+                // This ensures proper type identity across all plugins and contexts
+                if (_sharedContextManager != null)
                 {
-                    var di = new DirectoryInfo(folder.FolderPath);
-                    var module = di.GetFiles($"{assemblyName}.dll").FirstOrDefault();
-                    if (module != null)
+                    var resolvedAssembly = _sharedContextManager.ResolveAssembly(assemblyName);
+                    if (resolvedAssembly != null)
                     {
-                        // Load via shared context to ensure collectible/unload support
-                        var nugget = _sharedContextManager.LoadNuggetAsync(module.FullName, $"Resolve_{assemblyName}_{DateTime.UtcNow.Ticks}").GetAwaiter().GetResult();
-                        return nugget?.LoadedAssemblies.FirstOrDefault(a => a.GetName().Name.Equals(assemblyName, StringComparison.OrdinalIgnoreCase));
+                        Logger?.LogWithContext($"Resolved assembly via SharedContextManager: {assemblyName.Name}", null);
+                        return resolvedAssembly;
                     }
                 }
-                catch (Exception ex)
-                {
-                    Logger?.LogWithContext($"Failed to resolve assembly {assemblyName} from {folder.FolderPath}", ex);
-                }
-            }
 
-            return null;
+                // Fallback: Try from our local loaded assemblies
+                if (_loadedAssemblies != null && _loadedAssemblies.Count > 0)
+                {
+                    var assembly = _loadedAssemblies.FirstOrDefault(a => 
+                        a?.GetName()?.Name != null && 
+                        a.GetName().Name.Equals(assemblyName.Name, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (assembly != null)
+                    {
+                        Logger?.LogWithContext($"Resolved assembly from local cache: {assemblyName.Name}", null);
+                        return assembly;
+                    }
+                }
+
+                // Last resort: Try to load on-demand from configured folders
+                // Add null checks for ConfigEditor and its properties
+                if (ConfigEditor?.Config?.Folders != null)
+                {
+                    var simpleName = assemblyName.Name;
+                    var allFolders = ConfigEditor.Config.Folders
+                        .Where(c => c != null && 
+                                  !string.IsNullOrEmpty(c.FolderPath) &&
+                                  (c.FolderFilesType == FolderFileTypes.OtherDLL ||
+                                   c.FolderFilesType == FolderFileTypes.ConnectionDriver ||
+                                   c.FolderFilesType == FolderFileTypes.ProjectClass ||
+                                   c.FolderFilesType == FolderFileTypes.DataSources));
+
+                    foreach (var folder in allFolders)
+                    {
+                        try
+                        {
+                            if (!Directory.Exists(folder.FolderPath))
+                                continue;
+
+                            // CRITICAL: First try framework-specific subdirectory
+                            var resolvedFolderPath = ResolveFrameworkSpecificPath(folder.FolderPath);
+                            var di = new DirectoryInfo(resolvedFolderPath);
+                            
+                            // Search in resolved path first (TopDirectoryOnly to avoid wrong framework versions)
+                            var module = di.GetFiles($"{simpleName}.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                            
+                            // If not found and we're in a framework-specific path, try parent folder too
+                            if (module == null && resolvedFolderPath != folder.FolderPath)
+                            {
+                                di = new DirectoryInfo(folder.FolderPath);
+                                module = di.GetFiles($"{simpleName}.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                            }
+                            
+                            if (module != null && _sharedContextManager != null)
+                            {
+                                // Load via SharedContextManager to maintain proper isolation and reference sharing
+                                Logger?.LogWithContext($"Loading assembly on-demand from: {module.FullName}", null);
+                                var nugget = _sharedContextManager.LoadNuggetAsync(
+                                    module.FullName, 
+                                    $"OnDemand_{simpleName}_{DateTime.UtcNow.Ticks}"
+                                ).GetAwaiter().GetResult();
+                                
+                                if (nugget?.LoadedAssemblies != null && nugget.LoadedAssemblies.Count > 0)
+                                {
+                                    var loadedAssembly = nugget.LoadedAssemblies.FirstOrDefault(a => 
+                                        a?.GetName()?.Name != null &&
+                                        a.GetName().Name.Equals(simpleName, StringComparison.OrdinalIgnoreCase));
+                                    
+                                    if (loadedAssembly != null)
+                                    {
+                                        // Add to our local tracking
+                                        if (_loadedAssemblies != null && !_loadedAssemblies.Contains(loadedAssembly))
+                                        {
+                                            _loadedAssemblies.Add(loadedAssembly);
+                                            
+                                            if (_assemblies != null)
+                                            {
+                                                _assemblies.Add(new assemblies_rep(loadedAssembly, folder.FolderPath, 
+                                                    loadedAssembly.Location, folder.FolderFilesType));
+                                            }
+                                        }
+                                        
+                                        Logger?.LogWithContext($"Successfully loaded and resolved: {simpleName}", null);
+                                        return loadedAssembly;
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger?.LogWithContext($"Failed to resolve assembly {simpleName} from {folder.FolderPath}", ex);
+                        }
+                    }
+                }
+
+                Logger?.LogWithContext($"Unable to resolve assembly: {args.Name}", null);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWithContext($"Error in assembly resolution for: {args.Name}", ex);
+                return null;
+            }
         }
 
     /// <summary>Create instance by fully qualified type name using shared context.</summary>
@@ -842,6 +1014,89 @@ namespace TheTechIdea.Beep.Tools
                     ErrorCode = ErrorObject.Message 
                 };
                 progress.Report(args);
+            }
+        }
+
+        /// <summary>
+        /// Resolves a path to framework-specific subdirectory if it exists.
+        /// For multi-targeted projects, returns path/net8.0 (or net9.0, etc.) if it exists.
+        /// Otherwise returns the original path.
+        /// </summary>
+        private string ResolveFrameworkSpecificPath(string path)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(path))
+                    return path;
+
+                // If it's a file path, return as-is
+                if (File.Exists(path))
+                    return path;
+
+                // If it's a directory, check for framework-specific subdirectory
+                if (Directory.Exists(path))
+                {
+                    var targetFramework = GetCurrentTargetFramework();
+                    var frameworkPath = Path.Combine(path, targetFramework);
+                    
+                    if (Directory.Exists(frameworkPath))
+                    {
+                        Logger?.LogWithContext($"Resolved framework-specific path: {path} -> {frameworkPath}", null);
+                        return frameworkPath;
+                    }
+                    
+                    // Also check for -windows variant (e.g., net8.0-windows)
+                    var windowsFrameworkPath = Path.Combine(path, $"{targetFramework}-windows");
+                    if (Directory.Exists(windowsFrameworkPath))
+                    {
+                        Logger?.LogWithContext($"Resolved framework-specific path: {path} -> {windowsFrameworkPath}", null);
+                        return windowsFrameworkPath;
+                    }
+                }
+
+                // Return original path if no framework-specific directory found
+                return path;
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWithContext($"Error resolving framework-specific path for: {path}", ex);
+                return path;
+            }
+        }
+
+        /// <summary>
+        /// Gets the current target framework identifier (e.g., "net8.0", "net9.0")
+        /// </summary>
+        private string GetCurrentTargetFramework()
+        {
+            try
+            {
+                // Get the framework from the entry assembly's target framework attribute
+                var entryAssembly = Assembly.GetEntryAssembly();
+                if (entryAssembly != null)
+                {
+                    var targetFrameworkAttribute = entryAssembly.GetCustomAttribute<System.Runtime.Versioning.TargetFrameworkAttribute>();
+                    if (targetFrameworkAttribute != null)
+                    {
+                        // Parse ".NETCoreApp,Version=v8.0" to "net8.0"
+                        var frameworkName = targetFrameworkAttribute.FrameworkName;
+                        if (frameworkName.Contains("Version=v"))
+                        {
+                            var versionPart = frameworkName.Substring(frameworkName.IndexOf("Version=v") + 9);
+                            var majorMinor = versionPart.Split('.').Take(2);
+                            return $"net{string.Join(".", majorMinor)}";
+                        }
+                    }
+                }
+
+                // Fallback: detect from Environment.Version
+                var major = Environment.Version.Major;
+                return $"net{major}.0";
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWithContext("Error detecting target framework, defaulting to net8.0", ex);
+                return "net8.0"; // Safe default
             }
         }
 

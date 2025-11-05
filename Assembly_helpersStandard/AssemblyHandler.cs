@@ -1499,7 +1499,16 @@ namespace TheTechIdea.Beep.Tools
                 List<AssemblyClassDefinition> cls = DataSourcesClasses.Where(o => o.classProperties != null).ToList().Where(p => p.classProperties.Category == DatasourceCategory.FILE).ToList(); 
                 foreach (AssemblyClassDefinition item in cls)
                 {
-                    foreach (string extension in item.classProperties.FileType.Split(',').ToList())
+                    List<string> extensions = item.classProperties.FileType?.Split(',').ToList();
+                    if(extensions is null)
+                    {
+                        continue;
+                    }
+                    if (extensions.Count==0)
+                    {
+                        continue;
+                    }
+                    foreach (string extension in extensions)
                     {
                         ConnectionDriversConfig TXTFileDriver = new ConnectionDriversConfig();
                         TXTFileDriver.AdapterType = "DEFAULT";

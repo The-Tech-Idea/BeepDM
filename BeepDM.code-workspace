@@ -5,6 +5,12 @@
 		},
 		{
 			"path": "../BeepDataSources/DataSourcesPlugins/RDBMSDataSource"
+		},
+		{
+			"path": "../Beep.Branchs"
+		},
+		{
+			"path": "../Beep.Winform.Sample/WinFormsApp.UI.Test"
 		}
 	],
 	"settings": {
