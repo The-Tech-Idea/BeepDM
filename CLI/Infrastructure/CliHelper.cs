@@ -14,6 +14,27 @@ namespace TheTechIdea.Beep.CLI.Infrastructure
     public static class CliHelper
     {
         /// <summary>
+        /// Create BeepServiceProvider with the specified profile
+        /// Centralizes service provider creation for consistency across all commands
+        /// </summary>
+        /// <param name="profileName">Profile name (defaults to 'default')</param>
+        /// <returns>Configured BeepServiceProvider instance</returns>
+        public static BeepServiceProvider CreateServiceProvider(string? profileName = null)
+        {
+            return new BeepServiceProvider(profileName ?? ProfileManager.DEFAULT_PROFILE);
+        }
+
+        /// <summary>
+        /// Create BeepServiceProvider and get DMEEditor in one call
+        /// </summary>
+        /// <param name="profileName">Profile name (defaults to 'default')</param>
+        /// <returns>Configured IDMEEditor instance</returns>
+        public static IDMEEditor GetEditor(string? profileName = null)
+        {
+            var services = CreateServiceProvider(profileName);
+            return services.GetEditor();
+        }
+        /// <summary>
         /// Display entity field information in a formatted table
         /// </summary>
         public static void DisplayEntityFields(EntityStructure entity)
