@@ -24,6 +24,8 @@ namespace TheTechIdea.Beep.Tools
         List<string> NamespacestoIgnore { get; set; }
         List<assemblies_rep> Assemblies { get; set; }
         List<Assembly> LoadedAssemblies { get;  set; }
+        List<Type> LoaderExtensions { get; set; }
+        List<AssemblyClassDefinition> LoaderExtensionClasses { get; set; }
         Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args);
         List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
         IConfigEditor ConfigEditor { get; set; }
@@ -43,7 +45,9 @@ namespace TheTechIdea.Beep.Tools
         string LoadAssembly(string path, FolderFileTypes fileTypes);
         IErrorsInfo LoadAllAssembly(IProgress<PassedArgs> progress, CancellationToken token);
         Assembly LoadAssembly(string path);
-        
+        bool LoadNugget(string path);
+        bool UnloadNugget(string nuggetname);
+        bool UnloadAssembly(string assemblyname);
         bool RunMethod(object ObjInstance, string FullClassName, string MethodName);
         AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type, string typename);
         void AddTypeToCache(string fullName, Type type);

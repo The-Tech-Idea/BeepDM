@@ -1,0 +1,120 @@
+{
+  "id": "beepshell.extensions.datatools",
+  "name": "Data Tools Extension",
+  "version": "1.0.0",
+  "author": "BeepDM Community",
+  "description": "Comprehensive data import/export and synchronization tools for BeepShell",
+  "homepage": "https://github.com/The-Tech-Idea/BeepDM",
+  "repository": "https://github.com/The-Tech-Idea/BeepDM",
+  "license": "MIT",
+  "keywords": [
+    "data",
+    "export",
+    "import",
+    "sync",
+    "etl"
+  ],
+  "category": "Data Management",
+  "minShellVersion": "1.0.0",
+  "dependencies": {},
+  "assembly": {
+    "fileName": "BeepShell.Extensions.Example.dll",
+    "targetFramework": "net8.0",
+    "runtimeDependencies": [
+      "CsvHelper",
+      "Newtonsoft.Json"
+    ]
+  },
+  "commands": [
+    {
+      "name": "export",
+      "description": "Export table data to various formats (CSV, JSON, XML)",
+      "category": "Data",
+      "aliases": [
+        "exp"
+      ],
+      "examples": [
+        "export --source mydb --table customers --output customers.csv",
+        "export --source mydb --table orders --output orders.json --format json"
+      ]
+    },
+    {
+      "name": "import",
+      "description": "Import data from files into database tables",
+      "category": "Data",
+      "aliases": [
+        "imp"
+      ],
+      "examples": [
+        "import --source mydb --table customers --file customers.csv",
+        "import --source mydb --table orders --file orders.json --format json"
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "name": "data-sync",
+      "description": "Synchronize data between two data sources with configurable options",
+      "category": "ETL",
+      "parameters": [
+        {
+          "name": "sourceConnection",
+          "type": "string",
+          "required": true,
+          "description": "Source data connection name"
+        },
+        {
+          "name": "targetConnection",
+          "type": "string",
+          "required": true,
+          "description": "Target data connection name"
+        },
+        {
+          "name": "entityName",
+          "type": "string",
+          "required": true,
+          "description": "Table/entity to synchronize"
+        },
+        {
+          "name": "batchSize",
+          "type": "int",
+          "required": false,
+          "description": "Number of records per batch",
+          "defaultValue": 1000
+        }
+      ]
+    }
+  ],
+  "configuration": {
+    "fileName": "datatools.config.json",
+    "schema": {
+      "maxBatchSize": {
+        "type": "integer",
+        "default": 1000,
+        "description": "Maximum batch size for data operations"
+      },
+      "defaultFormat": {
+        "type": "string",
+        "default": "csv",
+        "description": "Default export format (csv, json, xml)"
+      },
+      "enabled": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable/disable this extension"
+      }
+    }
+  },
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2025-11-10",
+      "changes": [
+        "Initial release",
+        "Export command with CSV/JSON support",
+        "Import command with CSV/JSON support",
+        "Data sync workflow with progress tracking"
+      ]
+    }
+  ]
+}

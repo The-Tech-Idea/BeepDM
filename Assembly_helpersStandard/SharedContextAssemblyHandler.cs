@@ -33,6 +33,8 @@ namespace TheTechIdea.Beep.Tools
     private readonly DriverDiscoveryAssistant _driverAssistant;
     // New scanning abstraction
     private readonly IScanningService _scanningService;
+    // NuggetManager for nugget package handling
+    private readonly NuggetManager _nuggetManager;
         
         private readonly List<assemblies_rep> _assemblies = new();
         private readonly List<Assembly> _loadedAssemblies = new();
@@ -41,8 +43,15 @@ namespace TheTechIdea.Beep.Tools
         #endregion
 
         #region Properties - IAssemblyHandler Implementation
-    /// <summary>Namespaces to ignore during scanning.</summary>
-    public List<string> NamespacestoIgnore { get; set; } = new();
+        public List<Type> LoaderExtensions { get; set; } = new List<Type>();
+        /// <summary>
+        /// List of classes that extend the loader functionality.
+        /// </summary>
+        public List<AssemblyClassDefinition> LoaderExtensionClasses { get; set; } = new List<AssemblyClassDefinition>();
+
+
+        /// <summary>Namespaces to ignore during scanning.</summary>
+        public List<string> NamespacestoIgnore { get; set; } = new();
     /// <summary>
     /// Collection of loaded assembly representations. Wrapped to avoid external replacement of internal list.
     /// Setting replaces contents while preserving backing list reference.
@@ -105,6 +114,9 @@ namespace TheTechIdea.Beep.Tools
             // It handles all assembly loading with proper isolation and reference resolution
             _sharedContextManager = new SharedContextManager(Logger, useSingleSharedContext: true);
 
+            // Initialize NuggetManager for nugget package handling
+            _nuggetManager = new NuggetManager(Logger, ErrorObject, Utilfunction);
+
             // Initialize retained assistant and scanning service
             _driverAssistant = new DriverDiscoveryAssistant(_sharedContextManager, ConfigEditor, Logger);
             _scanningService = new ScanningService(_sharedContextManager, ConfigEditor, Logger);
@@ -113,7 +125,7 @@ namespace TheTechIdea.Beep.Tools
             // This ensures that when any code requests an assembly, we check the shared context first
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
 
-            Logger?.LogWithContext("SharedContextAssemblyHandler initialized with integrated plugin system", null);
+            Logger?.LogWithContext("SharedContextAssemblyHandler initialized with integrated plugin system and NuggetManager", null);
         }
         #endregion
 
@@ -877,6 +889,141 @@ namespace TheTechIdea.Beep.Tools
 
     /// <summary>No-op retained for interface compatibility; caching handled by SharedContextManager.</summary>
     public void AddTypeToCache(string fullName, Type type) { }
+
+    #region Nugget Management
+
+    /// <summary>
+    /// Load a nugget package from specified path
+    /// </summary>
+    public bool LoadNugget(string path)
+    {
+        try
+        {
+            ErrorObject.Flag = Errors.Ok;
+            
+            // Use NuggetManager to load the nugget
+            var result = _nuggetManager.LoadNugget(path, useIsolatedContext: false);
+
+            if (result)
+            {
+                // Get loaded assemblies from nugget
+                var nuggetName = Path.GetFileNameWithoutExtension(path);
+                var nuggetAssemblies = _nuggetManager.GetNuggetAssemblies(nuggetName);
+
+                // Add to tracking lists
+                foreach (var assembly in nuggetAssemblies)
+                {
+                    if (!_loadedAssemblies.Contains(assembly))
+                    {
+                        _loadedAssemblies.Add(assembly);
+                    }
+
+                    var assemblyRep = new assemblies_rep(assembly, path, assembly.FullName, FolderFileTypes.OtherDLL);
+                    if (!_assemblies.Any(a => a.DllLib == assembly))
+                    {
+                        _assemblies.Add(assemblyRep);
+                    }
+
+                    // Scan assembly using scanning service
+                    _scanningService?.ScanAssembly(assembly);
+                }
+
+                Logger?.LogWithContext($"Successfully loaded nugget: {nuggetName}", null);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            ErrorObject.Flag = Errors.Failed;
+            ErrorObject.Message = ex.Message;
+            ErrorObject.Ex = ex;
+            Logger?.LogWithContext($"Error loading nugget from {path}", ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Unload a nugget package by name
+    /// </summary>
+    public bool UnloadNugget(string nuggetname)
+    {
+        try
+        {
+            ErrorObject.Flag = Errors.Ok;
+            
+            var result = _nuggetManager.UnloadNugget(nuggetname);
+
+            if (result)
+            {
+                Logger?.LogWithContext($"Successfully unloaded nugget: {nuggetname}", null);
+            }
+            else
+            {
+                Logger?.LogWithContext($"Nugget not found: {nuggetname}", null);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            ErrorObject.Flag = Errors.Failed;
+            ErrorObject.Message = ex.Message;
+            ErrorObject.Ex = ex;
+            Logger?.LogWithContext($"Error unloading nugget: {nuggetname}", ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Unload an assembly by name
+    /// </summary>
+    public bool UnloadAssembly(string assemblyname)
+    {
+        try
+        {
+            ErrorObject.Flag = Errors.Ok;
+
+            // Find assembly in loaded assemblies
+            var assembly = _loadedAssemblies.FirstOrDefault(a =>
+                a.GetName().Name.Equals(assemblyname, StringComparison.OrdinalIgnoreCase));
+
+            if (assembly != null)
+            {
+                // Remove from tracking lists
+                _loadedAssemblies.Remove(assembly);
+
+                var assemblyRep = _assemblies.FirstOrDefault(a => a.DllLib == assembly);
+                if (assemblyRep != null)
+                {
+                    _assemblies.Remove(assemblyRep);
+                }
+
+                // Check if this assembly belongs to a nugget and try to find the nugget
+                var nuggetName = _nuggetManager.FindNuggetByAssemblyPath(assembly.Location);
+                if (!string.IsNullOrEmpty(nuggetName))
+                {
+                    _nuggetManager.UnloadNugget(nuggetName);
+                }
+
+                Logger?.LogWithContext($"Successfully unloaded assembly: {assemblyname}", null);
+                return true;
+            }
+
+            Logger?.LogWithContext($"Assembly not found: {assemblyname}", null);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            ErrorObject.Flag = Errors.Failed;
+            ErrorObject.Message = ex.Message;
+            ErrorObject.Ex = ex;
+            Logger?.LogWithContext($"Error unloading assembly: {assemblyname}", ex);
+            return false;
+        }
+    }
+
+    #endregion
 
     #region Inlined Scanning Logic (formerly in assistants)
     // (Duplicate helper block removed)

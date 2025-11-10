@@ -31,13 +31,24 @@ namespace TheTechIdea.Beep.Tools
         private ParentChildObject a;
         private string Name { get; set; }
         private string Descr { get; set; }
-        private List<Type> LoaderExtensions { get; set; } = new List<Type>();
+
+        /// <summary>
+        /// List of classes that extend the loader functionality.
+        /// </summary>
+        public List<AssemblyClassDefinition> LoaderExtensionClasses { get; set; } = new List<AssemblyClassDefinition>();
+
+        public List<Type> LoaderExtensions { get; set; } = new List<Type>();
         // Add at class level
         private Dictionary<string, Type> _typeCache = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
         private ConcurrentDictionary<string, Assembly> _loadedAssemblyCache =
  new ConcurrentDictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase);
         private List<ConnectionDriversConfig> DataDriversConfig = new List<ConnectionDriversConfig>();
         private bool disposedValue;
+        
+        /// <summary>
+        /// NuGet package manager for loading/unloading nuggets
+        /// </summary>
+        private NuggetManager _nuggetManager;
      
         public List<string> NamespacestoIgnore { get; set; } = new List<string>();
         /// <summary>
@@ -64,11 +75,6 @@ namespace TheTechIdea.Beep.Tools
         /// Interface for configuration editing.
         /// </summary>
         public IConfigEditor ConfigEditor { get; set; }
-
-        /// <summary>
-        /// List of classes that extend the loader functionality.
-        /// </summary>
-        public List<AssemblyClassDefinition> LoaderExtensionClasses { get; set; } = new List<AssemblyClassDefinition>();
 
         /// <summary>
         /// List of assemblies loaded or referenced.
@@ -98,6 +104,10 @@ namespace TheTechIdea.Beep.Tools
             CurrentDomain = AppDomain.CurrentDomain;
             DataSourcesClasses = new List<AssemblyClassDefinition>();
             CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            
+            // Initialize NuggetManager
+            _nuggetManager = new NuggetManager(Logger, ConfigEditor);
+            
             // Get current, executing, and calling assemblies
            var assemblies = new List<Assembly>
     {
@@ -2008,6 +2018,130 @@ namespace TheTechIdea.Beep.Tools
             }
         }
         #endregion New Implementations
+        
+        #region Nugget Management
+        /// <summary>
+        /// Load a NuGet package from specified path
+        /// </summary>
+        /// <param name="path">Path to nugget directory or DLL file</param>
+        /// <returns>True if loaded successfully</returns>
+        public bool LoadNugget(string path)
+        {
+            try
+            {
+                var result = _nuggetManager.LoadNugget(path);
+                
+                if (result)
+                {
+                    // Add nugget assemblies to LoadedAssemblies
+                    var nuggetName = Path.GetFileNameWithoutExtension(path);
+                    var nuggetAssemblies = _nuggetManager.GetNuggetAssemblies(nuggetName);
+                    
+                    foreach (var assembly in nuggetAssemblies)
+                    {
+                        if (!LoadedAssemblies.Contains(assembly))
+                        {
+                            LoadedAssemblies.Add(assembly);
+                            
+                            // Add to Assemblies list
+                            var assemblyRep = new assemblies_rep(assembly, path, assembly.FullName, FolderFileTypes.OtherDLL);
+                            if (!Assemblies.Any(a => a.DllLib == assembly))
+                            {
+                                Assemblies.Add(assemblyRep);
+                            }
+                            
+                            // Scan the assembly for types
+                            ScanAssembly(assembly);
+                        }
+                    }
+                    
+                    Logger?.WriteLog($"LoadNugget: Successfully loaded and scanned nugget from {path}");
+                }
+                
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger?.WriteLog($"LoadNugget: Error - {ex.Message}");
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Unload a NuGet package by name
+        /// </summary>
+        /// <param name="nuggetname">Name of the nugget to unload</param>
+        /// <returns>True if unloaded successfully</returns>
+        public bool UnloadNugget(string nuggetname)
+        {
+            try
+            {
+                var result = _nuggetManager.UnloadNugget(nuggetname);
+                
+                if (result)
+                {
+                    Logger?.WriteLog($"UnloadNugget: Successfully unloaded '{nuggetname}'");
+                    // Note: Assemblies remain in LoadedAssemblies as they cannot be truly unloaded in .NET Framework
+                    // Only with AssemblyLoadContext in .NET Core/.NET 5+ can assemblies be truly unloaded
+                }
+                
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger?.WriteLog($"UnloadNugget: Error - {ex.Message}");
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Unload an assembly by name (tracking only - cannot truly unload in .NET Framework)
+        /// </summary>
+        /// <param name="assemblyname">Name of the assembly to unload</param>
+        /// <returns>True if tracking removed successfully</returns>
+        public bool UnloadAssembly(string assemblyname)
+        {
+            try
+            {
+                // Find and remove from LoadedAssemblies
+                var assembly = LoadedAssemblies.FirstOrDefault(a => 
+                    a.GetName().Name.Equals(assemblyname, StringComparison.OrdinalIgnoreCase));
+                
+                if (assembly != null)
+                {
+                    LoadedAssemblies.Remove(assembly);
+                    
+                    // Remove from Assemblies list
+                    var assemblyRep = Assemblies.FirstOrDefault(a => a.DllLib == assembly);
+                    if (assemblyRep != null)
+                    {
+                        Assemblies.Remove(assemblyRep);
+                    }
+                    
+                    // Remove from cache
+                    _loadedAssemblyCache.TryRemove(assembly.Location, out _);
+                    
+                    Logger?.WriteLog($"UnloadAssembly: Removed tracking for '{assemblyname}'");
+                    return true;
+                }
+                
+                Logger?.WriteLog($"UnloadAssembly: Assembly '{assemblyname}' not found");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger?.WriteLog($"UnloadAssembly: Error - {ex.Message}");
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+                return false;
+            }
+        }
+        #endregion Nugget Management
+        
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
@@ -2018,7 +2152,8 @@ namespace TheTechIdea.Beep.Tools
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects)
+                    // Dispose managed state (managed objects)
+                    _nuggetManager?.Clear();
                     LoaderExtensions = null;
                     LoaderExtensionClasses = null;
                     Assemblies = null;

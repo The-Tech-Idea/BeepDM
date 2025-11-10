@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>TheTechIdea.Beep.Shell</RootNamespace>
+    <AssemblyName>BeepShell</AssemblyName>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <Version>1.0.0</Version>
+    <Authors>TheTechIdea</Authors>
+    <Company>TheTechIdea</Company>
+    <Product>BeepDM Interactive Shell</Product>
+    <Description>Interactive REPL shell for BeepDM with persistent connections and state management</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- BeepDM Core Libraries -->
+    <ProjectReference Include="..\DataManagementEngineStandard\DataManagementEngine.csproj" />
+    <ProjectReference Include="..\DataManagementModelsStandard\DataManagementModels.csproj" />
+    <ProjectReference Include="..\Assembly_helpersStandard\Assembly_helpers.csproj" />
+    <ProjectReference Include="..\DMLoggerStandard\DMLogger.csproj" />
+    <ProjectReference Include="..\JsonFileLoaderStandard\JsonFileLoader.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- UI and Console Libraries -->
+    <PackageReference Include="Spectre.Console" Version="0.49.1" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Dependency Injection -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>
