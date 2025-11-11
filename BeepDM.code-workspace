@@ -4,16 +4,7 @@
 			"path": "."
 		},
 		{
-			"path": "../BeepDataSources/DataSourcesPlugins/RDBMSDataSource"
-		},
-		{
-			"path": "../Beep.Branchs"
-		},
-		{
-			"path": "../Beep.Winform.Sample/WinFormsApp.UI.Test"
+			"path": "../Beep.Branchs/TheTechIdea.Beep.Vis.Loader"
 		}
-	],
-	"settings": {
-		"powershell.cwd": "BeepDM"
-	}
+	]
 }

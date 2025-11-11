@@ -233,6 +233,10 @@ namespace TheTechIdea.Beep.Tools
                 try
                 {
                     ILoaderExtention cls = (ILoaderExtention)Activator.CreateInstance(item, new object[] { this });
+                    
+                    // Store the instantiated extension
+                    LoaderExtensionInstances.Add(cls);
+                    
                     foreach (Assembly assembly1 in LoadedAssemblies)
                     {
                         try

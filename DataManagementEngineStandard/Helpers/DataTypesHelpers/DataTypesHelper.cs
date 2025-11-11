@@ -68,7 +68,7 @@ namespace TheTechIdea.Beep.Helpers
                 try
                 {
                     // Initialize mapping cache with common data source types
-                    InitializeMappingCache();
+              //      InitializeMappingCache();
                     
                     // Pre-load .NET data types
                     InitializeNetTypesCache();
@@ -84,6 +84,7 @@ namespace TheTechIdea.Beep.Helpers
 
         /// <summary>
         /// Initializes the mapping cache with common data source mappings.
+        /// Only loads mappings for data sources that have drivers installed.
         /// </summary>
         private void InitializeMappingCache()
         {
@@ -97,6 +98,16 @@ namespace TheTechIdea.Beep.Helpers
             {
                 try
                 {
+                    // Check if driver is installed before attempting to load mappings
+                    var hasDriver = DMEEditor?.ConfigEditor?.DataDriversClasses?
+                        .Any(d => d.classHandler?.Equals(dsName, StringComparison.OrdinalIgnoreCase) == true 
+                               && !d.NuggetMissing) ?? false;
+                    
+                    if (!hasDriver)
+                    {
+                        continue; // Skip databases without installed drivers
+                    }
+
                     var mappings = DataTypeFieldMappingHelper.GetDataTypes(dsName, DMEEditor);
                     if (mappings?.Any() == true)
                     {

@@ -26,6 +26,7 @@ namespace TheTechIdea.Beep.Tools
         List<Assembly> LoadedAssemblies { get;  set; }
         List<Type> LoaderExtensions { get; set; }
         List<AssemblyClassDefinition> LoaderExtensionClasses { get; set; }
+        List<ILoaderExtention> LoaderExtensionInstances { get; set; }
         Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args);
         List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
         IConfigEditor ConfigEditor { get; set; }

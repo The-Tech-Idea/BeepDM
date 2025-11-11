@@ -1,7 +1,12 @@
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Spectre.Console;
 using TheTechIdea.Beep.Editor;
 

@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using BeepShell.Infrastructure;
 using Spectre.Console;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Shell.Infrastructure;
@@ -12,76 +14,66 @@ namespace TheTechIdea.Beep.Shell.Commands
     /// </summary>
     public static class ShellCommands
     {
-        public static void ShowHelp()
+        public static void ShowHelp(IEnumerable<IShellCommand>? loadedCommands = null)
         {
             var table = new Table();
             table.Border = TableBorder.Rounded;
             table.Title = new TableTitle("[bold cyan]BeepShell Commands[/]");
             table.AddColumn("[bold]Command[/]");
             table.AddColumn("[bold]Description[/]");
+            table.AddColumn("[bold]Category[/]");
 
-            // Shell-specific commands
-            table.AddRow("[cyan]help, ?[/]", "Show this help message");
-            table.AddRow("[cyan]clear, cls[/]", "Clear the screen");
-            table.AddRow("[cyan]exit, quit, q[/]", "Exit the shell");
-            table.AddRow("[cyan]status[/]", "Show session status and statistics");
-            table.AddRow("[cyan]connections[/]", "Show all open connections");
-            table.AddRow("[cyan]datasources[/]", "Show all active data sources");
-            table.AddRow("[cyan]history[/]", "Show command history");
-            table.AddRow("[cyan]extensions[/]", "Show loaded shell extensions");
-            table.AddRow("[cyan]workflows[/]", "Show available workflows");
-            table.AddRow("[cyan]plugin <cmd>[/]", "Plugin management (list, load, unload, reload, health)");
-            table.AddRow("[cyan]events[/]", "Show event bus subscribers");
-            table.AddRow("[cyan]alias [name cmd][/]", "Show or create command aliases");
-            table.AddRow("[cyan]profile[/]", "Show current profile");
-            table.AddRow("[cyan]profile switch <name>[/]", "Switch to different profile");
-            table.AddRow("[cyan]reload[/]", "Reload configuration from disk");
-            table.AddRow("[cyan]close <datasource>[/]", "Close a specific data source connection");
-            
+            // Add dynamically loaded commands
+            if (loadedCommands != null && loadedCommands.Any())
+            {
+                var groupedCommands = loadedCommands
+                    .GroupBy(cmd => cmd.Category ?? "Other")
+                    .OrderBy(g => g.Key);
+
+                foreach (var group in groupedCommands)
+                {
+                    foreach (var cmd in group.OrderBy(c => c.CommandName))
+                    {
+                        var aliases = cmd.Aliases != null && cmd.Aliases.Any() 
+                            ? $", {string.Join(", ", cmd.Aliases)}" 
+                            : "";
+                        
+                        var commandName = $"[cyan]{cmd.CommandName}{aliases}[/]";
+                        var description = cmd.Description ?? "[dim]No description[/]";
+                        var category = $"[yellow]{group.Key}[/]";
+
+                        table.AddRow(commandName, description, category);
+                    }
+                }
+            }
+
             AnsiConsole.Write(table);
             AnsiConsole.WriteLine();
 
-            AnsiConsole.MarkupLine("[bold]Assembly Management Commands:[/]");
-            AnsiConsole.MarkupLine("  [cyan]assembly list [--verbose][/]        - List loaded assemblies");
-            AnsiConsole.MarkupLine("  [cyan]assembly load <path>[/]             - Load assembly from path");
-            AnsiConsole.MarkupLine("  [cyan]assembly unload <name>[/]           - Unload assembly");
-            AnsiConsole.MarkupLine("  [cyan]assembly scan [--all][/]            - Scan assemblies for types");
-            AnsiConsole.MarkupLine("  [cyan]assembly types [--assembly][/]      - List types from assemblies");
-            AnsiConsole.MarkupLine("  [cyan]assembly drivers[/]                 - List data drivers");
-            AnsiConsole.MarkupLine("  [cyan]assembly extensions[/]              - List loader extensions");
-            AnsiConsole.MarkupLine("  [cyan]assembly create <typename>[/]       - Create instance from type");
-            AnsiConsole.MarkupLine("  [cyan]assembly nugget load <path>[/]      - Load NuGet package");
-            AnsiConsole.MarkupLine("  [dim]Alias: 'asm' for 'assembly'[/]");
+            AnsiConsole.MarkupLine("[bold]Built-in Shell Commands:[/]");
+            AnsiConsole.MarkupLine("  [cyan]help, ?[/]       - Show this help message");
+            AnsiConsole.MarkupLine("  [cyan]clear, cls[/]    - Clear the screen");
+            AnsiConsole.MarkupLine("  [cyan]exit, quit, q[/] - Exit the shell");
+            AnsiConsole.MarkupLine("  [cyan]status[/]        - Show session status and statistics");
+            AnsiConsole.MarkupLine("  [cyan]connections[/]   - Show all open connections");
+            AnsiConsole.MarkupLine("  [cyan]datasources[/]   - Show all active data sources");
+            AnsiConsole.MarkupLine("  [cyan]history[/]       - Show command history");
+            AnsiConsole.MarkupLine("  [cyan]extensions[/]    - Show loaded shell extensions");
+            AnsiConsole.MarkupLine("  [cyan]workflows[/]     - Show available workflows");
+            AnsiConsole.MarkupLine("  [cyan]profile[/]       - Show current profile");
+            AnsiConsole.MarkupLine("  [cyan]reload[/]        - Reload configuration from disk");
             AnsiConsole.WriteLine();
 
-            AnsiConsole.MarkupLine("[bold]Standard Commands:[/]");
-            AnsiConsole.MarkupLine("  [dim]All CLI commands are available (config, ds, etl, class, etc.)[/]");
-            AnsiConsole.MarkupLine("  [dim]Type 'config --help' or 'ds --help' for specific command help[/]");
+            AnsiConsole.MarkupLine("[bold]Usage:[/]");
+            AnsiConsole.MarkupLine("  [dim]Type '[cyan]<command> --help[/]' for detailed help on any command[/]");
+            AnsiConsole.MarkupLine("  [dim]Example: '[cyan]nuget --help[/]' or '[cyan]driver-nuget --help[/]'[/]");
             AnsiConsole.WriteLine();
 
-            AnsiConsole.MarkupLine("[bold]Extension Commands:[/]");
-            AnsiConsole.MarkupLine("  [dim]Custom commands loaded from extensions are also available[/]");
-            AnsiConsole.MarkupLine("  [dim]Type 'extensions' to see loaded extensions[/]");
-            AnsiConsole.WriteLine();
-
-            AnsiConsole.MarkupLine("[bold]Plugin Management:[/]");
-            AnsiConsole.MarkupLine("  [cyan]plugin list[/]                        - Show loaded plugins");
-            AnsiConsole.MarkupLine("  [cyan]plugin load <path>[/]                 - Load a plugin (hot-reload)");
-            AnsiConsole.MarkupLine("  [cyan]plugin unload <id>[/]                 - Unload a plugin");
-            AnsiConsole.MarkupLine("  [cyan]plugin reload <id>[/]                 - Reload a plugin");
-            AnsiConsole.MarkupLine("  [cyan]plugin health [id][/]                 - Check plugin health");
-            AnsiConsole.WriteLine();
-
-            AnsiConsole.MarkupLine("[bold]Examples:[/]");
-            AnsiConsole.MarkupLine("  [cyan]asm list --verbose[/]                 - List all assemblies with details");
-            AnsiConsole.MarkupLine("  [cyan]asm load MyExtension.dll[/]           - Load an assembly");
-            AnsiConsole.MarkupLine("  [cyan]asm types --interface IDataSource[/]  - Find all IDataSource types");
-            AnsiConsole.MarkupLine("  [cyan]asm drivers[/]                        - List all data drivers");
-            AnsiConsole.MarkupLine("  [cyan]config connection list[/]             - List all connections");
-            AnsiConsole.MarkupLine("  [cyan]ds test MyDatabase[/]                 - Test a connection");
-            AnsiConsole.MarkupLine("  [cyan]class generate-poco MyDB Users[/]     - Generate POCO class");
-            AnsiConsole.MarkupLine("  [cyan]status[/]                             - Show session statistics");
-            AnsiConsole.MarkupLine("  [cyan]alias ls datasources[/]               - Create 'ls' alias");
+            if (loadedCommands != null && loadedCommands.Any())
+            {
+                var commandCount = loadedCommands.Count();
+                AnsiConsole.MarkupLine($"[green]✓[/] [dim]{commandCount} commands loaded[/]");
+            }
         }
 
         public static void ShowStatus(IDMEEditor editor, SessionState state)

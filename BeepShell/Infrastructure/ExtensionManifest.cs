@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -87,17 +91,17 @@ namespace BeepShell.Infrastructure
             if (string.IsNullOrEmpty(MinShellVersion) && string.IsNullOrEmpty(MaxShellVersion))
                 return true;
 
-            var currentVersion = Version.Parse(shellVersion);
+            var currentVersion = System.Version.Parse(shellVersion);
 
             if (!string.IsNullOrEmpty(MinShellVersion))
             {
-                if (currentVersion < Version.Parse(MinShellVersion))
+                if (currentVersion < System.Version.Parse(MinShellVersion))
                     return false;
             }
 
             if (!string.IsNullOrEmpty(MaxShellVersion))
             {
-                if (currentVersion > Version.Parse(MaxShellVersion))
+                if (currentVersion > System.Version.Parse(MaxShellVersion))
                     return false;
             }
 

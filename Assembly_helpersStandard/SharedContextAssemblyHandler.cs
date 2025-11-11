@@ -43,6 +43,11 @@ namespace TheTechIdea.Beep.Tools
         #endregion
 
         #region Properties - IAssemblyHandler Implementation
+        /// <summary>
+        /// Instantiated loader extension objects that have already been created and executed
+        /// </summary>
+        public List<ILoaderExtention> LoaderExtensionInstances { get; set; } = new List<ILoaderExtention>();
+
         public List<Type> LoaderExtensions { get; set; } = new List<Type>();
         /// <summary>
         /// List of classes that extend the loader functionality.

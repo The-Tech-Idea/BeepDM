@@ -153,7 +153,7 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
 
                 case "help":
                 case "?":
-                    ShellCommands.ShowHelp();
+                    ShellCommands.ShowHelp(_loadedCommands);
                     return true;
 
                 case "status":
@@ -356,6 +356,16 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
                 {
                     var command = cmd.BuildCommand();
                     rootCommand.AddCommand(command);
+                    
+                    // Add aliases for the command
+                    if (cmd.Aliases != null && cmd.Aliases.Length > 0)
+                    {
+                        foreach (var alias in cmd.Aliases)
+                        {
+                            // Add alias to the command itself
+                            command.AddAlias(alias);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -370,74 +380,71 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
         {
             try
             {
-                // Get already-discovered ILoaderExtention types from AssemblyHandler
-                // AssemblyHandler.LoaderExtensions contains Type objects that implement ILoaderExtention
-                var loaderExtensionTypes = _editor.AssemblyHandler.LoaderExtensionClasses;
+                // First, scan the BeepShell assembly itself for built-in commands
+                ScanCurrentAssemblyCommands();
 
-                if (loaderExtensionTypes == null || loaderExtensionTypes.Count == 0)
+                // Get already-instantiated loader extensions from AssemblyHandler
+                // AssemblyHandler.ScanExtensions() already created and scanned these during LoadAllAssembly()
+                var loaderExtensions = _editor.assemblyHandler.LoaderExtensionInstances;
+
+                if (loaderExtensions == null || loaderExtensions.Count == 0)
                 {
-                    // No extensions found, that's okay
                     return;
                 }
 
                 AnsiConsole.Status()
                     .Start("Loading shell extensions...", ctx =>
                     {
-                        foreach (var extClass in loaderExtensionTypes)
+                        // Find ShellExtensionScanner instances and get their discovered commands/workflows/extensions
+                        foreach (var extension in loaderExtensions)
                         {
                             try
                             {
-                                // Get the actual Type from the AssemblyClassDefinition
-                                var extType = _editor.AssemblyHandler.GetType(extClass.className);
-                                
-                                if (extType == null)
-                                    continue;
-
-                                // Instantiate the loader extension
-                                var loaderExt = Activator.CreateInstance(extType, new object[] { _editor.AssemblyHandler });
-                                
-                                // Check if it's a ShellExtensionScanner or implements our shell interfaces
-                                if (loaderExt is ILoaderExtention)
+                                if (extension is ShellExtensionScanner shellScanner)
                                 {
-                                    // This is a generic ILoaderExtention, we need to check what it discovered
-                                    // For now, skip non-shell extensions
-                                    if (extType.Namespace?.Contains("BeepShell") != true)
-                                        continue;
-                                }
+                                    // Get the INSTANCES that were already created during scanning
+                                    var commands = shellScanner.Commands;
+                                    var workflows = shellScanner.Workflows;
+                                    var extensions = shellScanner.Extensions;
 
-                                // Check if the type itself implements shell interfaces directly
-                                CheckAndLoadShellInterfaces(extType);
+                                    // Initialize and load extension providers first
+                                    foreach (var ext in extensions)
+                                    {
+                                        ext.Initialize(_editor);
+                                        _loadedExtensions.Add(ext);
+
+                                        // Get commands and workflows from the extension provider
+                                        foreach (var cmd in ext.GetCommands())
+                                        {
+                                            cmd.Initialize(_editor);
+                                            _loadedCommands.Add(cmd);
+                                        }
+
+                                        foreach (var wf in ext.GetWorkflows())
+                                        {
+                                            wf.Initialize(_editor);
+                                            _loadedWorkflows.Add(wf);
+                                        }
+                                    }
+
+                                    // Load standalone commands
+                                    foreach (var cmd in commands)
+                                    {
+                                        cmd.Initialize(_editor);
+                                        _loadedCommands.Add(cmd);
+                                    }
+
+                                    // Load standalone workflows
+                                    foreach (var wf in workflows)
+                                    {
+                                        wf.Initialize(_editor);
+                                        _loadedWorkflows.Add(wf);
+                                    }
+                                }
                             }
                             catch (Exception ex)
                             {
-                                AnsiConsole.MarkupLine($"[yellow]Warning:[/] Failed to load extension: {ex.Message}");
-                            }
-                        }
-
-                        // Also check all loaded assemblies for shell extension types directly
-                        // since AssemblyHandler scans for ILoaderExtention but shell extensions
-                        // might implement IShellCommand/IShellWorkflow/IShellExtension directly
-                        foreach (var assembly in _editor.AssemblyHandler.LoadedAssemblies)
-                        {
-                            try
-                            {
-                                if (assembly.FullName.StartsWith("System") || 
-                                    assembly.FullName.StartsWith("Microsoft") ||
-                                    assembly.FullName.StartsWith("netstandard"))
-                                    continue;
-
-                                var types = assembly.GetTypes();
-                                foreach (var type in types)
-                                {
-                                    if (type.IsAbstract || type.IsInterface)
-                                        continue;
-
-                                    CheckAndLoadShellInterfaces(type);
-                                }
-                            }
-                            catch (Exception)
-                            {
-                                // Skip assemblies that can't be reflected
+                                AnsiConsole.MarkupLine($"[yellow]Warning:[/] Failed to process extension: {ex.Message}");
                             }
                         }
                     });
@@ -445,52 +452,6 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
             catch (Exception ex)
             {
                 AnsiConsole.MarkupLine($"[red]Error loading extensions:[/] {ex.Message}");
-            }
-        }
-
-        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Extension loading requires dynamic type creation")]
-        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Extension system requires reflection")]
-        private void CheckAndLoadShellInterfaces([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
-        {
-            try
-            {
-                // Check for IShellExtension
-                if (typeof(IShellExtension).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
-                {
-                    var extension = (IShellExtension)Activator.CreateInstance(type);
-                    extension.Initialize(_editor);
-                    _loadedExtensions.Add(extension);
-
-                    // Get commands and workflows from extension
-                    foreach (var cmd in extension.GetCommands())
-                    {
-                        _loadedCommands.Add(cmd);
-                    }
-
-                    foreach (var wf in extension.GetWorkflows())
-                    {
-                        _loadedWorkflows.Add(wf);
-                    }
-                }
-                // Check for standalone IShellCommand
-                else if (typeof(IShellCommand).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
-                {
-                    var command = (IShellCommand)Activator.CreateInstance(type);
-                    command.Initialize(_editor);
-                    _loadedCommands.Add(command);
-                }
-                // Check for standalone IShellWorkflow
-                else if (typeof(IShellWorkflow).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
-                {
-                    var workflow = (IShellWorkflow)Activator.CreateInstance(type);
-                    workflow.Initialize(_editor);
-                    _loadedWorkflows.Add(workflow);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Skip types that can't be instantiated
-                AnsiConsole.MarkupLine($"[dim]Skipped {type.Name}: {ex.Message}[/]");
             }
         }
 
@@ -513,7 +474,7 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
                 }
 
                 // Unload plugins
-                _pluginManager?.UnloadAll();
+                // TODO: _pluginManager doesn't have UnloadAll() method - need to unload individually
 
                 _services?.Dispose();
                 
@@ -533,6 +494,37 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
             _commandAliases["q"] = "exit";
             _commandAliases["h"] = "help";
             _commandAliases["stat"] = "status";
+        }
+
+        private void ScanCurrentAssemblyCommands()
+        {
+            try
+            {
+                var currentAssembly = typeof(InteractiveShell).Assembly;
+                var commandTypes = currentAssembly.GetTypes()
+                    .Where(t => !t.IsAbstract && 
+                               !t.IsInterface && 
+                               typeof(IShellCommand).IsAssignableFrom(t))
+                    .ToList();
+
+                foreach (var type in commandTypes)
+                {
+                    try
+                    {
+                        var command = (IShellCommand)Activator.CreateInstance(type)!;
+                        command.Initialize(_editor);
+                        _loadedCommands.Add(command);
+                    }
+                    catch (Exception ex)
+                    {
+                        _editor.Logger?.WriteLog($"Failed to load command {type.Name}: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _editor.Logger?.WriteLog($"Error scanning current assembly: {ex.Message}");
+            }
         }
 
         private void HandlePluginCommand(string[] parts)

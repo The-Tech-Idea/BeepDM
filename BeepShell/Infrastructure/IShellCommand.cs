@@ -1,4 +1,8 @@
+using System;
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
+using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor;
 
 namespace BeepShell.Infrastructure

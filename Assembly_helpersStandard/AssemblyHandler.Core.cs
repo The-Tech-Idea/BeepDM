@@ -44,6 +44,11 @@ namespace TheTechIdea.Beep.Tools
         public List<Type> LoaderExtensions { get; set; } = new List<Type>();
 
         /// <summary>
+        /// Instantiated loader extension objects that have already been created and executed
+        /// </summary>
+        public List<ILoaderExtention> LoaderExtensionInstances { get; set; } = new List<ILoaderExtention>();
+
+        /// <summary>
         /// List of namespaces to ignore during scanning
         /// </summary>
         public List<string> NamespacestoIgnore { get; set; } = new List<string>();

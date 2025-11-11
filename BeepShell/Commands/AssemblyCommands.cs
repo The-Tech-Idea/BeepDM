@@ -1,8 +1,14 @@
+using System;
+using System.Collections.Generic;
 using System.CommandLine;
+using System.IO;
+using System.Linq;
 using BeepShell.Infrastructure;
 using Spectre.Console;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Shell.Commands
 {
@@ -49,7 +55,7 @@ namespace TheTechIdea.Beep.Shell.Commands
 
             cmd.SetHandler((verbose, filter) =>
             {
-                var assemblies = editor.AssemblyHandler.LoadedAssemblies;
+                var assemblies = editor.assemblyHandler.LoadedAssemblies;
 
                 if (!string.IsNullOrWhiteSpace(filter))
                 {
@@ -144,12 +150,12 @@ namespace TheTechIdea.Beep.Shell.Commands
                         {
                             if (File.Exists(path))
                             {
-                                var asm = editor.AssemblyHandler.LoadAssembly(path);
+                                var asm = editor.assemblyHandler.LoadAssembly(path);
                                 return asm != null ? "Success" : "Failed";
                             }
                             else
                             {
-                                var result = editor.AssemblyHandler.LoadAssembly(path, folderType);
+                                var result = editor.assemblyHandler.LoadAssembly(path, folderType);
                                 return result;
                             }
                         });
@@ -157,7 +163,7 @@ namespace TheTechIdea.Beep.Shell.Commands
                     if (result == "Success" || string.IsNullOrEmpty(result))
                     {
                         AnsiConsole.MarkupLine($"[green]✓[/] Assembly loaded successfully");
-                        AnsiConsole.MarkupLine($"[dim]Total assemblies: {editor.AssemblyHandler.LoadedAssemblies.Count}[/]");
+                        AnsiConsole.MarkupLine($"[dim]Total assemblies: {editor.assemblyHandler.LoadedAssemblies.Count}[/]");
                     }
                     else
                     {
@@ -192,11 +198,11 @@ namespace TheTechIdea.Beep.Shell.Commands
                     bool success;
                     if (isNugget)
                     {
-                        success = editor.AssemblyHandler.UnloadNugget(name);
+                        success = editor.assemblyHandler.UnloadNugget(name);
                     }
                     else
                     {
-                        success = editor.AssemblyHandler.UnloadAssembly(name);
+                        success = editor.assemblyHandler.UnloadAssembly(name);
                     }
 
                     if (success)
@@ -236,29 +242,17 @@ namespace TheTechIdea.Beep.Shell.Commands
                 {
                     if (!string.IsNullOrWhiteSpace(path))
                     {
-                        var asm = editor.AssemblyHandler.LoadAssembly(path);
+                        var asm = editor.assemblyHandler.LoadAssembly(path);
                         if (asm != null)
                         {
-                            AnsiConsole.Status()
-                                .Start("Scanning assembly...", ctx =>
-                                {
-                                    editor.AssemblyHandler.ScanAssembly(asm);
-                                });
-                            AnsiConsole.MarkupLine($"[green]✓[/] Assembly scanned: {asm.GetName().Name}");
+                            // TODO: ScanAssembly method no longer exists in IAssemblyHandler
+                            AnsiConsole.MarkupLine($"[yellow]Assembly loaded but scanning not implemented: {asm.GetName().Name}[/]");
                         }
                     }
                     else if (all)
                     {
-                        AnsiConsole.Status()
-                            .Start("Scanning all assemblies...", ctx =>
-                            {
-                                foreach (var asm in editor.AssemblyHandler.LoadedAssemblies)
-                                {
-                                    ctx.Status($"Scanning {asm.GetName().Name}...");
-                                    editor.AssemblyHandler.ScanAssembly(asm);
-                                }
-                            });
-                        AnsiConsole.MarkupLine($"[green]✓[/] All assemblies scanned");
+                        // TODO: ScanAssembly method no longer exists in IAssemblyHandler
+                        AnsiConsole.MarkupLine($"[yellow]Assembly scanning not implemented[/]");
                     }
                     else
                     {
@@ -295,7 +289,7 @@ namespace TheTechIdea.Beep.Shell.Commands
             {
                 var types = new List<Type>();
 
-                var assemblies = editor.AssemblyHandler.LoadedAssemblies;
+                var assemblies = editor.assemblyHandler.LoadedAssemblies;
                 if (!string.IsNullOrWhiteSpace(assemblyName))
                 {
                     assemblies = assemblies.Where(a => a.GetName().Name.Contains(assemblyName, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -369,7 +363,7 @@ namespace TheTechIdea.Beep.Shell.Commands
 
                 if (!string.IsNullOrWhiteSpace(category))
                 {
-                    drivers = drivers.Where(d => d.category.Equals(category, StringComparison.OrdinalIgnoreCase)).ToList();
+                    drivers = drivers.Where(d => d.DatasourceCategory.ToString().Equals(category, StringComparison.OrdinalIgnoreCase)).ToList();
                 }
 
                 if (!drivers.Any())
@@ -389,8 +383,8 @@ namespace TheTechIdea.Beep.Shell.Commands
                 foreach (var driver in drivers)
                 {
                     table.AddRow(
-                        driver.className,
-                        driver.category.ToString(),
+                        driver.DriverClass,
+                        driver.DatasourceCategory.ToString(),
                         driver.PackageName ?? "[dim]N/A[/]",
                         driver.version ?? "[dim]N/A[/]"
                     );
@@ -409,7 +403,7 @@ namespace TheTechIdea.Beep.Shell.Commands
 
             cmd.SetHandler(() =>
             {
-                var extensions = editor.AssemblyHandler.LoaderExtensionClasses;
+                var extensions = editor.assemblyHandler.LoaderExtensionClasses;
 
                 if (!extensions.Any())
                 {
@@ -426,10 +420,15 @@ namespace TheTechIdea.Beep.Shell.Commands
 
                 foreach (var ext in extensions)
                 {
+                    var fullName = ext.className ?? "";
+                    var lastDot = fullName.LastIndexOf('.');
+                    var namespacePart = lastDot > 0 ? fullName.Substring(0, lastDot) : "[dim]N/A[/]";
+                    var className = lastDot > 0 ? fullName.Substring(lastDot + 1) : fullName;
+                    
                     table.AddRow(
-                        ext.className,
-                        ext.assemblyname,
-                        ext.nameSpace ?? "[dim]N/A[/]"
+                        className,
+                        ext.AssemblyName ?? "[dim]N/A[/]",
+                        namespacePart
                     );
                 }
 
@@ -458,11 +457,11 @@ namespace TheTechIdea.Beep.Shell.Commands
                     
                     if (!string.IsNullOrWhiteSpace(assemblyName))
                     {
-                        instance = editor.AssemblyHandler.CreateInstanceFromString(assemblyName, typeName);
+                        instance = editor.assemblyHandler.CreateInstanceFromString(assemblyName, typeName);
                     }
                     else
                     {
-                        instance = editor.AssemblyHandler.CreateInstanceFromString(typeName);
+                        instance = editor.assemblyHandler.CreateInstanceFromString(typeName);
                     }
 
                     if (instance != null)
@@ -498,7 +497,7 @@ namespace TheTechIdea.Beep.Shell.Commands
             {
                 try
                 {
-                    var success = editor.AssemblyHandler.LoadNugget(path);
+                    var success = editor.assemblyHandler.LoadNugget(path);
                     if (success)
                     {
                         AnsiConsole.MarkupLine($"[green]✓[/] Nugget loaded: {path}");
