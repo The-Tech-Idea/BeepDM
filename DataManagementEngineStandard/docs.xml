@@ -14701,6 +14701,7 @@
         <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.InitializeMappingCache">
             <summary>
             Initializes the mapping cache with common data source mappings.
+            Only loads mappings for data sources that have drivers installed.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.InitializeNetTypesCache">
