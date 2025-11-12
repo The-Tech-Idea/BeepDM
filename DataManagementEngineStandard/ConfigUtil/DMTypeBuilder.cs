@@ -129,7 +129,13 @@ namespace TheTechIdea.Beep.Utilities
             if (!DataSourceNameSpace.ContainsKey(typeName))
                 DataSourceNameSpace[typeName] = $"{dataSourceName}.{typeName}";
 
-            return DataSourceNameSpace[typeName].Split('.').Reverse().Skip(1).Reverse().Aggregate((a, b) => $"{a}.{b}");
+            // Fix: Store the split result in a variable before using LINQ methods
+            var parts = DataSourceNameSpace[typeName].Split('.');
+            if (parts.Length <= 1)
+                return DataSourceNameSpace[typeName]; // No namespace to extract
+
+            // Remove the last part (typeName) to get the namespace
+            return string.Join(".", parts.Take(parts.Length - 1));
         }
 
         /// <summary>Compiles a dynamic type with the specified fields.</summary>
