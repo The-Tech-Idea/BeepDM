@@ -32,8 +32,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeepCLI", "CLI\BeepCLI.cspr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeepShell", "BeepShell\BeepShell.csproj", "{69BB4CFC-EE08-44C4-B66C-885B5DEABD3D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeepShell.Extensions.Example", "BeepShell.Extensions.Example\BeepShell.Extensions.Example.csproj", "{F6A00759-93C8-11B2-31B6-7B5785F0E85A}"
-EndProject
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Ad-Hoc|Any CPU = Ad-Hoc|Any CPU

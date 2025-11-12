@@ -67,6 +67,14 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
 
         public int Run()
         {
+            // Spectre.Console throws when stdin is non-interactive during automated builds/tasks.
+            // Bail out gracefully so CI or design-time builds do not hang or crash.
+            if (!AnsiConsole.Console.Profile.Capabilities.Interactive || Console.IsInputRedirected)
+            {
+                AnsiConsole.MarkupLine("[yellow]Interactive prompt disabled: console input is not available.[/]");
+                return 0;
+            }
+
             while (_isRunning)
             {
                 try
@@ -380,11 +388,9 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
         {
             try
             {
-                // First, scan the BeepShell assembly itself for built-in commands
-                ScanCurrentAssemblyCommands();
-
                 // Get already-instantiated loader extensions from AssemblyHandler
                 // AssemblyHandler.ScanExtensions() already created and scanned these during LoadAllAssembly()
+                // This includes ShellExtensionScanner which scans the BeepShell assembly
                 var loaderExtensions = _editor.assemblyHandler.LoaderExtensionInstances;
 
                 if (loaderExtensions == null || loaderExtensions.Count == 0)
@@ -494,37 +500,6 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
             _commandAliases["q"] = "exit";
             _commandAliases["h"] = "help";
             _commandAliases["stat"] = "status";
-        }
-
-        private void ScanCurrentAssemblyCommands()
-        {
-            try
-            {
-                var currentAssembly = typeof(InteractiveShell).Assembly;
-                var commandTypes = currentAssembly.GetTypes()
-                    .Where(t => !t.IsAbstract && 
-                               !t.IsInterface && 
-                               typeof(IShellCommand).IsAssignableFrom(t))
-                    .ToList();
-
-                foreach (var type in commandTypes)
-                {
-                    try
-                    {
-                        var command = (IShellCommand)Activator.CreateInstance(type)!;
-                        command.Initialize(_editor);
-                        _loadedCommands.Add(command);
-                    }
-                    catch (Exception ex)
-                    {
-                        _editor.Logger?.WriteLog($"Failed to load command {type.Name}: {ex.Message}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _editor.Logger?.WriteLog($"Error scanning current assembly: {ex.Message}");
-            }
         }
 
         private void HandlePluginCommand(string[] parts)

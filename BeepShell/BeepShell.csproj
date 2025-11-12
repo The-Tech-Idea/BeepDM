@@ -25,7 +25,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
     <PackageReference Include="TheTechIdea.Beep.AssemblyLoader" Version="2.0.11" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="2.0.51" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementEngine" Version="2.0.52" />
     <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.104" />
     <PackageReference Include="TheTechIdea.Beep.DMLogger" Version="2.0.3" />
     <PackageReference Include="TheTechIdea.Beep.JsonLoader" Version="2.0.4" />

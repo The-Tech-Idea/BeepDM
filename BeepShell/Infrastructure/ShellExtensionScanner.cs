@@ -63,7 +63,7 @@ namespace BeepShell.Infrastructure
             {
                 foreach (var assembly in _assemblyHandler.LoadedAssemblies)
                 {
-                    Scan(assembly);
+                   // Scan(assembly);
                 }
                 return _assemblyHandler.ErrorObject;
             }
@@ -119,6 +119,13 @@ namespace BeepShell.Infrastructure
                         // Check for IShellCommand implementations
                         if (typeof(IShellCommand).IsAssignableFrom(type))
                         {
+                            // Check if this type is already discovered (prevent duplicates)
+                            if (_commands.Any(c => c.GetType() == type))
+                            {
+                                _assemblyHandler.Logger?.WriteLog($"Skipping duplicate shell command: {type.FullName}");
+                                continue;
+                            }
+                            
                             var command = (IShellCommand)Activator.CreateInstance(type)!;
                             _commands.Add(command);
                             _assemblyHandler.Logger?.WriteLog($"Discovered shell command: {type.FullName}");
@@ -127,6 +134,13 @@ namespace BeepShell.Infrastructure
                         // Check for IShellWorkflow implementations
                         if (typeof(IShellWorkflow).IsAssignableFrom(type))
                         {
+                            // Check if this type is already discovered (prevent duplicates)
+                            if (_workflows.Any(w => w.GetType() == type))
+                            {
+                                _assemblyHandler.Logger?.WriteLog($"Skipping duplicate shell workflow: {type.FullName}");
+                                continue;
+                            }
+                            
                             var workflow = (IShellWorkflow)Activator.CreateInstance(type)!;
                             _workflows.Add(workflow);
                             _assemblyHandler.Logger?.WriteLog($"Discovered shell workflow: {type.FullName}");
@@ -135,6 +149,13 @@ namespace BeepShell.Infrastructure
                         // Check for IShellExtension implementations
                         if (typeof(IShellExtension).IsAssignableFrom(type))
                         {
+                            // Check if this type is already discovered (prevent duplicates)
+                            if (_extensions.Any(e => e.GetType() == type))
+                            {
+                                _assemblyHandler.Logger?.WriteLog($"Skipping duplicate shell extension provider: {type.FullName}");
+                                continue;
+                            }
+                            
                             var extension = (IShellExtension)Activator.CreateInstance(type)!;
                             _extensions.Add(extension);
                             _assemblyHandler.Logger?.WriteLog($"Discovered shell extension provider: {type.FullName}");

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Logger;
@@ -74,7 +75,7 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
                 var logger = sp.GetRequiredService<IDMLogger>();
                 var util = sp.GetRequiredService<IUtil>();
                 
-                return new SharedContextAssemblyHandler(
+                return new AssemblyHandler(
                     configEditor,
                     errorInfo,
                     logger,
@@ -150,7 +151,20 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
             if (!string.IsNullOrEmpty(envPath))
                 return envPath;
 
-            // Check if there's a saved global config location
+            // Default to executable directory so BeepShell keeps its config alongside the binary
+            var exeDir = GetExecutableDirectory();
+            if (!string.IsNullOrEmpty(exeDir))
+            {
+                if (profileName.Equals("default", StringComparison.OrdinalIgnoreCase))
+                {
+                    return exeDir;
+                }
+
+                var profileDir = Path.Combine(exeDir, "Profiles", profileName);
+                return profileDir;
+            }
+
+            // Check if there's a saved global config location (legacy fallback)
             var savedPath = ReadSavedConfigPath();
             if (!string.IsNullOrEmpty(savedPath) && profileName == "default")
                 return savedPath;
@@ -167,23 +181,8 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
         
         private static string ReadSavedConfigPath()
         {
-            try
-            {
-                var beepPathFile = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                    "TheTechIdea",
-                    "Beep",
-                    "BeepPath.txt"
-                );
-
-                if (File.Exists(beepPathFile))
-                    return File.ReadAllText(beepPathFile).Trim();
-            }
-            catch
-            {
-                // Ignore errors
-            }
-
+            // BeepShell ignores the legacy BeepPath.txt file to always use its own exe directory
+            // This prevents interference from other Beep applications (like WinForms samples)
             return string.Empty;
         }
         
@@ -192,6 +191,31 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
             if (!Directory.Exists(configPath))
             {
                 Directory.CreateDirectory(configPath);
+            }
+        }
+
+        private static string GetExecutableDirectory()
+        {
+            try
+            {
+                // Prefer AppContext.BaseDirectory for compatibility with single-file publish
+                var baseDir = AppContext.BaseDirectory;
+                if (!string.IsNullOrWhiteSpace(baseDir))
+                {
+                    return Path.GetFullPath(baseDir);
+                }
+
+                var entryAssemblyLocation = Assembly.GetEntryAssembly()?.Location;
+                if (!string.IsNullOrWhiteSpace(entryAssemblyLocation))
+                {
+                    return Path.GetDirectoryName(entryAssemblyLocation) ?? string.Empty;
+                }
+
+                return Directory.GetCurrentDirectory();
+            }
+            catch
+            {
+                return string.Empty;
             }
         }
 
