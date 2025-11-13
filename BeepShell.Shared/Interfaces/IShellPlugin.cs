@@ -4,9 +4,9 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Threading.Tasks;
-using TheTechIdea.Beep.Editor;
+using BeepShell.Shared.Models;
 
-namespace BeepShell.Infrastructure
+namespace BeepShell.Shared.Interfaces
 {
     /// <summary>
     /// Hot-reloadable plugin interface for dynamic loading/unloading without shell restart.
@@ -46,18 +46,6 @@ namespace BeepShell.Infrastructure
     }
 
     /// <summary>
-    /// Plugin health status
-    /// </summary>
-    public class PluginHealthStatus
-    {
-        public bool IsHealthy { get; set; } = true;
-        public string Status { get; set; } = "OK";
-        public List<string> Warnings { get; set; } = new();
-        public List<string> Errors { get; set; } = new();
-        public Dictionary<string, object> Metrics { get; set; } = new();
-    }
-
-    /// <summary>
     /// Plugin manager for loading, unloading, and managing plugins
     /// </summary>
     public interface IPluginManager
@@ -85,7 +73,7 @@ namespace BeepShell.Infrastructure
         /// <summary>
         /// Get plugin by ID
         /// </summary>
-        IShellPlugin GetPlugin(string pluginId);
+        IShellPlugin? GetPlugin(string pluginId);
 
         /// <summary>
         /// Check if plugin is loaded
@@ -104,21 +92,9 @@ namespace BeepShell.Infrastructure
     }
 
     /// <summary>
-    /// Plugin load result
-    /// </summary>
-    public class PluginLoadResult
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; }
-        public IShellPlugin Plugin { get; set; }
-        public List<string> Errors { get; set; } = new();
-        public TimeSpan LoadTime { get; set; }
-    }
-
-    /// <summary>
     /// Plugin load context for isolation
     /// </summary>
-    internal class PluginLoadContext : AssemblyLoadContext
+    public class PluginLoadContext : AssemblyLoadContext
     {
         private readonly AssemblyDependencyResolver _resolver;
 
@@ -128,7 +104,7 @@ namespace BeepShell.Infrastructure
             _resolver = new AssemblyDependencyResolver(pluginPath);
         }
 
-        protected override Assembly Load(AssemblyName assemblyName)
+        protected override Assembly? Load(AssemblyName assemblyName)
         {
             // Try to resolve from plugin dependencies first
             var assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);

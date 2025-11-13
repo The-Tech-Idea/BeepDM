@@ -1,7 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Runtime.Loader;
-using System.Threading.Tasks;
-using TheTechIdea.Beep.Editor;
+﻿global using System;
+global using System.Collections.Generic;
+global using System.IO;
+global using System.Reflection;
+global using System.Runtime.Loader;
+global using System.Threading.Tasks;
+global using TheTechIdea.Beep.Editor;
+global using BeepShell.Infrastructure;
+global using BeepShell.Shared.Interfaces;
+global using BeepShell.Shared.Models;
+global using BeepShell.Shared.Utilities;

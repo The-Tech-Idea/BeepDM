@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace BeepShell.Infrastructure
+namespace BeepShell.Shared.Models
 {
     /// <summary>
     /// Extension manifest for packaging and distribution
@@ -13,46 +13,46 @@ namespace BeepShell.Infrastructure
     public class ExtensionManifest
     {
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public string Id { get; set; } = string.Empty;
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [JsonPropertyName("version")]
-        public string Version { get; set; }
+        public string Version { get; set; } = string.Empty;
 
         [JsonPropertyName("author")]
-        public string Author { get; set; }
+        public string Author { get; set; } = string.Empty;
 
         [JsonPropertyName("description")]
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
         [JsonPropertyName("homepage")]
-        public string Homepage { get; set; }
+        public string Homepage { get; set; } = string.Empty;
 
         [JsonPropertyName("repository")]
-        public string Repository { get; set; }
+        public string Repository { get; set; } = string.Empty;
 
         [JsonPropertyName("license")]
-        public string License { get; set; }
+        public string License { get; set; } = string.Empty;
 
         [JsonPropertyName("keywords")]
         public List<string> Keywords { get; set; } = new();
 
         [JsonPropertyName("category")]
-        public string Category { get; set; }
+        public string Category { get; set; } = string.Empty;
 
         [JsonPropertyName("minShellVersion")]
-        public string MinShellVersion { get; set; }
+        public string MinShellVersion { get; set; } = string.Empty;
 
         [JsonPropertyName("maxShellVersion")]
-        public string MaxShellVersion { get; set; }
+        public string MaxShellVersion { get; set; } = string.Empty;
 
         [JsonPropertyName("dependencies")]
         public Dictionary<string, string> Dependencies { get; set; } = new();
 
         [JsonPropertyName("assembly")]
-        public AssemblyInfo Assembly { get; set; }
+        public AssemblyInfo Assembly { get; set; } = new();
 
         [JsonPropertyName("commands")]
         public List<CommandInfo> Commands { get; set; } = new();
@@ -61,12 +61,12 @@ namespace BeepShell.Infrastructure
         public List<WorkflowInfo> Workflows { get; set; } = new();
 
         [JsonPropertyName("configuration")]
-        public ConfigurationInfo Configuration { get; set; }
+        public ConfigurationInfo Configuration { get; set; } = new();
 
         [JsonPropertyName("changelog")]
         public List<ChangelogEntry> Changelog { get; set; } = new();
 
-        public static ExtensionManifest Load(string path)
+        public static ExtensionManifest? Load(string path)
         {
             var json = File.ReadAllText(path);
             return JsonSerializer.Deserialize<ExtensionManifest>(json, new JsonSerializerOptions
@@ -112,10 +112,10 @@ namespace BeepShell.Infrastructure
     public class AssemblyInfo
     {
         [JsonPropertyName("fileName")]
-        public string FileName { get; set; }
+        public string FileName { get; set; } = string.Empty;
 
         [JsonPropertyName("targetFramework")]
-        public string TargetFramework { get; set; }
+        public string TargetFramework { get; set; } = string.Empty;
 
         [JsonPropertyName("runtimeDependencies")]
         public List<string> RuntimeDependencies { get; set; } = new();
@@ -124,13 +124,13 @@ namespace BeepShell.Infrastructure
     public class CommandInfo
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [JsonPropertyName("description")]
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
         [JsonPropertyName("category")]
-        public string Category { get; set; }
+        public string Category { get; set; } = string.Empty;
 
         [JsonPropertyName("aliases")]
         public List<string> Aliases { get; set; } = new();
@@ -142,13 +142,13 @@ namespace BeepShell.Infrastructure
     public class WorkflowInfo
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [JsonPropertyName("description")]
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
         [JsonPropertyName("category")]
-        public string Category { get; set; }
+        public string Category { get; set; } = string.Empty;
 
         [JsonPropertyName("parameters")]
         public List<ParameterInfo> Parameters { get; set; } = new();
@@ -157,25 +157,25 @@ namespace BeepShell.Infrastructure
     public class ParameterInfo
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [JsonPropertyName("type")]
-        public string Type { get; set; }
+        public string Type { get; set; } = string.Empty;
 
         [JsonPropertyName("required")]
         public bool Required { get; set; }
 
         [JsonPropertyName("description")]
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
         [JsonPropertyName("defaultValue")]
-        public object DefaultValue { get; set; }
+        public object? DefaultValue { get; set; }
     }
 
     public class ConfigurationInfo
     {
         [JsonPropertyName("fileName")]
-        public string FileName { get; set; }
+        public string FileName { get; set; } = string.Empty;
 
         [JsonPropertyName("schema")]
         public Dictionary<string, object> Schema { get; set; } = new();
@@ -184,10 +184,10 @@ namespace BeepShell.Infrastructure
     public class ChangelogEntry
     {
         [JsonPropertyName("version")]
-        public string Version { get; set; }
+        public string Version { get; set; } = string.Empty;
 
         [JsonPropertyName("date")]
-        public string Date { get; set; }
+        public string Date { get; set; } = string.Empty;
 
         [JsonPropertyName("changes")]
         public List<string> Changes { get; set; } = new();
@@ -225,14 +225,12 @@ namespace BeepShell.Infrastructure
             // Version validation
             if (!string.IsNullOrWhiteSpace(manifest.Version))
             {
-                if (!Version.TryParse(manifest.Version, out _))
+                if (!System.Version.TryParse(manifest.Version, out _))
                     _errors.Add($"Invalid version format: {manifest.Version}");
             }
 
             // Assembly validation
-            if (manifest.Assembly == null)
-                _errors.Add("Manifest must specify an 'assembly' section");
-            else if (string.IsNullOrWhiteSpace(manifest.Assembly.FileName))
+            if (manifest.Assembly == null || string.IsNullOrWhiteSpace(manifest.Assembly.FileName))
                 _errors.Add("Assembly fileName must be specified");
 
             // Warnings

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using TheTechIdea.Beep.Shell.Infrastructure;
+using BeepShell.Commands;
 using Spectre.Console;
 
 namespace TheTechIdea.Beep.Shell
@@ -15,6 +16,10 @@ namespace TheTechIdea.Beep.Shell
         {
             try
             {
+                // Execute any pending driver cleanup BEFORE loading any assemblies
+                var appPath = AppDomain.CurrentDomain.BaseDirectory;
+                DriverShellCommands.ExecutePendingCleanup(appPath);
+
                 // Display welcome banner
                 DisplayWelcomeBanner();
 

@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor;
+using BeepShell.Shared.Models;
 
-namespace BeepShell.Infrastructure
+namespace BeepShell.Shared.Interfaces
 {
     /// <summary>
     /// Interface for shell command extensions that can be discovered and loaded dynamically.
@@ -125,30 +125,6 @@ namespace BeepShell.Infrastructure
     }
 
     /// <summary>
-    /// Workflow parameter definition
-    /// </summary>
-    public class WorkflowParameter
-    {
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public Type ParameterType { get; set; }
-        public bool Required { get; set; }
-        public object DefaultValue { get; set; }
-    }
-
-    /// <summary>
-    /// Workflow execution result
-    /// </summary>
-    public class WorkflowResult
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; }
-        public Dictionary<string, object> OutputData { get; set; } = new();
-        public List<string> Errors { get; set; } = new();
-        public TimeSpan Duration { get; set; }
-    }
-
-    /// <summary>
     /// Marker interface for shell extension providers.
     /// Implement this to create a container for multiple commands/workflows.
     /// </summary>
@@ -217,7 +193,7 @@ namespace BeepShell.Infrastructure
         /// <summary>
         /// Get extension configuration if available
         /// </summary>
-        IExtensionConfig GetConfig() => null;
+        IExtensionConfig? GetConfig() => null;
     }
 
     /// <summary>
@@ -243,7 +219,7 @@ namespace BeepShell.Infrastructure
         /// <summary>
         /// Get configuration value
         /// </summary>
-        T GetValue<T>(string key, T defaultValue = default);
+        T? GetValue<T>(string key, T? defaultValue = default);
 
         /// <summary>
         /// Set configuration value
@@ -254,33 +230,5 @@ namespace BeepShell.Infrastructure
         /// Check if configuration has a key
         /// </summary>
         bool HasKey(string key);
-    }
-
-    /// <summary>
-    /// Extension metadata attribute for discovery and validation
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-    public class ShellExtensionAttribute : Attribute
-    {
-        public string Name { get; set; }
-        public string Version { get; set; }
-        public string Author { get; set; }
-        public string Description { get; set; }
-        public string[] Dependencies { get; set; } = Array.Empty<string>();
-        public string MinShellVersion { get; set; }
-        public string ConfigFileName { get; set; }
-    }
-
-    /// <summary>
-    /// Command metadata attribute
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-    public class ShellCommandAttribute : Attribute
-    {
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string Category { get; set; }
-        public string[] Aliases { get; set; } = Array.Empty<string>();
-        public bool RequiresConnection { get; set; }
     }
 }

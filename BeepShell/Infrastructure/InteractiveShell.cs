@@ -7,10 +7,13 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
+using BeepShell.Infrastructure;
+using BeepShell.Shared.Interfaces;
+using BeepShell.Shared.Models;
 using Spectre.Console;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Shell.Commands;
-using BeepShell.Infrastructure;
+using TheTechIdea.Beep.Shell.Infrastructure;
 
 namespace TheTechIdea.Beep.Shell.Infrastructure
 {
@@ -625,14 +628,14 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
             {
                 var result = await _pluginManager.LoadPluginAsync(path, isolated: true);
                 
-                if (result.Success)
+                if (result.Success && result.Plugin != null)
                 {
                     AnsiConsole.MarkupLine($"[green]✓[/] {result.Message}");
                     
-                    // Publish event
-                    await _eventBus.PublishAsync(ShellEventType.ExtensionLoaded, new ShellEventArgs
+                    // Publish event with strongly-typed args
+                    await _eventBus.PublishAsync(ShellEventType.ExtensionLoaded, new PluginEventArgs
                     {
-                        Data = { ["pluginId"] = result.Plugin.PluginId }
+                        Plugin = result.Plugin
                     });
                 }
                 else
@@ -654,16 +657,18 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
         {
             try
             {
+                // Get plugin before unloading for event
+                var plugin = _pluginManager.GetPlugin(pluginId);
                 var success = await _pluginManager.UnloadPluginAsync(pluginId);
                 
-                if (success)
+                if (success && plugin != null)
                 {
                     AnsiConsole.MarkupLine($"[green]✓[/] Plugin unloaded: {pluginId}");
                     
-                    // Publish event
-                    await _eventBus.PublishAsync(ShellEventType.ExtensionUnloaded, new ShellEventArgs
+                    // Publish event with strongly-typed args
+                    await _eventBus.PublishAsync(ShellEventType.ExtensionUnloaded, new PluginEventArgs
                     {
-                        Data = { ["pluginId"] = pluginId }
+                        Plugin = plugin
                     });
                 }
                 else
@@ -683,14 +688,14 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
             {
                 var result = await _pluginManager.ReloadPluginAsync(pluginId);
                 
-                if (result.Success)
+                if (result.Success && result.Plugin != null)
                 {
                     AnsiConsole.MarkupLine($"[green]✓[/] {result.Message}");
                     
-                    // Publish event
-                    await _eventBus.PublishAsync(ShellEventType.PluginReloaded, new ShellEventArgs
+                    // Publish event with strongly-typed args
+                    await _eventBus.PublishAsync(ShellEventType.PluginReloaded, new PluginEventArgs
                     {
-                        Data = { ["pluginId"] = pluginId }
+                        Plugin = result.Plugin
                     });
                 }
                 else

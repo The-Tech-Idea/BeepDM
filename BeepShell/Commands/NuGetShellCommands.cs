@@ -16,7 +16,7 @@ namespace BeepShell.Commands
     /// </summary>
     public class NuGetShellCommands : IShellCommand
     {
-        private IDMEEditor _editor;
+        private IDMEEditor _editor = null!;
 
         public string CommandName => "nuget";
         public string Description => "Manage NuGet packages (load, unload, list, install)";
@@ -36,31 +36,50 @@ namespace BeepShell.Commands
 
             // nuget list - List all loaded nuggets
             var listCmd = new Command("list", "List loaded NuGet packages");
-            listCmd.SetHandler(() => ListNuggets());
+            var showDetailsOpt = new Option<bool>(new[] { "--details", "-d" }, "Show detailed information");
+            var filterOpt = new Option<string>(new[] { "--filter", "-f" }, "Filter by name pattern");
+            listCmd.AddOption(showDetailsOpt);
+            listCmd.AddOption(filterOpt);
+            listCmd.SetHandler((details, filter) => ListNuggets(details, filter), showDetailsOpt, filterOpt);
             cmd.AddCommand(listCmd);
 
-            // nuget load <path> - Load a NuGet package
-            var loadCmd = new Command("load", "Load a NuGet package from path");
-            var pathArg = new Argument<string>("path", "Path to the NuGet package or assembly");
-            loadCmd.AddArgument(pathArg);
-            loadCmd.SetHandler((string path) => LoadNugget(path), pathArg);
-            cmd.AddCommand(loadCmd);
+            // nuget install - Interactive install
+            var installCmd = new Command("install", "Install/load a NuGet package interactively");
+            installCmd.SetHandler(() => InstallNuggetInteractive());
+            cmd.AddCommand(installCmd);
 
-            // nuget unload <name> - Unload a NuGet package
-            var unloadCmd = new Command("unload", "Unload a NuGet package");
-            var nameArg = new Argument<string>("name", "Name of the NuGet package to unload");
-            unloadCmd.AddArgument(nameArg);
-            unloadCmd.SetHandler((string name) => UnloadNugget(name), nameArg);
-            cmd.AddCommand(unloadCmd);
+            // nuget install-from-file - Install from file system
+            var installFileCmd = new Command("install-from-file", "Install a NuGet package from file path");
+            var filePathArg = new Argument<string>("path", "Path to the NuGet package, DLL, or directory");
+            installFileCmd.AddArgument(filePathArg);
+            installFileCmd.SetHandler((path) => InstallFromFile(path), filePathArg);
+            cmd.AddCommand(installFileCmd);
 
-            // nuget search <directory> - Search for NuGet packages in directory
-            var searchCmd = new Command("search", "Search for NuGet packages in directory");
-            var dirArg = new Argument<string>("directory", () => Environment.CurrentDirectory, "Directory to search");
+            // nuget install-from-directory - Discover and install from directory
+            var installDirCmd = new Command("install-from-directory", "Discover and install packages from directory");
+            var dirPathArg = new Argument<string>("directory", () => Environment.CurrentDirectory, "Directory to scan");
             var recursiveOpt = new Option<bool>(new[] { "--recursive", "-r" }, "Search recursively");
-            searchCmd.AddArgument(dirArg);
-            searchCmd.AddOption(recursiveOpt);
-            searchCmd.SetHandler((string directory, bool recursive) => SearchNuggets(directory, recursive), dirArg, recursiveOpt);
-            cmd.AddCommand(searchCmd);
+            var autoOpt = new Option<bool>(new[] { "--auto", "-a" }, "Auto-install all found packages");
+            installDirCmd.AddArgument(dirPathArg);
+            installDirCmd.AddOption(recursiveOpt);
+            installDirCmd.AddOption(autoOpt);
+            installDirCmd.SetHandler((dir, recursive, auto) => InstallFromDirectory(dir, recursive, auto), 
+                dirPathArg, recursiveOpt, autoOpt);
+            cmd.AddCommand(installDirCmd);
+
+            // nuget update - Update a loaded package
+            var updateCmd = new Command("update", "Update/reload a NuGet package");
+            var updateNameOpt = new Option<string>(new[] { "--name", "-n" }, "Package name to update");
+            updateCmd.AddOption(updateNameOpt);
+            updateCmd.SetHandler((name) => UpdateNuggetInteractive(name), updateNameOpt);
+            cmd.AddCommand(updateCmd);
+
+            // nuget remove - Remove/unload a package
+            var removeCmd = new Command("remove", "Remove/unload a NuGet package");
+            var removeNameOpt = new Option<string>(new[] { "--name", "-n" }, "Package name to remove");
+            removeCmd.AddOption(removeNameOpt);
+            removeCmd.SetHandler((name) => RemoveNuggetInteractive(name), removeNameOpt);
+            cmd.AddCommand(removeCmd);
 
             // nuget info <name> - Get information about a loaded nugget
             var infoCmd = new Command("info", "Get information about a loaded NuGet package");
@@ -69,12 +88,15 @@ namespace BeepShell.Commands
             infoCmd.SetHandler((string name) => ShowNuggetInfo(name), infoNameArg);
             cmd.AddCommand(infoCmd);
 
-            // nuget reload <name> - Reload a NuGet package
-            var reloadCmd = new Command("reload", "Reload a NuGet package");
-            var reloadNameArg = new Argument<string>("name", "Name of the NuGet package to reload");
-            reloadCmd.AddArgument(reloadNameArg);
-            reloadCmd.SetHandler((string name) => ReloadNugget(name), reloadNameArg);
-            cmd.AddCommand(reloadCmd);
+            // nuget search <directory> - Search for NuGet packages in directory
+            var searchCmd = new Command("search", "Search for NuGet packages in directory");
+            var searchDirArg = new Argument<string>("directory", () => Environment.CurrentDirectory, "Directory to search");
+            var searchRecursiveOpt = new Option<bool>(new[] { "--recursive", "-r" }, "Search recursively");
+            searchCmd.AddArgument(searchDirArg);
+            searchCmd.AddOption(searchRecursiveOpt);
+            searchCmd.SetHandler((string directory, bool recursive) => SearchNuggets(directory, recursive), 
+                searchDirArg, searchRecursiveOpt);
+            cmd.AddCommand(searchCmd);
 
             // nuget validate <path> - Validate a NuGet package before loading
             var validateCmd = new Command("validate", "Validate a NuGet package");
@@ -83,10 +105,15 @@ namespace BeepShell.Commands
             validateCmd.SetHandler((string path) => ValidateNugget(path), validatePathArg);
             cmd.AddCommand(validateCmd);
 
+            // nuget status - Show status overview
+            var statusCmd = new Command("status", "Show NuGet packages status overview");
+            statusCmd.SetHandler(() => ShowStatus());
+            cmd.AddCommand(statusCmd);
+
             return cmd;
         }
 
-        private void ListNuggets()
+        private void ListNuggets(bool showDetails = false, string? filter = null)
         {
             try
             {
@@ -98,15 +125,36 @@ namespace BeepShell.Commands
                     return;
                 }
 
+                // Apply filter if provided
+                var filteredAssemblies = assemblies.AsEnumerable();
+                if (!string.IsNullOrWhiteSpace(filter))
+                {
+                    filteredAssemblies = assemblies.Where(a => 
+                        a.GetName().Name?.Contains(filter, StringComparison.OrdinalIgnoreCase) == true);
+                }
+
+                var assemblyList = filteredAssemblies.ToList();
+
+                if (assemblyList.Count == 0)
+                {
+                    AnsiConsole.MarkupLine($"[yellow]No packages found matching filter: {filter}[/]");
+                    return;
+                }
+
                 var table = new Table();
                 table.Border = TableBorder.Rounded;
-                table.Title = new TableTitle($"[bold cyan]Loaded NuGet Packages ({assemblies.Count})[/]");
+                table.Title = new TableTitle($"[bold cyan]Loaded NuGet Packages ({assemblyList.Count})[/]");
                 table.AddColumn("[cyan]Name[/]");
                 table.AddColumn("[cyan]Version[/]");
-                table.AddColumn("[cyan]Location[/]");
-                table.AddColumn("[cyan]Types[/]");
+                
+                if (showDetails)
+                {
+                    table.AddColumn("[cyan]Location[/]");
+                    table.AddColumn("[cyan]Types[/]");
+                    table.AddColumn("[cyan]Culture[/]");
+                }
 
-                foreach (var asm in assemblies)
+                foreach (var asm in assemblyList)
                 {
                     var name = asm.GetName();
                     var location = string.IsNullOrEmpty(asm.Location) ? "[dim]In Memory[/]" : Path.GetFileName(asm.Location);
@@ -118,12 +166,23 @@ namespace BeepShell.Commands
                     }
                     catch { }
 
-                    table.AddRow(
-                        name.Name ?? "[dim]Unknown[/]",
-                        name.Version?.ToString() ?? "[dim]N/A[/]",
-                        location,
-                        typeCount.ToString()
-                    );
+                    if (showDetails)
+                    {
+                        table.AddRow(
+                            name.Name ?? "[dim]Unknown[/]",
+                            name.Version?.ToString() ?? "[dim]N/A[/]",
+                            location,
+                            typeCount.ToString(),
+                            name.CultureName ?? "Neutral"
+                        );
+                    }
+                    else
+                    {
+                        table.AddRow(
+                            name.Name ?? "[dim]Unknown[/]",
+                            name.Version?.ToString() ?? "[dim]N/A[/]"
+                        );
+                    }
                 }
 
                 AnsiConsole.Write(table);
@@ -134,7 +193,49 @@ namespace BeepShell.Commands
             }
         }
 
-        private void LoadNugget(string path)
+        private void InstallNuggetInteractive()
+        {
+            try
+            {
+                var installMethod = AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("[cyan]How would you like to install the package?[/]")
+                        .AddChoices(new[]
+                        {
+                            "From File (Browse for DLL or directory)",
+                            "From Directory (Scan and choose)",
+                            "Cancel"
+                        }));
+
+                if (installMethod == "Cancel")
+                {
+                    AnsiConsole.MarkupLine("[yellow]Installation cancelled[/]");
+                    return;
+                }
+
+                if (installMethod.StartsWith("From File"))
+                {
+                    var path = AnsiConsole.Ask<string>("[cyan]Enter path to DLL or directory:[/]");
+                    InstallFromFile(path);
+                }
+                else if (installMethod.StartsWith("From Directory"))
+                {
+                    var directory = AnsiConsole.Ask<string>(
+                        "[cyan]Enter directory to scan:[/]", 
+                        Environment.CurrentDirectory);
+                    
+                    var recursive = AnsiConsole.Confirm("Search recursively?", true);
+                    
+                    InstallFromDirectory(directory, recursive, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+            }
+        }
+
+        private void InstallFromFile(string path)
         {
             try
             {
@@ -144,20 +245,20 @@ namespace BeepShell.Commands
                     return;
                 }
 
-                if (!File.Exists(path))
+                if (!File.Exists(path) && !Directory.Exists(path))
                 {
-                    AnsiConsole.MarkupLine($"[red]✗[/] File not found: {path}");
+                    AnsiConsole.MarkupLine($"[red]✗[/] Path not found: {path}");
                     return;
                 }
 
                 AnsiConsole.Status()
-                    .Start($"Loading NuGet package from {Path.GetFileName(path)}...", ctx =>
+                    .Start($"Installing package from {Path.GetFileName(path)}...", ctx =>
                     {
                         var success = _editor.assemblyHandler.LoadNugget(path);
 
                         if (success)
                         {
-                            AnsiConsole.MarkupLine($"[green]✓[/] NuGet package loaded: {Path.GetFileName(path)}");
+                            AnsiConsole.MarkupLine($"[green]✓[/] Package installed successfully: {Path.GetFileName(path)}");
                             
                             // Try to get assembly info
                             var fileName = Path.GetFileNameWithoutExtension(path);
@@ -174,51 +275,337 @@ namespace BeepShell.Commands
                         }
                         else
                         {
-                            AnsiConsole.MarkupLine($"[red]✗[/] Failed to load NuGet package");
+                            AnsiConsole.MarkupLine($"[red]✗[/] Failed to install package");
                         }
                     });
             }
             catch (Exception ex)
             {
-                AnsiConsole.MarkupLine($"[red]✗[/] Error loading NuGet package: {ex.Message}");
+                AnsiConsole.MarkupLine($"[red]✗[/] Error installing package: {ex.Message}");
             }
         }
 
-        private void UnloadNugget(string name)
+        private void InstallFromDirectory(string directory, bool recursive, bool auto)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(name))
+                if (!Directory.Exists(directory))
                 {
-                    AnsiConsole.MarkupLine("[red]✗[/] Package name is required");
+                    AnsiConsole.MarkupLine($"[red]✗[/] Directory not found: {directory}");
                     return;
                 }
 
-                var confirm = AnsiConsole.Confirm($"Are you sure you want to unload '{name}'?");
-                if (!confirm)
+                var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+                var dllFiles = Directory.GetFiles(directory, "*.dll", searchOption);
+                var nupkgFiles = Directory.GetFiles(directory, "*.nupkg", searchOption);
+                
+                var allFiles = dllFiles.Concat(nupkgFiles).ToList();
+
+                if (allFiles.Count == 0)
                 {
-                    AnsiConsole.MarkupLine("[yellow]Cancelled[/]");
+                    AnsiConsole.MarkupLine($"[yellow]No packages found in {directory}[/]");
+                    return;
+                }
+
+                AnsiConsole.MarkupLine($"[cyan]Found {allFiles.Count} package(s)[/]");
+
+                List<string> filesToInstall;
+
+                if (auto)
+                {
+                    filesToInstall = allFiles;
+                    AnsiConsole.MarkupLine("[yellow]Auto-installing all packages...[/]");
+                }
+                else
+                {
+                    // Show selection prompt
+                    filesToInstall = AnsiConsole.Prompt(
+                        new MultiSelectionPrompt<string>()
+                            .Title("[cyan]Select packages to install:[/]")
+                            .PageSize(15)
+                            .MoreChoicesText("[grey](Move up and down to see more packages)[/]")
+                            .InstructionsText("[grey](Press [blue]<space>[/] to toggle, [green]<enter>[/] to confirm)[/]")
+                            .AddChoices(allFiles)
+                            .UseConverter(f => $"{Path.GetFileName(f)} ({new FileInfo(f).Length / 1024:N0} KB)"));
+                }
+
+                if (!filesToInstall.Any())
+                {
+                    AnsiConsole.MarkupLine("[yellow]No packages selected[/]");
+                    return;
+                }
+
+                int successCount = 0;
+                int failCount = 0;
+
+                foreach (var file in filesToInstall)
+                {
+                    try
+                    {
+                        var success = _editor.assemblyHandler.LoadNugget(file);
+                        if (success)
+                        {
+                            successCount++;
+                            AnsiConsole.MarkupLine($"[green]✓[/] Installed: {Path.GetFileName(file)}");
+                        }
+                        else
+                        {
+                            failCount++;
+                            AnsiConsole.MarkupLine($"[red]✗[/] Failed: {Path.GetFileName(file)}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        failCount++;
+                        AnsiConsole.MarkupLine($"[red]✗[/] Error: {Path.GetFileName(file)} - {ex.Message}");
+                    }
+                }
+
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine($"[bold]Results:[/] [green]{successCount} succeeded[/], [red]{failCount} failed[/]");
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+            }
+        }
+
+        private void UpdateNuggetInteractive(string packageName)
+        {
+            try
+            {
+                System.Reflection.Assembly? targetAssembly = null;
+
+                if (string.IsNullOrWhiteSpace(packageName))
+                {
+                    // Show selection list of loaded packages
+                    var loadedPackages = _editor.assemblyHandler.LoadedAssemblies.ToList();
+
+                    if (!loadedPackages.Any())
+                    {
+                        AnsiConsole.MarkupLine("[yellow]⚠[/] No packages loaded to update");
+                        return;
+                    }
+
+                    targetAssembly = AnsiConsole.Prompt(
+                        new SelectionPrompt<System.Reflection.Assembly>()
+                            .Title("[cyan]Select a package to update:[/]")
+                            .PageSize(15)
+                            .MoreChoicesText("[grey](Move up and down to see more packages)[/]")
+                            .AddChoices(loadedPackages)
+                            .UseConverter(a => $"{a.GetName().Name} v{a.GetName().Version}"));
+                }
+                else
+                {
+                    // Find package by name
+                    targetAssembly = _editor.assemblyHandler.LoadedAssemblies
+                        .FirstOrDefault(a => a.GetName().Name?.Equals(packageName, StringComparison.OrdinalIgnoreCase) == true);
+
+                    if (targetAssembly == null)
+                    {
+                        AnsiConsole.MarkupLine($"[yellow]⚠[/] Package not found: {packageName}");
+                        return;
+                    }
+                }
+
+                var asmName = targetAssembly.GetName().Name;
+                var location = targetAssembly.Location;
+
+                if (string.IsNullOrEmpty(location))
+                {
+                    AnsiConsole.MarkupLine($"[red]✗[/] Cannot update in-memory assembly");
+                    return;
+                }
+
+                // Confirm update
+                if (!AnsiConsole.Confirm($"[yellow]Update package '{asmName}'?[/]"))
+                {
+                    AnsiConsole.MarkupLine("[yellow]Update cancelled[/]");
+                    return;
+                }
+
+                // Ask for new source
+                var updateMethod = AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("[cyan]Update from:[/]")
+                        .AddChoices(new[]
+                        {
+                            "Reload from current location",
+                            "Browse for new file",
+                            "Cancel"
+                        }));
+
+                if (updateMethod == "Cancel")
+                {
+                    AnsiConsole.MarkupLine("[yellow]Update cancelled[/]");
                     return;
                 }
 
                 AnsiConsole.Status()
-                    .Start($"Unloading NuGet package '{name}'...", ctx =>
+                    .Start($"Updating package '{asmName}'...", ctx =>
                     {
-                        var success = _editor.assemblyHandler.UnloadNugget(name);
+                        ctx.Status("Unloading current version...");
+                        var unloaded = _editor.assemblyHandler.UnloadNugget(asmName);
 
-                        if (success)
+                        if (!unloaded)
                         {
-                            AnsiConsole.MarkupLine($"[green]✓[/] NuGet package unloaded: {name}");
+                            AnsiConsole.MarkupLine($"[yellow]⚠[/] Could not unload current version (will attempt to reload)");
+                        }
+
+                        System.Threading.Thread.Sleep(500); // Brief pause
+
+                        string newPath = location;
+                        if (updateMethod.StartsWith("Browse"))
+                        {
+                            newPath = AnsiConsole.Ask<string>("[cyan]Enter path to new package:[/]", location);
+                        }
+
+                        ctx.Status("Loading new version...");
+                        var loaded = _editor.assemblyHandler.LoadNugget(newPath);
+
+                        if (loaded)
+                        {
+                            AnsiConsole.MarkupLine($"[green]✓[/] Package updated successfully: {asmName}");
                         }
                         else
                         {
-                            AnsiConsole.MarkupLine($"[yellow]⚠[/] NuGet package not found or cannot be unloaded: {name}");
+                            AnsiConsole.MarkupLine($"[red]✗[/] Failed to load updated package");
                         }
                     });
             }
             catch (Exception ex)
             {
-                AnsiConsole.MarkupLine($"[red]✗[/] Error unloading NuGet package: {ex.Message}");
+                AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+            }
+        }
+
+        private void RemoveNuggetInteractive(string packageName)
+        {
+            try
+            {
+                System.Reflection.Assembly? targetAssembly = null;
+
+                if (string.IsNullOrWhiteSpace(packageName))
+                {
+                    // Show selection list of loaded packages
+                    var loadedPackages = _editor.assemblyHandler.LoadedAssemblies.ToList();
+
+                    if (!loadedPackages.Any())
+                    {
+                        AnsiConsole.MarkupLine("[yellow]⚠[/] No packages loaded to remove");
+                        return;
+                    }
+
+                    targetAssembly = AnsiConsole.Prompt(
+                        new SelectionPrompt<System.Reflection.Assembly>()
+                            .Title("[cyan]Select a package to remove:[/]")
+                            .PageSize(15)
+                            .MoreChoicesText("[grey](Move up and down to see more packages)[/]")
+                            .AddChoices(loadedPackages)
+                            .UseConverter(a => $"{a.GetName().Name} v{a.GetName().Version}"));
+                }
+                else
+                {
+                    // Find package by name
+                    targetAssembly = _editor.assemblyHandler.LoadedAssemblies
+                        .FirstOrDefault(a => a.GetName().Name?.Equals(packageName, StringComparison.OrdinalIgnoreCase) == true);
+
+                    if (targetAssembly == null)
+                    {
+                        AnsiConsole.MarkupLine($"[yellow]⚠[/] Package not found: {packageName}");
+                        return;
+                    }
+                }
+
+                var asmName = targetAssembly.GetName().Name;
+
+                // Confirm removal
+                if (!AnsiConsole.Confirm($"[red]Are you sure you want to remove '{asmName}'?[/]"))
+                {
+                    AnsiConsole.MarkupLine("[yellow]Removal cancelled[/]");
+                    return;
+                }
+
+                AnsiConsole.Status()
+                    .Start($"Removing package '{asmName}'...", ctx =>
+                    {
+                        var success = _editor.assemblyHandler.UnloadNugget(asmName);
+
+                        if (success)
+                        {
+                            AnsiConsole.MarkupLine($"[green]✓[/] Package removed successfully: {asmName}");
+                            AnsiConsole.MarkupLine("[dim]Note: The assembly may still be loaded in memory until application restart[/]");
+                        }
+                        else
+                        {
+                            AnsiConsole.MarkupLine($"[yellow]⚠[/] Package not found or cannot be removed: {asmName}");
+                        }
+                    });
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+            }
+        }
+
+        private void ShowStatus()
+        {
+            try
+            {
+                var assemblies = _editor.assemblyHandler.LoadedAssemblies?.ToList() ?? new List<System.Reflection.Assembly>();
+                
+                var totalSize = 0L;
+                var inMemoryCount = 0;
+                var fileBasedCount = 0;
+
+                foreach (var asm in assemblies)
+                {
+                    if (string.IsNullOrEmpty(asm.Location))
+                    {
+                        inMemoryCount++;
+                    }
+                    else
+                    {
+                        fileBasedCount++;
+                        try
+                        {
+                            var fileInfo = new FileInfo(asm.Location);
+                            totalSize += fileInfo.Length;
+                        }
+                        catch { }
+                    }
+                }
+
+                var panel = new Panel(new Markup(
+                    $"[cyan]Total Packages:[/] {assemblies.Count}\n" +
+                    $"[green]File-Based:[/] {fileBasedCount}\n" +
+                    $"[yellow]In-Memory:[/] {inMemoryCount}\n" +
+                    $"[blue]Total Size:[/] {totalSize / (1024 * 1024):N2} MB"
+                ));
+                panel.Header = new PanelHeader("[bold yellow]NuGet Packages Status[/]");
+                panel.Border = BoxBorder.Rounded;
+
+                AnsiConsole.Write(panel);
+
+                if (assemblies.Any())
+                {
+                    if (AnsiConsole.Confirm("\nWould you like to see the package list?"))
+                    {
+                        ListNuggets(false, string.Empty);
+                    }
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine("\n[yellow]⚠ No packages currently loaded[/]");
+                    if (AnsiConsole.Confirm("Would you like to install packages now?"))
+                    {
+                        InstallNuggetInteractive();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
             }
         }
 
@@ -337,60 +724,6 @@ namespace BeepShell.Commands
             }
         }
 
-        private void ReloadNugget(string name)
-        {
-            try
-            {
-                // Find the assembly
-                var assembly = _editor.assemblyHandler.LoadedAssemblies
-                    .FirstOrDefault(a => a.GetName().Name?.Equals(name, StringComparison.OrdinalIgnoreCase) == true);
-
-                if (assembly == null)
-                {
-                    AnsiConsole.MarkupLine($"[yellow]NuGet package not found: {name}[/]");
-                    return;
-                }
-
-                var location = assembly.Location;
-                if (string.IsNullOrEmpty(location))
-                {
-                    AnsiConsole.MarkupLine($"[red]✗[/] Cannot reload in-memory assembly");
-                    return;
-                }
-
-                AnsiConsole.Status()
-                    .Start($"Reloading NuGet package '{name}'...", ctx =>
-                    {
-                        ctx.Status("Unloading...");
-                        var unloaded = _editor.assemblyHandler.UnloadNugget(name);
-
-                        if (unloaded)
-                        {
-                            ctx.Status("Loading...");
-                            System.Threading.Thread.Sleep(500); // Brief pause
-                            var loaded = _editor.assemblyHandler.LoadNugget(location);
-
-                            if (loaded)
-                            {
-                                AnsiConsole.MarkupLine($"[green]✓[/] NuGet package reloaded: {name}");
-                            }
-                            else
-                            {
-                                AnsiConsole.MarkupLine($"[red]✗[/] Failed to reload NuGet package");
-                            }
-                        }
-                        else
-                        {
-                            AnsiConsole.MarkupLine($"[red]✗[/] Failed to unload NuGet package");
-                        }
-                    });
-            }
-            catch (Exception ex)
-            {
-                AnsiConsole.MarkupLine($"[red]✗[/] Error reloading NuGet package: {ex.Message}");
-            }
-        }
-
         private void ValidateNugget(string path)
         {
             try
@@ -476,12 +809,20 @@ namespace BeepShell.Commands
             return new[]
             {
                 "nuget list",
-                "nuget load C:\\packages\\MyPackage.dll",
-                "nuget unload MyPackage",
-                "nuget search C:\\packages --recursive",
+                "nuget list --details",
+                "nuget list --filter System",
+                "nuget install",
+                "nuget install-from-file C:\\packages\\MyPackage.dll",
+                "nuget install-from-directory C:\\packages --recursive",
+                "nuget install-from-directory C:\\packages --auto",
+                "nuget update",
+                "nuget update --name MyPackage",
+                "nuget remove",
+                "nuget remove --name MyPackage",
                 "nuget info MyPackage",
-                "nuget reload MyPackage",
-                "nuget validate C:\\packages\\MyPackage.dll"
+                "nuget search C:\\packages --recursive",
+                "nuget validate C:\\packages\\MyPackage.dll",
+                "nuget status"
             };
         }
     }

@@ -101,6 +101,7 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
                 );
                 
                 // Load assemblies on startup
+                // Note: Driver cleanup is handled in Program.cs BEFORE ShellServiceProvider is created
                 try
                 {
                     editor.assemblyHandler.LoadAllAssembly(null, CancellationToken.None);
@@ -151,32 +152,16 @@ namespace TheTechIdea.Beep.Shell.Infrastructure
             if (!string.IsNullOrEmpty(envPath))
                 return envPath;
 
-            // Default to executable directory so BeepShell keeps its config alongside the binary
+            // Always use executable directory - BeepShell keeps its config alongside the binary
             var exeDir = GetExecutableDirectory();
-            if (!string.IsNullOrEmpty(exeDir))
+            
+            if (profileName.Equals("default", StringComparison.OrdinalIgnoreCase))
             {
-                if (profileName.Equals("default", StringComparison.OrdinalIgnoreCase))
-                {
-                    return exeDir;
-                }
-
-                var profileDir = Path.Combine(exeDir, "Profiles", profileName);
-                return profileDir;
+                return exeDir;
             }
 
-            // Check if there's a saved global config location (legacy fallback)
-            var savedPath = ReadSavedConfigPath();
-            if (!string.IsNullOrEmpty(savedPath) && profileName == "default")
-                return savedPath;
-
-            // Default to shell profile location
-            return Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "TheTechIdea",
-                "BeepShell",
-                "Profiles",
-                profileName
-            );
+            var profileDir = Path.Combine(exeDir, "Profiles", profileName);
+            return profileDir;
         }
         
         private static string ReadSavedConfigPath()

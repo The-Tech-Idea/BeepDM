@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.CommandLine;
 using System.IO;
 using System.Linq;
@@ -7,39 +8,68 @@ using BeepShell.Infrastructure;
 using Spectre.Console;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Tools;
 
 namespace BeepShell.Commands
 {
     /// <summary>
-    /// Class creator commands for BeepShell
-    /// Uses persistent DMEEditor for code generation
+    /// Class creator commands for BeepShell - Core functionality
+    /// Modular architecture using partial classes matching ClassCreator design
     /// </summary>
-    public class ClassCreatorShellCommands : IShellCommand
+    public partial class ClassCreatorShellCommands : IShellCommand
     {
-        private IDMEEditor _editor;
+        private IDMEEditor _editor = null!;
+        private ClassCreator _classCreator = null!;
 
         public string CommandName => "class";
         public string Description => "Generate C# classes from database entities";
         public string Category => "Tools";
         public string Version => "1.0.0";
         public string Author => "BeepDM Team";
-        public string[] Aliases => new[] { "codegen", "generate" };
+        public string[] Aliases => new[] { "codegen" };
 
         public void Initialize(IDMEEditor editor)
         {
             _editor = editor;
+            _classCreator = new ClassCreator(editor);
         }
 
         public Command BuildCommand()
         {
             var classCommand = new Command("class", Description);
 
-            // class generate
-            var generateCommand = new Command("generate", "Generate C# class from table");
+            // Add core commands
+            AddCoreCommands(classCommand);
+            
+            // Add Web API commands
+            AddWebApiCommands(classCommand);
+            
+            // Add Database commands
+            AddDatabaseCommands(classCommand);
+            
+            // Add Advanced commands
+            AddAdvancedCommands(classCommand);
+            
+            // Add DLL creation commands
+            AddDllCommands(classCommand);
+            
+            // Add Testing commands
+            AddTestingCommands(classCommand);
+
+            return classCommand;
+        }
+
+        /// <summary>
+        /// Builds core class generation commands
+        /// </summary>
+        private void AddCoreCommands(Command classCommand)
+        {
+            // class generate - Generate single POCO class
+            var generateCommand = new Command("generate", "Generate POCO class from table");
             var dsArg = new Argument<string>("datasource", "Data source name");
             var tableArg = new Argument<string>("table", "Table name");
             var outputOption = new Option<string>("--output", "Output file path");
-            var namespaceOption = new Option<string>("--namespace", () => "Generated", "Namespace for generated class");
+            var namespaceOption = new Option<string>("--namespace", () => "TheTechIdea.ProjectClasses", "Namespace for generated class");
             var publicOption = new Option<bool>("--public", () => true, "Generate public class");
 
             generateCommand.AddArgument(dsArg);
@@ -50,16 +80,16 @@ namespace BeepShell.Commands
 
             generateCommand.SetHandler((datasource, table, output, ns, isPublic) =>
             {
-                GenerateClass(datasource, table, output, ns, isPublic);
+                GeneratePocoClass(datasource, table, output, ns, isPublic);
             }, dsArg, tableArg, outputOption, namespaceOption, publicOption);
 
             classCommand.AddCommand(generateCommand);
 
-            // class batch
-            var batchCommand = new Command("batch", "Generate classes for all tables in a data source");
+            // class batch - Generate multiple classes
+            var batchCommand = new Command("batch", "Generate POCO classes for all tables");
             var batchDsArg = new Argument<string>("datasource", "Data source name");
             var batchOutputOption = new Option<string>("--output", "Output directory path") { IsRequired = true };
-            var batchNsOption = new Option<string>("--namespace", () => "Generated", "Namespace for generated classes");
+            var batchNsOption = new Option<string>("--namespace", () => "TheTechIdea.ProjectClasses", "Namespace for generated classes");
 
             batchCommand.AddArgument(batchDsArg);
             batchCommand.AddOption(batchOutputOption);
@@ -67,15 +97,56 @@ namespace BeepShell.Commands
 
             batchCommand.SetHandler((datasource, output, ns) =>
             {
-                GenerateBatch(datasource, output, ns);
+                GenerateBatchPocoClasses(datasource, output, ns);
             }, batchDsArg, batchOutputOption, batchNsOption);
 
             classCommand.AddCommand(batchCommand);
 
-            return classCommand;
+            // class inotify - Generate INotifyPropertyChanged class
+            var inotifyCommand = new Command("inotify", "Generate INotifyPropertyChanged class");
+            var inotifyDsArg = new Argument<string>("datasource", "Data source name");
+            var inotifyTableArg = new Argument<string>("table", "Table name");
+            var inotifyOutputOption = new Option<string>("--output", "Output file path") { IsRequired = true };
+            var inotifyNsOption = new Option<string>("--namespace", () => "TheTechIdea.ProjectClasses", "Namespace");
+
+            inotifyCommand.AddArgument(inotifyDsArg);
+            inotifyCommand.AddArgument(inotifyTableArg);
+            inotifyCommand.AddOption(inotifyOutputOption);
+            inotifyCommand.AddOption(inotifyNsOption);
+
+            inotifyCommand.SetHandler((datasource, table, output, ns) =>
+            {
+                GenerateINotifyClass(datasource, table, output, ns);
+            }, inotifyDsArg, inotifyTableArg, inotifyOutputOption, inotifyNsOption);
+
+            classCommand.AddCommand(inotifyCommand);
+
+            // class entity - Generate Entity class with full features
+            var entityCommand = new Command("entity", "Generate Entity class with validation and metadata");
+            var entityDsArg = new Argument<string>("datasource", "Data source name");
+            var entityTableArg = new Argument<string>("table", "Table name");
+            var entityOutputOption = new Option<string>("--output", "Output file path") { IsRequired = true };
+            var entityNsOption = new Option<string>("--namespace", () => "TheTechIdea.ProjectEntities", "Namespace");
+
+            entityCommand.AddArgument(entityDsArg);
+            entityCommand.AddArgument(entityTableArg);
+            entityCommand.AddOption(entityOutputOption);
+            entityCommand.AddOption(entityNsOption);
+
+            entityCommand.SetHandler((datasource, table, output, ns) =>
+            {
+                GenerateEntityClass(datasource, table, output, ns);
+            }, entityDsArg, entityTableArg, entityOutputOption, entityNsOption);
+
+            classCommand.AddCommand(entityCommand);
         }
 
-        private void GenerateClass(string datasourceName, string tableName, string outputPath, string namespaceName, bool isPublic)
+        #region Core Generation Methods
+
+        /// <summary>
+        /// Generates a POCO class
+        /// </summary>
+        private void GeneratePocoClass(string datasourceName, string tableName, string outputPath, string namespaceName, bool isPublic)
         {
             try
             {
@@ -99,7 +170,10 @@ namespace BeepShell.Commands
                 }
 
                 var className = SanitizeClassName(tableName);
-                var code = GenerateClassCode(className, structure, namespaceName, isPublic);
+                
+                // Use ClassCreator to generate POCO class
+                var code = _classCreator.CreatePOCOClass(className, structure, string.Empty, string.Empty, 
+                    string.Empty, outputPath ?? string.Empty, namespaceName, !string.IsNullOrEmpty(outputPath));
 
                 if (string.IsNullOrEmpty(outputPath))
                 {
@@ -112,9 +186,7 @@ namespace BeepShell.Commands
                 }
                 else
                 {
-                    // Write to file
-                    File.WriteAllText(outputPath, code);
-                    AnsiConsole.MarkupLine($"[green]✓[/] Class generated: {outputPath}");
+                    AnsiConsole.MarkupLine($"[green]✓[/] POCO class generated: {outputPath}");
                 }
             }
             catch (Exception ex)
@@ -123,7 +195,10 @@ namespace BeepShell.Commands
             }
         }
 
-        private void GenerateBatch(string datasourceName, string outputDir, string namespaceName)
+        /// <summary>
+        /// Generates POCO classes for all tables in batch
+        /// </summary>
+        private void GenerateBatchPocoClasses(string datasourceName, string outputDir, string namespaceName)
         {
             try
             {
@@ -157,7 +232,7 @@ namespace BeepShell.Commands
                 var progress = AnsiConsole.Progress();
                 progress.Start(ctx =>
                 {
-                    var task = ctx.AddTask("[cyan]Generating classes[/]", maxValue: entities.Count);
+                    var task = ctx.AddTask("[cyan]Generating POCO classes[/]", maxValue: entities.Count);
 
                     foreach (var entityName in entities)
                     {
@@ -169,10 +244,8 @@ namespace BeepShell.Commands
                             if (structure?.Fields != null && structure.Fields.Count > 0)
                             {
                                 var className = SanitizeClassName(entityName);
-                                var code = GenerateClassCode(className, structure, namespaceName, true);
-                                var filePath = Path.Combine(outputDir, $"{className}.cs");
-                                
-                                File.WriteAllText(filePath, code);
+                                _classCreator.CreatePOCOClass(className, structure, string.Empty, string.Empty, 
+                                    string.Empty, outputDir, namespaceName, true);
                             }
 
                             task.Increment(1);
@@ -184,7 +257,7 @@ namespace BeepShell.Commands
                     }
                 });
 
-                AnsiConsole.MarkupLine($"[green]✓[/] Generated classes in: {outputDir}");
+                AnsiConsole.MarkupLine($"[green]✓[/] Generated POCO classes in: {outputDir}");
             }
             catch (Exception ex)
             {
@@ -192,118 +265,159 @@ namespace BeepShell.Commands
             }
         }
 
-        private string GenerateClassCode(string className, EntityStructure structure, string namespaceName, bool isPublic)
+        /// <summary>
+        /// Generates INotifyPropertyChanged class
+        /// </summary>
+        private void GenerateINotifyClass(string datasourceName, string tableName, string outputPath, string namespaceName)
         {
-            var sb = new StringBuilder();
-            var accessibility = isPublic ? "public" : "internal";
-
-            // Using statements
-            sb.AppendLine("using System;");
-            sb.AppendLine("using System.ComponentModel.DataAnnotations;");
-            sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
-            sb.AppendLine();
-
-            // Namespace
-            sb.AppendLine($"namespace {namespaceName}");
-            sb.AppendLine("{");
-
-            // Class declaration
-            sb.AppendLine($"    /// <summary>");
-            sb.AppendLine($"    /// Entity class for {structure.EntityName}");
-            sb.AppendLine($"    /// Generated from {structure.DataSourceID ?? "database"}");
-            sb.AppendLine($"    /// </summary>");
-            sb.AppendLine($"    [Table(\"{structure.EntityName}\")]");
-            sb.AppendLine($"    {accessibility} class {className}");
-            sb.AppendLine("    {");
-
-            // Properties
-            foreach (var field in structure.Fields)
+            try
             {
-                var propertyName = SanitizePropertyName(field.fieldname);
-                var propertyType = MapDataType(field.fieldtype ?? "string", field.AllowDBNull);
+                var structure = GetEntityStructure(datasourceName, tableName);
+                if (structure == null) return;
 
-                // Add attributes
-                if (field.IsKey)
-                {
-                    sb.AppendLine("        [Key]");
-                }
-                if (field.IsAutoIncrement)
-                {
-                    sb.AppendLine("        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
-                }
-                if (!field.AllowDBNull && !IsNullableType(propertyType))
-                {
-                    sb.AppendLine("        [Required]");
-                }
-                if (field.Size1 > 0 && (field.fieldtype?.Contains("char", StringComparison.OrdinalIgnoreCase) ?? false))
-                {
-                    sb.AppendLine($"        [MaxLength({field.Size1})]");
-                }
+                AnsiConsole.Status()
+                    .Start($"Generating INotify class for {tableName}...", ctx =>
+                    {
+                        var code = _classCreator.CreateINotifyClass(structure, string.Empty, string.Empty, 
+                            string.Empty, outputPath, namespaceName, true);
+                        
+                        if (!string.IsNullOrEmpty(code))
+                        {
+                            AnsiConsole.MarkupLine($"[green]✓[/] INotifyPropertyChanged class generated: {outputPath}");
+                        }
+                    });
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+            }
+        }
 
-                sb.AppendLine($"        [Column(\"{field.fieldname}\")]");
-                sb.AppendLine($"        public {propertyType} {propertyName} {{ get; set; }}");
-                sb.AppendLine();
+        /// <summary>
+        /// Generates full Entity class
+        /// </summary>
+        private void GenerateEntityClass(string datasourceName, string tableName, string outputPath, string namespaceName)
+        {
+            try
+            {
+                var structure = GetEntityStructure(datasourceName, tableName);
+                if (structure == null) return;
+
+                AnsiConsole.Status()
+                    .Start($"Generating Entity class for {tableName}...", ctx =>
+                    {
+                        var code = _classCreator.CreateEntityClass(structure, string.Empty, string.Empty, 
+                            outputPath, namespaceName, true);
+                        
+                        if (!string.IsNullOrEmpty(code))
+                        {
+                            AnsiConsole.MarkupLine($"[green]✓[/] Entity class generated: {outputPath}");
+                        }
+                    });
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]✗[/] Error: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        /// <summary>
+        /// Gets a single entity structure from datasource
+        /// </summary>
+        private EntityStructure? GetEntityStructure(string datasourceName, string tableName)
+        {
+            var ds = _editor.GetDataSource(datasourceName);
+            if (ds == null)
+            {
+                AnsiConsole.MarkupLine($"[red]✗[/] Data source '{datasourceName}' not found");
+                return null;
             }
 
-            // Close class and namespace
-            sb.AppendLine("    }");
-            sb.AppendLine("}");
+            if (ds.ConnectionStatus != System.Data.ConnectionState.Open)
+            {
+                _editor.OpenDataSource(datasourceName);
+            }
 
-            return sb.ToString();
+            var structure = ds.GetEntityStructure(tableName, false);
+            if (structure == null || structure.Fields == null || structure.Fields.Count == 0)
+            {
+                AnsiConsole.MarkupLine($"[yellow]Could not retrieve structure for '{tableName}'[/]");
+                return null;
+            }
+
+            return structure;
+        }
+
+        /// <summary>
+        /// Gets multiple entity structures from datasource
+        /// </summary>
+        private List<EntityStructure> GetEntityStructures(string datasourceName, bool getAll, string[] tableNames)
+        {
+            var entities = new List<EntityStructure>();
+            var ds = _editor.GetDataSource(datasourceName);
+            
+            if (ds == null)
+            {
+                AnsiConsole.MarkupLine($"[red]✗[/] Data source '{datasourceName}' not found");
+                return entities;
+            }
+
+            if (ds.ConnectionStatus != System.Data.ConnectionState.Open)
+            {
+                _editor.OpenDataSource(datasourceName);
+            }
+
+            var entitiesToProcess = new List<string>();
+
+            if (getAll)
+            {
+                var allEntities = ds.GetEntitesList()?.ToList();
+                if (allEntities != null)
+                    entitiesToProcess.AddRange(allEntities);
+            }
+            else if (tableNames != null && tableNames.Length > 0)
+            {
+                entitiesToProcess.AddRange(tableNames);
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[yellow]Please specify --all or --tables option[/]");
+                return entities;
+            }
+
+            AnsiConsole.Status()
+                .Start("Loading entity structures...", ctx =>
+                {
+                    foreach (var tableName in entitiesToProcess)
+                    {
+                        ctx.Status($"Loading {tableName}...");
+                        var structure = ds.GetEntityStructure(tableName, false);
+                        if (structure != null && structure.Fields != null && structure.Fields.Count > 0)
+                        {
+                            entities.Add(structure);
+                        }
+                    }
+                });
+
+            return entities;
         }
 
         private string SanitizeClassName(string name)
         {
             // Remove invalid characters and ensure valid C# identifier
             var sanitized = new string(name.Where(c => char.IsLetterOrDigit(c) || c == '_').ToArray());
-            if (char.IsDigit(sanitized[0]))
+            if (sanitized.Length > 0 && char.IsDigit(sanitized[0]))
                 sanitized = "_" + sanitized;
             return sanitized;
         }
 
-        private string SanitizePropertyName(string name)
-        {
-            return SanitizeClassName(name);
-        }
+        #endregion
 
-        private string MapDataType(string dbType, bool allowNull)
-        {
-            if (string.IsNullOrEmpty(dbType))
-                return "object";
-
-            var type = dbType.ToLowerInvariant();
-            var nullable = allowNull ? "?" : "";
-
-            if (type.Contains("int"))
-                return "int" + nullable;
-            if (type.Contains("bigint"))
-                return "long" + nullable;
-            if (type.Contains("smallint"))
-                return "short" + nullable;
-            if (type.Contains("tinyint"))
-                return "byte" + nullable;
-            if (type.Contains("decimal") || type.Contains("numeric") || type.Contains("money"))
-                return "decimal" + nullable;
-            if (type.Contains("float") || type.Contains("real"))
-                return "double" + nullable;
-            if (type.Contains("bit") || type.Contains("bool"))
-                return "bool" + nullable;
-            if (type.Contains("date") || type.Contains("time"))
-                return "DateTime" + nullable;
-            if (type.Contains("guid") || type.Contains("uniqueidentifier"))
-                return "Guid" + nullable;
-            if (type.Contains("char") || type.Contains("text") || type.Contains("varchar"))
-                return "string";
-            if (type.Contains("binary") || type.Contains("image") || type.Contains("blob"))
-                return "byte[]";
-
-            return "object";
-        }
-
-        private bool IsNullableType(string type)
-        {
-            return type.EndsWith("?") || type == "string" || type == "byte[]" || type == "object";
-        }
+        #region IShellCommand Implementation
 
         public bool CanExecute() => _editor != null;
 
@@ -311,10 +425,43 @@ namespace BeepShell.Commands
         {
             return new[]
             {
-                "class generate mydb Users",
-                "class generate mydb Products --output Product.cs --namespace MyApp.Models",
-                "class batch mydb --output ./Models --namespace MyApp.Data"
+                // Core commands
+                "class generate mydb Users --output User.cs",
+                "class batch mydb --output ./Models --namespace MyApp.Models",
+                "class inotify mydb Products --output ProductNotify.cs",
+                "class entity mydb Orders --output Order.cs --namespace MyApp.Entities",
+                
+                // Web API commands
+                "class webapi mydb --output ./Controllers --all",
+                "class webapi mydb --output ./Controllers --tables Users,Products",
+                "class minimal-api --output Program.cs",
+                "class api-param DynamicController --output ./Controllers",
+                
+                // Database commands
+                "class dal mydb Users --output ./DAL",
+                "class dbcontext mydb --output ./Data --namespace MyApp.Data --all",
+                "class ef-config mydb Products --output ./Configurations",
+                "class repository mydb Orders --output ./Repositories",
+                "class migration mydb Users --output ./Migrations",
+                
+                // Advanced commands
+                "class docs mydb Users --output UserDocs.xml",
+                "class blazor mydb Products --output ./Components",
+                "class graphql mydb --output schema.graphql --all",
+                "class grpc mydb Orders --output ./Grpc",
+                "class diff mydb Users UserV2 --output changes.md",
+                
+                // DLL commands
+                "class dll MyProject mydb --output ./bin --all",
+                "class dll MyProject mydb --output ./bin --tables Users,Products",
+                "class dll-from-path MyClasses ./src/Models --output ./bin",
+                
+                // Testing commands
+                "class test mydb Users --output ./Tests",
+                "class validator mydb Products --output ./Validators"
             };
         }
+
+        #endregion
     }
 }

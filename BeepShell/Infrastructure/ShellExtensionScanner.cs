@@ -97,7 +97,7 @@ namespace BeepShell.Infrastructure
         {
             if (assembly == null)
                 return _assemblyHandler.ErrorObject;
-
+            _assemblyHandler.Logger?.WriteLog("Scanning assembly: " + assembly.FullName);
             try
             {
                 // Skip system assemblies

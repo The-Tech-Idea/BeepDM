@@ -7,6 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using BeepShell.Shared.Interfaces;
+using BeepShell.Shared.Models;
 using Spectre.Console;
 using TheTechIdea.Beep.Editor;
 
@@ -46,7 +48,7 @@ namespace BeepShell.Infrastructure
                 }
 
                 Assembly assembly;
-                PluginLoadContext loadContext = null;
+                PluginLoadContext? loadContext = null;
 
                 if (isolated)
                 {
@@ -74,7 +76,14 @@ namespace BeepShell.Infrastructure
                 }
 
                 // Create plugin instance
-                var plugin = (IShellPlugin)Activator.CreateInstance(pluginType);
+                var plugin = (IShellPlugin?)Activator.CreateInstance(pluginType);
+
+                if (plugin == null)
+                {
+                    result.Success = false;
+                    result.Message = "Failed to create plugin instance";
+                    return result;
+                }
 
                 // Check if already loaded
                 if (_plugins.ContainsKey(plugin.PluginId))
@@ -208,7 +217,7 @@ namespace BeepShell.Infrastructure
             // Load new version
             var result = await LoadPluginAsync(assemblyPath, isIsolated);
             
-            if (result.Success)
+            if (result.Success && result.Plugin != null)
             {
                 await result.Plugin.OnReloadAsync();
                 result.Message = $"Plugin '{result.Plugin.ExtensionName}' reloaded successfully";
@@ -217,7 +226,7 @@ namespace BeepShell.Infrastructure
             return result;
         }
 
-        public IShellPlugin GetPlugin(string pluginId)
+        public IShellPlugin? GetPlugin(string pluginId)
         {
             return _plugins.TryGetValue(pluginId, out var container) 
                 ? container.Plugin 
@@ -253,10 +262,10 @@ namespace BeepShell.Infrastructure
 
         private class PluginContainer
         {
-            public IShellPlugin Plugin { get; set; }
-            public Assembly Assembly { get; set; }
-            public PluginLoadContext LoadContext { get; set; }
-            public string AssemblyPath { get; set; }
+            public required IShellPlugin Plugin { get; set; }
+            public required Assembly Assembly { get; set; }
+            public PluginLoadContext? LoadContext { get; set; }
+            public required string AssemblyPath { get; set; }
             public DateTime LoadTime { get; set; }
             public bool IsIsolated { get; set; }
         }

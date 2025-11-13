@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor;
+using BeepShell.Shared.Interfaces;
 
 namespace BeepShell.Infrastructure
 {
@@ -48,6 +49,14 @@ namespace BeepShell.Infrastructure
         {
             Data[key] = value;
         }
+    }
+
+    /// <summary>
+    /// Strongly-typed event args for plugin events
+    /// </summary>
+    public class PluginEventArgs : ShellEventArgs
+    {
+        public required IShellPlugin Plugin { get; set; }
     }
 
     /// <summary>

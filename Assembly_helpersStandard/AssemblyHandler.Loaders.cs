@@ -290,8 +290,8 @@ namespace TheTechIdea.Beep.Tools
             SendMessege(progress, token, "Scanning Extensions");
             ScanExtensions();
             
-            SendMessege(progress, token, "Scanning Folders For Extension Project's and Addin's");
-            ScanExtensionsInAssemblies();
+            //SendMessege(progress, token, "Scanning Folders For Extension Project's and Addin's");
+            //ScanExtensionsInAssemblies();
 
             if (ConfigEditor.ConfigType != BeepConfigType.DataConnector)
             {
@@ -373,21 +373,21 @@ namespace TheTechIdea.Beep.Tools
         {
             var assemblies = LoadedAssemblies;
 
-            foreach (Assembly item in assemblies)
-            {
-                try
-                {
-                    if (!item.FullName.StartsWith("System") && !item.FullName.StartsWith("Microsoft"))
-                    {
-                        Assemblies.Add(new assemblies_rep(item, "", item.FullName, FolderFileTypes.Builtin));
-                        ScanAssembly(item);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger?.WriteLog($"GetBuiltinClasses: Error loading assembly {ex.Message}");
-                }
-            }
+            //foreach (Assembly item in assemblies)
+            //{
+            //    try
+            //    {
+            //        if (!item.FullName.StartsWith("System") && !item.FullName.StartsWith("Microsoft"))
+            //        {
+            //            Assemblies.Add(new assemblies_rep(item, "", item.FullName, FolderFileTypes.Builtin));
+            //            ScanAssembly(item);
+            //        }
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        Logger?.WriteLog($"GetBuiltinClasses: Error loading assembly {ex.Message}");
+            //    }
+            //}
 
             // Scan current and entry assemblies
             Assembly currentAssem = Assembly.GetExecutingAssembly();
