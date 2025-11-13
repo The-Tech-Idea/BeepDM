@@ -1,421 +1,774 @@
-# BeepShell - Interactive REPL for BeepDM
+# BeepShell
 
-An interactive shell (REPL - Read-Eval-Print Loop) for BeepDM that maintains persistent connections and state across commands, providing a faster and more efficient way to work with your data sources.
+**BeepShell** is an interactive REPL (Read-Eval-Print Loop) shell for BeepDM, providing a persistent session environment for database management, driver installation, data operations, and workflow execution.
 
-## 🚀 Why BeepShell?
-
-Unlike the standard BeepDM CLI which creates new instances for each command, BeepShell:
-
-✅ **Persistent Connections** - Open connections once, use them multiple times  
-✅ **Faster Execution** - No overhead from recreating services per command  
-✅ **Session State** - Track your work with command history and statistics  
-✅ **Interactive Workflow** - Perfect for exploration and development  
-✅ **Same Commands** - All CLI commands work the same way  
-✅ **Extensible** - Create custom commands and workflows as plugins  
-
-## 🔌 Extensibility
-
-BeepShell supports a powerful plugin system that allows you to create custom commands and workflows:
-
-- **IShellCommand** - Create new CLI commands
-- **IShellWorkflow** - Build complex multi-step operations
-- **IShellExtension** - Package multiple commands/workflows together
-- **Automatic Discovery** - Just implement the interface and drop the DLL in a BeepDM folder
-
-Extensions are automatically discovered and loaded using AssemblyHandler's `ScanExtensions()` mechanism.
-
-📖 **[Read the Extension Development Guide](EXTENSION_DEVELOPMENT.md)** to start building custom commands!  
-
-## 📦 Installation
-
-### Build from Source
-
-```bash
-cd BeepShell
-dotnet build
-dotnet run
-```
-
-### Install as Tool (Coming Soon)
-
-```bash
-dotnet tool install --global TheTechIdea.Beep.Shell
-beepshell
-```
-
-## 🎯 Quick Start
-
-### Launch BeepShell
-
-```bash
-# Default profile
-dotnet run
-
-# Specific profile
-dotnet run --profile production
-
-# Or set environment variable
-$env:BEEP_PROFILE="dev"
-dotnet run
-```
-
-### Your First Session
-
-```
-BeepShell v1.0.0
-Type 'help' for commands | Type 'exit' to quit
-
-beep> help                           # Show available commands
-beep> config connection list         # List all connections  
-beep> ds test MyDatabase            # Test and open connection
-beep> ds entities MyDatabase        # List tables (connection stays open!)
-beep> status                        # Check session stats
-beep> exit                          # Close shell
-```
-
-## 📚 Shell Commands
-
-### Shell-Specific Commands
-
-These commands only work in BeepShell (not in CLI):
-
-```bash
-help, ?                    # Show help
-clear, cls                 # Clear screen
-exit, quit, q             # Exit shell
-status                    # Show session statistics
-connections               # Show all open connections
-datasources               # Show active data sources
-history                   # Show command history
-extensions                # List loaded extensions
-workflows                 # List available workflows
-profile                   # Show current profile
-profile switch <name>     # Switch to different profile
-reload                    # Reload configuration from disk
-close <datasource>        # Close specific connection
-```
-
-### All CLI Commands Available
-
-Every command from BeepDM CLI works in BeepShell, plus any custom commands from loaded extensions:
-
-```bash
-# Configuration
-config show
-config connection add
-config connection list
-
-# Data Sources
-ds test MyDatabase
-ds info MyDatabase
-ds entities MyDatabase
-
-# Query
-query exec MyDatabase "SELECT * FROM Users"
-query entity MyDatabase Users --limit 50
-
-# ETL
-etl copy-structure SourceDB DestDB Users
-etl copy-data SourceDB DestDB Users
-
-# Class Generation
-class generate-poco MyDB Users --output ./Models
-
-# Custom Extension Commands (examples)
-export --source MyDB --table Users --output users.csv
-import --file data.csv --target MyDB --table ImportedData
-analyze --source MyDB --table Orders
-
-class generate-webapi MyDB --output ./Controllers
-
-# And all other commands...
-```
-
-## 🔄 Persistent State
-
-### What Persists in a Session?
-
-✅ **DMEEditor Instance** - Reused across all commands  
-✅ **Open Connections** - Stay open until you close them  
-✅ **Loaded Assemblies** - No need to reload drivers  
-✅ **Configuration** - Loaded once at startup  
-✅ **Data Sources List** - Accumulates as you work  
-
-### Example Workflow
-
-```bash
-beep> config connection list
-[Shows 5 connections]
-
-beep> ds test Database1
-✓ Connection successful
-
-beep> ds test Database2  
-✓ Connection successful
-
-beep> connections        # Both connections still open!
-Open Connections (2)
-  Database1    SqlServer    Open
-  Database2    PostgreSQL   Open
-
-beep> datasources        # Both in memory!
-Active Data Sources (2)
-  Database1    SqlServer    ●
-  Database2    PostgreSQL   ●
-
-beep> etl copy-data Database1 Database2 Users
-[Copies data - uses existing connections, no reconnection needed!]
-
-beep> close Database1    # Close when done
-✓ Closed connection to 'Database1'
-```
-
-## 📊 Session Statistics
-
-The `status` command shows comprehensive session information:
-
-```bash
-beep> status
-
-Session Status
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Profile:             production
-Session Time:        15 min 32 sec
-Start Time:          2025-11-10 10:30:15
-
-Command Statistics
-  Total Commands:    47
-  Successful:        45
-  Failed:            2
-  Execution Time:    2.3 sec
-
-Connections
-  Active Data Sources: 3
-  Open Connections:    2
-  Configured:          12
-
-Configuration
-  Drivers Loaded:      8
-  Assemblies:          15
-```
-
-## 🔧 Profile Management
-
-### Switch Profiles During Session
-
-```bash
-beep> profile
-Current profile: dev
-
-beep> profile switch production
-✓ Switched to profile: production
-
-beep> config show
-[Shows production configuration]
-```
-
-### Profile Locations
-
-Profiles are stored in:
-```
-%AppData%\TheTechIdea\BeepShell\Profiles\
-├── default/
-├── dev/
-├── staging/
-└── production/
-```
-
-## 💡 Use Cases
-
-### 1. Data Exploration
-
-```bash
-beep> ds test MyDatabase
-beep> ds entities MyDatabase
-beep> query entity MyDatabase Users --limit 10
-beep> query entity MyDatabase Orders --filter "Status=Pending"
-```
-
-### 2. Batch Operations
-
-```bash
-beep> ds test SourceDB
-beep> ds test DestDB
-beep> etl copy-structure SourceDB DestDB Users
-beep> etl copy-structure SourceDB DestDB Orders
-beep> etl copy-structure SourceDB DestDB Products
-beep> etl copy-data SourceDB DestDB Users
-beep> etl copy-data SourceDB DestDB Orders
-```
-
-### 3. Code Generation
-
-```bash
-beep> ds test MyDatabase
-beep> class generate-poco MyDatabase Users --output ./Models
-beep> class generate-poco MyDatabase Orders --output ./Models
-beep> class generate-poco MyDatabase Products --output ./Models
-beep> class generate-webapi MyDatabase --output ./Controllers
-```
-
-### 4. Configuration Management
-
-```bash
-beep> config connection list
-beep> config connection add
-beep> config connection update MyConnection
-beep> reload                    # Reload if changed externally
-beep> config connection list
-```
-
-## 🆚 BeepShell vs BeepDM CLI
-
-| Feature | BeepShell | CLI |
-|---------|-----------|-----|
-| **Execution Model** | Interactive | One-shot |
-| **State** | Persistent | Stateless |
-| **Connections** | Kept open | Closed per command |
-| **Startup Time** | Once | Per command |
-| **Best For** | Development, exploration | Automation, scripts |
-| **Memory** | ~10MB base | ~5MB per invocation |
-| **Commands** | Same + shell commands | All standard commands |
-
-## 🎨 Features
-
-### Command History
-
-```bash
-beep> history
-Command History (Last 10)
-  1   config connection list
-  2   ds test MyDatabase
-  3   ds entities MyDatabase
-  4   query entity MyDatabase Users
-  5   status
-```
-
-### Connection Management
-
-```bash
-beep> connections
-Open Connections (3)
-  Database1    SqlServer     Open    45 entities
-  Database2    PostgreSQL    Open    32 entities
-  FileDB       CSV           Open    5 entities
-
-beep> close Database1
-✓ Closed connection to 'Database1'
-```
-
-### Auto-completion (Future)
-
-- Tab completion for commands
-- Data source name completion
-- Entity name completion
-
-## 🔒 Best Practices
-
-### 1. Close Connections When Done
-
-```bash
-beep> close MyDatabase
-# Or exit shell to close all
-beep> exit
-```
-
-### 2. Use Profiles for Different Environments
-
-```bash
-# Development
-beepshell --profile dev
-
-# Production (read-only recommended)
-beepshell --profile production
-```
-
-### 3. Check Status Regularly
-
-```bash
-beep> status          # Monitor open connections
-beep> connections     # See what's open
-```
-
-### 4. Reload After External Changes
-
-```bash
-# If configuration files changed externally
-beep> reload
-```
-
-## ⚠️ Important Notes
-
-### Memory Usage
-
-BeepShell maintains state, so memory usage grows with:
-- Number of open connections
-- Number of loaded entities
-- Amount of cached data
-
-Monitor with `status` command and close unused connections.
-
-### Configuration Changes
-
-- Changes made in BeepShell persist to disk (same as CLI)
-- Use `reload` if configuration changed externally
-- Switching profiles closes all connections
-
-### Threading
-
-BeepShell is single-threaded. Long-running operations will block the prompt.
-
-## 🛠️ Development
-
-### Project Structure
-
-```
-BeepShell/
-├── Program.cs                        # Entry point
-├── BeepShell.csproj                  # Project file
-├── Infrastructure/
-│   ├── ShellServiceProvider.cs      # Persistent service provider
-│   └── InteractiveShell.cs          # REPL implementation
-└── Commands/
-    └── ShellCommands.cs             # Shell-specific commands
-```
-
-### Adding New Shell Commands
-
-Edit `InteractiveShell.cs` and add to `HandleShellCommand()`:
-
-```csharp
-case "mynewcommand":
-    ShellCommands.MyNewCommand(_editor, _sessionState);
-    return true;
-```
-
-## 📄 License
-
-Same as BeepDM main project.
-
-## 🆘 Getting Help
-
-```bash
-beep> help                    # Show all commands
-beep> config --help          # Help for specific command group
-beep> status                 # Check session status
-```
-
-## 🚀 Coming Soon
-
-- [ ] Tab auto-completion
-- [ ] Command aliases
-- [ ] Script execution from files
-- [ ] Session save/restore
-- [ ] Multi-line command support
-- [ ] Connection pooling
-- [ ] Background task execution
+[![.NET 8.0](https://img.shields.io/badge/.NET-8.0-blue)](https://dotnet.microsoft.com/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ---
 
-**BeepShell** - Your persistent companion for BeepDM data management!
+## 🎯 Features
+
+### Core Capabilities
+- **Persistent State Management**: Maintains connections and context across commands
+- **Hot-Reloadable Plugin System**: Load, unload, and reload plugins without restarting
+- **Database Driver Management**: Install, update, and manage database drivers from NuGet
+- **Interactive Data Operations**: Query, import, export, and transform data
+- **Workflow Orchestration**: Define and execute complex ETL/data workflows
+- **Profile Management**: Multiple configuration profiles for different environments
+
+### Command Categories
+- **Connection Management** (`conn`): Create, test, and manage database connections
+- **Driver Management** (`driver`): Install, update, and browse NuGet packages
+- **Data Source Operations** (`ds`): Work with data sources and entities
+- **Query Execution** (`query`): Execute SQL and inspect results
+- **Import/Export** (`import`, `export`): Data migration and transformation
+- **Workflow Execution** (`workflow`): Run predefined data workflows
+- **Plugin Management** (`plugin`): Load and manage shell extensions
+
+---
+
+## 🚀 Quick Start
+
+### Running BeepShell
+
+```powershell
+# Run with default profile
+dotnet run --project BeepShell
+
+# Run with specific profile
+dotnet run --project BeepShell -- --profile production
+
+# Or use the compiled executable
+.\BeepShell.exe --profile dev
+```
+
+### Basic Commands
+
+```bash
+# Show available commands
+help
+
+# List configured drivers
+driver list
+
+# Install a database driver
+driver install
+
+# Create a connection
+conn create
+
+# List connections
+conn list
+
+# Exit BeepShell
+exit
+```
+
+---
+
+## 📦 Driver Management
+
+BeepShell provides advanced driver management with NuGet integration:
+
+### Installing Drivers
+
+```bash
+# Interactive installation (recommended)
+driver install
+
+# Search NuGet.org for packages
+> Search NuGet.org (recommended)
+> Enter search term: Oracle
+
+# Select package from results:
+  ❯ Oracle.ManagedDataAccess.Core (12.5M downloads)
+    Oracle.ManagedDataAccess (45.2M downloads)
+    
+# Select version:
+  ❯ Latest (recommended)
+    23.4.0
+    21.12.0
+    19.20.0
+```
+
+### Checking for Updates
+
+```bash
+# Check specific driver for updates
+driver update --name Oracle --check
+
+# Update driver to latest version
+driver update --name Oracle
+
+# List all installed drivers with versions
+driver list
+```
+
+### Cleaning Drivers
+
+```bash
+# Remove all driver DLLs (marks for deletion on restart)
+driver clean
+
+# Force clean without confirmation
+driver clean --force
+
+# Drivers are deleted on next BeepShell startup
+```
+
+---
+
+## 🔌 Plugin System
+
+BeepShell supports a powerful plugin system for extending functionality with custom commands and workflows.
+
+### Plugin Architecture
+
+```
+BeepShell/                    # Main shell application
+├── Commands/                 # Built-in command implementations
+├── Infrastructure/           # Core shell services
+│   ├── PluginManager.cs     # Plugin lifecycle management
+│   ├── PluginLoadContext.cs # Isolated assembly loading
+│   └── ShellEventBus.cs     # Event communication
+└── README.md
+
+BeepShell.Shared/            # Shared plugin interfaces
+├── Interfaces/
+│   ├── IShellPlugin.cs      # Main plugin interface
+│   ├── IShellCommand.cs     # Command interface
+│   └── IShellWorkflow.cs    # Workflow interface
+└── Models/
+    └── PluginLoadResult.cs  # Plugin load status
+```
+
+---
+
+## 🛠️ Creating Your Own Plugin
+
+### Step 1: Create Plugin Project
+
+```powershell
+# Create a new class library targeting .NET 8.0
+dotnet new classlib -n MyCustomPlugin -f net8.0
+
+# Add reference to BeepShell.Shared
+cd MyCustomPlugin
+dotnet add reference ../BeepShell.Shared/BeepShell.Shared.csproj
+```
+
+### Step 2: Implement IShellPlugin
+
+```csharp
+using BeepShell.Shared.Interfaces;
+using BeepShell.Shared.Models;
+using System.CommandLine;
+using TheTechIdea.Beep.Editor;
+
+namespace MyCustomPlugin
+{
+    public class MyPlugin : IShellPlugin
+    {
+        private IDMEEditor? _editor;
+
+        // Plugin metadata
+        public string PluginId => "my-custom-plugin";
+        public string ExtensionName => "My Custom Plugin";
+        public string Version => "1.0.0";
+        public bool SupportsHotReload => true;
+
+        // Lifecycle methods
+        public void Initialize(IDMEEditor editor)
+        {
+            _editor = editor;
+        }
+
+        public void OnLoad()
+        {
+            Console.WriteLine($"[MyPlugin] Loaded v{Version}");
+        }
+
+        public void OnUnload()
+        {
+            Console.WriteLine("[MyPlugin] Unloading...");
+        }
+
+        public void Cleanup()
+        {
+            // Release resources
+            _editor = null;
+        }
+
+        // Hot-reload support
+        public Task<bool> PrepareUnloadAsync()
+        {
+            // Check if safe to unload
+            return Task.FromResult(true);
+        }
+
+        public Task OnReloadAsync()
+        {
+            Console.WriteLine("[MyPlugin] Reloaded!");
+            return Task.CompletedTask;
+        }
+
+        // Provide commands
+        public IEnumerable<IShellCommand> GetCommands()
+        {
+            return new[] { new MyCustomCommand(_editor!) };
+        }
+
+        // Provide workflows (optional)
+        public IEnumerable<IShellWorkflow> GetWorkflows()
+        {
+            return Enumerable.Empty<IShellWorkflow>();
+        }
+    }
+}
+```
+
+### Step 3: Implement Custom Command
+
+```csharp
+using BeepShell.Shared.Interfaces;
+using System.CommandLine;
+using TheTechIdea.Beep.Editor;
+using Spectre.Console;
+
+namespace MyCustomPlugin
+{
+    public class MyCustomCommand : IShellCommand
+    {
+        private readonly IDMEEditor _editor;
+
+        public string CommandName => "mycmd";
+
+        public MyCustomCommand(IDMEEditor editor)
+        {
+            _editor = editor;
+        }
+
+        public Command BuildCommand()
+        {
+            var command = new Command("mycmd", "My custom command");
+            
+            // Add options
+            var nameOption = new Option<string>(
+                new[] { "--name", "-n" }, 
+                "Your name");
+            command.AddOption(nameOption);
+
+            // Set handler
+            command.SetHandler((name) => Execute(name), nameOption);
+
+            return command;
+        }
+
+        private void Execute(string name)
+        {
+            AnsiConsole.MarkupLine($"[green]Hello, {name}![/]");
+            AnsiConsole.MarkupLine($"[cyan]Connected to {_editor.DataSources.Count} data sources[/]");
+        }
+
+        public string[] GetExamples()
+        {
+            return new[]
+            {
+                "mycmd --name John",
+                "mycmd -n BeepShell"
+            };
+        }
+    }
+}
+```
+
+### Step 4: Build and Load Plugin
+
+```powershell
+# Build the plugin
+dotnet build MyCustomPlugin
+
+# Copy to plugins directory
+mkdir BeepShell/bin/Debug/net8.0/Plugins
+cp MyCustomPlugin/bin/Debug/net8.0/MyCustomPlugin.dll BeepShell/bin/Debug/net8.0/Plugins/
+
+# Load in BeepShell
+plugin load --path Plugins/MyCustomPlugin.dll
+```
+
+### Step 5: Use Your Plugin
+
+```bash
+# Your command is now available!
+mycmd --name World
+# Output: Hello, World!
+#         Connected to 3 data sources
+
+# Get help for your command
+help mycmd
+
+# Hot-reload after making changes
+plugin reload --id my-custom-plugin
+```
+
+---
+
+## 🔥 Advanced Plugin Features
+
+### Hot-Reload Support
+
+Plugins can be reloaded without restarting BeepShell:
+
+```csharp
+public class HotReloadablePlugin : IShellPlugin
+{
+    public bool SupportsHotReload => true;
+
+    public async Task<bool> PrepareUnloadAsync()
+    {
+        // Save state before unload
+        await SaveStateAsync();
+        
+        // Return true if safe to unload
+        return true;
+    }
+
+    public async Task OnReloadAsync()
+    {
+        // Restore state after reload
+        await RestoreStateAsync();
+    }
+}
+```
+
+### Event Communication
+
+Plugins can communicate via the event bus:
+
+```csharp
+public class EventAwarePlugin : IShellPlugin
+{
+    private ShellEventBus? _eventBus;
+
+    public void Initialize(IDMEEditor editor)
+    {
+        _eventBus = new ShellEventBus();
+        
+        // Subscribe to events
+        _eventBus.Subscribe<PluginEventArgs>("PluginLoaded", OnPluginLoaded);
+    }
+
+    private void OnPluginLoaded(PluginEventArgs args)
+    {
+        Console.WriteLine($"Another plugin loaded: {args.Plugin.ExtensionName}");
+    }
+
+    public void OnLoad()
+    {
+        // Publish event
+        _eventBus?.Publish("PluginLoaded", new PluginEventArgs 
+        { 
+            Plugin = this 
+        });
+    }
+}
+```
+
+### Accessing Shell Services
+
+Plugins have full access to BeepDM services:
+
+```csharp
+public class DataOperationPlugin : IShellPlugin
+{
+    private IDMEEditor? _editor;
+
+    public void Initialize(IDMEEditor editor)
+    {
+        _editor = editor;
+    }
+
+    private void PerformOperation()
+    {
+        // Access configuration
+        var config = _editor.ConfigEditor;
+        
+        // Access data sources
+        var dataSources = _editor.DataSources;
+        
+        // Execute queries
+        var result = _editor.RunQuery("SELECT * FROM Users");
+        
+        // Load assemblies
+        var assemblies = _editor.assemblyHandler.GetAllAssemblies();
+        
+        // Log messages
+        _editor.Logger?.WriteLog("Operation completed");
+    }
+}
+```
+
+---
+
+## 📋 Plugin Best Practices
+
+### 1. Resource Management
+
+```csharp
+public void Cleanup()
+{
+    // Dispose of resources
+    _connections?.Clear();
+    _cache?.Clear();
+    
+    // Unsubscribe from events
+    _eventBus?.UnsubscribeAll();
+    
+    // Release references
+    _editor = null;
+}
+```
+
+### 2. Error Handling
+
+```csharp
+public void OnLoad()
+{
+    try
+    {
+        InitializeResources();
+    }
+    catch (Exception ex)
+    {
+        _editor?.Logger?.WriteLog($"[{PluginId}] Load error: {ex.Message}");
+        throw; // Re-throw to signal load failure
+    }
+}
+```
+
+### 3. Versioning
+
+```csharp
+public class VersionedPlugin : IShellPlugin
+{
+    public string Version => "1.2.0";
+    
+    public void OnLoad()
+    {
+        // Check compatibility
+        var shellVersion = Assembly.GetEntryAssembly()?.GetName().Version;
+        if (shellVersion?.Major < 1)
+        {
+            throw new InvalidOperationException(
+                $"Plugin requires BeepShell v1.0+, found v{shellVersion}");
+        }
+    }
+}
+```
+
+### 4. Configuration
+
+```csharp
+public class ConfigurablePlugin : IShellPlugin
+{
+    private PluginConfig? _config;
+
+    public void OnLoad()
+    {
+        // Load plugin-specific configuration
+        var configPath = Path.Combine(
+            _editor.ConfigEditor.ExePath, 
+            "Plugins", 
+            $"{PluginId}.json");
+            
+        if (File.Exists(configPath))
+        {
+            _config = JsonSerializer.Deserialize<PluginConfig>(
+                File.ReadAllText(configPath));
+        }
+    }
+}
+```
+
+---
+
+## 🧪 Testing Your Plugin
+
+### Unit Testing
+
+```csharp
+[Fact]
+public void Plugin_ShouldLoadSuccessfully()
+{
+    // Arrange
+    var mockEditor = new Mock<IDMEEditor>();
+    var plugin = new MyPlugin();
+    
+    // Act
+    plugin.Initialize(mockEditor.Object);
+    plugin.OnLoad();
+    
+    // Assert
+    Assert.Equal("my-custom-plugin", plugin.PluginId);
+    Assert.True(plugin.SupportsHotReload);
+}
+
+[Fact]
+public void Command_ShouldExecuteWithoutError()
+{
+    // Arrange
+    var mockEditor = new Mock<IDMEEditor>();
+    mockEditor.Setup(e => e.DataSources).Returns(new List<IDataSource>());
+    
+    var command = new MyCustomCommand(mockEditor.Object);
+    
+    // Act & Assert
+    var cmd = command.BuildCommand();
+    Assert.NotNull(cmd);
+    Assert.Equal("mycmd", cmd.Name);
+}
+```
+
+### Integration Testing
+
+```bash
+# Test plugin loading
+plugin load --path MyPlugin.dll
+
+# Verify command registration
+help mycmd
+
+# Test command execution
+mycmd --name Test
+
+# Test hot-reload
+# (Make changes to plugin)
+plugin reload --id my-custom-plugin
+
+# Test unload
+plugin unload --id my-custom-plugin
+```
+
+---
+
+## 📚 Plugin Examples
+
+### Example 1: Database Backup Plugin
+
+```csharp
+public class BackupCommand : IShellCommand
+{
+    public string CommandName => "backup";
+
+    public Command BuildCommand()
+    {
+        var cmd = new Command("backup", "Backup database");
+        var dsOption = new Option<string>("--datasource", "Data source name");
+        cmd.AddOption(dsOption);
+        cmd.SetHandler((ds) => BackupDatabase(ds), dsOption);
+        return cmd;
+    }
+
+    private void BackupDatabase(string dataSourceName)
+    {
+        var ds = _editor.GetDataSource(dataSourceName);
+        // Implement backup logic
+    }
+}
+```
+
+### Example 2: Data Validation Workflow
+
+```csharp
+public class ValidationWorkflow : IShellWorkflow
+{
+    public string WorkflowId => "data-validation";
+    public string Name => "Data Validation";
+    public string Description => "Validates data quality";
+
+    public async Task<WorkflowResult> ExecuteAsync(
+        WorkflowContext context)
+    {
+        // Implement validation logic
+        var errors = await ValidateDataAsync(context);
+        
+        return new WorkflowResult
+        {
+            Success = errors.Count == 0,
+            Message = $"Validation complete: {errors.Count} errors found"
+        };
+    }
+}
+```
+
+---
+
+## 🔧 Configuration
+
+### Profile Configuration
+
+BeepShell supports multiple profiles stored in `Profiles/` directory:
+
+```
+BeepShell/bin/Debug/net8.0/
+├── Config.json              # Default profile
+├── installed_drivers.json   # Driver tracker
+├── ConnectionDrivers/       # Installed drivers
+└── Profiles/
+    ├── dev/
+    │   └── Config.json
+    ├── staging/
+    │   └── Config.json
+    └── production/
+        └── Config.json
+```
+
+### Environment Variables
+
+```powershell
+# Set custom config path
+$env:BEEP_CONFIG_PATH = "C:\MyConfigs\BeepDM"
+
+# Set default profile
+$env:BEEP_PROFILE = "production"
+
+# Run with environment settings
+.\BeepShell.exe
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Plugin Won't Load
+
+```bash
+# Check plugin path
+plugin list
+
+# Check for errors in logs
+cat BeepDM.log
+
+# Verify plugin implements IShellPlugin
+# Ensure .NET 8.0 target framework
+# Check assembly dependencies
+```
+
+### Driver Installation Issues
+
+```bash
+# Clean driver cache
+driver clean
+
+# Restart BeepShell
+exit
+
+# Reinstall driver with specific version
+driver install
+> Search NuGet.org
+> Select package and version
+```
+
+### Hot-Reload Not Working
+
+```csharp
+// Ensure plugin supports hot-reload
+public bool SupportsHotReload => true;
+
+// Implement PrepareUnloadAsync
+public async Task<bool> PrepareUnloadAsync()
+{
+    // Clean up resources
+    return true; // Must return true to allow unload
+}
+```
+
+---
+
+## 📖 API Reference
+
+### IShellPlugin Interface
+
+```csharp
+public interface IShellPlugin
+{
+    string PluginId { get; }
+    string ExtensionName { get; }
+    string Version { get; }
+    bool SupportsHotReload { get; }
+    
+    void Initialize(IDMEEditor editor);
+    void OnLoad();
+    void OnUnload();
+    void Cleanup();
+    
+    Task<bool> PrepareUnloadAsync();
+    Task OnReloadAsync();
+    
+    IEnumerable<IShellCommand> GetCommands();
+    IEnumerable<IShellWorkflow> GetWorkflows();
+}
+```
+
+### IShellCommand Interface
+
+```csharp
+public interface IShellCommand
+{
+    string CommandName { get; }
+    Command BuildCommand();
+    string[] GetExamples();
+}
+```
+
+### IShellWorkflow Interface
+
+```csharp
+public interface IShellWorkflow
+{
+    string WorkflowId { get; }
+    string Name { get; }
+    string Description { get; }
+    
+    Task<WorkflowResult> ExecuteAsync(WorkflowContext context);
+}
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! To create a plugin:
+
+1. Fork the repository
+2. Create a feature branch
+3. Add your plugin to `Plugins/` directory
+4. Update documentation
+5. Submit a pull request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
+
+---
+
+## 🔗 Resources
+
+- **BeepDM Documentation**: [GitHub Repository](https://github.com/The-Tech-Idea/BeepDM)
+- **NuGet Package Gallery**: [nuget.org](https://www.nuget.org/)
+- **System.CommandLine**: [Microsoft Docs](https://learn.microsoft.com/en-us/dotnet/standard/commandline/)
+- **Spectre.Console**: [spectreconsole.net](https://spectreconsole.net/)
+
+---
+
+## 💡 Support
+
+For questions and support:
+- Open an issue on GitHub
+- Check existing documentation
+- Review plugin examples in `BeepShell.Shared/`
+
+**Happy Coding! 🚀**

@@ -2,12 +2,6 @@
 	"folders": [
 		{
 			"path": "."
-		},
-		{
-			"path": "../Beep.Branchs/TheTechIdea.Beep.Vis.Loader"
-		},
-		{
-			"path": "../Beep.Compilers/Beep.Compilers.Julia"
 		}
 	],
 	"settings": {}
