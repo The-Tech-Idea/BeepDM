@@ -35,6 +35,8 @@ namespace TheTechIdea.Beep.Tools
     private readonly IScanningService _scanningService;
     // NuggetManager for nugget package handling
     private readonly NuggetManager _nuggetManager;
+        private readonly PluginRegistry _pluginRegistry;
+        private readonly PluginInstaller _pluginInstaller;
         
         private readonly List<assemblies_rep> _assemblies = new();
         private readonly List<Assembly> _loadedAssemblies = new();
@@ -103,6 +105,10 @@ namespace TheTechIdea.Beep.Tools
     public IDMLogger Logger { get; set; }
     /// <summary>Utility functions provider.</summary>
     public IUtil Utilfunction { get; set; }
+    /// <summary>Plugin registry storing installed plugin metadata.</summary>
+    public PluginRegistry PluginRegistry => _pluginRegistry;
+    /// <summary>Plugin installer/uninstaller helper.</summary>
+    public PluginInstaller PluginInstaller => _pluginInstaller;
 
     // Plugin system removed – handler now limited to interface surface only
         #endregion
@@ -117,7 +123,10 @@ namespace TheTechIdea.Beep.Tools
 
             // Initialize SharedContextManager first - this is the core of the plugin system
             // It handles all assembly loading with proper isolation and reference resolution
-            _sharedContextManager = new SharedContextManager(Logger, useSingleSharedContext: true);
+            var registry = new PluginRegistry(ConfigEditor?.ExePath ?? AppContext.BaseDirectory, Logger);
+            _pluginRegistry = registry;
+            _pluginInstaller = new PluginInstaller(_pluginRegistry, Logger);
+            _sharedContextManager = new SharedContextManager(Logger, useSingleSharedContext: true, registry);
 
             // Initialize NuggetManager for nugget package handling
             _nuggetManager = new NuggetManager(Logger, ErrorObject, Utilfunction);

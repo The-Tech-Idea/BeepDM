@@ -387,6 +387,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         private readonly PluginHealthMonitor _healthMonitor;
         
     private readonly IDMLogger _logger;
+    private readonly PluginRegistry _pluginRegistry;
     // Global shared context mode (all plugins share a single load context for maximum interop) - mutable via API
     private bool _useSingleSharedContext;
     private SharedContextLoadContext _globalSharedContext; // created lazily when first plugin loads if mode enabled
@@ -488,10 +489,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
 
         #region Constructor
     /// <summary>Creates a new shared context manager with integrated plugin system managers.</summary>
-    public SharedContextManager(IDMLogger logger, bool useSingleSharedContext = true)
+    public SharedContextManager(IDMLogger logger, bool useSingleSharedContext = true, PluginRegistry pluginRegistry = null)
         {
             _logger = logger;
             _useSingleSharedContext = useSingleSharedContext;
+            _pluginRegistry = pluginRegistry;
             // Attempt to load persisted preference if constructor argument left default
             try
             {
@@ -895,6 +897,8 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                     NuggetInfo = nuggetInfo, 
                     Message = $"Nugget {nuggetId} loaded in shared context as plugin" 
                 });
+                try { _messageBus?.Publish("nugget.loaded", nuggetInfo); } catch { }
+                try { _pluginRegistry?.Register(new InstalledPluginInfo { Id = nuggetInfo.Id, Name = nuggetInfo.Name, Version = nuggetInfo.Version, InstallPath = nuggetInfo.SourcePath, Source = nuggetInfo.SourcePath, State = "Loaded" }); } catch { }
 
                 return nuggetInfo;
             }
@@ -1091,6 +1095,8 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                     NuggetInfo = nuggetInfo, 
                     Message = $"Nugget {nuggetId} unloaded from shared context with memory cleanup" 
                 });
+                try { _messageBus?.Publish("nugget.unloaded", nuggetInfo); } catch { }
+                try { _pluginRegistry?.UpdateState(nuggetId, "Unloaded"); } catch { }
 
                 return true;
             }

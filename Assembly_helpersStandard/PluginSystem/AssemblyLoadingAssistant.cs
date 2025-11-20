@@ -31,6 +31,60 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         }
 
         /// <summary>
+        /// Switch runtime shared context mode for shared context manager.
+        /// </summary>
+        public async Task<bool> SetSharedContextModeAsync(bool useSingleSharedContext)
+        {
+            try
+            {
+                return await _sharedContextManager.SetSharedContextModeAsync(useSingleSharedContext);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWithContext("SetSharedContextModeAsync failed", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns default application folder to which packages will be installed if requested.
+        /// </summary>
+        public string GetAppInstallPath()
+        {
+            var exePath = _assemblyHandler.ConfigEditor?.ExePath;
+            if (!string.IsNullOrWhiteSpace(exePath)) return exePath;
+            return AppContext.BaseDirectory;
+        }
+
+        /// <summary>
+        /// Downloads a nugget (NuGet package) and loads it (and its dependencies) into the shared context.
+        /// Returns list of loaded assemblies.
+        /// </summary>
+        public async Task<List<Assembly>> LoadNuggetFromNugetAsync(string packageName, string? version = null, IEnumerable<string> sources = null, bool useSingleSharedContext = true, string? appInstallPath = null, bool useProcessHost = false)
+        {
+            var loaded = new List<Assembly>();
+            if (string.IsNullOrWhiteSpace(packageName)) return loaded;
+
+            try
+            {
+                var assemblyRoot = _assemblyHandler.ConfigEditor?.ExePath ?? AppContext.BaseDirectory;
+                var downloader = new NuggetPackageDownloader(Path.Combine(assemblyRoot, "NugetDownloads"), _logger);
+                var registry = new PluginRegistry(assemblyRoot, _logger);
+                var processManager = new PluginProcessManager(_logger);
+                var loader = new NuggetPluginLoader(downloader, this, registry, _logger, processManager);
+                // Ensure shared context mode
+                await SetSharedContextModeAsync(useSingleSharedContext);
+                loaded = (await loader.LoadNuggetAsPluginAsync(packageName, version, sources, useSingleSharedContext, appInstallPath, useProcessHost)).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWithContext($"Failed to download and load nugget {packageName}: {ex.Message}", ex);
+            }
+
+            return loaded;
+        }
+
+        /// <summary>
         /// Legacy method - now delegates to SharedContextManager for true isolation
         /// </summary>
         public Assembly LoadAssemblySafely(string assemblyPath)

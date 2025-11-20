@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyModel;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
@@ -494,6 +495,68 @@ namespace TheTechIdea.Beep.Tools
                 ErrorObject.Message = ex.Message;
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Download a nugget from NuGet.org and load it into the engine
+        /// </summary>
+        public async Task<List<Assembly>> LoadNuggetFromNuGetAsync(string packageName, string version = null, IEnumerable<string> sources = null, bool useSingleSharedContext = true, string appInstallPath = null, bool useProcessHost = false)
+        {
+            var loadedAssemblies = new List<Assembly>();
+            try
+            {
+                // Use NuggetPackageDownloader to fetch all packages and dependencies
+                var downloadsDir = Path.Combine(ConfigEditor.ExePath, "NugetDownloads");
+                var downloader = new TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader(downloadsDir, Logger);
+                var results = await downloader.DownloadPackageWithDependenciesAsync(packageName, version, sources);
+
+                foreach (var kvp in results)
+                {
+                    var path = kvp.Value; // path to folder with DLLs
+                    var useIsolated = !useSingleSharedContext;
+                    var loaded = _nuggetManager.LoadNugget(path, useIsolated);
+                    if (loaded)
+                    {
+                        var nuggetName = Path.GetFileNameWithoutExtension(path.TrimEnd(Path.DirectorySeparatorChar));
+                        var nusAssemblies = _nuggetManager.GetNuggetAssemblies(nuggetName);
+                        foreach (var a in nusAssemblies)
+                        {
+                            if (!LoadedAssemblies.Contains(a)) LoadedAssemblies.Add(a);
+                            if (!loadedAssemblies.Contains(a)) loadedAssemblies.Add(a);
+                        }
+                        // Optionally install DLLs to application directory for improved resolution
+                        try
+                        {
+                            var installPath = appInstallPath ?? Path.Combine(ConfigEditor.ExePath, "Plugins");
+                            downloader.InstallPackageToAppDirectory(path, installPath, packageName, version);
+                            if (useProcessHost)
+                            {
+                                var exe = Directory.GetFiles(installPath, "*.exe", SearchOption.AllDirectories).FirstOrDefault();
+                                if (!string.IsNullOrWhiteSpace(exe))
+                                {
+                                    try
+                                    {
+                                        var psi = new System.Diagnostics.ProcessStartInfo { FileName = exe, UseShellExecute = false, CreateNoWindow = true };
+                                        System.Diagnostics.Process.Start(psi);
+                                        Logger?.WriteLog($"Started process-hosted plugin {packageName} @ {exe}");
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Logger?.WriteLog($"Failed to start process-hosted plugin: {ex.Message}");
+                                    }
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger?.WriteLog($"LoadNuggetFromNuGetAsync: Error - {ex.Message}");
+            }
+
+            return loadedAssemblies;
         }
 
         /// <summary>

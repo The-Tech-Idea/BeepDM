@@ -239,6 +239,11 @@
             Unload a NuGet package by name
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.LoadNuggetFromNuGetAsync(System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.String,System.Boolean)">
+            <summary>
+            Download a nugget from NuGet.org and load it into the engine
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.UnloadAssembly(System.String)">
             <summary>
             Unload an assembly by name
@@ -374,6 +379,22 @@
             <summary>
             Refactored AssemblyLoadingAssistant that delegates to SharedContextManager for true isolation
             Acts as a bridge between legacy AssemblyHandler interface and modern SharedContextManager
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.SetSharedContextModeAsync(System.Boolean)">
+            <summary>
+            Switch runtime shared context mode for shared context manager.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.GetAppInstallPath">
+            <summary>
+            Returns default application folder to which packages will be installed if requested.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.LoadNuggetFromNugetAsync(System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.String,System.Boolean)">
+            <summary>
+            Downloads a nugget (NuGet package) and loads it (and its dependencies) into the shared context.
+            Returns list of loaded assemblies.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.LoadAssemblySafely(System.String)">
@@ -628,6 +649,30 @@
             Returns aggregated statistics about discovered component categories during the current scanning session.
             </summary>
             <returns>Dictionary keyed by category name with counts.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader">
+            <summary>
+            Lightweight NuGet package downloader extracted/implemented for Assembly_helpersStandard
+            This mirrors the feature set used in BeepShell.Shared but uses IDMLogger instead of console UI.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.InstallPackageToAppDirectory(System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Installs files from a package folder into the application directory so that runtime resolution
+            can find the assemblies easily. Copies DLLs and native runtime files.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.NuggetPluginLoader">
+            <summary>
+            Helper class that downloads NuGet packages (nuggets) and loads them into the shared context
+            using AssemblyLoadingAssistant. It avoids creating references to BeepShell.Shared.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPluginLoader.LoadNuggetAsPluginAsync(System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.String,System.Boolean)">
+            <summary>
+            Downloads a nugget and dependencies, extracts each package and loads assemblies from the package directories
+            using the AssemblyLoadingAssistant.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Tools.PluginSystem.PluginHealthMonitor">
             <summary>
@@ -1089,7 +1134,7 @@
         <member name="P:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.DiscoveredLoaderExtensions">
             <summary>Snapshot list of discovered loader extension class definitions.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.#ctor(TheTechIdea.Beep.Logger.IDMLogger,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.#ctor(TheTechIdea.Beep.Logger.IDMLogger,System.Boolean,TheTechIdea.Beep.Tools.PluginSystem.PluginRegistry)">
             <summary>Creates a new shared context manager with integrated plugin system managers.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.RegisterPreLoadedAssemblies">
@@ -1361,6 +1406,12 @@
         </member>
         <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.Utilfunction">
             <summary>Utility functions provider.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.PluginRegistry">
+            <summary>Plugin registry storing installed plugin metadata.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.PluginInstaller">
+            <summary>Plugin installer/uninstaller helper.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.LoadAssembly(System.String,TheTechIdea.Beep.Utilities.FolderFileTypes)">
             <summary>
