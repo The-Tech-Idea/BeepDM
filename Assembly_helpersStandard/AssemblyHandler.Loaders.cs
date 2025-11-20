@@ -20,6 +20,7 @@ namespace TheTechIdea.Beep.Tools
     /// </summary>
     public partial class AssemblyHandler
     {
+
         #region Initialization
 
         /// <summary>
@@ -237,6 +238,8 @@ namespace TheTechIdea.Beep.Tools
         /// </summary>
         public IErrorsInfo LoadAllAssembly(IProgress<PassedArgs> progress, CancellationToken token)
         {
+            Progress= progress;
+            Token= token;
             ErrorObject.Flag = Errors.Ok;
             string res;
             Utilfunction.FunctionHierarchy = new List<ParentChildObject>();
@@ -312,6 +315,7 @@ namespace TheTechIdea.Beep.Tools
             {
                 try
                 {
+                    SendMessege(progress, token, $"Loading assemblies from {p}");
                     LoadAssembly(p, folderType);
                 }
                 catch (FileLoadException loadEx)
@@ -374,21 +378,22 @@ namespace TheTechIdea.Beep.Tools
         {
             var assemblies = LoadedAssemblies;
 
-            //foreach (Assembly item in assemblies)
-            //{
-            //    try
-            //    {
-            //        if (!item.FullName.StartsWith("System") && !item.FullName.StartsWith("Microsoft"))
-            //        {
-            //            Assemblies.Add(new assemblies_rep(item, "", item.FullName, FolderFileTypes.Builtin));
-            //            ScanAssembly(item);
-            //        }
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        Logger?.WriteLog($"GetBuiltinClasses: Error loading assembly {ex.Message}");
-            //    }
-            //}
+            foreach (Assembly item in assemblies)
+            {
+                try
+                {
+                    if (!item.FullName.StartsWith("System") && !item.FullName.StartsWith("Microsoft"))
+                    {
+                        SendMessege(Progress, Token, $"Getting Builtin Classes from {item.FullName}");
+                        Assemblies.Add(new assemblies_rep(item, "", item.FullName, FolderFileTypes.Builtin));
+                        ScanAssembly(item);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger?.WriteLog($"GetBuiltinClasses: Error loading assembly {ex.Message}");
+                }
+            }
 
             // Scan current and entry assemblies
             Assembly currentAssem = Assembly.GetExecutingAssembly();
@@ -398,6 +403,7 @@ namespace TheTechIdea.Beep.Tools
             {
                 if (!currentAssem.FullName.StartsWith("System") && !currentAssem.FullName.StartsWith("Microsoft"))
                 {
+                    SendMessege(Progress, Token, $"Getting Builtin Classes from {currentAssem.FullName}");
                     ScanAssembly(currentAssem);
                 }
             }

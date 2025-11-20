@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DriversConfigurations;
@@ -24,7 +25,8 @@ namespace TheTechIdea.Beep.Tools
         private ConcurrentDictionary<string, Assembly> _loadedAssemblyCache = new ConcurrentDictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase);
         private List<ConnectionDriversConfig> DataDriversConfig = new List<ConnectionDriversConfig>();
         private bool disposedValue;
-        
+        IProgress<PassedArgs> Progress;
+        CancellationToken Token;
         /// <summary>
         /// NuGet package manager for loading/unloading nuggets
         /// </summary>

@@ -233,7 +233,7 @@ namespace TheTechIdea.Beep.Tools
                 try
                 {
                     ILoaderExtention cls = (ILoaderExtention)Activator.CreateInstance(item, new object[] { this });
-                    
+                    SendMessege(Progress, Token, $"Scanning extension: {cls.ToString}");
                     // Store the instantiated extension
                     LoaderExtensionInstances.Add(cls);
                     
