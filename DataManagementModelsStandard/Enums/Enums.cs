@@ -234,12 +234,15 @@ namespace TheTechIdea.Beep.Utilities
         String,        // Text-based fields
         Char,          // Fixed-length text fields
         Numeric,       // Integer, float, double, decimal, etc.
+        Text,
+        DateTime,
         Integer,
         Double,
         Float,
         Long,
         Short,
         Decimal,
+        Image,
         Date,          // Date and DateTime fields
         Boolean,       // True/False fields
         Binary,        // Binary data, such as images or files
