@@ -438,7 +438,8 @@ namespace TheTechIdea.Beep.Tools
         {
             try
             {
-                var result = _nuggetManager.LoadNugget(path);
+                // Use isolated context for hot-reload capability
+                var result = _nuggetManager.LoadNugget(path, useIsolatedContext: true);
 
                 if (result)
                 {

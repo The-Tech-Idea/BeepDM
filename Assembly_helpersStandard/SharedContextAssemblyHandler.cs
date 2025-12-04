@@ -915,8 +915,8 @@ namespace TheTechIdea.Beep.Tools
         {
             ErrorObject.Flag = Errors.Ok;
             
-            // Use NuggetManager to load the nugget
-            var result = _nuggetManager.LoadNugget(path, useIsolatedContext: false);
+            // Use NuggetManager to load the nugget with isolated context for hot-reload
+            var result = _nuggetManager.LoadNugget(path, useIsolatedContext: true);
 
             if (result)
             {

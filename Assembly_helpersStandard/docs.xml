@@ -1019,6 +1019,77 @@
             Represents a plugin backup for rollback purposes
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker">
+            <summary>
+            Tracks which plugins are using which shared assemblies
+            Enables smart unloading by determining when assemblies can be safely unloaded
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker.RegisterUsage(System.Reflection.Assembly,System.String)">
+            <summary>
+            Register that a plugin is using an assembly
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker.UnregisterUsage(System.Reflection.Assembly,System.String)">
+            <summary>
+            Unregister a plugin's usage of an assembly
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker.UnregisterPlugin(System.String)">
+            <summary>
+            Unregister all assemblies for a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker.CanUnload(System.Reflection.Assembly)">
+            <summary>
+            Check if an assembly can be safely unloaded
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker.GetUsers(System.Reflection.Assembly)">
+            <summary>
+            Get all plugins using an assembly
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker.GetAssemblies(System.String)">
+            <summary>
+            Get all assemblies used by a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker.GetReferenceCount(System.Reflection.Assembly)">
+            <summary>
+            Get reference count for an assembly
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker.CanUnloadPlugin(System.String)">
+            <summary>
+            Check if a plugin can be safely unloaded
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker.GetSharedAndUniqueAssemblies(System.String)">
+            <summary>
+            Get assemblies that are shared vs unique to a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker.GetAffectedPlugins(System.String)">
+            <summary>
+            Get plugins that would be affected if we unload this plugin's shared assemblies
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker.GetStatistics">
+            <summary>
+            Get statistics about assembly usage
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker.Clear">
+            <summary>
+            Clear all tracking data
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.AssemblyUsageStatistics">
+            <summary>
+            Statistics about assembly usage
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Tools.PluginSystem.AssemblyResolvedEventArgs">
             <summary>
             Event arguments for assembly resolution events
@@ -1359,6 +1430,67 @@
         </member>
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.Dispose">
             <summary>Disposes the manager, unloading all nuggets and clearing caches.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.UnloadAnalysis">
+            <summary>
+            Analysis result for plugin unload operation
+            Provides information about what will happen when unloading a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.UnloadAnalysis.GetMessage">
+            <summary>
+            Get user-friendly message explaining unload status
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.UnloadAnalysis.GetDetailedExplanation">
+            <summary>
+            Get detailed explanation with recommendations
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyInfo">
+            <summary>
+            Information about a shared assembly
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.UnloadRecommendation">
+            <summary>
+            Recommendation for unload operation
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.UnloadMode">
+            <summary>
+            Mode for unloading plugins
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.PluginSystem.UnloadMode.Safe">
+            <summary>
+            Only unload if no other plugins depend on it
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.PluginSystem.UnloadMode.Cascade">
+            <summary>
+            Unload with all dependent plugins
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.PluginSystem.UnloadMode.Force">
+            <summary>
+            Force unload even if dependencies exist (may break things)
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.PluginSystem.UnloadMode.Scheduled">
+            <summary>
+            Schedule for unload when safe (monitor for opportunity)
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.PluginSystem.UnloadAnalyzer">
+            <summary>
+            Helper class to analyze plugin dependencies and create UnloadAnalysis
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.UnloadAnalyzer.Analyze(System.String,System.String,System.String,TheTechIdea.Beep.Tools.PluginSystem.SharedAssemblyTracker)">
+            <summary>
+            Analyze what would happen if we unload a plugin
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler">
             <summary>
