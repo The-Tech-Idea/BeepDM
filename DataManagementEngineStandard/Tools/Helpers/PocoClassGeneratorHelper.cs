@@ -101,28 +101,39 @@ namespace TheTechIdea.Beep.Tools.Helpers
 
         /// <summary>
         /// Creates an Entity class that inherits from Entity base class
+        /// Uses proper inheritance from TheTechIdea.Beep.Editor.Entity
         /// </summary>
         public string CreateEntityClass(EntityStructure entity, string usingHeader, string extraCode, 
             string outputPath, string namespaceString = "TheTechIdea.ProjectClasses", bool generateFiles = true)
         {
-            const string implementations = "Entity, INotifyPropertyChanged";
-            
-            var notificationCode = @"
-        public event PropertyChangedEventHandler PropertyChanged;
-        
-        private void NotifyPropertyChanged([CallerMemberName] string propertyName = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            // Ensure proper using statements for Entity base class
+            var defaultUsingHeader = @"using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.DataBase;";
 
-        protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
-        {
-            if (!EqualityComparer<T>.Default.Equals(field, value))
+            if (string.IsNullOrWhiteSpace(usingHeader))
             {
-                field = value;
-                NotifyPropertyChanged(propertyName);
-                return true;
+                usingHeader = defaultUsingHeader;
             }
-            return false;
-        }";
+            else if (!usingHeader.Contains("TheTechIdea.Beep.Editor"))
+            {
+                usingHeader += "\nusing TheTechIdea.Beep.Editor;";
+            }
+
+            // Entity class inherits from Entity base class which already implements INotifyPropertyChanged
+            const string implementations = "Entity";
+            
+            // Note: Entity base class already provides PropertyChanged event and SetProperty method
+            // So we don't need to add them here, but we can add custom code if needed
+            var notificationCode = extraCode ?? @"
+        // Entity base class provides:
+        // - PropertyChanged event (from INotifyPropertyChanged)
+        // - OnPropertyChanged method
+        // - SetProperty<T> method for property change notifications
+";
 
             var fieldTemplate = @"
 private :FIELDTYPE? :BACKINGFIELD;

@@ -18354,6 +18354,9 @@
             Partial class for DLL creation and compilation functionality
             </summary>
             <summary>
+            Entity class generation using EntitiesExtensions for type conversion
+            </summary>
+            <summary>
             Partial class for testing and validation functionality
             </summary>
             <summary>
@@ -18659,6 +18662,124 @@
             <param name="current">Current item index</param>
             <param name="total">Total items count</param>
             <param name="errorMessage">Optional error message</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityStructureFromType(System.Type,System.String)">
+            <summary>
+            Creates an EntityStructure from a .NET Type using EntitiesExtensions
+            </summary>
+            <param name="type">The .NET type to convert</param>
+            <param name="entityName">Optional entity name (defaults to type name)</param>
+            <returns>EntityStructure populated from the type</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityStructureFromType``1(System.String)">
+            <summary>
+            Creates an EntityStructure from a generic type using EntitiesExtensions
+            </summary>
+            <typeparam name="T">The type to convert</typeparam>
+            <param name="entityName">Optional entity name (defaults to type name)</param>
+            <returns>EntityStructure populated from the type</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityStructureFromDataTable(System.Data.DataTable)">
+            <summary>
+            Creates an EntityStructure from a DataTable using EntitiesExtensions
+            </summary>
+            <param name="dataTable">The DataTable to convert</param>
+            <returns>EntityStructure populated from the DataTable</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityStructureFromList``1(System.Collections.Generic.List{``0},System.String)">
+            <summary>
+            Creates EntityStructure objects from a list of objects using EntitiesExtensions
+            </summary>
+            <typeparam name="T">The type of objects in the list</typeparam>
+            <param name="list">The list of objects</param>
+            <param name="entityName">Optional entity name</param>
+            <returns>EntityStructure populated from the list</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityStructuresFromTypes(System.Type[])">
+            <summary>
+            Creates multiple EntityStructure objects from multiple types
+            </summary>
+            <param name="types">The types to convert</param>
+            <returns>List of EntityStructure objects</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityClassFromType(System.Type,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates an Entity class from a .NET Type that inherits from Entity base class
+            Uses EntitiesExtensions to convert the type to EntityStructure first
+            </summary>
+            <param name="type">The .NET type to convert and generate class from</param>
+            <param name="outputPath">Output directory for generated file</param>
+            <param name="namespaceString">Namespace for generated class</param>
+            <param name="entityName">Optional entity name (defaults to type name)</param>
+            <param name="generateFiles">Whether to generate .cs files</param>
+            <returns>Path to generated file</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityClassFromType``1(System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates an Entity class from a generic type that inherits from Entity base class
+            </summary>
+            <typeparam name="T">The type to convert and generate class from</typeparam>
+            <param name="outputPath">Output directory for generated file</param>
+            <param name="namespaceString">Namespace for generated class</param>
+            <param name="entityName">Optional entity name</param>
+            <param name="generateFiles">Whether to generate .cs files</param>
+            <returns>Path to generated file</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityClassesFromTypes(System.String,System.String,System.Boolean,System.Type[])">
+            <summary>
+            Generates Entity classes from multiple types that inherit from Entity base class
+            </summary>
+            <param name="outputPath">Output directory for generated files</param>
+            <param name="namespaceString">Namespace for generated classes</param>
+            <param name="generateFiles">Whether to generate .cs files</param>
+            <param name="types">The types to convert and generate classes from</param>
+            <returns>List of paths to generated files</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityClassFromDataTable(System.Data.DataTable,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates an Entity class from a DataTable that inherits from Entity base class
+            </summary>
+            <param name="dataTable">The DataTable to convert</param>
+            <param name="outputPath">Output directory for generated file</param>
+            <param name="namespaceString">Namespace for generated class</param>
+            <param name="generateFiles">Whether to generate .cs files</param>
+            <returns>Path to generated file</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityClassFromList``1(System.Collections.Generic.List{``0},System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates an Entity class from a list of objects that inherits from Entity base class
+            </summary>
+            <typeparam name="T">The type of objects in the list</typeparam>
+            <param name="list">The list of objects</param>
+            <param name="outputPath">Output directory for generated file</param>
+            <param name="namespaceString">Namespace for generated class</param>
+            <param name="entityName">Optional entity name</param>
+            <param name="generateFiles">Whether to generate .cs files</param>
+            <returns>Path to generated file</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityClassWithTypeMapping(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates an Entity class with proper data type mapping using DataTypesHelper
+            </summary>
+            <param name="entity">The EntityStructure to generate class from</param>
+            <param name="dataSourceName">Data source name for type mapping</param>
+            <param name="outputPath">Output directory for generated file</param>
+            <param name="namespaceString">Namespace for generated class</param>
+            <param name="usingHeader">Using statements</param>
+            <param name="extraCode">Extra code to include</param>
+            <param name="generateFiles">Whether to generate .cs files</param>
+            <returns>Path to generated file</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityClassesFromTypesWithMapping(System.String,System.String,System.String,System.Boolean,System.Type[])">
+            <summary>
+            Generates Entity classes from types with proper data type mapping
+            </summary>
+            <param name="dataSourceName">Data source name for type mapping</param>
+            <param name="outputPath">Output directory for generated files</param>
+            <param name="namespaceString">Namespace for generated classes</param>
+            <param name="generateFiles">Whether to generate .cs files</param>
+            <param name="types">The types to convert and generate classes from</param>
+            <returns>List of paths to generated files</returns>
         </member>
         <member name="P:TheTechIdea.Beep.Tools.ClassCreator.ValidationTestingGenerator">
             <summary>Gets the validation and testing generator helper (lazy-loaded)</summary>
@@ -18998,6 +19119,7 @@
         <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoClassGeneratorHelper.CreateEntityClass(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.String,System.String,System.Boolean)">
             <summary>
             Creates an Entity class that inherits from Entity base class
+            Uses proper inheritance from TheTechIdea.Beep.Editor.Entity
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoClassGeneratorHelper.CreateEntityClass(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.String,System.String,System.Boolean)">
