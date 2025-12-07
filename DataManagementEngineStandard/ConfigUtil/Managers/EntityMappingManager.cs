@@ -19,8 +19,17 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
     {
         private readonly IDMLogger _logger;
         private readonly IJsonLoader _jsonLoader;
-        private readonly ConfigandSettings _config;
+        private ConfigandSettings _config;
         private readonly ConfigPathManager _pathManager;
+
+        /// <summary>
+        /// Gets or sets the configuration. Can be updated after initialization.
+        /// </summary>
+        public ConfigandSettings Config 
+        { 
+            get => _config; 
+            set => _config = value; 
+        }
 
         public EntityMappingManager(IDMLogger logger, IJsonLoader jsonLoader, ConfigandSettings config, ConfigPathManager pathManager)
         {
@@ -96,6 +105,12 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         {
             try
             {
+                if (string.IsNullOrEmpty(_config.EntitiesPath))
+                {
+                    _logger?.WriteLog($"Warning: EntitiesPath not configured. Cannot load entities for {dsname}");
+                    return new DatasourceEntities { datasourcename = dsname, Entities = new List<EntityStructure>() };
+                }
+
                 string path = Path.Combine(_config.EntitiesPath, $"{dsname}_entities.json");
                 
                 if (File.Exists(path))
@@ -119,6 +134,12 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         {
             try
             {
+                if (string.IsNullOrEmpty(_config.EntitiesPath))
+                {
+                    _logger?.WriteLog($"Warning: EntitiesPath not configured. Cannot save entities for {datasourceEntities?.datasourcename}");
+                    return;
+                }
+
                 string path = Path.Combine(_config.EntitiesPath, $"{datasourceEntities.datasourcename}_entities.json");
                 
                 // Ensure directory exists
@@ -140,6 +161,12 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         {
             try
             {
+                if (string.IsNullOrEmpty(_config.EntitiesPath))
+                {
+                    _logger?.WriteLog($"Warning: EntitiesPath not configured. Cannot remove entities for {dsname}");
+                    return false;
+                }
+
                 string path = Path.Combine(_config.EntitiesPath, $"{dsname}_entities.json");
                 
                 if (File.Exists(path))

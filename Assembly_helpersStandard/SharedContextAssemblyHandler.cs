@@ -235,6 +235,19 @@ namespace TheTechIdea.Beep.Tools
 
             try
             {
+                // Log configuration state for diagnostics
+                if (ConfigEditor?.Config != null)
+                {
+                    var foldersCount = ConfigEditor.Config.Folders?.Count ?? 0;
+                    var connectionDriversPath = ConfigEditor.Config.ConnectionDriversPath ?? "null";
+                    var dataSourcesPath = ConfigEditor.Config.DataSourcesPath ?? "null";
+                    Logger?.LogWithContext($"LoadAllAssembly: Config.Folders count: {foldersCount}, ConnectionDriversPath: {connectionDriversPath}, DataSourcesPath: {dataSourcesPath}", null);
+                }
+                else
+                {
+                    Logger?.LogWithContext("LoadAllAssembly: ConfigEditor or Config is null", null);
+                }
+
                 SendMessage(progress, token, "Getting Builtin Classes");
                 GetBuiltinClasses();
 
@@ -327,15 +340,40 @@ namespace TheTechIdea.Beep.Tools
 
         private void LoadDriverClasses(IProgress<PassedArgs> progress, CancellationToken token)
         {
-            if (ConfigEditor?.Config?.Folders == null)
+            var driverFolders = new List<string>();
+
+            // First, try to get folders from Config.Folders
+            if (ConfigEditor?.Config?.Folders != null && ConfigEditor.Config.Folders.Count > 0)
             {
-                Logger?.LogWithContext("ConfigEditor.Config.Folders is null, skipping driver classes loading", null);
-                return;
+                driverFolders = ConfigEditor.Config.Folders
+                    .Where(c => c != null && !string.IsNullOrEmpty(c.FolderPath) && c.FolderFilesType == FolderFileTypes.ConnectionDriver)
+                    .Select(x => x.FolderPath)
+                    .ToList();
             }
 
-            var driverFolders = ConfigEditor.Config.Folders
-                .Where(c => c != null && !string.IsNullOrEmpty(c.FolderPath) && c.FolderFilesType == FolderFileTypes.ConnectionDriver)
-                .Select(x => x.FolderPath);
+            // Fallback: Use Config.ConnectionDriversPath if Folders is null/empty or no driver folders found
+            if (driverFolders.Count == 0 && !string.IsNullOrEmpty(ConfigEditor?.Config?.ConnectionDriversPath))
+            {
+                Logger?.LogWithContext($"Config.Folders is null/empty or has no ConnectionDriver folders. Using fallback path: {ConfigEditor.Config.ConnectionDriversPath}", null);
+                driverFolders.Add(ConfigEditor.Config.ConnectionDriversPath);
+            }
+
+            // If still no paths, try default path
+            if (driverFolders.Count == 0 && ConfigEditor?.ExePath != null)
+            {
+                var defaultPath = Path.Combine(ConfigEditor.ExePath, "ConnectionDrivers");
+                if (Directory.Exists(defaultPath))
+                {
+                    Logger?.LogWithContext($"Using default ConnectionDrivers path: {defaultPath}", null);
+                    driverFolders.Add(defaultPath);
+                }
+            }
+
+            if (driverFolders.Count == 0)
+            {
+                Logger?.LogWithContext("No driver folder paths found. Skipping driver classes loading.", null);
+                return;
+            }
 
             foreach (var path in driverFolders)
             {
@@ -352,15 +390,40 @@ namespace TheTechIdea.Beep.Tools
 
         private void LoadDataSourceClasses(IProgress<PassedArgs> progress, CancellationToken token)
         {
-            if (ConfigEditor?.Config?.Folders == null)
+            var dataSourceFolders = new List<string>();
+
+            // First, try to get folders from Config.Folders
+            if (ConfigEditor?.Config?.Folders != null && ConfigEditor.Config.Folders.Count > 0)
             {
-                Logger?.LogWithContext("ConfigEditor.Config.Folders is null, skipping data source classes loading", null);
-                return;
+                dataSourceFolders = ConfigEditor.Config.Folders
+                    .Where(c => c != null && !string.IsNullOrEmpty(c.FolderPath) && c.FolderFilesType == FolderFileTypes.DataSources)
+                    .Select(x => x.FolderPath)
+                    .ToList();
             }
 
-            var dataSourceFolders = ConfigEditor.Config.Folders
-                .Where(c => c != null && !string.IsNullOrEmpty(c.FolderPath) && c.FolderFilesType == FolderFileTypes.DataSources)
-                .Select(x => x.FolderPath);
+            // Fallback: Use Config.DataSourcesPath if Folders is null/empty or no data source folders found
+            if (dataSourceFolders.Count == 0 && !string.IsNullOrEmpty(ConfigEditor?.Config?.DataSourcesPath))
+            {
+                Logger?.LogWithContext($"Config.Folders is null/empty or has no DataSources folders. Using fallback path: {ConfigEditor.Config.DataSourcesPath}", null);
+                dataSourceFolders.Add(ConfigEditor.Config.DataSourcesPath);
+            }
+
+            // If still no paths, try default path
+            if (dataSourceFolders.Count == 0 && ConfigEditor?.ExePath != null)
+            {
+                var defaultPath = Path.Combine(ConfigEditor.ExePath, "DataSources");
+                if (Directory.Exists(defaultPath))
+                {
+                    Logger?.LogWithContext($"Using default DataSources path: {defaultPath}", null);
+                    dataSourceFolders.Add(defaultPath);
+                }
+            }
+
+            if (dataSourceFolders.Count == 0)
+            {
+                Logger?.LogWithContext("No data source folder paths found. Skipping data source classes loading.", null);
+                return;
+            }
 
             foreach (var path in dataSourceFolders)
             {

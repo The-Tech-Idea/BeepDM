@@ -1938,6 +1938,113 @@
             Clones the current message to create a new instance with the same data.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.MessageType">
+            <summary>
+            Gets or sets the fully qualified type name of the message payload.
+            Required metadata key: "MessageType"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.MessageVersion">
+            <summary>
+            Gets or sets the semantic version of the message (e.g., "1.0.0").
+            Required metadata key: "MessageVersion"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.CorrelationId">
+            <summary>
+            Gets or sets the correlation ID for request/response or workflow tracking.
+            Optional metadata key: "CorrelationId"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.CausationId">
+            <summary>
+            Gets or sets the causation ID (ID of message that caused this one).
+            Optional metadata key: "CausationId"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.Source">
+            <summary>
+            Gets or sets the source application/service that created the message.
+            Required metadata key: "Source"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.ContentType">
+            <summary>
+            Gets or sets the MIME content type (e.g., "application/json").
+            Required metadata key: "ContentType"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.Encoding">
+            <summary>
+            Gets or sets the character encoding (default: "utf-8").
+            Optional metadata key: "Encoding"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.RetryCount">
+            <summary>
+            Gets or sets the retry count for failed message processing.
+            Optional metadata key: "RetryCount"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.ErrorCode">
+            <summary>
+            Gets or sets the error code if message processing failed.
+            Optional metadata key: "ErrorCode"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.ErrorMessage">
+            <summary>
+            Gets or sets the error message if message processing failed.
+            Optional metadata key: "ErrorMessage"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.PartitionKey">
+            <summary>
+            Gets or sets the partition key for message routing (Kafka).
+            Optional metadata key: "PartitionKey"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.RoutingKey">
+            <summary>
+            Gets or sets the routing key for message routing (RabbitMQ).
+            Optional metadata key: "RoutingKey"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.TenantId">
+            <summary>
+            Gets or sets the tenant ID for multi-tenant isolation.
+            Optional metadata key: "TenantId"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.UserId">
+            <summary>
+            Gets or sets the user ID who triggered the message.
+            Optional metadata key: "UserId"
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Messaging.GenericMessage.TraceId">
+            <summary>
+            Gets or sets the trace ID for distributed tracing.
+            Optional metadata key: "TraceId"
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.GenericMessage.EnsureMetadata">
+            <summary>
+            Ensures the Metadata dictionary is initialized.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.GenericMessage.IsValid">
+            <summary>
+            Validates that the message has all required fields.
+            </summary>
+            <returns>True if the message is valid, false otherwise.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.GenericMessage.GetValidationErrors">
+            <summary>
+            Gets a list of validation errors for the message.
+            </summary>
+            <returns>List of validation error messages.</returns>
+        </member>
         <member name="M:TheTechIdea.Beep.Messaging.GenericProducer`1.#ctor(System.Func{`0,System.Threading.CancellationToken,System.Threading.Tasks.Task},System.Action{System.Exception})">
             <summary>
             Creates a generic producer with a send action.
@@ -1978,6 +2085,133 @@
         <member name="M:TheTechIdea.Beep.Messaging.IMessageDataSource`2.Disconnect">
             <summary>
             Disconnects and cleans up resources.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Messaging.MessageStandardsHelper">
+            <summary>
+            Helper class for creating and validating messages according to messaging standards.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Messaging.MessageStandardsHelper.DefaultJsonOptions">
+            <summary>
+            Default JSON serialization options following messaging standards.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.CreateStandardMessage(System.String,System.Object,System.String,System.String,System.Nullable{System.Int32},System.String,System.String)">
+            <summary>
+            Creates a standard message with all required metadata.
+            </summary>
+            <param name="entityName">The stream/queue/topic name.</param>
+            <param name="payload">The message payload object.</param>
+            <param name="source">The source application/service name.</param>
+            <param name="messageVersion">The semantic version (default: "1.0.0").</param>
+            <param name="priority">Message priority 0-255 (default: 100).</param>
+            <param name="correlationId">Optional correlation ID for request/response.</param>
+            <param name="causationId">Optional causation ID for event sourcing.</param>
+            <returns>A properly configured GenericMessage.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.CreateCorrelatedMessage(TheTechIdea.Beep.Messaging.GenericMessage,System.Object,System.String,System.String)">
+            <summary>
+            Creates a correlated message (for request/response or event sourcing).
+            </summary>
+            <param name="originalMessage">The original message to correlate with.</param>
+            <param name="newPayload">The payload for the new message.</param>
+            <param name="newEntityName">The entity name for the new message.</param>
+            <param name="source">The source application/service name.</param>
+            <returns>A new message correlated with the original.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.ValidateMessage(TheTechIdea.Beep.Messaging.GenericMessage)">
+            <summary>
+            Validates a message according to messaging standards.
+            </summary>
+            <param name="message">The message to validate.</param>
+            <returns>Validation result with errors if any.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.EnsureMessageStandards(TheTechIdea.Beep.Messaging.GenericMessage,System.String,System.String)">
+            <summary>
+            Ensures a message has all required metadata, adding defaults if missing.
+            </summary>
+            <param name="message">The message to ensure standards compliance.</param>
+            <param name="defaultSource">Default source if not set.</param>
+            <param name="defaultVersion">Default version if not set.</param>
+            <returns>The message with ensured metadata.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.SerializePayload(System.Object)">
+            <summary>
+            Serializes a message payload to JSON using standard options.
+            </summary>
+            <param name="payload">The payload to serialize.</param>
+            <returns>JSON string representation.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.DeserializePayload``1(System.String)">
+            <summary>
+            Deserializes JSON to a typed object using standard options.
+            </summary>
+            <typeparam name="T">The target type.</typeparam>
+            <param name="json">The JSON string to deserialize.</param>
+            <returns>The deserialized object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.DeserializePayload(System.String,System.Type)">
+            <summary>
+            Deserializes JSON to an object of the specified type using standard options.
+            </summary>
+            <param name="json">The JSON string to deserialize.</param>
+            <param name="type">The target type.</param>
+            <returns>The deserialized object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.DeserializeMessagePayload(TheTechIdea.Beep.Messaging.GenericMessage)">
+            <summary>
+            Deserializes a message payload using the MessageType from metadata.
+            </summary>
+            <param name="message">The message containing the payload and MessageType.</param>
+            <returns>The deserialized payload object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.ResolveMessageType(System.String)">
+            <summary>
+            Resolves a message type from a fully qualified type name.
+            </summary>
+            <param name="messageType">The fully qualified type name.</param>
+            <returns>The resolved Type, or null if not found.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.GetPartitionKey(TheTechIdea.Beep.Messaging.GenericMessage)">
+            <summary>
+            Gets the partition key for a message (for Kafka or similar systems).
+            Priority: Explicit PartitionKey > CorrelationId > EntityName + MessageId prefix
+            </summary>
+            <param name="message">The message.</param>
+            <returns>The partition key.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.SetErrorMessage(TheTechIdea.Beep.Messaging.GenericMessage,System.Exception)">
+            <summary>
+            Updates message metadata with error information.
+            </summary>
+            <param name="message">The message that failed.</param>
+            <param name="exception">The exception that occurred.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.ClearErrorMessage(TheTechIdea.Beep.Messaging.GenericMessage)">
+            <summary>
+            Clears error information from message metadata.
+            </summary>
+            <param name="message">The message to clear errors from.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.IsVersionCompatible(System.String,System.String)">
+            <summary>
+            Checks if two message versions are compatible (same major version).
+            </summary>
+            <param name="messageVersion">The message version.</param>
+            <param name="consumerVersion">The consumer version.</param>
+            <returns>True if compatible, false otherwise.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Messaging.MessageStandardsHelper.GetMajorVersion(System.String)">
+            <summary>
+            Gets the major version number from a semantic version string.
+            </summary>
+            <param name="version">The semantic version (e.g., "1.0.0").</param>
+            <returns>The major version number, or 1 if parsing fails.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Messaging.MessageValidationResult">
+            <summary>
+            Result of message validation.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Messaging.StreamConfig">

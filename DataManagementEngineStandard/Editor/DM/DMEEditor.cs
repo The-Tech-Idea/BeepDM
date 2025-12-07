@@ -1160,12 +1160,12 @@ namespace TheTechIdea.Beep
                     ILocalDB dB = (ILocalDB)ds;
                     DataSources.Add(ds);
 
-                    AddLogMessage("Fail", $"Success Created Local Database  {pdatasourcename}", DateTime.Now, -1, "", Errors.Failed);
+                    AddLogMessage("Success", $"Created Local Database {pdatasourcename}", DateTime.Now, 0, "", Errors.Ok);
                     return ds;
                 }
                 else
                 {
-                    AddLogMessage("Fail", "Could Find DataSource Drivers", DateTime.Now, 0, pdatasourcename, Errors.Failed);
+                    AddLogMessage("Fail", "Could not find DataSource Drivers", DateTime.Now, -1, pdatasourcename, Errors.Failed);
                     return null;
                 }
             }

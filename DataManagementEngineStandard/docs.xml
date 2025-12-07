@@ -1287,6 +1287,11 @@
             Manages entity structures and mapping operations
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.Managers.EntityMappingManager.Config">
+            <summary>
+            Gets or sets the configuration. Can be updated after initialization.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.EntityMappingManager.EntityStructureExist(System.String,System.String,System.String)">
             <summary>
             Checks if the entity structure file exists.

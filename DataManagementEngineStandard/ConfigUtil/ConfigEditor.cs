@@ -72,6 +72,9 @@ namespace TheTechIdea.Beep.ConfigUtil
 
 			// Initialize the configuration
 			Init();
+
+			// Update entity manager with fully initialized Config (Config may have been replaced in Init())
+			_entityManager.Config = Config;
 		}
 
 		private void InitializeProperties()
@@ -512,16 +515,25 @@ namespace TheTechIdea.Beep.ConfigUtil
 					Config.ExePath = ContainerName;
 				}
 
+				// Ensure Config.Folders is never null (deserialization might set it to null)
+				if (Config.Folders == null)
+				{
+					Config.Folders = new List<StorageFolders>();
+				}
+
 				if (Config != null)
 				{
 					if (!Config.ExePath.Equals(exedir, StringComparison.InvariantCultureIgnoreCase))
 					{
 						Config = new ConfigandSettings();
 						List<StorageFolders> folders = new List<StorageFolders>();
-						foreach (StorageFolders fold in Config.Folders)
+						if (Config.Folders != null)
 						{
-							var dirName = new DirectoryInfo(fold.FolderPath).Name;
-							folders.Add(new StorageFolders(Path.Combine(ContainerName, dirName), fold.FolderFilesType));
+							foreach (StorageFolders fold in Config.Folders)
+							{
+								var dirName = new DirectoryInfo(fold.FolderPath).Name;
+								folders.Add(new StorageFolders(Path.Combine(ContainerName, dirName), fold.FolderFilesType));
+							}
 						}
 						Config.ExePath = exedir;
 						Config.Folders = folders;
@@ -531,6 +543,7 @@ namespace TheTechIdea.Beep.ConfigUtil
 				{
 					Config = new ConfigandSettings();
 					Config.ExePath = ContainerName;
+					Config.Folders = new List<StorageFolders>();
 				}
 				Config.ExePath = ContainerName;
 

@@ -11,21 +11,16 @@ A robust REST/Web API data source for BeepDM providing database-like operations,
 
 ## Project layout (partials)
 
-- WebAPIDataSource.cs: core state, ctor, DI of helpers
-- WebAPIDataSource.Connection.cs: open/close, transactional stubs
-- WebAPIDataSource.Helpers.cs: helper instances
-- WebAPIDataSource.Configuration.cs: config validation
-- WebAPIDataSource.Authentication.cs: auth handling
-- WebAPIDataSource.Request.cs: HTTP request/response
-- WebAPIDataSource.Cache.cs: in-memory caching
-- WebAPIDataSource.RateLimit.cs: rate limiting
-- WebAPIDataSource.DataHelper.cs: URL building, response processing
-- WebAPIDataSource.Schema.cs: schema inference
-- WebAPIDataSource.http.cs: low-level HTTP methods (GetAsync, PostAsync, etc.)
-- WebAPIDataSource.Data.cs: CRUD operations
-- WebAPIDataSource.Query.cs: RunQuery, GetScalar
-- WebAPIDataSource.Structure.cs: entities discovery and schema
-- WebAPIDataSource.*.cs: other specialized behaviors (paging, scripting, entity ops)
+- **WebAPIDataSource.cs**: core state, constructor, helper initialization
+- **WebAPIDataSource.Connection.cs**: Openconnection/Closeconnection, transaction stubs (BeginTransaction, EndTransaction, Commit)
+- **WebAPIDataSource.Http.cs**: low-level HTTP methods (GetAsync, PostAsync, PutAsync, PatchAsync, DeleteAsync with generic overloads)
+- **WebAPIDataSource.Data.cs**: high-level CRUD operations (GetEntity, InsertEntity, UpdateEntity, DeleteEntity, UpdateEntities)
+- **WebAPIDataSource.Query.cs**: RunQuery, GetScalar, ExecuteSql
+- **WebAPIDataSource.Structure.cs**: entity discovery and schema (GetEntitesList, GetEntityStructure, CheckEntityExist, etc.)
+- **WebAPIDataSource.Scripting.cs**: scripting and entity creation (RunScript, GetCreateEntityScript, CreateEntities)
+- **WebAPIDataSource.WebAPI.cs**: IWebAPIDataSource specific methods (ReadData)
+
+Note: Several partial files exist but are currently empty (Bulk.cs, BulkOperations.cs, Complete.cs, CoreInterface.cs, DataOperations.cs, EntityMethods.cs, Interface.cs, Main.cs, PagingAsync.cs, QueryMethods.cs, ScriptTransactions.cs). These are placeholders for future functionality.
 
 ## Helpers
 
@@ -51,49 +46,71 @@ A robust REST/Web API data source for BeepDM providing database-like operations,
 - WebAPIErrorHelper
   - Normalize/handle error responses
 
+## Connection Management (WebAPIDataConnection)
+
+The `WebAPIDataConnection` class implements `IDataConnection` and manages Web API connections:
+
+- **Connection Properties**: Uses `WebAPIConnectionProperties` (or any `IConnectionProperties`)
+- **Connection State**: Tracks `ConnectionState` (Open, Closed, Broken)
+- **Validation**: Validates URL format and authentication requirements before opening
+- **Connection String**: Supports building/parsing connection strings from properties
+
+Key methods:
+- `OpenConnection()` / `OpenConnection(IConnectionProperties)` - Opens and validates connection
+- `CloseConn()` - Closes the connection
+- `ValidateConfiguration()` - Validates required properties based on AuthType
+
 ## Configuration (WebAPIConnectionProperties)
 
 Core URL/auth
-- Url: base URL (https://api.example.com)
-- AuthType: None | ApiKey | Basic | Bearer | OAuth2
-- ApiKey / ApiKeyHeader (default X-API-Key)
-- UserID / Password (Basic)
-- ClientId / ClientSecret / TokenUrl / AuthUrl / Scope / GrantType (OAuth2)
+- `Url`: base URL (https://api.example.com)
+- `AuthType`: `AuthTypeEnum` (None | ApiKey | Basic | Bearer | OAuth2)
+- `ApiKey` / `ApiKeyHeader` (default "X-API-Key")
+- `UserID` / `Password` (Basic authentication)
+- `ClientId` / `ClientSecret` / `TokenUrl` / `AuthUrl` / `Scope` / `GrantType` (OAuth2)
+- `KeyToken` / `BearerToken` (Bearer authentication)
 
 Behavior
-- TimeoutMs, RetryCount, RetryDelayMs
-- EnableCaching, CacheExpiryMinutes
-- MaxConcurrentRequests
-- EnableRateLimit, RateLimitRequestsPerMinute
+- `TimeoutMs` (default: 30000), `MaxRetries` / `RetryCount` (default: 3), `RetryIntervalMs` / `RetryDelayMs` (default: 1000)
+- `EnableCaching` (default: true), `CacheExpiryMinutes` (default: 15)
+- `MaxConcurrentRequests` (default: 10)
+- `EnableRateLimit` (default: true), `RateLimitRequestsPerMinute` (default: 60)
 
 Pagination and response
-- PageNumberParameter (default page), PageSizeParameter (default limit)
-- ResponseFormat, DataPath, TotalCountPath
+- `PageNumberParameter` (default: "page"), `PageSizeParameter` (default: "limit")
+- `DefaultPageSize` (default: 100), `MaxPageSize` (default: 1000)
+- `ResponseFormat` (default: "json"), `DataPath`, `TotalCountPath`
 
 Headers and parameters
-- Headers: List<WebApiHeader>
-- Parameters: string key=value;... (optional)
+- `Headers`: `List<WebApiHeader>` (custom HTTP headers)
+- `Parameters`: string in format "key=value;key2=value2" (optional connection parameters)
+- `ParameterList`: `Dictionary<string, string>` (alternative parameter storage)
+
+Validation
+- `ValidateConfiguration()` - Validates required properties for current AuthType
+- `GetValidationErrors()` - Returns descriptive error messages for missing/invalid configuration
+- `UpdateAuthenticationRequirements()` - Automatically updates `RequiresAuthentication` and `RequiresTokenRefresh` based on AuthType
 
 ## Endpoints configuration
 
-WebAPIConfigurationHelper.GetEndpointConfiguration(entityName) resolves:
-- Endpoints.{entity}.Get / Post / Put / Delete / List
-- Endpoints.{entity}.Method, RequiresAuth, CacheDuration, RateLimit
-Falls back to "/{entity}" when not supplied.
+`WebAPIConfigurationHelper.GetEndpointConfiguration(entityName)` resolves endpoint configurations:
+- `GetEndpoint` / `PostEndpoint` / `PutEndpoint` / `DeleteEndpoint` / `ListEndpoint`
+- Additional properties: `Method`, `RequiresAuth`, `CacheDuration`, `RateLimit`
+- Falls back to "/{entityName}" when specific endpoint configuration is not supplied
 
 ## Data operations (WebAPIDataSource.Data.cs)
 
 CRUD functions exposed by the data source:
 
-- IBindingList GetEntity(string entityName, List<AppFilter> filter)
+- `IEnumerable<object> GetEntity(string entityName, List<AppFilter> filter)`
   - GET {BaseUrl}/{Endpoints.{entity}.Get} with optional filters appended as query string
-  - Parses JSON to BindingList<object> (dictionary per row)
+  - Parses JSON response to IEnumerable<object> (dictionary per row)
 
-- PagedResult GetEntity(string entityName, List<AppFilter> filter, int pageNumber, int pageSize)
+- `PagedResult GetEntity(string entityName, List<AppFilter> filter, int pageNumber, int pageSize)`
   - GET {BaseUrl}/{Endpoints.{entity}.List} with paging parameters
   - Returns data plus TotalRecords (from X-Total-Count header or JSON fields)
 
-- Task<IBindingList> GetEntityAsync(string entityName, List<AppFilter> filter)
+- `Task<IEnumerable<object>> GetEntityAsync(string entityName, List<AppFilter> filter)`
   - Async wrapper for GetEntity
 
 - IErrorsInfo InsertEntity(string entityName, object data)
@@ -118,11 +135,12 @@ All calls:
 
 When creating custom data sources that inherit from WebAPIDataSource:
 
-1. **Do not use low-level HTTP methods** - WebAPIDataSource does not expose GetAsync, PostAsync, etc.
-2. **Use high-level CRUD methods** - Override GetEntity, InsertEntity, UpdateEntity, DeleteEntity as needed
-3. **Handle authentication via configuration** - Set up WebAPIConnectionProperties with appropriate auth settings
-4. **Use connection management** - Override ConnectAsync/DisconnectAsync for custom connection logic
-5. **Configure endpoints** - Define entity endpoints in your configuration or override endpoint resolution
+1. **Low-level HTTP methods are available** - WebAPIDataSource exposes public virtual methods: GetAsync, PostAsync, PutAsync, PatchAsync, DeleteAsync (with generic overloads). These can be used directly or overridden for custom behavior.
+2. **Use high-level CRUD methods** - Override GetEntity, InsertEntity, UpdateEntity, DeleteEntity as needed for domain-specific logic
+3. **Handle authentication via configuration** - Set up WebAPIConnectionProperties with appropriate auth settings (AuthTypeEnum: None, ApiKey, Basic, Bearer, OAuth2)
+4. **Use connection management** - Override Openconnection/Closeconnection for custom connection logic
+5. **Configure endpoints** - Define entity endpoints in your configuration or override endpoint resolution via WebAPIConfigurationHelper
+6. **Access helper instances** - Use the private helper fields (_configHelper, _authHelper, _requestHelper, etc.) in your overrides
 
 ### Example Custom Data Source Pattern
 
@@ -138,16 +156,23 @@ public class MyApiDataSource : WebAPIDataSource
         {
             props.Url = config.BaseUrl;
             props.ApiKey = config.ApiKey;
-            props.AuthType = AuthType.ApiKey;
+            props.AuthType = AuthTypeEnum.ApiKey;
             // ... other properties
         }
     }
 
-    public override IBindingList GetEntity(string entityName, List<AppFilter> filter)
+    public override IEnumerable<object> GetEntity(string entityName, List<AppFilter> filter)
     {
-        // Custom implementation using base class helpers
-        // Do not call base.GetAsync() - it doesn't exist
-        // Instead, implement your own HTTP logic or use the high-level methods
+        // Option 1: Use high-level base implementation
+        return base.GetEntity(entityName, filter);
+        
+        // Option 2: Use low-level HTTP methods
+        // var response = await GetAsync<T>($"/api/{entityName}", queryParams);
+        
+        // Option 3: Custom implementation using helpers
+        // var endpointConfig = _configHelper.GetEndpointConfiguration(entityName);
+        // var url = _dataHelper.BuildEndpointUrl(_configHelper.BaseUrl, endpointConfig.GetEndpoint);
+        // ...
     }
 }
 ```
@@ -155,17 +180,42 @@ public class MyApiDataSource : WebAPIDataSource
 ### Quick CRUD examples
 
 ```csharp
-// Read all
+// Read all (returns IEnumerable<object>)
 var orders = ds.GetEntity("Orders", null);
 
-// Read paged
+// Read paged (returns PagedResult)
 var page = ds.GetEntity("Orders", null, pageNumber: 1, pageSize: 50);
+var data = page.Data; // IEnumerable<object>
+var total = page.TotalRecords;
 
-// Insert
+// Insert (returns IErrorsInfo)
 var resIns = ds.InsertEntity("Orders", new { customerId = 1, total = 99.5 });
+if (resIns.Flag == Errors.Ok) { /* success */ }
 
-// Update
+// Update (returns IErrorsInfo)
 var resUpd = ds.UpdateEntity("Orders", new { id = 123, total = 120.0 });
 
-// Delete
+// Delete (returns IErrorsInfo)
 var resDel = ds.DeleteEntity("Orders", new { id = 123 });
+
+// Using low-level HTTP methods
+var response = await ds.GetAsync<OrderResponse>("/api/orders/123");
+var ordersList = await ds.GetAsync<List<Order>>("/api/orders", query: new Dictionary<string, string> { { "status", "active" } });
+```
+
+### Connection Management
+
+```csharp
+// Open connection (validates configuration and tests connectivity)
+var state = ds.Openconnection();
+if (state == ConnectionState.Open) { /* ready to use */ }
+
+// Close connection
+ds.Closeconnection();
+
+// Transaction support (stubs for Web APIs)
+ds.BeginTransaction(new PassedArgs());
+// ... operations ...
+ds.Commit(new PassedArgs());
+ds.EndTransaction(new PassedArgs());
+```
