@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../BeepDataSources/InMemoryDB"
+		},
+		{
+			"path": "../../BeepDataSources/Messaging"
+		},
+		{
+			"path": "../../BeepDataSources/VectorDatabase"
+		}
+	],
+	"settings": {}
+}

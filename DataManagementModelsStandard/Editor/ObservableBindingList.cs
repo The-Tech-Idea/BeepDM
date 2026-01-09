@@ -24,11 +24,11 @@ namespace TheTechIdea.Beep.Editor
         public event EventHandler<ItemChangedEventArgs<T>> ItemChanged;
 
         public event EventHandler<ItemValidatingEventArgs<T>> ItemValidating;
-        public event EventHandler<ItemValidatingEventArgs<T>> ItemDeleteing;
+        public event EventHandler<ItemValidatingEventArgs<T>> ItemDeleting;
       
         public List<Tracking> Trackings { get; set; } = new List<Tracking>();
         public bool SuppressNotification { get; set; } = false;
-        public bool IsSorted => false;
+        public bool IsSorted => isSorted;
         public bool IsSynchronized => false;
         private bool _isPositionChanging = false; // Add this flag
 
@@ -1017,7 +1017,7 @@ namespace TheTechIdea.Beep.Editor
             foreach (T item in this.Items)
             {
                 item.PropertyChanged += Item_PropertyChanged;
-                this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
+                originalList.Add(item); // Add to originalList, don't add again to Items (already in base constructor)
             }
             AddingNew += ObservableBindingList_AddingNew;
             UpdateItemIndexMapping(0, true); // Update index mapping after resetting items
@@ -1246,6 +1246,17 @@ namespace TheTechIdea.Beep.Editor
         }
         private void CreateLogEntry(T item, LogAction action, Tracking tracking, Dictionary<string, object> changedFields = null)
         {
+            if (tracking == null)
+            {
+                // Create a temporary tracking for logging purposes
+                int originalIndex = originalList.IndexOf(item);
+                tracking = new Tracking(Guid.NewGuid(), originalIndex >= 0 ? originalIndex : 0, Items.IndexOf(item))
+                {
+                    EntityState = action == LogAction.Insert ? EntityState.Added : 
+                                 action == LogAction.Delete ? EntityState.Deleted : EntityState.Modified
+                };
+            }
+            
             // Check if an entry for this tracking record already exists
             var existingLogEntry = UpdateLog.Values.FirstOrDefault(log =>
                 log.TrackingRecord != null && log.TrackingRecord.UniqueId == tracking.UniqueId);
@@ -1351,7 +1362,7 @@ namespace TheTechIdea.Beep.Editor
         {
             T removedItem = this[index];
             var args = new ItemValidatingEventArgs<T>(removedItem);
-            ItemDeleteing?.Invoke(this, args);
+            ItemDeleting?.Invoke(this, args);
             if (args.Cancel)
             {
                 // Revert change or handle as needed
@@ -1378,10 +1389,10 @@ namespace TheTechIdea.Beep.Editor
            
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
             Items.RemoveAt(index);
-            originalList.RemoveAt(tracking.OriginalIndex);
-            ItemRemoved?.Invoke(this, new ItemRemovedEventArgs<T>(removedItem));
+            
             if (tracking != null)
             {
+                originalList.RemoveAt(tracking.OriginalIndex);
                 tracking.EntityState = EntityState.Deleted;
                 tracking.IsSaved = false; // Optional, mark as pending
             }
@@ -1389,13 +1400,19 @@ namespace TheTechIdea.Beep.Editor
             {
                 // Create a tracking record if it doesn't exist yet
                 int originalIndex = originalList.IndexOf(removedItem);
-                var newTracking = new Tracking(Guid.NewGuid(), originalIndex, index)
+                if (originalIndex >= 0)
                 {
-                    EntityState = EntityState.Deleted,
-                    IsSaved = false
-                };
-                Trackings.Add(newTracking);
+                    originalList.RemoveAt(originalIndex);
+                    var newTracking = new Tracking(Guid.NewGuid(), originalIndex, index)
+                    {
+                        EntityState = EntityState.Deleted,
+                        IsSaved = false
+                    };
+                    Trackings.Add(newTracking);
+                }
             }
+            
+            ItemRemoved?.Invoke(this, new ItemRemovedEventArgs<T>(removedItem));
 
         }
         protected override void InsertItem(int index, T item)
@@ -1471,26 +1488,43 @@ namespace TheTechIdea.Beep.Editor
             base.SetItem(index, item);
             if (string.IsNullOrEmpty(filterString))
             {
-                originalList[index] = item;
                 if (Trackings.Count > 0)
                 {
-                    Tracking tr = Trackings.Where(p => p.Equals(index)).FirstOrDefault();
+                    Tracking tr = Trackings.Where(p => p.CurrentIndex == index || p.OriginalIndex == index).FirstOrDefault();
                     if (tr != null)
                     {
-                        index = tr.OriginalIndex;
+                        originalList[tr.OriginalIndex] = item;
+                        if (IsLoggin)
+                        {
+                            CreateLogEntry(item, LogAction.Update, tr, changedFields);
+                        }
                     }
-
-                    if (index == -1)
+                    else
                     {
-                        tr = new Tracking(Guid.NewGuid(), index, index);
-                        tr.EntityState = EntityState.Modified;
-                        Trackings.Add(tr);
+                        // Create a new tracking record if it doesn't exist
+                        int originalIndex = originalList.IndexOf(replacedItem);
+                        if (originalIndex >= 0)
+                        {
+                            originalList[originalIndex] = item;
+                            tr = new Tracking(Guid.NewGuid(), originalIndex, index)
+                            {
+                                EntityState = EntityState.Modified
+                            };
+                            Trackings.Add(tr);
+                            if (IsLoggin)
+                            {
+                                CreateLogEntry(item, LogAction.Update, tr, changedFields);
+                            }
+                        }
                     }
-                    if (IsLoggin)
+                }
+                else
+                {
+                    // No tracking, update by index directly
+                    if (index >= 0 && index < originalList.Count)
                     {
-                        CreateLogEntry(item, LogAction.Update, tr, changedFields);
+                        originalList[index] = item;
                     }
-
                 }
             }
             else
@@ -1498,15 +1532,13 @@ namespace TheTechIdea.Beep.Editor
                 Tracking tracking = Trackings.Where(p => p.CurrentIndex == index).FirstOrDefault();
                 if (tracking != null)
                 {
+                    originalList[tracking.OriginalIndex] = item;
                     tracking.EntityState = EntityState.Modified;
                     if (IsLoggin)
                     {
-
                         CreateLogEntry(item, LogAction.Update, tracking, changedFields);
                     }
                 }
-                originalList[tracking.OriginalIndex] = item;
-
             }
 
             if (!SuppressNotification)
@@ -1525,16 +1557,24 @@ namespace TheTechIdea.Beep.Editor
         #region "ID Generations"
         private void UpdateIndexTrackingAfterFilterorSort()
         {
+            // Optimize by creating a dictionary for O(1) lookups instead of O(n) IndexOf calls
+            var itemToOriginalIndex = new Dictionary<T, int>(originalList.Count);
+            for (int i = 0; i < originalList.Count; i++)
+            {
+                itemToOriginalIndex[originalList[i]] = i;
+            }
+            
             for (int i = 0; i < Items.Count; i++)
             {
-                int originallistidx = originalList.IndexOf(Items[i]);
+                T currentItem = Items[i];
                 int newlistidx = i;
-                if (Trackings.Count > 0)
+                
+                if (itemToOriginalIndex.TryGetValue(currentItem, out int originallistidx))
                 {
-                    if (originallistidx != -1)
+                    if (Trackings.Count > 0)
                     {
                         int idx = Trackings.FindIndex(p => p.OriginalIndex == originallistidx);
-                        if(idx != -1)
+                        if (idx != -1)
                         {
                             Trackings[idx].CurrentIndex = newlistidx;
                             UpdateLogEntries(Trackings[idx], newlistidx);
@@ -1549,10 +1589,8 @@ namespace TheTechIdea.Beep.Editor
                             Trackings.Add(newTracking);
                         }
                     }
-                 
                 }
             }
-
         }
         private void EnsureTrackingConsistency()
         {
@@ -1584,7 +1622,13 @@ namespace TheTechIdea.Beep.Editor
         }
         private void ResettoOriginal(List<T> items)
         {
-
+            // Reset items to the original list state
+            // This method can be used to restore the list to its original state after filtering/sorting
+            if (items != null && items.Count > 0)
+            {
+                ResetItems(items);
+                ResetBindings();
+            }
         }
         private void UpdateItemIndexMapping(int startIndex, bool isInsert)
         {
@@ -1619,7 +1663,7 @@ namespace TheTechIdea.Beep.Editor
             else
             { return null; }
         }
-        public T GetItemFroCurrentList(int index)
+        public T GetItemFromCurrentList(int index)
         {
             if(index>=0 && index < Items.Count)
             {
@@ -1628,28 +1672,47 @@ namespace TheTechIdea.Beep.Editor
                 { return null; }
             
         }
+        
+        [Obsolete("Use GetItemFromCurrentList instead. This method name contains a typo.")]
+        public T GetItemFroCurrentList(int index)
+        {
+            return GetItemFromCurrentList(index);
+        }
         public Tracking GetTrackingITem(T item)
         {
-            Tracking retval = null;
-            int index = -1;
-            if (DeletedList.Count > 0)
-                {
-                    index = DeletedList.IndexOf(item);
-                    retval = Trackings.Where(p => p.CurrentIndex == index).FirstOrDefault();
-                }
-
-            index = GetOriginalIndex(item);
-            if (index>-1)
-            {
+            if (item == null)
+                return null;
                 
-                retval = Trackings.Where(p => p.OriginalIndex == index).FirstOrDefault();
-            }
-            else
+            Tracking retval = null;
+            
+            // First check if item is in deleted list
+            if (DeletedList.Count > 0 && DeletedList.Contains(item))
             {
-                retval= Trackings.Where(p => p.CurrentIndex == index).FirstOrDefault();
+                int originalIndex = originalList.IndexOf(item);
+                if (originalIndex >= 0)
+                {
+                    retval = Trackings.Where(p => p.OriginalIndex == originalIndex).FirstOrDefault();
+                }
+                if (retval != null)
+                    return retval;
+            }
+
+            // Check by original index
+            int index = GetOriginalIndex(item);
+            if (index >= 0)
+            {
+                retval = Trackings.Where(p => p.OriginalIndex == index).FirstOrDefault();
+                if (retval != null)
+                    return retval;
             }
             
-                
+            // Check by current index as fallback
+            int currentIndex = Items.IndexOf(item);
+            if (currentIndex >= 0)
+            {
+                retval = Trackings.Where(p => p.CurrentIndex == currentIndex).FirstOrDefault();
+            }
+            
             return retval;
         }
         public void MarkAsCommitted(T item)

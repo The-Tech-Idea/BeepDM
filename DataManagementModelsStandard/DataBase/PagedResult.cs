@@ -16,6 +16,19 @@ namespace TheTechIdea.Beep.DataBase
         public int TotalPages { get; set; }
         public bool HasNextPage { get; set; }
         public bool HasPreviousPage { get; set; }
+
+        public PagedResult() { }
+
+        public PagedResult(object data, int pageNumber, int pageSize, int totalRecords)
+        {
+            Data = data;
+            PageNumber = Math.Max(1, pageNumber);
+            PageSize = pageSize;
+            TotalRecords = totalRecords;
+            TotalPages = pageSize > 0 ? (int)Math.Ceiling(totalRecords / (double)pageSize) : 0;
+            HasPreviousPage = pageNumber > 1;
+            HasNextPage = pageNumber * pageSize < totalRecords;
+        }
     }
 
 }
