@@ -15,18 +15,18 @@ namespace TheTechIdea.Beep.Tools
     /// <summary>
     /// Partial class for testing and validation functionality
     /// </summary>
-    public partial class ClassCreator : IValidationAndTestingGenerator
+    public partial class ClassCreator
     {
         #region Private Fields
 
-        private ValidationAndTestingGeneratorHelper _validationTestingHelper;
+        private ValidationAndTestingGeneratorHelper _validationHelper;
 
         #endregion
 
         #region Properties
 
         /// <summary>Gets the validation and testing generator helper (lazy-loaded)</summary>
-        protected IValidationAndTestingGenerator ValidationTestingGenerator
+        protected ValidationAndTestingGeneratorHelper ValidationTestingGenerator
         {
             get
             {
@@ -113,7 +113,7 @@ namespace TheTechIdea.Beep.Tools
     /// <summary>
     /// Helper class for generating testing and validation classes
     /// </summary>
-    public class ValidationAndTestingGeneratorHelper : IValidationAndTestingGenerator
+    public class ValidationAndTestingGeneratorHelper
     {
         private readonly IDMEEditor _dmeEditor;
         private readonly ClassGenerationHelper _helper;

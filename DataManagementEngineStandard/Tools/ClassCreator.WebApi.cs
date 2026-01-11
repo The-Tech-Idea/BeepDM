@@ -10,7 +10,7 @@ namespace TheTechIdea.Beep.Tools
     /// <summary>
     /// Partial class for Web API generation functionality
     /// </summary>
-    public partial class ClassCreator : IWebApiGenerator
+    public partial class ClassCreator
     {
         #region Private Fields
 
@@ -21,7 +21,7 @@ namespace TheTechIdea.Beep.Tools
         #region Properties
 
         /// <summary>Gets the Web API generator helper (lazy-loaded)</summary>
-        protected IWebApiGenerator WebApiGenerator
+        protected WebApiGeneratorHelper WebApiGenerator
         {
             get
             {

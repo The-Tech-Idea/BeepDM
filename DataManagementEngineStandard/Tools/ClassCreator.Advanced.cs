@@ -15,7 +15,7 @@ namespace TheTechIdea.Beep.Tools
     /// <summary>
     /// Partial class for documentation, utilities, and advanced features
     /// </summary>
-    public partial class ClassCreator : IDocumentationGenerator, IUiComponentGenerator, IServerlessGenerator
+    public partial class ClassCreator
     {
         #region Private Fields
 
@@ -28,7 +28,7 @@ namespace TheTechIdea.Beep.Tools
         #region Properties
 
         /// <summary>Gets the documentation generator helper (lazy-loaded)</summary>
-        protected IDocumentationGenerator DocumentationGenerator
+        protected DocumentationGeneratorHelper DocumentationGenerator
         {
             get
             {
@@ -41,7 +41,7 @@ namespace TheTechIdea.Beep.Tools
         }
 
         /// <summary>Gets the UI component generator helper (lazy-loaded)</summary>
-        protected IUiComponentGenerator UiComponentGenerator
+        protected UiComponentGeneratorHelper UiComponentGenerator
         {
             get
             {
@@ -54,7 +54,7 @@ namespace TheTechIdea.Beep.Tools
         }
 
         /// <summary>Gets the serverless generator helper (lazy-loaded)</summary>
-        protected IServerlessGenerator ServerlessGenerator
+        protected ServerlessGeneratorHelper ServerlessGenerator
         {
             get
             {
@@ -217,7 +217,7 @@ namespace TheTechIdea.Beep.Tools
     /// <summary>
     /// Helper class for generating documentation
     /// </summary>
-    public class DocumentationGeneratorHelper : IDocumentationGenerator
+    public class DocumentationGeneratorHelper
     {
         private readonly IDMEEditor _dmeEditor;
         private readonly ClassGenerationHelper _helper;
@@ -347,7 +347,7 @@ namespace TheTechIdea.Beep.Tools
     /// <summary>
     /// Helper class for generating UI components
     /// </summary>
-    public class UiComponentGeneratorHelper : IUiComponentGenerator
+    public class UiComponentGeneratorHelper
     {
         private readonly IDMEEditor _dmeEditor;
         private readonly ClassGenerationHelper _helper;
@@ -443,7 +443,7 @@ namespace TheTechIdea.Beep.Tools
     /// <summary>
     /// Helper class for generating serverless functions
     /// </summary>
-    public class ServerlessGeneratorHelper : IServerlessGenerator
+    public class ServerlessGeneratorHelper
     {
         private readonly IDMEEditor _dmeEditor;
         private readonly ClassGenerationHelper _helper;

@@ -17,7 +17,7 @@ namespace TheTechIdea.Beep.Tools
     /// Enhanced ClassCreator with modular architecture using partial classes and helper pattern.
     /// Provides comprehensive class generation capabilities with separation of concerns.
     /// </summary>
-    public partial class ClassCreator : IClassCreator, IClassCreatorCore
+    public partial class ClassCreator : IClassCreator
     {
         #region Private Fields
 
@@ -39,10 +39,10 @@ namespace TheTechIdea.Beep.Tools
         public IDMEEditor DMEEditor { get; set; }
 
         /// <summary>Gets the POCO class generator helper</summary>
-        protected IPocoClassGenerator PocoGenerator => _pocoHelper;
+        protected PocoClassGeneratorHelper PocoGenerator => _pocoHelper;
 
         /// <summary>Gets the modern class generator helper</summary>
-        protected IModernClassGenerator ModernGenerator => _modernHelper;
+        protected ModernClassGeneratorHelper ModernGenerator => _modernHelper;
 
         /// <summary>Gets the class generation helper utilities</summary>
         protected ClassGenerationHelper GenerationHelper => _generationHelper;

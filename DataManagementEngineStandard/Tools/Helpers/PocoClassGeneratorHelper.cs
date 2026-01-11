@@ -13,7 +13,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
     /// <summary>
     /// Helper class for generating POCO classes and basic class structures
     /// </summary>
-    public class PocoClassGeneratorHelper : IPocoClassGenerator
+    public class PocoClassGeneratorHelper
     {
         private readonly IDMEEditor _dmeEditor;
         private readonly ClassGenerationHelper _helper;

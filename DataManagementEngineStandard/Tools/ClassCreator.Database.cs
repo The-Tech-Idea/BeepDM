@@ -10,7 +10,7 @@ namespace TheTechIdea.Beep.Tools
     /// <summary>
     /// Partial class for database-related class generation functionality
     /// </summary>
-    public partial class ClassCreator : IDatabaseClassGenerator
+    public partial class ClassCreator
     {
         #region Private Fields
 
@@ -20,8 +20,8 @@ namespace TheTechIdea.Beep.Tools
 
         #region Properties
 
-        /// <summary>Gets the database class generator helper (lazy-loaded)</summary>
-        protected IDatabaseClassGenerator DatabaseGenerator
+        /// <summary>Gets the Database class generator helper (lazy-loaded)</summary>
+        protected DatabaseClassGeneratorHelper DatabaseGenerator
         {
             get
             {

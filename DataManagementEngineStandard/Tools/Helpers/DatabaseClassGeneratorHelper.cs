@@ -14,7 +14,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
     /// <summary>
     /// Helper class for generating database-related classes
     /// </summary>
-    public class DatabaseClassGeneratorHelper : IDatabaseClassGenerator
+    public class DatabaseClassGeneratorHelper
     {
         private readonly IDMEEditor _dmeEditor;
         private readonly ClassGenerationHelper _helper;

@@ -15,7 +15,7 @@ namespace TheTechIdea.Beep.Tools
     /// <summary>
     /// Partial class for DLL creation and compilation functionality
     /// </summary>
-    public partial class ClassCreator : IDllCreator
+    public partial class ClassCreator
     {
         #region DLL Creation Methods
 

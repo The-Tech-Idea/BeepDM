@@ -255,6 +255,141 @@ namespace TheTechIdea.Beep.Utilities
         Timestamp,     // Timestamp or row version for concurrency
         Complex        // Complex or nested types, possibly serialized
     }
+
+    /// <summary>
+    /// Enum representing datasource capabilities for type-safe capability checking.
+    /// Use with DataSourceCapabilityMatrix.Supports() instead of magic strings.
+    /// </summary>
+    public enum CapabilityType
+    {
+        /// <summary>ACID transaction support</summary>
+        SupportsTransactions,
+        
+        /// <summary>JOIN operations between tables/collections</summary>
+        SupportsJoins,
+        
+        /// <summary>Aggregation operations (GROUP BY, COUNT, SUM, etc.)</summary>
+        SupportsAggregations,
+        
+        /// <summary>Index creation and management</summary>
+        SupportsIndexes,
+        
+        /// <summary>Parameterized queries (SQL injection prevention)</summary>
+        SupportsParameterization,
+        
+        /// <summary>Auto-increment/identity columns</summary>
+        SupportsIdentity,
+        
+        /// <summary>Time-To-Live (TTL) on records</summary>
+        SupportsTTL,
+        
+        /// <summary>Temporal tables (time-versioning)</summary>
+        SupportsTemporalTables,
+        
+        /// <summary>Window functions (OVER, ROW_NUMBER, RANK)</summary>
+        SupportsWindowFunctions,
+        
+        /// <summary>Stored procedures or equivalent</summary>
+        SupportsStoredProcedures,
+        
+        /// <summary>Bulk insert/update/delete operations</summary>
+        SupportsBulkOperations,
+        
+        /// <summary>Full-text search capability</summary>
+        SupportsFullTextSearch,
+        
+        /// <summary>Native JSON support</summary>
+        SupportsNativeJson,
+        
+        /// <summary>Table/collection partitioning</summary>
+        SupportsPartitioning,
+        
+        /// <summary>Data replication</summary>
+        SupportsReplication,
+        
+        /// <summary>Views support</summary>
+        SupportsViews,
+        
+        /// <summary>Schema evolution (adding columns, etc.)</summary>
+        SupportsSchemaEvolution,
+        
+        /// <summary>Schema-enforced (requires predefined structure)</summary>
+        IsSchemaEnforced,
+
+        // ========== Vector Database Capabilities ==========
+        
+        /// <summary>Vector similarity search (cosine, euclidean, dot product)</summary>
+        SupportsVectorSearch,
+        
+        /// <summary>Embedding storage and retrieval</summary>
+        SupportsEmbeddings,
+        
+        /// <summary>Approximate Nearest Neighbor (ANN) algorithms like HNSW</summary>
+        SupportsANN,
+        
+        // ========== Graph Database Capabilities ==========
+        
+        /// <summary>Graph traversal operations</summary>
+        SupportsGraphTraversal,
+        
+        /// <summary>Cypher query language (Neo4j)</summary>
+        SupportsCypherQuery,
+        
+        /// <summary>Gremlin query language</summary>
+        SupportsGremlinQuery,
+        
+        // ========== Time Series Capabilities ==========
+        
+        /// <summary>Time series specific queries (range, rollup)</summary>
+        SupportsTimeSeriesQueries,
+        
+        /// <summary>Data downsampling/aggregation over time</summary>
+        SupportsDownsampling,
+        
+        /// <summary>Data retention policies</summary>
+        SupportsRetentionPolicies,
+        
+        // ========== Search Engine Capabilities ==========
+        
+        /// <summary>Faceted/filtered search</summary>
+        SupportsFacetedSearch,
+        
+        /// <summary>Search result highlighting</summary>
+        SupportsHighlighting,
+        
+        // ========== Streaming & Protocol Capabilities ==========
+        
+        /// <summary>Streaming data operations</summary>
+        SupportsStreaming,
+        
+        /// <summary>Publish/Subscribe messaging pattern</summary>
+        SupportsPublishSubscribe,
+        
+        /// <summary>Message ordering guarantees</summary>
+        SupportsMessageOrdering,
+        
+        /// <summary>Dead letter queue for failed messages</summary>
+        SupportsDeadLetterQueue,
+        
+        /// <summary>Push notifications / real-time updates</summary>
+        SupportsPushNotifications,
+        
+        /// <summary>Append-only operations (logs, streams)</summary>
+        SupportsAppend,
+        
+        /// <summary>Binary protocol support (gRPC, Thrift)</summary>
+        SupportsBinaryProtocol,
+        
+        /// <summary>Async/await operation pattern</summary>
+        SupportsAsyncOperations,
+        
+        /// <summary>OAuth authentication</summary>
+        SupportsOAuth,
+        
+        /// <summary>Continuous queries / change data capture</summary>
+        SupportsContinuousQueries
+    }
+
     public enum Sqlcommandtype
     { getTable,getlistoftables, getPKforTable, getFKforTable, getChildTable, getParentTable,getFktableValues,CheckTableExist, getlistoftablesfromotherschema }
 

@@ -14,7 +14,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
     /// <summary>
     /// Helper class for generating Web API controllers and related components
     /// </summary>
-    public class WebApiGeneratorHelper : IWebApiGenerator
+    public class WebApiGeneratorHelper
     {
         private readonly IDMEEditor _dmeEditor;
         private readonly ClassGenerationHelper _helper;
