@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Helpers.RDBMSHelpers;
 
 namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
 {
@@ -129,9 +130,15 @@ ON UPDATE CASCADE";
                 if (string.IsNullOrWhiteSpace(tableName))
                     return ("", false, "Table name is required");
 
-                // Use delegation to existing helper if available
-                // Otherwise, generate SQL Server compatible query as default
-                var query = RDBMSHelpers.DatabaseSchemaQueryHelper.GetPrimaryKeyQuery(SupportedType, tableName);
+                // Generate database-specific query for primary key information
+                var query = SupportedType switch
+                {
+                    DataSourceType.SqlServer => $"SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME = '{tableName}' AND CONSTRAINT_TYPE = 'PRIMARY KEY'",
+                    DataSourceType.Mysql => $"SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{tableName}' AND CONSTRAINT_TYPE = 'PRIMARY KEY'",
+                    DataSourceType.Postgre => $"SELECT constraint_name FROM information_schema.table_constraints WHERE table_name = '{tableName}' AND constraint_type = 'PRIMARY KEY'",
+                    DataSourceType.Oracle => $"SELECT constraint_name FROM user_constraints WHERE table_name = UPPER('{tableName}') AND constraint_type = 'P'",
+                    _ => ""
+                };
 
                 return (query, !string.IsNullOrEmpty(query), "");
             }
@@ -152,7 +159,15 @@ ON UPDATE CASCADE";
                 if (string.IsNullOrWhiteSpace(tableName))
                     return ("", false, "Table name is required");
 
-                var query = RDBMSHelpers.DatabaseSchemaQueryHelper.GetForeignKeysQuery(SupportedType, tableName);
+                // Generate database-specific query for foreign key information
+                var query = SupportedType switch
+                {
+                    DataSourceType.SqlServer => $"SELECT * FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_TABLE_NAME = '{tableName}'",
+                    DataSourceType.Mysql => $"SELECT * FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME = '{tableName}' AND REFERENCED_TABLE_NAME IS NOT NULL",
+                    DataSourceType.Postgre => $"SELECT * FROM information_schema.table_constraints WHERE table_name = '{tableName}' AND constraint_type = 'FOREIGN KEY'",
+                    DataSourceType.Oracle => $"SELECT * FROM user_constraints WHERE table_name = UPPER('{tableName}') AND constraint_type = 'R'",
+                    _ => ""
+                };
 
                 return (query, !string.IsNullOrEmpty(query), "");
             }
@@ -172,7 +187,15 @@ ON UPDATE CASCADE";
                 if (string.IsNullOrWhiteSpace(tableName))
                     return ("", false, "Table name is required");
 
-                var query = RDBMSHelpers.DatabaseSchemaQueryHelper.GetConstraintsQuery(SupportedType, tableName);
+                // Generate database-specific query for all constraints
+                var query = SupportedType switch
+                {
+                    DataSourceType.SqlServer => $"SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME = '{tableName}'",
+                    DataSourceType.Mysql => $"SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{tableName}'",
+                    DataSourceType.Postgre => $"SELECT * FROM information_schema.table_constraints WHERE table_name = '{tableName}'",
+                    DataSourceType.Oracle => $"SELECT * FROM user_constraints WHERE table_name = UPPER('{tableName}')",
+                    _ => ""
+                };
 
                 return (query, !string.IsNullOrEmpty(query), "");
             }

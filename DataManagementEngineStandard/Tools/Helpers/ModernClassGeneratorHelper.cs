@@ -14,7 +14,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
     /// <summary>
     /// Helper class for generating modern C# class patterns
     /// </summary>
-    public class ModernClassGeneratorHelper : IModernClassGenerator
+    public class ModernClassGeneratorHelper 
     {
         private readonly IDMEEditor _dmeEditor;
         private readonly ClassGenerationHelper _helper;

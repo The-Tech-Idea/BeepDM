@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
+namespace TheTechIdea.Beep.Core
 {
     /// <summary>
     /// Comprehensive capability matrix for 40+ datasource types.

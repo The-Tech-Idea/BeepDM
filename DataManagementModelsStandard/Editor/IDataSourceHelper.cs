@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Core;
 
-namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
+namespace TheTechIdea.Beep.Editor
 {
     /// <summary>
     /// Defines the contract for all datasource-specific helper implementations.

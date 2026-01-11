@@ -636,6 +636,346 @@
             Gets or sets a value indicating whether the token needs to be refreshed.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Core.DataSourceCapabilities">
+            <summary>
+            Defines the capabilities and features supported by a specific datasource type.
+            Used to determine what operations (transactions, joins, aggregations, etc.) are possible
+            with a given datasource, enabling graceful degradation when features aren't available.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsTransactions">
+            <summary>
+            Indicates whether the datasource supports ACID transactions.
+            </summary>
+            <remarks>
+            - RDBMS: true (full ACID)
+            - MongoDB: true (multi-document, v4.0+)
+            - Redis: true (Lua scripts provide atomicity)
+            - Cassandra: false (eventual consistency only)
+            - REST APIs: false (no server-side transaction support)
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsJoins">
+            <summary>
+            Indicates whether the datasource supports JOIN operations.
+            </summary>
+            <remarks>
+            - RDBMS: true (full JOIN support)
+            - MongoDB: false (uses $lookup aggregation, different paradigm)
+            - NoSQL: false (typically requires denormalization)
+            - Cassandra: false (no JOIN support)
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsAggregations">
+            <summary>
+            Indicates whether the datasource supports aggregation operations (GROUP BY, COUNT, SUM, etc.).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsIndexes">
+            <summary>
+            Indicates whether the datasource supports index creation and management.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsParameterization">
+            <summary>
+            Indicates whether the datasource supports parameterized queries (prevents SQL injection).
+            </summary>
+            <remarks>
+            Note: Some drivers automatically handle parameterization (MongoDB, Elasticsearch),
+            while others require explicit parameter binding (SQL databases).
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsIdentity">
+            <summary>
+            Indicates whether the datasource supports auto-increment/identity columns.
+            </summary>
+            <remarks>
+            - RDBMS: true (AUTO_INCREMENT, IDENTITY, SEQUENCE)
+            - MongoDB: false (application-assigned _id or ObjectId)
+            - Redis: true (INCR command)
+            - File-based: false
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsTTL">
+            <summary>
+            Indicates whether the datasource supports Time-To-Live (TTL) on records.
+            </summary>
+            <remarks>
+            - Redis: true (EXPIRE command)
+            - MongoDB: true (TTL indexes)
+            - Cassandra: true (TTL on columns)
+            - RDBMS: false (no native TTL)
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsTemporalTables">
+            <summary>
+            Indicates whether the datasource supports temporal tables (time-versioning).
+            </summary>
+            <remarks>
+            - SQL Server 2016+: true
+            - PostgreSQL 10+: true
+            - Most NoSQL: false
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsWindowFunctions">
+            <summary>
+            Indicates whether the datasource supports window functions (OVER, ROW_NUMBER, RANK, etc.).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsStoredProcedures">
+            <summary>
+            Indicates whether the datasource supports stored procedures or equivalent.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsBulkOperations">
+            <summary>
+            Indicates whether the datasource supports bulk insert/update/delete operations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsFullTextSearch">
+            <summary>
+            Indicates whether the datasource supports full-text search.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsNativeJson">
+            <summary>
+            Indicates whether the datasource has native JSON support.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsPartitioning">
+            <summary>
+            Indicates whether the datasource supports table/collection partitioning.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsReplication">
+            <summary>
+            Indicates whether the datasource supports data replication.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsViews">
+            <summary>
+            Indicates whether the datasource supports views.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsSchemaEvolution">
+            <summary>
+            Indicates whether the datasource supports schema evolution (adding columns, etc.).
+            </summary>
+            <remarks>
+            - RDBMS: true (ALTER TABLE, but can be slow)
+            - MongoDB: true (schema-free)
+            - Redis: false (key-value only)
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.IsSchemaEnforced">
+            <summary>
+            Indicates whether the datasource is schema-enforced (requires predefined structure).
+            </summary>
+            <remarks>
+            - RDBMS: true
+            - MongoDB: false (schema-free)
+            - Redis: depends on usage
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsVectorSearch">
+            <summary>
+            Indicates whether the datasource supports vector similarity search.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsEmbeddings">
+            <summary>
+            Indicates whether the datasource supports embedding storage and retrieval.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsANN">
+            <summary>
+            Indicates whether the datasource supports Approximate Nearest Neighbor algorithms (HNSW, IVF).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsGraphTraversal">
+            <summary>
+            Indicates whether the datasource supports graph traversal operations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsCypherQuery">
+            <summary>
+            Indicates whether the datasource supports Cypher query language (Neo4j).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsGremlinQuery">
+            <summary>
+            Indicates whether the datasource supports Gremlin query language.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsTimeSeriesQueries">
+            <summary>
+            Indicates whether the datasource supports time series specific queries.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsDownsampling">
+            <summary>
+            Indicates whether the datasource supports data downsampling/aggregation over time.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsRetentionPolicies">
+            <summary>
+            Indicates whether the datasource supports data retention policies.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsFacetedSearch">
+            <summary>
+            Indicates whether the datasource supports faceted/filtered search.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsHighlighting">
+            <summary>
+            Indicates whether the datasource supports search result highlighting.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsStreaming">
+            <summary>
+            Indicates whether the datasource supports streaming data operations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsPublishSubscribe">
+            <summary>
+            Indicates whether the datasource supports publish/subscribe messaging pattern.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsMessageOrdering">
+            <summary>
+            Indicates whether the datasource supports message ordering guarantees.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsDeadLetterQueue">
+            <summary>
+            Indicates whether the datasource supports dead letter queue for failed messages.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsPushNotifications">
+            <summary>
+            Indicates whether the datasource supports push notifications / real-time updates.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsAppend">
+            <summary>
+            Indicates whether the datasource supports append-only operations (logs, streams).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsBinaryProtocol">
+            <summary>
+            Indicates whether the datasource supports binary protocol (gRPC, Thrift).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsAsyncOperations">
+            <summary>
+            Indicates whether the datasource supports async/await operation pattern.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsOAuth">
+            <summary>
+            Indicates whether the datasource supports OAuth authentication.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.SupportsContinuousQueries">
+            <summary>
+            Indicates whether the datasource supports continuous queries / change data capture.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Core.DataSourceCapabilities.Notes">
+            <summary>
+            Gets or sets a description of key limitations or notable features.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Core.DataSourceCapabilities.IsCapable(System.String)">
+            <summary>
+            Determines if a specific capability is supported.
+            </summary>
+            <param name="capabilityName">Name of the capability (property name, case-insensitive)</param>
+            <returns>True if the capability is supported; false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Core.DataSourceCapabilities.IsCapable(TheTechIdea.Beep.Utilities.CapabilityType)">
+            <summary>
+            Determines if a specific capability is supported using strongly-typed enum.
+            </summary>
+            <param name="capability">The capability to check</param>
+            <returns>True if the capability is supported; false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Core.DataSourceCapabilities.ToString">
+            <summary>
+            Gets a summary of capabilities in a human-readable format.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Core.DataSourceCapabilityMatrix">
+            <summary>
+            Comprehensive capability matrix for 40+ datasource types.
+            Defines which operations (transactions, joins, aggregations, etc.) are supported by each datasource.
+            Enables intelligent query generation and graceful degradation when features aren't available.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Core.DataSourceCapabilityMatrix.DefaultConnectorCapabilities">
+            <summary>
+            Default capabilities for connectors (REST API-based business applications).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Core.DataSourceCapabilityMatrix.CategoryDefaults">
+            <summary>
+            Default capabilities by datasource category for fallback.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Core.DataSourceCapabilityMatrix.GetCapabilities(TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Gets the capability information for a specific datasource type.
+            </summary>
+            <param name="type">The datasource type</param>
+            <returns>Capabilities object; returns empty/default if type not found</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Core.DataSourceCapabilityMatrix.GetCapabilities(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Utilities.DatasourceCategory)">
+            <summary>
+            Gets capability information for a datasource type with category-based fallback.
+            Use this method when the datasource type might not have explicit capabilities defined.
+            </summary>
+            <param name="type">The datasource type</param>
+            <param name="category">The datasource category for fallback</param>
+            <returns>Explicit capabilities if defined, otherwise category defaults</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Core.DataSourceCapabilityMatrix.GetCapabilitiesByCategory(TheTechIdea.Beep.Utilities.DatasourceCategory)">
+            <summary>
+            Gets the default capabilities for a datasource category.
+            Useful for connectors and other types that share common patterns.
+            </summary>
+            <param name="category">The datasource category</param>
+            <returns>Default capabilities for the category</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Core.DataSourceCapabilityMatrix.Supports(TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
+            <summary>
+            Checks if a specific datasource supports a given capability.
+            </summary>
+            <param name="type">The datasource type</param>
+            <param name="capabilityName">The capability name (property name, case-insensitive)</param>
+            <returns>True if supported; false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Core.DataSourceCapabilityMatrix.Supports(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Utilities.CapabilityType)">
+            <summary>
+            Checks if a specific datasource supports a given capability (type-safe).
+            </summary>
+            <param name="type">The datasource type</param>
+            <param name="capability">The capability to check</param>
+            <returns>True if supported; false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Core.DataSourceCapabilityMatrix.GetDatasourcesSupportingCapability(System.String)">
+            <summary>
+            Gets all datasource types that support a specific capability.
+            </summary>
+            <param name="capabilityName">The capability name</param>
+            <returns>List of datasource types that support the capability</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Core.DataSourceCapabilityMatrix.GetCapabilitySummary">
+            <summary>
+            Gets a summary of all datasource capabilities (for debugging/analysis).
+            </summary>
+            <returns>Dictionary mapping datasource type to capability summary</returns>
+        </member>
         <member name="T:TheTechIdea.Beep.DataView.DMDataView">
             <summary>
             Represents a view for displaying and interacting with DataView  data.
@@ -963,6 +1303,364 @@
             Executes an action with event suppression and performance monitoring
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.IDataSourceHelper">
+            <summary>
+            Defines the contract for all datasource-specific helper implementations.
+            Each datasource type (RDBMS, MongoDB, Redis, etc.) should have an implementation
+            of this interface to provide database-agnostic operations.
+            
+            This abstraction enables:
+            - Unified API for different datasource types
+            - Query generation for each datasource's native language/syntax
+            - Feature detection for graceful degradation
+            - Type mapping across different database systems
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IDataSourceHelper.SupportedType">
+            <summary>
+            Gets or sets the datasource type this helper is designed for.
+            Setting this allows dynamic switching between different datasource types at runtime.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IDataSourceHelper.Name">
+            <summary>
+            Gets the human-readable name of the datasource type.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IDataSourceHelper.Capabilities">
+            <summary>
+            Gets the capabilities of this datasource type.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GetSchemaQuery(System.String)">
+            <summary>
+            Gets a query to retrieve schemas or databases accessible to the specified user.
+            </summary>
+            <param name="userName">The username to check privileges for (can be null for some datasources)</param>
+            <returns>Query string and success indicator</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GetTableExistsQuery(System.String)">
+            <summary>
+            Gets a query to check if a table/collection exists.
+            </summary>
+            <param name="tableName">The name of the table/collection</param>
+            <returns>Query string and success indicator</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GetColumnInfoQuery(System.String)">
+            <summary>
+            Gets a query to retrieve column/field information for a table/collection.
+            </summary>
+            <param name="tableName">The name of the table/collection</param>
+            <returns>Query string and success indicator</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateCreateTableSql(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Nullable{TheTechIdea.Beep.Utilities.DataSourceType})">
+            <summary>
+            Generates SQL/query to create a table/collection from an entity structure.
+            Supports optional schema name and datasource type for multi-dialect generation.
+            </summary>
+            <param name="entity">The entity definition</param>
+            <param name="schemaName">Optional schema name (for SQL Server, PostgreSQL, Oracle). Default uses default schema.</param>
+            <param name="dataSourceType">Optional datasource type for context-aware generation. If null, uses SupportedType.</param>
+            <returns>DDL statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateDropTableSql(System.String,System.String)">
+            <summary>
+            Generates SQL/query to drop a table/collection.
+            </summary>
+            <param name="tableName">The name of the table/collection to drop</param>
+            <param name="schemaName">Optional schema name for multi-schema datasources</param>
+            <returns>DDL statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateTruncateTableSql(System.String,System.String)">
+            <summary>
+            Generates SQL/query to truncate a table/collection (remove all data).
+            </summary>
+            <param name="tableName">The name of the table/collection</param>
+            <param name="schemaName">Optional schema name for multi-schema datasources</param>
+            <returns>DML statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateCreateIndexSql(System.String,System.String,System.String[],System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates SQL/query to create an index on specified columns.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <param name="indexName">The name for the index</param>
+            <param name="columns">Column names to index</param>
+            <param name="options">Optional configuration (unique, clustered, etc.)</param>
+            <returns>DDL statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateAddColumnSql(System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Generates SQL/query to add a column to an existing table/collection.
+            Unsupported by schema-free datasources.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <param name="column">The EntityField to add</param>
+            <returns>DDL statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateAlterColumnSql(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Generates SQL/query to modify an existing column definition.
+            Unsupported by schema-free datasources and has limited support in some RDBMS.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <param name="columnName">Name of the column to modify</param>
+            <param name="newColumn">New column definition</param>
+            <returns>DDL statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateDropColumnSql(System.String,System.String)">
+            <summary>
+            Generates SQL/query to drop a column from a table/collection.
+            Unsupported by schema-free datasources.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <param name="columnName">Name of the column to drop</param>
+            <returns>DDL statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateRenameTableSql(System.String,System.String)">
+            <summary>
+            Generates SQL/query to rename a table/collection.
+            </summary>
+            <param name="oldTableName">Current table/collection name</param>
+            <param name="newTableName">New table/collection name</param>
+            <returns>DDL statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateRenameColumnSql(System.String,System.String,System.String)">
+            <summary>
+            Generates SQL/query to rename a column in a table/collection.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <param name="oldColumnName">Current column name</param>
+            <param name="newColumnName">New column name</param>
+            <returns>DDL statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateAddPrimaryKeySql(System.String,System.String[])">
+            <summary>
+            Generates SQL/query to add a primary key constraint to a table.
+            Unsupported by most NoSQL datasources except Cassandra.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <param name="columnNames">Columns that form the primary key</param>
+            <returns>DDL statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateAddForeignKeySql(System.String,System.String[],System.String,System.String[])">
+            <summary>
+            Generates SQL/query to add a foreign key constraint between two tables.
+            Unsupported by NoSQL datasources (MongoDB, Redis, etc.).
+            </summary>
+            <param name="tableName">The table containing the foreign key</param>
+            <param name="columnNames">Columns that form the foreign key</param>
+            <param name="referencedTableName">Referenced table name</param>
+            <param name="referencedColumnNames">Columns in referenced table</param>
+            <returns>DDL statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateAddConstraintSql(System.String,System.String,System.String)">
+            <summary>
+            Generates SQL/query to add a generic constraint (UNIQUE, CHECK, etc.).
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <param name="constraintName">Name for the constraint</param>
+            <param name="constraintDefinition">Constraint definition (e.g., "UNIQUE (col1, col2)" or "CHECK (col1 > 0)")</param>
+            <returns>DDL statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GetPrimaryKeyQuery(System.String)">
+            <summary>
+            Generates a query to retrieve primary key information for a table.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <returns>Query statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GetForeignKeysQuery(System.String)">
+            <summary>
+            Generates a query to retrieve foreign key information for a table.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <returns>Query statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GetConstraintsQuery(System.String)">
+            <summary>
+            Generates a query to retrieve all constraints (PRIMARY, FOREIGN, UNIQUE, CHECK) for a table.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <returns>Query statement, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateBeginTransactionSql">
+            <summary>
+            Generates SQL/command to begin a transaction.
+            Unsupported by datasources without ACID (MongoDB pre-v4.0, Redis with limited scope, etc.).
+            </summary>
+            <returns>SQL command, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateCommitSql">
+            <summary>
+            Generates SQL/command to commit a transaction.
+            Unsupported by datasources without ACID support.
+            </summary>
+            <returns>SQL command, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateRollbackSql">
+            <summary>
+            Generates SQL/command to rollback a transaction.
+            Unsupported by datasources without ACID support.
+            </summary>
+            <returns>SQL command, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateInsertSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates SQL/query to insert a single record.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <param name="data">Column→Value mappings</param>
+            <returns>DML statement, parameters dict, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateUpdateSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates SQL/query to update records matching conditions.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <param name="data">Column→Value mappings to update</param>
+            <param name="conditions">Condition column→Value mappings for WHERE clause</param>
+            <returns>DML statement, parameters dict, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateDeleteSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates SQL/query to delete records matching conditions.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <param name="conditions">Condition column→Value mappings for WHERE clause</param>
+            <returns>DML statement, parameters dict, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GenerateSelectSql(System.String,System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.Dictionary{System.String,System.Object},System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Generates SQL/query to select records with optional filtering and paging.
+            </summary>
+            <param name="tableName">The table/collection name</param>
+            <param name="columns">Columns to select (null = all)</param>
+            <param name="conditions">Optional WHERE conditions</param>
+            <param name="orderBy">Optional ORDER BY clause</param>
+            <param name="skip">Records to skip (for paging)</param>
+            <param name="take">Records to take (for paging)</param>
+            <returns>Query statement, parameters dict, success indicator, and error message if failed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.QuoteIdentifier(System.String)">
+            <summary>
+            Safely quotes/escapes identifiers (table names, column names) according to datasource rules.
+            </summary>
+            <param name="identifier">The identifier to quote</param>
+            <returns>Properly quoted identifier</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.MapClrTypeToDatasourceType(System.Type,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Maps a C# type to the datasource's native type with optional size/precision constraints.
+            </summary>
+            <param name="clrType">The C# type (e.g., typeof(int))</param>
+            <param name="size">Optional size constraint for string types (e.g., 255 for VARCHAR)</param>
+            <param name="precision">Optional precision for numeric types (e.g., 18 for DECIMAL)</param>
+            <param name="scale">Optional scale for numeric types (e.g., 2 for DECIMAL)</param>
+            <returns>Datasource-specific type name (e.g., "INT", "VARCHAR(255)", "DECIMAL(18,2)")</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.MapDatasourceTypeToClrType(System.String)">
+            <summary>
+            Maps a datasource type to the corresponding C# type.
+            </summary>
+            <param name="datasourceType">The datasource type name</param>
+            <returns>Corresponding C# Type</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.ValidateEntity(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Validates whether an entity structure is compatible with this datasource.
+            </summary>
+            <param name="entity">The entity to validate</param>
+            <returns>Validation result with any error messages</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.SupportsCapability(TheTechIdea.Beep.Utilities.CapabilityType)">
+            <summary>
+            Checks whether this datasource supports a specific operation capability.
+            Used for graceful degradation when features aren't available.
+            </summary>
+            <param name="capability">The capability to check</param>
+            <returns>True if supported, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GetMaxStringSize">
+            <summary>
+            Gets the maximum size allowed for string/varchar columns in this datasource.
+            Returns -1 for unlimited, 0 for unsupported.
+            </summary>
+            <returns>Maximum character length</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDataSourceHelper.GetMaxNumericPrecision">
+            <summary>
+            Gets the maximum numeric precision supported by this datasource.
+            For DECIMAL/NUMERIC types, returns total digits. Returns 0 for unlimited.
+            </summary>
+            <returns>Maximum precision</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.KeyDetectionStrategy">
+            <summary>
+            Strategy for detecting the primary key in POCO-to-Entity conversion.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.KeyDetectionStrategy.AttributeOnly">
+            <summary>
+            Only uses [Key] DataAnnotation attribute. Fails if no [Key] found.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.KeyDetectionStrategy.ConventionOnly">
+            <summary>
+            Only uses naming conventions: "Id" or "{ClassName}Id". Fails if no match found.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.KeyDetectionStrategy.AttributeThenConvention">
+            <summary>
+            Tries [Key] attribute first, then falls back to naming conventions. Default recommended strategy.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDMEEditor.GetDataSourceHelper(TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Gets the appropriate IDataSourceHelper implementation for a datasource type.
+            Enables direct access to datasource-specific query generation and operations.
+            </summary>
+            <param name="datasourceType">The datasource type to get a helper for</param>
+            <returns>IDataSourceHelper implementation for the datasource, or null if not yet implemented</returns>
+            <remarks>
+            This method provides access to datasource-specific query generators and utilities.
+            
+            Currently Implemented Helpers (Phase 1):
+            - MongoDB → MongoDBHelper (aggregation pipelines, BSON documents)
+            - Redis → RedisHelper (hash operations, Lua scripts)
+            - Cassandra → CassandraHelper (CQL generation, composite keys)
+            - REST APIs → RestApiHelper (HTTP endpoints, query parameters, JSON bodies)
+            
+            Planned Helpers (Phase 2+):
+            - RDBMS (SQL Server, MySQL, PostgreSQL, Oracle, etc.) → RdbmsHelper variants
+            - Elasticsearch → ElasticsearchHelper
+            - Neo4j → Neo4jHelper
+            - File-based → FileDataSourceHelper (CSV, JSON, XML)
+            
+            Usage Pattern:
+            <code>
+            var helper = dmeEditor.GetDataSourceHelper(DataSourceType.MongoDB);
+            if (helper != null)
+            {
+                // Generate query
+                var (sql, parameters, success, error) = helper.GenerateSelectSql(
+                    entity, 
+                    new Dictionary{string, object}() { {"_id", "123"} }
+                );
+                
+                if (success)
+                {
+                    // Execute the query using the datasource
+                    var mongodb = dmeEditor.GetDataSource("MyMongoDB");
+                    var result = await mongodb.ExecuteCommandAsync(sql, parameters);
+                }
+            }
+            </code>
+            
+            Note: Returns null for unsupported or not-yet-implemented datasources.
+            Check the capability matrix first to determine supported operations.
+            </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.WhereContains(System.String,System.String,System.Boolean)">
             <summary>
             Finds items where a string property contains the search text
@@ -1130,6 +1828,129 @@
             <summary>
             Contains a code improvement suggestion
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Utilities.CapabilityType">
+            <summary>
+            Enum representing datasource capabilities for type-safe capability checking.
+            Use with DataSourceCapabilityMatrix.Supports() instead of magic strings.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsTransactions">
+            <summary>ACID transaction support</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsJoins">
+            <summary>JOIN operations between tables/collections</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsAggregations">
+            <summary>Aggregation operations (GROUP BY, COUNT, SUM, etc.)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsIndexes">
+            <summary>Index creation and management</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsParameterization">
+            <summary>Parameterized queries (SQL injection prevention)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsIdentity">
+            <summary>Auto-increment/identity columns</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsTTL">
+            <summary>Time-To-Live (TTL) on records</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsTemporalTables">
+            <summary>Temporal tables (time-versioning)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsWindowFunctions">
+            <summary>Window functions (OVER, ROW_NUMBER, RANK)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsStoredProcedures">
+            <summary>Stored procedures or equivalent</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsBulkOperations">
+            <summary>Bulk insert/update/delete operations</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsFullTextSearch">
+            <summary>Full-text search capability</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsNativeJson">
+            <summary>Native JSON support</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsPartitioning">
+            <summary>Table/collection partitioning</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsReplication">
+            <summary>Data replication</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsViews">
+            <summary>Views support</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsSchemaEvolution">
+            <summary>Schema evolution (adding columns, etc.)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.IsSchemaEnforced">
+            <summary>Schema-enforced (requires predefined structure)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsVectorSearch">
+            <summary>Vector similarity search (cosine, euclidean, dot product)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsEmbeddings">
+            <summary>Embedding storage and retrieval</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsANN">
+            <summary>Approximate Nearest Neighbor (ANN) algorithms like HNSW</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsGraphTraversal">
+            <summary>Graph traversal operations</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsCypherQuery">
+            <summary>Cypher query language (Neo4j)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsGremlinQuery">
+            <summary>Gremlin query language</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsTimeSeriesQueries">
+            <summary>Time series specific queries (range, rollup)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsDownsampling">
+            <summary>Data downsampling/aggregation over time</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsRetentionPolicies">
+            <summary>Data retention policies</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsFacetedSearch">
+            <summary>Faceted/filtered search</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsHighlighting">
+            <summary>Search result highlighting</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsStreaming">
+            <summary>Streaming data operations</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsPublishSubscribe">
+            <summary>Publish/Subscribe messaging pattern</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsMessageOrdering">
+            <summary>Message ordering guarantees</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsDeadLetterQueue">
+            <summary>Dead letter queue for failed messages</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsPushNotifications">
+            <summary>Push notifications / real-time updates</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsAppend">
+            <summary>Append-only operations (logs, streams)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsBinaryProtocol">
+            <summary>Binary protocol support (gRPC, Thrift)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsAsyncOperations">
+            <summary>Async/await operation pattern</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsOAuth">
+            <summary>OAuth authentication</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Utilities.CapabilityType.SupportsContinuousQueries">
+            <summary>Continuous queries / change data capture</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Utilities.DefaultValueType">
             <summary>

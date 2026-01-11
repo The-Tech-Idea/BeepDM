@@ -1,7 +1,7 @@
 using System;
 using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
+namespace TheTechIdea.Beep.Core
 {
     /// <summary>
     /// Defines the capabilities and features supported by a specific datasource type.

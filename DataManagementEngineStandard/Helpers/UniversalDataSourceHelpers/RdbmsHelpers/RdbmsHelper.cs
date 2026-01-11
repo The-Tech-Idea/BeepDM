@@ -5,6 +5,9 @@ using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core;
+using TheTechIdea.Beep.Helpers.RDBMSHelpers;
+using TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers;
+using TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers;
 
 namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
 {
@@ -53,7 +56,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                var query = RDBMSHelpers.DatabaseSchemaQueryHelper.GetSchemasorDatabases(SupportedType, userName);
+                var query = DatabaseSchemaQueryHelper.GetSchemasorDatabases(SupportedType, userName);
                 return (query, !string.IsNullOrEmpty(query));
             }
             catch
@@ -70,7 +73,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                var query = RDBMSHelpers.DatabaseSchemaQueryHelper.GetTableExistsQuery(
+                var query = DatabaseSchemaQueryHelper.GetTableExistsQuery(
                     SupportedType,
                     tableName,
                     null
@@ -91,7 +94,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                var query = RDBMSHelpers.DatabaseSchemaQueryHelper.GetColumnInfoQuery(
+                var query = DatabaseSchemaQueryHelper.GetColumnInfoQuery(
                     SupportedType,
                     tableName,
                     null
@@ -212,7 +215,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
             {
                 // Create minimal entity structure for legacy helper
                 var entity = new EntityStructure { EntityName = tableName };
-                var (query, parameters, success, error) = RDBMSHelpers.DatabaseDMLHelper.GenerateInsertQuerySafe(
+                var (query, parameters, success, error) = DatabaseDMLHelper.GenerateInsertQuerySafe(
                     entity,
                     data,
                     SupportedType
@@ -237,7 +240,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
             try
             {
                 var entity = new EntityStructure { EntityName = tableName };
-                var (query, parameters, success, error) = RDBMSHelpers.DatabaseDMLHelper.GenerateUpdateQuerySafe(
+                var (query, parameters, success, error) = DatabaseDMLHelper.GenerateUpdateQuerySafe(
                     entity,
                     data,
                     conditions,
@@ -262,7 +265,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
             try
             {
                 var entity = new EntityStructure { EntityName = tableName };
-                var (query, parameters, success, error) = RDBMSHelpers.DatabaseDMLHelper.GenerateDeleteQuerySafe(
+                var (query, parameters, success, error) = DatabaseDMLHelper.GenerateDeleteQuerySafe(
                     entity,
                     conditions,
                     SupportedType
@@ -290,7 +293,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
             try
             {
                 var entity = new EntityStructure { EntityName = tableName };
-                var (query, parameters, success, error) = RDBMSHelpers.DatabaseDMLHelper.GenerateSelectQuerySafe(
+                var (query, parameters, success, error) = DatabaseDMLHelper.GenerateSelectQuerySafe(
                     entity,
                     conditions,
                     SupportedType,
@@ -334,7 +337,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                return RDBMSHelpers.DatabaseEntityTypeHelper.MapClrTypeToDatabase(clrType, SupportedType);
+                return DatabaseEntityTypeHelper.MapClrTypeToDatabase(clrType, SupportedType);
             }
             catch
             {
@@ -350,7 +353,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                return RDBMSHelpers.DatabaseEntityTypeHelper.MapDatabaseTypeToClr(datasourceType, SupportedType);
+                return DatabaseEntityTypeHelper.MapDatabaseTypeToClr(datasourceType, SupportedType);
             }
             catch
             {
@@ -379,30 +382,30 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
                     errors.Add("Entity name is required");
                 }
 
-                if (entity.EntityFields == null || !entity.EntityFields.Any())
+                if (entity.Fields == null || !entity.Fields.Any())
                 {
                     errors.Add("Entity must have at least one field");
                 }
                 else
                 {
                     // Check for reserved keywords
-                    var keywordChecker = new RDBMSHelpers.DatabaseEntityReservedKeywordChecker();
+                    var keywordChecker = new DatabaseEntityReservedKeywordChecker();
                     if (keywordChecker.IsReservedKeyword(entity.EntityName, SupportedType))
                     {
                         errors.Add($"Entity name '{entity.EntityName}' is a reserved keyword in {SupportedType}");
                     }
 
                     // Validate fields
-                    foreach (var field in entity.EntityFields)
+                    foreach (var field in entity.Fields)
                     {
-                        if (string.IsNullOrWhiteSpace(field.FieldName))
+                        if (string.IsNullOrWhiteSpace(field.fieldname))
                         {
                             errors.Add("All fields must have a name");
                         }
 
-                        if (keywordChecker.IsReservedKeyword(field.FieldName, SupportedType))
+                        if (keywordChecker.IsReservedKeyword(field.fieldname, SupportedType))
                         {
-                            errors.Add($"Field name '{field.FieldName}' is a reserved keyword in {SupportedType}");
+                            errors.Add($"Field name '{field.fieldname}' is a reserved keyword in {SupportedType}");
                         }
                     }
                 }
@@ -491,7 +494,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                var dataType = MapClrTypeToDatasourceType(column.FieldType);
+                var dataType = column.fieldtype;
                 var quotedTable = QuoteIdentifier(tableName);
                 var quotedColumn = QuoteIdentifier(column.fieldname);
                 var sql = $"ALTER TABLE {quotedTable} ADD {quotedColumn} {dataType}";
@@ -510,7 +513,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                var dataType = MapClrTypeToDatasourceType(newColumn.FieldType);
+                var dataType = newColumn.fieldtype;
                 var quotedTable = QuoteIdentifier(tableName);
                 var quotedColumn = QuoteIdentifier(columnName);
                 var sql = SupportedType switch
@@ -599,21 +602,5 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         }
 
         #endregion
-    }
-}
-                        {
-                            errors.Add($"Field name '{field.FieldName}' is a reserved keyword in {datasourceType}");
-                        }
-                    }
-                }
-
-                return (errors.Count == 0, errors);
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"Validation error: {ex.Message}");
-                return (false, errors);
-            }
-        }
     }
 }
