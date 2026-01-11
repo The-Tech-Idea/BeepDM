@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core;
+using TheTechIdea.Beep.Helpers.DataTypesHelpers;
 
 namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers
 {
@@ -18,6 +20,17 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers
     /// </summary>
     public class CassandraHelper : IDataSourceHelper
     {
+        private readonly IDMEEditor _dmeEditor;
+
+        /// <summary>
+        /// Initializes a new instance of the CassandraHelper class.
+        /// </summary>
+        /// <param name="dmeEditor">The IDMEEditor instance</param>
+        public CassandraHelper(IDMEEditor dmeEditor)
+        {
+            _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
+        }
+
         public DataSourceType SupportedType { get; set; } = DataSourceType.Cassandra;
         public string Name => "Apache Cassandra";
 
@@ -126,7 +139,9 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers
 
                 foreach (var field in entity.Fields)
                 {
-                    string cassandraType = MapClrTypeToDatasourceType(field.FieldType);
+                    // Convert fieldtype string to Type
+                    Type fieldClrType = Type.GetType(field.fieldtype) ?? typeof(string);
+                    string cassandraType = MapClrTypeToDatasourceType(fieldClrType);
                     columns.Add($"{QuoteIdentifier(field.fieldname)} {cassandraType}");
 
                     // Assume first field is partition key if not specified
@@ -134,7 +149,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers
                         partitionKeys.Add(field.fieldname);
 
                     // Add other fields as clustering keys if needed
-                    if (field.FieldType == typeof(DateTime) && clusteringKeys.Count == 0)
+                    if (fieldClrType == typeof(DateTime) && clusteringKeys.Count == 0)
                         clusteringKeys.Add(field.fieldname);
                 }
 
@@ -238,7 +253,8 @@ CREATE TABLE IF NOT EXISTS {QuoteIdentifier(keyspace)}.{QuoteIdentifier(tableNam
                     return ("", false, "Invalid table name or column");
 
                 string keyspace = "default_keyspace"; // Would need to extract from tableName
-                string cassandraType = MapClrTypeToDatasourceType(column.FieldType);
+                Type columnClrType = Type.GetType(column.fieldtype) ?? typeof(string);
+                string cassandraType = MapClrTypeToDatasourceType(columnClrType);
                 string cql = $"ALTER TABLE {QuoteIdentifier(keyspace)}.{QuoteIdentifier(tableName)} ADD {QuoteIdentifier(column.fieldname)} {cassandraType};";
 
                 return (cql, true, "");
@@ -567,67 +583,70 @@ CREATE TABLE IF NOT EXISTS {QuoteIdentifier(keyspace)}.{QuoteIdentifier(tableNam
         /// <summary>
         /// Maps C# types to Cassandra CQL types.
         /// </summary>
+        /// <summary>
+        /// Maps C# types to Cassandra CQL types.
+        /// Uses DataTypeMappingRepository for mapping.
+        /// </summary>
         public string MapClrTypeToDatasourceType(Type clrType, int? size = null, int? precision = null, int? scale = null)
         {
-            if (clrType == typeof(string))
-                return size.HasValue ? $"text" : "text"; // Cassandra uses text instead of varchar
-            if (clrType == typeof(int))
-                return "int";
-            if (clrType == typeof(long))
-                return "bigint";
-            if (clrType == typeof(double) || clrType == typeof(float))
-                return "double";
-            if (clrType == typeof(decimal))
-                return "decimal";
-            if (clrType == typeof(bool))
-                return "boolean";
-            if (clrType == typeof(DateTime))
-                return "timestamp";
-            if (clrType == typeof(byte[]))
-                return "blob";
-            if (clrType == typeof(Guid))
-                return "uuid";
+            try
+            {
+                if (clrType == null)
+                    return "text";
 
-            return "text"; // Default fallback
+                var netTypeName = clrType.FullName ?? clrType.Name;
+                
+                var mappings = DataTypeMappingRepository.GetDataTypes(SupportedType, _dmeEditor);
+                if (mappings != null && mappings.Any())
+                {
+                    var exactMatch = mappings.FirstOrDefault(m => 
+                        m.NetDataType.Equals(netTypeName, StringComparison.OrdinalIgnoreCase) && m.Fav)
+                        ?? mappings.FirstOrDefault(m => m.NetDataType.Equals(netTypeName, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (exactMatch != null)
+                        return exactMatch.DataType;
+                }
+
+                return "text"; // Minimal fallback
+            }
+            catch
+            {
+                return "text"; // Minimal fallback
+            }
         }
 
         /// <summary>
         /// Maps Cassandra CQL types back to C# types.
+        /// Uses DataTypeMappingRepository for mapping.
         /// </summary>
         public Type MapDatasourceTypeToClrType(string datasourceType)
         {
-            if (string.IsNullOrWhiteSpace(datasourceType))
-                return typeof(string);
-
-            switch (datasourceType.ToLower())
+            try
             {
-                case "text":
-                case "varchar":
-                case "ascii":
+                if (string.IsNullOrWhiteSpace(datasourceType))
                     return typeof(string);
-                case "int":
-                    return typeof(int);
-                case "bigint":
-                case "counter":
-                    return typeof(long);
-                case "double":
-                case "float":
-                    return typeof(double);
-                case "decimal":
-                    return typeof(decimal);
-                case "boolean":
-                    return typeof(bool);
-                case "timestamp":
-                case "time":
-                case "date":
-                    return typeof(DateTime);
-                case "blob":
-                    return typeof(byte[]);
-                case "uuid":
-                case "timeuuid":
-                    return typeof(Guid);
-                default:
-                    return typeof(string);
+
+                var cleanType = datasourceType.Trim();
+                var mappings = DataTypeMappingRepository.GetDataTypes(SupportedType, _dmeEditor);
+                if (mappings != null && mappings.Any())
+                {
+                    var mapping = mappings.FirstOrDefault(m => 
+                        m.DataType.Equals(cleanType, StringComparison.OrdinalIgnoreCase) && m.Fav)
+                        ?? mappings.FirstOrDefault(m => m.DataType.StartsWith(cleanType, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (mapping != null && !string.IsNullOrWhiteSpace(mapping.NetDataType))
+                    {
+                        var type = Type.GetType(mapping.NetDataType);
+                        if (type != null)
+                            return type;
+                    }
+                }
+
+                return typeof(string); // Minimal fallback
+            }
+            catch
+            {
+                return typeof(string); // Minimal fallback
             }
         }
 
@@ -658,8 +677,11 @@ CREATE TABLE IF NOT EXISTS {QuoteIdentifier(keyspace)}.{QuoteIdentifier(tableNam
             {
                 // Cassandra requires at least one partition key
                 bool hasPartitionKey = entity.Fields.Any(f =>
-                    f.IsKey == true || f.IsAutoIncrement == true ||
-                    f.FieldType == typeof(string) || f.FieldType == typeof(int) || f.FieldType == typeof(long));
+                {
+                    Type fType = Type.GetType(f.fieldtype) ?? typeof(string);
+                    return f.IsKey == true || f.IsAutoIncrement == true ||
+                        fType == typeof(string) || fType == typeof(int) || fType == typeof(long);
+                });
 
                 if (!hasPartitionKey)
                 {
@@ -675,7 +697,29 @@ CREATE TABLE IF NOT EXISTS {QuoteIdentifier(keyspace)}.{QuoteIdentifier(tableNam
         /// </summary>
         public bool SupportsCapability(CapabilityType capability)
         {
-            return Capabilities.SupportsCapability(capability);
+            var caps = Capabilities;
+            return capability switch
+            {
+                CapabilityType.SupportsTransactions => caps.SupportsTransactions,
+                CapabilityType.SupportsJoins => caps.SupportsJoins,
+                CapabilityType.SupportsAggregations => caps.SupportsAggregations,
+                CapabilityType.SupportsIndexes => caps.SupportsIndexes,
+                CapabilityType.SupportsParameterization => caps.SupportsParameterization,
+                CapabilityType.SupportsIdentity => caps.SupportsIdentity,
+                CapabilityType.SupportsTTL => caps.SupportsTTL,
+                CapabilityType.SupportsTemporalTables => caps.SupportsTemporalTables,
+                CapabilityType.SupportsWindowFunctions => caps.SupportsWindowFunctions,
+                CapabilityType.SupportsStoredProcedures => caps.SupportsStoredProcedures,
+                CapabilityType.SupportsBulkOperations => caps.SupportsBulkOperations,
+                CapabilityType.SupportsFullTextSearch => caps.SupportsFullTextSearch,
+                CapabilityType.SupportsNativeJson => caps.SupportsNativeJson,
+                CapabilityType.SupportsPartitioning => caps.SupportsPartitioning,
+                CapabilityType.SupportsReplication => caps.SupportsReplication,
+                CapabilityType.SupportsViews => caps.SupportsViews,
+                CapabilityType.SupportsSchemaEvolution => caps.SupportsSchemaEvolution,
+                CapabilityType.IsSchemaEnforced => caps.IsSchemaEnforced,
+                _ => false
+            };
         }
 
         /// <summary>

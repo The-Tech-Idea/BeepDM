@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core;
+using TheTechIdea.Beep.Helpers.DataTypesHelpers;
 
 namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers
 {
@@ -17,6 +19,17 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers
     /// </summary>
     public class RestApiHelper : IDataSourceHelper
     {
+        private readonly IDMEEditor _dmeEditor;
+
+        /// <summary>
+        /// Initializes a new instance of the RestApiHelper class.
+        /// </summary>
+        /// <param name="dmeEditor">The IDMEEditor instance</param>
+        public RestApiHelper(IDMEEditor dmeEditor)
+        {
+            _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
+        }
+
         public DataSourceType SupportedType { get; set; } = DataSourceType.RestApi;
         public string Name => "Generic REST API";
 
@@ -426,56 +439,70 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers
         /// <summary>
         /// Maps C# types to JSON types for REST APIs.
         /// </summary>
+        /// <summary>
+        /// Maps C# types to JSON types for REST APIs.
+        /// Uses DataTypeMappingRepository for mapping.
+        /// </summary>
         public string MapClrTypeToDatasourceType(Type clrType, int? size = null, int? precision = null, int? scale = null)
         {
-            if (clrType == typeof(string))
-                return size.HasValue ? $"string({size})" : "string";
-            if (clrType == typeof(int) || clrType == typeof(long))
-                return "integer";
-            if (clrType == typeof(double) || clrType == typeof(float) || clrType == typeof(decimal))
-                return precision.HasValue && scale.HasValue ? $"number({precision},{scale})" : "number";
-            if (clrType == typeof(bool))
-                return "boolean";
-            if (clrType == typeof(DateTime))
-                return "datetime";
-            if (clrType == typeof(byte[]))
-                return "binary";
+            try
+            {
+                if (clrType == null)
+                    return "string";
 
-            return "string"; // Default fallback
+                var netTypeName = clrType.FullName ?? clrType.Name;
+                
+                var mappings = DataTypeMappingRepository.GetDataTypes(SupportedType, _dmeEditor);
+                if (mappings != null && mappings.Any())
+                {
+                    var exactMatch = mappings.FirstOrDefault(m => 
+                        m.NetDataType.Equals(netTypeName, StringComparison.OrdinalIgnoreCase) && m.Fav)
+                        ?? mappings.FirstOrDefault(m => m.NetDataType.Equals(netTypeName, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (exactMatch != null)
+                        return exactMatch.DataType;
+                }
+
+                return "string"; // Minimal fallback
+            }
+            catch
+            {
+                return "string"; // Minimal fallback
+            }
         }
 
         /// <summary>
         /// Maps JSON types back to C# types for REST APIs.
+        /// Uses DataTypeMappingRepository for mapping.
         /// </summary>
         public Type MapDatasourceTypeToClrType(string datasourceType)
         {
-            if (string.IsNullOrWhiteSpace(datasourceType))
-                return typeof(string);
-
-            switch (datasourceType.ToLower())
+            try
             {
-                case "string":
-                case "text":
+                if (string.IsNullOrWhiteSpace(datasourceType))
                     return typeof(string);
-                case "integer":
-                case "int":
-                    return typeof(int);
-                case "number":
-                case "decimal":
-                case "float":
-                case "double":
-                    return typeof(double);
-                case "boolean":
-                case "bool":
-                    return typeof(bool);
-                case "datetime":
-                case "date":
-                    return typeof(DateTime);
-                case "binary":
-                case "blob":
-                    return typeof(byte[]);
-                default:
-                    return typeof(string);
+
+                var cleanType = datasourceType.Trim();
+                var mappings = DataTypeMappingRepository.GetDataTypes(SupportedType, _dmeEditor);
+                if (mappings != null && mappings.Any())
+                {
+                    var mapping = mappings.FirstOrDefault(m => 
+                        m.DataType.Equals(cleanType, StringComparison.OrdinalIgnoreCase) && m.Fav)
+                        ?? mappings.FirstOrDefault(m => m.DataType.StartsWith(cleanType, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (mapping != null && !string.IsNullOrWhiteSpace(mapping.NetDataType))
+                    {
+                        var type = Type.GetType(mapping.NetDataType);
+                        if (type != null)
+                            return type;
+                    }
+                }
+
+                return typeof(string); // Minimal fallback
+            }
+            catch
+            {
+                return typeof(string); // Minimal fallback
             }
         }
 
@@ -508,7 +535,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers
         /// </summary>
         public bool SupportsCapability(CapabilityType capability)
         {
-            return Capabilities.SupportsCapability(capability);
+            return Capabilities.IsCapable(capability);
         }
 
         /// <summary>

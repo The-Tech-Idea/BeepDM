@@ -46,7 +46,8 @@ namespace TheTechIdea.Beep
             try
             {
                 // Use factory to create helper
-                var helper = DataSourceHelperFactory.CreateHelper(datasourceType);
+                var factory = new DataSourceHelperFactory(this);
+                var helper = factory.CreateHelper(datasourceType);
 
                 if (helper != null)
                 {
@@ -85,8 +86,9 @@ namespace TheTechIdea.Beep
                     throw new ArgumentNullException(nameof(helper));
                 }
 
-                // Register with factory - capture the instance in closure
-                DataSourceHelperFactory.RegisterHelper(datasourceType, () => helper);
+                // Register with factory - create factory instance and register
+                var factory = new DataSourceHelperFactory(this);
+                factory.RegisterHelper(datasourceType, (dme) => helper);
                 Logger?.WriteLog($"Registered custom helper for datasource {datasourceType}");
             }
             catch (Exception ex)

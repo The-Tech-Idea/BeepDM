@@ -37,9 +37,14 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Mapping
             if (navPropInfo == null || sourceType == null || targetType == null)
                 return null;
 
+            // Get PropertyInfo from sourceType using PropertyName
+            var navProperty = sourceType.GetProperty(navPropInfo.PropertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (navProperty == null)
+                return null;
+
             // Analyze cardinality
             var cardinality = Analysis.RelationshipInferencer.InferCardinality(
-                navPropInfo.PropertyInfo,
+                navProperty,
                 sourceType,
                 targetType);
 
@@ -105,9 +110,14 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Mapping
             if (navPropInfo == null || sourceType == null || targetType == null)
                 return null;
 
+            // Get PropertyInfo from sourceType using PropertyName
+            var navProperty = sourceType.GetProperty(navPropInfo.PropertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (navProperty == null)
+                return null;
+
             // Child relations only apply to One-to-Many
             var cardinality = Analysis.RelationshipInferencer.InferCardinality(
-                navPropInfo.PropertyInfo,
+                navProperty,
                 sourceType,
                 targetType);
 

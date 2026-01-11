@@ -2865,401 +2865,108 @@
             <param name="entityName">The name of the entity.</param>
             <returns>The index of the entity.</returns>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema,System.String)">
             <summary>
-            BeepSyncManager - A clean, modern sync manager based on best practices
-            Consolidates functionality from DataSyncManager and DataSyncService with helper-based architecture
+            Retrieves records from the source data based on the schema's LastSyncDate and the specified filter operator.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+            <param name="filterOperator">The filter operator to use for comparing the LastSyncDate.</param>
+            <returns>A collection of records from the source data.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetNewRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Retrieves new records from the source data based on the schema's LastSyncDate.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+            <returns>A collection of new records from the source data.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetUpdatedRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Retrieves updated records from the source data based on the schema's LastSyncDate.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+            <returns>A collection of updated records from the source data.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncData(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.Progress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Synchronizes data based on the provided schema, cancellation token, and progress reporter.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+            <param name="token">Cancellation token to handle task cancellation.</param>
+            <param name="progress">Progress reporter to report synchronization progress.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncData(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Synchronizes data based on the provided schema.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Asynchronously synchronizes data based on the provided schema, cancellation token, and progress reporter.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+            <param name="token">Cancellation token to handle task cancellation.</param>
+            <param name="progress">Progress reporter to report synchronization progress.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.CreateDestinationEntity(TheTechIdea.Beep.Editor.DataSyncSchema,System.Object,System.Boolean)">
+            <summary>
+            Creates the destination entity by mapping fields from the source entity based on the schema.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+            <param name="sourceData">The source data entity.</param>
+            <param name="isNewRecord">Indicates whether the record is new or an update.</param>
+            <returns>The mapped destination entity.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.LogSyncRun(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Logs the synchronization run data.
+            </summary>
+            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetDataSource(System.String)">
+            <summary>
+            Retrieves the IDataSource instance based on the name.
+            </summary>
+            <param name="dataSourceName">The name of the data source.</param>
+            <returns>The IDataSource instance.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncAllDataAsync(System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Asynchronously synchronizes all data based on the loaded schemas, cancellation token, and progress reporter.
+            </summary>
+            <param name="token">Cancellation token to handle task cancellation.</param>
+            <param name="progress">Progress reporter to report synchronization progress.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncAllData">
+            <summary>
+            Synchronizes all data based on the loaded schemas.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.Editor">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.UpdateDataSourceUsingUpdateLog(System.Collections.Generic.Dictionary{System.DateTime,TheTechIdea.Beep.Editor.EntityUpdateInsertLog})">
             <summary>
-            DME Editor instance
+            Synchronizes changes from the update log to the destination data source.
             </summary>
+            <param name="sourceList">The source ObservableBindingList containing the changes.</param>
+            <param name="destinationDataSource">The destination IDataSource to apply the changes to.</param>
         </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncSchemas">
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.ValidateSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
             <summary>
-            Collection of sync schemas
+            Validates the provided schema to ensure all required fields are populated.
             </summary>
+            <param name="schema">The DataSyncSchema to validate.</param>
+            <returns>An IErrorsInfo object containing validation results.</returns>
         </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.IsPaused">
-            <summary>
-            Indicates if sync operations are currently paused
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.IsCancelled">
-            <summary>
-            Indicates if sync operations have been cancelled
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.ApplyDefaultsOnSync">
-            <summary>
-            Enable automatic application of default values during sync operations
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.ApplyDefaultsOnlyToEmptyFields">
-            <summary>
-            Apply defaults only to empty/null fields (true) or overwrite existing values (false)
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.AutoCreateAuditDefaults">
-            <summary>
-            Enable automatic creation of audit field defaults for sync operations
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
-            <summary>
-            Initialize BeepSyncManager with editor and create helper instances
-            </summary>
-            <param name="editor">DME Editor instance</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.InitializeDefaultsManager">
-            <summary>
-            Initialize DefaultsManager and configure sync-specific defaults
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.LogExistingDefaults">
-            <summary>
-            Log information about existing defaults across all data sources
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
-            <summary>
-            Synchronize data based on schema - async version with full error handling and progress reporting
-            </summary>
-            <param name="schema">Sync schema to execute</param>
-            <param name="cancellationToken">Cancellation token</param>
-            <param name="progress">Progress reporter</param>
-            <returns>Operation result</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncData(TheTechIdea.Beep.Editor.DataSyncSchema,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
-            <summary>
-            Synchronize data - synchronous version
-            </summary>
-            <param name="schema">Sync schema to execute</param>
-            <param name="progress">Progress reporter</param>
-            <returns>Operation result</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncAllSchemasAsync(System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
-            <summary>
-            Synchronize all schemas
-            </summary>
-            <param name="cancellationToken">Cancellation token</param>
-            <param name="progress">Progress reporter</param>
-            <returns>Operation result</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.AddSyncSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <summary>
-            Add sync schema to collection
-            </summary>
-            <param name="schema">Schema to add</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.RemoveSyncSchema(System.String)">
-            <summary>
-            Remove sync schema from collection
-            </summary>
-            <param name="schemaId">ID of schema to remove</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.UpdateSyncSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <summary>
-            Update existing sync schema
-            </summary>
-            <param name="schema">Updated schema</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.GetSchema(System.String)">
-            <summary>
-            Get schema by ID
-            </summary>
-            <param name="schemaId">Schema ID</param>
-            <returns>Schema or null if not found</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.ValidateSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <summary>
-            Validate schema using validation helper
-            </summary>
-            <param name="schema">Schema to validate</param>
-            <returns>Validation result</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SaveSchemasAsync">
-            <summary>
-            Save all schemas to storage
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.LoadSchemasAsync">
-            <summary>
-            Load schemas from storage
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SaveSchemas">
-            <summary>
-            Save schemas synchronously
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.LoadSchemas">
-            <summary>
-            Load schemas synchronously
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.PauseSync">
-            <summary>
-            Pause sync operations
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.ResumeSync">
-            <summary>
-            Resume sync operations
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.CancelSync">
-            <summary>
-            Cancel all sync operations
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.ProcessSingleRecordAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Object,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
-            <summary>
-            Process a single record through the sync pipeline
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.ApplyDefaultsToRecord(System.String,System.String,System.Object,System.Collections.Generic.Dictionary{System.String,System.Object})">
-            <summary>
-            Apply default values to a record during sync operations
-            </summary>
-            <param name="dataSourceName">Name of the data source</param>
-            <param name="entityName">Name of the entity</param>
-            <param name="record">Record to apply defaults to</param>
-            <param name="context">Additional context for rule resolution</param>
-            <returns>Record with defaults applied</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.HasDefaultsForDataSource(System.String)">
-            <summary>
-            Check if there are any defaults configured for the specified data source
-            </summary>
-            <param name="dataSourceName">Name of the data source to check</param>
-            <returns>True if defaults exist, false otherwise</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.HasDefaultsConfigured(System.String,System.String)">
-            <summary>
-            Check if there are defaults configured for a specific data source and entity
-            </summary>
-            <param name="dataSourceName">Name of the data source</param>
-            <param name="entityName">Name of the entity (optional, for logging purposes)</param>
-            <returns>True if defaults exist, false otherwise</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.GetSyncKeyValue(System.Object,System.String)">
-            <summary>
-            Get sync key value from source record
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.NormalizeToEnumerable(System.Object)">
-            <summary>
-            Normalize data to enumerable for consistent processing
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.CreateErrorResult(System.String)">
-            <summary>
-            Create error result
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.CreateSuccessResult(System.String)">
-            <summary>
-            Create success result
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.Dispose(System.Boolean)">
-            <summary>
-            Dispose managed resources
-            </summary>
-            <param name="disposing">True if disposing managed resources</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.Dispose">
-            <summary>
-            Dispose the manager and clean up resources
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncData(System.String)">
-            <summary>
-            Synchronize data by schema ID - backward compatibility
-            </summary>
-            <param name="schemaId">Schema ID</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncData(System.String,System.String,System.String)">
-            <summary>
-            Synchronize data with parameters - backward compatibility
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncData(System.String,System.String,System.String,System.String)">
-            <summary>
-            Synchronize data with sync field parameters - backward compatibility
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncData(System.String,System.String,System.String,System.String,System.String)">
-            <summary>
-            Synchronize data with full parameters - backward compatibility
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.AddFilter(System.String,TheTechIdea.Beep.Report.AppFilter)">
-            <summary>
-            Add filter to schema - backward compatibility
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.RemoveFilter(System.String,System.String)">
-            <summary>
-            Remove filter from schema - backward compatibility
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.AddFieldMapping(System.String,TheTechIdea.Beep.Editor.FieldSyncData)">
-            <summary>
-            Add field mapping to schema - backward compatibility
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SyncAllData">
-            <summary>
-            Synchronize all schemas - backward compatibility (sync version)
-            </summary>
-        </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.GetRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema,System.String)" -->
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.GetNewRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <summary>
-            Get new records since last sync - enhanced version from DataSyncManager
-            </summary>
-            <param name="schema">Sync schema</param>
-            <returns>New records</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.GetUpdatedRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <summary>
-            Get updated records since last sync - enhanced version from DataSyncManager
-            </summary>
-            <param name="schema">Sync schema</param>
-            <returns>Updated records</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.BulkSyncAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Int32,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
-            <summary>
-            Bulk synchronize multiple records with enhanced error handling and metrics
-            </summary>
-            <param name="schema">Sync schema</param>
-            <param name="batchSize">Number of records to process in each batch</param>
-            <param name="cancellationToken">Cancellation token</param>
-            <param name="progress">Progress reporter</param>
-            <returns>Sync metrics and results</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.ProcessBatchAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Collections.Generic.IEnumerable{System.Object},System.Threading.CancellationToken)">
-            <summary>
-            Process a batch of records
-            </summary>
-            <param name="schema">Sync schema</param>
-            <param name="records">Records to process</param>
-            <param name="cancellationToken">Cancellation token</param>
-            <returns>Tuple with success count and error count</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.ConfigureSyncDefaults(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.ValueTuple{System.String,System.Boolean}})">
-            <summary>
-            Configure default values for a data source used in sync operations
-            </summary>
-            <param name="dataSourceName">Name of the data source</param>
-            <param name="entityName">Name of the entity</param>
-            <param name="defaults">Dictionary of field names and default configurations</param>
-            <returns>Configuration result</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.SetupAuditDefaults(System.String,System.String)">
-            <summary>
-            Set up standard audit defaults for sync operations
-            </summary>
-            <param name="dataSourceName">Name of the data source</param>
-            <param name="entityName">Name of the entity</param>
-            <returns>Configuration result</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.GetEntityDefaults(System.String,System.String)">
-            <summary>
-            Get configured default values for an entity
-            </summary>
-            <param name="dataSourceName">Name of the data source</param>
-            <param name="entityName">Name of the entity</param>
-            <returns>Dictionary of configured defaults</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.AutoConfigureSchemaDefaults(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <summary>
-            Auto-configure defaults for a sync schema
-            </summary>
-            <param name="schema">Sync schema to configure defaults for</param>
-            <returns>Configuration result</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.BeepSyncManager.ValidateSchemaDefaults(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <summary>
-            Validate that defaults are properly configured for a sync schema
-            </summary>
-            <param name="schema">Sync schema to validate</param>
-            <returns>Validation result with details about defaults configuration</returns>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper">
-            <summary>
-            Helper class for data source operations in sync processes
-            Based on patterns from DataSyncManager and DataSyncService
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
-            <summary>
-            Initializes a new instance of the DataSourceHelper class
-            </summary>
-            <param name="editor">The DME editor instance</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.GetDataSource(System.String)">
-            <summary>
-            Get data source by name with validation and error logging
-            </summary>
-            <param name="dataSourceName">Name of the data source</param>
-            <returns>IDataSource instance or null if not found</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.ValidateDataSourceConnection(System.String)">
-            <summary>
-            Validate that a data source exists and is accessible
-            </summary>
-            <param name="dataSourceName">Name of the data source to validate</param>
-            <returns>True if data source is valid and accessible</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.GetEntityDataAsync(System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
-            <summary>
-            Get entity data from source with filters - async version
-            </summary>
-            <param name="dataSourceName">Name of the data source</param>
-            <param name="entityName">Name of the entity</param>
-            <param name="filters">Optional filters to apply</param>
-            <returns>Entity data or null if not found</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.InsertEntityAsync(System.String,System.String,System.Object)">
-            <summary>
-            Insert entity data into destination - async version
-            </summary>
-            <param name="dataSourceName">Name of the destination data source</param>
-            <param name="entityName">Name of the entity</param>
-            <param name="entity">Entity data to insert</param>
-            <returns>Operation result</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.UpdateEntityAsync(System.String,System.String,System.Object)">
-            <summary>
-            Update entity data in destination - async version
-            </summary>
-            <param name="dataSourceName">Name of the destination data source</param>
-            <param name="entityName">Name of the entity</param>
-            <param name="entity">Entity data to update</param>
-            <returns>Operation result</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.EntityExistsAsync(System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
-            <summary>
-            Check if entity exists in destination based on filters
-            </summary>
-            <param name="dataSourceName">Name of the data source</param>
-            <param name="entityName">Name of the entity</param>
-            <param name="filters">Filters to identify the entity</param>
-            <returns>True if entity exists</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.CreateErrorResult(System.String)">
-            <summary>
-            Create error result for failed operations
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper.CreateSuccessResult(System.String)">
-            <summary>
-            Create success result for successful operations
-            </summary>
+        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SendMessege(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.String)">
+            <summary>Sends a message and updates progress based on the result.</summary>
+            <param name="progress">An object that reports progress updates.</param>
+            <param name="token">A cancellation token that can be used to cancel the operation.</param>
+            <param name="refentity">An optional reference to an entity structure.</param>
+            <param name="sc">An optional ETL script detail.</param>
+            <param name="messege">An optional message to send.</param>
+            <remarks>
+            If the error flag is set to "Failed" in the DMEEditor.ErrorObject, a SyncErrorsandTracking object is created and the error count is incremented.
+            </remarks>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper">
             <summary>
@@ -3267,12 +2974,11 @@
             Based on mapping patterns from DataSyncManager
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.BeepSync.Interfaces.IDataSourceHelper)">
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
             Initializes a new instance of the FieldMappingHelper class
             </summary>
             <param name="editor">The DME editor instance</param>
-            <param name="dataSourceHelper">The data source helper instance</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.MapFields(System.Object,System.Object,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.FieldSyncData})">
             <summary>
@@ -3308,15 +3014,6 @@
             </summary>
             <param name="mappedFields">Field mappings to validate</param>
             <returns>Validation result</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.ConvertValue(System.Object,System.Type,TheTechIdea.Beep.Editor.FieldSyncData)">
-            <summary>
-            Convert value from source type to destination type with error handling
-            </summary>
-            <param name="value">Source value</param>
-            <param name="targetType">Target type</param>
-            <param name="field">Field mapping info for error reporting</param>
-            <returns>Converted value</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper">
             <summary>
@@ -3442,12 +3139,11 @@
             Based on validation patterns from DataSyncManager.ValidateSchema
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.BeepSync.Interfaces.IDataSourceHelper)">
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
             Initializes a new instance of the SyncValidationHelper class
             </summary>
             <param name="editor">The DME editor instance</param>
-            <param name="dataSourceHelper">The data source helper instance</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper.ValidateSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
             <summary>
@@ -10723,6 +10419,10 @@
             Data Management Enterprize Editor (DMEEditor)
             This is the Class that encapsulate all functionality of Data Management.
             </summary>
+            <summary>
+            DMEEditor partial class for Universal DataSource Helpers framework integration (Phase 2).
+            Provides POCO-to-Entity conversion and datasource capability detection.
+            </summary>
         </member>
         <member name="P:TheTechIdea.Beep.DMEEditor.ContainerMode">
             <summary>
@@ -10967,251 +10667,20 @@
             <param name="ClassDBHandlerName"></param>
             <returns></returns>
         </member>
-        <member name="T:TheTechIdea.Beep.DMEEditorHelpers">
+        <member name="M:TheTechIdea.Beep.DMEEditor.InitializeUniversalDataSourceHelpers">
             <summary>
-            Lightweight IDMEEditor implementation that uses helper classes (DataSourceLifecycleHelper, ValidationHelper, ErrorHandlingHelper, CacheManager).
-            This is intended as an additional implementation for experiments and refactoring; it preserves the IDMEEditor contract.
+            Initializes the Universal DataSource Helpers components.
+            Called during DMEEditor initialization to set up datasource helpers registry.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.DataSources">
+        <member name="M:TheTechIdea.Beep.DMEEditor.GetDataSourceHelper(TheTechIdea.Beep.Utilities.DataSourceType)">
             <summary>
-            Gets or sets the list of active data sources.
+            Gets the appropriate IDataSourceHelper for a datasource type using the factory pattern.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.progress">
+        <member name="M:TheTechIdea.Beep.DMEEditor.RegisterDataSourceHelper(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Editor.IDataSourceHelper)">
             <summary>
-            Gets or sets the progress handler for reporting progress.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.ContainerMode">
-            <summary>
-            Gets or sets a value indicating whether the editor is running in container mode.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.ContainerName">
-            <summary>
-            Gets or sets the name of the container.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.EntityName">
-            <summary>
-            Gets or sets the name of the current entity.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.DataSourceName">
-            <summary>
-            Gets or sets the name of the current data source.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.ETL">
-            <summary>
-            Gets or sets the ETL (Extract, Transform, Load) component.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.ErrorObject">
-            <summary>
-            Gets or sets the error information object.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.Logger">
-            <summary>
-            Gets or sets the logger instance.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.typesHelper">
-            <summary>
-            Gets or sets the data types helper.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.Utilfunction">
-            <summary>
-            Gets or sets the utility functions provider.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.ConfigEditor">
-            <summary>
-            Gets or sets the configuration editor.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.WorkFlowEditor">
-            <summary>
-            Gets or sets the workflow editor.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.classCreator">
-            <summary>
-            Gets or sets the class creator for dynamic type generation.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.assemblyHandler">
-            <summary>
-            Gets or sets the assembly handler for managing loaded assemblies.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.Loganderrors">
-            <summary>
-            Gets or sets the collection of log and error messages.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DMEEditorHelpers.Passedarguments">
-            <summary>
-            Gets or sets the arguments passed in events.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.DMEEditorHelpers.PassEvent">
-            <summary>
-            Event triggered to pass arguments and notifications.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.#ctor">
-            <summary>
-            Initializes a new instance of the <see cref="T:TheTechIdea.Beep.DMEEditorHelpers"/> class.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.GetDataSource(System.String)">
-            <summary>
-            Retrieves a data source by name. It first checks the cache, then attempts to create it if not found.
-            </summary>
-            <param name="pdatasourcename">The name of the data source to retrieve.</param>
-            <returns>An IDataSource instance or null if not found.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.CreateNewDataSourceConnection(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.String)">
-            <summary>
-            Creates a new data source connection using the provided properties. Delegates creation to DataSourceLifecycleHelper.
-            </summary>
-            <param name="cn">The connection properties.</param>
-            <param name="pdatasourcename">The desired name for the data source.</param>
-            <returns>A new IDataSource instance or null on failure.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.CreateLocalDataSourceConnection(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.String,System.String)">
-            <summary>
-            Creates a local data source connection. This method delegates to CreateNewDataSourceConnection.
-            </summary>
-            <param name="dataConnection">The connection properties.</param>
-            <param name="pdatasourcename">The name for the data source.</param>
-            <param name="ClassDBHandlerName">The class handler name (used by helper to resolve driver).</param>
-            <returns>A new IDataSource instance or null on failure.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.RemoveDataDource(System.String)">
-            <summary>
-            Removes a data source from the editor and attempts to dispose it.
-            </summary>
-            <param name="pdatasourcename">The name of the data source to remove.</param>
-            <returns>True if the data source was found and removed; otherwise, false.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.CheckDataSourceExist(System.String)">
-            <summary>
-            Checks if a data source with the specified name exists in the editor.
-            </summary>
-            <param name="pdatasourcename">The name of the data source to check.</param>
-            <returns>True if the data source exists; otherwise, false.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.OpenDataSource(System.String)">
-            <summary>
-            Opens the connection for a specified data source.
-            </summary>
-            <param name="pdatasourcename">The name of the data source to open.</param>
-            <returns>The state of the connection after the open attempt.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.CloseDataSource(System.String)">
-            <summary>
-            Closes the connection for a specified data source.
-            </summary>
-            <param name="pdatasourcename">The name of the data source to close.</param>
-            <returns>True if the connection was successfully closed.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.GetDataSourceClass(System.String)">
-            <summary>
-            Retrieves the assembly and class definition for a given data source name.
-            </summary>
-            <param name="DatasourceName">The name of the data source.</param>
-            <returns>The AssemblyClassDefinition or null if not found.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.AddLogMessage(System.String,System.String,System.DateTime,System.Int32,System.String,TheTechIdea.Beep.ConfigUtil.Errors)">
-            <summary>
-            Adds a log message to the logger and updates the error object.
-            </summary>
-            <param name="pLogType">The type of the log (e.g., "Error", "Info").</param>
-            <param name="pLogMessage">The message to log.</param>
-            <param name="pLogData">The timestamp of the log entry.</param>
-            <param name="pRecordID">An optional record ID related to the log.</param>
-            <param name="pMiscData">Miscellaneous data related to the log.</param>
-            <param name="pFlag">An error flag indicating the status.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.AddLogMessage(System.String)">
-            <summary>
-            Adds a simple log message.
-            </summary>
-            <param name="pLogMessage">The message to log.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.RaiseEvent(System.Object,TheTechIdea.Beep.Addin.PassedArgs)">
-            <summary>
-            Raises the PassEvent to notify listeners.
-            </summary>
-            <param name="sender">The object that raised the event.</param>
-            <param name="args">The event arguments.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.AskQuestion(TheTechIdea.Beep.Addin.IPassedArgs)">
-            <summary>
-            Placeholder method for asking a question to the user.
-            </summary>
-            <param name="args">Arguments for the question.</param>
-            <returns>An IErrorsInfo object.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.GetData(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.DataBase.EntityStructure)">
-            <summary>
-            Retrieves data for a specific entity from a data source.
-            </summary>
-            <param name="ds">The data source.</param>
-            <param name="entity">The entity structure defining what data to retrieve.</param>
-            <returns>Data as an object (e.g., DataTable) or null on failure.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.Getdefaults(System.String)">
-            <summary>
-            Gets default values for a data source using the DefaultsManager.
-            </summary>
-            <param name="DatasourceName">The name of the data source.</param>
-            <returns>A list of default values.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.Savedefaults(System.Collections.Generic.List{TheTechIdea.Beep.ConfigUtil.DefaultValue},System.String)">
-            <summary>
-            Saves default values for a data source using the DefaultsManager.
-            </summary>
-            <param name="defaults">The list of default values to save.</param>
-            <param name="DatasourceName">The name of the data source.</param>
-            <returns>An IErrorsInfo object indicating the result.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.RemoveDataDourceUsingGuidID(System.String)">
-            <summary>
-            Removes a data source from the editor using its unique GUID.
-            </summary>
-            <param name="guidID">The GUID of the data source to remove.</param>
-            <returns>True if the data source was found and removed; otherwise, false.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.CheckDataSourceExistUsingGuidID(System.String)">
-            <summary>
-            Checks if a data source with the specified GUID exists.
-            </summary>
-            <param name="guidID">The GUID to check.</param>
-            <returns>True if the data source exists; otherwise, false.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.OpenDataSourceUsingGuidID(System.String)">
-            <summary>
-            Opens the connection for a data source identified by its GUID.
-            </summary>
-            <param name="guidID">The GUID of the data source to open.</param>
-            <returns>The state of the connection after the open attempt.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.CloseDataSourceUsingGuidID(System.String)">
-            <summary>
-            Closes the connection for a data source identified by its GUID.
-            </summary>
-            <param name="guidID">The GUID of the data source to close.</param>
-            <returns>True if the connection was successfully closed.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.DMEEditorHelpers.Dispose">
-            <summary>
-            Disposes all resources used by the editor, including all cached and local data sources.
+            Registers a custom datasource helper using the factory pattern.
             </summary>
         </member>
         <!-- Badly formed XML comment ignored for member "T:TheTechIdea.Beep.EntityDataMoveValidator" -->
@@ -17805,6 +17274,1512 @@
             <param name="input">Input string</param>
             <returns>SHA256 hash as a hex string</returns>
         </member>
+        <!-- Badly formed XML comment ignored for member "T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector" -->
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.IsCollectionNavigation(System.Reflection.PropertyInfo)" -->
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.IsSingleObjectNavigation(System.Reflection.PropertyInfo)">
+            <summary>
+            Detects if a property is a single object reference navigation property.
+            Examples: Customer customer, Order order (not ICollection)
+            </summary>
+            <param name="prop">Property to analyze</param>
+            <returns>true if property references a single complex object</returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.IsVirtualNavigation(System.Reflection.PropertyInfo)" -->
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.IsNavigationProperty(System.Reflection.PropertyInfo)">
+            <summary>
+            Comprehensive check: detects if a property is ANY type of navigation property.
+            </summary>
+            <param name="prop">Property to analyze</param>
+            <returns>true if property represents a relationship (collection, reference, or virtual)</returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.GetReferencedType(System.Reflection.PropertyInfo)" -->
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.IsNullableReference(System.Reflection.PropertyInfo)">
+            <summary>
+            Detects if a property is a nullable reference type (e.g., Order?, Customer?).
+            </summary>
+            <param name="prop">Property to analyze</param>
+            <returns>true if property type is nullable</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.FindForeignKeyProperty(System.Reflection.PropertyInfo,System.Type)">
+            <summary>
+            Detects if a property could be a foreign key field.
+            Looks for properties named {NavigationPropertyName}Id or {ClassName}Id.
+            </summary>
+            <param name="navProperty">Navigation property to find FK for</param>
+            <param name="entityType">Type containing both properties</param>
+            <returns>Foreign key property, or null if not found</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.FindInverseNavigationProperty(System.Reflection.PropertyInfo,System.Type)">
+            <summary>
+            Detects if a type has an inverse navigation property pointing back to the source type.
+            For example, if Customer has Orders property, Order.Customer is the inverse.
+            </summary>
+            <param name="navProperty">Source navigation property</param>
+            <param name="sourceType">Type containing the source property</param>
+            <returns>Inverse property, or null if not found or one-way relationship</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.GetNavigationPropertyType(System.Reflection.PropertyInfo)">
+            <summary>
+            Gets the cardinality category of a navigation property.
+            </summary>
+            <param name="prop">Navigation property to analyze</param>
+            <returns>Collection indicates one-to-many; single reference indicates one-to-one or many-to-one</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.GetNavigationProperties(System.Type)">
+            <summary>
+            Extracts all navigation properties from a type.
+            </summary>
+            <param name="type">Type to analyze</param>
+            <returns>List of all navigation properties found</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.GetScalarProperties(System.Type)">
+            <summary>
+            Extracts all scalar (non-navigation) properties from a type.
+            </summary>
+            <param name="type">Type to analyze</param>
+            <returns>List of all scalar properties found</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.AnalyzeNavigationProperty(System.Reflection.PropertyInfo,System.Type)">
+            <summary>
+            Comprehensive relationship analysis: returns all navigation info for a property.
+            </summary>
+            <param name="navProperty">Navigation property to analyze</param>
+            <param name="sourceType">Type containing the navigation property</param>
+            <returns>Complete navigation relationship details</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.GetPublicProperties(System.Type)">
+            <summary>
+            Gets all public properties from a type, excluding indexers.
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.IsNullableType(System.Type)" -->
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyDetector.IsIntegralType(System.Type)">
+            <summary>
+            Determines if a type is an integral type (int, long, short, etc.).
+            Used for foreign key detection.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyType">
+            <summary>
+            Categorizes the type of navigation property.
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "F:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyType.Collection" -->
+        <member name="F:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyType.SingleReference">
+            <summary>
+            Single object reference: represents one-to-one or many-to-one relationship.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyType.Unknown">
+            <summary>
+            Could not determine navigation property type.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo">
+            <summary>
+            Complete analysis result for a navigation property.
+            Contains all metadata needed to infer relationships and cardinality.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo.PropertyName">
+            <summary>
+            Name of the navigation property (e.g., "Orders", "Customer").
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo.PropertyType" -->
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo.NavigationType">
+            <summary>
+            Category of navigation property (Collection or SingleReference).
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo.ReferencedType" -->
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo.SourceType">
+            <summary>
+            The type containing this navigation property.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo.IsVirtual">
+            <summary>
+            Whether property uses virtual access (ORM lazy loading indicator).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo.IsNullable">
+            <summary>
+            Whether property can be null (nullable reference type or nullable FK).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo.ForeignKeyProperty">
+            <summary>
+            Foreign key property if found, e.g., CustomerId for Customer property.
+            Null for collection navigation (FK is on the child).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo.InverseProperty">
+            <summary>
+            Inverse navigation property if bidirectional relationship detected.
+            E.g., Customer property on Order if Orders collection found on Customer.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo.ToString">
+            <summary>
+            Display-friendly summary of the relationship.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipInferencer">
+            <summary>
+            Infers relationship cardinality and constraints from POCO object models.
+            Determines whether relationships are One-to-One, One-to-Many, Many-to-Many,
+            or Self-Referencing based on property patterns, attributes, and type analysis.
+            
+            Decision Priority:
+            1. Explicit attributes ([ForeignKey], [InverseProperty])
+            2. Naming conventions (XXXId for foreign keys)
+            3. Type analysis (ICollection indicates collection side)
+            4. Bidirectional detection (matching navigation properties)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipInferencer.InferCardinality(System.Reflection.PropertyInfo,System.Type,System.Type)">
+            <summary>
+            Infers the cardinality of a relationship between source and target types
+            based on a source navigation property.
+            </summary>
+            <param name="sourceNavProperty">Navigation property from source type</param>
+            <param name="sourceType">Type containing the navigation property</param>
+            <param name="targetType">Type being referenced by navigation property</param>
+            <returns>Inferred relationship cardinality</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipInferencer.DetectForeignKeyProperty(System.Reflection.PropertyInfo,System.Type)">
+            <summary>
+            Detects the foreign key property for a navigation relationship.
+            Looks for properties named {NavigationName}Id, {ReferencedTypeName}Id, or
+            marked with [ForeignKey] attribute.
+            </summary>
+            <param name="navigationProperty">Navigation property to find FK for</param>
+            <param name="sourceType">Type containing the navigation property</param>
+            <returns>Foreign key property, or null if not found or not applicable</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipInferencer.IsManyToManyPattern(System.Reflection.PropertyInfo,System.Type,System.Type)">
+            <summary>
+            Detects if a navigation property represents a many-to-many relationship.
+            Typically indicated by collection properties on both sides without
+            explicit foreign key on either side.
+            </summary>
+            <param name="navigationProperty">Navigation property to check</param>
+            <param name="sourceType">Type containing the property</param>
+            <param name="targetType">Type being referenced</param>
+            <returns>true if many-to-many pattern detected</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipInferencer.IsBidirectional(System.Reflection.PropertyInfo,System.Type,System.Type)">
+            <summary>
+            Detects if a relationship is bidirectional (both types have navigation properties
+            pointing to each other).
+            </summary>
+            <param name="sourceNavProperty">Navigation property from source</param>
+            <param name="sourceType">Source type</param>
+            <param name="targetType">Target type</param>
+            <returns>true if bidirectional relationship detected</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipInferencer.GetInversePropertyName(System.Reflection.PropertyInfo,System.Type)">
+            <summary>
+            Gets the inverse property name following naming conventions.
+            For Orders collection on Customer, inverse is typically Customer on Order.
+            </summary>
+            <param name="navigationProperty">Navigation property</param>
+            <param name="sourceType">Source type</param>
+            <returns>Expected inverse property name, or null if not determinable</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipInferencer.ShouldCascadeDelete(System.Reflection.PropertyInfo)">
+            <summary>
+            Detects if a type has a cascade delete relationship with another type.
+            Cascade delete typically occurs on the "many" side pointing to "one" side.
+            </summary>
+            <param name="navigationProperty">Navigation property to check</param>
+            <returns>true if cascade delete behavior expected</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipInferencer.AnalyzeRelationship(System.Reflection.PropertyInfo,System.Type,System.Type)">
+            <summary>
+            Analyzes relationship directionality and returns cardinality from both perspectives.
+            Useful for bidirectional relationships.
+            </summary>
+            <param name="sourceNavProperty">Navigation from source</param>
+            <param name="sourceType">Source type</param>
+            <param name="targetType">Target type</param>
+            <returns>Relationship analysis including both directions</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipInferencer.HasCollectionNavigationTo(System.Type,System.Type)">
+            <summary>
+            Checks if a type has a collection navigation property pointing to another type.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipInferencer.GetPublicProperties(System.Type)">
+            <summary>
+            Gets all public properties from a type, excluding indexers.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipCardinality">
+            <summary>
+            Categorizes relationship cardinality.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipCardinality.OneToOne">
+            <summary>
+            One-to-One: Each source entity has exactly one target entity.
+            Example: Customer has one Address, Address belongs to one Customer.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipCardinality.OneToMany">
+            <summary>
+            One-to-Many: One source entity has many target entities.
+            Example: Customer has many Orders.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipCardinality.ManyToOne">
+            <summary>
+            Many-to-One: Many source entities have one target entity.
+            Inverse of One-to-Many from target perspective.
+            Example: Many Orders belong to one Customer.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipCardinality.ManyToMany">
+            <summary>
+            Many-to-Many: Source and target entities have many-to-many relationship.
+            Usually requires a joining table in database.
+            Example: Student has many Courses, Course has many Students.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipCardinality.SelfReference">
+            <summary>
+            Self-Reference: Entity references itself (hierarchical relationships).
+            Example: Employee has Manager (which is also an Employee).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipCardinality.Unknown">
+            <summary>
+            Could not determine relationship cardinality.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipAnalysis">
+            <summary>
+            Complete relationship analysis result.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipAnalysis.SourceType">
+            <summary>
+            Source entity type.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipAnalysis.TargetType">
+            <summary>
+            Target entity type.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipAnalysis.SourceProperty">
+            <summary>
+            Navigation property from source to target.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipAnalysis.SourceCardinality">
+            <summary>
+            Cardinality from source perspective.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipAnalysis.TargetCardinality">
+            <summary>
+            Cardinality from target perspective (if bidirectional).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipAnalysis.IsBidirectional">
+            <summary>
+            Whether relationship is bidirectional.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipAnalysis.ForeignKeyProperty">
+            <summary>
+            Foreign key property (if applicable).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipAnalysis.InversePropertyName">
+            <summary>
+            Expected name of inverse navigation property.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipAnalysis.ShouldCascadeDelete">
+            <summary>
+            Whether deleting source should cascade delete target.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipAnalysis.IsLazyLoaded">
+            <summary>
+            Whether relationship uses lazy loading (virtual properties).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.RelationshipAnalysis.ToString">
+            <summary>
+            Display-friendly summary.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper">
+             <summary>
+             Apache Cassandra-specific helper for query generation and operations.
+             Cassandra is a distributed, NoSQL database designed for massive scalability.
+             Uses CQL (Cassandra Query Language) which is SQL-like but with differences.
+            
+             Note: Cassandra doesn't support JOINs; denormalization is required.
+             No transactions for multi-partition operations.
+             Token-based pagination for efficient distributed queries.
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Initializes a new instance of the CassandraHelper class.
+            </summary>
+            <param name="dmeEditor">The IDMEEditor instance</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GetSchemaQuery(System.String)">
+            <summary>
+            Gets a CQL query to retrieve keyspaces (schemas in Cassandra).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GetTableExistsQuery(System.String)">
+            <summary>
+            Gets a CQL query to check if a table (column family) exists.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GetColumnInfoQuery(System.String)">
+            <summary>
+            Gets a CQL query to retrieve column information for a table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateCreateTableSql(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Nullable{TheTechIdea.Beep.Utilities.DataSourceType})">
+            <summary>
+            Generates CQL to create a table from an entity structure.
+            Cassandra requires partition keys and clustering columns to be specified.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateDropTableSql(System.String,System.String)">
+            <summary>
+            Generates CQL to drop a table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateTruncateTableSql(System.String,System.String)">
+            <summary>
+            Generates CQL to truncate a table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateCreateIndexSql(System.String,System.String,System.String[],System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Cassandra doesn't support traditional secondary indexes like RDBMS.
+            Use materialized views or application-side indexing instead.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateAddColumnSql(System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Generates CQL to add a column to an existing table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateAlterColumnSql(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Cassandra doesn't support altering column types.
+            You need to create a new table and migrate data.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateDropColumnSql(System.String,System.String)">
+            <summary>
+            Cassandra doesn't support dropping columns.
+            You need to create a new table without the column and migrate data.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateRenameTableSql(System.String,System.String)">
+            <summary>
+            Cassandra doesn't support renaming tables.
+            You need to create a new table and migrate data.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateRenameColumnSql(System.String,System.String,System.String)">
+            <summary>
+            Cassandra doesn't support renaming columns.
+            You need to create a new table and migrate data.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateAddPrimaryKeySql(System.String,System.String[])">
+            <summary>
+            Cassandra doesn't support adding primary keys to existing tables.
+            Primary keys must be defined at table creation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateAddForeignKeySql(System.String,System.String[],System.String,System.String[])">
+            <summary>
+            Cassandra doesn't support foreign key constraints.
+            Referential integrity must be handled application-side.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateAddConstraintSql(System.String,System.String,System.String)">
+            <summary>
+            Cassandra doesn't support traditional constraints.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GetPrimaryKeyQuery(System.String)">
+            <summary>
+            Gets a CQL query to retrieve primary key information.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GetForeignKeysQuery(System.String)">
+            <summary>
+            Cassandra doesn't support foreign key constraints.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GetConstraintsQuery(System.String)">
+            <summary>
+            Cassandra doesn't support traditional constraints.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateBeginTransactionSql">
+            <summary>
+            Cassandra doesn't support traditional transactions.
+            Light-weight transactions (LWT) are available for single partition operations.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateCommitSql">
+            <summary>
+            Cassandra doesn't support traditional transaction commit.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateRollbackSql">
+            <summary>
+            Cassandra doesn't support traditional transaction rollback.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateInsertSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates CQL INSERT statement.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateUpdateSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates CQL UPDATE statement.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateDeleteSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates CQL DELETE statement.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GenerateSelectSql(System.String,System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.Dictionary{System.String,System.Object},System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Generates CQL SELECT statement.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.QuoteIdentifier(System.String)">
+            <summary>
+            Quotes identifiers using double quotes for Cassandra CQL.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.MapClrTypeToDatasourceType(System.Type,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Maps C# types to Cassandra CQL types.
+            </summary>
+            <summary>
+            Maps C# types to Cassandra CQL types.
+            Uses DataTypeMappingRepository for mapping.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.MapDatasourceTypeToClrType(System.String)">
+            <summary>
+            Maps Cassandra CQL types back to C# types.
+            Uses DataTypeMappingRepository for mapping.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.ValidateEntity(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Validates entity structure for Cassandra compatibility.
+            Cassandra has specific requirements for primary keys and clustering columns.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.SupportsCapability(TheTechIdea.Beep.Utilities.CapabilityType)">
+            <summary>
+            Checks if Cassandra supports a specific capability.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GetMaxStringSize">
+            <summary>
+            Cassandra text columns can be up to 2GB.
+            Returns -1 to indicate very large limit.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers.CassandraHelper.GetMaxNumericPrecision">
+            <summary>
+            Cassandra decimal type has high precision.
+            Returns 0 to indicate unlimited.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core.DataSourceHelperFactory">
+            <summary>
+            Factory class for creating datasource-specific helper implementations.
+            Returns the appropriate IDataSourceHelper based on DataSourceType.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core.DataSourceHelperFactory.CreateHelper(TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Creates and returns the appropriate IDataSourceHelper for the given datasource type.
+            </summary>
+            <param name="datasourceType">The datasource type</param>
+            <returns>IDataSourceHelper implementation, or null if not supported</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core.DataSourceHelperFactory.IsHelperAvailable(TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Checks if a helper is available for the specified datasource type.
+            </summary>
+            <param name="datasourceType">The datasource type</param>
+            <returns>True if a helper exists, false otherwise</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core.DataSourceHelperFactory.RegisterHelper(TheTechIdea.Beep.Utilities.DataSourceType,System.Func{TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.IDataSourceHelper})">
+            <summary>
+            Registers a custom helper factory for a datasource type.
+            </summary>
+            <param name="datasourceType">The datasource type</param>
+            <param name="factory">Factory function to create the helper</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core.DataSourceHelperFactory.GetSupportedDataSources">
+            <summary>
+            Gets all supported datasource types that have helpers.
+            </summary>
+            <returns>Collection of supported datasource types</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core.GeneralDataSourceHelper">
+            <summary>
+            General implementation of IDataSourceHelper that delegates to specific helpers based on datasource type.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Mapping.RelationshipToEntityMapper">
+            <summary>
+            Converts relationship analysis results from NavigationPropertyDetector and RelationshipInferencer
+            into the existing BeepDM relationship classes (RelationShipKeys, ChildRelation).
+            
+            This adapter bridges the new navigation property analysis with the existing EntityStructure
+            relationship model, enabling automatic population of Relations and ChildRelations lists
+            when converting POCOs to EntityStructure.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Mapping.RelationshipToEntityMapper.CreateRelationshipKey(TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo,System.String,System.String,System.Type,System.Type)">
+            <summary>
+            Converts analysis of a navigation property into a RelationShipKeys object
+            representing the foreign key relationship.
+            </summary>
+            <param name="navPropInfo">Navigation property analysis</param>
+            <param name="sourceEntityName">Name of source entity</param>
+            <param name="targetEntityName">Name of target entity</param>
+            <param name="sourceType">Source type</param>
+            <param name="targetType">Target type</param>
+            <returns>RelationShipKeys configured for this relationship, or null if not applicable</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Mapping.RelationshipToEntityMapper.CreateChildRelation(TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis.NavigationPropertyInfo,System.String,System.String,System.Type,System.Type)">
+            <summary>
+            Converts analysis of a navigation property into a ChildRelation object
+            for one-to-many relationships where the FK is on the child side.
+            </summary>
+            <param name="navPropInfo">Navigation property analysis</param>
+            <param name="sourceEntityName">Name of entity with collection (parent)</param>
+            <param name="targetEntityName">Name of child entity</param>
+            <param name="sourceType">Source type (parent)</param>
+            <param name="targetType">Target type (child)</param>
+            <returns>ChildRelation for one-to-many, or null if not applicable</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Mapping.RelationshipToEntityMapper.PopulateRelationships(System.Type,TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Extracts all relationships from a POCO type and populates EntityStructure.Relations
+            and EntityStructure.ChildRelations with appropriate entries.
+            </summary>
+            <param name="pocoType">POCO type to analyze</param>
+            <param name="entityStructure">EntityStructure to populate</param>
+            <param name="entityName">Entity name (typically type name)</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Mapping.RelationshipToEntityMapper.GetRelationshipSummary(System.Type)">
+            <summary>
+            Analyzes a POCO type and returns relationship summary for documentation/UI.
+            </summary>
+            <param name="pocoType">POCO type to analyze</param>
+            <returns>Dictionary mapping relationship names to cardinality descriptions</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Mapping.RelationshipToEntityMapper.GetPrimaryKeyName(System.Type)">
+            <summary>
+            Gets the primary key property name for a type.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Mapping.RelationshipToEntityMapper.FindChildForeignKeyProperty(System.String,System.Type)">
+            <summary>
+            Finds the foreign key property on a child type that references a parent type.
+            Looks for properties named {ParentEntityName}Id or {ParentType.Name}Id.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Mapping.RelationshipToEntityMapper.IsIntegralType(System.Type)">
+            <summary>
+            Checks if a type is suitable for a foreign key (int, long, Guid, etc.).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper">
+             <summary>
+             MongoDB-specific helper for query generation and operations.
+             MongoDB uses BSON documents and aggregation pipelines instead of SQL.
+             This helper generates MongoDB query syntax and aggregation pipelines.
+            
+             Note: MongoDB doesn't support traditional JOINs. Use $lookup for embedded aggregations.
+             Transactions are supported for multi-document operations (v4.0+).
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Initializes a new instance of the MongoDBHelper class.
+            </summary>
+            <param name="dmeEditor">The IDMEEditor instance</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GetSchemaQuery(System.String)">
+            <summary>
+            MongoDB doesn't have traditional schemas, but collections can be listed.
+            Returns a query to retrieve collection names.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GetTableExistsQuery(System.String)">
+            <summary>
+            Gets a query to check if a collection exists.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GetColumnInfoQuery(System.String)">
+            <summary>
+            Gets a query to retrieve field information for a collection.
+            MongoDB is schema-less, so this returns a sample document structure.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateCreateTableSql(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Nullable{TheTechIdea.Beep.Utilities.DataSourceType})">
+            <summary>
+            MongoDB collections are created implicitly when first document is inserted.
+            This method acknowledges that DDL is not needed for collection creation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateDropTableSql(System.String,System.String)">
+            <summary>
+            Generates MongoDB command to drop a collection.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateTruncateTableSql(System.String,System.String)">
+            <summary>
+            Generates MongoDB command to remove all documents from a collection.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateCreateIndexSql(System.String,System.String,System.String[],System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates MongoDB command to create an index.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateAddColumnSql(System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            MongoDB is schema-less, so adding columns is not applicable.
+            Returns success since no action is needed.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateAlterColumnSql(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            MongoDB is schema-less, so altering columns is not applicable.
+            Returns success since no action is needed.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateDropColumnSql(System.String,System.String)">
+            <summary>
+            MongoDB is schema-less, so dropping columns is not applicable.
+            Returns success since no action is needed.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateRenameTableSql(System.String,System.String)">
+            <summary>
+            Generates MongoDB command to rename a collection.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateRenameColumnSql(System.String,System.String,System.String)">
+            <summary>
+            MongoDB doesn't support renaming individual fields in existing documents.
+            This would require an update operation on all documents.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateAddPrimaryKeySql(System.String,System.String[])">
+            <summary>
+            MongoDB doesn't support traditional primary keys.
+            The _id field serves as the primary key.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateAddForeignKeySql(System.String,System.String[],System.String,System.String[])">
+            <summary>
+            MongoDB doesn't support foreign key constraints.
+            Relationships are handled application-side or via $lookup.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateAddConstraintSql(System.String,System.String,System.String)">
+            <summary>
+            MongoDB doesn't support traditional constraints.
+            Validation rules can be set at collection level.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GetPrimaryKeyQuery(System.String)">
+            <summary>
+            MongoDB doesn't have traditional primary key queries.
+            The _id field is the primary key.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GetForeignKeysQuery(System.String)">
+            <summary>
+            MongoDB doesn't support foreign key constraints.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GetConstraintsQuery(System.String)">
+            <summary>
+            MongoDB doesn't support traditional constraints.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateBeginTransactionSql">
+            <summary>
+            Generates MongoDB command to start a transaction (v4.0+).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateCommitSql">
+            <summary>
+            Generates MongoDB command to commit a transaction.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateRollbackSql">
+            <summary>
+            Generates MongoDB command to abort a transaction.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateInsertSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates MongoDB insert command.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateUpdateSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates MongoDB update command.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateDeleteSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates MongoDB delete command.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateSelectSql(System.String,System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.Dictionary{System.String,System.Object},System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Generates MongoDB find command or aggregation pipeline.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.QuoteIdentifier(System.String)">
+            <summary>
+            MongoDB doesn't require identifier quoting for collection names.
+            Returns the identifier as-is.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.MapClrTypeToDatasourceType(System.Type,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Maps C# types to MongoDB BSON types.
+            Uses DataTypeMappingRepository for mapping.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.MapDatasourceTypeToClrType(System.String)">
+            <summary>
+            Maps MongoDB BSON types back to C# types.
+            Uses DataTypeMappingRepository for mapping.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.ValidateEntity(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Validates entity structure for MongoDB compatibility.
+            MongoDB is schema-flexible, so validation is minimal.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.SupportsCapability(TheTechIdea.Beep.Utilities.CapabilityType)">
+            <summary>
+            Checks if MongoDB supports a specific capability.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GetMaxStringSize">
+            <summary>
+            MongoDB doesn't have string size limits.
+            Returns -1 to indicate unlimited.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GetMaxNumericPrecision">
+            <summary>
+            MongoDB uses IEEE 754 floating point, so precision is limited.
+            Returns 15 (double precision).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper">
+            <summary>
+            Partial class for RdbmsHelper providing constraint and relationship DDL operations
+            (PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK constraints).
+            
+            Each method generates database-agnostic SQL, then adapts for specific RDBMS syntax.
+            </summary>
+            <summary>
+            Unified RDBMS helper implementing IDataSourceHelper interface for all RDBMS databases.
+            Provides a single entry point for all RDBMS query generation and operations.
+            
+            Supported Databases (9):
+            - SQL Server, MySQL, PostgreSQL, Oracle, SQLite, DB2, Firebird
+            - Azure SQL, AWS RDS
+            
+            This implementation delegates to the legacy helper classes:
+            - DatabaseSchemaQueryHelper - Schema and metadata queries
+            - DatabaseObjectCreationHelper - DDL operations
+            - DatabaseDMLHelper - DML operations (INSERT, UPDATE, DELETE, SELECT)
+            - DatabaseEntityHelper - Entity analysis and validation
+            </summary>
+            <summary>
+            Partial class for RdbmsHelper providing transaction control operations.
+            
+            Supports BEGIN/COMMIT/ROLLBACK for ACID compliance across RDBMS databases.
+            Syntax varies by RDBMS (SQL Server uses BEGIN TRANSACTION, MySQL uses START TRANSACTION).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateAddPrimaryKeySql(System.String,System.String[])">
+            <summary>
+            Generates SQL to add a primary key constraint to a table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateAddForeignKeySql(System.String,System.String[],System.String,System.String[])">
+            <summary>
+            Generates SQL to add a foreign key constraint between tables.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateAddConstraintSql(System.String,System.String,System.String)">
+            <summary>
+            Generates SQL to add a generic constraint (UNIQUE, CHECK, etc.).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GetPrimaryKeyQuery(System.String)">
+            <summary>
+            Generates a query to retrieve primary key information for a table.
+            Database-specific query for different RDBMS types.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GetForeignKeysQuery(System.String)">
+            <summary>
+            Generates a query to retrieve foreign key information for a table.
+            Database-specific query for different RDBMS types.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GetConstraintsQuery(System.String)">
+            <summary>
+            Generates a query to retrieve all constraints for a table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Initializes a new instance of the RdbmsHelper class.
+            </summary>
+            <param name="dmeEditor">The IDMEEditor instance</param>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.SupportedType">
+            <summary>
+            Gets or sets the datasource type this helper is designed for.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.Name">
+            <summary>
+            Gets the human-readable name of the datasource type.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.Capabilities">
+            <summary>
+            Gets the capabilities of this datasource type.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GetSchemaQuery(System.String)">
+            <summary>
+            Gets the schema or databases accessible to a user.
+            Implementation of IDataSourceHelper schema query method.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GetTableExistsQuery(System.String)">
+            <summary>
+            Checks if a table/entity exists.
+            Implementation of IDataSourceHelper table existence check.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GetColumnInfoQuery(System.String)">
+            <summary>
+            Gets column information for a table.
+            Implementation of IDataSourceHelper column info retrieval.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateCreateTableSql(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Nullable{TheTechIdea.Beep.Utilities.DataSourceType})">
+            <summary>
+            Generates CREATE TABLE SQL from an EntityStructure.
+            Implementation of IDataSourceHelper DDL create table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateDropTableSql(System.String,System.String)">
+            <summary>
+            Generates DROP TABLE SQL.
+            Implementation of IDataSourceHelper DDL drop table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateTruncateTableSql(System.String,System.String)">
+            <summary>
+            Generates TRUNCATE TABLE SQL.
+            Implementation of IDataSourceHelper DDL truncate table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateCreateIndexSql(System.String,System.String,System.String[],System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates CREATE INDEX SQL.
+            Implementation of IDataSourceHelper DDL create index.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateInsertSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates INSERT SQL from entity data.
+            Implementation of IDataSourceHelper DML insert.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateUpdateSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates UPDATE SQL from entity data and where conditions.
+            Implementation of IDataSourceHelper DML update.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateDeleteSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates DELETE SQL from where conditions.
+            Implementation of IDataSourceHelper DML delete.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateSelectSql(System.String,System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.Dictionary{System.String,System.Object},System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Generates SELECT SQL from entity and optional where conditions.
+            Implementation of IDataSourceHelper DML select.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.QuoteIdentifier(System.String)">
+            <summary>
+            Quotes/escapes an identifier for the specified datasource.
+            Implementation of IDataSourceHelper identifier quoting.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.MapClrTypeToDatasourceType(System.Type,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Maps a CLR type to the appropriate datasource type.
+            Implementation of IDataSourceHelper CLR to database type mapping.
+            Uses DataTypeMappingRepository for mapping.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.MapDatasourceTypeToClrType(System.String)">
+            <summary>
+            Maps a datasource type string to a CLR type.
+            Implementation of IDataSourceHelper database to CLR type mapping.
+            Uses DataTypeMappingRepository for reverse mapping.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.MapClrTypeToDatabaseTypeFallback(System.Type,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Fallback mapping for CLR type to database type when repository doesn't have the mapping.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.MapDatabaseTypeToClrTypeFallback(System.String)">
+            <summary>
+            Fallback mapping for database type to CLR type when repository doesn't have the mapping.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.CleanDatabaseType(System.String)">
+            <summary>
+            Cleans database type string by removing size/precision/scale parameters.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.ValidateEntity(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Validates an entity structure for use with the datasource.
+            Implementation of IDataSourceHelper entity validation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.SupportsCapability(TheTechIdea.Beep.Utilities.CapabilityType)">
+            <summary>
+            Checks whether this datasource supports a specific operation capability.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GetMaxStringSize">
+            <summary>
+            Gets the maximum size allowed for string/varchar columns in this datasource.
+            Returns -1 for unlimited, 0 for unsupported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GetMaxNumericPrecision">
+            <summary>
+            Gets the maximum numeric precision supported by this datasource.
+            For DECIMAL/NUMERIC types, returns total digits. Returns 0 for unlimited.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateAddColumnSql(System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Generates SQL to add a column to an existing table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateAlterColumnSql(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Generates SQL to modify an existing column definition.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateDropColumnSql(System.String,System.String)">
+            <summary>
+            Generates SQL to drop a column from a table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateRenameTableSql(System.String,System.String)">
+            <summary>
+            Generates SQL to rename a table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateRenameColumnSql(System.String,System.String,System.String)">
+            <summary>
+            Generates SQL to rename a column in a table.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateBeginTransactionSql">
+            <summary>
+            Generates SQL to begin a transaction.
+            Syntax varies by RDBMS:
+            - SQL Server: BEGIN TRANSACTION
+            - MySQL/PostgreSQL/SQLite/Firebird: BEGIN TRANSACTION or START TRANSACTION
+            - Oracle: implicit (transactions start with first DML statement)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateCommitSql">
+            <summary>
+            Generates SQL to commit a transaction.
+            Standard SQL syntax: COMMIT
+            Also supported: COMMIT TRANSACTION (SQL Server), COMMIT WORK (PostgreSQL)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateRollbackSql">
+            <summary>
+            Generates SQL to rollback (abort) a transaction.
+            Standard SQL syntax: ROLLBACK
+            Also supported: ROLLBACK TRANSACTION (SQL Server), ROLLBACK TO SAVEPOINT (PostgreSQL)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateSavepointSql(System.String)">
+            <summary>
+            Generates SQL to create a savepoint within a transaction.
+            Useful for partial rollback in complex transaction scenarios.
+            Syntax: SAVEPOINT savepoint_name (PostgreSQL, Oracle, MySQL 5.7+)
+            SQL Server uses: SAVE TRANSACTION savepoint_name
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateRollbackToSavepointSql(System.String)">
+            <summary>
+            Generates SQL to rollback to a specific savepoint.
+            Useful for undoing part of a transaction without committing or rolling back entirely.
+            Syntax: ROLLBACK TO SAVEPOINT savepoint_name (PostgreSQL, Oracle)
+            SQL Server uses: ROLLBACK TRANSACTION savepoint_name
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GetTransactionIsolationLevelQuery">
+            <summary>
+            Gets the current transaction isolation level for the RDBMS.
+            Returns SQL query to retrieve isolation level information.
+            Different RDBMS store this in different system views/functions.
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateSetTransactionIsolationLevelSql(System.String)" -->
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper">
+             <summary>
+             Redis-specific helper for query generation and operations.
+             Redis is an in-memory key-value store with support for various data structures.
+             This helper generates Redis commands and Lua scripts for operations.
+            
+             Note: Redis doesn't have traditional schemas. Key patterns and data structures are used.
+             Lua scripts provide atomic multi-command operations.
+             TTL (Time-To-Live) is a first-class feature.
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Initializes a new instance of the RedisHelper class.
+            </summary>
+            <param name="dmeEditor">The IDMEEditor instance</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GetSchemaQuery(System.String)">
+            <summary>
+            Gets a command to retrieve all keys matching a pattern.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GetTableExistsQuery(System.String)">
+            <summary>
+            Gets a command to check if a key exists.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GetColumnInfoQuery(System.String)">
+            <summary>
+            Gets a command to retrieve information about a key's type and TTL.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateCreateTableSql(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Nullable{TheTechIdea.Beep.Utilities.DataSourceType})">
+            <summary>
+            Redis doesn't require explicit table/collection creation.
+            Keys are created implicitly when set.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateDropTableSql(System.String,System.String)">
+            <summary>
+            Generates Redis command to delete keys matching a pattern.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateTruncateTableSql(System.String,System.String)">
+            <summary>
+            Redis doesn't support truncate operations.
+            Use DEL command for individual keys.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateCreateIndexSql(System.String,System.String,System.String[],System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Redis doesn't support traditional indexes.
+            Secondary indexes would need to be implemented as separate keys.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateAddColumnSql(System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Redis is schema-less, so adding fields is not applicable.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateAlterColumnSql(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Redis is schema-less, so altering fields is not applicable.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateDropColumnSql(System.String,System.String)">
+            <summary>
+            Redis is schema-less, so dropping fields is not applicable.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateRenameTableSql(System.String,System.String)">
+            <summary>
+            Redis doesn't support renaming keys directly.
+            Would require copying data and deleting old key.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateRenameColumnSql(System.String,System.String,System.String)">
+            <summary>
+            Redis doesn't support renaming fields in data structures.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateAddPrimaryKeySql(System.String,System.String[])">
+            <summary>
+            Redis doesn't support primary key constraints.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateAddForeignKeySql(System.String,System.String[],System.String,System.String[])">
+            <summary>
+            Redis doesn't support foreign key constraints.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateAddConstraintSql(System.String,System.String,System.String)">
+            <summary>
+            Redis doesn't support traditional constraints.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GetPrimaryKeyQuery(System.String)">
+            <summary>
+            Redis doesn't have primary key queries.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GetForeignKeysQuery(System.String)">
+            <summary>
+            Redis doesn't support foreign key constraints.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GetConstraintsQuery(System.String)">
+            <summary>
+            Redis doesn't support traditional constraints.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateBeginTransactionSql">
+            <summary>
+            Generates Redis MULTI command to start a transaction.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateCommitSql">
+            <summary>
+            Generates Redis EXEC command to commit a transaction.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateRollbackSql">
+            <summary>
+            Generates Redis DISCARD command to rollback a transaction.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateInsertSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates Redis command to set a key-value pair.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateUpdateSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates Redis command to update a key's value or TTL.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateDeleteSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates Redis DEL command to delete keys.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GenerateSelectSql(System.String,System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.Dictionary{System.String,System.Object},System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Generates Redis GET command to retrieve key values.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.QuoteIdentifier(System.String)">
+            <summary>
+            Redis doesn't require identifier quoting for key names.
+            Returns the identifier as-is.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.MapClrTypeToDatasourceType(System.Type,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Maps C# types to Redis string representations.
+            </summary>
+            <summary>
+            Maps C# types to Redis types.
+            Uses DataTypeMappingRepository for mapping.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.MapDatasourceTypeToClrType(System.String)">
+            <summary>
+            Maps Redis types back to C# types.
+            Uses DataTypeMappingRepository for mapping.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.ValidateEntity(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Validates entity structure for Redis compatibility.
+            Redis is very flexible with key naming and data types.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.SupportsCapability(TheTechIdea.Beep.Utilities.CapabilityType)">
+            <summary>
+            Checks if Redis supports a specific capability.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GetMaxStringSize">
+            <summary>
+            Redis doesn't have string size limits.
+            Returns -1 to indicate unlimited.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers.RedisHelper.GetMaxNumericPrecision">
+            <summary>
+            Redis uses 64-bit integers, so precision is limited.
+            Returns 18 (max digits in 64-bit signed integer).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper">
+             <summary>
+             Generic REST API helper for query generation and operations.
+             Works with standard REST endpoints that follow REST conventions.
+            
+             Note: REST APIs have limited server-side capabilities.
+             No transactions, joins, or aggregations support.
+             Query parameters and JSON payloads are used for operations.
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Initializes a new instance of the RestApiHelper class.
+            </summary>
+            <param name="dmeEditor">The IDMEEditor instance</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GetSchemaQuery(System.String)">
+            <summary>
+            Gets the REST endpoint to retrieve available resources (schemas).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GetTableExistsQuery(System.String)">
+            <summary>
+            Gets the REST endpoint to check if a resource exists.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GetColumnInfoQuery(System.String)">
+            <summary>
+            Gets the REST endpoint to retrieve field information for a resource.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateCreateTableSql(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Nullable{TheTechIdea.Beep.Utilities.DataSourceType})">
+            <summary>
+            REST APIs typically don't support DDL operations.
+            Returns error indicating DDL is not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateDropTableSql(System.String,System.String)">
+            <summary>
+            REST APIs typically don't support DDL operations.
+            Returns error indicating DDL is not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateTruncateTableSql(System.String,System.String)">
+            <summary>
+            REST APIs typically don't support DDL operations.
+            Returns error indicating DDL is not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateCreateIndexSql(System.String,System.String,System.String[],System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            REST APIs typically don't support DDL operations.
+            Returns error indicating DDL is not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateAddColumnSql(System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            REST APIs typically don't support DDL operations.
+            Returns error indicating DDL is not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateAlterColumnSql(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            REST APIs typically don't support DDL operations.
+            Returns error indicating DDL is not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateDropColumnSql(System.String,System.String)">
+            <summary>
+            REST APIs typically don't support DDL operations.
+            Returns error indicating DDL is not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateRenameTableSql(System.String,System.String)">
+            <summary>
+            REST APIs typically don't support DDL operations.
+            Returns error indicating DDL is not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateRenameColumnSql(System.String,System.String,System.String)">
+            <summary>
+            REST APIs typically don't support DDL operations.
+            Returns error indicating DDL is not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateAddPrimaryKeySql(System.String,System.String[])">
+            <summary>
+            REST APIs typically don't support constraint operations.
+            Returns error indicating constraints are not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateAddForeignKeySql(System.String,System.String[],System.String,System.String[])">
+            <summary>
+            REST APIs typically don't support constraint operations.
+            Returns error indicating constraints are not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateAddConstraintSql(System.String,System.String,System.String)">
+            <summary>
+            REST APIs typically don't support constraint operations.
+            Returns error indicating constraints are not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GetPrimaryKeyQuery(System.String)">
+            <summary>
+            REST APIs typically don't support constraint queries.
+            Returns error indicating constraint queries are not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GetForeignKeysQuery(System.String)">
+            <summary>
+            REST APIs typically don't support constraint queries.
+            Returns error indicating constraint queries are not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GetConstraintsQuery(System.String)">
+            <summary>
+            REST APIs typically don't support constraint queries.
+            Returns error indicating constraint queries are not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateBeginTransactionSql">
+            <summary>
+            REST APIs typically don't support transactions.
+            Returns error indicating transactions are not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateCommitSql">
+            <summary>
+            REST APIs typically don't support transactions.
+            Returns error indicating transactions are not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateRollbackSql">
+            <summary>
+            REST APIs typically don't support transactions.
+            Returns error indicating transactions are not supported.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateInsertSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates a REST API POST request to insert a record.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateUpdateSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates a REST API PUT/PATCH request to update records.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateDeleteSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Generates a REST API DELETE request to delete records.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateSelectSql(System.String,System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.Dictionary{System.String,System.Object},System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Generates a REST API GET request to retrieve records.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.QuoteIdentifier(System.String)">
+            <summary>
+            REST APIs typically don't require identifier quoting.
+            Returns the identifier as-is.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.MapClrTypeToDatasourceType(System.Type,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Maps C# types to JSON types for REST APIs.
+            </summary>
+            <summary>
+            Maps C# types to JSON types for REST APIs.
+            Uses DataTypeMappingRepository for mapping.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.MapDatasourceTypeToClrType(System.String)">
+            <summary>
+            Maps JSON types back to C# types for REST APIs.
+            Uses DataTypeMappingRepository for mapping.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.ValidateEntity(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Validates entity structure for REST API compatibility.
+            REST APIs are generally flexible with schema.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.SupportsCapability(TheTechIdea.Beep.Utilities.CapabilityType)">
+            <summary>
+            Checks if REST API supports a specific capability.
+            REST APIs have limited capabilities compared to databases.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GetMaxStringSize">
+            <summary>
+            REST APIs typically don't have string size limits.
+            Returns -1 to indicate unlimited.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GetMaxNumericPrecision">
+            <summary>
+            REST APIs typically don't have numeric precision limits.
+            Returns 0 to indicate unlimited.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Helpers.ValidationResult">
             <summary>
             Result of a validation operation containing success status and any error messages.
@@ -18362,6 +19337,10 @@
             Entity class generation using EntitiesExtensions for type conversion
             </summary>
             <summary>
+            Partial class extending ClassCreator with POCO to Entity generation capabilities.
+            Supports namespace scanning, runtime type loading, and datasource integration.
+            </summary>
+            <summary>
             Partial class for testing and validation functionality
             </summary>
             <summary>
@@ -18579,7 +19558,7 @@
             <returns>The generated code</returns>
         </member>
         <member name="P:TheTechIdea.Beep.Tools.ClassCreator.DatabaseGenerator">
-            <summary>Gets the database class generator helper (lazy-loaded)</summary>
+            <summary>Gets the Database class generator helper (lazy-loaded)</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateDataAccessLayer(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
             <summary>
@@ -18785,6 +19764,96 @@
             <param name="generateFiles">Whether to generate .cs files</param>
             <param name="types">The types to convert and generate classes from</param>
             <returns>List of paths to generated files</returns>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.ClassCreator.PocoToEntityGenerator">
+            <summary>
+            Gets the POCO to Entity generator helper (lazy initialization)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ScanNamespaceForPocos(System.String,System.Reflection.Assembly)">
+            <summary>
+            Scans a namespace and discovers all POCO classes
+            </summary>
+            <param name="namespaceName">The namespace to scan</param>
+            <param name="assembly">Optional specific assembly to search (searches all if null)</param>
+            <returns>List of discovered POCO types</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.FindClassByName(System.String,System.String,System.Reflection.Assembly)">
+            <summary>
+            Finds a specific class by name in a namespace
+            </summary>
+            <param name="namespaceName">The namespace to search (can be null for global search)</param>
+            <param name="className">The class name to find</param>
+            <param name="assembly">Optional specific assembly to search</param>
+            <returns>The found Type or null</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ConvertPocoToEntity(System.Type,System.Boolean)">
+            <summary>
+            Converts a POCO type to EntityStructure with relationship detection
+            </summary>
+            <param name="pocoType">The POCO type to convert</param>
+            <param name="detectRelationships">Whether to detect navigation property relationships</param>
+            <returns>EntityStructure representing the POCO</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateEntityClassFromPoco(System.Type,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates entity class code from a POCO type
+            </summary>
+            <param name="pocoType">The source POCO type</param>
+            <param name="outputPath">Output path for file generation (null = no file)</param>
+            <param name="namespaceString">Target namespace for generated class</param>
+            <param name="generateFile">Whether to write the code to a file</param>
+            <returns>Generated C# code string</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GenerateEntityClassesFromNamespace(System.String,System.String,System.String,System.Boolean,System.Reflection.Assembly)">
+            <summary>
+            Generates entity classes from all POCOs in a namespace
+            </summary>
+            <param name="sourceNamespace">The source namespace containing POCOs</param>
+            <param name="outputPath">Output path for file generation (null = no files)</param>
+            <param name="targetNamespace">Target namespace for generated classes</param>
+            <param name="generateFiles">Whether to write code to files</param>
+            <param name="assembly">Optional specific assembly to scan</param>
+            <returns>List of generated C# code strings</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityTypeAtRuntime(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Compiles entity code and returns the Type at runtime (no file output)
+            </summary>
+            <param name="entity">The entity structure to compile</param>
+            <param name="namespaceString">Target namespace for the type</param>
+            <returns>Compiled Type or null on failure</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityTypeFromPocoAtRuntime(System.Type,System.String)">
+            <summary>
+            Compiles entity code from POCO and returns the Type at runtime
+            </summary>
+            <param name="pocoType">The source POCO type</param>
+            <param name="namespaceString">Target namespace for the type</param>
+            <returns>Compiled Type or null on failure</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityTypesFromNamespaceAtRuntime(System.String,System.String,System.Reflection.Assembly)">
+            <summary>
+            Generates and compiles multiple entity types at runtime from a namespace
+            </summary>
+            <param name="sourceNamespace">The source namespace containing POCOs</param>
+            <param name="targetNamespace">Target namespace for generated types</param>
+            <param name="assembly">Optional specific assembly to scan</param>
+            <returns>Dictionary mapping type names to compiled Types</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityTypesFromDataSourceAtRuntime(System.String,System.Collections.Generic.List{System.String},System.String)">
+            <summary>
+            Generates entity types from a datasource at runtime
+            </summary>
+            <param name="datasourceName">Name of the datasource</param>
+            <param name="entityNames">Specific entity names (null = all entities)</param>
+            <param name="targetNamespace">Target namespace for generated types</param>
+            <returns>Dictionary mapping type names to compiled Types</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ClearPocoToEntityCache">
+            <summary>
+            Clears the runtime type cache
+            </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Tools.ClassCreator.ValidationTestingGenerator">
             <summary>Gets the validation and testing generator helper (lazy-loaded)</summary>
@@ -19157,6 +20226,136 @@
             Generates the template for INotifyPropertyChanged properties
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper">
+            <summary>
+            Helper for converting POCO classes to Entity classes with namespace scanning and runtime loading
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.ScanNamespaceForPocos(System.String,System.Reflection.Assembly)">
+            <summary>
+            Scans a namespace and discovers all POCO classes
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.FindClassByName(System.String,System.String,System.Reflection.Assembly)">
+            <summary>
+            Finds a specific class by name in a namespace
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.IsPocoClass(System.Type)">
+            <summary>
+            Checks if a type is a valid POCO class (not interface, abstract, static, etc.)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.GetSearchableAssemblies">
+            <summary>
+            Gets all searchable assemblies from current AppDomain
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.ConvertPocoToEntity(System.Type,System.Boolean)">
+            <summary>
+            Converts a POCO type to EntityStructure with relationship detection
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.CreateEntityField(System.Reflection.PropertyInfo,System.Int32)">
+            <summary>
+            Creates an EntityField from a PropertyInfo
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.MapClrTypeToDbType(System.Type)">
+            <summary>
+            Maps CLR type to database type string
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.GetFieldSize(System.Reflection.PropertyInfo)">
+            <summary>
+            Gets the field size from StringLength or MaxLength attributes
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.IsNullable(System.Reflection.PropertyInfo)">
+            <summary>
+            Checks if property is nullable
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.HasAutoIncrementAttribute(System.Reflection.PropertyInfo)">
+            <summary>
+            Checks if property has auto-increment attribute
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.IsPrimaryKeyProperty(System.Reflection.PropertyInfo)">
+            <summary>
+            Checks if property is a primary key
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.HasUniqueAttribute(System.Reflection.PropertyInfo)">
+            <summary>
+            Checks if property has unique constraint
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.CreateRelationshipFromNavigation(System.Type,System.Reflection.PropertyInfo)">
+            <summary>
+            Creates a RelationShipKeys from a navigation property
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.GenerateFriendlyName(System.String)">
+            <summary>
+            Generates a friendly display name from a class name
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.GenerateEntityClassFromPoco(System.Type,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates entity class code from a POCO type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.GenerateEntityClassesFromNamespace(System.String,System.String,System.String,System.Boolean,System.Reflection.Assembly)">
+            <summary>
+            Generates entity classes from all POCOs in a namespace
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.GenerateEntityClassCode(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates entity class code from EntityStructure
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.GetClrTypeName(System.String,System.Boolean)">
+            <summary>
+            Gets the CLR type name from a database type string
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.CreateEntityTypeAtRuntime(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Compiles entity code and returns the Type at runtime (no file output)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.CreateEntityTypeFromPocoAtRuntime(System.Type,System.String)">
+            <summary>
+            Compiles entity code from POCO and returns the Type at runtime
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.CreateEntityTypesFromNamespaceAtRuntime(System.String,System.String,System.Reflection.Assembly)">
+            <summary>
+            Generates and compiles multiple entity types at runtime from a namespace
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.GenerateEntityClassBodyOnly(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Generates entity class body only (no namespace wrapper)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.CompileCodeToAssembly(System.String,System.String)">
+            <summary>
+            Compiles C# code to an in-memory assembly with proper references
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.CreateEntityTypesFromDataSourceAtRuntime(System.String,System.Collections.Generic.List{System.String},System.String)">
+            <summary>
+            Generates entity types from a datasource at runtime
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.ClearCache">
+            <summary>
+            Clears the runtime type cache
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Tools.Helpers.WebApiGeneratorHelper">
             <summary>
             Helper class for generating Web API controllers and related components
@@ -19227,54 +20426,71 @@
             Generates minimal API endpoints
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Tools.Interfaces.IClassCreatorCore">
+        <member name="T:TheTechIdea.Beep.Tools.Interfaces.IClassCreator">
             <summary>
-            Core interface for class creation functionality
+            Unified interface for comprehensive class creation functionality
+            Combines all functionality from POCO generation, modern patterns, WebAPI, Database, 
+            Serverless, UI, Testing, Documentation, and DLL creation
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Tools.Interfaces.IPocoClassGenerator">
+        <member name="M:TheTechIdea.Beep.Tools.Interfaces.IClassCreator.ScanNamespaceForPocos(System.String,System.Reflection.Assembly)">
             <summary>
-            Interface for basic POCO class generation
+            Scans a namespace and discovers all POCO classes
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Tools.Interfaces.IModernClassGenerator">
+        <member name="M:TheTechIdea.Beep.Tools.Interfaces.IClassCreator.FindClassByName(System.String,System.String,System.Reflection.Assembly)">
             <summary>
-            Interface for modern class generation patterns
+            Finds a specific class by name in a namespace
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Tools.Interfaces.IWebApiGenerator">
+        <member name="M:TheTechIdea.Beep.Tools.Interfaces.IClassCreator.ConvertPocoToEntity(System.Type,System.Boolean)">
             <summary>
-            Interface for web API generation
+            Converts a POCO type to EntityStructure with relationship detection
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Tools.Interfaces.IDatabaseClassGenerator">
+        <member name="M:TheTechIdea.Beep.Tools.Interfaces.IClassCreator.ConvertToEntityStructure``1(TheTechIdea.Beep.Editor.KeyDetectionStrategy,System.String)">
             <summary>
-            Interface for database-related class generation
+            Converts a POCO type to EntityStructure using generic type with KeyDetectionStrategy
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Tools.Interfaces.IServerlessGenerator">
+        <member name="M:TheTechIdea.Beep.Tools.Interfaces.IClassCreator.ConvertToEntityStructure(System.Type,TheTechIdea.Beep.Editor.KeyDetectionStrategy,System.String)">
             <summary>
-            Interface for serverless and cloud generation
+            Converts a runtime POCO type to EntityStructure with KeyDetectionStrategy
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Tools.Interfaces.IUiComponentGenerator">
+        <member name="M:TheTechIdea.Beep.Tools.Interfaces.IClassCreator.ConvertToEntityStructure(System.Object,TheTechIdea.Beep.Editor.KeyDetectionStrategy,System.String)">
             <summary>
-            Interface for UI component generation
+            Converts a POCO object instance to EntityStructure with KeyDetectionStrategy
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Tools.Interfaces.IValidationAndTestingGenerator">
+        <member name="M:TheTechIdea.Beep.Tools.Interfaces.IClassCreator.GenerateEntityClassFromPoco(System.Type,System.String,System.String,System.Boolean)">
             <summary>
-            Interface for validation and testing
+            Generates entity class code from a POCO type
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Tools.Interfaces.IDocumentationGenerator">
+        <member name="M:TheTechIdea.Beep.Tools.Interfaces.IClassCreator.GenerateEntityClassesFromNamespace(System.String,System.String,System.String,System.Boolean,System.Reflection.Assembly)">
             <summary>
-            Interface for documentation and utilities
+            Generates entity classes from all POCOs in a namespace
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Tools.Interfaces.IDllCreator">
+        <member name="M:TheTechIdea.Beep.Tools.Interfaces.IClassCreator.CreateEntityTypeAtRuntime(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
             <summary>
-            Interface for DLL creation and compilation
+            Compiles entity code and returns the Type at runtime (no file output)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Interfaces.IClassCreator.CreateEntityTypeFromPocoAtRuntime(System.Type,System.String)">
+            <summary>
+            Compiles entity code from POCO and returns the Type at runtime
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Interfaces.IClassCreator.CreateEntityTypesFromNamespaceAtRuntime(System.String,System.String,System.Reflection.Assembly)">
+            <summary>
+            Generates and compiles multiple entity types at runtime from a namespace
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Interfaces.IClassCreator.GetCircularReferences``1">
+            <summary>
+            Gets circular reference diagnostics for a POCO type
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIAuthenticationHelper">

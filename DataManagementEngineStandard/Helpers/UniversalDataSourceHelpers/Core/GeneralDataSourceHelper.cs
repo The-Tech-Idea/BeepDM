@@ -13,10 +13,11 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
     {
         private IDataSourceHelper _currentHelper;
 
-        public GeneralDataSourceHelper(DataSourceType dataSourceType)
+        public GeneralDataSourceHelper(DataSourceType dataSourceType, IDMEEditor dmeEditor)
         {
             SupportedType = dataSourceType;
-            _currentHelper = DataSourceHelperFactory.CreateHelper(dataSourceType);
+            var factory = new DataSourceHelperFactory(dmeEditor);
+            _currentHelper = factory.CreateHelper(dataSourceType);
         }
 
         public DataSourceType SupportedType { get; set; }

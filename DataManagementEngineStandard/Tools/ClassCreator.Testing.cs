@@ -19,7 +19,7 @@ namespace TheTechIdea.Beep.Tools
     {
         #region Private Fields
 
-        private ValidationAndTestingGeneratorHelper _validationHelper;
+        private ValidationAndTestingGeneratorHelper _validationTestingHelper;
 
         #endregion
 

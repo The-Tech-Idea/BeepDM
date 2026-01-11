@@ -15,17 +15,14 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
     public class SyncValidationHelper : ISyncValidationHelper
     {
         private readonly IDMEEditor _editor;
-        private readonly IDataSourceHelper _dataSourceHelper;
 
         /// <summary>
         /// Initializes a new instance of the SyncValidationHelper class
         /// </summary>
         /// <param name="editor">The DME editor instance</param>
-        /// <param name="dataSourceHelper">The data source helper instance</param>
-        public SyncValidationHelper(IDMEEditor editor, IDataSourceHelper dataSourceHelper)
+        public SyncValidationHelper(IDMEEditor editor)
         {
             _editor = editor ?? throw new ArgumentNullException(nameof(editor));
-            _dataSourceHelper = dataSourceHelper ?? throw new ArgumentNullException(nameof(dataSourceHelper));
         }
 
         /// <summary>
@@ -108,10 +105,10 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
 
             try
             {
-                if (!_dataSourceHelper.ValidateDataSourceConnection(dataSourceName))
+                if (!_editor.CheckDataSourceExist(dataSourceName))
                 {
                     result.Flag = Errors.Failed;
-                    result.Message = $"Data source '{dataSourceName}' is not accessible";
+                    result.Message = $"Data source '{dataSourceName}' does not exist";
                 }
                 else
                 {
@@ -154,7 +151,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
 
             try
             {
-                var dataSource = _dataSourceHelper.GetDataSource(dataSourceName);
+                var dataSource = _editor.GetDataSource(dataSourceName);
                 if (dataSource == null)
                 {
                     result.Flag = Errors.Failed;
@@ -203,7 +200,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             try
             {
                 // Validate sync field exists in source entity
-                var sourceDs = _dataSourceHelper.GetDataSource(schema.SourceDataSourceName);
+                var sourceDs = _editor.GetDataSource(schema.SourceDataSourceName);
                 if (sourceDs != null)
                 {
                     var sourceStructure = sourceDs.GetEntityStructure(schema.SourceEntityName, false);
@@ -218,7 +215,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 }
 
                 // Validate sync field exists in destination entity
-                var destDs = _dataSourceHelper.GetDataSource(schema.DestinationDataSourceName);
+                var destDs = _editor.GetDataSource(schema.DestinationDataSourceName);
                 if (destDs != null)
                 {
                     var destStructure = destDs.GetEntityStructure(schema.DestinationEntityName, false);
@@ -235,7 +232,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 // Validate field mappings if they exist
                 if (schema.MappedFields != null && schema.MappedFields.Count > 0)
                 {
-                    var mappingHelper = new FieldMappingHelper(_editor, _dataSourceHelper);
+                    var mappingHelper = new FieldMappingHelper(_editor);
                     var mappingValidation = mappingHelper.ValidateFieldMappings(schema.MappedFields);
                     if (mappingValidation.Flag == Errors.Failed)
                         errors.Add(new ErrorsInfo { Message = $"Field mapping validation failed: {mappingValidation.Message}" });

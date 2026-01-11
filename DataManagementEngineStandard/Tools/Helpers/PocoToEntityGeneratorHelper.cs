@@ -163,7 +163,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             // Add assemblies from DMEEditor's assembly handler if available
             if (_dmeEditor?.assemblyHandler?.Assemblies != null)
             {
-                assemblies.AddRange(_dmeEditor.assemblyHandler.Assemblies);
+                assemblies.AddRange(_dmeEditor.assemblyHandler.Assemblies.Select(a => a.DllLib).Where(a => a != null));
             }
 
             return assemblies.Distinct();
@@ -245,7 +245,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             {
                 fieldname = prop.Name,
                 fieldtype = MapClrTypeToDbType(prop.PropertyType),
-                Size1 = GetFieldSize(prop),
+                Size1 = int.TryParse(GetFieldSize(prop), out int size) ? size : 0,
                 AllowDBNull = IsNullable(prop),
                 IsAutoIncrement = HasAutoIncrementAttribute(prop),
                 IsKey = IsPrimaryKeyProperty(prop),
@@ -363,15 +363,14 @@ namespace TheTechIdea.Beep.Tools.Helpers
             var referencedType = NavigationPropertyDetector.GetReferencedType(navProp);
             if (referencedType == null) return null;
 
-            var fkProperty = NavigationPropertyDetector.FindForeignKeyProperty(parentType, navProp);
+            var fkProperty = NavigationPropertyDetector.FindForeignKeyProperty(navProp, parentType);
             var cardinality = RelationshipInferencer.InferCardinality(navProp, parentType, referencedType);
 
             var relationship = new RelationShipKeys
             {
                 EntityColumnID = fkProperty?.Name ?? $"{referencedType.Name}Id",
                 RelatedEntityID = referencedType.Name,
-                RelatedEntityColumnID = "Id", // Convention
-                RelatedEntityColumnMatchID = fkProperty?.Name ?? $"{referencedType.Name}Id"
+                RelatedEntityColumnID = "Id" // Convention
             };
 
             return relationship;
@@ -482,7 +481,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                     sb.AppendLine("        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
                 if (!field.AllowDBNull && clrType == "string")
                     sb.AppendLine("        [Required]");
-                if (!string.IsNullOrEmpty(field.Size1) && field.Size1 != "0" && clrType == "string")
+                if (field.Size1 > 0 && clrType == "string")
                     sb.AppendLine($"        [StringLength({field.Size1})]");
 
                 // Property
@@ -729,7 +728,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             }
 
             // Get all entities or specified ones
-            var entities = entityNames ?? ds.GetEntitesList().Select(e => e.EntityName).ToList();
+            var entities = entityNames ?? ds.GetEntitesList().ToList();
 
             var allCode = new StringBuilder();
             allCode.AppendLine("using System;");

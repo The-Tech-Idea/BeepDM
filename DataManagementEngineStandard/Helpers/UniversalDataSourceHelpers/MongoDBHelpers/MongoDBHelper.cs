@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core;
+using TheTechIdea.Beep.Helpers.DataTypesHelpers;
 
 namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers
 {
@@ -17,6 +19,17 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers
     /// </summary>
     public class MongoDBHelper : IDataSourceHelper
     {
+        private readonly IDMEEditor _dmeEditor;
+
+        /// <summary>
+        /// Initializes a new instance of the MongoDBHelper class.
+        /// </summary>
+        /// <param name="dmeEditor">The IDMEEditor instance</param>
+        public MongoDBHelper(IDMEEditor dmeEditor)
+        {
+            _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
+        }
+
         public DataSourceType SupportedType { get; set; } = DataSourceType.MongoDB;
         public string Name => "MongoDB";
 
@@ -172,7 +185,11 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers
                 if (options != null)
                 {
                     if (options.TryGetValue("unique", out var unique) && (bool)unique)
-                        indexSpec["indexes"].AsArray()[0]["unique"] = true;
+                    {
+                        var indexesArray = indexSpec["indexes"] as Dictionary<string, object>[];
+                        if (indexesArray != null && indexesArray.Length > 0)
+                            indexesArray[0]["unique"] = true;
+                    }
                 }
 
                 return (Newtonsoft.Json.JsonConvert.SerializeObject(indexSpec), true, "");
@@ -557,67 +574,71 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers
 
         /// <summary>
         /// Maps C# types to MongoDB BSON types.
+        /// Uses DataTypeMappingRepository for mapping.
         /// </summary>
         public string MapClrTypeToDatasourceType(Type clrType, int? size = null, int? precision = null, int? scale = null)
         {
-            if (clrType == typeof(string))
-                return "string";
-            if (clrType == typeof(int))
-                return "int";
-            if (clrType == typeof(long))
-                return "long";
-            if (clrType == typeof(double))
-                return "double";
-            if (clrType == typeof(decimal))
-                return "decimal";
-            if (clrType == typeof(bool))
-                return "bool";
-            if (clrType == typeof(DateTime))
-                return "date";
-            if (clrType == typeof(byte[]))
-                return "binData";
-            if (clrType == typeof(object))
-                return "object";
+            try
+            {
+                if (clrType == null)
+                    return "string";
 
-            return "string"; // Default fallback
+                var netTypeName = clrType.FullName ?? clrType.Name;
+                
+                // Get mappings for this datasource type
+                var mappings = DataTypeMappingRepository.GetDataTypes(SupportedType, _dmeEditor);
+                if (mappings != null && mappings.Any())
+                {
+                    var exactMatch = mappings.FirstOrDefault(m => 
+                        m.NetDataType.Equals(netTypeName, StringComparison.OrdinalIgnoreCase) && m.Fav)
+                        ?? mappings.FirstOrDefault(m => m.NetDataType.Equals(netTypeName, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (exactMatch != null)
+                        return exactMatch.DataType;
+                }
+
+                // Minimal fallback for error cases only
+                return "string";
+            }
+            catch
+            {
+                return "string"; // Minimal fallback
+            }
         }
 
         /// <summary>
         /// Maps MongoDB BSON types back to C# types.
+        /// Uses DataTypeMappingRepository for mapping.
         /// </summary>
         public Type MapDatasourceTypeToClrType(string datasourceType)
         {
-            if (string.IsNullOrWhiteSpace(datasourceType))
-                return typeof(object);
-
-            switch (datasourceType.ToLower())
+            try
             {
-                case "string":
-                    return typeof(string);
-                case "int":
-                case "integer":
-                    return typeof(int);
-                case "long":
-                    return typeof(long);
-                case "double":
-                case "number":
-                    return typeof(double);
-                case "decimal":
-                    return typeof(decimal);
-                case "bool":
-                case "boolean":
-                    return typeof(bool);
-                case "date":
-                case "datetime":
-                    return typeof(DateTime);
-                case "bindata":
-                case "binary":
-                    return typeof(byte[]);
-                case "object":
-                case "document":
+                if (string.IsNullOrWhiteSpace(datasourceType))
                     return typeof(object);
-                default:
-                    return typeof(object);
+
+                var cleanType = datasourceType.Trim();
+                var mappings = DataTypeMappingRepository.GetDataTypes(SupportedType, _dmeEditor);
+                if (mappings != null && mappings.Any())
+                {
+                    var mapping = mappings.FirstOrDefault(m => 
+                        m.DataType.Equals(cleanType, StringComparison.OrdinalIgnoreCase) && m.Fav)
+                        ?? mappings.FirstOrDefault(m => m.DataType.StartsWith(cleanType, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (mapping != null && !string.IsNullOrWhiteSpace(mapping.NetDataType))
+                    {
+                        var type = Type.GetType(mapping.NetDataType);
+                        if (type != null)
+                            return type;
+                    }
+                }
+
+                // Minimal fallback for error cases only
+                return typeof(object);
+            }
+            catch
+            {
+                return typeof(object); // Minimal fallback
             }
         }
 
@@ -659,7 +680,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers
         /// </summary>
         public bool SupportsCapability(CapabilityType capability)
         {
-            return Capabilities.SupportsCapability(capability);
+            return Capabilities.IsCapable(capability);
         }
 
         /// <summary>
