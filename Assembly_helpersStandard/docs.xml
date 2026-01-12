@@ -229,6 +229,16 @@
             Get builtin classes from current and entry assemblies
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.LoadAssembliesFromFolder(System.String,TheTechIdea.Beep.Utilities.FolderFileTypes,System.Boolean)">
+            <summary>
+            Load assemblies from a folder and scan for DataSources
+            Designed for loading DLLs extracted from NuGet packages
+            </summary>
+            <param name="folderPath">Path to folder containing DLLs</param>
+            <param name="folderFileType">Type of folder (DataSources, ConnectionDriver, etc.)</param>
+            <param name="scanForDataSources">Whether to scan specifically for IDataSource implementations</param>
+            <returns>List of successfully loaded assemblies</returns>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.LoadNugget(System.String)">
             <summary>
             Load a NuGet package from specified path
@@ -353,6 +363,16 @@
         <member name="M:TheTechIdea.Beep.Tools.NuggetManager.Clear">
             <summary>
             Clear all loaded nuggets (tracking only for shared context)
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.NuggetManager.FrameworkFolders">
+            <summary>
+            Framework folders in priority order (most compatible first)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.NuggetManager.GetCompatibleDlls(System.String)">
+            <summary>
+            Get compatible DLLs from a path, prioritizing framework-specific folders and skipping native DLLs
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.NuggetManager.LoadNuggetInContext(System.String,System.Runtime.Loader.AssemblyLoadContext)">
@@ -1578,6 +1598,16 @@
         </member>
         <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.AddTypeToCache(System.String,System.Type)">
             <summary>No-op retained for interface compatibility; caching handled by SharedContextManager.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.LoadAssembliesFromFolder(System.String,TheTechIdea.Beep.Utilities.FolderFileTypes,System.Boolean)">
+            <summary>
+            Load assemblies from a folder and scan for DataSources
+            Designed for loading DLLs extracted from NuGet packages
+            </summary>
+            <param name="folderPath">Path to folder containing DLLs</param>
+            <param name="folderFileType">Type of folder (DataSources, ConnectionDriver, etc.)</param>
+            <param name="scanForDataSources">Whether to scan specifically for IDataSource implementations</param>
+            <returns>List of successfully loaded assemblies</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.LoadNugget(System.String)">
             <summary>

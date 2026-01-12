@@ -291,6 +291,55 @@ namespace TheTechIdea.Beep.Tools
         #region Private Helper Methods
 
         /// <summary>
+        /// Framework folders in priority order (most compatible first)
+        /// </summary>
+        private static readonly string[] FrameworkFolders = new[]
+        {
+            $"net{Environment.Version.Major}.{Environment.Version.Minor}",
+            $"net{Environment.Version.Major}.0",
+            "net8.0", "net7.0", "net6.0",
+            "netstandard2.1", "netstandard2.0", "netstandard1.6",
+            "netcoreapp3.1", "netcoreapp3.0", "netcoreapp2.1",
+            "net48", "net472", "net461", "net46", "net45"
+        };
+
+        /// <summary>
+        /// Get compatible DLLs from a path, prioritizing framework-specific folders and skipping native DLLs
+        /// </summary>
+        private IEnumerable<string> GetCompatibleDlls(string path)
+        {
+            var dlls = new List<string>();
+            
+            // Check for lib folder with framework subfolders
+            var libPath = Path.Combine(path, "lib");
+            if (Directory.Exists(libPath))
+            {
+                // Try each framework in priority order
+                foreach (var fw in FrameworkFolders)
+                {
+                    var fwPath = Path.Combine(libPath, fw);
+                    if (Directory.Exists(fwPath))
+                    {
+                        dlls.AddRange(Directory.GetFiles(fwPath, "*.dll", SearchOption.TopDirectoryOnly));
+                        _logger?.WriteLog($"GetCompatibleDlls: Found framework folder '{fw}' with {dlls.Count} DLL(s)");
+                        break; // Use first compatible framework
+                    }
+                }
+            }
+            
+            // If no lib folder or no framework matches, get root DLLs
+            if (!dlls.Any())
+            {
+                dlls.AddRange(Directory.GetFiles(path, "*.dll", SearchOption.TopDirectoryOnly));
+            }
+            
+            // Filter out DLLs in runtimes folder (native DLLs)
+            return dlls.Where(d => 
+                !d.Contains($"{Path.DirectorySeparatorChar}runtimes{Path.DirectorySeparatorChar}") &&
+                !d.Contains("/runtimes/"));
+        }
+
+        /// <summary>
         /// Load nugget assemblies using isolated AssemblyLoadContext
         /// </summary>
         private List<Assembly> LoadNuggetInContext(string path, AssemblyLoadContext context)
@@ -299,27 +348,38 @@ namespace TheTechIdea.Beep.Tools
 
             try
             {
+                IEnumerable<string> dllFiles;
+                
                 if (File.Exists(path) && path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
                 {
                     // Single DLL file
-                    var assembly = context.LoadFromAssemblyPath(path);
-                    assemblies.Add(assembly);
+                    dllFiles = new[] { path };
                 }
                 else if (Directory.Exists(path))
                 {
-                    // Directory - load all DLLs
-                    var dllFiles = Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories);
-                    foreach (var dllFile in dllFiles)
+                    // Directory - use smart scanning to get compatible DLLs
+                    dllFiles = GetCompatibleDlls(path);
+                }
+                else
+                {
+                    return assemblies;
+                }
+
+                foreach (var dllFile in dllFiles)
+                {
+                    try
                     {
-                        try
-                        {
-                            var assembly = context.LoadFromAssemblyPath(dllFile);
-                            assemblies.Add(assembly);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger?.WriteLog($"LoadNuggetInContext: Error loading '{dllFile}': {ex.Message}");
-                        }
+                        var assembly = context.LoadFromAssemblyPath(dllFile);
+                        assemblies.Add(assembly);
+                        _logger?.WriteLog($"LoadNuggetInContext: Loaded {Path.GetFileName(dllFile)}");
+                    }
+                    catch (BadImageFormatException)
+                    {
+                        _logger?.WriteLog($"LoadNuggetInContext: Skipping native DLL: {Path.GetFileName(dllFile)}");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.WriteLog($"LoadNuggetInContext: Error loading '{dllFile}': {ex.Message}");
                     }
                 }
             }
@@ -340,27 +400,38 @@ namespace TheTechIdea.Beep.Tools
 
             try
             {
+                IEnumerable<string> dllFiles;
+                
                 if (File.Exists(path) && path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
                 {
                     // Single DLL file
-                    var assembly = Assembly.LoadFrom(path);
-                    assemblies.Add(assembly);
+                    dllFiles = new[] { path };
                 }
                 else if (Directory.Exists(path))
                 {
-                    // Directory - load all DLLs
-                    var dllFiles = Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories);
-                    foreach (var dllFile in dllFiles)
+                    // Directory - use smart scanning to get compatible DLLs
+                    dllFiles = GetCompatibleDlls(path);
+                }
+                else
+                {
+                    return assemblies;
+                }
+
+                foreach (var dllFile in dllFiles)
+                {
+                    try
                     {
-                        try
-                        {
-                            var assembly = Assembly.LoadFrom(dllFile);
-                            assemblies.Add(assembly);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger?.WriteLog($"LoadNuggetTraditional: Error loading '{dllFile}': {ex.Message}");
-                        }
+                        var assembly = Assembly.LoadFrom(dllFile);
+                        assemblies.Add(assembly);
+                        _logger?.WriteLog($"LoadNuggetTraditional: Loaded {Path.GetFileName(dllFile)}");
+                    }
+                    catch (BadImageFormatException)
+                    {
+                        _logger?.WriteLog($"LoadNuggetTraditional: Skipping native DLL: {Path.GetFileName(dllFile)}");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.WriteLog($"LoadNuggetTraditional: Error loading '{dllFile}': {ex.Message}");
                     }
                 }
             }

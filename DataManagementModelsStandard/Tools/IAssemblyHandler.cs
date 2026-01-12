@@ -51,6 +51,7 @@ namespace TheTechIdea.Beep.Tools
         bool UnloadAssembly(string assemblyname);
         bool RunMethod(object ObjInstance, string FullClassName, string MethodName);
         AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type, string typename);
+        List<Assembly> LoadAssembliesFromFolder(string folderPath, FolderFileTypes folderFileType, bool scanForDataSources = true);
         void AddTypeToCache(string fullName, Type type);
     }
 }

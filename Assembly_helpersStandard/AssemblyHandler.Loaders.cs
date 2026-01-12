@@ -427,6 +427,103 @@ namespace TheTechIdea.Beep.Tools
             return ErrorObject;
         }
 
+        /// <summary>
+        /// Load assemblies from a folder and scan for DataSources
+        /// Designed for loading DLLs extracted from NuGet packages
+        /// </summary>
+        /// <param name="folderPath">Path to folder containing DLLs</param>
+        /// <param name="folderFileType">Type of folder (DataSources, ConnectionDriver, etc.)</param>
+        /// <param name="scanForDataSources">Whether to scan specifically for IDataSource implementations</param>
+        /// <returns>List of successfully loaded assemblies</returns>
+        public List<Assembly> LoadAssembliesFromFolder(string folderPath, FolderFileTypes folderFileType, bool scanForDataSources = true)
+        {
+            var loadedAssemblies = new List<Assembly>();
+            
+            if (!Directory.Exists(folderPath))
+            {
+                Logger?.WriteLog($"LoadAssembliesFromFolder: Directory does not exist: {folderPath}");
+                return loadedAssemblies;
+            }
+
+            try
+            {
+                foreach (string dllPath in Directory.GetFiles(folderPath, "*.dll", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        // Skip native DLLs in runtimes folders
+                        if (dllPath.Contains($"{Path.DirectorySeparatorChar}runtimes{Path.DirectorySeparatorChar}") ||
+                            dllPath.Contains("/runtimes/"))
+                        {
+                            continue;
+                        }
+
+                        // Check if already loaded
+                        if (_loadedAssemblyCache.ContainsKey(dllPath))
+                        {
+                            var cached = _loadedAssemblyCache[dllPath];
+                            if (!loadedAssemblies.Contains(cached))
+                                loadedAssemblies.Add(cached);
+                            continue;
+                        }
+
+                        Assembly loadedAssembly = LoadAssemblySafely(dllPath);
+                        if (loadedAssembly != null)
+                        {
+                            // Add to collections
+                            assemblies_rep x = new assemblies_rep(loadedAssembly, dllPath, dllPath, folderFileType);
+                            if (!Assemblies.Any(a => a.DllLib == loadedAssembly))
+                            {
+                                Assemblies.Add(x);
+                            }
+                            
+                            _loadedAssemblyCache[dllPath] = loadedAssembly;
+                            
+                            if (!LoadedAssemblies.Contains(loadedAssembly))
+                            {
+                                LoadedAssemblies.Add(loadedAssembly);
+                            }
+
+                            // Scan for DataSources if requested
+                            if (scanForDataSources)
+                            {
+                                ScanAssemblyForDataSources(loadedAssembly);
+                            }
+                            else
+                            {
+                                // Full scan for all types
+                                ScanAssembly(loadedAssembly);
+                            }
+
+                            loadedAssemblies.Add(loadedAssembly);
+                            Logger?.WriteLog($"LoadAssembliesFromFolder: Loaded and scanned {loadedAssembly.GetName().Name} from {dllPath}");
+                        }
+                    }
+                    catch (FileLoadException loadEx)
+                    {
+                        Logger?.WriteLog($"LoadAssembliesFromFolder: Assembly already loaded: {dllPath} - {loadEx.Message}");
+                    }
+                    catch (BadImageFormatException imgEx)
+                    {
+                        Logger?.WriteLog($"LoadAssembliesFromFolder: Bad image format (likely native DLL): {dllPath} - {imgEx.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger?.WriteLog($"LoadAssembliesFromFolder: Error loading {dllPath}: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger?.WriteLog($"LoadAssembliesFromFolder: Error processing folder {folderPath}: {ex.Message}");
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+            }
+
+            Logger?.WriteLog($"LoadAssembliesFromFolder: Successfully loaded {loadedAssemblies.Count} assembly(ies) from {folderPath}");
+            return loadedAssemblies;
+        }
+
         #endregion
 
         #region Nugget Management
