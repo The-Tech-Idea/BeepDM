@@ -177,7 +177,7 @@ namespace TheTechIdea.Beep.Helpers
                 parameter1 = "Database",
                 parameter2 = "DatabaseConfiguration",
                 iconname = "couchbase.svg",
-                classHandler = "CouchbaseLiteDatasource",
+                classHandler = "CouchBaseLiteDataSource",
                 ADOType = false,
                 CreateLocal = false,
                 InMemory = false,
