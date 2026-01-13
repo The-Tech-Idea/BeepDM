@@ -60,7 +60,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "108.0.0.0",
                 NuggetSource = "RestSharp",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -87,7 +87,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "5.0.0.0",
                 NuggetSource = "GraphQL.Client",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -114,7 +114,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "7.0.0.0",
                 NuggetSource = "Microsoft.OData.Client",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -141,7 +141,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "4.3.0.0",
                 NuggetSource = "System.Net.Http",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -171,7 +171,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "2.0.0.0",
                 NuggetSource = "OPC",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -198,7 +198,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "4.8.0.0",
                 NuggetSource = "System.ServiceModel",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -225,7 +225,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "3.0.0.0",
                 NuggetSource = "CookComputing.XmlRpc",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -252,7 +252,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "2.10.0.0",
                 NuggetSource = "StreamJsonRpc",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -283,7 +283,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "6.0.0.0",
                 NuggetSource = "System.Data.Odbc",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -314,7 +314,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "6.0.0.0",
                 NuggetSource = "System.Data.OleDb",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -345,7 +345,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "4.3.0.0",
                 NuggetSource = "System.Data.Common",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -372,7 +372,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "2.0.0.0",
                 NuggetSource = "Grpc.Net.Client",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -399,7 +399,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "4.3.0.0",
                 NuggetSource = "System.Net.WebSockets.Client",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -426,7 +426,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "4.0.0.0",
                 NuggetSource = "LaunchDarkly.EventSource",
-                NuggetMissing = false
+               NuggetMissing = false,NeedDrivers=false
             };
         }
     }

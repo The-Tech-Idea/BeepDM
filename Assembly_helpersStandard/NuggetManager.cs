@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -47,13 +48,14 @@ namespace TheTechIdea.Beep.Tools
         #region Public Methods
 
         /// <summary>
-        /// Load a nugget from specified path (supports both single DLL and directory)
+        /// Load a nugget from specified path (supports .nupkg files, single DLL, and directory)
         /// </summary>
-        /// <param name="path">Path to nugget directory or DLL file</param>
+        /// <param name="path">Path to nugget .nupkg file, directory, or DLL file</param>
         /// <param name="useIsolatedContext">If true, uses AssemblyLoadContext for isolation (.NET Core/.NET 5+)</param>
         /// <returns>True if loaded successfully</returns>
         public bool LoadNugget(string path, bool useIsolatedContext = false)
         {
+            string extractedPath = null;
             try
             {
                 if (string.IsNullOrWhiteSpace(path))
@@ -66,6 +68,20 @@ namespace TheTechIdea.Beep.Tools
                 {
                     _logger?.WriteLog($"LoadNugget: Path does not exist: {path}");
                     return false;
+                }
+
+                // If path is a .nupkg file, extract it first
+                if (File.Exists(path) && path.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger?.WriteLog($"LoadNugget: Extracting .nupkg file: {path}");
+                    extractedPath = ExtractNuGetPackage(path);
+                    if (string.IsNullOrEmpty(extractedPath) || !Directory.Exists(extractedPath))
+                    {
+                        _logger?.WriteLog($"LoadNugget: Failed to extract .nupkg file: {path}");
+                        return false;
+                    }
+                    path = extractedPath; // Use extracted directory for loading
+                    _logger?.WriteLog($"LoadNugget: Extracted to: {extractedPath}");
                 }
 
                 // Determine nugget name
@@ -135,6 +151,12 @@ namespace TheTechIdea.Beep.Tools
                 _errorObject.Message = ex.Message;
                 _errorObject.Ex = ex;
                 return false;
+            }
+            finally
+            {
+                // Note: We don't delete extractedPath here because assemblies may reference files in it
+                // The extracted directory will remain until the nugget is unloaded or the process exits
+                // If cleanup is needed, it should be done in UnloadNugget
             }
         }
 
@@ -244,6 +266,154 @@ namespace TheTechIdea.Beep.Tools
         {
             _assemblyPathToNugget.TryGetValue(assemblyPath, out var nuggetName);
             return nuggetName;
+        }
+
+        /// <summary>
+        /// Checks if a repository path is a filesystem path (directory or file)
+        /// </summary>
+        public static bool IsFilesystemRepository(string repoPath)
+        {
+            if (string.IsNullOrWhiteSpace(repoPath))
+                return false;
+            
+            // If it starts with http:// or https://, it's a URL
+            if (repoPath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                repoPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                return false;
+            
+            // Check if it exists as a file or directory
+            if (File.Exists(repoPath) || Directory.Exists(repoPath))
+                return true;
+            
+            // Check if it looks like a path (contains path separators)
+            if (repoPath.Contains(Path.DirectorySeparatorChar) || repoPath.Contains('/'))
+                return true;
+            
+            return false;
+        }
+
+        /// <summary>
+        /// Gets package versions from a filesystem repository (directory containing .nupkg files)
+        /// </summary>
+        public List<string> GetPackageVersionsFromFilesystem(string packageName, string repoPath)
+        {
+            var versions = new List<string>();
+            
+            try
+            {
+                if (Directory.Exists(repoPath))
+                {
+                    // Search for .nupkg files matching the package ID
+                    var packageFiles = Directory.GetFiles(repoPath, $"{packageName}.*.nupkg", SearchOption.AllDirectories)
+                        .Where(f => Path.GetFileName(f).StartsWith($"{packageName}.", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                    
+                    if (!packageFiles.Any())
+                    {
+                        // Also try case-insensitive search
+                        packageFiles = Directory.GetFiles(repoPath, "*.nupkg", SearchOption.AllDirectories)
+                            .Where(f => Path.GetFileNameWithoutExtension(f).StartsWith($"{packageName}.", StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+                    }
+                    
+                    foreach (var file in packageFiles)
+                    {
+                        var fileName = Path.GetFileNameWithoutExtension(file);
+                        // Format: PackageId.Version (e.g., "MyPackage.1.2.3")
+                        var parts = fileName.Split('.');
+                        if (parts.Length >= 2)
+                        {
+                            // Try to parse version from the end
+                            for (int i = parts.Length - 1; i >= 1; i--)
+                            {
+                                var versionStr = string.Join(".", parts.Skip(i));
+                                // Try to parse as version (basic check - could use NuGet.Versioning if available)
+                                if (System.Version.TryParse(versionStr, out _) || 
+                                    versionStr.Split('.').All(p => int.TryParse(p, out _)))
+                                {
+                                    versions.Add(versionStr);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Sort versions (newest first) - simple string comparison for now
+                    versions = versions
+                        .OrderByDescending(v => v, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                }
+                else if (File.Exists(repoPath) && repoPath.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Single .nupkg file
+                    var fileName = Path.GetFileNameWithoutExtension(repoPath);
+                    if (fileName.StartsWith($"{packageName}.", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var parts = fileName.Split('.');
+                        for (int i = parts.Length - 1; i >= 1; i--)
+                        {
+                            var versionStr = string.Join(".", parts.Skip(i));
+                            if (System.Version.TryParse(versionStr, out _) || 
+                                versionStr.Split('.').All(p => int.TryParse(p, out _)))
+                            {
+                                versions.Add(versionStr);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.WriteLog($"GetPackageVersionsFromFilesystem: Error getting versions from filesystem {repoPath}: {ex.Message}");
+            }
+            
+            return versions;
+        }
+
+        /// <summary>
+        /// Checks if a package is already installed in a destination folder
+        /// </summary>
+        /// <param name="packageName">Name of the package</param>
+        /// <param name="destinationFolder">Destination folder to check</param>
+        /// <param name="expectedAssemblyName">Optional expected assembly name to check for</param>
+        /// <param name="expectedClassName">Optional expected class name to verify the package is loaded</param>
+        /// <returns>True if package appears to be installed</returns>
+        public bool IsPackageAlreadyInstalled(string packageName, string destinationFolder, string? expectedAssemblyName = null, string? expectedClassName = null)
+        {
+            if (!Directory.Exists(destinationFolder))
+                return false;
+
+            // Check for DLL files that match the package name
+            var dllFiles = Directory.GetFiles(destinationFolder, "*.dll", SearchOption.AllDirectories);
+            
+            // If expected assembly name is provided, check for it specifically
+            if (!string.IsNullOrWhiteSpace(expectedAssemblyName))
+            {
+                var expectedDll = Path.Combine(destinationFolder, $"{expectedAssemblyName}.dll");
+                if (File.Exists(expectedDll))
+                {
+                    _logger?.WriteLog($"IsPackageAlreadyInstalled: Package {packageName} already installed: {expectedDll}");
+                    return true;
+                }
+                
+                // Also check in subdirectories
+                if (dllFiles.Any(dll => Path.GetFileNameWithoutExtension(dll).Equals(expectedAssemblyName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    _logger?.WriteLog($"IsPackageAlreadyInstalled: Package {packageName} already installed (found matching assembly)");
+                    return true;
+                }
+            }
+            
+            // Check if any DLL matches the package name (case-insensitive)
+            var packageNameLower = packageName.ToLowerInvariant();
+            if (dllFiles.Any(dll => Path.GetFileNameWithoutExtension(dll).ToLowerInvariant().Contains(packageNameLower)))
+            {
+                _logger?.WriteLog($"IsPackageAlreadyInstalled: Package {packageName} may already be installed (found matching DLL)");
+                return true;
+            }
+            
+            return false;
         }
 
         /// <summary>
@@ -471,6 +641,45 @@ namespace TheTechIdea.Beep.Tools
             catch
             {
                 return "1.0.0";
+            }
+        }
+
+        /// <summary>
+        /// Extracts a .nupkg file to a temporary directory
+        /// </summary>
+        /// <param name="nupkgPath">Path to the .nupkg file</param>
+        /// <returns>Path to the extracted directory, or null if extraction failed</returns>
+        private string ExtractNuGetPackage(string nupkgPath)
+        {
+            try
+            {
+                if (!File.Exists(nupkgPath))
+                {
+                    _logger?.WriteLog($"ExtractNuGetPackage: File not found: {nupkgPath}");
+                    return null;
+                }
+
+                // Extract to a subdirectory next to the .nupkg file
+                var extractDir = Path.Combine(
+                    Path.GetDirectoryName(nupkgPath) ?? Path.GetTempPath(),
+                    Path.GetFileNameWithoutExtension(nupkgPath) + "_extracted");
+
+                // If directory already exists, use it (may have been extracted before)
+                if (!Directory.Exists(extractDir))
+                {
+                    Directory.CreateDirectory(extractDir);
+                }
+
+                // Extract the .nupkg file (it's a ZIP archive)
+                ZipFile.ExtractToDirectory(nupkgPath, extractDir, overwriteFiles: true);
+
+                _logger?.WriteLog($"ExtractNuGetPackage: Extracted '{nupkgPath}' to '{extractDir}'");
+                return extractDir;
+            }
+            catch (Exception ex)
+            {
+                _logger?.WriteLog($"ExtractNuGetPackage: Error extracting '{nupkgPath}': {ex.Message}");
+                return null;
             }
         }
 

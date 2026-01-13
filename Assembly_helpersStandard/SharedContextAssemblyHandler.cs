@@ -379,7 +379,25 @@ namespace TheTechIdea.Beep.Tools
             {
                 try
                 {
+                    // Load from main folder
                     LoadAssembly(path, FolderFileTypes.ConnectionDriver);
+                    
+                    // Also scan subfolders (for NuGet packages downloaded to subfolders like ConnectionDrivers/SqlServer/)
+                    if (Directory.Exists(path))
+                    {
+                        foreach (var subDir in Directory.GetDirectories(path))
+                        {
+                            try
+                            {
+                                Logger?.LogWithContext($"Scanning driver subfolder: {Path.GetFileName(subDir)}", null);
+                                LoadAssembly(subDir, FolderFileTypes.ConnectionDriver);
+                            }
+                            catch (Exception subEx)
+                            {
+                                Logger?.LogWithContext($"Failed to load driver classes from subfolder {subDir}", subEx);
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -429,7 +447,25 @@ namespace TheTechIdea.Beep.Tools
             {
                 try
                 {
+                    // Load from main folder
                     LoadAssembly(path, FolderFileTypes.DataSources);
+                    
+                    // Also scan subfolders (for NuGet packages downloaded to subfolders like DataSources/SqlServer/)
+                    if (Directory.Exists(path))
+                    {
+                        foreach (var subDir in Directory.GetDirectories(path))
+                        {
+                            try
+                            {
+                                Logger?.LogWithContext($"Scanning datasource subfolder: {Path.GetFileName(subDir)}", null);
+                                LoadAssembly(subDir, FolderFileTypes.DataSources);
+                            }
+                            catch (Exception subEx)
+                            {
+                                Logger?.LogWithContext($"Failed to load datasource classes from subfolder {subDir}", subEx);
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {

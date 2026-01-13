@@ -397,6 +397,39 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         }
 
         /// <summary>
+        /// Checks if a NuGet package is already loaded in memory by package name
+        /// Maps NuGet package ID to assembly name (often they match)
+        /// </summary>
+        public bool IsPackageLoaded(string packageName)
+        {
+            if (string.IsNullOrWhiteSpace(packageName))
+                return false;
+
+            // Check shared context assemblies
+            var sharedAssemblies = _sharedContextManager.GetSharedAssemblies();
+            if (sharedAssemblies.Any(a => 
+                a.GetName().Name.Equals(packageName, StringComparison.OrdinalIgnoreCase) ||
+                a.GetName().Name.StartsWith(packageName + ".", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            // Check traditional loaded assemblies
+            if (_assemblyHandler.LoadedAssemblies.Any(a => 
+                a.GetName().Name.Equals(packageName, StringComparison.OrdinalIgnoreCase) ||
+                a.GetName().Name.StartsWith(packageName + ".", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            // Also check AppDomain for any loaded assemblies
+            var appDomainAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+            return appDomainAssemblies.Any(a => 
+                a.GetName().Name.Equals(packageName, StringComparison.OrdinalIgnoreCase) ||
+                a.GetName().Name.StartsWith(packageName + ".", StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
         /// Gets comprehensive loading statistics from both systems
         /// </summary>
         public Dictionary<string, object> GetLoadingStatistics()

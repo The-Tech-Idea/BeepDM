@@ -24,7 +24,7 @@ namespace TheTechIdea.Beep.Helpers
                 CreateRealIMMemoryConfig(),
                 CreateHadoopConfig(),
                 CreatePetastormConfig(),
-                CreateRocketSetConfig(),
+                //CreateRocketSetConfig(),
                 CreateApacheIgniteConfig(),
                 CreateHazelcastConfig(),
                 CreateRedisMemoryConfig(),
@@ -76,9 +76,9 @@ namespace TheTechIdea.Beep.Helpers
             {
                 GuidID = "b68a607a-8d54-4ca1-b8e3-0feabe3f5590",
                 PackageName = "TheTechIdea.Beep.Maui.DataSource.Sqlite",
-                DriverClass = "TheTechIdea.Beep.Maui.DataSource.Sqlite",
+                DriverClass = "sqlite-net-pcl",
                 version = "1.0.113.0",
-                dllname = "TheTechIdea.Beep.Maui.DataSource.Sqlite.dll",
+                dllname = "sqlite-net-pcl",
                 ConnectionString = "{File}",
                 iconname = "Sqlite.svg",
                 classHandler = "SQLiteMauiDataSource",
@@ -91,7 +91,7 @@ namespace TheTechIdea.Beep.Helpers
                 DatasourceType = DataSourceType.SqlLite,
                 IsMissing = false,
                 NuggetVersion = "1.0.113.0",
-                NuggetSource = "TheTechIdea.Beep.Maui.DataSource.Sqlite",
+                NuggetSource = "sqlite-net-pcl",
                 NuggetMissing = false
             };
         }
@@ -104,6 +104,7 @@ namespace TheTechIdea.Beep.Helpers
             {
                 ADOType = true,
                 classHandler = "DuckDBMemoryDataSource",
+
                 CreateLocal = false,
                 DatasourceCategory = DatasourceCategory.INMEMORY,
                 DatasourceType = DataSourceType.DuckDB,
@@ -205,36 +206,36 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "Petastorm",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers= false
             };
         }
 
-        /// <summary>Creates a configuration object for RocketSet connection drivers.</summary>
-        /// <returns>A configuration object for RocketSet connection drivers.</returns>
-        public static ConnectionDriversConfig CreateRocketSetConfig()
-        {
-            return new ConnectionDriversConfig
-            {
-                GuidID = Guid.NewGuid().ToString(),
-                PackageName = "RocketSet",
-                DriverClass = "RocketSet",
-                version = "1.0.0.0",
-                dllname = "TheTechIdea.Beep.RocketSetDataSource.dll",
-                ConnectionString = "MemoryLimit={MemoryLimit};CacheSize={CacheSize};",
-                iconname = "rocketset.svg",
-                classHandler = "RocketSetDataSource",
-                ADOType = false,
-                CreateLocal = false,
-                InMemory = true,
-                Favourite = false,
-                DatasourceCategory = DatasourceCategory.INMEMORY,
-                DatasourceType = DataSourceType.RocketSet,
-                IsMissing = false,
-                NuggetVersion = "1.0.0.0",
-                NuggetSource = "RocketSet",
-                NuggetMissing = false
-            };
-        }
+        ///// <summary>Creates a configuration object for RocketSet connection drivers.</summary>
+        ///// <returns>A configuration object for RocketSet connection drivers.</returns>
+        //public static ConnectionDriversConfig CreateRocketSetConfig()
+        //{
+        //    return new ConnectionDriversConfig
+        //    {
+        //        GuidID = Guid.NewGuid().ToString(),
+        //        PackageName = "RocketSet",
+        //        DriverClass = "RocketSet",
+        //        version = "1.0.0.0",
+        //        dllname = "TheTechIdea.Beep.RocketSetDataSource.dll",
+        //        ConnectionString = "MemoryLimit={MemoryLimit};CacheSize={CacheSize};",
+        //        iconname = "rocketset.svg",
+        //        classHandler = "RocketSetDataSource",
+        //        ADOType = false,
+        //        CreateLocal = false,
+        //        InMemory = true,
+        //        Favourite = false,
+        //        DatasourceCategory = DatasourceCategory.INMEMORY,
+        //        DatasourceType = DataSourceType.RocketSet,
+        //        IsMissing = false,
+        //        NuggetVersion = "1.0.0.0",
+        //        NuggetSource = "RocketSet",
+        //        NuggetMissing = false
+        //    };
+        //}
 
         /// <summary>Creates a configuration object for Apache Ignite connection drivers.</summary>
         /// <returns>A configuration object for Apache Ignite connection drivers.</returns>
@@ -259,7 +260,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "2.14.0.0",
                 NuggetSource = "Apache.Ignite",
-                NuggetMissing = false
+                NuggetMissing = false, NeedDrivers= false
             };
         }
 
@@ -342,7 +343,7 @@ namespace TheTechIdea.Beep.Helpers
                 DatasourceType = DataSourceType.Memcached,
                 IsMissing = false,
                 NuggetVersion = "3.0.0.0",
-                NuggetSource = "EnyimMemcached",
+                NuggetSource = "EnyimMemcachedCore",
                 NuggetMissing = false
             };
         }

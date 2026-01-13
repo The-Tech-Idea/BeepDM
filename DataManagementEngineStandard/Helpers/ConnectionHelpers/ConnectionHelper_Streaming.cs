@@ -45,12 +45,12 @@ namespace TheTechIdea.Beep.Helpers
             return new ConnectionDriversConfig
             {
                 GuidID = "kafka-guid",
-                PackageName = "Kafka",
-                DriverClass = "Kafka",
-                version = "2.8.0.0",
-                dllname = "Kafka.dll",
-                AdapterType = "Kafka.KafkaDataAdapter",
-                DbConnectionType = "Kafka.KafkaConnection",
+                PackageName = "Confluent.Kafka",
+                DriverClass = "Confluent.Kafka",
+                version = "2.3.0.0",
+                dllname = "Confluent.Kafka.dll",
+                AdapterType = "Confluent.Kafka.ProducerBuilder",
+                DbConnectionType = "Confluent.Kafka.ConsumerBuilder",
                 ConnectionString = "BrokerList=your-broker-list;ClientId=your-client-id;",
                 iconname = "kafka.svg",
                 classHandler = "KafkaDataSource",
@@ -61,8 +61,8 @@ namespace TheTechIdea.Beep.Helpers
                 DatasourceCategory = DatasourceCategory.STREAM,
                 DatasourceType = DataSourceType.Kafka,
                 IsMissing = false,
-                NuggetVersion = "1.0.0.0",
-                NuggetSource = "Kafka",
+                NuggetVersion = "2.3.0.0",
+                NuggetSource = "Confluent.Kafka",
                 NuggetMissing = false
             };
         }

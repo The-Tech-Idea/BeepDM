@@ -196,7 +196,12 @@ namespace TheTechIdea.Beep.DriversConfigurations
             get { return _nuggetsource; }
             set { SetProperty(ref _nuggetsource, value); }
         }
-        
+        private bool _needDrivers=true;
+        public bool NeedDrivers
+        {
+            get { return _needDrivers; }
+            set { SetProperty(ref _needDrivers, value); }
+        }
     }
 
 }

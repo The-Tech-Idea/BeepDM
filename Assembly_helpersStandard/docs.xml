@@ -322,9 +322,9 @@
         </member>
         <member name="M:TheTechIdea.Beep.Tools.NuggetManager.LoadNugget(System.String,System.Boolean)">
             <summary>
-            Load a nugget from specified path (supports both single DLL and directory)
+            Load a nugget from specified path (supports .nupkg files, single DLL, and directory)
             </summary>
-            <param name="path">Path to nugget directory or DLL file</param>
+            <param name="path">Path to nugget .nupkg file, directory, or DLL file</param>
             <param name="useIsolatedContext">If true, uses AssemblyLoadContext for isolation (.NET Core/.NET 5+)</param>
             <returns>True if loaded successfully</returns>
         </member>
@@ -360,6 +360,26 @@
             Find which nugget owns a specific assembly path
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.NuggetManager.IsFilesystemRepository(System.String)">
+            <summary>
+            Checks if a repository path is a filesystem path (directory or file)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.NuggetManager.GetPackageVersionsFromFilesystem(System.String,System.String)">
+            <summary>
+            Gets package versions from a filesystem repository (directory containing .nupkg files)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.NuggetManager.IsPackageAlreadyInstalled(System.String,System.String,System.String,System.String)">
+            <summary>
+            Checks if a package is already installed in a destination folder
+            </summary>
+            <param name="packageName">Name of the package</param>
+            <param name="destinationFolder">Destination folder to check</param>
+            <param name="expectedAssemblyName">Optional expected assembly name to check for</param>
+            <param name="expectedClassName">Optional expected class name to verify the package is loaded</param>
+            <returns>True if package appears to be installed</returns>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.NuggetManager.Clear">
             <summary>
             Clear all loaded nuggets (tracking only for shared context)
@@ -394,6 +414,13 @@
             <summary>
             Get nugget version from assembly
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.NuggetManager.ExtractNuGetPackage(System.String)">
+            <summary>
+            Extracts a .nupkg file to a temporary directory
+            </summary>
+            <param name="nupkgPath">Path to the .nupkg file</param>
+            <returns>Path to the extracted directory, or null if extraction failed</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant">
             <summary>
@@ -460,6 +487,12 @@
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.GetAssemblyByName(System.String)">
             <summary>
             Gets assembly by name - searches both shared context and traditional assemblies
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.IsPackageLoaded(System.String)">
+            <summary>
+            Checks if a NuGet package is already loaded in memory by package name
+            Maps NuGet package ID to assembly name (often they match)
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant.GetLoadingStatistics">
@@ -672,14 +705,60 @@
         </member>
         <member name="T:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader">
             <summary>
-            Lightweight NuGet package downloader extracted/implemented for Assembly_helpersStandard
-            This mirrors the feature set used in BeepShell.Shared but uses IDMLogger instead of console UI.
+            NuGet package downloader using official NuGet SDK.
+            Uses standard NuGet global packages folder for caching.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.GetDefaultGlobalPackagesFolder">
+            <summary>
+            Gets the standard NuGet global packages folder path.
+            Default: %USERPROFILE%\.nuget\packages (Windows) or ~/.nuget/packages (Unix)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.#ctor(TheTechIdea.Beep.Logger.IDMLogger)">
+            <summary>
+            Creates a NuggetPackageDownloader using the standard NuGet global packages folder.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.#ctor(System.String,TheTechIdea.Beep.Logger.IDMLogger)">
+            <summary>
+            Creates a NuggetPackageDownloader with optional custom packages folder.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.GetPackagePath(System.String,NuGet.Versioning.NuGetVersion)">
+            <summary>
+            Gets the package path in the global packages folder.
+            Format: {globalPackagesFolder}/{packageId.ToLower()}/{version}/
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.IsPackageInCache(System.String,NuGet.Versioning.NuGetVersion)">
+            <summary>
+            Checks if a package already exists in the global packages folder.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.DownloadPackageAsync(System.String,System.String,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Downloads a package using NuGet SDK directly.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.DownloadPackageWithDependenciesAsync(System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.HashSet{System.String})">
+            <summary>
+            Downloads a package with all its dependencies.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.SearchPackageVersionsAsync(System.String,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Searches for available versions of a package.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.ExtractNuGetPackage(System.String)">
+            <summary>
+            Extracts a NuGet package.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.InstallPackageToAppDirectory(System.String,System.String,System.String,System.String,System.Boolean)">
             <summary>
-            Installs files from a package folder into the application directory so that runtime resolution
-            can find the assemblies easily. Copies DLLs and native runtime files.
+            Installs package files to the application directory.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Tools.PluginSystem.NuggetPluginLoader">

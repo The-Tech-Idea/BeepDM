@@ -11975,10 +11975,6 @@
             <summary>Creates a configuration object for Petastorm connection drivers.</summary>
             <returns>A configuration object for Petastorm connection drivers.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateRocketSetConfig">
-            <summary>Creates a configuration object for RocketSet connection drivers.</summary>
-            <returns>A configuration object for RocketSet connection drivers.</returns>
-        </member>
         <member name="M:TheTechIdea.Beep.Helpers.ConnectionHelper.CreateApacheIgniteConfig">
             <summary>Creates a configuration object for Apache Ignite connection drivers.</summary>
             <returns>A configuration object for Apache Ignite connection drivers.</returns>

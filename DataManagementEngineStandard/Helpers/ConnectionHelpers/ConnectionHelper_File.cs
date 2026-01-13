@@ -72,7 +72,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1",
                 NuggetSource = "FileReader",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -102,7 +102,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1",
                 NuggetSource = "CSVDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -132,7 +132,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1",
                 NuggetSource = "JsonDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -162,7 +162,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1",
                 NuggetSource = "TxtXlsCSVFileSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -189,7 +189,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1",
                 NuggetSource = "DataViewReader",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -217,7 +217,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "XMLDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -245,7 +245,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "YAMLDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -273,7 +273,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "INIDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -301,7 +301,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "TextFileDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -329,7 +329,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "PDFDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -357,7 +357,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "ParquetDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -385,7 +385,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "AvroDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -413,7 +413,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "ORCDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -441,7 +441,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "FeatherDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -469,7 +469,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "Hdf5DataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -497,7 +497,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "LibSVMDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -525,7 +525,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "GraphMLDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -553,7 +553,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "DICOMDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -581,7 +581,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "LASDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -609,7 +609,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "RecordIODataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -637,7 +637,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "MarkdownDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -665,7 +665,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "LogFileDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
 
@@ -693,7 +693,7 @@ namespace TheTechIdea.Beep.Helpers
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",
                 NuggetSource = "FlatFileDataSource",
-                NuggetMissing = false
+                NuggetMissing = false,NeedDrivers=false
             };
         }
     }

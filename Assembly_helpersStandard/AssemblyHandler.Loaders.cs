@@ -311,12 +311,73 @@ namespace TheTechIdea.Beep.Tools
         private void LoadFolderAssemblies(FolderFileTypes folderType, IProgress<PassedArgs> progress, CancellationToken token)
         {
             string res;
-            foreach (string p in ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == folderType).Select(x => x.FolderPath))
+            var folderPaths = new List<string>();
+            
+            // Get paths from Config.Folders
+            if (ConfigEditor?.Config?.Folders != null)
+            {
+                folderPaths = ConfigEditor.Config.Folders
+                    .Where(c => c != null && !string.IsNullOrEmpty(c.FolderPath) && c.FolderFilesType == folderType)
+                    .Select(x => x.FolderPath)
+                    .ToList();
+            }
+            
+            // Fallback to default paths if no folders configured
+            if (folderPaths.Count == 0 && ConfigEditor?.Config != null)
+            {
+                string fallbackPath = null;
+                
+                if (folderType == FolderFileTypes.ConnectionDriver && !string.IsNullOrEmpty(ConfigEditor.Config.ConnectionDriversPath))
+                {
+                    fallbackPath = ConfigEditor.Config.ConnectionDriversPath;
+                }
+                else if (folderType == FolderFileTypes.DataSources && !string.IsNullOrEmpty(ConfigEditor.Config.DataSourcesPath))
+                {
+                    fallbackPath = ConfigEditor.Config.DataSourcesPath;
+                }
+                else if (ConfigEditor?.ExePath != null)
+                {
+                    // Try default path based on folder type
+                    var folderName = folderType == FolderFileTypes.ConnectionDriver ? "ConnectionDrivers" :
+                                    folderType == FolderFileTypes.DataSources ? "DataSources" :
+                                    folderType.ToString();
+                    var defaultPath = Path.Combine(ConfigEditor.ExePath, folderName);
+                    if (Directory.Exists(defaultPath))
+                    {
+                        fallbackPath = defaultPath;
+                    }
+                }
+                
+                if (!string.IsNullOrEmpty(fallbackPath))
+                {
+                    Logger?.WriteLog($"LoadFolderAssemblies: Using fallback path for {folderType}: {fallbackPath}");
+                    folderPaths.Add(fallbackPath);
+                }
+            }
+            
+            foreach (string p in folderPaths)
             {
                 try
                 {
                     SendMessege(progress, token, $"Loading assemblies from {p}");
                     LoadAssembly(p, folderType);
+                    
+                    // Also scan subfolders (for NuGet packages downloaded to subfolders)
+                    if (Directory.Exists(p))
+                    {
+                        foreach (var subDir in Directory.GetDirectories(p))
+                        {
+                            try
+                            {
+                                Logger?.WriteLog($"LoadFolderAssemblies: Scanning subfolder: {Path.GetFileName(subDir)}");
+                                LoadAssembly(subDir, folderType);
+                            }
+                            catch (Exception subEx)
+                            {
+                                Logger?.WriteLog($"LoadFolderAssemblies: Failed to load from subfolder {subDir}: {subEx.Message}");
+                            }
+                        }
+                    }
                 }
                 catch (FileLoadException loadEx)
                 {
@@ -610,8 +671,8 @@ namespace TheTechIdea.Beep.Tools
             try
             {
                 // Use NuggetPackageDownloader to fetch all packages and dependencies
-                var downloadsDir = Path.Combine(ConfigEditor.ExePath, "NugetDownloads");
-                var downloader = new TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader(downloadsDir, Logger);
+                // Uses standard NuGet global packages folder for caching
+                var downloader = new TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader(Logger);
                 var results = await downloader.DownloadPackageWithDependenciesAsync(packageName, version, sources);
 
                 foreach (var kvp in results)

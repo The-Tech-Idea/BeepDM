@@ -112,7 +112,7 @@ namespace TheTechIdea.Beep.Helpers
                 PackageName = "Raven.Client",
                 DriverClass = "Raven.Client",
                 version = "5.0.1.0",
-                dllname = "Raven.Client",
+                dllname = "Raven.Client.dll",
                 parameter1 = "Database",
                 parameter2 = "Sesssion",
                 parameter3 = "Collection",
@@ -288,10 +288,10 @@ namespace TheTechIdea.Beep.Helpers
             return new ConnectionDriversConfig
             {
                 GuidID = "bfcb718d-608f-4164-86ee-24e35c689638",
-                PackageName = "LiteDBDataSource",
-                DriverClass = "LiteDBDataSource",
-                version = "1",
-                dllname = "LiteDB",
+                PackageName = "LiteDB",
+                DriverClass = "LiteDB",
+                version = "5.0.21",
+                dllname = "LiteDB.dll",
                 ConnectionString = "{File}",
                 iconname = "litedb.svg",
                 classHandler = "LiteDBDataSource",
@@ -302,8 +302,8 @@ namespace TheTechIdea.Beep.Helpers
                 DatasourceCategory = DatasourceCategory.NOSQL,
                 DatasourceType = DataSourceType.LiteDB,
                 IsMissing = false,
-                NuggetVersion = "1",
-                NuggetSource = "LiteDBDataSource",
+                NuggetVersion = "5.0.21",
+                NuggetSource = "LiteDB",
                 NuggetMissing = false
             };
         }
