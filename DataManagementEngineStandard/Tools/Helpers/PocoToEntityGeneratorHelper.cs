@@ -12,7 +12,7 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis;
 using TheTechIdea.Beep.Roslyn;
-using TheTechIdea.Beep.Tools.Interfaces;
+using TheTechIdea.Beep.Tools;
 
 namespace TheTechIdea.Beep.Tools.Helpers
 {

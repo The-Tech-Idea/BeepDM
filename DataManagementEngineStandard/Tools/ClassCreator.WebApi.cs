@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Beep.Tools.Interfaces;
+using TheTechIdea.Beep.Tools;
 using TheTechIdea.Beep.Tools.Helpers;
 using TheTechIdea.Beep.ConfigUtil;
 
@@ -12,29 +12,6 @@ namespace TheTechIdea.Beep.Tools
     /// </summary>
     public partial class ClassCreator
     {
-        #region Private Fields
-
-        private WebApiGeneratorHelper _webApiHelper;
-
-        #endregion
-
-        #region Properties
-
-        /// <summary>Gets the Web API generator helper (lazy-loaded)</summary>
-        protected WebApiGeneratorHelper WebApiGenerator
-        {
-            get
-            {
-                if (_webApiHelper == null)
-                {
-                    _webApiHelper = new WebApiGeneratorHelper(DMEEditor);
-                }
-                return _webApiHelper;
-            }
-        }
-
-        #endregion
-
         #region Web API Generation Methods
 
         /// <summary>
@@ -50,7 +27,7 @@ namespace TheTechIdea.Beep.Tools
         {
             try
             {
-                return WebApiGenerator.GenerateWebApiControllers(dataSourceName, entities, outputPath, namespaceName);
+                return _webApiHelper.GenerateWebApiControllers(dataSourceName, entities, outputPath, namespaceName);
             }
             catch (Exception ex)
             {
@@ -71,7 +48,7 @@ namespace TheTechIdea.Beep.Tools
         {
             try
             {
-                return WebApiGenerator.GenerateWebApiControllerForEntityWithParams(className, outputPath, namespaceName);
+                return _webApiHelper.GenerateWebApiControllerForEntityWithParams(className, outputPath, namespaceName);
             }
             catch (Exception ex)
             {
@@ -90,7 +67,7 @@ namespace TheTechIdea.Beep.Tools
         {
             try
             {
-                return WebApiGenerator.GenerateMinimalWebApi(outputPath, namespaceName);
+                return _webApiHelper.GenerateMinimalWebApi(outputPath, namespaceName);
             }
             catch (Exception ex)
             {

@@ -8,6 +8,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Roslyn;
+using TheTechIdea.Beep.Tools;
 
 namespace TheTechIdea.Beep.Utilities
 {
@@ -185,7 +186,7 @@ namespace TheTechIdea.Beep.Utilities
         public static string ConvertPOCOClassToEntity(IDMEEditor editor, EntityStructure entityStructure, string namespaceName)
         {
             string usingText = "using System;\nusing System.ComponentModel;\nusing System.Runtime.CompilerServices;using TheTechIdea.Beep.Editor;";
-            return editor.classCreator.CreatEntityClass(entityStructure, usingText, null, null, namespaceName, false);
+            return editor.classCreator.CreateEntityClass(entityStructure, usingText, null, null, namespaceName, false);
         }
 
         /// <summary>Resolves .NET type names into actual `Type` objects.</summary>
@@ -280,6 +281,20 @@ namespace TheTechIdea.Beep.Utilities
 
             propBuilder.SetGetMethod(getter);
             propBuilder.SetSetMethod(setter);
+        }
+    }
+
+    internal static class ClassCreatorExtensions
+    {
+        /// <summary>
+        /// Compat shim that forwards to the standard CreateEntityClass implementation.
+        /// </summary>
+        public static string CreateEntityClass(this IClassCreator creator, EntityStructure entity, string usingHeader, string extraCode, string outputPath, string namespaceString, bool generateFiles)
+        {
+            if (creator == null) throw new ArgumentNullException(nameof(creator));
+
+            // Call the implemented interface member directly (avoids the old misspelled variant).
+            return ((IClassCreator)creator).CreateEntityClass(entity, usingHeader, extraCode, outputPath, namespaceString, generateFiles);
         }
     }
 }

@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Beep.Tools.Interfaces;
+using TheTechIdea.Beep.Tools;
 using TheTechIdea.Beep.Tools.Helpers;
 using TheTechIdea.Beep.ConfigUtil;
+using System.Linq;
 
 namespace TheTechIdea.Beep.Tools
 {
@@ -12,29 +13,6 @@ namespace TheTechIdea.Beep.Tools
     /// </summary>
     public partial class ClassCreator
     {
-        #region Private Fields
-
-        private DatabaseClassGeneratorHelper _databaseHelper;
-
-        #endregion
-
-        #region Properties
-
-        /// <summary>Gets the Database class generator helper (lazy-loaded)</summary>
-        protected DatabaseClassGeneratorHelper DatabaseGenerator
-        {
-            get
-            {
-                if (_databaseHelper == null)
-                {
-                    _databaseHelper = new DatabaseClassGeneratorHelper(DMEEditor);
-                }
-                return _databaseHelper;
-            }
-        }
-
-        #endregion
-
         #region Database Class Generation Methods
 
         /// <summary>
@@ -48,7 +26,7 @@ namespace TheTechIdea.Beep.Tools
             try
             {
                 ValidateEntityForGeneration(entity);
-                return DatabaseGenerator.GenerateDataAccessLayer(entity, outputPath);
+                return _databaseHelper.GenerateDataAccessLayer(entity, outputPath);
             }
             catch (Exception ex)
             {
@@ -81,7 +59,7 @@ namespace TheTechIdea.Beep.Tools
                     ValidateEntityForGeneration(entity);
                 }
 
-                return DatabaseGenerator.GenerateDbContext(entities, namespaceString, outputPath);
+                return _databaseHelper.GenerateDbContext(entities, namespaceString, outputPath);
             }
             catch (Exception ex)
             {
@@ -106,7 +84,7 @@ namespace TheTechIdea.Beep.Tools
                 if (string.IsNullOrWhiteSpace(namespaceString))
                     throw new ArgumentException("Namespace string cannot be null or empty", nameof(namespaceString));
 
-                return DatabaseGenerator.GenerateEntityConfiguration(entity, namespaceString, outputPath);
+                return _databaseHelper.GenerateEntityConfiguration(entity, namespaceString, outputPath);
             }
             catch (Exception ex)
             {
@@ -134,7 +112,7 @@ namespace TheTechIdea.Beep.Tools
                 if (string.IsNullOrWhiteSpace(namespaceName))
                     throw new ArgumentException("Namespace name cannot be null or empty", nameof(namespaceName));
 
-                return DatabaseGenerator.GenerateRepositoryImplementation(entity, outputPath, namespaceName, interfaceOnly);
+                return _databaseHelper.GenerateRepositoryImplementation(entity, outputPath, namespaceName, interfaceOnly);
             }
             catch (Exception ex)
             {
@@ -161,7 +139,7 @@ namespace TheTechIdea.Beep.Tools
                 if (string.IsNullOrWhiteSpace(namespaceName))
                     throw new ArgumentException("Namespace name cannot be null or empty", nameof(namespaceName));
 
-                return DatabaseGenerator.GenerateEFCoreMigration(entity, outputPath, namespaceName);
+                return _databaseHelper.GenerateEFCoreMigration(entity, outputPath, namespaceName);
             }
             catch (Exception ex)
             {
@@ -191,6 +169,44 @@ namespace TheTechIdea.Beep.Tools
                 throw new ArgumentException(errorMessage, nameof(entity));
             }
         }
+
+        #region Batch Code Generation Methods
+
+        /// <summary>
+        /// Generates data access layer classes for multiple entities
+        /// </summary>
+        public List<string> GenerateDataAccessLayers(List<EntityStructure> entities, string outputPath)
+        {
+            return entities?.Select(entity => GenerateDataAccessLayer(entity, outputPath)).ToList() ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Generates Entity Framework configurations for multiple entities
+        /// </summary>
+        public List<string> GenerateEntityConfigurations(List<EntityStructure> entities, string namespaceString, string outputPath)
+        {
+            return entities?.Select(entity => GenerateEntityConfiguration(entity, namespaceString, outputPath)).ToList() ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Generates repository implementations for multiple entities
+        /// </summary>
+        public List<string> GenerateRepositoryImplementations(List<EntityStructure> entities, string outputPath,
+            string namespaceName = "TheTechIdea.ProjectRepositories", bool interfaceOnly = false)
+        {
+            return entities?.Select(entity => GenerateRepositoryImplementation(entity, outputPath, namespaceName, interfaceOnly)).ToList() ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Generates Entity Framework Core migrations for multiple entities
+        /// </summary>
+        public List<string> GenerateEFCoreMigrations(List<EntityStructure> entities, string outputPath,
+            string namespaceName = "TheTechIdea.ProjectMigrations")
+        {
+            return entities?.Select(entity => GenerateEFCoreMigration(entity, outputPath, namespaceName)).ToList() ?? new List<string>();
+        }
+
+        #endregion
 
         #endregion
     }

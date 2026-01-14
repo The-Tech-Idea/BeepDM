@@ -6,10 +6,11 @@ using System.Threading;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Roslyn;
-using TheTechIdea.Beep.Tools.Interfaces;
+using TheTechIdea.Beep.Tools;
 using TheTechIdea.Beep.Tools.Helpers;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
+using System.Linq;
 
 namespace TheTechIdea.Beep.Tools
 {
@@ -24,6 +25,13 @@ namespace TheTechIdea.Beep.Tools
         private readonly PocoClassGeneratorHelper _pocoHelper;
         private readonly ModernClassGeneratorHelper _modernHelper;
         private readonly ClassGenerationHelper _generationHelper;
+        private ValidationAndTestingGeneratorHelper _validationTestingHelper;
+        private DocumentationGeneratorHelper _documentationHelper;
+        private UiComponentGeneratorHelper _uiComponentHelper;
+        private ServerlessGeneratorHelper _serverlessHelper;
+        private DatabaseClassGeneratorHelper _databaseHelper;
+        private WebApiGeneratorHelper _webApiHelper;
+        private PocoToEntityGeneratorHelper _pocoToEntityHelper;
 
         #endregion
 
@@ -59,10 +67,19 @@ namespace TheTechIdea.Beep.Tools
         {
             DMEEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
             
-            // Initialize helpers
+            // Initialize all core helpers
             _generationHelper = new ClassGenerationHelper(dmeEditor);
             _pocoHelper = new PocoClassGeneratorHelper(dmeEditor);
             _modernHelper = new ModernClassGeneratorHelper(dmeEditor);
+            
+            // Initialize specialized helpers (lazy initialization)
+            _validationTestingHelper = new ValidationAndTestingGeneratorHelper(dmeEditor);
+            _documentationHelper = new DocumentationGeneratorHelper(dmeEditor);
+            _uiComponentHelper = new UiComponentGeneratorHelper(dmeEditor);
+            _serverlessHelper = new ServerlessGeneratorHelper(dmeEditor);
+            _databaseHelper = new DatabaseClassGeneratorHelper(dmeEditor);
+            _webApiHelper = new WebApiGeneratorHelper(dmeEditor);
+            _pocoToEntityHelper = new PocoToEntityGeneratorHelper(dmeEditor);
         }
 
         #endregion
@@ -282,15 +299,6 @@ namespace TheTechIdea.Beep.Tools
                 outputpath, nameSpacestring, generateCSharpCodeFiles);
         }
         /// <summary>
-        /// Creates an Entity class that inherits from Entity base class (legacy interface method)
-        /// </summary>
-        public string CreatEntityClass(EntityStructure entity, string usingheader, string extracode, 
-            string outputpath, string nameSpacestring = "TheTechIdea.ProjectClasses", bool generateCSharpCodeFiles = true)
-        {
-            return _pocoHelper.CreateEntityClass(entity, usingheader, extracode, outputpath, 
-                nameSpacestring, generateCSharpCodeFiles);
-        }
-
         /// <summary>
         /// Creates an Entity class that inherits from Entity base class (modern method)
         /// </summary>
@@ -299,6 +307,15 @@ namespace TheTechIdea.Beep.Tools
         {
             return _pocoHelper.CreateEntityClass(entity, usingHeader, extraCode, outputPath, 
                 namespaceString, generateFiles);
+        }
+
+        /// <summary>
+        /// Backward-compatible alias for misspelled interface member.
+        /// </summary>
+        public string CreatEntityClass(EntityStructure entity, string usingHeader, string extraCode,
+            string outputPath, string namespaceString = "TheTechIdea.ProjectClasses", bool generateFiles = true)
+        {
+            return CreateEntityClass(entity, usingHeader, extraCode, outputPath, namespaceString, generateFiles);
         }
 
         /// <summary>
@@ -439,7 +456,7 @@ namespace TheTechIdea.Beep.Tools
         }
 
         #endregion
-
+        
         #region Utility Methods
 
         /// <summary>
@@ -521,6 +538,104 @@ namespace TheTechIdea.Beep.Tools
             return code.ToString();
         }
 
+        #region Utility Methods
+
+        /// <summary>
+        /// Generates a safe C# property name from a field name
+        /// </summary>
+        public string GenerateSafePropertyName(string fieldName, int index = 0)
+        {
+            return _generationHelper.GenerateSafePropertyName(fieldName, index);
+        }
+
+        /// <summary>
+        /// Converts a name to snake_case
+        /// </summary>
+        public string ToSnakeCase(string name)
+        {
+            return _generationHelper.ToSnakeCase(name);
+        }
+
+        /// <summary>
+        /// Converts a name to PascalCase
+        /// </summary>
+        public string ToPascalCase(string name)
+        {
+            return _generationHelper.ToPascalCase(name);
+        }
+
+        /// <summary>
+        /// Converts a name to camelCase
+        /// </summary>
+        public string ToCamelCase(string name)
+        {
+            return _generationHelper.ToCamelCase(name);
+        }
+
+        #endregion
+
+        #region Batch Class Creation Methods
+
+        /// <summary>
+        /// Creates multiple POCO classes from a list of entity structures
+        /// </summary>
+        public List<string> CreatePOCOClasses(List<EntityStructure> entities, string usingheader,
+            string implementations, string extracode, string outputpath,
+            string nameSpacestring = "TheTechIdea.ProjectClasses", bool generateCSharpCodeFiles = true)
+        {
+            return entities?.Select(entity => CreatePOCOClass("", entity, usingheader, implementations, extracode, outputpath, nameSpacestring, generateCSharpCodeFiles)).ToList() ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Creates multiple INotify classes from a list of entity structures
+        /// </summary>
+        public List<string> CreateINotifyClasses(List<EntityStructure> entities, string usingheader,
+            string implementations, string extracode, string outputpath,
+            string nameSpacestring = "TheTechIdea.ProjectClasses", bool generateCSharpCodeFiles = true)
+        {
+            return entities?.Select(entity => CreateINotifyClass(entity, usingheader, implementations, extracode, outputpath, nameSpacestring, generateCSharpCodeFiles)).ToList() ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Creates multiple Entity classes from a list of entity structures
+        /// </summary>
+        public List<string> CreateEntityClasses(List<EntityStructure> entities, string usingheader,
+            string extracode, string outputpath,
+            string nameSpacestring = "TheTechIdea.ProjectClasses", bool generateCSharpCodeFiles = true)
+        {
+            return entities?.Select(entity => CreateEntityClass(entity, usingheader, extracode, outputpath, nameSpacestring, generateCSharpCodeFiles)).ToList() ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Creates multiple record classes from a list of entity structures
+        /// </summary>
+        public List<string> CreateRecordClasses(List<EntityStructure> entities, string outputPath,
+            string namespaceName = "TheTechIdea.ProjectClasses", bool generateFile = true)
+        {
+            return entities?.Select(entity => CreateRecordClass(entity.EntityName, entity, outputPath, namespaceName, generateFile)).ToList() ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Creates multiple nullable-aware classes from a list of entity structures
+        /// </summary>
+        public List<string> CreateNullableAwareClasses(List<EntityStructure> entities, string outputPath,
+            string namespaceName = "TheTechIdea.ProjectClasses", bool generateNullableAnnotations = true)
+        {
+            return entities?.Select(entity => CreateNullableAwareClass(entity.EntityName, entity, outputPath, namespaceName, generateNullableAnnotations)).ToList() ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Creates multiple DDD aggregate root classes from a list of entity structures
+        /// </summary>
+        public List<string> CreateDDDAggregateRoots(List<EntityStructure> entities, string outputPath,
+            string namespaceName = "TheTechIdea.ProjectDomain")
+        {
+            return entities?.Select(entity => CreateDDDAggregateRoot(entity, outputPath, namespaceName)).ToList() ?? new List<string>();
+        }
+
+       
+
+        #endregion
 
         #endregion
     }

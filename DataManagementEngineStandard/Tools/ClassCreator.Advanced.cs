@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Beep.Tools.Interfaces;
+using TheTechIdea.Beep.Tools;
 using TheTechIdea.Beep.Tools.Helpers;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
@@ -17,57 +17,6 @@ namespace TheTechIdea.Beep.Tools
     /// </summary>
     public partial class ClassCreator
     {
-        #region Private Fields
-
-        private DocumentationGeneratorHelper _documentationHelper;
-        private UiComponentGeneratorHelper _uiComponentHelper;
-        private ServerlessGeneratorHelper _serverlessHelper;
-
-        #endregion
-
-        #region Properties
-
-        /// <summary>Gets the documentation generator helper (lazy-loaded)</summary>
-        protected DocumentationGeneratorHelper DocumentationGenerator
-        {
-            get
-            {
-                if (_documentationHelper == null)
-                {
-                    _documentationHelper = new DocumentationGeneratorHelper(DMEEditor);
-                }
-                return _documentationHelper;
-            }
-        }
-
-        /// <summary>Gets the UI component generator helper (lazy-loaded)</summary>
-        protected UiComponentGeneratorHelper UiComponentGenerator
-        {
-            get
-            {
-                if (_uiComponentHelper == null)
-                {
-                    _uiComponentHelper = new UiComponentGeneratorHelper(DMEEditor);
-                }
-                return _uiComponentHelper;
-            }
-        }
-
-        /// <summary>Gets the serverless generator helper (lazy-loaded)</summary>
-        protected ServerlessGeneratorHelper ServerlessGenerator
-        {
-            get
-            {
-                if (_serverlessHelper == null)
-                {
-                    _serverlessHelper = new ServerlessGeneratorHelper(DMEEditor);
-                }
-                return _serverlessHelper;
-            }
-        }
-
-        #endregion
-
         #region Documentation Methods
 
         /// <summary>
@@ -78,7 +27,7 @@ namespace TheTechIdea.Beep.Tools
             try
             {
                 ValidateEntityForAdvancedGeneration(entity);
-                return DocumentationGenerator.GenerateEntityDocumentation(entity, outputPath);
+                return _documentationHelper.GenerateEntityDocumentation(entity, outputPath);
             }
             catch (Exception ex)
             {
@@ -100,7 +49,7 @@ namespace TheTechIdea.Beep.Tools
                 if (newEntity == null)
                     throw new ArgumentNullException(nameof(newEntity));
 
-                return DocumentationGenerator.GenerateEntityDiffReport(originalEntity, newEntity);
+                return _documentationHelper.GenerateEntityDiffReport(originalEntity, newEntity);
             }
             catch (Exception ex)
             {
@@ -129,7 +78,7 @@ namespace TheTechIdea.Beep.Tools
                     ValidateEntityForAdvancedGeneration(entity);
                 }
 
-                return UiComponentGenerator.GenerateGraphQLSchema(entities, outputPath, namespaceName);
+                return _uiComponentHelper.GenerateGraphQLSchema(entities, outputPath, namespaceName);
             }
             catch (Exception ex)
             {
@@ -151,7 +100,7 @@ namespace TheTechIdea.Beep.Tools
                 if (string.IsNullOrWhiteSpace(namespaceName))
                     throw new ArgumentException("Namespace name cannot be null or empty", nameof(namespaceName));
 
-                return UiComponentGenerator.GenerateBlazorComponent(entity, outputPath, namespaceName);
+                return _uiComponentHelper.GenerateBlazorComponent(entity, outputPath, namespaceName);
             }
             catch (Exception ex)
             {
@@ -180,7 +129,7 @@ namespace TheTechIdea.Beep.Tools
                 if (string.IsNullOrWhiteSpace(namespaceName))
                     throw new ArgumentException("Namespace name cannot be null or empty", nameof(namespaceName));
 
-                return ServerlessGenerator.GenerateGrpcService(entity, outputPath, namespaceName);
+                return _serverlessHelper.GenerateGrpcService(entity, outputPath, namespaceName);
             }
             catch (Exception ex)
             {
@@ -210,7 +159,63 @@ namespace TheTechIdea.Beep.Tools
                 throw new ArgumentException(errorMessage, nameof(entity));
             }
         }
-     
+        
+        #region Batch Advanced Generation Methods
+
+        /// <summary>
+        /// Generates unit test classes for multiple entities
+        /// </summary>
+        public List<string> GenerateUnitTestClasses(List<EntityStructure> entities, string outputPath)
+        {
+            return entities?.Select(entity => GenerateUnitTestClass(entity, outputPath)).ToList() ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Generates XML documentation for multiple entities
+        /// </summary>
+        public List<string> GenerateEntityDocumentations(List<EntityStructure> entities, string outputPath)
+        {
+            return entities?.Select(entity => GenerateEntityDocumentation(entity, outputPath)).ToList() ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Generates FluentValidation validators for multiple entities
+        /// </summary>
+        public List<string> GenerateFluentValidatorsForEntities(List<EntityStructure> entities, string outputPath,
+            string namespaceName = "TheTechIdea.ProjectValidators")
+        {
+            return entities?.Select(entity => GenerateFluentValidators(entity, outputPath, namespaceName)).ToList() ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Generates serverless functions for multiple entities
+        /// </summary>
+        public List<string> GenerateServerlessFunctionsForEntities(List<EntityStructure> entities, string outputPath,
+            CloudProviderType cloudProvider = CloudProviderType.Azure)
+        {
+            return entities?.Select(entity => GenerateServerlessFunctions(entity, outputPath, cloudProvider)).ToList() ?? new List<string>();
+        }
+
+        /// <summary>
+        /// Generates gRPC service definitions for multiple entities
+        /// </summary>
+        public List<(string ProtoFile, string ServiceImplementation)> GenerateGrpcServices(List<EntityStructure> entities,
+            string outputPath, string namespaceName)
+        {
+            return entities?.Select(entity => GenerateGrpcService(entity, outputPath, namespaceName)).ToList() ?? new List<(string, string)>();
+        }
+
+        /// <summary>
+        /// Generates Blazor components for multiple entities
+        /// </summary>
+        public List<string> GenerateBlazorComponents(List<EntityStructure> entities, string outputPath,
+            string namespaceName = "TheTechIdea.ProjectComponents")
+        {
+            return entities?.Select(entity => GenerateBlazorComponent(entity, outputPath, namespaceName)).ToList() ?? new List<string>();
+        }
+
+        #endregion
+
         #endregion
     }
 
@@ -582,5 +587,6 @@ namespace TheTechIdea.Beep.Tools
             sb.AppendLine("    }");
             sb.AppendLine("}");
         }
+
     }
 }

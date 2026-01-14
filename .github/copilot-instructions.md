@@ -1,89 +1,45 @@
-# BeepDM Copilot Instructions
+# BeepDM — Copilot instructions (concise)
 
-BeepDM is a modular, extensible data management engine for connecting, managing, and synchronizing data across diverse sources (databases, files, APIs, in-memory stores).
+Purpose: give AI coding agents the minimum, high-value knowledge to be productive in this repo.
 
-## Architecture Overview
+Quick orientation
+- Core orchestrator: `DMEEditor` (`DataManagementEngineStandard/Editor/DM/DMEEditor.cs`).
+- Core modules: `DataManagementEngineStandard` (implementation), `DataManagementModelsStandard` (interfaces), `Assembly_helpersStandard` (plugin/assembly loader), `Beep.Shell` (CLI).
+- Configs: JSON files live in `Config/` (notably `DataConnections.json`, `ConnectionConfig.json`, `DataTypeMapping.json`).
 
-### Core Dependency Structure
-```
-IDMEEditor (DMEEditor) - CENTRAL ORCHESTRATOR
-├── IConfigEditor (ConfigEditor) - manages frameworks configs (JSON)
-├── IDataSource - abstractions for all data sources (RDBMS, files, cloud)
-├── IETL (ETLEditor) - Extract, Transform, Load operations
-├── IAssemblyHandler - loads plugins & scans for IDataSource implementations
-├── IDMLogger - logging across framework
-├── IUtil - type conversions, entity structure introspection
-├── IDataTypesHelper - data type mappings between sources
-├── IErrorsInfo - error tracking/reporting
-├── IWorkFlowEditor - workflow orchestration
-└── IClassCreator - dynamic type generation from entity metadata
-```
+Key patterns and conventions (do not change lightly)
+- Dependency Injection: built with Autofac / `IHost` patterns. Many services are registered as **Singleton** (desktop) or **Scoped** (web).
+- UnitOfWork: transactional API `UnitofWork<T>` (see `DataManagementEngineStandard/Editor/UOW/`). Use `Commit()` to persist.
+- Plugin model: drivers/addins discovered by `AssemblyHandler` (`Assembly_helpersStandard/AssemblyHandler.Core.cs`) and flagged by `[AddinAttribute]`.
+- Partial classes: `DMEEditor` is split across partials — prefer editing helper partials for feature-local changes.
+- Progress & errors: long ops use `IProgress<PassedArgs>` and return `IErrorsInfo` instead of throwing.
 
-**Key Pattern**: All features are singleton-registered and pluggable. `DMEEditor` is initialized via dependency injection (Autofac or MS.Extensions.DependencyInjection).
+Important files to consult (examples)
+- `DataManagementEngineStandard/Editor/DM/DMEEditor.cs` — central orchestration
+- `DataManagementEngineStandard/ConfigUtil/ConfigEditor.cs` — connection + mapping APIs
+- `Assembly_helpersStandard/AssemblyHandler.Core.cs` — plugin discovery and loaders
+- `DataSourcesPluginsCore/` — many example datasource implementations
 
-### Major Data Flows
-1. **Connection Setup**: `ConfigEditor.AddDataConnection(ConnectionProperties)` → IDataSource instance retrieved via `GetDataSource(name)`
-2. **CRUD Operations**: `UnitofWork<T>` wraps entity changes, `Commit()` persists via IDataSource
-3. **ETL/Sync**: `DataSyncManager` coordinates multi-source data movement with metrics
-4. **Plugin Loading**: `IAssemblyHandler.LoadExtensionsFromPaths()` scans directories for `IDM_Addin` implementations
+Build / run / test (common commands)
+- Build solution: `dotnet build BeepDM.sln`
+- Run shell (dev): `dotnet run --project Beep.Shell/BeepShell.csproj`
+- Run unit/integration tests: `dotnet test` (from repo root targets `tests/` projects)
 
-## Project Structure & Key Conventions
+Developer rules for code changes
+- Preserve DI registrations and service lifetimes; prefer adding registrations rather than changing existing lifetimes.
+- When adding a data source plugin: implement `IDataSource`, annotate with `[AddinAttribute(...)]`, place DLL or project under `ConnectionDrivers/` or `ProjectClasses/` and ensure `AssemblyHandler` can discover it.
+- Use existing JSON config files in `Config/` and `ConfigEditor` helpers to add or modify connections — avoid ad-hoc connection strings.
+- Keep public API shape stable: many consumers rely on `IDMEEditor`, `IConfigEditor`, `UnitofWork<T>`.
 
-### Directory Organization (Every BeepDM project follows this)
-- **Config/** - `QueryList.json`, `ConnectionConfig.json`, `DataTypeMapping.json`, `DataConnections.json`
-- **ConnectionDrivers/** - Data source driver DLLs (Oracle, SQLite, SQL Server)
-- **Addin/** - DLLs implementing `IDM_Addin` (custom forms, business logic)
-- **LoadingExtensions/** - `ILoaderExtention` implementations for dynamic functionality
-- **DataFiles/** - Primary data storage
-- **ProjectClasses/** - Custom `IDataSource` implementations
-- **Mapping/** - Data source entity mapping definitions
-- **WorkFlow/** - Workflow definition files
+Quick search hints for exploration
+- Find registration points: search for `RegisterType<` and `AddBeepServices(`
+- Find plugin markers: search for `AddinAttribute` and `LoadExtensionsFromPaths`
+- Find UOW usage: search for `CreateUnitOfWork<` and `Commit()`
 
-### Design Patterns
-1. **Partial Classes** - DMEEditor split across: `DMEEditor.cs`, `DMEEditorHelpers.cs` (core), plus feature-specific partials
-2. **Lightweight Alternative**: `DMEEditorHelpers` - experimental helper-based implementation preserving IDMEEditor contract
-3. **UnitofWork Pattern**: `UnitofWork<T>` for transactional CRUD, change tracking, bulk operations
-4. **Forms Simulation**: `FormsManager` (IUnitofWorksManager) simulates Oracle Forms master-detail relationships
-5. **Helper-Based Decomposition**: Complex classes (e.g., FormsManager) delegate to modular helpers (`IRelationshipManager`, `IDirtyStateManager`)
+If you modify this file
+- Keep this document short. Update only with new, verifiable repository conventions.
 
-## Essential Development Workflows
-
-### Initialization (Required for all usage)
-```csharp
-// Autofac pattern (see DataManagementEngineStandard/Examples/)
-var builder = new ContainerBuilder();
-builder.RegisterType<DMEEditor>().As<IDMEEditor>().SingleInstance();
-builder.RegisterType<ConfigEditor>().As<IConfigEditor>().SingleInstance();
-builder.RegisterType<DMLogger>().As<IDMLogger>().SingleInstance();
-// ... register remaining services
-var container = builder.Build();
-
-var dmeEditor = container.Resolve<IDMEEditor>();
-// Add default configurations
-beepService.AddAllConnectionConfigurations();
-beepService.AddAllDataSourceMappings();
-beepService.AddAllDataSourceQueryConfigurations();
-```
-
-### Adding a Custom Data Source
-1. Implement `IDataSource` interface with `[AddinAttribute(Category, DatasourceType)]`
-2. Place DLL in **ConnectionDrivers/** or **ProjectClasses/**
-3. `IAssemblyHandler` auto-discovers via reflection; register in `ConfigEditor.DataDriversClasses`
-
-### Build & Deployment
-- **Solution**: `BeepDM.sln` (VS 2022+, .NET Framework/Core)
-- **Main Projects**: DataManagementModels, DataManagementEngine, DMLogger, Assembly_helpers, JsonFileLoader
-- **CLI/Shell**: BeepCLI, BeepShell (built on core engine)
-- **Build**: Standard MSBuild; outputs to `bin/Debug` or `bin/Release` per project
-
-### Configuration Files
-All in **Config/** directory, loaded at startup via `IJsonLoader`:
-- **ConnectionConfig.json** - defines data source drivers and metadata
-- **DataConnections.json** - stores connection strings & properties (ConnectionProperties objects)
-- **DataTypeMapping.json** - maps data types (e.g., SqlDbType.Int → C# int)
-- **QueryList.json** - RDBMS metadata queries (stored procedures, tables, columns)
-
-## Code Examples from This Codebase
+Next step: tell me which areas you want expanded (build, testing, a specific module).
 
 ### Connecting to SQLite
 ```csharp

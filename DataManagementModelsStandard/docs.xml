@@ -3220,14 +3220,247 @@
             <param name="namespaceName">Namespace</param>
             <returns>The generated proto file and service implementation</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateBlazorComponent(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreatePOCOClasses(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.String,System.String,System.String,System.Boolean)">
             <summary>
-            Generates Blazor component for displaying and editing entity
+            Creates multiple POCO classes from a list of entity structures
             </summary>
-            <param name="entity">Entity structure</param>
-            <param name="outputPath">Output path</param>
-            <param name="namespaceName">Component namespace</param>
-            <returns>The Blazor component code</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateINotifyClasses(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates multiple INotify classes from a list of entity structures
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateEntityClasses(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Creates multiple Entity classes from a list of entity structures
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateRecordClasses(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.Boolean)">
+            <summary>
+            Creates multiple record classes from a list of entity structures
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateNullableAwareClasses(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.Boolean)">
+            <summary>
+            Creates multiple nullable-aware classes from a list of entity structures
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateDDDAggregateRoots(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String)">
+            <summary>
+            Creates multiple DDD aggregate root classes from a list of entity structures
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateDataAccessLayers(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String)">
+            <summary>
+            Generates data access layer classes for multiple entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateUnitTestClasses(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String)">
+            <summary>
+            Generates unit test classes for multiple entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateEntityConfigurations(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String)">
+            <summary>
+            Generates Entity Framework configurations for multiple entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateRepositoryImplementations(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String,System.Boolean)">
+            <summary>
+            Generates repository implementations for multiple entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateEntityDocumentations(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String)">
+            <summary>
+            Generates XML documentation for multiple entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateFluentValidatorsForEntities(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String)">
+            <summary>
+            Generates FluentValidation validators for multiple entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateEFCoreMigrations(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String)">
+            <summary>
+            Generates Entity Framework Core migrations for multiple entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateServerlessFunctionsForEntities(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,TheTechIdea.Beep.Utilities.CloudProviderType)">
+            <summary>
+            Generates serverless functions for multiple entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateGrpcServices(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String)">
+            <summary>
+            Generates gRPC service definitions for multiple entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateBlazorComponents(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String,System.String)">
+            <summary>
+            Generates Blazor components for multiple entities
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ConvertPocosToEntities(System.Collections.Generic.List{System.Type},System.Boolean)">
+            <summary>
+            Converts multiple POCO types to EntityStructures
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ConvertToEntityStructures(System.Collections.Generic.List{System.Object},TheTechIdea.Beep.Editor.KeyDetectionStrategy)">
+            <summary>
+            Converts multiple objects to EntityStructures
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ConvertToEntityStructures``1(System.Collections.Generic.List{``0},TheTechIdea.Beep.Editor.KeyDetectionStrategy)">
+            <summary>
+            Converts multiple POCO types to EntityStructures using generic method
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateEntityClassesFromPocos(System.Collections.Generic.List{System.Type},System.String,System.String,System.Boolean)">
+            <summary>
+            Generates entity classes from multiple POCO types
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateEntityTypesAtRuntime(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String)">
+            <summary>
+            Creates runtime types from multiple EntityStructures
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateEntityTypesFromPocosAtRuntime(System.Collections.Generic.List{System.Type},System.String)">
+            <summary>
+            Creates runtime types from multiple POCO types
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ConvertNamespacePocoClassesToEntities(System.String,System.String,System.Reflection.Assembly,System.String)">
+            <summary>
+            Converts all POCO classes from a namespace in loaded library to Entity classes and saves to files
+            </summary>
+            <param name="namespaceName">Namespace containing POCO classes</param>
+            <param name="outputPath">Output directory path for generated entity files</param>
+            <param name="assembly">Optional specific assembly to search</param>
+            <param name="namespaceString">Target namespace for generated entity classes</param>
+            <returns>List of generated entity class file paths</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ConvertNamespacePocoClassesToEntityFile(System.String,System.String,System.Reflection.Assembly,System.String)">
+            <summary>
+            Converts all POCO classes from a namespace in loaded library to Entity code and saves to single file
+            </summary>
+            <param name="namespaceName">Namespace containing POCO classes</param>
+            <param name="outputPath">Output file path for generated combined entity code</param>
+            <param name="assembly">Optional specific assembly to search</param>
+            <param name="namespaceString">Target namespace for generated entity classes</param>
+            <returns>Path to generated file</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ConvertNamespaceEFCoreClassesToEntities(System.String,System.String,System.Reflection.Assembly,System.String)">
+            <summary>
+            Converts all EF Core mapped classes from a namespace in loaded library to Entity classes
+            Automatically excludes navigation properties and virtual collections
+            </summary>
+            <param name="namespaceName">Namespace containing EF Core DbSet classes</param>
+            <param name="outputPath">Output directory path for generated entity files</param>
+            <param name="assembly">Optional specific assembly to search</param>
+            <param name="namespaceString">Target namespace for generated entity classes</param>
+            <returns>List of generated entity class file paths</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ConvertNamespaceEFCoreClassesToEntityFile(System.String,System.String,System.Reflection.Assembly,System.String)">
+            <summary>
+            Converts all EF Core mapped classes from a namespace in loaded library to Entity code and saves to single file
+            Automatically excludes navigation properties and virtual collections
+            </summary>
+            <param name="namespaceName">Namespace containing EF Core DbSet classes</param>
+            <param name="outputPath">Output file path for generated combined entity code</param>
+            <param name="assembly">Optional specific assembly to search</param>
+            <param name="namespaceString">Target namespace for generated entity classes</param>
+            <returns>Path to generated file</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ScanNamespaceForPocos(System.String,System.Reflection.Assembly)">
+            <summary>
+            Scans a namespace and discovers all POCO classes
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.FindClassByName(System.String,System.String,System.Reflection.Assembly)">
+            <summary>
+            Finds a specific class by name in a namespace
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ConvertPocoToEntity(System.Type,System.Boolean)">
+            <summary>
+            Converts a POCO type to EntityStructure with relationship detection
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ConvertToEntityStructure``1(TheTechIdea.Beep.Editor.KeyDetectionStrategy,System.String)">
+            <summary>
+            Converts a POCO type to EntityStructure using generic type with KeyDetectionStrategy
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ConvertToEntityStructure(System.Type,TheTechIdea.Beep.Editor.KeyDetectionStrategy,System.String)">
+            <summary>
+            Converts a runtime POCO type to EntityStructure with KeyDetectionStrategy
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ConvertToEntityStructure(System.Object,TheTechIdea.Beep.Editor.KeyDetectionStrategy,System.String)">
+            <summary>
+            Converts a POCO object instance to EntityStructure with KeyDetectionStrategy
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateEntityClassFromPoco(System.Type,System.String,System.String,System.Boolean)">
+            <summary>
+            Generates entity class code from a POCO type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateEntityClassesFromNamespace(System.String,System.String,System.String,System.Boolean,System.Reflection.Assembly)">
+            <summary>
+            Generates entity classes from all POCOs in a namespace
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateEntityTypeAtRuntime(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Compiles entity code and returns the Type at runtime (no file output)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateEntityTypeFromPocoAtRuntime(System.Type,System.String)">
+            <summary>
+            Compiles entity code from POCO and returns the Type at runtime
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateEntityTypesFromNamespaceAtRuntime(System.String,System.String,System.Reflection.Assembly)">
+            <summary>
+            Generates and compiles multiple entity types at runtime from a namespace
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GetCircularReferences``1">
+            <summary>
+            Gets circular reference diagnostics for a POCO type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateEntityTypesFromDataSourceAtRuntime(System.String,System.Collections.Generic.List{System.String},System.String)">
+            <summary>
+            Generates and compiles multiple entity types at runtime from a datasource
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ClearPocoToEntityCache">
+            <summary>
+            Clears the runtime type cache
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.GenerateSafePropertyName(System.String,System.Int32)">
+            <summary>
+            Generates a safe C# property name from a field name
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ToSnakeCase(System.String)">
+            <summary>
+            Converts a name to snake_case
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ToPascalCase(System.String)">
+            <summary>
+            Converts a name to PascalCase
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ToCamelCase(System.String)">
+            <summary>
+            Converts a name to camelCase
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Tools.NuggetInfo">
             <summary>
