@@ -86,13 +86,13 @@ Console.WriteLine($"Success: {syncResult.Success}, Records: {syncResult.RecordsP
 
 | Purpose | Path |
 |---------|------|
-| Central orchestrator | [DataManagementEngineStandard/Editor/DM/DMEEditor.cs](DataManagementEngineStandard/Editor/DM/DMEEditor.cs) |
-| Config management | [DataManagementEngineStandard/ConfigUtil/ConfigEditor.cs](DataManagementEngineStandard/ConfigUtil/ConfigEditor.cs) |
-| Main interfaces | [DataManagementModelsStandard/Editor/IDMEEditor.cs](DataManagementModelsStandard/Editor/IDMEEditor.cs), [DataManagementModelsStandard/IDataSource.cs](DataManagementModelsStandard/IDataSource.cs) |
-| UnitofWork pattern | [DataManagementEngineStandard/Editor/UOW/](DataManagementEngineStandard/Editor/UOW/) |
-| Forms/Master-Detail | [DataManagementEngineStandard/Editor/Forms/FormsManager.cs](DataManagementEngineStandard/Editor/Forms/FormsManager.cs) |
-| Assembly scanning | [Assembly_helpersStandard/AssemblyHandler.Core.cs](Assembly_helpersStandard/AssemblyHandler.Core.cs) |
-| Integration tests | [tests/IntegrationTests/](tests/IntegrationTests/) |
+| Central orchestrator | [DataManagementEngineStandard/Editor/DM/DMEEditor.cs](../DataManagementEngineStandard/Editor/DM/DMEEditor.cs) |
+| Config management | [DataManagementEngineStandard/ConfigUtil/ConfigEditor.cs](../DataManagementEngineStandard/ConfigUtil/ConfigEditor.cs) |
+| Main interfaces | [DataManagementModelsStandard/Editor/IDMEEditor.cs](../DataManagementModelsStandard/Editor/IDMEEditor.cs), [DataManagementModelsStandard/IDataSource.cs](../DataManagementModelsStandard/IDataSource.cs) |
+| UnitOfWork pattern | [DataManagementEngineStandard/Editor/UOW/](../DataManagementEngineStandard/Editor/UOW/) |
+| Forms/Master-Detail | [DataManagementEngineStandard/Editor/Forms/FormsManager.cs](../DataManagementEngineStandard/Editor/Forms/FormsManager.cs) |
+| Assembly scanning | [Assembly_helpersStandard/AssemblyHandler.Core.cs](../Assembly_helpersStandard/AssemblyHandler.Core.cs) |
+| Integration tests | [tests/IntegrationTests/](../tests/IntegrationTests/) |
 
 ## Integration Patterns by Application Type
 
@@ -413,7 +413,7 @@ foreach (var dsClass in beepService.DMEEditor.ConfigEditor.DataDriversClasses)
 
 ---
 
-**For detailed examples and architecture docs**, see [README.md](README.md), component-specific READMEs in each project folder, and HTML docs in [DataManagementEngineStandard/Docs/](DataManagementEngineStandard/Docs/).
+**For detailed examples and architecture docs**, see [README.md](../README.md), component-specific READMEs in each project folder, and HTML docs in [DataManagementEngineStandard/Docs/](../DataManagementEngineStandard/Docs/).
 
 **Related Repositories**:
 - [Beep.Containers](https://github.com/The-Tech-Idea/Beep.Containers) - DI/Service registration

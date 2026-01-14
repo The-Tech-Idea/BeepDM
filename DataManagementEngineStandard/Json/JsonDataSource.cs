@@ -479,32 +479,55 @@ namespace TheTechIdea.Beep.Json
                 return new PagedResult();
             }
 
-            List<object> resultList = new List<object>();
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize <= 0) pageSize = int.MaxValue;
 
-            int startIndex = (pageNumber - 1) * pageSize;
-            var pagedItems = rootJsonArray.Skip(startIndex).Take(pageSize);
+            // Prepare simple filters (equality only). If AppFilter has an Operator property elsewhere it will be ignored here.
+            var activeFilters = (filter ?? new List<AppFilter>())
+                .Where(f => f != null && !string.IsNullOrWhiteSpace(f.FieldName) && !string.IsNullOrEmpty(f.FilterValue))
+                .ToList();
 
-            foreach (var item in pagedItems.OfType<JObject>())
+            var resultList = new List<object>();
+            int skip = (pageNumber - 1) * pageSize;
+            int total = 0;
+
+            foreach (var item in rootJsonArray.OfType<JObject>())
             {
-                dynamic record = new ExpandoObject();
-                var recordDictionary = (IDictionary<string, object>)record;
-
-                foreach (var property in item.Properties())
+                // Apply filters
+                bool include = true;
+                foreach (var f in activeFilters)
                 {
-                    recordDictionary[property.Name] = property.Value.ToObject<object>();
+                    var token = item.Property(f.FieldName, StringComparison.OrdinalIgnoreCase)?.Value;
+                    if (token == null)
+                    {
+                        include = false; break;
+                    }
+
+                    if (!string.Equals(token.Type == JTokenType.Object && token["$oid"] != null ? token["$oid"].ToString() : token.ToString(), f.FilterValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        include = false; break;
+                    }
+                }
+                if (!include) continue;
+
+                if (total >= skip && resultList.Count < pageSize)
+                {
+                    dynamic record = new ExpandoObject();
+                    var recordDictionary = (IDictionary<string, object>)record;
+
+                    foreach (var property in item.Properties())
+                    {
+                        recordDictionary[property.Name] = property.Value.ToObject<object>();
+                    }
+
+                    UpdateEntityStructureWithMissingFields(item, entityStructure);
+                    resultList.Add(record);
                 }
 
-                UpdateEntityStructureWithMissingFields(item, entityStructure);
-                resultList.Add(record);
+                total++;
             }
-            PagedResult pagedResult= new PagedResult
-            {
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                TotalRecords = rootJsonArray.Count,
-                 Data = resultList
-            };
-            return pagedResult;
+
+            return new PagedResult(resultList, pageNumber, pageSize, total);
         }
 
         /// <summary>
@@ -512,7 +535,65 @@ namespace TheTechIdea.Beep.Json
         /// </summary>
         public Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
-            return Task.FromResult(GetEntity(EntityName, Filter));
+            return GetEntityAsyncImpl(EntityName, Filter);
+        }
+
+        private async Task<IEnumerable<object>> GetEntityAsyncImpl(string entityName, List<AppFilter> filter)
+        {
+            // Basic validation
+            if (string.IsNullOrWhiteSpace(entityName)) return Enumerable.Empty<object>();
+            var entityStructure = Entities.FirstOrDefault(e => e.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+            if (entityStructure == null) return Enumerable.Empty<object>();
+            var rootJsonArray = GetRootJsonArray();
+            if (rootJsonArray == null) return Enumerable.Empty<object>();
+
+            // Prepare simple filters (equality only). If AppFilter has an Operator property elsewhere it will be ignored here.
+            var activeFilters = (filter ?? new List<AppFilter>())
+                .Where(f => f != null && !string.IsNullOrWhiteSpace(f.FieldName) && !string.IsNullOrEmpty(f.FilterValue))
+                .ToList();
+
+            var results = new List<object>();
+            int yielded = 0;
+
+            foreach (var item in rootJsonArray.OfType<JObject>())
+            {
+                // Apply filters
+                bool include = true;
+                foreach (var f in activeFilters)
+                {
+                    var token = item.Property(f.FieldName, StringComparison.OrdinalIgnoreCase)?.Value;
+                    if (token == null)
+                    {
+                        include = false; break;
+                    }
+                    if (!string.Equals(token.Type == JTokenType.Object && token["$oid"] != null ? token["$oid"].ToString() : token.ToString(), f.FilterValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        include = false; break;
+                    }
+                }
+                if (!include) continue;
+
+                // Build a dictionary for the row
+                var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                foreach (var prop in item.Properties())
+                {
+                    object value;
+                    if (prop.Value.Type == JTokenType.Object && prop.Value["$oid"] != null)
+                        value = prop.Value["$oid"].ToString();
+                    else
+                        value = prop.Value.Type == JTokenType.Null ? null : prop.Value.ToObject<object>();
+                    dict[prop.Name] = value;
+                }
+
+                UpdateEntityStructureWithMissingFields(item, entityStructure);
+                results.Add(dict);
+
+                // Keep large reads responsive.
+                if (++yielded % 128 == 0)
+                    await Task.Yield();
+            }
+
+            return results;
         }
 
         /// <summary>

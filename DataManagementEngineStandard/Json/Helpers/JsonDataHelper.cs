@@ -33,81 +33,83 @@ namespace TheTechIdea.Beep.Json.Helpers
             if (es == null || _root == null) return Enumerable.Empty<object>();
 
             var predicates = JsonFilterHelper.CompileFilters(filters, es);
-            var list = new List<object>();
 
-            // Decide source slice (only root supported for now; deeper paths could map logically later)
-            IEnumerable<JObject> source = _root.OfType<JObject>();
+            return Enumerate();
 
-            // Resolve type
-            Type runtimeType = SafeGetType(entityName);
-            Dictionary<string, PropertyInfo> propMap = runtimeType != null
-                ? es.Fields
-                    .GroupBy(f => f.fieldname, StringComparer.OrdinalIgnoreCase)
-                    .Select(g => g.First())
-                    .Select(f => new { f.fieldname, PI = runtimeType.GetProperty(f.fieldname, BindingFlags.Public | BindingFlags.Instance) })
-                    .Where(x => x.PI != null && x.PI.CanWrite)
-                    .ToDictionary(x => x.fieldname, x => x.PI, StringComparer.OrdinalIgnoreCase)
-                : null;
-
-            foreach (var obj in source)
+            IEnumerable<object> Enumerate()
             {
-                if (!predicates.All(p => p(obj))) continue;
+                // Decide source slice (only root supported for now; deeper paths could map logically later)
+                IEnumerable<JObject> source = _root.OfType<JObject>();
 
-                if (runtimeType != null)
+                // Resolve type
+                Type runtimeType = SafeGetType(entityName);
+                Dictionary<string, PropertyInfo> propMap = runtimeType != null
+                    ? es.Fields
+                        .GroupBy(f => f.fieldname, StringComparer.OrdinalIgnoreCase)
+                        .Select(g => g.First())
+                        .Select(f => new { f.fieldname, PI = runtimeType.GetProperty(f.fieldname, BindingFlags.Public | BindingFlags.Instance) })
+                        .Where(x => x.PI != null && x.PI.CanWrite)
+                        .ToDictionary(x => x.fieldname, x => x.PI, StringComparer.OrdinalIgnoreCase)
+                    : null;
+
+                foreach (var obj in source)
                 {
-                    object inst;
-                    try { inst = Activator.CreateInstance(runtimeType); }
-                    catch { inst = null; }
+                    if (!predicates.All(p => p(obj))) continue;
 
-                    if (inst != null)
+                    if (runtimeType != null)
                     {
-                        foreach (var p in obj.Properties())
+                        object inst;
+                        try { inst = Activator.CreateInstance(runtimeType); }
+                        catch { inst = null; }
+
+                        if (inst != null)
                         {
-                            if (!propMap.TryGetValue(p.Name, out var pi)) continue;
-                            try
+                            foreach (var p in obj.Properties())
                             {
-                                var targetType = pi.PropertyType;
-                                object converted = ConvertToken(p.Value, targetType);
-                                pi.SetValue(inst, converted);
+                                if (!propMap.TryGetValue(p.Name, out var pi)) continue;
+                                try
+                                {
+                                    var targetType = pi.PropertyType;
+                                    object converted = ConvertToken(p.Value, targetType);
+                                    pi.SetValue(inst, converted);
+                                }
+                                catch { /* ignore */ }
                             }
-                            catch { /* ignore */ }
+                            yield return inst;
+                            continue;
                         }
-                        list.Add(inst);
-                        continue;
                     }
-                }
 
-                // fallback dictionary
-                var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-                foreach (var p in obj.Properties())
-                {
-                    dict[p.Name] = ConvertToken(p.Value, null);
+                    // fallback dictionary
+                    var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var p in obj.Properties())
+                    {
+                        dict[p.Name] = ConvertToken(p.Value, null);
+                    }
+                    yield return dict;
                 }
-                list.Add(dict);
             }
-
-            return list;
         }
 
         public PagedResult GetEntitiesPaged(string entityName, List<AppFilter> filters, int page, int size)
         {
             if (page < 1) page = 1;
             if (size <= 0) size = int.MaxValue;
-            var all = GetEntities(entityName, filters).ToList();
-            int total = all.Count;
-            int skip = (page - 1) * size;
-            var pageItems = (skip < total ? all.Skip(skip).Take(size) : Enumerable.Empty<object>()).ToList();
 
-            return new PagedResult
+            int skip = (page - 1) * size;
+            int total = 0;
+            var pageItems = new List<object>();
+
+            foreach (var item in GetEntities(entityName, filters))
             {
-                PageNumber = page,
-                PageSize = size,
-                TotalRecords = total,
-                TotalPages = total > 0 && size > 0 ? (int)Math.Ceiling((double)total / size) : 0,
-                HasNextPage = page * size < total,
-                HasPreviousPage = page > 1,
-                Data = pageItems
-            };
+                if (total >= skip && pageItems.Count < size)
+                {
+                    pageItems.Add(item);
+                }
+                total++;
+            }
+
+            return new PagedResult(pageItems, page, size, total);
         }
 
         private Type SafeGetType(string entityName)

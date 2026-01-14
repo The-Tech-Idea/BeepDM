@@ -1318,6 +1318,14 @@ namespace TheTechIdea.Beep.FileManager
             if (targetType.IsEnum) return Enum.Parse(targetType, value, true);
             return Convert.ChangeType(value, targetType);
         }
+
+        private static string EscapeCsv(string value, char delimiter)
+        {
+            if (value == null) return string.Empty;
+            bool mustQuote = value.Contains(delimiter) || value.Contains('"') || value.Contains('\n') || value.Contains('\r');
+            if (!mustQuote) return value;
+            return $"\"{value.Replace("\"", "\"\"")}\"";
+        }
         // Improved implementation of GetEntity with paging support
         // Improved implementation with extended filtering operators
         public PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
@@ -1333,17 +1341,191 @@ namespace TheTechIdea.Beep.FileManager
                 if (pageNumber < 1) pageNumber = 1;
                 if (pageSize <= 0) pageSize = int.MaxValue;
 
-                // Reuse existing filtered loader
-                var all = GetEntity(EntityName, filter)?.ToList() ?? new List<object>();
-                int total = all.Count;
-
-                int skip = (pageNumber - 1) * pageSize;
-                if (skip >= total)
+                // Ensure entity structure
+                var entityStructure = GetEntityStructure(EntityName, false);
+                if (entityStructure == null || entityStructure.Fields == null || entityStructure.Fields.Count == 0)
                 {
-                    skip = total; // return empty page if out of range
+                    DMEEditor.AddLogMessage("Fail", $"Entity structure not found or empty for {EntityName}", DateTime.Now, 0, null, Errors.Failed);
+                    return null;
                 }
 
-                var pageItems = all.Skip(skip).Take(pageSize).ToList();
+                // Build runtime type (if possible)
+                Type runtimeType = null;
+                try
+                {
+                    runtimeType = GetEntityType(EntityName);
+                }
+                catch
+                {
+                    runtimeType = null;
+                }
+
+                // Map field index for faster access
+                var fieldIndexMap = entityStructure.Fields
+                    .Select((f, i) => new { f.fieldname, Index = i, FieldDef = f })
+                    .ToDictionary(x => x.fieldname, x => x, StringComparer.OrdinalIgnoreCase);
+
+                var activeFilters = (filter ?? new List<AppFilter>())
+                    .Where(f => f != null && !string.IsNullOrWhiteSpace(f.FieldName) && !string.IsNullOrWhiteSpace(f.Operator))
+                    .ToList();
+
+                if (string.IsNullOrEmpty(CombineFilePath))
+                {
+                    CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+                }
+                if (!File.Exists(CombineFilePath))
+                {
+                    DMEEditor.AddLogMessage("Fail", $"File not found: {CombineFilePath}", DateTime.Now, 0, null, Errors.Failed);
+                    return null;
+                }
+
+                int skip = (pageNumber - 1) * pageSize;
+                int total = 0;
+                var pageItems = new List<object>(Math.Min(pageSize, 1024));
+
+                using var parser = new CsvTextFieldParser(CombineFilePath);
+                parser.SetDelimiter(Delimiter);
+
+                var header = parser.ReadFields();
+                if (header == null)
+                {
+                    // empty file
+                    var empty = new PagedResult { PageNumber = pageNumber, PageSize = pageSize };
+                    var emptyType = empty.GetType();
+                    var dp = emptyType.GetProperty("Data");
+                    if (dp != null && dp.CanWrite) dp.SetValue(empty, pageItems);
+                    return empty;
+                }
+
+                var headerToEntityIndex = new Dictionary<int, int>();
+                for (int h = 0; h < header.Length; h++)
+                {
+                    var matchIdx = entityStructure.Fields.FindIndex(f =>
+                        f.fieldname.Equals(header[h], StringComparison.OrdinalIgnoreCase) ||
+                        f.Originalfieldname?.Equals(header[h], StringComparison.OrdinalIgnoreCase) == true);
+                    if (matchIdx >= 0) headerToEntityIndex[h] = matchIdx;
+                }
+
+                while (!parser.EndOfData)
+                {
+                    string[] row;
+                    try
+                    {
+                        row = parser.ReadFields();
+                        if (row == null) break;
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    bool include = true;
+                    foreach (var f in activeFilters)
+                    {
+                        if (!fieldIndexMap.TryGetValue(f.FieldName, out var info))
+                        {
+                            include = false;
+                            break;
+                        }
+
+                        int entityFieldIdx = info.Index;
+                        int csvIdx = headerToEntityIndex.FirstOrDefault(kv => kv.Value == entityFieldIdx).Key;
+                        if (csvIdx < 0 || csvIdx >= row.Length)
+                        {
+                            include = false;
+                            break;
+                        }
+
+                        string rawValue = row[csvIdx];
+                        if (!EvaluateFilter(rawValue, info.FieldDef, f))
+                        {
+                            include = false;
+                            break;
+                        }
+                    }
+
+                    if (!include) continue;
+                    total++;
+
+                    // Collect only the requested page
+                    if (total <= skip) continue;
+                    if (pageItems.Count >= pageSize) continue;
+
+                    if (runtimeType != null)
+                    {
+                        object instance;
+                        try
+                        {
+                            instance = Activator.CreateInstance(runtimeType);
+                        }
+                        catch
+                        {
+                            runtimeType = null;
+                            instance = null;
+                        }
+
+                        if (instance != null)
+                        {
+                            foreach (var ef in entityStructure.Fields)
+                            {
+                                var prop = runtimeType.GetProperty(ef.fieldname);
+                                if (prop == null || !prop.CanWrite) continue;
+
+                                int csvIndex = headerToEntityIndex.FirstOrDefault(kv => kv.Value == fieldIndexMap[ef.fieldname].Index).Key;
+                                if (csvIndex < 0 || csvIndex >= row.Length) continue;
+
+                                var strVal = row[csvIndex];
+                                if (string.IsNullOrWhiteSpace(strVal))
+                                {
+                                    prop.SetValue(instance, null);
+                                    continue;
+                                }
+
+                                try
+                                {
+                                    var targetType = Type.GetType(ef.fieldtype) ?? typeof(string);
+                                    object converted = ConvertString(strVal, targetType);
+                                    prop.SetValue(instance, converted);
+                                }
+                                catch
+                                {
+                                    prop.SetValue(instance, null);
+                                }
+                            }
+                            pageItems.Add(instance);
+                            continue;
+                        }
+                    }
+
+                    var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var ef in entityStructure.Fields)
+                    {
+                        int csvIndex = headerToEntityIndex.FirstOrDefault(kv => kv.Value == fieldIndexMap[ef.fieldname].Index).Key;
+                        if (csvIndex < 0 || csvIndex >= row.Length)
+                        {
+                            dict[ef.fieldname] = null;
+                            continue;
+                        }
+
+                        var strVal = row[csvIndex];
+                        if (string.IsNullOrWhiteSpace(strVal))
+                        {
+                            dict[ef.fieldname] = null;
+                            continue;
+                        }
+
+                        try
+                        {
+                            var targetType = Type.GetType(ef.fieldtype) ?? typeof(string);
+                            dict[ef.fieldname] = ConvertString(strVal, targetType);
+                        }
+                        catch
+                        {
+                            dict[ef.fieldname] = null;
+                        }
+                    }
+                    pageItems.Add(dict);
+                }
 
                 var result = new PagedResult
                 {
@@ -1503,51 +1685,97 @@ namespace TheTechIdea.Beep.FileManager
                     return ErrorObject;
                 }
 
-                var rows = new List<string>();
-                bool isUpdated = false;
-
-                using (var reader = new StreamReader(CombineFilePath))
+                var pkField = entityStructure.PrimaryKeys?.FirstOrDefault() ?? entityStructure.Fields.FirstOrDefault();
+                if (pkField == null)
                 {
-                    string headers = reader.ReadLine();
-                    rows.Add(headers); // Add headers back
-                    string[] headerFields = headers.Split(Delimiter);
+                    ErrorObject.Flag = Errors.Failed;
+                    Logger.WriteLog($"Entity '{entityName}' has no fields to identify records.");
+                    return ErrorObject;
+                }
 
-                    string line;
-                    while ((line = reader.ReadLine()) != null)
+                var pkProp = uploadDataRow?.GetType().GetProperty(pkField.fieldname);
+                var pkVal = pkProp?.GetValue(uploadDataRow)?.ToString();
+                if (string.IsNullOrWhiteSpace(pkVal))
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    Logger.WriteLog($"Primary key value missing for update on '{entityName}'.");
+                    return ErrorObject;
+                }
+
+                string[] BuildRowFromObject(string[] headers)
+                {
+                    var values = new string[headers.Length];
+                    for (int i = 0; i < headers.Length; i++)
                     {
-                        var fields = line.Split(Delimiter);
-                        var dataRow = new Dictionary<string, string>();
+                        var colName = headers[i];
+                        var prop = uploadDataRow.GetType().GetProperty(colName) ?? uploadDataRow.GetType().GetProperty(colName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                        values[i] = prop?.GetValue(uploadDataRow)?.ToString() ?? string.Empty;
+                    }
+                    return values;
+                }
 
-                        for (int i = 0; i < headerFields.Length; i++)
-                        {
-                            dataRow[headerFields[i]] = fields[i];
-                        }
+                bool isUpdated = false;
+                var tempPath = CombineFilePath + ".tmp";
+                using (var parser = new CsvTextFieldParser(CombineFilePath))
+                using (var writer = new StreamWriter(tempPath, false, Encoding.UTF8))
+                {
+                    parser.SetDelimiter(Delimiter);
+                    var headers = parser.ReadFields();
+                    if (headers == null)
+                    {
+                        ErrorObject.Flag = Errors.Failed;
+                        Logger.WriteLog($"CSV file is empty for entity '{entityName}'.");
+                        return ErrorObject;
+                    }
 
-                        // Match condition (update based on primary key)
-                        if (dataRow[entityStructure.Fields[0].fieldname].Equals(
-                                uploadDataRow.GetType().GetProperty(entityStructure.Fields[0].fieldname)
-                                .GetValue(uploadDataRow).ToString()))
+                    int pkIndex = Array.FindIndex(headers, h => string.Equals(h, pkField.fieldname, StringComparison.OrdinalIgnoreCase));
+                    if (pkIndex < 0)
+                    {
+                        ErrorObject.Flag = Errors.Failed;
+                        Logger.WriteLog($"Primary key column '{pkField.fieldname}' not found in CSV header.");
+                        return ErrorObject;
+                    }
+
+                    writer.WriteLine(string.Join(Delimiter.ToString(), headers.Select(h => EscapeCsv(h, Delimiter))));
+
+                    while (!parser.EndOfData)
+                    {
+                        string[] row;
+                        try { row = parser.ReadFields(); } catch { continue; }
+                        if (row == null) break;
+
+                        var currentPk = pkIndex < row.Length ? row[pkIndex] : null;
+                        if (!isUpdated && string.Equals(currentPk, pkVal, StringComparison.OrdinalIgnoreCase))
                         {
-                            // Replace with new data
-                            var updatedRow = string.Join(Delimiter, entityStructure.Fields.Select(f =>
-                                uploadDataRow.GetType().GetProperty(f.fieldname).GetValue(uploadDataRow)?.ToString() ?? ""));
-                            rows.Add(updatedRow);
+                            var updated = BuildRowFromObject(headers);
+                            writer.WriteLine(string.Join(Delimiter.ToString(), updated.Select(v => EscapeCsv(v, Delimiter))));
                             isUpdated = true;
                         }
                         else
                         {
-                            rows.Add(line);
+                            // Preserve existing row as parsed values
+                            writer.WriteLine(string.Join(Delimiter.ToString(), row.Select(v => EscapeCsv(v, Delimiter))));
                         }
                     }
                 }
 
                 if (isUpdated)
                 {
-                    File.WriteAllLines(CombineFilePath, rows);
+                    if (File.Exists(CombineFilePath))
+                    {
+                        var backup = CombineFilePath + ".bak";
+                        File.Replace(tempPath, CombineFilePath, backup, ignoreMetadataErrors: true);
+                        try { File.Delete(backup); } catch { }
+                    }
+                    else
+                    {
+                        File.Move(tempPath, CombineFilePath);
+                    }
                     Logger.WriteLog($"Entity '{entityName}' updated successfully.");
                 }
                 else
                 {
+                    try { File.Delete(tempPath); } catch { }
                     Logger.WriteLog($"No matching record found to update in entity '{entityName}'.");
                 }
             }
@@ -1570,47 +1798,81 @@ namespace TheTechIdea.Beep.FileManager
                     return ErrorObject;
                 }
 
-                var rows = new List<string>();
-                bool isDeleted = false;
-
-                using (var reader = new StreamReader(CombineFilePath))
+                var pkField = entityStructure.PrimaryKeys?.FirstOrDefault() ?? entityStructure.Fields.FirstOrDefault();
+                if (pkField == null)
                 {
-                    string headers = reader.ReadLine();
-                    rows.Add(headers); // Add headers back
-                    string[] headerFields = headers.Split(Delimiter);
+                    ErrorObject.Flag = Errors.Failed;
+                    Logger.WriteLog($"Entity '{entityName}' has no fields to identify records.");
+                    return ErrorObject;
+                }
 
-                    string line;
-                    while ((line = reader.ReadLine()) != null)
+                var pkProp = uploadDataRow?.GetType().GetProperty(pkField.fieldname);
+                var pkVal = pkProp?.GetValue(uploadDataRow)?.ToString();
+                if (string.IsNullOrWhiteSpace(pkVal))
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    Logger.WriteLog($"Primary key value missing for delete on '{entityName}'.");
+                    return ErrorObject;
+                }
+
+                bool isDeleted = false;
+                var tempPath = CombineFilePath + ".tmp";
+                using (var parser = new CsvTextFieldParser(CombineFilePath))
+                using (var writer = new StreamWriter(tempPath, false, Encoding.UTF8))
+                {
+                    parser.SetDelimiter(Delimiter);
+                    var headers = parser.ReadFields();
+                    if (headers == null)
                     {
-                        var fields = line.Split(Delimiter);
-                        var dataRow = new Dictionary<string, string>();
+                        ErrorObject.Flag = Errors.Failed;
+                        Logger.WriteLog($"CSV file is empty for entity '{entityName}'.");
+                        return ErrorObject;
+                    }
 
-                        for (int i = 0; i < headerFields.Length; i++)
-                        {
-                            dataRow[headerFields[i]] = fields[i];
-                        }
+                    int pkIndex = Array.FindIndex(headers, h => string.Equals(h, pkField.fieldname, StringComparison.OrdinalIgnoreCase));
+                    if (pkIndex < 0)
+                    {
+                        ErrorObject.Flag = Errors.Failed;
+                        Logger.WriteLog($"Primary key column '{pkField.fieldname}' not found in CSV header.");
+                        return ErrorObject;
+                    }
 
-                        // Match condition (delete based on primary key)
-                        if (dataRow[entityStructure.Fields[0].fieldname].Equals(
-                                uploadDataRow.GetType().GetProperty(entityStructure.Fields[0].fieldname)
-                                .GetValue(uploadDataRow).ToString()))
+                    writer.WriteLine(string.Join(Delimiter.ToString(), headers.Select(h => EscapeCsv(h, Delimiter))));
+
+                    while (!parser.EndOfData)
+                    {
+                        string[] row;
+                        try { row = parser.ReadFields(); } catch { continue; }
+                        if (row == null) break;
+
+                        var currentPk = pkIndex < row.Length ? row[pkIndex] : null;
+                        if (!isDeleted && string.Equals(currentPk, pkVal, StringComparison.OrdinalIgnoreCase))
                         {
                             isDeleted = true;
+                            continue;
                         }
-                        else
-                        {
-                            rows.Add(line);
-                        }
+
+                        writer.WriteLine(string.Join(Delimiter.ToString(), row.Select(v => EscapeCsv(v, Delimiter))));
                     }
                 }
 
                 if (isDeleted)
                 {
-                    File.WriteAllLines(CombineFilePath, rows);
+                    if (File.Exists(CombineFilePath))
+                    {
+                        var backup = CombineFilePath + ".bak";
+                        File.Replace(tempPath, CombineFilePath, backup, ignoreMetadataErrors: true);
+                        try { File.Delete(backup); } catch { }
+                    }
+                    else
+                    {
+                        File.Move(tempPath, CombineFilePath);
+                    }
                     Logger.WriteLog($"Entity '{entityName}' deleted successfully.");
                 }
                 else
                 {
+                    try { File.Delete(tempPath); } catch { }
                     Logger.WriteLog($"No matching record found to delete in entity '{entityName}'.");
                 }
             }
@@ -2002,44 +2264,40 @@ namespace TheTechIdea.Beep.FileManager
                     return ErrorObject;
                 }
 
-                // Retrieve the data
-                var data = GetEntity(entityName, null) as DataTable;
-                if (data == null)
+                if (string.IsNullOrEmpty(CombineFilePath))
                 {
-                    DMEEditor.AddLogMessage("Error", "Failed to retrieve data for export", DateTime.Now, 0, null, Errors.Failed);
+                    CombineFilePath = Path.Combine(Dataconnection.ConnectionProp.FilePath, Dataconnection.ConnectionProp.FileName);
+                }
+                if (!File.Exists(CombineFilePath))
+                {
+                    DMEEditor.AddLogMessage("Error", $"Source CSV not found: {CombineFilePath}", DateTime.Now, 0, null, Errors.Failed);
                     ErrorObject.Flag = Errors.Failed;
                     return ErrorObject;
                 }
 
-                using (var writer = new StreamWriter(targetFilePath, false, Encoding.UTF8))
-                {
-                    // Write headers if requested
-                    if (includeHeaders)
-                    {
-                        string headerLine = string.Join(delimiter.ToString(),
-                            data.Columns.Cast<DataColumn>().Select(column =>
-                                column.ColumnName.Contains(delimiter) ?
-                                $"\"{column.ColumnName.Replace("\"", "\"\"")}\"" :
-                                column.ColumnName));
-                        writer.WriteLine(headerLine);
-                    }
+                using var parser = new CsvTextFieldParser(CombineFilePath);
+                parser.SetDelimiter(Delimiter);
 
-                    // Write data rows
-                    foreach (DataRow row in data.Rows)
-                    {
-                        string dataLine = string.Join(delimiter.ToString(),
-                            row.ItemArray.Select(field =>
-                            {
-                                string value = field?.ToString() ?? string.Empty;
-                                if (value.Contains(delimiter) || value.Contains('"') || value.Contains('\n'))
-                                {
-                                    // Escape double quotes and wrap in quotes
-                                    return $"\"{value.Replace("\"", "\"\"")}\"";
-                                }
-                                return value;
-                            }));
-                        writer.WriteLine(dataLine);
-                    }
+                using var writer = new StreamWriter(targetFilePath, false, Encoding.UTF8);
+
+                var header = parser.ReadFields();
+                if (header == null)
+                {
+                    // empty file
+                    return ErrorObject;
+                }
+
+                if (includeHeaders)
+                {
+                    writer.WriteLine(string.Join(delimiter.ToString(), header.Select(h => EscapeCsv(h, delimiter))));
+                }
+
+                while (!parser.EndOfData)
+                {
+                    string[] row;
+                    try { row = parser.ReadFields(); } catch { continue; }
+                    if (row == null) break;
+                    writer.WriteLine(string.Join(delimiter.ToString(), row.Select(v => EscapeCsv(v, delimiter))));
                 }
 
                 DMEEditor.AddLogMessage("Success", $"Data exported to {targetFilePath}", DateTime.Now, 0, null, Errors.Ok);

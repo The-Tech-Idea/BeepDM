@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
@@ -33,6 +34,8 @@ namespace TheTechIdea.Beep.Json
         private JsonGraphHelper _graphHelper;
         private JsonSchemaPersistenceHelper _schemaPersistence = new();
         private readonly object _lock = new();
+        private bool _dataDirty;
+        private bool _rootWasObject;
         #endregion
 
         #region Ctor
@@ -97,6 +100,7 @@ namespace TheTechIdea.Beep.Json
 
         public ConnectionState Closeconnection()
         {
+            PersistDataIfDirty();
             PersistSchemaIfDirty();
             ConnectionStatus = ConnectionState.Closed;
             return ConnectionStatus;
@@ -130,12 +134,24 @@ namespace TheTechIdea.Beep.Json
             {
                 _rootJson = new JArray();
             }
+
+            _rootWasObject = _rootJson.Type == JTokenType.Object;
+
             if (_rootJson.Type == JTokenType.Array)
+            {
                 _rootArray = (JArray)_rootJson;
+            }
             else if (_rootJson.Type == JTokenType.Object)
+            {
+                // Normalize in-memory representation to an array so schema/paging/helpers work.
                 _rootArray = new JArray(_rootJson);
+                _rootJson = _rootArray;
+            }
             else
+            {
                 _rootArray = new JArray();
+                _rootJson = _rootArray;
+            }
         }
 
         private void BuildSchema()
@@ -181,6 +197,71 @@ namespace TheTechIdea.Beep.Json
                 }
                 catch { }
             });
+        }
+
+        private void PersistDataIfDirty()
+        {
+            if (!_dataDirty)
+                return;
+
+            if (string.IsNullOrWhiteSpace(_filePath))
+                return;
+
+            lock (_lock)
+            {
+                if (!_dataDirty)
+                    return;
+
+                try
+                {
+                    JToken toWrite = _rootArray ?? new JArray();
+
+                    // Preserve original root shape when possible.
+                    if (_rootWasObject && toWrite is JArray arr && arr.Count == 1 && arr[0] is JObject)
+                    {
+                        toWrite = arr[0];
+                    }
+
+                    var json = toWrite.ToString(Formatting.Indented);
+                    var directory = Path.GetDirectoryName(_filePath);
+                    if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+                    {
+                        Directory.CreateDirectory(directory);
+                    }
+
+                    var tempPath = _filePath + ".tmp";
+                    File.WriteAllText(tempPath, json);
+
+                    // Replace is the safest atomic-ish write on Windows; fallback to move if needed.
+                    if (File.Exists(_filePath))
+                    {
+                        var backupPath = _filePath + ".bak";
+                        File.Replace(tempPath, _filePath, backupPath, ignoreMetadataErrors: true);
+                        try { File.Delete(backupPath); } catch { }
+                    }
+                    else
+                    {
+                        File.Move(tempPath, _filePath);
+                    }
+
+                    _dataDirty = false;
+                }
+                catch (Exception ex)
+                {
+                    ErrorObject.Flag = Errors.Failed;
+                    ErrorObject.Message = ex.Message;
+                    try
+                    {
+                        PassEvent?.Invoke(this, new PassedArgs
+                        {
+                            EventType = "Error",
+                            Messege = $"Failed to persist JSON data: {ex.Message}",
+                            Errors = Errors.Failed
+                        });
+                    }
+                    catch { }
+                }
+            }
         }
         #endregion
 
@@ -231,17 +312,22 @@ namespace TheTechIdea.Beep.Json
         public PagedResult GetEntity(string EntityName, List<AppFilter> filter, int pageNumber, int pageSize)
         {
             EnsureOpen();
-            if (pageNumber < 1) pageNumber = 1;
-            if (pageSize <= 0) pageSize = int.MaxValue;
-            var all = GetEntity(EntityName, filter).ToList();
-            int skip = (pageNumber - 1) * pageSize;
-            var page = skip >= all.Count ? new List<object>() : all.Skip(skip).Take(pageSize).ToList();
-            return new PagedResult { Data = page };
+            return _dataHelper?.GetEntitiesPaged(EntityName, filter, pageNumber, pageSize) ?? new PagedResult();
         }
 
-        public Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
+        public async Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
-            return Task.FromResult(GetEntity(EntityName, Filter));
+            EnsureOpen();
+            if (_asyncHelper == null)
+                return Enumerable.Empty<object>();
+
+            var list = new List<object>();
+            await foreach (var item in _asyncHelper.StreamAsync(EntityName, Filter ?? new List<AppFilter>(), CancellationToken.None))
+            {
+                list.Add(item);
+            }
+
+            return list;
         }
 
         public IEnumerable<object> RunQuery(string qrystr)
@@ -252,13 +338,90 @@ namespace TheTechIdea.Beep.Json
         }
         #endregion
 
+        #region Advanced Features (P2)
+        /// <summary>
+        /// Optional graph hydration: returns dictionaries that include nested child entity collections.
+        /// This does not change the underlying stored JSON; it only shapes the returned results.
+        /// </summary>
+        public IEnumerable<object> GetEntityGraph(string rootEntityName, List<AppFilter> rootFilters, int depth = 1, bool includeParentReference = true, bool includeAncestorChain = false)
+        {
+            EnsureOpen();
+            if (_graphHelper == null)
+                return Enumerable.Empty<object>();
+
+            var options = new GraphHydrationOptions
+            {
+                Depth = Math.Max(0, depth),
+                IncludeParentReference = includeParentReference,
+                IncludeAncestorChain = includeAncestorChain
+            };
+
+            return _graphHelper.MaterializeGraph(rootEntityName, rootFilters ?? new List<AppFilter>(), options);
+        }
+
+        /// <summary>
+        /// Scans the current JSON data for an entity and adds any missing fields to its EntityStructure.
+        /// Marks schema as dirty so it will be persisted on Commit/Close.
+        /// </summary>
+        public IErrorsInfo SyncSchemaFromData(string entityName)
+        {
+            EnsureOpen();
+            if (string.IsNullOrWhiteSpace(entityName))
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = "Entity name is required.";
+                return ErrorObject;
+            }
+
+            var es = Entities.FirstOrDefault(e => e.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+            if (es == null)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = "Entity not found.";
+                return ErrorObject;
+            }
+
+            var arr = JsonPathNavigator.ResolveArray(_rootJson, es);
+            if (arr == null)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = "Entity data is not an array.";
+                return ErrorObject;
+            }
+
+            bool changed = false;
+            try
+            {
+                changed |= JsonSchemaSyncHelper.SyncFieldsFromData(arr, es);
+                changed |= JsonSchemaSyncHelper.EnsurePrimaryKeyIntegrity(es);
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+                return ErrorObject;
+            }
+
+            if (changed)
+                _schemaPersistence.MarkDirty();
+
+            ErrorObject.Flag = Errors.Ok;
+            ErrorObject.Message = changed ? "Schema synchronized from data." : "Schema already up to date.";
+            return ErrorObject;
+        }
+        #endregion
+
         #region CRUD
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
             EnsureOpen();
             bool ok = _crudHelper?.Insert(EntityName, InsertedData) ?? false;
             ErrorObject.Flag = ok ? Errors.Ok : Errors.Failed;
-            if (ok) _schemaPersistence.MarkDirty();
+            if (ok)
+            {
+                _schemaPersistence.MarkDirty();
+                _dataDirty = true;
+            }
             return ErrorObject;
         }
 
@@ -267,7 +430,11 @@ namespace TheTechIdea.Beep.Json
             EnsureOpen();
             bool ok = _crudHelper?.Update(EntityName, UploadDataRow) ?? false;
             ErrorObject.Flag = ok ? Errors.Ok : Errors.Failed;
-            if (ok) _schemaPersistence.MarkDirty();
+            if (ok)
+            {
+                _schemaPersistence.MarkDirty();
+                _dataDirty = true;
+            }
             return ErrorObject;
         }
 
@@ -291,7 +458,11 @@ namespace TheTechIdea.Beep.Json
             }
             bool ok = _crudHelper?.Delete(EntityName, new AppFilter { FieldName = pk.fieldname, Operator = "=", FilterValue = val }) ?? false;
             ErrorObject.Flag = ok ? Errors.Ok : Errors.Failed;
-            if (ok) _schemaPersistence.MarkDirty();
+            if (ok)
+            {
+                _schemaPersistence.MarkDirty();
+                _dataDirty = true;
+            }
             return ErrorObject;
         }
 
@@ -319,10 +490,31 @@ namespace TheTechIdea.Beep.Json
         #region Not Supported Operations
         public IErrorsInfo BeginTransaction(PassedArgs args)
         {
-            ErrorObject.Flag = Errors.Failed; ErrorObject.Message = "Transactions not supported"; return ErrorObject;
+            // Minimal semantics for file-backed JSON: treated as "unit of work" barrier.
+            ErrorObject.Flag = Errors.Ok;
+            ErrorObject.Message = "Transaction started";
+            return ErrorObject;
         }
-        public IErrorsInfo EndTransaction(PassedArgs args) => BeginTransaction(args);
-        public IErrorsInfo Commit(PassedArgs args) => BeginTransaction(args);
+
+        public IErrorsInfo EndTransaction(PassedArgs args)
+        {
+            ErrorObject.Flag = Errors.Ok;
+            ErrorObject.Message = "Transaction ended";
+            return ErrorObject;
+        }
+
+        public IErrorsInfo Commit(PassedArgs args)
+        {
+            EnsureOpen();
+            PersistDataIfDirty();
+            PersistSchemaIfDirty();
+            if (ErrorObject.Flag != Errors.Failed)
+            {
+                ErrorObject.Flag = Errors.Ok;
+                ErrorObject.Message = "Committed";
+            }
+            return ErrorObject;
+        }
         public IErrorsInfo ExecuteSql(string sql) { ErrorObject.Flag = Errors.Failed; ErrorObject.Message = "ExecuteSql not supported"; return ErrorObject; }
         public IErrorsInfo RunScript(ETLScriptDet dDLScripts) { ErrorObject.Flag = Errors.Failed; ErrorObject.Message = "RunScript not supported"; return ErrorObject; }
         public double GetScalar(string query) => 0;
@@ -342,6 +534,7 @@ namespace TheTechIdea.Beep.Json
             {
                 if (disposing)
                 {
+                    PersistDataIfDirty();
                     PersistSchemaIfDirty();
                 }
                 disposedValue = true;
