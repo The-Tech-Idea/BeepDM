@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Vis;
 
 namespace TheTechIdea.Beep.ConfigUtil
@@ -129,17 +130,33 @@ namespace TheTechIdea.Beep.ConfigUtil
             get { return _methods; }
             set { SetProperty(ref _methods, value); }
         }
-        private string _assemblyName=string.Empty;
+        private string _assemblyName = string.Empty;
         public string AssemblyName
         {
             get { return _assemblyName; }
             set { SetProperty(ref _assemblyName, value); }
         }
-        private string _assemblyVersion=string.Empty;
+        private string _assemblyVersion = string.Empty;
         public string Version
         {
-            get {return _assemblyVersion; }
-            set { SetProperty(ref _assemblyVersion, value);}
+            get { return _assemblyVersion; }
+            set { SetProperty(ref _assemblyVersion, value); }
+        }
+        private DatasourceCategory _category;
+        public DatasourceCategory Category
+        {
+            get { return _category; }
+            set
+            {
+                SetProperty(ref _category, value);
+            }
+        }
+        private DataSourceType _datasourcetype;
+        public DataSourceType DatasourceType
+        {
+            get { return _datasourcetype; }
+            set { SetProperty(ref _datasourcetype, value); }
+
         }
     }
 }

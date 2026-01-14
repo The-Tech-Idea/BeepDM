@@ -238,21 +238,24 @@ namespace TheTechIdea.Beep.Tools
             {
                 xcls.LocalDB = true;
             }
-            if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
-            {
-                xcls.IsDataSource = true;
-            }
+          
             if (type.ImplementedInterfaces.Contains(typeof(IInMemoryDB)))
             {
                 xcls.InMemory = true;
             }
+
             
             xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
             if (xcls.classProperties != null)
             {
                 xcls.Order = xcls.classProperties.order;
                 xcls.RootName = xcls.classProperties.misc;
-                
+                if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
+                {
+                    xcls.IsDataSource = true;
+                    xcls.DatasourceType = xcls.classProperties.DatasourceType;
+                    xcls.Category=xcls.classProperties.Category;
+                 }
                 try
                 {
                     xcls.VisSchema = (AddinVisSchema)type.GetCustomAttribute(typeof(AddinVisSchema), false);

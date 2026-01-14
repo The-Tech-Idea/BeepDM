@@ -166,6 +166,12 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             {
                 xcls.Order = xcls.classProperties.order;
                 xcls.RootName = xcls.classProperties.misc;
+                if (type.ImplementedInterfaces.Contains(typeof(IDataSource)))
+                {
+                    xcls.IsDataSource = true;
+                    xcls.DatasourceType = xcls.classProperties.DatasourceType;
+                    xcls.Category = xcls.classProperties.Category;
+                }
                 try
                 {
                     xcls.VisSchema = (AddinVisSchema)type.GetCustomAttribute(typeof(AddinVisSchema), false);

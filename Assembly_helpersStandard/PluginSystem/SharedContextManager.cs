@@ -1231,7 +1231,19 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         public Type GetType(string fullTypeName)
         {
             if (string.IsNullOrWhiteSpace(fullTypeName)) return null;
-            if (_sharedTypeCache.TryGetValue(fullTypeName, out var weak))
+            
+            // Parse Assembly Qualified Name if provided (e.g., "TypeName, AssemblyName, Version=...")
+            // Extract just the type name part before the first comma
+            string typeNameOnly = fullTypeName;
+            int commaIndex = fullTypeName.IndexOf(',');
+            if (commaIndex > 0)
+            {
+                typeNameOnly = fullTypeName.Substring(0, commaIndex).Trim();
+            }
+            
+            // Check cache using both full input and parsed type name
+            if (_sharedTypeCache.TryGetValue(fullTypeName, out var weak) || 
+                _sharedTypeCache.TryGetValue(typeNameOnly, out weak))
             {
                 if (weak != null && weak.TryGetTarget(out var t) && t != null)
                 {
@@ -1239,6 +1251,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 }
                 // Stale entry – remove
                 _sharedTypeCache.TryRemove(fullTypeName, out _);
+                _sharedTypeCache.TryRemove(typeNameOnly, out _);
             }
 
             // Attempt late resolution by scanning shared assemblies (lazy recovery)
@@ -1248,10 +1261,14 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 {
                     try
                     {
-                        var resolved = asm.GetType(fullTypeName, throwOnError: false, ignoreCase: false);
+                        // Use typeNameOnly (without assembly version info) for Assembly.GetType()
+                        var resolved = asm.GetType(typeNameOnly, throwOnError: false, ignoreCase: false);
                         if (resolved != null)
                         {
-                            _sharedTypeCache[fullTypeName] = new WeakReference<Type>(resolved);
+                            // Cache using both the original input and the parsed name
+                            var weakRef = new WeakReference<Type>(resolved);
+                            _sharedTypeCache[fullTypeName] = weakRef;
+                            _sharedTypeCache[typeNameOnly] = weakRef;
                             return resolved;
                         }
                     }
@@ -1968,7 +1985,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 // Detect current runtime framework version
                 var currentFramework = Environment.Version.Major; // .NET 8 = 8, .NET 9 = 9, etc.
                 
-                // Check if path contains framework-specific folder (net8.0, net9.0, etc.)
+                // Check if path contains a framework-specific folder (net8.0, net9.0, etc.)
                 var pathLower = directoryPath.ToLowerInvariant();
                 
                 // If path contains a framework identifier, check compatibility
