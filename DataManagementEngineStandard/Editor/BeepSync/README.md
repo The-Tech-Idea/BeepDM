@@ -73,7 +73,7 @@ var syncManager = new BeepSyncManager(dmeEditor);
 // Create a sync schema
 var schema = new DataSyncSchema
 {
-    ID = Guid.NewGuid().ToString(),
+    Id = Guid.NewGuid().ToString(),
     SourceDataSourceName = "SourceDB",
     DestinationDataSourceName = "DestinationDB",
     SourceEntityName = "Customers",

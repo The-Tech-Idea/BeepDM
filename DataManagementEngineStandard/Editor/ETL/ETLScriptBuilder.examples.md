@@ -13,8 +13,8 @@ var copyScripts = builder.BuildCopyDataScripts(srcDs, destDs, entities,
     progress: new Progress<PassedArgs>(p => Console.WriteLine(p.Messege)),
     token: CancellationToken.None);
 
-etl.Script.ScriptDTL.AddRange(createScripts);
-etl.Script.ScriptDTL.AddRange(copyScripts);
+etl.Script.ScriptDetails.AddRange(createScripts);
+etl.Script.ScriptDetails.AddRange(copyScripts);
 ```
 
 Example 2: Only specific entities

@@ -31,15 +31,15 @@ namespace TheTechIdea.Beep.Editor.ETL
                 token.ThrowIfCancellationRequested();
                 var script = new ETLScriptDet
                 {
-                    ID = i++,
-                    sourcedatasourcename = src.DatasourceName,
-                    sourceentityname = e.EntityName,
-                    sourceDatasourceEntityName = string.IsNullOrEmpty(e.DatasourceEntityName)? e.EntityName: e.DatasourceEntityName,
-                    destinationdatasourcename = dest.DatasourceName,
-                    destinationentityname = e.EntityName,
-                    destinationDatasourceEntityName = string.IsNullOrEmpty(e.DatasourceEntityName)? e.EntityName: e.DatasourceEntityName,
+                    Id = i++,
+                    SourceDataSourceName = src.DatasourceName,
+                    SourceEntityName = e.EntityName,
+                    SourceDataSourceEntityName = string.IsNullOrEmpty(e.DatasourceEntityName) ? e.EntityName : e.DatasourceEntityName,
+                    DestinationDataSourceName = dest.DatasourceName,
+                    DestinationEntityName = e.EntityName,
+                    DestinationDataSourceEntityName = string.IsNullOrEmpty(e.DatasourceEntityName) ? e.EntityName : e.DatasourceEntityName,
                     SourceEntity = e,
-                    scriptType = DDLScriptType.CreateEntity,
+                    ScriptType = DDLScriptType.CreateEntity,
                     CopyData = copyData,
                     Active = true,
                     Mapping = new EntityDataMap_DTL(),
@@ -61,15 +61,15 @@ namespace TheTechIdea.Beep.Editor.ETL
                 token.ThrowIfCancellationRequested();
                 var script = new ETLScriptDet
                 {
-                    ID = i++,
-                    sourcedatasourcename = src.DatasourceName,
-                    sourceentityname = e.EntityName,
-                    sourceDatasourceEntityName = string.IsNullOrEmpty(e.DatasourceEntityName)? e.EntityName: e.DatasourceEntityName,
-                    destinationdatasourcename = dest.DatasourceName,
-                    destinationentityname = e.EntityName,
-                    destinationDatasourceEntityName = string.IsNullOrEmpty(e.DatasourceEntityName)? e.EntityName: e.DatasourceEntityName,
+                    Id = i++,
+                    SourceDataSourceName = src.DatasourceName,
+                    SourceEntityName = e.EntityName,
+                    SourceDataSourceEntityName = string.IsNullOrEmpty(e.DatasourceEntityName) ? e.EntityName : e.DatasourceEntityName,
+                    DestinationDataSourceName = dest.DatasourceName,
+                    DestinationEntityName = e.EntityName,
+                    DestinationDataSourceEntityName = string.IsNullOrEmpty(e.DatasourceEntityName) ? e.EntityName : e.DatasourceEntityName,
                     SourceEntity = e,
-                    scriptType = DDLScriptType.CopyData,
+                    ScriptType = DDLScriptType.CopyData,
                     Active = true,
                     Mapping = new EntityDataMap_DTL(),
                     Tracking = new List<SyncErrorsandTracking>()

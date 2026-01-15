@@ -10,8 +10,8 @@ var destDs = dmeEditor.GetDataSource("ModernDB");
 etl.CreateScriptHeader(srcDs, new Progress<PassedArgs>(p => Console.WriteLine(p.Messege)), CancellationToken.None);
 
 // Filter to entities you want
-etl.Script.ScriptDTL = etl.Script.ScriptDTL
-    .Where(s => new[]{"Customers","Orders"}.Contains(s.sourceentityname))
+etl.Script.ScriptDetails = etl.Script.ScriptDetails
+    .Where(s => new[]{"Customers","Orders"}.Contains(s.SourceEntityName))
     .ToList();
 
 // Execute

@@ -9,24 +9,22 @@ namespace TheTechIdea.Beep.Editor
 {
     public interface IETLScriptDTL
     {
-         int ID { get; set; }
-         string GuidID { get; set; } 
-        string ddl { get; set; }
-        string sourceentityname { get; set; }
-        string sourceDatasourceEntityName { get; set; }
-        string destinationdatasourcename { get; set; }
-        string sourcedatasourcename { get; set; }
-         string destinationentityname { get; set; }
-         string destinationDatasourceEntityName { get; set; }
-        string errormessage { get; set; }
+        int Id { get; set; }
+        string GuidId { get; set; }
+        string Ddl { get; set; }
+        string SourceEntityName { get; set; }
+        string SourceDataSourceEntityName { get; set; }
+        string DestinationDataSourceName { get; set; }
+        string SourceDataSourceName { get; set; }
+        string DestinationEntityName { get; set; }
+        string DestinationDataSourceEntityName { get; set; }
+        string ErrorMessage { get; set; }
         bool Active { get; set; }
-        bool CopyData { get; set; } 
-        List<AppFilter> FilterConditions { get; set; }  
-    
-        DDLScriptType scriptType { get; set; }
+        bool CopyData { get; set; }
+        List<AppFilter> FilterConditions { get; set; }
+        DDLScriptType ScriptType { get; set; }
         EntityDataMap_DTL Mapping { get; set; }
         List<SyncErrorsandTracking> Tracking { get; set; }
-      
     }
     public enum DDLScriptType
     {

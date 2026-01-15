@@ -13,20 +13,30 @@ namespace TheTechIdea.Beep.Editor
     {
         public ETLScriptDet()
         {
-            ID = 1;
+            Id = 1;
         }
-        public int ID { get; set; }
-        public string GuidID { get; set; } = Guid.NewGuid().ToString();
-        public string ddl { get ; set ; }
+      //  [JsonProperty("ID")]
+        public int Id { get; set; }
+      //  [JsonProperty("GuidID")]
+        public string GuidId { get; set; } = Guid.NewGuid().ToString();
+      //  [JsonProperty("ddl")]
+        public string Ddl { get ; set ; }
 
-        public string sourcedatasourcename { get; set; }
-        public string sourceentityname { get ; set ; }
-        public string sourceDatasourceEntityName { get; set; }
+      //  [JsonProperty("sourcedatasourcename")]
+        public string SourceDataSourceName { get; set; }
+      //  [JsonProperty("sourceentityname")]
+        public string SourceEntityName { get; set; }
+      //  [JsonProperty("sourceDatasourceEntityName")]
+        public string SourceDataSourceEntityName { get; set; }
         public EntityStructure SourceEntity { get; set; }
-        public string destinationentityname { get; set; }
-        public string destinationDatasourceEntityName { get; set; }
-        public string destinationdatasourcename { get ; set ; }
-        public string errormessage { get ; set ; }
+      //  [JsonProperty("destinationentityname")]
+        public string DestinationEntityName { get; set; }
+      //  [JsonProperty("destinationDatasourceEntityName")]
+        public string DestinationDataSourceEntityName { get; set; }
+      //  [JsonProperty("destinationdatasourcename")]
+        public string DestinationDataSourceName { get ; set ; }
+      //  [JsonProperty("errormessage")]
+        public string ErrorMessage { get ; set ; }
         public bool IsCreated { get; set; }=false;
         public bool IsModified { get; set; }=false ;
         public bool IsDataCopied { get; set; }=false ;
@@ -34,7 +44,8 @@ namespace TheTechIdea.Beep.Editor
         public bool Active { get; set; } = false;
         public bool CopyData { get; set; }= false;
         public List<AppFilter> FilterConditions { get; set; }=new List<AppFilter>();
-        public DDLScriptType scriptType { get; set; }=new DDLScriptType();
+       
+        public DDLScriptType ScriptType { get; set; }=new DDLScriptType();
         public EntityDataMap_DTL Mapping { get; set; }
         public List<SyncErrorsandTracking> Tracking { get; set; } = new List<SyncErrorsandTracking>();
         public List<ETLScriptDet> CopyDataScripts { get; set; } = new List<ETLScriptDet>();

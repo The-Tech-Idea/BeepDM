@@ -318,7 +318,7 @@ var scripts = dmeEditor.ETL.GetCreateEntityScript(sourceDs, entities,
                                                  progress, cancellationToken, true);
 
 // Set up the ETL script
-dmeEditor.ETL.Script.ScriptDTL.AddRange(scripts);
+dmeEditor.ETL.Script.ScriptDetails.AddRange(scripts);
 
 // Execute the migration
 var result = await dmeEditor.ETL.RunCreateScript(progress, cancellationToken);</code></pre>

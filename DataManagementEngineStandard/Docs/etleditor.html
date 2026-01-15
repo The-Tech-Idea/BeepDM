@@ -192,7 +192,7 @@ var createScripts = etlEditor.GetCreateEntityScript(
     destDs, entities, progress, cancellationToken, true);
 
 // Set up the ETL script
-etlEditor.Script.ScriptDTL.AddRange(createScripts);
+etlEditor.Script.ScriptDetails.AddRange(createScripts);
 
 // Save the script for later use
 etlEditor.SaveETL("MigrationProject");</code></pre>
@@ -512,8 +512,8 @@ var copyScripts = etlEditor.GetCopyDataEntityScript(
     progress, cancellationToken);
 
 // Combine scripts
-etlEditor.Script.ScriptDTL.AddRange(createScripts);
-etlEditor.Script.ScriptDTL.AddRange(copyScripts);
+etlEditor.Script.ScriptDetails.AddRange(createScripts);
+etlEditor.Script.ScriptDetails.AddRange(copyScripts);
 
 // Execute with detailed monitoring
 var result = await etlEditor.RunCreateScript(

@@ -334,8 +334,8 @@ public async Task&lt;SyncResult&gt; ExecuteSync(SyncConfiguration config)
         // Step 3: Filter entities if specified
         if (config.EntitiesToSync?.Any() == true)
         {
-            _etlEditor.Script.ScriptDTL = _etlEditor.Script.ScriptDTL
-                .Where(s =&gt; config.EntitiesToSync.Contains(s.sourceEntityName))
+            _etlEditor.Script.ScriptDetails = _etlEditor.Script.ScriptDetails
+                .Where(s =&gt; config.EntitiesToSync.Contains(s.SourceEntityName))
                 .ToList();
         }
         

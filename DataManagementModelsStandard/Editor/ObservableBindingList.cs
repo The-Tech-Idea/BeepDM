@@ -7,9 +7,11 @@ using System.Linq;
 using System.Data;
 using System.Reflection;
 using System.Linq.Expressions;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
+
 
 namespace TheTechIdea.Beep.Editor
 {
@@ -2003,8 +2005,12 @@ namespace TheTechIdea.Beep.Editor
     }
     public class EntityUpdateInsertLog
     {
-        public int ID { get; set; }
-        public int RecordID { get; set; }
+      //  [JsonProperty("ID")]
+        [JsonPropertyName("ID")]
+        public int Id { get; set; }
+      //  [JsonProperty("RecordID")]
+        [JsonPropertyName("RecordID")]
+        public int RecordId { get; set; }
         public string RecordGuidKey { get; set; }
         public string GuidKey { get; set; } = Guid.NewGuid().ToString();
         public Dictionary<string, object> UpdatedFields { get; set; }

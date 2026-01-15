@@ -146,17 +146,17 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 var schemas = await LoadSchemasAsync();
 
                 // Find and replace existing schema or add new one
-                var existingSchema = schemas.FirstOrDefault(s => s.ID == schema.ID);
+                var existingSchema = schemas.FirstOrDefault(s => s.Id == schema.Id);
                 if (existingSchema != null)
                 {
                     var index = schemas.IndexOf(existingSchema);
                     schemas[index] = schema;
-                    _editor.AddLogMessage("BeepSync", $"Updated existing schema '{schema.ID}'", DateTime.Now, -1, "", Errors.Ok);
+                    _editor.AddLogMessage("BeepSync", $"Updated existing schema '{schema.Id}'", DateTime.Now, -1, "", Errors.Ok);
                 }
                 else
                 {
                     schemas.Add(schema);
-                    _editor.AddLogMessage("BeepSync", $"Added new schema '{schema.ID}'", DateTime.Now, -1, "", Errors.Ok);
+                    _editor.AddLogMessage("BeepSync", $"Added new schema '{schema.Id}'", DateTime.Now, -1, "", Errors.Ok);
                 }
 
                 // Save all schemas
@@ -164,7 +164,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             }
             catch (Exception ex)
             {
-                _editor.AddLogMessage("BeepSync", $"Error saving single schema '{schema?.ID}': {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                _editor.AddLogMessage("BeepSync", $"Error saving single schema '{schema?.Id}': {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
                 throw;
             }
         }
@@ -172,14 +172,14 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
         /// <summary>
         /// Delete schema from storage
         /// </summary>
-        /// <param name="schemaId">ID of schema to delete</param>
+        /// <param name="schemaId">Id of schema to delete</param>
         public async Task DeleteSchemaAsync(string schemaId)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(schemaId))
                 {
-                    _editor.AddLogMessage("BeepSync", "Cannot delete schema: schema ID is null or empty", DateTime.Now, -1, "", Errors.Failed);
+                    _editor.AddLogMessage("BeepSync", "Cannot delete schema: schema Id is null or empty", DateTime.Now, -1, "", Errors.Failed);
                     return;
                 }
 
@@ -187,7 +187,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 var schemas = await LoadSchemasAsync();
 
                 // Find and remove schema
-                var schemaToRemove = schemas.FirstOrDefault(s => s.ID == schemaId);
+                var schemaToRemove = schemas.FirstOrDefault(s => s.Id == schemaId);
                 if (schemaToRemove != null)
                 {
                     schemas.Remove(schemaToRemove);

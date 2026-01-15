@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
@@ -389,7 +389,7 @@ namespace TheTechIdea.Beep.Editor
         {
             var syncRunData = new SyncRunData
             {
-                SyncSchemaID = schema.ID,
+                SyncSchemaId = schema.Id,
                 SyncDate = schema.LastSyncDate,
                 SyncStatus = schema.SyncStatus,
                 SyncStatusMessage = schema.SyncStatusMessage
@@ -444,13 +444,13 @@ namespace TheTechIdea.Beep.Editor
 
         public void SyncData(string SchemaID)
         {
-            DataSyncSchema schema = SyncSchemas.Find(x => x.ID == SchemaID);
+            DataSyncSchema schema = SyncSchemas.Find(x => x.Id == SchemaID);
             SyncData(schema);
         }
 
         public void SyncData(string SchemaID, string SourceEntityName, string DestinationEntityName)
         {
-            DataSyncSchema schema = SyncSchemas.Find(x => x.ID == SchemaID);
+            DataSyncSchema schema = SyncSchemas.Find(x => x.Id == SchemaID);
             schema.SourceEntityName = SourceEntityName;
             schema.DestinationEntityName = DestinationEntityName;
             SyncData(schema);
@@ -458,7 +458,7 @@ namespace TheTechIdea.Beep.Editor
 
         public void SyncData(string SchemaID, string SourceEntityName, string DestinationEntityName, string SourceSyncDataField)
         {
-            DataSyncSchema schema = SyncSchemas.Find(x => x.ID == SchemaID);
+            DataSyncSchema schema = SyncSchemas.Find(x => x.Id == SchemaID);
             schema.SourceEntityName = SourceEntityName;
             schema.DestinationEntityName = DestinationEntityName;
             schema.SourceSyncDataField = SourceSyncDataField;
@@ -467,7 +467,7 @@ namespace TheTechIdea.Beep.Editor
 
         public void SyncData(string SchemaID, string SourceEntityName, string DestinationEntityName, string SourceSyncDataField, string DestinationyncDataField)
         {
-            DataSyncSchema schema = SyncSchemas.Find(x => x.ID == SchemaID);
+            DataSyncSchema schema = SyncSchemas.Find(x => x.Id == SchemaID);
             schema.SourceEntityName = SourceEntityName;
             schema.DestinationEntityName = DestinationEntityName;
             schema.SourceSyncDataField = SourceSyncDataField;
@@ -477,7 +477,7 @@ namespace TheTechIdea.Beep.Editor
 
         public void SyncData(string SchemaID, string SourceEntityName, string DestinationEntityName, string SourceSyncDataField, string DestinationyncDataField, string SyncType)
         {
-            DataSyncSchema schema = SyncSchemas.Find(x => x.ID == SchemaID);
+            DataSyncSchema schema = SyncSchemas.Find(x => x.Id == SchemaID);
             schema.SourceEntityName = SourceEntityName;
             schema.DestinationEntityName = DestinationEntityName;
             schema.SourceSyncDataField = SourceSyncDataField;
@@ -488,7 +488,7 @@ namespace TheTechIdea.Beep.Editor
 
         public void SyncData(string SchemaID, string SourceEntityName, string DestinationEntityName, string SourceSyncDataField, string DestinationyncDataField, string SyncType, string SyncDirection)
         {
-            DataSyncSchema schema = SyncSchemas.Find(x => x.ID == SchemaID);
+            DataSyncSchema schema = SyncSchemas.Find(x => x.Id == SchemaID);
             schema.SourceEntityName = SourceEntityName;
             schema.DestinationEntityName = DestinationEntityName;
             schema.SourceSyncDataField = SourceSyncDataField;
@@ -505,13 +505,13 @@ namespace TheTechIdea.Beep.Editor
 
         public void RemoveSyncSchema(string SchemaID)
         {
-            DataSyncSchema schema = SyncSchemas.Find(x => x.ID == SchemaID);
+            DataSyncSchema schema = SyncSchemas.Find(x => x.Id == SchemaID);
             SyncSchemas.Remove(schema);
         }
 
         public void UpdateSyncSchema(DataSyncSchema schema)
         {
-            DataSyncSchema schema1 = SyncSchemas.Find(x => x.ID == schema.ID);
+            DataSyncSchema schema1 = SyncSchemas.Find(x => x.Id == schema.Id);
             if (schema1 != null)
             {
                 var index = SyncSchemas.IndexOf(schema1);
@@ -521,20 +521,20 @@ namespace TheTechIdea.Beep.Editor
 
         public void AddFilter(string SchemaID, AppFilter filter)
         {
-            DataSyncSchema schema = SyncSchemas.Find(x => x.ID == SchemaID);
+            DataSyncSchema schema = SyncSchemas.Find(x => x.Id == SchemaID);
             schema.Filters.Add(filter);
         }
 
         public void RemoveFilter(string SchemaID, string FieldName)
         {
-            DataSyncSchema schema = SyncSchemas.Find(x => x.ID == SchemaID);
+            DataSyncSchema schema = SyncSchemas.Find(x => x.Id == SchemaID);
             AppFilter filter = schema.Filters.Find(x => x.FieldName == FieldName);
             schema.Filters.Remove(filter);
         }
 
         public void AddFieldMapping(string SchemaID, FieldSyncData field)
         {
-            DataSyncSchema schema = SyncSchemas.Find(x => x.ID == SchemaID);
+            DataSyncSchema schema = SyncSchemas.Find(x => x.Id == SchemaID);
             schema.MappedFields.Add(field);
         }
 
@@ -564,7 +564,7 @@ namespace TheTechIdea.Beep.Editor
             foreach (var logEntry in UpdateLog.Values)
             {
                 var tracking = logEntry.TrackingRecord;
-                var schema = SyncSchemas.Find(x => x.ID == tracking.UniqueId.ToString());
+                var schema = SyncSchemas.Find(x => x.Id == tracking.UniqueId.ToString());
 
                 if (schema != null)
                 {
@@ -692,7 +692,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 SyncErrorsandTracking tr = new SyncErrorsandTracking
                 {
-                    errormessage = Editor.ErrorObject.Message
+                    ErrorMessage = Editor.ErrorObject.Message
                 };
                 Errorcount++;
 

@@ -4,13 +4,15 @@ using System.Text;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Report;
 
+
 namespace TheTechIdea.Beep.Editor
 {
     public class DataSyncSchema : Entity
     {
 
         private string _id;
-        public string ID
+      //  [JsonProperty("ID")]
+        public string Id
         {
             get { return _id; }
             set { SetProperty(ref _id, value); }
@@ -153,7 +155,7 @@ namespace TheTechIdea.Beep.Editor
 
         public DataSyncSchema()
         {
-            ID = Guid.NewGuid().ToString();
+            Id = Guid.NewGuid().ToString();
             MappedFields = new ObservableBindingList<FieldSyncData>();
             SyncRuns = new ObservableBindingList<SyncRunData>();
             Filters = new ObservableBindingList<AppFilter>();
@@ -165,7 +167,8 @@ namespace TheTechIdea.Beep.Editor
     public class FieldSyncData : Entity
     {
         private string _id;
-        public string ID
+      //  [JsonProperty("ID")]
+        public string Id
         {
             get { return _id; }
             set { SetProperty(ref _id, value); }
@@ -213,21 +216,23 @@ namespace TheTechIdea.Beep.Editor
         }
         public FieldSyncData()
         {
-            ID = Guid.NewGuid().ToString();
+            Id = Guid.NewGuid().ToString();
         }
     }
     public class SyncRunData : Entity
     {
 
         private string _id;
-        public string ID
+      //  [JsonProperty("ID")]
+        public string Id
         {
             get { return _id; }
             set { SetProperty(ref _id, value); }
         }
 
         private string _syncschemaid;
-        public string SyncSchemaID
+      //  [JsonProperty("SyncSchemaID")]
+        public string SyncSchemaId
         {
             get { return _syncschemaid; }
             set { SetProperty(ref _syncschemaid, value); }
@@ -255,7 +260,7 @@ namespace TheTechIdea.Beep.Editor
         }
         public SyncRunData()
         {
-            ID = Guid.NewGuid().ToString();
+            Id = Guid.NewGuid().ToString();
         }
     }
 }

@@ -56,13 +56,20 @@ namespace TheTechIdea.Beep.Editor.ETL
         {
             try
             {
-                var filePath = Path.Combine(_scriptPath, $"{script.id}.json");
+                if (script == null)
+                {
+                    _dmeEditor.AddLogMessage("ETLScriptManager", "Cannot save null script.", DateTime.Now, -1, null, Errors.Failed);
+                    return _dmeEditor.ErrorObject;
+                }
+
+                var filePath = Path.Combine(_scriptPath, $"{script.Id}.json");
                 _dmeEditor.ConfigEditor.JsonLoader.Serialize(filePath, script);
-                _dmeEditor.AddLogMessage("ETLScriptManager", $"Saved script {script.id}.", DateTime.Now, -1, null, Errors.Ok);
+                _dmeEditor.AddLogMessage("ETLScriptManager", $"Saved script {script.Id}.", DateTime.Now, -1, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-                _dmeEditor.AddLogMessage("ETLScriptManager", $"Error saving script {script.id}: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+                var scriptId = script == null ? "unknown" : script.Id.ToString();
+                _dmeEditor.AddLogMessage("ETLScriptManager", $"Error saving script {scriptId}: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
             }
 
             return _dmeEditor.ErrorObject;
@@ -98,14 +105,21 @@ namespace TheTechIdea.Beep.Editor.ETL
 
         public IErrorsInfo ValidateScript(ETLScriptHDR script)
         {
-            if (string.IsNullOrWhiteSpace(script.scriptSource))
+            if (script == null)
             {
                 _dmeEditor.ErrorObject.Flag = Errors.Failed;
-                _dmeEditor.ErrorObject.Message = "Script ID is missing.";
+                _dmeEditor.ErrorObject.Message = "Script is missing.";
                 return _dmeEditor.ErrorObject;
             }
 
-            if (script.ScriptDTL == null || !script.ScriptDTL.Any())
+            if (string.IsNullOrWhiteSpace(script.ScriptSource))
+            {
+                _dmeEditor.ErrorObject.Flag = Errors.Failed;
+                _dmeEditor.ErrorObject.Message = "Script source is missing.";
+                return _dmeEditor.ErrorObject;
+            }
+
+            if (script.ScriptDetails == null || !script.ScriptDetails.Any())
             {
                 _dmeEditor.ErrorObject.Flag = Errors.Failed;
                 _dmeEditor.ErrorObject.Message = "Script details are missing.";
@@ -128,7 +142,19 @@ namespace TheTechIdea.Beep.Editor.ETL
         {
             try
             {
-                foreach (var detail in script.ScriptDTL)
+                if (script == null)
+                {
+                    _dmeEditor.AddLogMessage("ETLScriptManager", "Cannot execute null script.", DateTime.Now, -1, null, Errors.Failed);
+                    return _dmeEditor.ErrorObject;
+                }
+
+                if (script.ScriptDetails == null)
+                {
+                    _dmeEditor.AddLogMessage("ETLScriptManager", $"Script {script.Id} has no details to execute.", DateTime.Now, -1, null, Errors.Failed);
+                    return _dmeEditor.ErrorObject;
+                }
+
+                foreach (var detail in script.ScriptDetails)
                 {
                     if (token.IsCancellationRequested)
                         break;
@@ -137,15 +163,15 @@ namespace TheTechIdea.Beep.Editor.ETL
                     await ExecuteScriptDetailAsync(detail, progress, token, customTransformation);
                 }
 
-                _dmeEditor.AddLogMessage("ETLScriptManager", $"Executed script {script.id} successfully.", DateTime.Now, -1, null, Errors.Ok);
+                _dmeEditor.AddLogMessage("ETLScriptManager", $"Executed script {script.Id} successfully.", DateTime.Now, -1, null, Errors.Ok);
             }
             catch (OperationCanceledException)
             {
-                _dmeEditor.AddLogMessage("ETLScriptManager", $"Execution of script {script.id} was cancelled.", DateTime.Now, -1, null, Errors.Failed);
+                _dmeEditor.AddLogMessage("ETLScriptManager", $"Execution of script {script?.Id} was cancelled.", DateTime.Now, -1, null, Errors.Failed);
             }
             catch (Exception ex)
             {
-                _dmeEditor.AddLogMessage("ETLScriptManager", $"Error executing script {script.id}: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+                _dmeEditor.AddLogMessage("ETLScriptManager", $"Error executing script {script?.Id}: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
             }
 
             return _dmeEditor.ErrorObject;
@@ -157,20 +183,41 @@ namespace TheTechIdea.Beep.Editor.ETL
             CancellationToken token,
             Func<object, object> customTransformation)
         {
-            var sourceDs = _dmeEditor.GetDataSource(detail.sourcedatasourcename);
-            var destDs = _dmeEditor.GetDataSource(detail.destinationdatasourcename);
+            if (detail == null)
+                return;
+
+            if (string.IsNullOrWhiteSpace(detail.SourceDataSourceName) || string.IsNullOrWhiteSpace(detail.DestinationDataSourceName))
+            {
+                _dmeEditor.AddLogMessage("ETLScriptManager", $"Script detail {detail.Id} is missing datasource names.", DateTime.Now, -1, null, Errors.Failed);
+                return;
+            }
+
+            var sourceDs = _dmeEditor.GetDataSource(detail.SourceDataSourceName);
+            var destDs = _dmeEditor.GetDataSource(detail.DestinationDataSourceName);
 
             if (sourceDs == null || destDs == null)
             {
-                _dmeEditor.AddLogMessage("ETLScriptManager", $"DataSource not found for {detail.ID}.", DateTime.Now, -1, null, Errors.Failed);
+                _dmeEditor.AddLogMessage("ETLScriptManager", $"DataSource not found for {detail.Id}.", DateTime.Now, -1, null, Errors.Failed);
                 return;
             }
 
             // Fetch source data
-            var sourceData = await FetchSourceDataAsync(sourceDs, detail.sourceentityname, token);
+            if (string.IsNullOrWhiteSpace(detail.SourceEntityName))
+            {
+                _dmeEditor.AddLogMessage("ETLScriptManager", $"Script detail {detail.Id} is missing source entity name.", DateTime.Now, -1, null, Errors.Failed);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(detail.DestinationEntityName))
+            {
+                _dmeEditor.AddLogMessage("ETLScriptManager", $"Script detail {detail.Id} is missing destination entity name.", DateTime.Now, -1, null, Errors.Failed);
+                return;
+            }
+
+            var sourceData = await FetchSourceDataAsync(sourceDs, detail.SourceEntityName, token);
             if (sourceData == null)
             {
-                _dmeEditor.AddLogMessage("ETLScriptManager", $"Source data for entity {detail.sourceentityname} is null.", DateTime.Now, -1, null, Errors.Failed);
+                _dmeEditor.AddLogMessage("ETLScriptManager", $"Source data for entity {detail.SourceEntityName} is null.", DateTime.Now, -1, null, Errors.Failed);
                 return;
             }
 
@@ -180,7 +227,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                 : sourceData;
 
             // Insert transformed data into destination
-            await InsertDataAsync(destDs, detail.destinationentityname, transformedData, progress, token);
+            await InsertDataAsync(destDs, detail.DestinationEntityName, transformedData, progress, token);
         }
 
         private async Task<IEnumerable<object>> FetchSourceDataAsync(IDataSource sourceDs, string srcEntity, CancellationToken token)
@@ -195,8 +242,9 @@ namespace TheTechIdea.Beep.Editor.ETL
             IProgress<PassedArgs> progress,
             CancellationToken token)
         {
-            var batches = data.Batch(100); // Batch size of 100 for efficiency
-            int totalCount = data.Count();
+            var dataList = data as IList<object> ?? data.ToList();
+            var batches = dataList.Batch(100); // Batch size of 100 for efficiency
+            int totalCount = dataList.Count;
             int processedCount = 0;
 
             foreach (var batch in batches)
@@ -204,7 +252,13 @@ namespace TheTechIdea.Beep.Editor.ETL
                 if (token.IsCancellationRequested)
                     break;
 
-                await Task.WhenAll(batch.Select(record => Task.Run(() => destDs.InsertEntity(destEntity, record), token)));
+                foreach (var record in batch)
+                {
+                    if (token.IsCancellationRequested)
+                        break;
+
+                    destDs.InsertEntity(destEntity, record);
+                }
 
                 processedCount += batch.Count();
 

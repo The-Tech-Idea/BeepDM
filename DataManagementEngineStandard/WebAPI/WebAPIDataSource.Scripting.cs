@@ -20,7 +20,7 @@ namespace TheTechIdea.Beep.WebAPI
         {
             try
             {
-                Logger.WriteLog($"Running script: {dDLScripts?.ddl}");
+                Logger.WriteLog($"Running script: {dDLScripts?.Ddl}");
                 // Web APIs typically don't support running arbitrary scripts
                 // This could be extended to support specific API operations
                 ErrorObject.Flag = Errors.Failed;

@@ -11,7 +11,7 @@ var etl = new ETLEditor(dmeEditor);
 etl.CreateScriptHeader(sourceDs, new Progress<PassedArgs>(p => Console.WriteLine(p.Messege)), token);
 
 // 2) Optionally filter/modify scripts
-// etl.Script.ScriptDTL = etl.Script.ScriptDTL.Where(...).ToList();
+// etl.Script.ScriptDetails = etl.Script.ScriptDetails.Where(...).ToList();
 
 // 3) Execute (create entities, then optionally copy data)
 var result = await etl.RunCreateScript(progress, token, copydata: true, useEntityStructure: true);

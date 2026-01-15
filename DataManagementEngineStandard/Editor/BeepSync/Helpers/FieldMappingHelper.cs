@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
@@ -128,7 +128,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                     {
                         mappings.Add(new FieldSyncData
                         {
-                            ID = Guid.NewGuid().ToString(),
+                            Id = Guid.NewGuid().ToString(),
                             SourceField = sourceField.fieldname,
                             DestinationField = matchingDestField.fieldname,
                             SourceFieldType = sourceField.fieldtype,
@@ -168,10 +168,10 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             foreach (var mapping in mappedFields)
             {
                 if (string.IsNullOrWhiteSpace(mapping.SourceField))
-                    errors.Add($"Source field is empty for mapping ID: {mapping.ID}");
+                    errors.Add($"Source field is empty for mapping Id: {mapping.Id}");
 
                 if (string.IsNullOrWhiteSpace(mapping.DestinationField))
-                    errors.Add($"Destination field is empty for mapping ID: {mapping.ID}");
+                    errors.Add($"Destination field is empty for mapping Id: {mapping.Id}");
 
                 // Check for duplicate destination fields
                 var duplicateDestFields = mappedFields

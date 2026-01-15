@@ -104,8 +104,8 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 // Create sync run data entry
                 var syncRunData = new SyncRunData
                 {
-                    ID = Guid.NewGuid().ToString(),
-                    SyncSchemaID = schema.ID,
+                    Id = Guid.NewGuid().ToString(),
+                    SyncSchemaId = schema.Id,
                     SyncDate = schema.LastSyncDate != default ? schema.LastSyncDate : DateTime.Now,
                     SyncStatus = schema.SyncStatus,
                     SyncStatusMessage = schema.SyncStatusMessage
@@ -120,11 +120,11 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
 
                 // Log the sync run
                 var logLevel = schema.SyncStatus == "Success" ? Errors.Ok : Errors.Failed;
-                LogMessage($"Sync run logged for schema '{schema.ID}': {schema.SyncStatus} - {schema.SyncStatusMessage}", logLevel);
+                LogMessage($"Sync run logged for schema '{schema.Id}': {schema.SyncStatus} - {schema.SyncStatusMessage}", logLevel);
             }
             catch (Exception ex)
             {
-                LogMessage($"Error logging sync run for schema '{schema?.ID}': {ex.Message}", Errors.Failed);
+                LogMessage($"Error logging sync run for schema '{schema?.Id}': {ex.Message}", Errors.Failed);
             }
         }
 
@@ -160,7 +160,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 schema.SyncStatusMessage = fullMessage;
 
                 // Log the error
-                LogMessage($"Sync error for schema '{schema.ID}' ({schema.SourceEntityName} -> {schema.DestinationEntityName}): {fullMessage}", Errors.Failed);
+                LogMessage($"Sync error for schema '{schema.Id}' ({schema.SourceEntityName} -> {schema.DestinationEntityName}): {fullMessage}", Errors.Failed);
 
                 // Log the sync run with error details
                 LogSyncRun(schema);
@@ -168,7 +168,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             catch (Exception logEx)
             {
                 // Fallback error logging
-                LogMessage($"Error while logging sync error for schema '{schema?.ID}': {logEx.Message}", Errors.Failed);
+                LogMessage($"Error while logging sync error for schema '{schema?.Id}': {logEx.Message}", Errors.Failed);
             }
         }
 
@@ -194,7 +194,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 schema.SyncStatusMessage = $"Synchronization completed successfully. Processed {recordsProcessed} record(s).";
 
                 // Log success message
-                LogMessage($"Sync completed for schema '{schema.ID}' ({schema.SourceEntityName} -> {schema.DestinationEntityName}): {recordsProcessed} record(s) processed", Errors.Ok);
+                LogMessage($"Sync completed for schema '{schema.Id}' ({schema.SourceEntityName} -> {schema.DestinationEntityName}): {recordsProcessed} record(s) processed", Errors.Ok);
 
                 // Report progress if available
                 ReportProgress(progress, schema.SyncStatusMessage);
@@ -204,7 +204,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             }
             catch (Exception ex)
             {
-                LogMessage($"Error while logging sync success for schema '{schema?.ID}': {ex.Message}", Errors.Failed);
+                LogMessage($"Error while logging sync success for schema '{schema?.Id}': {ex.Message}", Errors.Failed);
             }
         }
 
@@ -229,7 +229,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 schema.SyncStatusMessage = "Synchronization was cancelled by user.";
 
                 // Log cancellation message
-                LogMessage($"Sync cancelled for schema '{schema.ID}' ({schema.SourceEntityName} -> {schema.DestinationEntityName})", Errors.Ok);
+                LogMessage($"Sync cancelled for schema '{schema.Id}' ({schema.SourceEntityName} -> {schema.DestinationEntityName})", Errors.Ok);
 
                 // Report progress if available
                 if (progress != null)
@@ -247,7 +247,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             }
             catch (Exception ex)
             {
-                LogMessage($"Error while logging sync cancellation for schema '{schema?.ID}': {ex.Message}", Errors.Failed);
+                LogMessage($"Error while logging sync cancellation for schema '{schema?.Id}': {ex.Message}", Errors.Failed);
             }
         }
     }

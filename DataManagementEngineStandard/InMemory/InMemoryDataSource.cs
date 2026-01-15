@@ -153,11 +153,11 @@ namespace TheTechIdea.Beep.InMemory
                 InMemoryStructures = Entities;
                 if (InMemoryStructures.Count > 0 && Isfoldercreated)
                 {
-                    if (CreateScript.ScriptDTL.Count == 0)
+                    if (CreateScript.ScriptDetails.Count == 0)
                     {
                         CreateScript = new ETLScriptHDR();
-                        CreateScript.ScriptDTL.AddRange(DMEEditor.ETL.GetCreateEntityScript(this, Entities, progress, token.Token, true));
-                        foreach (var item in CreateScript.ScriptDTL)
+                        CreateScript.ScriptDetails.AddRange(DMEEditor.ETL.GetCreateEntityScript(this, Entities, progress, token.Token, true));
+                        foreach (var item in CreateScript.ScriptDetails)
                         {
                             item.CopyDataScripts.AddRange(DMEEditor.ETL.GetCopyDataEntityScript(this, new List<EntityStructure>() { item.SourceEntity }, progress, token.Token));
                         }

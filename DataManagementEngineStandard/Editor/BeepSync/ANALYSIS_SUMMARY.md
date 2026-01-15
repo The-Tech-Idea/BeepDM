@@ -128,7 +128,7 @@ BeepSyncManager maintains **100% backward compatibility** with DataSyncManager's
 // 1. Code duplication across multiple SyncData overloads
 public void SyncData(string SchemaID, string SourceEntityName, string DestinationEntityName)
 {
-    DataSyncSchema schema = SyncSchemas.Find(x => x.ID == SchemaID);
+    DataSyncSchema schema = SyncSchemas.Find(x => x.Id == SchemaID);
     schema.SourceEntityName = SourceEntityName;
     schema.DestinationEntityName = DestinationEntityName;
     SyncData(schema); // Duplicated logic

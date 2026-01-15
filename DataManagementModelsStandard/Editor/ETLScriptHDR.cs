@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 
 namespace TheTechIdea.Beep.Editor
@@ -8,22 +9,33 @@ namespace TheTechIdea.Beep.Editor
     {
         public ETLScriptHDR()
         {
-            id = 1;
-            GuidID = Guid.NewGuid().ToString();
+            Id = 1;
+            GuidId = Guid.NewGuid().ToString();
         }
-        public List<ETLScriptDet> ScriptDTL { get; set; } = new List<ETLScriptDet>();
-        public string workflowFileId { get; set; }
-        public string scriptSource { get; set; }
-        public string scriptDestination { get; set; }
-        public string scriptName { get; set; }
-        public string scriptDescription { get; set; }
-        public string scriptType { get; set; }
-        public string scriptStatus { get; set; }
+      //  [JsonProperty("ScriptDTL")]
+        public List<ETLScriptDet> ScriptDetails { get; set; } = new List<ETLScriptDet>();
+      //  [JsonProperty("workflowFileId")]
+        public string WorkflowFileId { get; set; }
+      //  [JsonProperty("scriptSource")]
+        public string ScriptSource { get; set; }
+      //  [JsonProperty("scriptDestination")]
+        public string ScriptDestination { get; set; }
+      //  [JsonProperty("scriptName")]
+        public string ScriptName { get; set; }
+      //  [JsonProperty("scriptDescription")]
+        public string ScriptDescription { get; set; }
+       
+        public string ScriptType { get; set; }
+      //  [JsonProperty("scriptStatus")]
+        public string ScriptStatus { get; set; }
         public DateTime LastRunDateTime { get; set; }
-        public string OwnerGuidID { get; set; }
+      //  [JsonProperty("OwnerGuidID")]
+        public string OwnerGuidId { get; set; }
         public string OwnerName { get; set; }
-        public string GuidID { get; set; }
-        public  int id { get; set; }
+      //  [JsonProperty("GuidID")]
+        public string GuidId { get; set; }
+      //  [JsonProperty("id")]
+        public int Id { get; set; }
 
 
     }
