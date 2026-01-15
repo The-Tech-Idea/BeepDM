@@ -37,7 +37,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="10.0.2" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.115" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.118" />
     <!-- NuGet SDK for direct package downloading -->
     <PackageReference Include="NuGet.Protocol" Version="7.0.1" />
     <PackageReference Include="NuGet.Packaging" Version="7.0.1" />

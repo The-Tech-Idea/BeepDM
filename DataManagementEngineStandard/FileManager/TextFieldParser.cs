@@ -89,7 +89,7 @@ namespace TheTechIdea.Beep.FileManager
             {
                 EntityStructure entity = editor.Utilfunction.GetEntityStructureFromListorTable(records);
                 // Assuming 'Fields' is a list of 'EntityField' that contains the column headers.
-                var headers = entity.Fields.Select(field => field.fieldname);
+                var headers = entity.Fields.Select(field => field.FieldName);
 
                 // Writing the headers separated by the delimiter.
                 writer.WriteLine(string.Join(delimiterChar.ToString(), headers));
@@ -115,7 +115,7 @@ namespace TheTechIdea.Beep.FileManager
                 {
                     var values = entity.Fields.Select(field =>
                     {
-                        var value = row[field.fieldname] ?? "";
+                        var value = row[field.FieldName] ?? "";
                         // Properly escape values that contain the delimiter or quotes.
                         return value.ToString().Contains(delimiterChar) || value.ToString().Contains(quoteChar)
                             ? $"\"{value.ToString().Replace(quoteChar.ToString(), quoteEscapeChar + quoteChar.ToString())}\""
@@ -128,7 +128,7 @@ namespace TheTechIdea.Beep.FileManager
                 //{
                 //    var values = entity.Fields.Select(field =>
                 //    {
-                //        var value = record.GetType().GetProperty(field.fieldname)?.GetValue(record, null) ?? "";
+                //        var value = record.GetType().GetProperty(field.FieldName)?.GetValue(record, null) ?? "";
                 //         //Properly escape values that contain delimiter or quotes.
                 //        return value.ToString().Contains(delimiterChar) || value.ToString().Contains(quoteChar)
                 //            ? $"\"{value.ToString().Replace(quoteChar.ToString(), quoteEscapeChar + quoteChar.ToString())}\""

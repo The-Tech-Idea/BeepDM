@@ -178,7 +178,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                 }
             }
 
-            if (parameters.TryGetValue("FieldName", out var fieldName) && fieldName is string field)
+            if (parameters.TryGetValue("FieldName", out var FieldName) && FieldName is string field)
                 passedArgs.ParameterString1 = field;
 
             if (parameters.TryGetValue("Parameters", out var additionalParams) && additionalParams is Dictionary<string, object> additionalDict)

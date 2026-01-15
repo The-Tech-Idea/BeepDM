@@ -39,20 +39,20 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
             {
                 foreach (var field in entity.Fields)
                 {
-                    if (field.fieldname.Length > maxIdentifierLength)
+                    if (field.FieldName.Length > maxIdentifierLength)
                     {
-                        errors.Add($"Field name '{field.fieldname}' exceeds maximum length of {maxIdentifierLength} for {entity.DatabaseType}");
+                        errors.Add($"Field name '{field.FieldName}' exceeds maximum length of {maxIdentifierLength} for {entity.DatabaseType}");
                     }
 
-                    if (!IsValidIdentifier(field.fieldname))
+                    if (!IsValidIdentifier(field.FieldName))
                     {
-                        errors.Add($"Field name '{field.fieldname}' contains invalid characters");
+                        errors.Add($"Field name '{field.FieldName}' contains invalid characters");
                     }
 
                     // Check for reserved keywords
-                    if (DatabaseEntityReservedKeywordChecker.IsReservedKeyword(field.fieldname, entity.DatabaseType))
+                    if (DatabaseEntityReservedKeywordChecker.IsReservedKeyword(field.FieldName, entity.DatabaseType))
                     {
-                        errors.Add($"Field name '{field.fieldname}' is a reserved keyword in {entity.DatabaseType}");
+                        errors.Add($"Field name '{field.FieldName}' is a reserved keyword in {entity.DatabaseType}");
                     }
                 }
             }

@@ -22,7 +22,7 @@ namespace TheTechIdea.Beep.Editor
         bool Active { get; set; }
         bool CopyData { get; set; }
         List<AppFilter> FilterConditions { get; set; }
-        DDLScriptType ScriptType { get; set; }
+        DDLScriptType ScriptType{ get; set; }
         EntityDataMap_DTL Mapping { get; set; }
         List<SyncErrorsandTracking> Tracking { get; set; }
     }

@@ -79,16 +79,16 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 {
                     foreach (var field in entity.Fields)
                     {
-                        if (field != null && !string.IsNullOrWhiteSpace(field.fieldname))
+                        if (field != null && !string.IsNullOrWhiteSpace(field.FieldName))
                         {
-                            sb.AppendLine($"    <member name=\"P:{entity.EntityName}.{field.fieldname}\">");
+                            sb.AppendLine($"    <member name=\"P:{entity.EntityName}.{field.FieldName}\">");
                             sb.AppendLine($"      <summary>");
-                            sb.AppendLine($"      Gets or sets the {field.fieldname} property.");
+                            sb.AppendLine($"      Gets or sets the {field.FieldName} property.");
                             sb.AppendLine($"      </summary>");
                             sb.AppendLine($"      <remarks>");
-                            sb.AppendLine($"      TODO: Add detailed description for {field.fieldname}.");
+                            sb.AppendLine($"      TODO: Add detailed description for {field.FieldName}.");
                             sb.AppendLine($"      </remarks>");
-                            sb.AppendLine($"      <value>Type: {field.fieldtype}</value>");
+                            sb.AppendLine($"      <value>Type: {field.Fieldtype}</value>");
                             sb.AppendLine($"    </member>");
                         }
                     }
@@ -160,43 +160,43 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 var newFields = newEntity.Fields ?? new List<EntityField>();
 
                 // Find removed fields
-                var removedFields = originalFields.Where(f => !newFields.Any(nf => nf.fieldname == f.fieldname)).ToList();
+                var removedFields = originalFields.Where(f => !newFields.Any(nf => nf.FieldName == f.FieldName)).ToList();
                 if (removedFields.Count > 0)
                 {
                     sb.AppendLine();
                     sb.AppendLine("REMOVED FIELDS:");
                     foreach (var field in removedFields)
                     {
-                        sb.AppendLine($"  - {field.fieldname} ({field.fieldtype})");
+                        sb.AppendLine($"  - {field.FieldName} ({field.Fieldtype})");
                     }
                 }
 
                 // Find added fields
-                var addedFields = newFields.Where(f => !originalFields.Any(of => of.fieldname == f.fieldname)).ToList();
+                var addedFields = newFields.Where(f => !originalFields.Any(of => of.FieldName == f.FieldName)).ToList();
                 if (addedFields.Count > 0)
                 {
                     sb.AppendLine();
                     sb.AppendLine("ADDED FIELDS:");
                     foreach (var field in addedFields)
                     {
-                        sb.AppendLine($"  + {field.fieldname} ({field.fieldtype})");
+                        sb.AppendLine($"  + {field.FieldName} ({field.Fieldtype})");
                     }
                 }
 
                 // Find modified fields
                 var modifiedFields = newFields.Where(f => 
-                    originalFields.Any(of => of.fieldname == f.fieldname && of.fieldtype != f.fieldtype)).ToList();
+                    originalFields.Any(of => of.FieldName == f.FieldName && of.Fieldtype != f.Fieldtype)).ToList();
                 if (modifiedFields.Count > 0)
                 {
                     sb.AppendLine();
                     sb.AppendLine("MODIFIED FIELDS:");
                     foreach (var field in modifiedFields)
                     {
-                        var originalField = originalFields.FirstOrDefault(f => f.fieldname == field.fieldname);
+                        var originalField = originalFields.FirstOrDefault(f => f.FieldName == field.FieldName);
                         if (originalField != null)
                         {
-                            sb.AppendLine($"  ~ {field.fieldname}");
-                            sb.AppendLine($"    Type changed from {originalField.fieldtype} to {field.fieldtype}");
+                            sb.AppendLine($"  ~ {field.FieldName}");
+                            sb.AppendLine($"    Type changed from {originalField.Fieldtype} to {field.Fieldtype}");
                         }
                     }
                 }

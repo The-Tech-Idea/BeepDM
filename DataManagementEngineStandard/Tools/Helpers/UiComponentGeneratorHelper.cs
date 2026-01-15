@@ -65,10 +65,10 @@ namespace TheTechIdea.Beep.Tools.Helpers
                         {
                             foreach (var field in entity.Fields)
                             {
-                                if (field != null && !string.IsNullOrWhiteSpace(field.fieldname))
+                                if (field != null && !string.IsNullOrWhiteSpace(field.FieldName))
                                 {
-                                    string graphqlType = MapToGraphQLType(field.fieldtype);
-                                    sb.AppendLine($"  {field.fieldname}: {graphqlType}");
+                                    string graphqlType = MapToGraphQLType(field.Fieldtype);
+                                    sb.AppendLine($"  {field.FieldName}: {graphqlType}");
                                 }
                             }
                         }
@@ -158,27 +158,27 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 {
                     foreach (var field in entity.Fields)
                     {
-                        if (field != null && !string.IsNullOrWhiteSpace(field.fieldname))
+                        if (field != null && !string.IsNullOrWhiteSpace(field.FieldName))
                         {
                             sb.AppendLine($"                <div class=\"form-group mb-3\">");
-                            sb.AppendLine($"                    <label for=\"{field.fieldname}\" class=\"form-label\">{field.fieldname}</label>");
+                            sb.AppendLine($"                    <label for=\"{field.FieldName}\" class=\"form-label\">{field.FieldName}</label>");
                             
-                            if (field.fieldtype.ToLower().Contains("bool"))
+                            if (field.Fieldtype.ToLower().Contains("bool"))
                             {
-                                sb.AppendLine($"                    <InputCheckbox id=\"{field.fieldname}\" class=\"form-check-input\" @bind-Value=\"entity.{field.fieldname}\" />");
+                                sb.AppendLine($"                    <InputCheckbox id=\"{field.FieldName}\" class=\"form-check-input\" @bind-Value=\"entity.{field.FieldName}\" />");
                             }
-                            else if (field.fieldtype.ToLower().Contains("int") || field.fieldtype.ToLower().Contains("long") || 
-                                     field.fieldtype.ToLower().Contains("decimal") || field.fieldtype.ToLower().Contains("double"))
+                            else if (field.Fieldtype.ToLower().Contains("int") || field.Fieldtype.ToLower().Contains("long") || 
+                                     field.Fieldtype.ToLower().Contains("decimal") || field.Fieldtype.ToLower().Contains("double"))
                             {
-                                sb.AppendLine($"                    <InputNumber id=\"{field.fieldname}\" class=\"form-control\" @bind-Value=\"entity.{field.fieldname}\" />");
+                                sb.AppendLine($"                    <InputNumber id=\"{field.FieldName}\" class=\"form-control\" @bind-Value=\"entity.{field.FieldName}\" />");
                             }
-                            else if (field.fieldtype.ToLower().Contains("date"))
+                            else if (field.Fieldtype.ToLower().Contains("date"))
                             {
-                                sb.AppendLine($"                    <InputDate id=\"{field.fieldname}\" class=\"form-control\" @bind-Value=\"entity.{field.fieldname}\" />");
+                                sb.AppendLine($"                    <InputDate id=\"{field.FieldName}\" class=\"form-control\" @bind-Value=\"entity.{field.FieldName}\" />");
                             }
                             else
                             {
-                                sb.AppendLine($"                    <InputText id=\"{field.fieldname}\" class=\"form-control\" @bind-Value=\"entity.{field.fieldname}\" />");
+                                sb.AppendLine($"                    <InputText id=\"{field.FieldName}\" class=\"form-control\" @bind-Value=\"entity.{field.FieldName}\" />");
                             }
                             
                             sb.AppendLine($"                </div>");
@@ -324,12 +324,12 @@ namespace TheTechIdea.Beep.Tools.Helpers
         /// <summary>
         /// Maps database field type to GraphQL type.
         /// </summary>
-        private string MapToGraphQLType(string fieldType)
+        private string MapToGraphQLType(string Fieldtype)
         {
-            if (string.IsNullOrEmpty(fieldType))
+            if (string.IsNullOrEmpty(Fieldtype))
                 return "String";
 
-            string lowerType = fieldType.ToLower();
+            string lowerType = Fieldtype.ToLower();
 
             if (lowerType.Contains("int"))
                 return "Int";

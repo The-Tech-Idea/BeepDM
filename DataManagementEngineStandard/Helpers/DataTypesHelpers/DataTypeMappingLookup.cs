@@ -39,18 +39,18 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
         /// Gets the datatype mapping for a given class name, field type, entity field, and DME editor with caching.
         /// </summary>
         /// <param name="className">The name of the class.</param>
-        /// <param name="fieldType">The type of the field.</param>
+        /// <param name="Fieldtype">The type of the field.</param>
         /// <param name="fld">The entity field.</param>
         /// <param name="DMEEditor">The DME editor.</param>
         /// <returns>The datatype mapping for the given parameters.</returns>
-        public static DatatypeMapping GetDataTypeMappingForString(string className, string fieldType, EntityField fld, IDMEEditor DMEEditor)
+        public static DatatypeMapping GetDataTypeMappingForString(string className, string Fieldtype, EntityField fld, IDMEEditor DMEEditor)
         {
-            if (string.IsNullOrWhiteSpace(className) || string.IsNullOrWhiteSpace(fieldType) || fld == null || DMEEditor == null)
+            if (string.IsNullOrWhiteSpace(className) || string.IsNullOrWhiteSpace(Fieldtype) || fld == null || DMEEditor == null)
             {
                 return null;
             }
 
-            var cacheKey = $"{className}|{fieldType}|{fld.Size1}";
+            var cacheKey = $"{className}|{Fieldtype}|{fld.Size1}";
             
             return _mappingCache.GetOrAdd(cacheKey, _ =>
             {
@@ -62,19 +62,19 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                     
                     // First, try to find exact match with preferred mapping
                     var mapping = mappings.FirstOrDefault(x => 
-                        x.NetDataType.Equals(fieldType, StringComparison.InvariantCultureIgnoreCase) && x.Fav);
+                        x.NetDataType.Equals(Fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.Fav);
                     
                     if (mapping == null)
                     {
                         // Fall back to any matching mapping
                         mapping = mappings.FirstOrDefault(x => 
-                            x.NetDataType.Equals(fieldType, StringComparison.InvariantCultureIgnoreCase));
+                            x.NetDataType.Equals(Fieldtype, StringComparison.InvariantCultureIgnoreCase));
                     }
 
                     // Handle size-specific mappings
                     if (fld.Size1 > 0 && mapping != null)
                     {
-                        mapping = ProcessSizeMapping(mapping, mappings, fieldType, fld.Size1);
+                        mapping = ProcessSizeMapping(mapping, mappings, Fieldtype, fld.Size1);
                     }
 
                     return mapping;
@@ -82,7 +82,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 catch (Exception ex)
                 {
                     DMEEditor.AddLogMessage("DataTypeMappingLookup", 
-                        $"Error getting data type mapping for {className}.{fieldType}: {ex.Message}", 
+                        $"Error getting data type mapping for {className}.{Fieldtype}: {ex.Message}", 
                         DateTime.Now, -1, null, Errors.Failed);
                     return null;
                 }
@@ -121,7 +121,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                     EnsureDataTypesMapLoaded(DMEEditor);
 
                     // Clean the provider field type
-                    var cleanFieldType = CleanFieldType(providerfldtype);
+                    var cleanFieldtype = CleanFieldtype(providerfldtype);
                     
                     // Get the class handler for the data source
                     var classHandler = DMEEditor.GetDataSourceClass(DSname);
@@ -136,7 +136,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                     // Look up the mapping
                     var mappings = GetCachedClassMappings(classHandler.className, DMEEditor);
                     var mapping = mappings.FirstOrDefault(m => 
-                        m.DataType.Equals(cleanFieldType, StringComparison.InvariantCultureIgnoreCase));
+                        m.DataType.Equals(cleanFieldtype, StringComparison.InvariantCultureIgnoreCase));
 
                     return mapping?.NetDataType;
                 }
@@ -164,7 +164,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 return GetFallbackDataType(fld);
             }
 
-            var cacheKey = $"{DSname}|{fld.EntityName}|{fld.fieldname}|{fld.fieldtype}|{fld.Size1}|{fld.NumericPrecision}|{fld.NumericScale}";
+            var cacheKey = $"{DSname}|{fld.EntityName}|{fld.FieldName}|{fld.Fieldtype}|{fld.Size1}|{fld.NumericPrecision}|{fld.NumericScale}";
             
             return _dataTypeCache.GetOrAdd(cacheKey, _ =>
             {
@@ -174,7 +174,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                     if (ds == null)
                     {
                         DMEEditor.AddLogMessage("DataTypeMappingLookup", 
-                            $"Data source '{DSname}' not found for field '{fld.EntityName}.{fld.fieldname}'", 
+                            $"Data source '{DSname}' not found for field '{fld.EntityName}.{fld.FieldName}'", 
                             DateTime.Now, 0, null, Errors.Warning);
                         return GetFallbackDataType(fld);
                     }
@@ -183,21 +183,21 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
                     string retval;
 
-                    if (!IsSystemType(fld.fieldtype))
+                    if (!IsSystemType(fld.Fieldtype))
                     {
-                        retval = GetFieldTypeWoConversion(DSname, fld, DMEEditor);
+                        retval = GetFieldtypeWoConversion(DSname, fld, DMEEditor);
                     }
                     else
                     {
                         var classHandler = DMEEditor.GetDataSourceClass(DSname);
                         if (classHandler != null)
                         {
-                            retval = ProcessSystemFieldType(classHandler.className, fld, DMEEditor);
+                            retval = ProcessSystemFieldtype(classHandler.className, fld, DMEEditor);
                         }
                         else
                         {
                             DMEEditor.AddLogMessage("DataTypeMappingLookup", 
-                                $"Class handler not found for data source '{DSname}', field '{fld.EntityName}.{fld.fieldname}'", 
+                                $"Class handler not found for data source '{DSname}', field '{fld.EntityName}.{fld.FieldName}'", 
                                 DateTime.Now, 0, null, Errors.Warning);
                             return GetFallbackDataType(fld);
                         }
@@ -213,7 +213,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 catch (Exception ex)
                 {
                     DMEEditor.AddLogMessage("DataTypeMappingLookup", 
-                        $"Error processing field '{fld.EntityName}.{fld.fieldname}': {ex.Message}", 
+                        $"Error processing field '{fld.EntityName}.{fld.FieldName}': {ex.Message}", 
                         DateTime.Now, -1, null, Errors.Failed);
                     return GetFallbackDataType(fld);
                 }
@@ -234,19 +234,19 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 return GetFallbackDataType(fld);
             }
 
-            var cacheKey = $"class|{className}|{fld.fieldtype}|{fld.Size1}|{fld.NumericPrecision}|{fld.NumericScale}";
+            var cacheKey = $"class|{className}|{fld.Fieldtype}|{fld.Size1}|{fld.NumericPrecision}|{fld.NumericScale}";
             
             return _dataTypeCache.GetOrAdd(cacheKey, _ =>
             {
                 try
                 {
                     EnsureDataTypesMapLoaded(DMEEditor);
-                    return ProcessSystemFieldType(className, fld, DMEEditor) ?? GetFallbackDataType(fld);
+                    return ProcessSystemFieldtype(className, fld, DMEEditor) ?? GetFallbackDataType(fld);
                 }
                 catch (Exception ex)
                 {
                     DMEEditor.AddLogMessage("DataTypeMappingLookup", 
-                        $"Error getting data type from class '{className}' for field type '{fld.fieldtype}': {ex.Message}", 
+                        $"Error getting data type from class '{className}' for field type '{fld.Fieldtype}': {ex.Message}", 
                         DateTime.Now, -1, null, Errors.Failed);
                     return GetFallbackDataType(fld);
                 }
@@ -260,14 +260,14 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
         /// <param name="fld">The entity field.</param>
         /// <param name="DMEEditor">The DME editor.</param>
         /// <returns>The field type without conversion.</returns>
-        public static string GetFieldTypeWoConversion(string DSname, EntityField fld, IDMEEditor DMEEditor)
+        public static string GetFieldtypeWoConversion(string DSname, EntityField fld, IDMEEditor DMEEditor)
         {
             if (string.IsNullOrWhiteSpace(DSname) || fld == null || DMEEditor == null)
             {
-                return GetFallbackFieldType(fld);
+                return GetFallbackFieldtype(fld);
             }
 
-            var cacheKey = $"wo_conv|{DSname}|{fld.fieldtype}|{fld.Size1}|{fld.NumericPrecision}|{fld.NumericScale}";
+            var cacheKey = $"wo_conv|{DSname}|{fld.Fieldtype}|{fld.Size1}|{fld.NumericPrecision}|{fld.NumericScale}";
             
             return _dataTypeCache.GetOrAdd(cacheKey, _ =>
             {
@@ -279,20 +279,20 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                     if (classHandler == null)
                     {
                         DMEEditor.AddLogMessage("DataTypeMappingLookup", 
-                            $"Class handler not found for data source '{DSname}', field '{fld.EntityName}.{fld.fieldname}'", 
+                            $"Class handler not found for data source '{DSname}', field '{fld.EntityName}.{fld.FieldName}'", 
                             DateTime.Now, 0, null, Errors.Warning);
-                        return GetFallbackFieldType(fld);
+                        return GetFallbackFieldtype(fld);
                     }
 
                     var mappings = GetCachedClassMappings(classHandler.className, DMEEditor);
-                    return ProcessFieldTypeMapping(mappings, classHandler.className, fld) ?? GetFallbackFieldType(fld);
+                    return ProcessFieldtypeMapping(mappings, classHandler.className, fld) ?? GetFallbackFieldtype(fld);
                 }
                 catch (Exception ex)
                 {
                     DMEEditor.AddLogMessage("DataTypeMappingLookup", 
-                        $"Error getting field type without conversion for '{fld.EntityName}.{fld.fieldname}': {ex.Message}", 
+                        $"Error getting field type without conversion for '{fld.EntityName}.{fld.FieldName}': {ex.Message}", 
                         DateTime.Now, -1, null, Errors.Failed);
-                    return GetFallbackFieldType(fld);
+                    return GetFallbackFieldtype(fld);
                 }
             });
         }
@@ -344,26 +344,26 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
             });
         }
 
-        private static string CleanFieldType(string fieldType)
+        private static string CleanFieldtype(string Fieldtype)
         {
-            if (string.IsNullOrWhiteSpace(fieldType))
-                return fieldType;
+            if (string.IsNullOrWhiteSpace(Fieldtype))
+                return Fieldtype;
 
-            return _parenthesesPattern.Replace(fieldType, "").Trim();
+            return _parenthesesPattern.Replace(Fieldtype, "").Trim();
         }
 
-        private static bool IsSystemType(string fieldType)
+        private static bool IsSystemType(string Fieldtype)
         {
-            return !string.IsNullOrWhiteSpace(fieldType) && fieldType.Contains("System.", StringComparison.InvariantCultureIgnoreCase);
+            return !string.IsNullOrWhiteSpace(Fieldtype) && Fieldtype.Contains("System.", StringComparison.InvariantCultureIgnoreCase);
         }
 
-        private static DatatypeMapping ProcessSizeMapping(DatatypeMapping baseMapping, List<DatatypeMapping> mappings, string fieldType, int size)
+        private static DatatypeMapping ProcessSizeMapping(DatatypeMapping baseMapping, List<DatatypeMapping> mappings, string Fieldtype, int size)
         {
             if (baseMapping == null || size <= 0)
                 return baseMapping;
 
             var sizeMapping = mappings.FirstOrDefault(x => 
-                x.NetDataType.Equals(fieldType, StringComparison.InvariantCultureIgnoreCase) && 
+                x.NetDataType.Equals(Fieldtype, StringComparison.InvariantCultureIgnoreCase) && 
                 x.DataType.Contains("N"));
 
             if (sizeMapping != null)
@@ -381,41 +381,41 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
             return baseMapping;
         }
 
-        private static string ProcessSystemFieldType(string className, EntityField fld, IDMEEditor DMEEditor)
+        private static string ProcessSystemFieldtype(string className, EntityField fld, IDMEEditor DMEEditor)
         {
-            if (fld == null || string.IsNullOrWhiteSpace(fld.fieldtype))
+            if (fld == null || string.IsNullOrWhiteSpace(fld.Fieldtype))
                 return null;
 
             var mappings = GetCachedClassMappings(className, DMEEditor);
 
             string retval = null;
 
-            if (fld.fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase))
+            if (fld.Fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase))
             {
-                retval = ProcessStringFieldType(mappings, className, fld);
+                retval = ProcessStringFieldtype(mappings, className, fld);
             }
-            else if (!fld.fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
+            else if (!fld.Fieldtype.Equals("System.DateTime", StringComparison.InvariantCultureIgnoreCase))
             {
-                retval = ProcessNumericFieldType(mappings, className, fld);
+                retval = ProcessNumericFieldtype(mappings, className, fld);
             }
 
             if (retval == null)
             {
                 var dt = mappings.FirstOrDefault(x => 
-                    x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase));
+                    x.NetDataType.Equals(fld.Fieldtype, StringComparison.InvariantCultureIgnoreCase));
                 retval = dt?.DataType;
             }
 
             return retval;
         }
 
-        private static string ProcessStringFieldType(List<DatatypeMapping> mappings, string className, EntityField fld)
+        private static string ProcessStringFieldtype(List<DatatypeMapping> mappings, string className, EntityField fld)
         {
             if (fld.Size1 > 0)
             {
                 // Try to find preferred mapping with size placeholder
                 var dt = mappings.FirstOrDefault(x => 
-                    x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && 
+                    x.NetDataType.Equals(fld.Fieldtype, StringComparison.InvariantCultureIgnoreCase) && 
                     x.Fav && 
                     x.DataType.Contains("N"));
 
@@ -423,7 +423,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 {
                     // Fall back to any mapping with size placeholder
                     dt = mappings.FirstOrDefault(x => 
-                        x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase) && 
+                        x.NetDataType.Equals(fld.Fieldtype, StringComparison.InvariantCultureIgnoreCase) && 
                         x.DataType.Contains("N"));
                 }
 
@@ -435,15 +435,15 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
             // No size specified, get default string mapping
             var defaultMapping = mappings.FirstOrDefault(x => 
-                x.NetDataType.Equals(fld.fieldtype, StringComparison.InvariantCultureIgnoreCase));
+                x.NetDataType.Equals(fld.Fieldtype, StringComparison.InvariantCultureIgnoreCase));
             
             return defaultMapping?.DataType;
         }
 
-        private static string ProcessNumericFieldType(List<DatatypeMapping> mappings, string className, EntityField fld)
+        private static string ProcessNumericFieldtype(List<DatatypeMapping> mappings, string className, EntityField fld)
         {
             // Set default precision and scale for decimals
-            if (fld.fieldtype.Equals("System.Decimal", StringComparison.InvariantCultureIgnoreCase))
+            if (fld.Fieldtype.Equals("System.Decimal", StringComparison.InvariantCultureIgnoreCase))
             {
                 if (fld.NumericPrecision == 0) fld.NumericPrecision = 28;
                 if (fld.NumericScale == 0) fld.NumericScale = 8;
@@ -454,8 +454,8 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 if (fld.NumericScale > 0)
                 {
                     // Look for precision,scale pattern
-                    var dt = FindBestMapping(mappings, fld.fieldtype, "P,S", true) ??
-                            FindBestMapping(mappings, fld.fieldtype, "P,S", false);
+                    var dt = FindBestMapping(mappings, fld.Fieldtype, "P,S", true) ??
+                            FindBestMapping(mappings, fld.Fieldtype, "P,S", false);
                     
                     if (dt != null)
                     {
@@ -465,8 +465,8 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 else
                 {
                     // Look for precision only pattern
-                    var dt = FindBestMapping(mappings, fld.fieldtype, "(N)", true) ??
-                            FindBestMapping(mappings, fld.fieldtype, "(N)", false);
+                    var dt = FindBestMapping(mappings, fld.Fieldtype, "(N)", true) ??
+                            FindBestMapping(mappings, fld.Fieldtype, "(N)", false);
                     
                     if (dt != null)
                     {
@@ -474,8 +474,8 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                     }
 
                     // Fall back to precision,scale with 0 scale
-                    dt = FindBestMapping(mappings, fld.fieldtype, "P,S", true) ??
-                         FindBestMapping(mappings, fld.fieldtype, "P,S", false);
+                    dt = FindBestMapping(mappings, fld.Fieldtype, "P,S", true) ??
+                         FindBestMapping(mappings, fld.Fieldtype, "P,S", false);
                     
                     if (dt != null)
                     {
@@ -487,15 +487,15 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
             return null;
         }
 
-        private static DatatypeMapping FindBestMapping(List<DatatypeMapping> mappings, string fieldType, string pattern, bool preferFavorite)
+        private static DatatypeMapping FindBestMapping(List<DatatypeMapping> mappings, string Fieldtype, string pattern, bool preferFavorite)
         {
             return mappings.FirstOrDefault(x => 
-                x.NetDataType.Equals(fieldType, StringComparison.InvariantCultureIgnoreCase) && 
+                x.NetDataType.Equals(Fieldtype, StringComparison.InvariantCultureIgnoreCase) && 
                 x.DataType.Contains(pattern) && 
                 (!preferFavorite || x.Fav));
         }
 
-        private static string ProcessFieldTypeMapping(List<DatatypeMapping> mappings, string className, EntityField fld)
+        private static string ProcessFieldtypeMapping(List<DatatypeMapping> mappings, string className, EntityField fld)
         {
             DatatypeMapping dt = null;
 
@@ -503,7 +503,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
             if (fld.Size1 > 0)
             {
                 dt = mappings.FirstOrDefault(x => 
-                    x.DataType == fld.fieldtype && 
+                    x.DataType == fld.Fieldtype && 
                     x.DataType.Contains("N"));
                 
                 if (dt != null)
@@ -518,7 +518,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 if (fld.NumericScale > 0)
                 {
                     dt = mappings.FirstOrDefault(x => 
-                        x.DataType == fld.fieldtype && 
+                        x.DataType == fld.Fieldtype && 
                         x.DataType.Contains("N,S"));
                     
                     if (dt != null)
@@ -529,7 +529,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 else
                 {
                     dt = mappings.FirstOrDefault(x => 
-                        x.DataType == fld.fieldtype && 
+                        x.DataType == fld.Fieldtype && 
                         x.DataType.Contains("(N)"));
                     
                     if (dt != null)
@@ -539,7 +539,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
                     // Fall back to precision,scale pattern
                     dt = mappings.FirstOrDefault(x => 
-                        x.DataType == fld.fieldtype && 
+                        x.DataType == fld.Fieldtype && 
                         x.DataType.Contains("(N,S)"));
                     
                     if (dt != null)
@@ -550,7 +550,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
             }
 
             // Default mapping
-            dt = mappings.FirstOrDefault(x => x.DataType == fld.fieldtype);
+            dt = mappings.FirstOrDefault(x => x.DataType == fld.Fieldtype);
             return dt?.DataType;
         }
 
@@ -575,13 +575,13 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
         private static string GetFallbackDataType(EntityField fld)
         {
-            if (fld == null || string.IsNullOrWhiteSpace(fld.fieldtype))
+            if (fld == null || string.IsNullOrWhiteSpace(fld.Fieldtype))
                 return "System.String";
 
             // Analyze field type to provide intelligent fallback
-            var fieldTypeLower = fld.fieldtype.ToLowerInvariant();
+            var FieldtypeLower = fld.Fieldtype.ToLowerInvariant();
 
-            return fieldTypeLower switch
+            return FieldtypeLower switch
             {
                 var type when type.Contains("int") => fld.Size1 > 10 ? "System.Int64" : "System.Int32",
                 var type when type.Contains("decimal") || type.Contains("numeric") => "System.Decimal",
@@ -594,7 +594,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
             };
         }
 
-        private static string GetFallbackFieldType(EntityField fld)
+        private static string GetFallbackFieldtype(EntityField fld)
         {
             if (fld == null)
                 return "varchar(255)";

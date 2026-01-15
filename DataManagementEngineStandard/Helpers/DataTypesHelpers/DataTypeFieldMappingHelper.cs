@@ -58,13 +58,13 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
         /// <summary>Gets the datatype mapping for a given class name, field type, entity field, and DME editor.</summary>
         /// <param name="className">The name of the class.</param>
-        /// <param name="fieldType">The type of the field.</param>
+        /// <param name="Fieldtype">The type of the field.</param>
         /// <param name="fld">The entity field.</param>
         /// <param name="DMEEditor">The DME editor.</param>
         /// <returns>The datatype mapping for the given parameters.</returns>
-        public static DatatypeMapping GetDataTypeMappingForString(string className, string fieldType, EntityField fld, IDMEEditor DMEEditor)
+        public static DatatypeMapping GetDataTypeMappingForString(string className, string Fieldtype, EntityField fld, IDMEEditor DMEEditor)
         {
-            return DataTypeMappingLookup.GetDataTypeMappingForString(className, fieldType, fld, DMEEditor);
+            return DataTypeMappingLookup.GetDataTypeMappingForString(className, Fieldtype, fld, DMEEditor);
         }
 
         /// <summary>Gets the data type of a field in a specific data source.</summary>
@@ -120,9 +120,9 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
         /// <param name="fld">The entity field.</param>
         /// <param name="DMEEditor">The DME editor.</param>
         /// <returns>The field type without conversion.</returns>
-        public static string GetFieldTypeWoConversion(string DSname, EntityField fld, IDMEEditor DMEEditor)
+        public static string GetFieldtypeWoConversion(string DSname, EntityField fld, IDMEEditor DMEEditor)
         {
-            return DataTypeMappingLookup.GetFieldTypeWoConversion(DSname, fld, DMEEditor);
+            return DataTypeMappingLookup.GetFieldtypeWoConversion(DSname, fld, DMEEditor);
         }
 
         /// <summary>Returns a comprehensive list of all datatype mappings for all supported databases.</summary>

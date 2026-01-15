@@ -73,7 +73,7 @@ var config = importManager.CreateImportConfiguration(
 // Configure advanced options
 config.SourceFilters.Add(new AppFilter 
 { 
-    FieldName = "ModifiedDate", 
+   FieldName = "ModifiedDate", 
     Operator = ">=", 
     FilterValue = DateTime.Today.AddDays(-7).ToString() 
 });

@@ -60,7 +60,7 @@ namespace TheTechIdea.Beep.Editor
 
         #endregion
 
-        #region DDL Operations (Create, Alter, Drop) - Level 1 Schema Operations
+        #region Ddl Operations (Create, Alter, Drop) - Level 1 Schema Operations
 
         /// <summary>
         /// Generates SQL/query to create a table/collection from an entity structure.

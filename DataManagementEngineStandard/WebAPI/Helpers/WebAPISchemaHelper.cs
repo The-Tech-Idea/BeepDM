@@ -189,7 +189,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             try
             {
                 var actualFields = new HashSet<string>();
-                var fieldTypes = new Dictionary<string, HashSet<Type>>();
+                var Fieldtypes = new Dictionary<string, HashSet<Type>>();
 
                 // Analyze actual data
                 foreach (var json in jsonData.Take(20))
@@ -200,7 +200,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                     try
                     {
                         var doc = JsonDocument.Parse(json);
-                        CollectActualFields(doc.RootElement, "", actualFields, fieldTypes, 0);
+                        CollectActualFields(doc.RootElement, "", actualFields, Fieldtypes, 0);
                     }
                     catch (JsonException)
                     {
@@ -209,7 +209,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                 }
 
                 // Check for missing fields in schema
-                var schemaFields = new HashSet<string>(entity.Fields.Select(f => f.fieldname));
+                var schemaFields = new HashSet<string>(entity.Fields.Select(f => f.FieldName));
                 var missingInSchema = actualFields.Except(schemaFields).ToList();
                 var missingInData = schemaFields.Except(actualFields).ToList();
 
@@ -229,16 +229,16 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                 // Check field type consistency
                 foreach (var field in entity.Fields)
                 {
-                    if (fieldTypes.ContainsKey(field.fieldname))
+                    if (Fieldtypes.ContainsKey(field.FieldName))
                     {
-                        var actualTypes = fieldTypes[field.fieldname];
-                        var expectedType = GetTypeFromString(field.fieldtype);
+                        var actualTypes = Fieldtypes[field.FieldName];
+                        var expectedType = GetTypeFromString(field.Fieldtype);
                         
                         if (!actualTypes.Contains(expectedType) && actualTypes.Any())
                         {
                             result.IsValid = false;
-                            result.Issues.Add($"Field {field.fieldname} type mismatch. Expected: {field.fieldtype}, Found: {string.Join(", ", actualTypes.Select(t => t.Name))}");
-                            result.SuggestedChanges.Add($"Update {field.fieldname} field type");
+                            result.Issues.Add($"Field {field.FieldName} type mismatch. Expected: {field.Fieldtype}, Found: {string.Join(", ", actualTypes.Select(t => t.Name))}");
+                            result.SuggestedChanges.Add($"Update {field.FieldName} field type");
                         }
                     }
                 }
@@ -275,7 +275,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             // Preserve existing field metadata where possible
             foreach (var existingField in entity.Fields)
             {
-                var matchingField = updatedSchema.Fields.FirstOrDefault(f => f.fieldname == existingField.fieldname);
+                var matchingField = updatedSchema.Fields.FirstOrDefault(f => f.FieldName == existingField.FieldName);
                 if (matchingField != null)
                 {
                     // Preserve custom metadata
@@ -371,7 +371,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                     {
                         if (!analysis.ContainsKey(basePath))
                         {
-                            analysis[basePath] = new FieldAnalysis { FieldName = basePath };
+                            analysis[basePath] = new FieldAnalysis {FieldName = basePath };
                         }
 
                         var fieldAnalysis = analysis[basePath];
@@ -428,7 +428,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             }
         }
 
-        private EntityField CreateEntityFieldFromAnalysis(string fieldName, FieldAnalysis analysis)
+        private EntityField CreateEntityFieldFromAnalysis(string FieldName, FieldAnalysis analysis)
         {
             var mostCommonType = analysis.PossibleTypes.GroupBy(t => t)
                 .OrderByDescending(g => g.Count())
@@ -436,8 +436,8 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
 
             var field = new EntityField
             {
-                fieldname = fieldName,
-                fieldtype = mostCommonType.ToString(),
+               FieldName = FieldName,
+                Fieldtype = mostCommonType.ToString(),
                 AllowDBNull = analysis.NullCount > 0,
                 Size1 = analysis.StringLengths.Any() ? analysis.StringLengths.Max() : 0,
                 IsKey = false,
@@ -448,33 +448,33 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             // Set field category based on type - using custom properties if available
             if (mostCommonType == typeof(string))
             {
-                // field.fieldcategory = "Text";
+                // field.FieldCategory = "Text";
             }
             else if (mostCommonType == typeof(int) || mostCommonType == typeof(long))
             {
-                // field.fieldcategory = "Number";
+                // field.FieldCategory = "Number";
             }
             else if (mostCommonType == typeof(double) || mostCommonType == typeof(decimal))
             {
-                // field.fieldcategory = "Decimal";
+                // field.FieldCategory = "Decimal";
             }
             else if (mostCommonType == typeof(DateTime))
             {
-                // field.fieldcategory = "Date";
+                // field.FieldCategory = "Date";
             }
             else if (mostCommonType == typeof(bool))
             {
-                // field.fieldcategory = "Boolean";
+                // field.FieldCategory = "Boolean";
             }
             else
             {
-                // field.fieldcategory = "Object";
+                // field.FieldCategory = "Object";
             }
 
             return field;
         }
 
-        private void CollectActualFields(JsonElement element, string basePath, HashSet<string> fields, Dictionary<string, HashSet<Type>> fieldTypes, int depth)
+        private void CollectActualFields(JsonElement element, string basePath, HashSet<string> fields, Dictionary<string, HashSet<Type>> Fieldtypes, int depth)
         {
             if (depth > MaxNestingDepth)
                 return;
@@ -485,7 +485,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                     foreach (var property in element.EnumerateObject())
                     {
                         var propertyPath = string.IsNullOrEmpty(basePath) ? property.Name : $"{basePath}.{property.Name}";
-                        CollectActualFields(property.Value, propertyPath, fields, fieldTypes, depth + 1);
+                        CollectActualFields(property.Value, propertyPath, fields, Fieldtypes, depth + 1);
                     }
                     break;
 
@@ -494,7 +494,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                     {
                         foreach (var item in element.EnumerateArray().Take(1))
                         {
-                            CollectActualFields(item, basePath, fields, fieldTypes, depth + 1);
+                            CollectActualFields(item, basePath, fields, Fieldtypes, depth + 1);
                         }
                     }
                     break;
@@ -504,11 +504,11 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                     {
                         fields.Add(basePath);
                         
-                        if (!fieldTypes.ContainsKey(basePath))
-                            fieldTypes[basePath] = new HashSet<Type>();
+                        if (!Fieldtypes.ContainsKey(basePath))
+                            Fieldtypes[basePath] = new HashSet<Type>();
 
                         var type = GetTypeFromJsonElement(element);
-                        fieldTypes[basePath].Add(type);
+                        Fieldtypes[basePath].Add(type);
                     }
                     break;
             }

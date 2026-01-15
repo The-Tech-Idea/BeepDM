@@ -67,7 +67,7 @@ This index helps you find exactly what you need in the Universal DataSource Help
 1. **IDataSourceHelper.cs** (~380 lines)
    - ✅ Complete interface contract
    - ✅ Schema operations (get schemas, table exists, column info)
-   - ✅ DDL operations (create, drop, truncate, index)
+   - ✅ Ddl operations (create, drop, truncate, index)
    - ✅ DML operations (insert, update, delete, select)
    - ✅ Utility methods (quoting, type mapping, validation)
    - **When to use:** When implementing a new datasource helper

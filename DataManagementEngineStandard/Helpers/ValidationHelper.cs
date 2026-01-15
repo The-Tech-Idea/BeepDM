@@ -233,9 +233,9 @@ namespace TheTechIdea.Beep.Helpers
             {
                 foreach (var pk in entity.PrimaryKeys)
                 {
-                    if (!entity.Fields.Any(f => f.fieldname.Equals(pk.fieldname, StringComparison.OrdinalIgnoreCase)))
+                    if (!entity.Fields.Any(f => f.FieldName.Equals(pk.FieldName, StringComparison.OrdinalIgnoreCase)))
                     {
-                        result.AddError($"Primary key field '{pk.fieldname}' does not exist in entity fields");
+                        result.AddError($"Primary key field '{pk.FieldName}' does not exist in entity fields");
                     }
                 }
             }
@@ -480,33 +480,33 @@ namespace TheTechIdea.Beep.Helpers
 
         private static void ValidateEntityFields(List<EntityField> fields, ValidationResult result)
         {
-            var fieldNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var FieldNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var field in fields)
             {
-                if (string.IsNullOrWhiteSpace(field.fieldname))
+                if (string.IsNullOrWhiteSpace(field.FieldName))
                 {
                     result.AddError("Field name cannot be null or empty");
                     continue;
                 }
 
-                if (!IsValidName(field.fieldname))
+                if (!IsValidName(field.FieldName))
                 {
-                    result.AddError($"Field name '{field.fieldname}' contains invalid characters");
+                    result.AddError($"Field name '{field.FieldName}' contains invalid characters");
                 }
 
-                if (fieldNames.Contains(field.fieldname))
+                if (FieldNames.Contains(field.FieldName))
                 {
-                    result.AddError($"Duplicate field name: {field.fieldname}");
+                    result.AddError($"Duplicate field name: {field.FieldName}");
                 }
                 else
                 {
-                    fieldNames.Add(field.fieldname);
+                    FieldNames.Add(field.FieldName);
                 }
 
-                if (string.IsNullOrWhiteSpace(field.fieldtype))
+                if (string.IsNullOrWhiteSpace(field.Fieldtype))
                 {
-                    result.AddWarning($"Field '{field.fieldname}' has no type specified");
+                    result.AddWarning($"Field '{field.FieldName}' has no type specified");
                 }
             }
         }

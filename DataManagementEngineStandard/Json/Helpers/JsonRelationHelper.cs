@@ -52,7 +52,7 @@ namespace TheTechIdea.Beep.Json.Helpers
 
             return parentArray
                 .OfType<JObject>()
-                .Where(o => string.Equals(o[parentPk.fieldname]?.ToString(), childRowParentKeyValue, StringComparison.OrdinalIgnoreCase))
+                .Where(o => string.Equals(o[parentPk.FieldName]?.ToString(), childRowParentKeyValue, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
     }

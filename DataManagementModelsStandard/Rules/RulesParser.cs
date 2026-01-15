@@ -48,7 +48,7 @@ namespace TheTechIdea.Beep.Rules
             // Try to extract metadata from the rule's [Rule] attribute.
             string ruleName = rule.RuleText;
             string ruleType = "Advanced";
-            string fieldName = "";
+            string FieldName = "";
 
             var ruleTypeInfo = rule.GetType();
             var attr = (RuleAttribute)ruleTypeInfo.GetCustomAttributes(typeof(RuleAttribute), false).FirstOrDefault();
@@ -56,8 +56,8 @@ namespace TheTechIdea.Beep.Rules
             {
                 ruleName = attr.RuleName;     // Use the attribute's rule name.
                 ruleType = attr.RuleType;     // Use the attribute's rule type.
-                // Optionally, if you include Fieldname in your attribute, extract it here.
-                // fieldName = attr.RuleField;  // For example, if you had this property.
+                // Optionally, if you include FieldName in your attribute, extract it here.
+                //FieldName = attr.RuleField;  // For example, if you had this property.
             }
             else
             {

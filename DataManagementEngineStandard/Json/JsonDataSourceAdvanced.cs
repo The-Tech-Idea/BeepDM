@@ -449,14 +449,14 @@ namespace TheTechIdea.Beep.Json
                 ErrorObject.Message = "Primary key not defined.";
                 return ErrorObject;
             }
-            var val = UploadDataRow?.GetType().GetProperty(pk.fieldname)?.GetValue(UploadDataRow)?.ToString();
+            var val = UploadDataRow?.GetType().GetProperty(pk.FieldName)?.GetValue(UploadDataRow)?.ToString();
             if (string.IsNullOrWhiteSpace(val))
             {
                 ErrorObject.Flag = Errors.Failed;
                 ErrorObject.Message = "Primary key value missing.";
                 return ErrorObject;
             }
-            bool ok = _crudHelper?.Delete(EntityName, new AppFilter { FieldName = pk.fieldname, Operator = "=", FilterValue = val }) ?? false;
+            bool ok = _crudHelper?.Delete(EntityName, new AppFilter {FieldName = pk.FieldName, Operator = "=", FilterValue = val }) ?? false;
             ErrorObject.Flag = ok ? Errors.Ok : Errors.Failed;
             if (ok)
             {
@@ -522,7 +522,7 @@ namespace TheTechIdea.Beep.Json
         public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress) { ErrorObject.Flag = Errors.Failed; ErrorObject.Message = "Bulk update not supported"; return ErrorObject; }
         public IEnumerable<ETLScriptDet> GetCreateEntityScript(List<EntityStructure> entities = null)
         {
-            // JSON file source does not generate DDL scripts; return empty collection
+            // JSON file source does not generate Ddl scripts; return empty collection
             return Enumerable.Empty<ETLScriptDet>();
         }
         #endregion

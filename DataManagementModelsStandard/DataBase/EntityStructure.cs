@@ -190,6 +190,12 @@ private int _id;
             get { return _relations; }
             set { SetProperty(ref _relations, value); }
         }
+        private string _primarykeystring;
+        public string PrimaryKeyString
+        {
+            get { return _primarykeystring; }
+            set { SetProperty(ref _primarykeystring, value); }
+        }
         private List<EntityField> _primarykeys;
         public List<EntityField> PrimaryKeys
         {
@@ -319,7 +325,7 @@ private int _id;
         }
 
         private string _fieldname;
-        public string fieldname
+        public string FieldName
         {
             get { return _fieldname; }
             set { SetProperty(ref _fieldname, value); }
@@ -339,7 +345,7 @@ private int _id;
         }
 
         private string _fieldtype;
-        public string fieldtype
+        public string Fieldtype
         {
             get { return _fieldtype; }
             set { SetProperty(ref _fieldtype, value); }
@@ -378,11 +384,11 @@ private int _id;
             set { SetProperty(ref _numericscale, value); }
         }
 
-        private DbFieldCategory _fieldcategory;
-        public DbFieldCategory fieldCategory
+        private DbFieldCategory _FieldCategory;
+        public DbFieldCategory FieldCategory
         {
-            get { return _fieldcategory; }
-            set { SetProperty(ref _fieldcategory, value); }
+            get { return _FieldCategory; }
+            set { SetProperty(ref _FieldCategory, value); }
         }
         //IsRequired ValueMin ValueMax IsIndexed
 
@@ -472,7 +478,7 @@ private int _id;
         }
         
         private bool _DisplayField = false;
-        public bool DisplayField
+        public bool IsDisplayField
         {
             get { return _DisplayField; }
             set { SetProperty(ref _DisplayField, value); }
@@ -490,7 +496,12 @@ private int _id;
             get { return _entityname; }
             set { SetProperty(ref _entityname, value); }
         }
-
+        private string _caption;
+        public string Caption
+        {
+            get { return _caption; }
+            set { SetProperty(ref _caption, value); }
+        }
         // New fields
         public int OrdinalPosition { get; set; }
         public bool IsReadOnly { get; set; }
@@ -505,8 +516,8 @@ private int _id;
         public bool IsHidden { get; set; }
         public EntityField()
         {
-            fieldtype = "Text";
-            fieldCategory = DbFieldCategory.String;
+            Fieldtype = "Text";
+           FieldCategory = DbFieldCategory.String;
             GuidID = Guid.NewGuid().ToString();
             IsAutoIncrement = false;
             AllowDBNull = true;
@@ -514,7 +525,7 @@ private int _id;
             IsUnique = false;
             IsKey = false;
             Checked = false;
-            DisplayField = false;
+            IsDisplayField = false;
 
         }
         public EntityField Clone()

@@ -119,7 +119,7 @@ user = DefaultsManager.ApplyDefaultsToRecord(editor, "MyDatabase", "Users", user
 
 ```csharp
 "SEQUENCE(1000)"         // Start sequence from 1000
-"INCREMENT(fieldname)"   // Increment based on existing field
+"INCREMENT(FieldName)"   // Increment based on existing field
 "RANDOM(1, 100)"         // Random number between 1 and 100
 "CALCULATE(field1 + field2)" // Simple calculation
 ```

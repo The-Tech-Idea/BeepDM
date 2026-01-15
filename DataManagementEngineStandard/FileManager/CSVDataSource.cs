@@ -190,9 +190,9 @@ namespace TheTechIdea.Beep.FileManager
                             EntityField f = flds[findex];
                             try
                             {
-                                if (f.fieldname.ToLower().Contains("date") || f.fieldname.ToLower().Contains("_dt"))
+                                if (f.FieldName.ToLower().Contains("date") || f.FieldName.ToLower().Contains("_dt"))
                                 {
-                                    f.fieldtype = "System.DateTime";
+                                    f.Fieldtype = "System.DateTime";
                                     f.Checked = true;
                                 }
                                 else
@@ -205,54 +205,54 @@ namespace TheTechIdea.Beep.FileManager
                                         {
                                             if (decimal.TryParse(valstring, out dval))
                                             {
-                                                f.fieldtype = "System.Decimal";
+                                                f.Fieldtype = "System.Decimal";
                                                 //    f.Checked = true;
                                             }
                                             else
                                              if (double.TryParse(valstring, out dblval))
                                             {
-                                                f.fieldtype = "System.Double";
+                                                f.Fieldtype = "System.Double";
                                                 //  f.Checked = true;
                                             }
                                             else
                                             if (long.TryParse(valstring, out longval))
                                             {
-                                                f.fieldtype = "System.Long";
+                                                f.Fieldtype = "System.Long";
                                                 // f.Checked = true;
                                             }
                                             else
                                              if (float.TryParse(valstring, out floatval))
                                             {
-                                                f.fieldtype = "System.Float";
+                                                f.Fieldtype = "System.Float";
                                                 //  f.Checked = true;
                                             }
                                             else
                                              if (int.TryParse(valstring, out intval))
                                             {
-                                                f.fieldtype = "System.Int32";
+                                                f.Fieldtype = "System.Int32";
                                                 //   f.Checked = true;
                                             }
                                             else
                                              if (DateTime.TryParse(valstring, out dateval))
                                             {
-                                                f.fieldtype = "System.DateTime";
+                                                f.Fieldtype = "System.DateTime";
                                                 // f.Checked = true;
                                             }
                                             else
                                              if (bool.TryParse(valstring, out boolval))
                                             {
-                                                f.fieldtype = "System.Bool";
+                                                f.Fieldtype = "System.Bool";
                                                 //  f.Checked = true;
                                             }
                                             else
                                              if (short.TryParse(valstring, out shortval))
                                             {
-                                                f.fieldtype = "System.Short";
+                                                f.Fieldtype = "System.Short";
                                                 //f.Checked = true;
                                             }
                                             else
                                             {
-                                                f.fieldtype = "System.String";
+                                                f.Fieldtype = "System.String";
                                                 f.Checked = true;
                                             }
 
@@ -267,7 +267,7 @@ namespace TheTechIdea.Beep.FileManager
                             }
                             try
                             {
-                                if (f.fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase))
+                                if (f.Fieldtype.Equals("System.String", StringComparison.InvariantCultureIgnoreCase))
                                 {
                                     if (!string.IsNullOrEmpty(r[j]) && !string.IsNullOrWhiteSpace(r[j]))
                                     {
@@ -289,7 +289,7 @@ namespace TheTechIdea.Beep.FileManager
                             }
                             try
                             {
-                                if (f.fieldtype.Equals("System.Decimal", StringComparison.InvariantCultureIgnoreCase))
+                                if (f.Fieldtype.Equals("System.Decimal", StringComparison.InvariantCultureIgnoreCase))
                                 {
                                     if (!string.IsNullOrEmpty(r[j]) && !string.IsNullOrWhiteSpace(r[j]))
                                     {
@@ -299,7 +299,7 @@ namespace TheTechIdea.Beep.FileManager
                                             if (decimal.TryParse(valstring, out dval))
                                             {
 
-                                                f.fieldtype = "System.Decimal";
+                                                f.Fieldtype = "System.Decimal";
                                                 f.Size1 = GetDecimalPrecision(dval);
                                                 f.Size2 = GetDecimalScale(dval);
                                             }
@@ -325,7 +325,7 @@ namespace TheTechIdea.Beep.FileManager
             // Check for string size
             foreach (EntityField fld in flds)
             {
-                if (fld.fieldtype.Equals("System.string", StringComparison.InvariantCultureIgnoreCase))
+                if (fld.Fieldtype.Equals("System.string", StringComparison.InvariantCultureIgnoreCase))
                 {
                     if (fld.Size1 == 0)
                     {
@@ -381,9 +381,9 @@ namespace TheTechIdea.Beep.FileManager
                                 entspace = "_" + entspace;
                             }
                            
-                            f.fieldname = entspace;
+                            f.FieldName = entspace;
                             f.Originalfieldname = field;
-                            f.fieldtype = "System.String";
+                            f.Fieldtype = "System.String";
                             f.ValueRetrievedFromParent = false;
                             f.EntityName = sheetname;
                             f.FieldIndex = y;
@@ -443,8 +443,8 @@ namespace TheTechIdea.Beep.FileManager
                 // Define DataTable structure based on entity fields
                 foreach (EntityField field in Entities[0].Fields)
                 {
-                    Type fieldType =Type.GetType(field.fieldtype);
-                    dataTable.Columns.Add(field.fieldname, fieldType ?? typeof(string)); // Default to string if type is unknown
+                    Type Fieldtype =Type.GetType(field.Fieldtype);
+                    dataTable.Columns.Add(field.FieldName, Fieldtype ?? typeof(string)); // Default to string if type is unknown
                 }
 
                 // Initialize the CSV reader
@@ -524,7 +524,7 @@ namespace TheTechIdea.Beep.FileManager
                     Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
                     foreach (EntityField item in Entities[0].Fields)
                     {
-                        properties.Add(item.fieldname, DMTypeBuilder.MyType.GetProperty(item.fieldname));
+                        properties.Add(item.FieldName, DMTypeBuilder.MyType.GetProperty(item.FieldName));
                         //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
                     }
 
@@ -542,7 +542,7 @@ namespace TheTechIdea.Beep.FileManager
                                 string st = r[i].ToString();
                                 if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st))
                                 {
-                                    properties[Entities[0].Fields[i].fieldname].SetValue(x, Convert.ChangeType(st, DMEEditor.Utilfunction.GetTypeCode(Type.GetType(Entities[0].Fields[i].fieldtype))), null);
+                                    properties[Entities[0].Fields[i].FieldName].SetValue(x, Convert.ChangeType(st, DMEEditor.Utilfunction.GetTypeCode(Type.GetType(Entities[0].Fields[i].Fieldtype))), null);
                                 }
                             }
                             catch (Exception fieldex)
@@ -704,7 +704,7 @@ namespace TheTechIdea.Beep.FileManager
                         // Create a new CSV file and write the headers (field names)
                         using (var writer = new StreamWriter(entityFilePath, false))
                         {
-                            var headerLine = string.Join(Delimiter.ToString(), entity.Fields.Select(f => f.fieldname));
+                            var headerLine = string.Join(Delimiter.ToString(), entity.Fields.Select(f => f.FieldName));
                             writer.WriteLine(headerLine);
                         }
 
@@ -792,9 +792,9 @@ namespace TheTechIdea.Beep.FileManager
                                 {
                                     existingEntity.Fields.Add(new EntityField
                                     {
-                                        fieldname = existingFields[i],
+                                       FieldName = existingFields[i],
                                         EntityName = entity.EntityName,
-                                        fieldtype = "System.String", // Default type
+                                        Fieldtype = "System.String", // Default type
                                         FieldIndex = i
                                     });
                                 }
@@ -826,13 +826,13 @@ namespace TheTechIdea.Beep.FileManager
                     }
 
                     // Create field mapping between old and new structure
-                    Dictionary<string, string> fieldNameMapping = new Dictionary<string, string>();
+                    Dictionary<string, string> FieldNameMapping = new Dictionary<string, string>();
                     Dictionary<string, int> oldFieldIndexes = new Dictionary<string, int>();
 
                     // Map existing fields by name
                     for (int i = 0; i < existingEntity.Fields.Count; i++)
                     {
-                        oldFieldIndexes[existingEntity.Fields[i].fieldname] = i;
+                        oldFieldIndexes[existingEntity.Fields[i].FieldName] = i;
                     }
 
                     // Create a backup of the file before modifying it
@@ -844,7 +844,7 @@ namespace TheTechIdea.Beep.FileManager
                     using (var writer = new StreamWriter(entityFilePath, false))
                     {
                         // Write the new header
-                        writer.WriteLine(string.Join(Delimiter.ToString(), entity.Fields.Select(f => f.fieldname)));
+                        writer.WriteLine(string.Join(Delimiter.ToString(), entity.Fields.Select(f => f.FieldName)));
 
                         // Write existing data with field mapping
                         foreach (var row in existingData)
@@ -853,8 +853,8 @@ namespace TheTechIdea.Beep.FileManager
 
                             for (int i = 0; i < entity.Fields.Count; i++)
                             {
-                                string fieldName = entity.Fields[i].fieldname;
-                                if (oldFieldIndexes.TryGetValue(fieldName, out int oldIndex) && oldIndex < row.Length)
+                                string FieldName = entity.Fields[i].FieldName;
+                                if (oldFieldIndexes.TryGetValue(FieldName, out int oldIndex) && oldIndex < row.Length)
                                 {
                                     // Field exists in old structure, copy the value
                                     newRow[i] = row[oldIndex];
@@ -882,7 +882,7 @@ namespace TheTechIdea.Beep.FileManager
                     // Create a new CSV file with just the headers
                     using (var writer = new StreamWriter(entityFilePath, false))
                     {
-                        var headerLine = string.Join(Delimiter.ToString(), entity.Fields.Select(f => f.fieldname));
+                        var headerLine = string.Join(Delimiter.ToString(), entity.Fields.Select(f => f.FieldName));
                         writer.WriteLine(headerLine);
                     }
 
@@ -975,8 +975,8 @@ namespace TheTechIdea.Beep.FileManager
 
                 // Map field index for faster access
                 var fieldIndexMap = entityStructure.Fields
-                    .Select((f, i) => new { f.fieldname, Index = i, FieldDef = f })
-                    .ToDictionary(x => x.fieldname, x => x, StringComparer.OrdinalIgnoreCase);
+                    .Select((f, i) => new { f.FieldName, Index = i, FieldDef = f })
+                    .ToDictionary(x => x.FieldName, x => x, StringComparer.OrdinalIgnoreCase);
 
                 // Normalize filters (ignore invalid)
                 var activeFilters = (filter ?? new List<AppFilter>())
@@ -1015,7 +1015,7 @@ namespace TheTechIdea.Beep.FileManager
                 for (int h = 0; h < header.Length; h++)
                 {
                     var matchIdx = entityStructure.Fields.FindIndex(f =>
-                        f.fieldname.Equals(header[h], StringComparison.OrdinalIgnoreCase) ||
+                        f.FieldName.Equals(header[h], StringComparison.OrdinalIgnoreCase) ||
                         f.Originalfieldname?.Equals(header[h], StringComparison.OrdinalIgnoreCase) == true);
                     if (matchIdx >= 0) headerToEntityIndex[h] = matchIdx;
                 }
@@ -1080,10 +1080,10 @@ namespace TheTechIdea.Beep.FileManager
 
                         foreach (var ef in entityStructure.Fields)
                         {
-                            var prop = runtimeType.GetProperty(ef.fieldname);
+                            var prop = runtimeType.GetProperty(ef.FieldName);
                             if (prop == null || !prop.CanWrite) continue;
 
-                            int csvIndex = headerToEntityIndex.FirstOrDefault(kv => kv.Value == fieldIndexMap[ef.fieldname].Index).Key;
+                            int csvIndex = headerToEntityIndex.FirstOrDefault(kv => kv.Value == fieldIndexMap[ef.FieldName].Index).Key;
                             if (csvIndex < 0 || csvIndex >= row.Length) continue;
 
                             var strVal = row[csvIndex];
@@ -1095,7 +1095,7 @@ namespace TheTechIdea.Beep.FileManager
 
                             try
                             {
-                                var targetType = Type.GetType(ef.fieldtype) ?? typeof(string);
+                                var targetType = Type.GetType(ef.Fieldtype) ?? typeof(string);
                                 object converted = ConvertString(strVal, targetType);
                                 prop.SetValue(instance, converted);
                             }
@@ -1113,26 +1113,26 @@ namespace TheTechIdea.Beep.FileManager
                     var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
                     foreach (var ef in entityStructure.Fields)
                     {
-                        int csvIndex = headerToEntityIndex.FirstOrDefault(kv => kv.Value == fieldIndexMap[ef.fieldname].Index).Key;
+                        int csvIndex = headerToEntityIndex.FirstOrDefault(kv => kv.Value == fieldIndexMap[ef.FieldName].Index).Key;
                         if (csvIndex < 0 || csvIndex >= row.Length)
                         {
-                            dict[ef.fieldname] = null;
+                            dict[ef.FieldName] = null;
                             continue;
                         }
                         var strVal = row[csvIndex];
                         if (string.IsNullOrWhiteSpace(strVal))
                         {
-                            dict[ef.fieldname] = null;
+                            dict[ef.FieldName] = null;
                             continue;
                         }
                         try
                         {
-                            var targetType = Type.GetType(ef.fieldtype) ?? typeof(string);
-                            dict[ef.fieldname] = ConvertString(strVal, targetType);
+                            var targetType = Type.GetType(ef.Fieldtype) ?? typeof(string);
+                            dict[ef.FieldName] = ConvertString(strVal, targetType);
                         }
                         catch
                         {
-                            dict[ef.fieldname] = null;
+                            dict[ef.FieldName] = null;
                         }
                     }
                     results.Add(dict);
@@ -1167,10 +1167,10 @@ namespace TheTechIdea.Beep.FileManager
                 };
             }
 
-            var fieldType = Type.GetType(fieldDef.fieldtype) ?? typeof(string);
+            var Fieldtype = Type.GetType(fieldDef.Fieldtype) ?? typeof(string);
 
             // Handle string
-            if (fieldType == typeof(string))
+            if (Fieldtype == typeof(string))
             {
                 string v = rawValue;
                 string fv = f.FilterValue ?? string.Empty;
@@ -1210,7 +1210,7 @@ namespace TheTechIdea.Beep.FileManager
             }
 
             // Numeric
-            if (IsNumeric(fieldType))
+            if (IsNumeric(Fieldtype))
             {
                 if (!decimal.TryParse(rawValue, out var numVal)) return false;
                 if (op == "between")
@@ -1246,7 +1246,7 @@ namespace TheTechIdea.Beep.FileManager
             }
 
             // DateTime
-            if (fieldType == typeof(DateTime))
+            if (Fieldtype == typeof(DateTime))
             {
                 if (!DateTime.TryParse(rawValue, out var dateVal)) return false;
                 if (op == "between")
@@ -1281,7 +1281,7 @@ namespace TheTechIdea.Beep.FileManager
             }
 
             // Bool
-            if (fieldType == typeof(bool))
+            if (Fieldtype == typeof(bool))
             {
                 if (!bool.TryParse(NormalizeBool(rawValue), out var bv)) return false;
                 bool cmpBool = bool.TryParse(NormalizeBool(f.FilterValue), out var fb) && fb;
@@ -1362,8 +1362,8 @@ namespace TheTechIdea.Beep.FileManager
 
                 // Map field index for faster access
                 var fieldIndexMap = entityStructure.Fields
-                    .Select((f, i) => new { f.fieldname, Index = i, FieldDef = f })
-                    .ToDictionary(x => x.fieldname, x => x, StringComparer.OrdinalIgnoreCase);
+                    .Select((f, i) => new { f.FieldName, Index = i, FieldDef = f })
+                    .ToDictionary(x => x.FieldName, x => x, StringComparer.OrdinalIgnoreCase);
 
                 var activeFilters = (filter ?? new List<AppFilter>())
                     .Where(f => f != null && !string.IsNullOrWhiteSpace(f.FieldName) && !string.IsNullOrWhiteSpace(f.Operator))
@@ -1401,7 +1401,7 @@ namespace TheTechIdea.Beep.FileManager
                 for (int h = 0; h < header.Length; h++)
                 {
                     var matchIdx = entityStructure.Fields.FindIndex(f =>
-                        f.fieldname.Equals(header[h], StringComparison.OrdinalIgnoreCase) ||
+                        f.FieldName.Equals(header[h], StringComparison.OrdinalIgnoreCase) ||
                         f.Originalfieldname?.Equals(header[h], StringComparison.OrdinalIgnoreCase) == true);
                     if (matchIdx >= 0) headerToEntityIndex[h] = matchIdx;
                 }
@@ -1468,10 +1468,10 @@ namespace TheTechIdea.Beep.FileManager
                         {
                             foreach (var ef in entityStructure.Fields)
                             {
-                                var prop = runtimeType.GetProperty(ef.fieldname);
+                                var prop = runtimeType.GetProperty(ef.FieldName);
                                 if (prop == null || !prop.CanWrite) continue;
 
-                                int csvIndex = headerToEntityIndex.FirstOrDefault(kv => kv.Value == fieldIndexMap[ef.fieldname].Index).Key;
+                                int csvIndex = headerToEntityIndex.FirstOrDefault(kv => kv.Value == fieldIndexMap[ef.FieldName].Index).Key;
                                 if (csvIndex < 0 || csvIndex >= row.Length) continue;
 
                                 var strVal = row[csvIndex];
@@ -1483,7 +1483,7 @@ namespace TheTechIdea.Beep.FileManager
 
                                 try
                                 {
-                                    var targetType = Type.GetType(ef.fieldtype) ?? typeof(string);
+                                    var targetType = Type.GetType(ef.Fieldtype) ?? typeof(string);
                                     object converted = ConvertString(strVal, targetType);
                                     prop.SetValue(instance, converted);
                                 }
@@ -1500,28 +1500,28 @@ namespace TheTechIdea.Beep.FileManager
                     var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
                     foreach (var ef in entityStructure.Fields)
                     {
-                        int csvIndex = headerToEntityIndex.FirstOrDefault(kv => kv.Value == fieldIndexMap[ef.fieldname].Index).Key;
+                        int csvIndex = headerToEntityIndex.FirstOrDefault(kv => kv.Value == fieldIndexMap[ef.FieldName].Index).Key;
                         if (csvIndex < 0 || csvIndex >= row.Length)
                         {
-                            dict[ef.fieldname] = null;
+                            dict[ef.FieldName] = null;
                             continue;
                         }
 
                         var strVal = row[csvIndex];
                         if (string.IsNullOrWhiteSpace(strVal))
                         {
-                            dict[ef.fieldname] = null;
+                            dict[ef.FieldName] = null;
                             continue;
                         }
 
                         try
                         {
-                            var targetType = Type.GetType(ef.fieldtype) ?? typeof(string);
-                            dict[ef.fieldname] = ConvertString(strVal, targetType);
+                            var targetType = Type.GetType(ef.Fieldtype) ?? typeof(string);
+                            dict[ef.FieldName] = ConvertString(strVal, targetType);
                         }
                         catch
                         {
-                            dict[ef.fieldname] = null;
+                            dict[ef.FieldName] = null;
                         }
                     }
                     pageItems.Add(dict);
@@ -1693,7 +1693,7 @@ namespace TheTechIdea.Beep.FileManager
                     return ErrorObject;
                 }
 
-                var pkProp = uploadDataRow?.GetType().GetProperty(pkField.fieldname);
+                var pkProp = uploadDataRow?.GetType().GetProperty(pkField.FieldName);
                 var pkVal = pkProp?.GetValue(uploadDataRow)?.ToString();
                 if (string.IsNullOrWhiteSpace(pkVal))
                 {
@@ -1728,11 +1728,11 @@ namespace TheTechIdea.Beep.FileManager
                         return ErrorObject;
                     }
 
-                    int pkIndex = Array.FindIndex(headers, h => string.Equals(h, pkField.fieldname, StringComparison.OrdinalIgnoreCase));
+                    int pkIndex = Array.FindIndex(headers, h => string.Equals(h, pkField.FieldName, StringComparison.OrdinalIgnoreCase));
                     if (pkIndex < 0)
                     {
                         ErrorObject.Flag = Errors.Failed;
-                        Logger.WriteLog($"Primary key column '{pkField.fieldname}' not found in CSV header.");
+                        Logger.WriteLog($"Primary key column '{pkField.FieldName}' not found in CSV header.");
                         return ErrorObject;
                     }
 
@@ -1806,7 +1806,7 @@ namespace TheTechIdea.Beep.FileManager
                     return ErrorObject;
                 }
 
-                var pkProp = uploadDataRow?.GetType().GetProperty(pkField.fieldname);
+                var pkProp = uploadDataRow?.GetType().GetProperty(pkField.FieldName);
                 var pkVal = pkProp?.GetValue(uploadDataRow)?.ToString();
                 if (string.IsNullOrWhiteSpace(pkVal))
                 {
@@ -1829,11 +1829,11 @@ namespace TheTechIdea.Beep.FileManager
                         return ErrorObject;
                     }
 
-                    int pkIndex = Array.FindIndex(headers, h => string.Equals(h, pkField.fieldname, StringComparison.OrdinalIgnoreCase));
+                    int pkIndex = Array.FindIndex(headers, h => string.Equals(h, pkField.FieldName, StringComparison.OrdinalIgnoreCase));
                     if (pkIndex < 0)
                     {
                         ErrorObject.Flag = Errors.Failed;
-                        Logger.WriteLog($"Primary key column '{pkField.fieldname}' not found in CSV header.");
+                        Logger.WriteLog($"Primary key column '{pkField.FieldName}' not found in CSV header.");
                         return ErrorObject;
                     }
 
@@ -1915,14 +1915,14 @@ namespace TheTechIdea.Beep.FileManager
                 {
                     // Create headers if file doesn't exist
                     lines.Add(string.Join(Delimiter.ToString(),
-                        entityStructure.Fields.Select(f => f.fieldname)));
+                        entityStructure.Fields.Select(f => f.FieldName)));
                 }
 
                 // Add new data row
                 var newRow = new List<string>();
                 foreach (var field in entityStructure.Fields)
                 {
-                    var prop = InsertedData.GetType().GetProperty(field.fieldname);
+                    var prop = InsertedData.GetType().GetProperty(field.FieldName);
                     if (prop != null)
                     {
                         var value = prop.GetValue(InsertedData)?.ToString() ?? string.Empty;
@@ -2176,7 +2176,7 @@ namespace TheTechIdea.Beep.FileManager
                 {
                     // Create headers if file doesn't exist
                     lines.Add(string.Join(Delimiter.ToString(),
-                        entityStructure.Fields.Select(f => f.fieldname)));
+                        entityStructure.Fields.Select(f => f.FieldName)));
                 }
 
                 // Add all data rows efficiently
@@ -2185,7 +2185,7 @@ namespace TheTechIdea.Beep.FileManager
                     var newRow = new List<string>();
                     foreach (var field in entityStructure.Fields)
                     {
-                        var prop = dataItem.GetType().GetProperty(field.fieldname);
+                        var prop = dataItem.GetType().GetProperty(field.FieldName);
                         if (prop != null)
                         {
                             var value = prop.GetValue(dataItem)?.ToString() ?? string.Empty;
@@ -2230,14 +2230,14 @@ namespace TheTechIdea.Beep.FileManager
                         return false;
 
                     string[] headers = headerLine.Split(Delimiter);
-                    var entityFieldNames = entityStructure.Fields.Select(f => f.fieldname).ToList();
+                    var entityFieldNames = entityStructure.Fields.Select(f => f.FieldName).ToList();
 
                     // Check if all entity fields exist in the headers
-                    foreach (var fieldName in entityFieldNames)
+                    foreach (var FieldName in entityFieldNames)
                     {
-                        if (!headers.Contains(fieldName))
+                        if (!headers.Contains(FieldName))
                         {
-                            DMEEditor.AddLogMessage("Warning", $"CSV header missing field: {fieldName}", DateTime.Now, 0, null, Errors.Failed);
+                            DMEEditor.AddLogMessage("Warning", $"CSV header missing field: {FieldName}", DateTime.Now, 0, null, Errors.Failed);
                             return false;
                         }
                     }
@@ -2383,39 +2383,39 @@ namespace TheTechIdea.Beep.FileManager
             foreach (var field in entityStructure.Fields)
             {
                 // Check required fields
-                if (!field.AllowDBNull && (!dataRow.ContainsKey(field.fieldname) || dataRow[field.fieldname] == null))
+                if (!field.AllowDBNull && (!dataRow.ContainsKey(field.FieldName) || dataRow[field.FieldName] == null))
                 {
-                    errors.Add($"Field '{field.fieldname}' is required but no value was provided");
+                    errors.Add($"Field '{field.FieldName}' is required but no value was provided");
                     isValid = false;
                     continue;
                 }
 
                 // Skip validation for null values in nullable fields
-                if (!dataRow.ContainsKey(field.fieldname) || dataRow[field.fieldname] == null)
+                if (!dataRow.ContainsKey(field.FieldName) || dataRow[field.FieldName] == null)
                     continue;
 
                 // Type validation
                 try
                 {
-                    Type fieldType = Type.GetType(field.fieldtype);
-                    if (fieldType != null)
+                    Type Fieldtype = Type.GetType(field.Fieldtype);
+                    if (Fieldtype != null)
                     {
-                        Convert.ChangeType(dataRow[field.fieldname], fieldType);
+                        Convert.ChangeType(dataRow[field.FieldName], Fieldtype);
                     }
                 }
                 catch
                 {
-                    errors.Add($"Field '{field.fieldname}' has an invalid value of '{dataRow[field.fieldname]}' for type {field.fieldtype}");
+                    errors.Add($"Field '{field.FieldName}' has an invalid value of '{dataRow[field.FieldName]}' for type {field.Fieldtype}");
                     isValid = false;
                 }
 
                 // Size validation for string fields
-                if (field.fieldtype == "System.String" && field.Size1 > 0)
+                if (field.Fieldtype == "System.String" && field.Size1 > 0)
                 {
-                    string value = dataRow[field.fieldname]?.ToString() ?? string.Empty;
+                    string value = dataRow[field.FieldName]?.ToString() ?? string.Empty;
                     if (value.Length > field.Size1)
                     {
-                        errors.Add($"Field '{field.fieldname}' value exceeds maximum length of {field.Size1}");
+                        errors.Add($"Field '{field.FieldName}' value exceeds maximum length of {field.Size1}");
                         isValid = false;
                     }
                 }

@@ -127,7 +127,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Helpers
             }
         }
 
-        public IErrorsInfo ValidateFieldName(string dataSourceName, string fieldName)
+        public IErrorsInfo ValidateFieldName(string dataSourceName, string FieldName)
         {
             var errorInfo = new ErrorsInfo { Flag = Errors.Ok };
 
@@ -138,7 +138,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Helpers
                     return CreateError("Data source name cannot be empty");
                 }
 
-                if (string.IsNullOrWhiteSpace(fieldName))
+                if (string.IsNullOrWhiteSpace(FieldName))
                 {
                     return CreateError("Field name cannot be empty");
                 }
@@ -151,12 +151,12 @@ namespace TheTechIdea.Beep.Editor.Defaults.Helpers
                 }
 
                 // Validate field name format
-                if (!IsValidPropertyName(fieldName))
+                if (!IsValidPropertyName(FieldName))
                 {
-                    return CreateError($"Invalid field name format: '{fieldName}'");
+                    return CreateError($"Invalid field name format: '{FieldName}'");
                 }
 
-                errorInfo.Message = $"Field validation passed for '{fieldName}' in '{dataSourceName}'";
+                errorInfo.Message = $"Field validation passed for '{FieldName}' in '{dataSourceName}'";
                 return errorInfo;
             }
             catch (Exception ex)

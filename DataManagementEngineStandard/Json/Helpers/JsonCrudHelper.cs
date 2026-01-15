@@ -52,7 +52,7 @@ namespace TheTechIdea.Beep.Json.Helpers
             if (pk == null)
                 return false;
 
-            var pkProp = data.GetType().GetProperty(pk.fieldname);
+            var pkProp = data.GetType().GetProperty(pk.FieldName);
             if (pkProp == null)
                 return false;
 
@@ -60,7 +60,7 @@ namespace TheTechIdea.Beep.Json.Helpers
 
             var target = arr.FirstOrDefault(t =>
                 t.Type == JTokenType.Object &&
-                t[pk.fieldname]?.ToString() == pkVal) as JObject;
+                t[pk.FieldName]?.ToString() == pkVal) as JObject;
 
             if (target == null)
                 return false;
@@ -89,7 +89,7 @@ namespace TheTechIdea.Beep.Json.Helpers
 
             var toRemove = arr
                 .Where(t => t.Type == JTokenType.Object &&
-                            string.Equals(t[keyFilter.FieldName]?.ToString(), keyFilter.FilterValue, StringComparison.OrdinalIgnoreCase))
+                            string.Equals(t[keyFilter?.FieldName]?.ToString(), keyFilter.FilterValue, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             foreach (var r in toRemove)
@@ -104,11 +104,11 @@ namespace TheTechIdea.Beep.Json.Helpers
             if (pk == null)
                 return;
 
-            if (obj[pk.fieldname] == null || string.IsNullOrWhiteSpace(obj[pk.fieldname]?.ToString()))
+            if (obj[pk.FieldName] == null || string.IsNullOrWhiteSpace(obj[pk.FieldName]?.ToString()))
             {
                 // Only generate if string key and not auto increment
-                if (pk.fieldtype == typeof(string).FullName)
-                    obj[pk.fieldname] = Guid.NewGuid().ToString("N");
+                if (pk.Fieldtype == typeof(string).FullName)
+                    obj[pk.FieldName] = Guid.NewGuid().ToString("N");
             }
         }
 

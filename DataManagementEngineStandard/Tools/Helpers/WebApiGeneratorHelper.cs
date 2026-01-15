@@ -311,7 +311,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             sb.AppendLine("            try");
             sb.AppendLine("            {");
             sb.AppendLine("                var filters = new List<AppFilter> { ");
-            sb.AppendLine("                    new AppFilter { FieldName = \"Id\", Operator = \"=\", FilterValue = id.ToString() } ");
+            sb.AppendLine("                    new AppFilter {FieldName = \"Id\", Operator = \"=\", FilterValue = id.ToString() } ");
             sb.AppendLine("                };");
             sb.AppendLine($"                var result = await Task.Run(() => _dataSource.GetEntity(\"{entity.EntityName}\", filters));");
             sb.AppendLine("                if (result == null) return NotFound();");
@@ -365,7 +365,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             sb.AppendLine("            {");
             sb.AppendLine("                if (updatedItem == null) return BadRequest(\"Item cannot be null\");");
             sb.AppendLine("                var filters = new List<AppFilter> { ");
-            sb.AppendLine("                    new AppFilter { FieldName = \"Id\", Operator = \"=\", FilterValue = id.ToString() } ");
+            sb.AppendLine("                    new AppFilter {FieldName = \"Id\", Operator = \"=\", FilterValue = id.ToString() } ");
             sb.AppendLine("                };");
             sb.AppendLine($"                var existingItem = await Task.Run(() => _dataSource.GetEntity(\"{entity.EntityName}\", filters));");
             sb.AppendLine("                if (existingItem == null) return NotFound();");
@@ -394,7 +394,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             sb.AppendLine("            try");
             sb.AppendLine("            {");
             sb.AppendLine("                var filters = new List<AppFilter> { ");
-            sb.AppendLine("                    new AppFilter { FieldName = \"Id\", Operator = \"=\", FilterValue = id.ToString() } ");
+            sb.AppendLine("                    new AppFilter {FieldName = \"Id\", Operator = \"=\", FilterValue = id.ToString() } ");
             sb.AppendLine("                };");
             sb.AppendLine($"                var existingItem = await Task.Run(() => _dataSource.GetEntity(\"{entity.EntityName}\", filters));");
             sb.AppendLine("                if (existingItem == null) return NotFound();");

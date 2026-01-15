@@ -103,7 +103,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
                 // Validate field mappings
                 foreach (var fieldMap in mappedEntity.EntityFields    )
                 {
-                    if (string.IsNullOrEmpty(fieldMap.fieldname))
+                    if (string.IsNullOrEmpty(fieldMap.FieldName))
                         return CreateErrorsInfo(Errors.Failed, $"Field name cannot be empty in entity '{mappedEntity.EntityName}'");
                 }
             }
@@ -129,8 +129,8 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
                 return CreateErrorsInfo(Errors.Failed, "Destination entity must have at least one field");
 
             // Check for compatible fields (at least some overlap)
-            var sourceFieldNames = sourceEntity.Fields.Select(f => f.fieldname.ToLowerInvariant()).ToHashSet();
-            var destFieldNames = destEntity.Fields.Select(f => f.fieldname.ToLowerInvariant()).ToHashSet();
+            var sourceFieldNames = sourceEntity.Fields.Select(f => f.FieldName.ToLowerInvariant()).ToHashSet();
+            var destFieldNames = destEntity.Fields.Select(f => f.FieldName.ToLowerInvariant()).ToHashSet();
 
             var commonFields = sourceFieldNames.Intersect(destFieldNames);
             if (!commonFields.Any())
@@ -142,12 +142,12 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
             var requiredDestFields = destEntity.Fields.Where(f => f.IsRequired && !f.IsAutoIncrement).ToList();
             foreach (var requiredField in requiredDestFields)
             {
-                var fieldName = requiredField.fieldname.ToLowerInvariant();
-                if (!sourceFieldNames.Contains(fieldName))
+                var FieldName = requiredField.FieldName.ToLowerInvariant();
+                if (!sourceFieldNames.Contains(FieldName))
                 {
                     // Check if there's a default value configured for this field
                     // This would require integration with DefaultsManager
-                    _editor.Logger?.WriteLog($"Warning: Required field '{requiredField.fieldname}' not found in source. " +
+                    _editor.Logger?.WriteLog($"Warning: Required field '{requiredField.FieldName}' not found in source. " +
                                           "Ensure default value is configured or mapping is provided.");
                 }
             }

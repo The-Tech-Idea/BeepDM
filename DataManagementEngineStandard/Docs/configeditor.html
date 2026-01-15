@@ -516,8 +516,8 @@ var customerEntity = new EntityStructure
     {
         new EntityField
         {
-            fieldname = "CustomerID",
-            fieldtype = "System.Int32",
+           FieldName = "CustomerID",
+            Fieldtype = "System.Int32",
             Size1 = 4,
             AllowDBNull = false,
             IsKey = true,
@@ -525,22 +525,22 @@ var customerEntity = new EntityStructure
         },
         new EntityField
         {
-            fieldname = "CustomerName",
-            fieldtype = "System.String",
+           FieldName = "CustomerName",
+            Fieldtype = "System.String",
             Size1 = 100,
             AllowDBNull = false
         },
         new EntityField
         {
-            fieldname = "Email",
-            fieldtype = "System.String",
+           FieldName = "Email",
+            Fieldtype = "System.String",
             Size1 = 255,
             AllowDBNull = true
         },
         new EntityField
         {
-            fieldname = "CreatedDate",
-            fieldtype = "System.DateTime",
+           FieldName = "CreatedDate",
+            Fieldtype = "System.DateTime",
             AllowDBNull = false,
             DefaultValue = "GETDATE()"
         }
@@ -956,9 +956,9 @@ public static class DataApplicationConfigManager
             DataSourceID = "MainDatabase",
             Fields = new List<EntityField>
             {
-                new EntityField { fieldname = "CustomerID", fieldtype = "System.Int32", IsKey = true },
-                new EntityField { fieldname = "CustomerName", fieldtype = "System.String", Size1 = 100 },
-                new EntityField { fieldname = "Email", fieldtype = "System.String", Size1 = 255 }
+                new EntityField {FieldName = "CustomerID", Fieldtype = "System.Int32", IsKey = true },
+                new EntityField {FieldName = "CustomerName", Fieldtype = "System.String", Size1 = 100 },
+                new EntityField {FieldName = "Email", Fieldtype = "System.String", Size1 = 255 }
             }
         };
 

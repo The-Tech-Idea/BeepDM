@@ -8,7 +8,7 @@ using TheTechIdea.Beep.Helpers.RDBMSHelpers;
 namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
 {
     /// <summary>
-    /// Partial class for RdbmsHelper providing constraint and relationship DDL operations
+    /// Partial class for RdbmsHelper providing constraint and relationship Ddl operations
     /// (PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK constraints).
     /// 
     /// Each method generates database-agnostic SQL, then adapts for specific RDBMS syntax.

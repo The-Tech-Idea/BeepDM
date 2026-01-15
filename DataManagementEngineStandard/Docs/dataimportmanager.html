@@ -215,7 +215,7 @@ if (result.Flag == Errors.Ok)
 // Configure filters (optional)
 importManager.SourceFilters.Add(new AppFilter 
 { 
-    FieldName = "CreatedDate", 
+   FieldName = "CreatedDate", 
     Operator = ">=", 
     FilterValue = DateTime.Today.AddDays(-30).ToString() 
 });
@@ -596,7 +596,7 @@ public async Task&lt;bool&gt; PerformCustomerImport()
         // Configure filters for incremental import
         importManager.SourceFilters.Add(new AppFilter
         {
-            FieldName = "ModifiedDate",
+           FieldName = "ModifiedDate",
             Operator = ">=",
             FilterValue = GetLastImportDate().ToString("yyyy-MM-dd")
         });

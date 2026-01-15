@@ -281,13 +281,13 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
                 {
                     new AppFilter 
                     { 
-                        FieldName = "IsActive", 
+                       FieldName = "IsActive", 
                         Operator = "=", 
                         FilterValue = "true" 
                     },
                     new AppFilter 
-                    { 
-                        FieldName = "Status", 
+                    {
+                       FieldName = "Status", 
                         Operator = "=", 
                         FilterValue = "Active" 
                     }
@@ -302,8 +302,8 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
                 
                 var pagedFilters = filters.Concat(new[]
                 {
-                    new AppFilter { FieldName = "PageIndex", FilterValue = unitOfWork.PageIndex.ToString() },
-                    new AppFilter { FieldName = "PageSize", FilterValue = unitOfWork.PageSize.ToString() }
+                    new AppFilter {FieldName = "PageIndex", FilterValue = unitOfWork.PageIndex.ToString() },
+                    new AppFilter {FieldName = "PageSize", FilterValue = unitOfWork.PageSize.ToString() }
                 }).ToList();
 
                 var pagedCustomers = await unitOfWork.Get(pagedFilters);

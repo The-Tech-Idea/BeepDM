@@ -289,7 +289,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     {
                         new AppFilter
                         {
-                            FieldName = relationship.DetailForeignKeyField,
+                           FieldName = relationship.DetailForeignKeyField,
                             Operator = "=",
                             FilterValue = masterValue.ToString()
                         }

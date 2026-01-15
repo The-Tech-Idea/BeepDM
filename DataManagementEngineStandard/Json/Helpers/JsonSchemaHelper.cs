@@ -109,14 +109,14 @@ namespace TheTechIdea.Beep.Json.Helpers
         {
             foreach (var prop in sample.Properties())
             {
-                if (entity.Fields.Any(f => f.fieldname.Equals(prop.Name, StringComparison.OrdinalIgnoreCase)))
+                if (entity.Fields.Any(f => f.FieldName.Equals(prop.Name, StringComparison.OrdinalIgnoreCase)))
                     continue;
 
                 entity.Fields.Add(new EntityField
                 {
-                    fieldname = prop.Name,
+                   FieldName = prop.Name,
                     Originalfieldname = prop.Name,
-                    fieldtype = InferClrType(prop.Value),
+                    Fieldtype = InferClrType(prop.Value),
                     EntityName = entity.EntityName,
                     AllowDBNull = true
                 });
@@ -142,7 +142,7 @@ namespace TheTechIdea.Beep.Json.Helpers
         {
             // Prefer natural keys
             var pk = entity.Fields
-                .FirstOrDefault(f => PreferredKeyNames.Contains(f.fieldname, StringComparer.OrdinalIgnoreCase));
+                .FirstOrDefault(f => PreferredKeyNames.Contains(f.FieldName, StringComparer.OrdinalIgnoreCase));
 
             if (pk != null)
             {
@@ -152,12 +152,12 @@ namespace TheTechIdea.Beep.Json.Helpers
             }
 
             // Create synthetic
-            if (!entity.Fields.Any(f => f.fieldname == "_rowId"))
+            if (!entity.Fields.Any(f => f.FieldName == "_rowId"))
             {
                 var synthetic = new EntityField
                 {
-                    fieldname = "_rowId",
-                    fieldtype = typeof(string).FullName,
+                   FieldName = "_rowId",
+                    Fieldtype = typeof(string).FullName,
                     IsKey = true,
                     IsAutoIncrement = false,
                     AllowDBNull = false,
@@ -184,12 +184,12 @@ namespace TheTechIdea.Beep.Json.Helpers
 
             // Add foreign key field if not existing
             const string parentRefName = "_parentId";
-            if (!child.Fields.Any(f => f.fieldname.Equals(parentRefName, StringComparison.OrdinalIgnoreCase)))
+            if (!child.Fields.Any(f => f.FieldName.Equals(parentRefName, StringComparison.OrdinalIgnoreCase)))
             {
                 child.Fields.Add(new EntityField
                 {
-                    fieldname = parentRefName,
-                    fieldtype = parentPk.fieldtype,
+                   FieldName = parentRefName,
+                    Fieldtype = parentPk.Fieldtype,
                     AllowDBNull = true,
                     EntityName = child.EntityName
                 });
@@ -199,7 +199,7 @@ namespace TheTechIdea.Beep.Json.Helpers
             var rel = new RelationShipKeys
             {
                 RelatedEntityID = parent.EntityName,
-                RelatedEntityColumnID = parentPk.fieldname,
+                RelatedEntityColumnID = parentPk.FieldName,
                 EntityColumnID = parentRefName
             };
             child.Relations.Add(rel);

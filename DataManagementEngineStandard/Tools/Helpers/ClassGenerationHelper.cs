@@ -39,10 +39,10 @@ namespace TheTechIdea.Beep.Tools.Helpers
 
             foreach (var field in entity.Fields)
             {
-                if (string.IsNullOrEmpty(field.fieldname))
+                if (string.IsNullOrEmpty(field.FieldName))
                     errors.Add($"Field name cannot be empty in entity {entity.EntityName}.");
-                if (string.IsNullOrEmpty(field.fieldtype))
-                    errors.Add($"Field type cannot be empty for field {field.fieldname} in entity {entity.EntityName}.");
+                if (string.IsNullOrEmpty(field.Fieldtype))
+                    errors.Add($"Field type cannot be empty for field {field.FieldName} in entity {entity.EntityName}.");
             }
 
             return errors;
@@ -51,13 +51,13 @@ namespace TheTechIdea.Beep.Tools.Helpers
         /// <summary>
         /// Generates a safe C# property name from a field name
         /// </summary>
-        public string GenerateSafePropertyName(string fieldName, int index = 0)
+        public string GenerateSafePropertyName(string FieldName, int index = 0)
         {
-            if (string.IsNullOrWhiteSpace(fieldName))
+            if (string.IsNullOrWhiteSpace(FieldName))
                 return $"Field{index}";
 
             // Remove invalid characters and replace with underscore
-            var safeName = Regex.Replace(fieldName, @"[^A-Za-z0-9_]", "_");
+            var safeName = Regex.Replace(FieldName, @"[^A-Za-z0-9_]", "_");
 
             // If it starts with a digit, prefix with underscore
             if (char.IsDigit(safeName[0]))
@@ -104,9 +104,9 @@ namespace TheTechIdea.Beep.Tools.Helpers
         /// <summary>
         /// Determines if a type is numeric
         /// </summary>
-        public bool IsNumericType(string fieldType)
+        public bool IsNumericType(string Fieldtype)
         {
-            var lowerType = fieldType.ToLower();
+            var lowerType = Fieldtype.ToLower();
             return lowerType == "int" || lowerType == "int32" || lowerType == "int64" ||
                    lowerType == "long" || lowerType == "decimal" || lowerType == "double" ||
                    lowerType == "float" || lowerType == "short" || lowerType == "byte" ||
@@ -117,9 +117,9 @@ namespace TheTechIdea.Beep.Tools.Helpers
         /// <summary>
         /// Determines if a type is an integral type
         /// </summary>
-        public bool IsIntegralType(string fieldType)
+        public bool IsIntegralType(string Fieldtype)
         {
-            var lowerType = fieldType.ToLower();
+            var lowerType = Fieldtype.ToLower();
             return lowerType == "int" || lowerType == "int32" || lowerType == "int64" ||
                    lowerType == "long" || lowerType == "short" || lowerType == "int16" ||
                    lowerType == "byte" || lowerType == "uint" || lowerType == "ulong" ||
@@ -129,9 +129,9 @@ namespace TheTechIdea.Beep.Tools.Helpers
         /// <summary>
         /// Maps C# field types to SQL Server types
         /// </summary>
-        public string MapFieldTypeToSqlType(string fieldType)
+        public string MapFieldtypeToSqlType(string Fieldtype)
         {
-            var lowerType = fieldType.ToLower();
+            var lowerType = Fieldtype.ToLower();
             return lowerType switch
             {
                 "string" => "nvarchar(max)",
@@ -228,13 +228,13 @@ namespace TheTechIdea.Beep.Tools.Helpers
         /// <summary>
         /// Gets a user-friendly display name from a field name
         /// </summary>
-        public string GetDisplayName(string fieldName)
+        public string GetDisplayName(string FieldName)
         {
-            if (string.IsNullOrEmpty(fieldName))
+            if (string.IsNullOrEmpty(FieldName))
                 return string.Empty;
 
             // Insert a space before each capital letter and then capitalize the first letter
-            var result = Regex.Replace(fieldName, "([A-Z])", " $1").Trim();
+            var result = Regex.Replace(FieldName, "([A-Z])", " $1").Trim();
             return char.ToUpper(result[0]) + result.Substring(1);
         }
 
@@ -352,7 +352,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             for (int i = 0; i < fields.Count; i++)
             {
                 var field = fields[i];
-                sb.Append($"    {MapFieldTypeToSqlType(field.fieldtype)} {GenerateSafePropertyName(field.fieldname)}{(i < fields.Count - 1 ? ", " : "")}");
+                sb.Append($"    {MapFieldtypeToSqlType(field.Fieldtype)} {GenerateSafePropertyName(field.FieldName)}{(i < fields.Count - 1 ? ", " : "")}");
             }
 
             sb.AppendLine(") {");
@@ -360,7 +360,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             // Assign parameters to properties
             foreach (var field in fields)
             {
-                sb.AppendLine($"    this.{GenerateSafePropertyName(field.fieldname)} = {GenerateSafePropertyName(field.fieldname)};");
+                sb.AppendLine($"    this.{GenerateSafePropertyName(field.FieldName)} = {GenerateSafePropertyName(field.FieldName)};");
             }
 
             sb.AppendLine("}");
@@ -371,10 +371,10 @@ namespace TheTechIdea.Beep.Tools.Helpers
         /// <summary>
         /// Generates a full property with getter and setter
         /// </summary>
-        public string GenerateFullProperty(string propertyName, string fieldType)
+        public string GenerateFullProperty(string propertyName, string Fieldtype)
         {
             var backingField = GenerateBackingFieldName(propertyName);
-            var propertyType = MapFieldTypeToSqlType(fieldType);
+            var propertyType = MapFieldtypeToSqlType(Fieldtype);
 
             return $"private {propertyType} {backingField};\n" +
                    $"public {propertyType} {propertyName} {{ get => {backingField}; set => {backingField} = value; }}";

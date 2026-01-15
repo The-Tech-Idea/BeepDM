@@ -239,9 +239,9 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <summary>
         /// Safely gets a field value from the current record
         /// </summary>
-        public static T GetCurrentFieldValue<T>(this IUnitOfWorkWrapper wrapper, string fieldName, T defaultValue = default(T))
+        public static T GetCurrentFieldValue<T>(this IUnitOfWorkWrapper wrapper, string FieldName, T defaultValue = default(T))
         {
-            if (wrapper == null || string.IsNullOrWhiteSpace(fieldName))
+            if (wrapper == null || string.IsNullOrWhiteSpace(FieldName))
                 return defaultValue;
 
             try
@@ -249,7 +249,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                 var currentRecord = wrapper.CurrentItem;
                 if (currentRecord != null)
                 {
-                    var value = GetFieldValue(currentRecord, fieldName);
+                    var value = GetFieldValue(currentRecord, FieldName);
                     if (value != null && value is T)
                         return (T)value;
                 }
@@ -265,9 +265,9 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <summary>
         /// Safely sets a field value on the current record
         /// </summary>
-        public static bool SetCurrentFieldValue(this IUnitOfWorkWrapper wrapper, string fieldName, object value)
+        public static bool SetCurrentFieldValue(this IUnitOfWorkWrapper wrapper, string FieldName, object value)
         {
-            if (wrapper == null || string.IsNullOrWhiteSpace(fieldName))
+            if (wrapper == null || string.IsNullOrWhiteSpace(FieldName))
                 return false;
 
             try
@@ -275,7 +275,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                 var currentRecord = wrapper.CurrentItem;
                 if (currentRecord != null)
                 {
-                    return SetFieldValue(currentRecord, fieldName, value);
+                    return SetFieldValue(currentRecord, FieldName, value);
                 }
             }
             catch
@@ -288,12 +288,12 @@ namespace TheTechIdea.Beep.Editor.UOW
 
         #region Private Helper Methods
 
-        private static object GetFieldValue(dynamic record, string fieldName)
+        private static object GetFieldValue(dynamic record, string FieldName)
         {
             try
             {
                 // Try as dynamic object first
-                return ((IDictionary<string, object>)record)[fieldName];
+                return ((IDictionary<string, object>)record)[FieldName];
             }
             catch
             {
@@ -301,7 +301,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                 {
                     // Try reflection
                     var type = record.GetType();
-                    var property = type.GetProperty(fieldName);
+                    var property = type.GetProperty(FieldName);
                     return property?.GetValue(record);
                 }
                 catch
@@ -311,12 +311,12 @@ namespace TheTechIdea.Beep.Editor.UOW
             }
         }
 
-        private static bool SetFieldValue(dynamic record, string fieldName, object value)
+        private static bool SetFieldValue(dynamic record, string FieldName, object value)
         {
             try
             {
                 // Try as dynamic object first
-                ((IDictionary<string, object>)record)[fieldName] = value;
+                ((IDictionary<string, object>)record)[FieldName] = value;
                 return true;
             }
             catch
@@ -325,7 +325,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                 {
                     // Try reflection
                     var type = record.GetType();
-                    var property = type.GetProperty(fieldName);
+                    var property = type.GetProperty(FieldName);
                     if (property != null && property.CanWrite)
                     {
                         property.SetValue(record, value);

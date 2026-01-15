@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+
 
 
 namespace TheTechIdea.Beep.Editor
@@ -25,7 +25,7 @@ namespace TheTechIdea.Beep.Editor
       //  [JsonProperty("scriptDescription")]
         public string ScriptDescription { get; set; }
        
-        public string ScriptType { get; set; }
+        public string ScriptType{ get; set; }
       //  [JsonProperty("scriptStatus")]
         public string ScriptStatus { get; set; }
         public DateTime LastRunDateTime { get; set; }

@@ -258,13 +258,13 @@ var mapping = new EntityDataMap
         { 
             FromFieldName = "CustomerName", 
             ToFieldName = "Name",
-            FieldType = "string"
+            Fieldtype = "string"
         },
         new EntityDataMap_DTL 
         { 
             FromFieldName = "CustomerEmail", 
             ToFieldName = "EmailAddress",
-            FieldType = "string"
+            Fieldtype = "string"
         }
     }
 };
@@ -274,7 +274,7 @@ importManager.Mapping = mapping;
 // Set up filters if needed
 importManager.SourceFilters.Add(new AppFilter
 {
-    FieldName = "Status",
+   FieldName = "Status",
     Operator = "=",
     FilterValue = "Active"
 });

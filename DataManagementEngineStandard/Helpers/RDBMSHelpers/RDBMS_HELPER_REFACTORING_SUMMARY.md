@@ -27,7 +27,7 @@ The `RDBMSHelper` class has been successfully refactored from a single large mon
 **Location**: `DataManagementEngineStandard\Helpers\RDBMSHelpers\DatabaseObjectCreationHelper.cs`
 
 **Responsibilities**:
-- Table creation and DDL operations
+- Table creation and Ddl operations
 - Index creation and management
 - Primary key generation
 - Database object lifecycle management
@@ -170,7 +170,7 @@ The `RDBMSHelper` class has been successfully refactored from a single large mon
 
 ### ?? **Separation of Concerns**
 - **Schema Operations**: Database metadata and schema queries
-- **Object Creation**: DDL operations and database object management
+- **Object Creation**: Ddl operations and database object management
 - **DML Operations**: Data manipulation with advanced parameterization
 - **Feature Detection**: Comprehensive database capability analysis
 - **Query Repository**: Centralized query management and caching

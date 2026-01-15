@@ -64,7 +64,7 @@ var users = cacheDataSource.GetEntity("Users", null);
 // Filter data
 var filters = new List<AppFilter>
 {
-    new AppFilter { FieldName = "Name", Operator = "contains", FilterValue = "John" }
+    new AppFilter {FieldName = "Name", Operator = "contains", FilterValue = "John" }
 };
 var filteredUsers = cacheDataSource.GetEntity("Users", filters);
 
@@ -84,10 +84,10 @@ var userEntity = new EntityStructure
     DatabaseType = DataSourceType.InMemoryCache,
     Fields = new List<EntityField>
     {
-        new EntityField { fieldname = "Id", fieldtype = "System.Int32", IsKey = true },
-        new EntityField { fieldname = "Name", fieldtype = "System.String" },
-        new EntityField { fieldname = "Email", fieldtype = "System.String" },
-        new EntityField { fieldname = "CreatedDate", fieldtype = "System.DateTime" }
+        new EntityField {FieldName = "Id", Fieldtype = "System.Int32", IsKey = true },
+        new EntityField {FieldName = "Name", Fieldtype = "System.String" },
+        new EntityField {FieldName = "Email", Fieldtype = "System.String" },
+        new EntityField {FieldName = "CreatedDate", Fieldtype = "System.DateTime" }
     }
 };
 
@@ -117,9 +117,9 @@ The CacheMemoryDataSource supports comprehensive filtering with the following op
 ```csharp
 var complexFilters = new List<AppFilter>
 {
-    new AppFilter { FieldName = "Department", Operator = "=", FilterValue = "Engineering" },
-    new AppFilter { FieldName = "Salary", Operator = ">=", FilterValue = "50000" },
-    new AppFilter { FieldName = "Status", Operator = "!=", FilterValue = "Terminated" }
+    new AppFilter {FieldName = "Department", Operator = "=", FilterValue = "Engineering" },
+    new AppFilter {FieldName = "Salary", Operator = ">=", FilterValue = "50000" },
+    new AppFilter {FieldName = "Status", Operator = "!=", FilterValue = "Terminated" }
 };
 
 var results = cacheDataSource.GetEntity("Employees", complexFilters);
@@ -232,9 +232,9 @@ var user = new {
 // More specific filters first for better performance
 var filters = new List<AppFilter>
 {
-    new AppFilter { FieldName = "Id", Operator = "=", FilterValue = "123" }, // Most specific
-    new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "Active" },
-    new AppFilter { FieldName = "Name", Operator = "contains", FilterValue = "John" } // Least specific
+    new AppFilter {FieldName = "Id", Operator = "=", FilterValue = "123" }, // Most specific
+    new AppFilter {FieldName = "Status", Operator = "=", FilterValue = "Active" },
+    new AppFilter {FieldName = "Name", Operator = "contains", FilterValue = "John" } // Least specific
 };
 ```
 
@@ -287,7 +287,7 @@ public class UsersController : ControllerBase
         var filters = new List<AppFilter>();
         if (!string.IsNullOrEmpty(department))
         {
-            filters.Add(new AppFilter { FieldName = "Department", Operator = "=", FilterValue = department });
+            filters.Add(new AppFilter {FieldName = "Department", Operator = "=", FilterValue = department });
         }
         
         var users = _cacheDataSource.GetEntity("Users", filters);

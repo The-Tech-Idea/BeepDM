@@ -228,7 +228,7 @@ if (mappedEntity != null)
         }
         
         // Handle type conversions
-        if (fieldMapping.FromFieldType == "varchar" && fieldMapping.ToFieldType == "nvarchar")
+        if (fieldMapping.FromFieldtype == "varchar" && fieldMapping.ToFieldtype == "nvarchar")
         {
             // Unicode conversion may be needed
         }
@@ -239,8 +239,8 @@ if (mappedEntity != null)
     {
         FromFieldName = "FirstName,LastName", // Composite source
         ToFieldName = "DisplayName",
-        FromFieldType = "varchar",
-        ToFieldType = "nvarchar"
+        FromFieldtype = "varchar",
+        ToFieldtype = "nvarchar"
         // Custom transformation logic would be handled in transformation functions
     });
     
@@ -409,8 +409,8 @@ if (mappedEntity != null)
     {
         FromFieldName = "ProductCode",
         ToFieldName = "SKU",
-        FromFieldType = "varchar",
-        ToFieldType = "nvarchar"
+        FromFieldtype = "varchar",
+        ToFieldtype = "nvarchar"
     });
     
     // Manually save the updated mapping
@@ -546,8 +546,8 @@ public class CustomMappingManager
                 }
                 
                 // Handle date format conversions
-                if (fieldMapping.FromFieldType.Contains("date") && 
-                    fieldMapping.ToFieldType.Contains("string"))
+                if (fieldMapping.FromFieldtype.Contains("date") && 
+                    fieldMapping.ToFieldtype.Contains("string"))
                 {
                     var dateValue = GetPropertyValue(sourceObject, fieldMapping.FromFieldName);
                     if (dateValue is DateTime dt)

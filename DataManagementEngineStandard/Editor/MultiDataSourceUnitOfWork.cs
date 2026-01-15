@@ -90,7 +90,7 @@ namespace TheTechIdea.Beep.Editor
                 var childUnit = GetUnitOfWork(mapping.ChildEntityName);
                 var filters = new List<AppFilter>
                 {
-                    new AppFilter { FieldName = mapping.ChildForeignKeyField, Operator = "=", FilterValue = parentKeyValue }
+                    new AppFilter {FieldName = mapping.ChildForeignKeyField, Operator = "=", FilterValue = parentKeyValue }
                 };
 
                 dynamic filteredChildren = await childUnit.Get(filters);
@@ -306,7 +306,7 @@ namespace TheTechIdea.Beep.Editor
                     var childUnit = GetUnitOfWork(mapping.ChildEntityName);
                     var filters = new List<AppFilter>
                     {
-                        new AppFilter { FieldName = mapping.ChildForeignKeyField, Operator = "IS NULL", FilterValue = null }
+                        new AppFilter {FieldName = mapping.ChildForeignKeyField, Operator = "IS NULL", FilterValue = null }
                     };
 
                     dynamic children = await childUnit.Get(filters);
@@ -339,7 +339,7 @@ namespace TheTechIdea.Beep.Editor
                     var childUnit = GetUnitOfWork(mapping.ChildEntityName);
                     var filters = new List<AppFilter>
                     {
-                        new AppFilter { FieldName = mapping.ChildForeignKeyField, Operator = "=", FilterValue = parentKeyValue }
+                        new AppFilter {FieldName = mapping.ChildForeignKeyField, Operator = "=", FilterValue = parentKeyValue }
                     };
 
                     dynamic children = await childUnit.Get(filters);
@@ -403,7 +403,7 @@ namespace TheTechIdea.Beep.Editor
 
                         var filters = new List<AppFilter>
                         {
-                            new AppFilter { FieldName = mapping.ChildForeignKeyField, Operator = "=", FilterValue = parentKeyValue }
+                            new AppFilter {FieldName = mapping.ChildForeignKeyField, Operator = "=", FilterValue = parentKeyValue }
                         };
 
                         dynamic children = childUnit.Get(filters).Result;

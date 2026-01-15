@@ -1545,7 +1545,7 @@ namespace TheTechIdea.Beep.DataView
             {
                 foreach (EntityField item in e.Fields)
                 {
-                    DataColumn co = new DataColumn(item.fieldname, Type.GetType(item.fieldtype));
+                    DataColumn co = new DataColumn(item.FieldName, Type.GetType(item.Fieldtype));
                     co.AllowDBNull = item.AllowDBNull;
                     co.AutoIncrement = item.IsAutoIncrement;
                     co.Unique = item.IsUnique;

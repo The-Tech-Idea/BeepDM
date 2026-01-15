@@ -475,7 +475,7 @@ private void ConfigureIncrementalFilters(DataImportManager importManager, DateTi
     // Add filter for records modified since last sync
     importManager.SourceFilters.Add(new AppFilter
     {
-        FieldName = "ModifiedDate",
+       FieldName = "ModifiedDate",
         Operator = "&gt;=",
         FilterValue = lastSyncTime.ToString("yyyy-MM-dd HH:mm:ss")
     });
@@ -484,7 +484,7 @@ private void ConfigureIncrementalFilters(DataImportManager importManager, DateTi
     // For example, only sync active records:
     importManager.SourceFilters.Add(new AppFilter
     {
-        FieldName = "IsActive",
+       FieldName = "IsActive",
         Operator = "=",
         FilterValue = "true"
     });
@@ -683,13 +683,13 @@ public class ConflictResolver
         return result;
     }
     
-    private FieldResolution ResolveFieldConflict(string fieldName, object sourceValue, object destValue)
+    private FieldResolution ResolveFieldConflict(string FieldName, object sourceValue, object destValue)
     {
         // Implement field-specific resolution logic
         // This could be based on business rules, data types, etc.
         
         // Example business rules:
-        if (fieldName.EndsWith("Date") || fieldName.EndsWith("Timestamp"))
+        if (FieldName.EndsWith("Date") || FieldName.EndsWith("Timestamp"))
         {
             // For date fields, use the most recent
             if (sourceValue is DateTime sourceDate && destValue is DateTime destDate)
@@ -700,7 +700,7 @@ public class ConflictResolver
             }
         }
         
-        if (fieldName.Contains("Amount") || fieldName.Contains("Price"))
+        if (FieldName.Contains("Amount") || FieldName.Contains("Price"))
         {
             // For monetary fields, might want to use the higher value or apply specific business logic
             // This is just an example - real logic would depend on business requirements

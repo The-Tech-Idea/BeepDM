@@ -472,13 +472,13 @@ namespace TheTechIdea.Beep.Helpers.FileandFolderHelpers
 
                     if (!addColumn) // Remove Column
                     {
-                        var columnToRemove = updatedEntity.Fields.Select(f => f.fieldname).ToArray();
+                        var columnToRemove = updatedEntity.Fields.Select(f => f.FieldName).ToArray();
                         columnToRemoveIndex = Array.FindIndex(headers, h => columnToRemove.Contains(h));
                         writer.WriteLine(string.Join(",", headers.Where((h, i) => i != columnToRemoveIndex)));
                     }
                     else // Add Column
                     {
-                        var newColumn = updatedEntity.Fields.Last().fieldname;
+                        var newColumn = updatedEntity.Fields.Last().FieldName;
                         writer.WriteLine(headerLine + $",{newColumn}");
                     }
 

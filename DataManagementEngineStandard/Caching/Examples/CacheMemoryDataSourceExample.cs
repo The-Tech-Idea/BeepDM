@@ -288,7 +288,7 @@ namespace TheTechIdea.Beep.Caching.Examples
             // Single-condition filter - department filtering
             var engineeringFilter = new List<AppFilter>
             {
-                new AppFilter { FieldName = "Department", Operator = "=", FilterValue = "Engineering" }
+                new AppFilter {FieldName = "Department", Operator = "=", FilterValue = "Engineering" }
             };
 
             Console.WriteLine("\n   Engineering department users:");
@@ -304,8 +304,8 @@ namespace TheTechIdea.Beep.Caching.Examples
             // Multi-condition filter - category and price range
             var electronicsFilter = new List<AppFilter>
             {
-                new AppFilter { FieldName = "Category", Operator = "=", FilterValue = "Electronics" },
-                new AppFilter { FieldName = "Price", Operator = "<", FilterValue = "300" }
+                new AppFilter {FieldName = "Category", Operator = "=", FilterValue = "Electronics" },
+                new AppFilter {FieldName = "Price", Operator = "<", FilterValue = "300" }
             };
 
             Console.WriteLine("\n   Electronics under $300:");
@@ -366,7 +366,7 @@ namespace TheTechIdea.Beep.Caching.Examples
             {
                 foreach (var field in userEntity.Fields)
                 {
-                    Console.WriteLine($"   - {field.fieldname} ({field.fieldtype})");
+                    Console.WriteLine($"   - {field.FieldName} ({field.Fieldtype})");
                 }
             }
 
@@ -380,19 +380,19 @@ namespace TheTechIdea.Beep.Caching.Examples
                 DataSourceID = "ExampleCacheSource",
                 Fields = new List<EntityField>
                 {
-                    new EntityField { fieldname = "Id", fieldtype = "System.Int32", IsKey = true, AllowDBNull = false },
-                    new EntityField { fieldname = "UserId", fieldtype = "System.Int32", AllowDBNull = false },
-                    new EntityField { fieldname = "ProductId", fieldtype = "System.Int32", AllowDBNull = false },
-                    new EntityField { fieldname = "Quantity", fieldtype = "System.Int32", AllowDBNull = false },
-                    new EntityField { fieldname = "OrderDate", fieldtype = "System.DateTime", AllowDBNull = false },
-                    new EntityField { fieldname = "TotalAmount", fieldtype = "System.Decimal", AllowDBNull = false }
+                    new EntityField {FieldName = "Id", Fieldtype = "System.Int32", IsKey = true, AllowDBNull = false },
+                    new EntityField {FieldName = "UserId", Fieldtype = "System.Int32", AllowDBNull = false },
+                    new EntityField {FieldName = "ProductId", Fieldtype = "System.Int32", AllowDBNull = false },
+                    new EntityField {FieldName = "Quantity", Fieldtype = "System.Int32", AllowDBNull = false },
+                    new EntityField {FieldName = "OrderDate", Fieldtype = "System.DateTime", AllowDBNull = false },
+                    new EntityField {FieldName = "TotalAmount", Fieldtype = "System.Decimal", AllowDBNull = false }
                 }
             };
 
             // Set primary key
             orderEntity.PrimaryKeys = new List<EntityField> 
             { 
-                orderEntity.Fields.First(f => f.fieldname == "Id") 
+                orderEntity.Fields.First(f => f.FieldName == "Id") 
             };
 
             // Create the entity
@@ -560,7 +560,7 @@ namespace TheTechIdea.Beep.Caching.Examples
             watch.Restart();
             var filter = new List<AppFilter>
             {
-                new AppFilter { FieldName = "Value", Operator = ">", FilterValue = "5000" }
+                new AppFilter {FieldName = "Value", Operator = ">", FilterValue = "5000" }
             };
 
             var filteredResults = _cacheDataSource.GetEntity("PerformanceTest", filter);

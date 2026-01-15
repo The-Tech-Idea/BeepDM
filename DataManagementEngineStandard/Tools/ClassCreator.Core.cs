@@ -543,9 +543,9 @@ namespace TheTechIdea.Beep.Tools
         /// <summary>
         /// Generates a safe C# property name from a field name
         /// </summary>
-        public string GenerateSafePropertyName(string fieldName, int index = 0)
+        public string GenerateSafePropertyName(string FieldName, int index = 0)
         {
-            return _generationHelper.GenerateSafePropertyName(fieldName, index);
+            return _generationHelper.GenerateSafePropertyName(FieldName, index);
         }
 
         /// <summary>

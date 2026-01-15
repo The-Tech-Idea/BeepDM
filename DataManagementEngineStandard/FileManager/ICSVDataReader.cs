@@ -145,18 +145,18 @@ namespace TheTechIdea.Beep.FileManager
             string value = _currentRow[actualIndex];
 
             // Get field type from entity structure
-            string fieldName = GetName(i);
-            var field = _entityStructure.Fields.FirstOrDefault(f => f.fieldname == fieldName);
-            if (field != null && !string.IsNullOrEmpty(field.fieldtype))
+            string FieldName = GetName(i);
+            var field = _entityStructure.Fields.FirstOrDefault(f => f.FieldName == FieldName);
+            if (field != null && !string.IsNullOrEmpty(field.Fieldtype))
             {
                 try
                 {
-                    Type fieldType = Type.GetType(field.fieldtype);
-                    if (fieldType != null 
+                    Type Fieldtype = Type.GetType(field.Fieldtype);
+                    if (Fieldtype != null 
                         && !string.IsNullOrEmpty(value) 
                         && !string.IsNullOrWhiteSpace(value))
                     {
-                        return  CSVTypeMapper.ConvertValue(value, fieldType);
+                        return  CSVTypeMapper.ConvertValue(value, Fieldtype);
 
                     }
                 }
@@ -195,7 +195,7 @@ namespace TheTechIdea.Beep.FileManager
                 return _columnNames[i];
 
             if (_entityStructure != null && i < _entityStructure.Fields.Count)
-                return _entityStructure.Fields[i].fieldname;
+                return _entityStructure.Fields[i].FieldName;
 
             return $"Column{i}";
         }
@@ -207,7 +207,7 @@ namespace TheTechIdea.Beep.FileManager
 
             for (int i = 0; i < _entityStructure.Fields.Count; i++)
             {
-                if (_entityStructure.Fields[i].fieldname == name)
+                if (_entityStructure.Fields[i].FieldName == name)
                     return i;
             }
 

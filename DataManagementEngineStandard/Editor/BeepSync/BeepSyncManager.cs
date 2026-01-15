@@ -61,7 +61,7 @@ namespace TheTechIdea.Beep.Editor
             var sourceFilters = schema.Filters.ToList();
             sourceFilters.Add(new AppFilter
             {
-                FieldName = schema.SourceSyncDataField,
+               FieldName = schema.SourceSyncDataField,
                 Operator = filterOperator,
                 FilterValue = schema.LastSyncDate.ToString("yyyy-MM-dd HH:mm:ss") // Format date as needed
             });
@@ -132,7 +132,7 @@ namespace TheTechIdea.Beep.Editor
                     {
                         new AppFilter
                         {
-                            FieldName = schema.SourceSyncDataField,
+                           FieldName = schema.SourceSyncDataField,
                             Operator = "=",
                             FilterValue = sourceData.GetType().GetProperty(schema.SourceSyncDataField).GetValue(sourceData).ToString()
                         }
@@ -217,7 +217,7 @@ namespace TheTechIdea.Beep.Editor
                     {
                         new AppFilter
                         {
-                            FieldName = schema.SourceSyncDataField,
+                           FieldName = schema.SourceSyncDataField,
                             Operator = "=",
                             FilterValue = sourceData.GetType().GetProperty(schema.SourceSyncDataField).GetValue(sourceData).ToString()
                         }
@@ -306,7 +306,7 @@ namespace TheTechIdea.Beep.Editor
                     {
                         new AppFilter
                         {
-                            FieldName = schema.SourceSyncDataField,
+                           FieldName = schema.SourceSyncDataField,
                             Operator = "=",
                             FilterValue = sourceData.GetType().GetProperty(schema.SourceSyncDataField).GetValue(sourceData).ToString()
                         }
@@ -576,7 +576,7 @@ namespace TheTechIdea.Beep.Editor
             {
                 new AppFilter
                 {
-                    FieldName = tracking.PKFieldName,
+                   FieldName = tracking.PKFieldName,
                     Operator = "=",
                     FilterValue = tracking.PKFieldValue
                 }

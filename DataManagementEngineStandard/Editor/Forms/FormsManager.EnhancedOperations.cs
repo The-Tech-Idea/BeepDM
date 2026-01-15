@@ -480,7 +480,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>
         /// Copies field values between records
         /// </summary>
-        public bool CopyFields(object sourceRecord, object targetRecord, params string[] fieldNames)
+        public bool CopyFields(object sourceRecord, object targetRecord, params string[] FieldNames)
         {
             if (sourceRecord == null || targetRecord == null)
                 return false;
@@ -488,13 +488,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             try
             {
                 var success = true;
-                foreach (var fieldName in fieldNames)
+                foreach (var FieldName in FieldNames)
                 {
-                    var value = _formsSimulationHelper.GetFieldValue(sourceRecord, fieldName);
-                    if (!_formsSimulationHelper.SetFieldValue(targetRecord, fieldName, value))
+                    var value = _formsSimulationHelper.GetFieldValue(sourceRecord, FieldName);
+                    if (!_formsSimulationHelper.SetFieldValue(targetRecord, FieldName, value))
                     {
                         success = false;
-                        LogError($"Failed to copy field '{fieldName}'", null);
+                        LogError($"Failed to copy field '{FieldName}'", null);
                     }
                 }
                 return success;

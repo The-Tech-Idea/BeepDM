@@ -36,7 +36,7 @@ UniversalDataSourceHelpers/
 
 1. **IDataSourceHelper Interface** — Defines the contract all datasource helpers must implement:
    - Schema operations (get schemas, check existence, retrieve column info)
-   - DDL operations (CREATE, DROP, TRUNCATE, CREATE INDEX)
+   - Ddl operations (CREATE, DROP, TRUNCATE, CREATE INDEX)
    - DML operations (INSERT, UPDATE, DELETE, SELECT)
    - Utility methods (identifier quoting, type mapping, validation)
 
@@ -257,7 +257,7 @@ var diagnostics = PocoToEntityConverter.GetCircularReferenceDiagnostics<MyClass>
 (string Query, bool Success) = helper.GetTableExistsQuery(tableName);
 (string Query, bool Success) = helper.GetColumnInfoQuery(tableName);
 
-// DDL operations
+// Ddl operations
 (string Sql, bool Success, string Error) = helper.GenerateCreateTableSql(entity);
 (string Sql, bool Success, string Error) = helper.GenerateDropTableSql(tableName);
 

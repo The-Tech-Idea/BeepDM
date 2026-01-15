@@ -14,7 +14,7 @@ namespace TheTechIdea.Beep.Json.Helpers
             if (data == null || es == null) return false;
             bool changed = false;
 
-            var existing = new HashSet<string>(es.Fields.Select(f => f.fieldname), StringComparer.OrdinalIgnoreCase);
+            var existing = new HashSet<string>(es.Fields.Select(f => f.FieldName), StringComparer.OrdinalIgnoreCase);
 
             foreach (var obj in data.OfType<JObject>())
             {
@@ -24,8 +24,8 @@ namespace TheTechIdea.Beep.Json.Helpers
                     {
                         es.Fields.Add(new EntityField
                         {
-                            fieldname = prop.Name,
-                            fieldtype = InferClrType(prop.Value),
+                           FieldName = prop.Name,
+                            Fieldtype = InferClrType(prop.Value),
                             EntityName = es.EntityName,
                             AllowDBNull = true
                         });
@@ -45,7 +45,7 @@ namespace TheTechIdea.Beep.Json.Helpers
                 return false;
 
             var pk = es.PrimaryKeys.First();
-            if (!es.Fields.Any(f => f.fieldname.Equals(pk.fieldname, StringComparison.OrdinalIgnoreCase)))
+            if (!es.Fields.Any(f => f.FieldName.Equals(pk.FieldName, StringComparison.OrdinalIgnoreCase)))
             {
                 es.Fields.Insert(0, pk);
                 return true;

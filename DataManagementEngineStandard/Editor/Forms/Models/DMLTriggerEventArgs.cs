@@ -52,15 +52,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         /// <summary>
         /// Sets a field value in the current record using reflection
         /// </summary>
-        /// <param name="fieldName">Name of the field to set</param>
+        /// <param name="FieldName">Name of the field to set</param>
         /// <param name="value">Value to assign</param>
-        public void SetFieldValue(string fieldName, object value)
+        public void SetFieldValue(string FieldName, object value)
         {
-            if (CurrentRecord == null || string.IsNullOrWhiteSpace(fieldName)) return;
+            if (CurrentRecord == null || string.IsNullOrWhiteSpace(FieldName)) return;
             
             try
             {
-                var property = CurrentRecord.GetType().GetProperty(fieldName, 
+                var property = CurrentRecord.GetType().GetProperty(FieldName, 
                     System.Reflection.BindingFlags.IgnoreCase | 
                     System.Reflection.BindingFlags.Public | 
                     System.Reflection.BindingFlags.Instance);
@@ -74,22 +74,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
             catch (Exception)
             {
                 // Log error but don't throw to avoid breaking the trigger chain
-                Message += $"Error setting field '{fieldName}'; ";
+                Message += $"Error setting field '{FieldName}'; ";
             }
         }
 
         /// <summary>
         /// Gets a field value from the current record using reflection
         /// </summary>
-        /// <param name="fieldName">Name of the field to get</param>
+        /// <param name="FieldName">Name of the field to get</param>
         /// <returns>Field value or null if not found</returns>
-        public object GetFieldValue(string fieldName)
+        public object GetFieldValue(string FieldName)
         {
-            if (CurrentRecord == null || string.IsNullOrWhiteSpace(fieldName)) return null;
+            if (CurrentRecord == null || string.IsNullOrWhiteSpace(FieldName)) return null;
             
             try
             {
-                var property = CurrentRecord.GetType().GetProperty(fieldName, 
+                var property = CurrentRecord.GetType().GetProperty(FieldName, 
                     System.Reflection.BindingFlags.IgnoreCase | 
                     System.Reflection.BindingFlags.Public | 
                     System.Reflection.BindingFlags.Instance);
@@ -105,30 +105,30 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         /// <summary>
         /// Sets the current date/time to a field - common Oracle Forms pattern
         /// </summary>
-        /// <param name="fieldName">Name of the date field</param>
-        public void SetCurrentDateTime(string fieldName)
+        /// <param name="FieldName">Name of the date field</param>
+        public void SetCurrentDateTime(string FieldName)
         {
-            SetFieldValue(fieldName, DateTime.Now);
+            SetFieldValue(FieldName, DateTime.Now);
         }
 
         /// <summary>
         /// Sets the current user to a field - common Oracle Forms pattern
         /// </summary>
-        /// <param name="fieldName">Name of the user field</param>
+        /// <param name="FieldName">Name of the user field</param>
         /// <param name="currentUser">Current user name</param>
-        public void SetCurrentUser(string fieldName, string currentUser)
+        public void SetCurrentUser(string FieldName, string currentUser)
         {
-            SetFieldValue(fieldName, currentUser);
+            SetFieldValue(FieldName, currentUser);
         }
 
         /// <summary>
         /// Checks if a field is null or empty
         /// </summary>
-        /// <param name="fieldName">Name of the field to check</param>
+        /// <param name="FieldName">Name of the field to check</param>
         /// <returns>True if field is null or empty</returns>
-        public bool IsFieldNullOrEmpty(string fieldName)
+        public bool IsFieldNullOrEmpty(string FieldName)
         {
-            var value = GetFieldValue(fieldName);
+            var value = GetFieldValue(FieldName);
             return value == null || value is string str && string.IsNullOrWhiteSpace(str);
         }
 

@@ -104,7 +104,7 @@ namespace TheTechIdea.Beep.Json.Helpers
             if (!children.Any()) return dict;
 
             var parentPk = entity.PrimaryKeys?.FirstOrDefault();
-            string parentPkValue = parentPk != null ? current[parentPk.fieldname]?.ToString() : null;
+            string parentPkValue = parentPk != null ? current[parentPk.FieldName]?.ToString() : null;
 
             foreach (var child in children)
             {

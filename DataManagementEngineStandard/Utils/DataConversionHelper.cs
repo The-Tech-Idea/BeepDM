@@ -261,9 +261,9 @@ namespace TheTechIdea.Beep.Utils
                 var instance = Activator.CreateInstance(entType);
                 foreach (var field in ent.Fields)
                 {
-                    var pi = entType.GetProperty(field.fieldname, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                    var pi = entType.GetProperty(field.FieldName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                     if (pi == null) continue;
-                    object value = row[field.fieldname];
+                    object value = row[field.FieldName];
                     if (value == DBNull.Value)
                     {
                         value = pi.PropertyType.IsValueType ? Activator.CreateInstance(pi.PropertyType) : null;

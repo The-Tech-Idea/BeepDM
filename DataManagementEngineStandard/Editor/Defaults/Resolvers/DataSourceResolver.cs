@@ -268,14 +268,14 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                 }
 
                 var entityName = RemoveQuotes(parts[0].Trim());
-                string fieldName = null;
+                string FieldName = null;
                 var filters = new List<AppFilter>();
 
                 // For functions that need a field name (MAX, MIN, SUM, AVG)
                 int startIndex = 1;
                 if (function != "COUNT" && parts.Length > 1)
                 {
-                    fieldName = RemoveQuotes(parts[1].Trim());
+                   FieldName = RemoveQuotes(parts[1].Trim());
                     startIndex = 2;
                 }
 
@@ -296,7 +296,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 
                 // Build and execute aggregate query
                 var whereClause = BuildWhereClause(filters);
-                var query = BuildAggregateQuery(function, entityName, fieldName, whereClause);
+                var query = BuildAggregateQuery(function, entityName, FieldName, whereClause);
 
                 return dataSource.GetScalar(query);
             }
@@ -343,13 +343,13 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     var index = condition.IndexOf(op);
                     if (index > 0)
                     {
-                        var fieldName = condition.Substring(0, index).Trim();
+                        var FieldName = condition.Substring(0, index).Trim();
                         var value = condition.Substring(index + op.Length).Trim();
                         value = RemoveQuotes(value);
 
                         return new AppFilter
                         {
-                            FieldName = fieldName,
+                           FieldName = FieldName,
                             Operator = op,
                             FilterValue = value
                         };
@@ -373,9 +373,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             return "WHERE " + string.Join(" AND ", conditions);
         }
 
-        private string BuildAggregateQuery(string function, string entityName, string fieldName, string whereClause)
+        private string BuildAggregateQuery(string function, string entityName, string FieldName, string whereClause)
         {
-            var field = string.IsNullOrWhiteSpace(fieldName) ? "*" : fieldName;
+            var field = string.IsNullOrWhiteSpace(FieldName) ? "*" : FieldName;
             var query = $"SELECT {function}({field}) FROM {entityName}";
             
             if (!string.IsNullOrWhiteSpace(whereClause))

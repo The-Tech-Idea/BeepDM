@@ -42,7 +42,7 @@ namespace TheTechIdea.Beep.WebAPI
             try
             {
                 Logger.WriteLog("Getting create entity scripts");
-                // Web APIs don't use traditional DDL scripts
+                // Web APIs don't use traditional Ddl scripts
                 // Return empty list as scripts are not applicable
                 return new List<ETLScriptDet>();
             }

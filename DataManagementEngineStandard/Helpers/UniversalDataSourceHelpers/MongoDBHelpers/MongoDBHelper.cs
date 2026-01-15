@@ -99,18 +99,18 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers
 
         #endregion
 
-        #region DDL Operations (Create, Alter, Drop) - Level 1 Schema Operations
+        #region Ddl Operations (Create, Alter, Drop) - Level 1 Schema Operations
 
         /// <summary>
         /// MongoDB collections are created implicitly when first document is inserted.
-        /// This method acknowledges that DDL is not needed for collection creation.
+        /// This method acknowledges that Ddl is not needed for collection creation.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateCreateTableSql(
             EntityStructure entity,
             string schemaName = null,
             DataSourceType? dataSourceType = null)
         {
-            return ("", true, "MongoDB collections are created implicitly - no DDL needed");
+            return ("", true, "MongoDB collections are created implicitly - no Ddl needed");
         }
 
         /// <summary>

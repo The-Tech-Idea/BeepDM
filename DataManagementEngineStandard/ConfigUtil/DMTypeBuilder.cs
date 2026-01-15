@@ -144,7 +144,7 @@ namespace TheTechIdea.Beep.Utilities
         {
             typeBuilder = GetTypeBuilder(libName, namespaceName, typeName);
             foreach (var field in fields)
-                CreateProperty(typeBuilder, SanitizeFieldName(field.fieldname), ResolveType(field.fieldtype));
+                CreateProperty(typeBuilder, SanitizeFieldName(field.FieldName), ResolveType(field.Fieldtype));
             return typeBuilder.CreateTypeInfo();
         }
 
@@ -212,9 +212,9 @@ namespace TheTechIdea.Beep.Utilities
         }
 
         /// <summary>Sanitizes field names to ensure they are valid .NET identifiers.</summary>
-        private static string SanitizeFieldName(string fieldName)
+        private static string SanitizeFieldName(string FieldName)
         {
-            return string.IsNullOrWhiteSpace(fieldName) ? "UnnamedField" : fieldName.Replace(" ", "_").Replace("-", "_");
+            return string.IsNullOrWhiteSpace(FieldName) ? "UnnamedField" : FieldName.Replace(" ", "_").Replace("-", "_");
         }
 
         /// <summary>Logs errors safely in a thread-safe manner.</summary>

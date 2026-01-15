@@ -116,7 +116,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
                 {
                     // Check if the field exists in the entity structure
                     var field = entityStructure.Fields?.FirstOrDefault(
-                        f => f.fieldname.Equals(defaultValue.PropertyName, StringComparison.InvariantCultureIgnoreCase));
+                        f => f.FieldName.Equals(defaultValue.PropertyName, StringComparison.InvariantCultureIgnoreCase));
 
                     if (field == null)
                         continue;
@@ -261,10 +261,10 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
                 
                 foreach (var requiredField in requiredFields)
                 {
-                    var value = _editor.Utilfunction.GetFieldValueFromObject(requiredField.fieldname, transformedRecord);
+                    var value = _editor.Utilfunction.GetFieldValueFromObject(requiredField.FieldName, transformedRecord);
                     if (value == null || (value is string str && string.IsNullOrWhiteSpace(str)))
                     {
-                        _editor.Logger?.WriteLog($"Required field '{requiredField.fieldname}' is missing or empty after transformation");
+                        _editor.Logger?.WriteLog($"Required field '{requiredField.FieldName}' is missing or empty after transformation");
                         return false;
                     }
                 }

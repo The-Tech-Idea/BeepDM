@@ -30,7 +30,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
         public (string Query, bool Success) GetColumnInfoQuery(string tableName) => _currentHelper.GetColumnInfoQuery(tableName);
         #endregion
 
-        #region DDL Operations
+        #region Ddl Operations
         public (string Sql, bool Success, string ErrorMessage) GenerateCreateTableSql(EntityStructure entity, string schemaName = null, DataSourceType? dataSourceType = null) 
             => _currentHelper.GenerateCreateTableSql(entity, schemaName, dataSourceType);
         
