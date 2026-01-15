@@ -18968,6 +18968,99 @@
             <param name="parameters">Parameters for the operation</param>
             <returns>Tuple with validation result and error message</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.JsonLoaderService.IEnhancedJsonLoader">
+            <summary>
+            Enhanced interface for JSON loading and saving operations
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.JsonLoaderService.JsonLoader">
+            <summary>
+            Provides methods for serializing objects to JSON and deserializing JSON to objects.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.JsonLoaderService.JsonLoader.#ctor">
+            <summary>
+            Initializes a new instance of the JsonLoader class.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.JsonLoaderService.JsonLoader.SerializeObject(System.Object)">
+            <summary>
+            Serializes the specified object to a JSON string.
+            </summary>
+            <param name="obj">The object to serialize.</param>
+            <returns>A JSON string representation of the object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.JsonLoaderService.JsonLoader.DeserializeObject(System.String)">
+            <summary>
+            Deserializes the JSON string to an object.
+            </summary>
+            <param name="jsonstring">The JSON string to deserialize.</param>
+            <returns>The deserialized object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.JsonLoaderService.JsonLoader.DeserializeObject``1(System.String)">
+            <summary>
+            Deserializes the JSON string to an object.
+            </summary>
+            <param name="filename">The file name for JSON string to deserialize.</param>
+            <returns>The deserialized object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.JsonLoaderService.JsonLoader.DeserializeObjectFromjsonString``1(System.String)">
+            <summary>
+            Deserializes the JSON string to an object.
+            </summary>
+            <param name="jsonstring">The JSON string to deserialize.</param>
+            <returns>The deserialized object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.JsonLoaderService.JsonLoader.DeserializeSingleObjectFromjsonString``1(System.String)">
+            <summary>
+            Deserializes single Object from string.
+            </summary>
+            <param name="jsonstring">The JSON string to deserialize.</param>
+            <returns>The deserialized object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.JsonLoaderService.JsonLoader.DeserializeSingleObject``1(System.String)">
+            <summary>
+            Deserializes single Object from file.
+            </summary>
+            <param name="filename">The file that contain JSON string to deserialize.</param>
+            <returns>The deserialized object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.JsonLoaderService.JsonLoader.Serialize(System.String,System.Object)">
+            <summary>
+            Serializes file to object .
+            </summary>
+            <param name="filename">The file  to serialize.</param>
+            <param name="obj">The object to serialize.</param>
+            <returns>A object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.JsonLoaderService.JsonLoader.DeserializeObjectString``1(System.String)">
+            <summary>
+            Deserializes  Object from file.
+            </summary>
+            <param name="stringobject">The JSON string to deserialize.</param>
+            <returns>The deserialized object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.JsonLoaderService.JsonLoader.JsonToDataTable(System.String)">
+            <summary>
+            Convert Json to DataTable.
+            </summary>
+            <param name="jsonString">The JSON string to Convert.</param>
+            <returns>The DataTable object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.JsonLoaderService.JsonLoader.ConverttoDataset(System.String)">
+            <summary>
+            Convert Json to DataSet.
+            </summary>
+            <param name="jsonString">The JSON string to Convert.</param>
+            <returns>The DataSet object.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.JsonLoaderService.JsonLoader.CheckJsonType(Newtonsoft.Json.Linq.JToken)">
+            <summary>
+            Check Json Token Type.
+            </summary>
+            <param name="obj">The JSON JToken to Check.</param>
+            <returns>The string type name .</returns>
+        </member>
         <member name="T:TheTechIdea.Beep.Json.JsonDataSource">
             <summary>
             JsonDataSource provides CRUD operations on a JSON file acting as a data source.
@@ -19312,6 +19405,18 @@
             Returns a list of child relations for a given table. Not implemented for JSON.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSourceAdvanced.GetEntityGraph(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Int32,System.Boolean,System.Boolean)">
+            <summary>
+            Optional graph hydration: returns dictionaries that include nested child entity collections.
+            This does not change the underlying stored JSON; it only shapes the returned results.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSourceAdvanced.SyncSchemaFromData(System.String)">
+            <summary>
+            Scans the current JSON data for an entity and adds any missing fields to its EntityStructure.
+            Marks schema as dirty so it will be persisted on Commit/Close.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Properties.Resources">
             <summary>
               A strongly-typed resource class, for looking up localized strings, etc.
@@ -19339,6 +19444,87 @@
             The textual expression that defines the rule's logic.
             For example: ":Entity1.LastName == 'Smith'" or other valid expressions.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.EnvironmentService.CreateMainFolder(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Creates the main Beep application folder in a platform-appropriate location.
+            </summary>
+            <param name="beepService">Optional BeepService reference.</param>
+            <returns>Path to the created main folder or empty string if creation fails.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.EnvironmentService.CreateMainFolder">
+            <summary>
+            Creates the main Beep application folder in a platform-appropriate location.
+            </summary>
+            <returns>Path to the created main folder or empty string if creation fails.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.EnvironmentService.CreateContainerfolder(System.String)">
+            <summary>
+            Creates a container folder within the main Beep folder.
+            </summary>
+            <param name="containername">Name of the container folder to create.</param>
+            <returns>Path to the created container folder or empty string if creation fails.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.EnvironmentService.CreateAppfolder(System.String,System.String)">
+            <summary>
+            Creates an application folder within a container folder.
+            </summary>
+            <param name="containername">Name of the container that will hold the app folder.</param>
+            <param name="appfolder">Name of the application folder to create.</param>
+            <returns>Path to the created application folder or empty string if creation fails.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.EnvironmentService.CreateAppfolder(System.String)">
+            <summary>
+            Creates an application folder directly within the main Beep folder.
+            </summary>
+            <param name="appfolder">Name of the application folder to create.</param>
+            <returns>Path to the created application folder or empty string if creation fails.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.EnvironmentService.GetBaseFolderPath">
+            <summary>
+            Gets the appropriate base folder path based on the current operating system.
+            </summary>
+            <returns>The base folder path for application data.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.EnvironmentService.SanitizeFolderName(System.String)">
+            <summary>
+            Sanitizes folder names for cross-platform compatibility.
+            </summary>
+            <param name="folderName">The folder name to sanitize.</param>
+            <returns>A sanitized, cross-platform safe folder name.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.EnvironmentService.CreateDirectorySafely(System.String)">
+            <summary>
+            Creates a directory recursively, ensuring all parent directories exist.
+            </summary>
+            <param name="path">The directory path to create.</param>
+            <returns>True if the directory was created successfully, false otherwise.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering JsonLoader with dependency injection
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.ServiceCollectionExtensions.AddJsonLoader(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds JsonLoader services to the dependency injection container
+            </summary>
+            <param name="services">The service collection</param>
+            <returns>The service collection for method chaining</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.ServiceCollectionExtensions.AddJsonLoaderScoped(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds JsonLoader services as scoped to the dependency injection container
+            </summary>
+            <param name="services">The service collection</param>
+            <returns>The service collection for method chaining</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.ServiceCollectionExtensions.AddJsonLoaderTransient(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds JsonLoader services as transient to the dependency injection container
+            </summary>
+            <param name="services">The service collection</param>
+            <returns>The service collection for method chaining</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Tools.ClassCreator">
             <summary>

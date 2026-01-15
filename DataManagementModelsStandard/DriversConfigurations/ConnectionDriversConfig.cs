@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Utilities;
 
@@ -202,6 +203,13 @@ namespace TheTechIdea.Beep.DriversConfigurations
             get { return _needDrivers; }
             set { SetProperty(ref _needDrivers, value); }
         }
+        private List<string> _versions;
+        public List<string> Versions
+        {
+            get { return _versions; }
+            set { SetProperty(ref _versions, value); }
+        }
+
     }
 
 }

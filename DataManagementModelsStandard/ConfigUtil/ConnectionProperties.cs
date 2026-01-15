@@ -515,11 +515,36 @@ using TheTechIdea.Beep.Utilities;
                 set { SetProperty(ref _allowLoadLocalInfile, value); }
             }
 
-            private string _authenticationType;
+            private AuthTypeEnum _authenticationTypeEnum = AuthTypeEnum.None;
+            
+            /// <summary>
+            /// Authentication type enum for this connection (supports all connection types: databases, Web APIs, files, cloud services)
+            /// Recommended for new code - provides type safety and IntelliSense
+            /// </summary>
+            [Browsable(true)]
+            [Category("Authentication")]
+            [DisplayName("Authentication Type")]
+            [Description("The authentication method used for this connection")]
+            public AuthTypeEnum AuthenticationTypeEnum
+            {
+                get { return _authenticationTypeEnum; }
+                set { SetProperty(ref _authenticationTypeEnum, value); }
+            }
+
+            /// <summary>
+            /// String representation of authentication type (implements IConnectionProperties interface)
+            /// Automatically syncs with AuthenticationTypeEnum property
+            /// For backward compatibility and serialization
+            /// </summary>
+            [Browsable(false)]
             public string AuthenticationType
             {
-                get { return _authenticationType; }
-                set { SetProperty(ref _authenticationType, value); }
+                get { return _authenticationTypeEnum.ToStringValue(); }
+                set 
+                { 
+                    var enumValue = AuthTypeEnumExtensions.FromString(value);
+                    SetProperty(ref _authenticationTypeEnum, enumValue); 
+                }
             }
 
             private string _authority;

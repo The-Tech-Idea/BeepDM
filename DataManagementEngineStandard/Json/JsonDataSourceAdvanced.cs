@@ -256,7 +256,7 @@ namespace TheTechIdea.Beep.Json
                         {
                             EventType = "Error",
                             Messege = $"Failed to persist JSON data: {ex.Message}",
-                            Errors = Errors.Failed
+                          
                         });
                     }
                     catch { }
