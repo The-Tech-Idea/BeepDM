@@ -1240,9 +1240,21 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             {
                 typeNameOnly = fullTypeName.Substring(0, commaIndex).Trim();
             }
+
+            // If assembly-qualified, try to extract the assembly simple name token (second comma-separated token)
+            string assemblyToken = null;
+            try
+            {
+                var parts = fullTypeName.Split(',');
+                if (parts.Length > 1)
+                {
+                    assemblyToken = parts[1].Trim();
+                }
+            }
+            catch { /* ignore split errors */ }
             
             // Check cache using both full input and parsed type name
-            if (_sharedTypeCache.TryGetValue(fullTypeName, out var weak) || 
+            if (_sharedTypeCache.TryGetValue(fullTypeName, out var weak) ||
                 _sharedTypeCache.TryGetValue(typeNameOnly, out weak))
             {
                 if (weak != null && weak.TryGetTarget(out var t) && t != null)
@@ -1252,6 +1264,33 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 // Stale entry – remove
                 _sharedTypeCache.TryRemove(fullTypeName, out _);
                 _sharedTypeCache.TryRemove(typeNameOnly, out _);
+            }
+
+            // If assembly-qualified name provided, try resolving the assembly first for a direct lookup
+            if (!string.IsNullOrEmpty(assemblyToken))
+            {
+                try
+                {
+                    // Try to resolve by simple assembly name (ResolveAssemblyByName handles many cases)
+                    var asm = ResolveAssemblyByName(assemblyToken) ??
+                              GetSharedAssemblies().FirstOrDefault(a => string.Equals(a.GetName().Name, assemblyToken, StringComparison.OrdinalIgnoreCase));
+
+                    if (asm != null)
+                    {
+                        var resolved = asm.GetType(typeNameOnly, throwOnError: false, ignoreCase: false);
+                        if (resolved != null)
+                        {
+                            var weakRef = new WeakReference<Type>(resolved);
+                            _sharedTypeCache[fullTypeName] = weakRef;
+                            _sharedTypeCache[typeNameOnly] = weakRef;
+                            return resolved;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWithContext($"Failed to resolve assembly-qualified type '{fullTypeName}'", ex);
+                }
             }
 
             // Attempt late resolution by scanning shared assemblies (lazy recovery)
@@ -1275,7 +1314,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                     catch { }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger?.LogWithContext($"Error while scanning shared assemblies for type '{fullTypeName}'", ex);
+            }
+
             return null;
         }
 

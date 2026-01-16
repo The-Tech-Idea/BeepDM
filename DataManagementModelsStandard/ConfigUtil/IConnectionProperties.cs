@@ -130,6 +130,16 @@ namespace TheTechIdea.Beep.ConfigUtil
         /// </summary>
         string OracleSIDorService { get; set; }
 
+    
+
+        
+        List<string> Regions { get; set; }
+        // add any cloud specific properties like  what ai added already regions
+
+
+
+
+
         #endregion
 
         #region File Properties
